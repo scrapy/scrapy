@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from six.moves.urllib.parse import urljoin
 
 from scrapy.http import HtmlResponse
@@ -53,29 +54,53 @@ class BaseRedirectMiddleware(object):
 class RedirectMiddleware(BaseRedirectMiddleware):
     """Handle redirection of requests based on response status and meta-refresh html tag"""
 
+    def __init__(self, *a, **kw):
+        super(RedirectMiddleware, self).__init__(*a, **kw)
+        self.redirect_handlers = self._create_handlers()
+
     def process_response(self, request, response, spider):
         if request.meta.get('dont_redirect', False):
             return response
 
-        if request.method == 'HEAD':
-            if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
-                redirected_url = urljoin(request.url, response.headers['location'])
-                redirected = request.replace(url=redirected_url)
-                return self._redirect(redirected, request, spider, response.status)
+        handler = self._get_redirect_handler(request, response)
+        if response.headers.get('Location') and handler:
+            redirected_url = urljoin(request.url, response.headers['location'])
+            if redirected_url == request.url:
+                logger.info('Caught cyclic redirection, ignoring.',
+                            {'request': request}, extra={'spider': spider})
             else:
-                return response
-
-        if response.status in [302, 303] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
-            redirected = self._redirect_request_using_get(request, redirected_url)
-            return self._redirect(redirected, request, spider, response.status)
-
-        if response.status in [301, 307] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
-            redirected = request.replace(url=redirected_url)
-            return self._redirect(redirected, request, spider, response.status)
+                redirected = handler(request, redirected_url)
+                return self._redirect(redirected, request, spider, response.status)
 
         return response
+
+    def _get_redirect_handler(self, request, response):
+        method_handlers = self.redirect_handlers[request.method]
+        for handler_item in method_handlers:
+            if response.status in handler_item['status_codes']:
+                return handler_item['handler']
+
+    def _create_handlers(self):
+        default_handler = lambda req, redirected_url: req.replace(url=redirected_url)
+        redirect_handlers = defaultdict(lambda: [
+            {
+                'status_codes': [302, 303],
+                'handler': self._redirect_request_using_get
+            },
+            {
+                'status_codes': [301, 307],
+                'handler': default_handler,
+            }
+        ])
+        redirect_handlers['HEAD'] = [
+            {
+                'status_codes': [301, 302, 303, 307],
+                'handler': default_handler,
+            }
+        ]
+
+        return redirect_handlers
+
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
