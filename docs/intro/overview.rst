@@ -144,7 +144,7 @@ Finally, here's the spider code::
             torrent['url'] = response.url
             torrent['name'] = response.xpath("//h1/text()").extract()
             torrent['description'] = response.xpath("//div[@id='description']").extract()
-            torrent['size'] = response.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
+            torrent['size'] = response.xpath("//div[@id='specifications']/p[2]/text()[2]").extract()
             return torrent
 
 The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
