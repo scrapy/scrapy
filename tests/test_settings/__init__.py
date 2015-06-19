@@ -2,7 +2,8 @@ import six
 import unittest
 import warnings
 
-from scrapy.settings import Settings, SettingsAttribute, CrawlerSettings
+from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
+                             CrawlerSettings)
 from tests import mock
 from . import default_settings
 
@@ -33,35 +34,16 @@ class SettingsTest(unittest.TestCase):
     if six.PY3:
         assertItemsEqual = unittest.TestCase.assertCountEqual
 
+
+class BaseSettingsTest(unittest.TestCase):
+
+    if six.PY3:
+        assertItemsEqual = unittest.TestCase.assertCountEqual
+
     def setUp(self):
-        self.settings = Settings()
-
-    @mock.patch.dict('scrapy.settings.SETTINGS_PRIORITIES', {'default': 10})
-    @mock.patch('scrapy.settings.default_settings', default_settings)
-    def test_initial_defaults(self):
-        settings = Settings()
-        self.assertEqual(len(settings.attributes), 1)
-        self.assertIn('TEST_DEFAULT', settings.attributes)
-
-        attr = settings.attributes['TEST_DEFAULT']
-        self.assertIsInstance(attr, SettingsAttribute)
-        self.assertEqual(attr.value, 'defvalue')
-        self.assertEqual(attr.priority, 10)
-
-    @mock.patch.dict('scrapy.settings.SETTINGS_PRIORITIES', {})
-    @mock.patch('scrapy.settings.default_settings', {})
-    def test_initial_values(self):
-        settings = Settings({'TEST_OPTION': 'value'}, 10)
-        self.assertEqual(len(settings.attributes), 1)
-        self.assertIn('TEST_OPTION', settings.attributes)
-
-        attr = settings.attributes['TEST_OPTION']
-        self.assertIsInstance(attr, SettingsAttribute)
-        self.assertEqual(attr.value, 'value')
-        self.assertEqual(attr.priority, 10)
+        self.settings = BaseSettings()
 
     def test_set_new_attribute(self):
-        self.settings.attributes = {}
         self.settings.set('TEST_OPTION', 'value', 0)
         self.assertIn('TEST_OPTION', self.settings.attributes)
 
@@ -69,6 +51,12 @@ class SettingsTest(unittest.TestCase):
         self.assertIsInstance(attr, SettingsAttribute)
         self.assertEqual(attr.value, 'value')
         self.assertEqual(attr.priority, 0)
+
+    def test_set_settingsattribute(self):
+        myattr = SettingsAttribute(0, 30) # Note priority 30
+        self.settings.set('TEST_ATTR', myattr, 10)
+        self.assertEqual(self.settings.get('TEST_ATTR'), 0)
+        self.assertEqual(self.settings.getpriority('TEST_ATTR'), 30)
 
     def test_set_instance_identity_on_update(self):
         attr = SettingsAttribute('value', 0)
@@ -79,13 +67,11 @@ class SettingsTest(unittest.TestCase):
         self.assertIs(attr, self.settings.attributes['TEST_OPTION'])
 
     def test_set_calls_settings_attributes_methods_on_update(self):
-        with mock.patch.object(SettingsAttribute, '__setattr__') as mock_setattr, \
-                mock.patch.object(SettingsAttribute, 'set') as mock_set:
+        attr = SettingsAttribute('value', 10)
+        with mock.patch.object(attr, '__setattr__') as mock_setattr, \
+                mock.patch.object(attr, 'set') as mock_set:
 
-            attr = SettingsAttribute('value', 10)
             self.settings.attributes = {'TEST_OPTION': attr}
-            mock_set.reset_mock()
-            mock_setattr.reset_mock()
 
             for priority in (0, 10, 20):
                 self.settings.set('TEST_OPTION', 'othervalue', priority)
@@ -93,6 +79,19 @@ class SettingsTest(unittest.TestCase):
                 self.assertFalse(mock_setattr.called)
                 mock_set.reset_mock()
                 mock_setattr.reset_mock()
+
+    def test_setitem(self):
+        settings = BaseSettings()
+        settings.set('key', 'a', 'default')
+        settings['key'] = 'b'
+        self.assertEqual(settings['key'], 'b')
+        self.assertEqual(settings.getpriority('key'), 20)
+        settings['key'] = 'c'
+        self.assertEqual(settings['key'], 'c')
+        settings['key2'] = 'x'
+        self.assertIn('key2', settings)
+        self.assertEqual(settings['key2'], 'x')
+        self.assertEqual(settings.getpriority('key2'), 20)
 
     def test_setdict_alias(self):
         with mock.patch.object(self.settings, 'set') as mock_set:
@@ -118,7 +117,8 @@ class SettingsTest(unittest.TestCase):
     def test_setmodule_alias(self):
         with mock.patch.object(self.settings, 'set') as mock_set:
             self.settings.setmodule(default_settings, 10)
-            mock_set.assert_called_with('TEST_DEFAULT', 'defvalue', 10)
+            mock_set.assert_any_call('TEST_DEFAULT', 'defvalue', 10)
+            mock_set.assert_any_call('TEST_DICT', {'key': 'val'}, 10)
 
     def test_setmodule_by_path(self):
         self.settings.attributes = {}
@@ -132,10 +132,54 @@ class SettingsTest(unittest.TestCase):
         self.assertItemsEqual(six.iterkeys(self.settings.attributes),
                               six.iterkeys(ctrl_attributes))
 
-        for attr, ctrl_attr in zip(six.itervalues(self.settings.attributes),
-                                   six.itervalues(ctrl_attributes)):
+        for key in six.iterkeys(ctrl_attributes):
+            attr = self.settings.attributes[key]
+            ctrl_attr = ctrl_attributes[key]
             self.assertEqual(attr.value, ctrl_attr.value)
             self.assertEqual(attr.priority, ctrl_attr.priority)
+
+    def test_update(self):
+        settings = BaseSettings({'key_lowprio': 0}, priority=0)
+        settings.set('key_highprio', 10, priority=50)
+        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11}, priority=30)
+        custom_settings.set('newkey_one', None, priority=50)
+        custom_dict = {'key_lowprio': 2, 'key_highprio': 12, 'newkey_two': None}
+
+        settings.update(custom_dict, priority=20)
+        self.assertEqual(settings['key_lowprio'], 2)
+        self.assertEqual(settings.getpriority('key_lowprio'), 20)
+        self.assertEqual(settings['key_highprio'], 10)
+        self.assertIn('newkey_two', settings)
+        self.assertEqual(settings.getpriority('newkey_two'), 20)
+
+        settings.update(custom_settings)
+        self.assertEqual(settings['key_lowprio'], 1)
+        self.assertEqual(settings.getpriority('key_lowprio'), 30)
+        self.assertEqual(settings['key_highprio'], 10)
+        self.assertIn('newkey_one', settings)
+        self.assertEqual(settings.getpriority('newkey_one'), 50)
+
+        settings.update({'key_lowprio': 3}, priority=20)
+        self.assertEqual(settings['key_lowprio'], 1)
+
+    def test_update_jsonstring(self):
+        settings = BaseSettings({'number': 0, 'dict': BaseSettings({'key': 'val'})})
+        settings.update('{"number": 1, "newnumber": 2}')
+        self.assertEqual(settings['number'], 1)
+        self.assertEqual(settings['newnumber'], 2)
+        settings.set("dict", '{"key": "newval", "newkey": "newval2"}')
+        self.assertEqual(settings['dict']['key'], "newval")
+        self.assertEqual(settings['dict']['newkey'], "newval2")
+
+    def test_delete(self):
+        settings = BaseSettings({'key': None})
+        settings.set('key_highprio', None, priority=50)
+        settings.delete('key')
+        settings.delete('key_highprio')
+        self.assertNotIn('key', settings)
+        self.assertIn('key_highprio', settings)
+        del settings['key_highprio']
+        self.assertNotIn('key_highprio', settings)
 
     def test_get(self):
         test_configuration = {
@@ -189,6 +233,18 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3'), {})
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
+
+    def test_getpriority(self):
+        settings = BaseSettings({'key': 'value'}, priority=99)
+        self.assertEqual(settings.getpriority('key'), 99)
+        self.assertEqual(settings.getpriority('nonexistentkey'), None)
+
+    def test_maxpriority(self):
+        # Empty settings should return 'default'
+        self.assertEqual(self.settings.maxpriority(), 0)
+        self.settings.set('A', 0, 10)
+        self.settings.set('B', 0, 30)
+        self.assertEqual(self.settings.maxpriority(), 30)
 
     def test_copy(self):
         values = {
@@ -252,6 +308,39 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('BAR'), 'foo')
             self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
             self.assertIn('BAR', self.settings.defaults)
+
+
+class SettingsTest(unittest.TestCase):
+
+    if six.PY3:
+        assertItemsEqual = unittest.TestCase.assertCountEqual
+
+    def setUp(self):
+        self.settings = Settings()
+
+    @mock.patch.dict('scrapy.settings.SETTINGS_PRIORITIES', {'default': 10})
+    @mock.patch('scrapy.settings.default_settings', default_settings)
+    def test_initial_defaults(self):
+        settings = Settings()
+        self.assertEqual(len(settings.attributes), 2)
+        self.assertIn('TEST_DEFAULT', settings.attributes)
+
+        attr = settings.attributes['TEST_DEFAULT']
+        self.assertIsInstance(attr, SettingsAttribute)
+        self.assertEqual(attr.value, 'defvalue')
+        self.assertEqual(attr.priority, 10)
+
+    @mock.patch.dict('scrapy.settings.SETTINGS_PRIORITIES', {})
+    @mock.patch('scrapy.settings.default_settings', {})
+    def test_initial_values(self):
+        settings = Settings({'TEST_OPTION': 'value'}, 10)
+        self.assertEqual(len(settings.attributes), 1)
+        self.assertIn('TEST_OPTION', settings.attributes)
+
+        attr = settings.attributes['TEST_OPTION']
+        self.assertIsInstance(attr, SettingsAttribute)
+        self.assertEqual(attr.value, 'value')
+        self.assertEqual(attr.priority, 10)
 
 
 class CrawlerSettingsTest(unittest.TestCase):
