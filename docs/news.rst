@@ -3,8 +3,8 @@
 Release notes
 =============
 
-1.0
----
+1.0 (2015-06-19)
+----------------
 
 You will find a lot of new features and bugfixes in this major release.  Make
 sure to check our updated :ref:`overview <intro-overview>` to get a glance of
