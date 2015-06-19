@@ -36,13 +36,21 @@ class SettingsAttribute(object):
 
     def __init__(self, value, priority):
         self.value = value
-        self.priority = priority
+        if isinstance(self.value, BaseSettings):
+            self.priority = max(self.value.maxpriority(), priority)
+        else:
+            self.priority = priority
 
     def set(self, value, priority):
         """Sets value if priority is higher or equal than current priority."""
-        if priority >= self.priority:
-            self.value = value
-            self.priority = priority
+        if isinstance(self.value, BaseSettings):
+            # Ignore self.priority if self.value has per-key priorities
+            self.value.update(value, priority)
+            self.priority = max(self.value.maxpriority(), priority)
+        else:
+            if priority >= self.priority:
+                self.value = value
+                self.priority = priority
 
     def __str__(self):
         return "<SettingsAttribute value={self.value!r} " \
@@ -94,6 +102,20 @@ class BaseSettings(MutableMapping):
         if isinstance(value, six.string_types):
             value = json.loads(value)
         return dict(value)
+
+    def _getcomposite(self, name):
+        # DO NOT USE THIS FUNCTION IN YOUR CUSTOM PROJECTS
+        # It's for internal use in the transition away from the _BASE settings and
+        # will be removed along with _BASE support in a future release
+        basename = name + "_BASE"
+        if basename in self:
+            warnings.warn('_BASE settings are deprecated.',
+                          category=ScrapyDeprecationWarning)
+            compsett = BaseSettings(self[name + "_BASE"], priority='default')
+            compsett.update(self[name])
+            return compsett
+        else:
+            return self[name]
 
     def getpriority(self, name):
         prio = None
@@ -232,16 +254,25 @@ class _DictProxy(MutableMapping):
 class Settings(BaseSettings):
 
     def __init__(self, values=None, priority='project'):
+        # Do not pass kwarg values here. We don't want to promote user-defined
+        # dicts, and we want to update, not replace, default dicts with the
+        # values given by the user
         super(Settings, self).__init__()
         self.setmodule(default_settings, 'default')
+        # Promote default dictionaries to BaseSettings instances for per-key
+        # priorities
+        for name in self:
+            val = self[name]
+            if isinstance(val, dict):
+                self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)
 
 
 class CrawlerSettings(Settings):
 
     def __init__(self, settings_module=None, **kw):
-        Settings.__init__(self, **kw)
         self.settings_module = settings_module
+        Settings.__init__(self, **kw)
 
     def __getitem__(self, opt_name):
         if opt_name in self.overrides:

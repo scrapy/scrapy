@@ -24,22 +24,20 @@ Here's an example::
         'myproject.middlewares.CustomSpiderMiddleware': 543,
     }
 
-The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
-:setting:`SPIDER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
-be overridden) and then sorted by order to get the final sorted list of enabled
-middlewares: the first middleware is the one closer to the engine and the last
-is the one closer to the spider.
+The specified :setting:`SPIDER_MIDDLEWARES` setting is merged with the default
+one (i.e. it does not overwrite it) and then sorted by order to get the final
+sorted list of enabled middlewares: the first middleware is the one closer to
+the engine and the last is the one closer to the spider.
 
-To decide which order to assign to your middleware see the
-:setting:`SPIDER_MIDDLEWARES_BASE` setting and pick a value according to where
+To decide which order to assign to your middleware see the default
+:setting:`SPIDER_MIDDLEWARES` setting and pick a value according to where
 you want to insert the middleware. The order does matter because each
 middleware performs a different action and your middleware could depend on some
 previous (or subsequent) middleware being applied.
 
-If you want to disable a builtin middleware (the ones defined in
-:setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign `None` as its
-value.  For example, if you want to disable the off-site middleware::
+If you want to disable a builtin middleware you must define it in your project's
+:setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its value. For
+example, if you want to disable the off-site middleware::
 
     SPIDER_MIDDLEWARES = {
         'myproject.middlewares.CustomSpiderMiddleware': 543,
@@ -173,7 +171,7 @@ information on how to use them and how to write your own spider middleware, see
 the :ref:`spider middleware usage guide <topics-spider-middleware>`.
 
 For a list of the components enabled by default (and their orders) see the
-:setting:`SPIDER_MIDDLEWARES_BASE` setting.
+:setting:`SPIDER_MIDDLEWARES` setting.
 
 DepthMiddleware
 ---------------

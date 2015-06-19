@@ -269,6 +269,11 @@ Default::
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
+When you set :setting:`DEFAULT_REQUEST_HEADERS` manually, e.g. in your
+project's settings module, it will be merged with the default, not overwrite it.
+If you want to disable any of the default request headers (and not replace them)
+you must assign ``None`` as their value.
+
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
@@ -350,16 +355,6 @@ The downloader to use for crawling.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
-Default:: ``{}``
-
-A dict containing the downloader middlewares enabled in your project, and their
-orders. For more info see :ref:`topics-downloader-middleware-setting`.
-
-.. setting:: DOWNLOADER_MIDDLEWARES_BASE
-
-DOWNLOADER_MIDDLEWARES_BASE
----------------------------
-
 Default::
 
     {
@@ -369,6 +364,7 @@ Default::
         'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
         'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
         'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+        'scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware': 560,
         'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
         'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
         'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
@@ -379,10 +375,16 @@ Default::
         'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     }
 
-A dict containing the downloader middlewares enabled by default in Scrapy. You
-should never modify this setting in your project, modify
-:setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
-:ref:`topics-downloader-middleware-setting`.
+A dict containing the downloader middlewares enabled in your project, and their
+orders. Low orders are closer to the engine, high orders are closer to the
+downloader.
+
+When you set :setting:`DOWNLOADER_MIDDLEWARES` manually, e.g. in your project's
+settings module, it will be merged with the default, not overwrite it. If you
+want to disable any of the default downloader middlewares you must assign
+``None`` as their value.
+
+For more info see :ref:`topics-downloader-middleware-setting`.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -423,33 +425,23 @@ spider attribute.
 DOWNLOAD_HANDLERS
 -----------------
 
-Default: ``{}``
-
-A dict containing the request downloader handlers enabled in your project.
-See `DOWNLOAD_HANDLERS_BASE` for example format.
-
-.. setting:: DOWNLOAD_HANDLERS_BASE
-
-DOWNLOAD_HANDLERS_BASE
-----------------------
-
 Default::
 
     {
         'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
-        'http': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
-        'https': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
+        'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
+        'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
         's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
+        'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
     }
 
-A dict containing the request download handlers enabled by default in Scrapy.
-You should never modify this setting in your project, modify
-:setting:`DOWNLOAD_HANDLERS` instead.
 
-If you want to disable any of the above download handlers you must define them
-in your project's :setting:`DOWNLOAD_HANDLERS` setting and assign `None`
-as their value.  For example, if you want to disable the file download
-handler::
+A dict containing the request downloader handlers enabled in your project.
+
+When you set :setting:`DOWNLOAD_HANDLERS` manually, e.g. in your project's
+settings module, it will be merged with the default, not overwrite it. If you
+want to disable any of the default download handlers you must assign ``None``
+as their value. For example, if you want to disable the file download handler::
 
     DOWNLOAD_HANDLERS = {
         'file': None,
@@ -552,15 +544,6 @@ to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
 EXTENSIONS
 ----------
 
-Default:: ``{}``
-
-A dict containing the extensions enabled in your project, and their orders.
-
-.. setting:: EXTENSIONS_BASE
-
-EXTENSIONS_BASE
----------------
-
 Default::
 
     {
@@ -575,12 +558,18 @@ Default::
         'scrapy.extensions.throttle.AutoThrottle': 0,
     }
 
-The list of available extensions. Keep in mind that some of them need to
-be enabled through a setting. By default, this setting contains all stable
-built-in extensions.
+A dict containing the extensions enabled in your project, and their orders. By
+default, this setting contains all stable built-in extensions. Keep in mind that
+some of them need to be enabled through a setting.
+
+When you set :setting:`EXTENSIONS` manually, e.g. in your project's settings
+module, it will be merged with the default, not overwrite it. If you want to
+disable any of the default enabled extensions you must assign ``None`` as their
+value.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
+
 
 .. setting:: ITEM_PIPELINES
 
@@ -589,12 +578,9 @@ ITEM_PIPELINES
 
 Default: ``{}``
 
-A dict containing the item pipelines to use, and their orders. The dict is
-empty by default order values are arbitrary but it's customary to define them
-in the 0-1000 range.
-
-Lists are supported in :setting:`ITEM_PIPELINES` for backwards compatibility,
-but they are deprecated.
+A dict containing the item pipelines to use, and their orders. Order values are
+arbitrary, but it is customary to define them in the 0-1000 range. Lower orders
+process before higher orders.
 
 Example::
 
@@ -602,16 +588,6 @@ Example::
        'mybot.pipelines.validate.ValidateMyItem': 300,
        'mybot.pipelines.validate.StoreMyItem': 800,
    }
-
-.. setting:: ITEM_PIPELINES_BASE
-
-ITEM_PIPELINES_BASE
--------------------
-
-Default: ``{}``
-
-A dict containing the pipelines enabled by default in Scrapy. You should never
-modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
 .. setting:: LOG_ENABLED
 
@@ -638,7 +614,7 @@ LOG_FILE
 
 Default: ``None``
 
-File name to use for logging output. If None, standard error will be used.
+File name to use for logging output. If ``None``, standard error will be used.
 
 .. setting:: LOG_FORMAT
 
@@ -902,16 +878,6 @@ The scheduler to use for crawling.
 SPIDER_CONTRACTS
 ----------------
 
-Default:: ``{}``
-
-A dict containing the scrapy contracts enabled in your project, used for
-testing spiders. For more info see :ref:`topics-contracts`.
-
-.. setting:: SPIDER_CONTRACTS_BASE
-
-SPIDER_CONTRACTS_BASE
----------------------
-
 Default::
 
     {
@@ -920,9 +886,13 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled by default in Scrapy. You should
-never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
-instead. For more info see :ref:`topics-contracts`.
+A dict containing the scrapy contracts enabled in your project, used for
+testing spiders. For more info see :ref:`topics-contracts`.
+
+When you set :setting:`SPIDER_CONTRACTS` manually, e.g. in your project's
+settings module, it will be merged with the default, not overwrite it. If you
+want to disable any of the default contracts you must assign ``None`` as their
+value.
 
 .. setting:: SPIDER_LOADER_CLASS
 
@@ -939,16 +909,6 @@ The class that will be used for loading spiders, which must implement the
 SPIDER_MIDDLEWARES
 ------------------
 
-Default:: ``{}``
-
-A dict containing the spider middlewares enabled in your project, and their
-orders. For more info see :ref:`topics-spider-middleware-setting`.
-
-.. setting:: SPIDER_MIDDLEWARES_BASE
-
-SPIDER_MIDDLEWARES_BASE
------------------------
-
 Default::
 
     {
@@ -959,10 +919,14 @@ Default::
         'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     }
 
-A dict containing the spider middlewares enabled by default in Scrapy. You
-should never modify this setting in your project, modify
-:setting:`SPIDER_MIDDLEWARES` instead. For more info see
-:ref:`topics-spider-middleware-setting`.
+A dict containing the spider middlewares enabled in your project, and their
+orders. Low orders are closer to the engine, high orders are closer to the
+spider. For more info see :ref:`topics-spider-middleware-setting`.
+
+When you set :setting:`SPIDER_MIDDLEWARES` manually, e.g. in your project's
+settings module, it will be merged with the default, not overwrite it. If you
+want to disable any of the default spider middlewares you must assign ``None``
+as their value.
 
 .. setting:: SPIDER_MODULES
 

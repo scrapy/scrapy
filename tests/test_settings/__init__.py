@@ -28,11 +28,22 @@ class SettingsAttributeTest(unittest.TestCase):
         self.assertEqual(self.attribute.value, 'value')
         self.assertEqual(self.attribute.priority, 10)
 
+    def test_set_per_key_priorities(self):
+        attribute = SettingsAttribute(
+                        BaseSettings({'one': 10, 'two': 20}, 0),
+                        0)
 
-class SettingsTest(unittest.TestCase):
+        new_dict = {'one': 11, 'two': 21}
+        attribute.set(new_dict, 10)
+        self.assertEqual(attribute.value['one'], 11)
+        self.assertEqual(attribute.value['two'], 21)
 
-    if six.PY3:
-        assertItemsEqual = unittest.TestCase.assertCountEqual
+        new_settings = BaseSettings()
+        new_settings.set('one', 12, 20)
+        new_settings.set('two', 12, 0)
+        attribute.set(new_settings, 0)
+        self.assertEqual(attribute.value['one'], 12)
+        self.assertEqual(attribute.value['two'], 21)
 
 
 class BaseSettingsTest(unittest.TestCase):
@@ -239,6 +250,20 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getpriority('key'), 99)
         self.assertEqual(settings.getpriority('nonexistentkey'), None)
 
+    def test_getcomposite(self):
+        s = BaseSettings({'TEST_BASE': {1: 1, 2: 2},
+                          'TEST': BaseSettings({1: 10}),
+                          'HASNOBASE': BaseSettings({1: 1})})
+        cs = s._getcomposite('TEST')
+        self.assertEqual(len(cs), 2)
+        self.assertEqual(cs[1], 10)
+        self.assertEqual(cs[2], 2)
+        cs = s._getcomposite('HASNOBASE')
+        self.assertEqual(len(cs), 1)
+        self.assertEqual(cs[1], 1)
+        cs = s._getcomposite('NONEXISTENT')
+        self.assertIsNone(cs)
+
     def test_maxpriority(self):
         # Empty settings should return 'default'
         self.assertEqual(self.settings.maxpriority(), 0)
@@ -341,6 +366,24 @@ class SettingsTest(unittest.TestCase):
         self.assertIsInstance(attr, SettingsAttribute)
         self.assertEqual(attr.value, 'value')
         self.assertEqual(attr.priority, 10)
+
+    @mock.patch('scrapy.settings.default_settings', default_settings)
+    def test_autopromote_dicts(self):
+        settings = Settings()
+        mydict = settings.get('TEST_DICT')
+        self.assertIsInstance(mydict, BaseSettings)
+        self.assertIn('key', mydict)
+        self.assertEqual(mydict['key'], 'val')
+        self.assertEqual(mydict.getpriority('key'), 0)
+
+    @mock.patch('scrapy.settings.default_settings', default_settings)
+    def test_getdict_autodegrade_basesettings(self):
+        settings = Settings()
+        mydict = settings.getdict('TEST_DICT')
+        self.assertIsInstance(mydict, dict)
+        self.assertEqual(len(mydict), 1)
+        self.assertIn('key', mydict)
+        self.assertEqual(mydict['key'], 'val')
 
 
 class CrawlerSettingsTest(unittest.TestCase):
