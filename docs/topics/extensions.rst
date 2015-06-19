@@ -42,17 +42,15 @@ by a string: the full Python path to the extension's class name. For example::
 
 As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
 the extension paths, and their values are the orders, which define the
-extension *loading* order. Extensions orders are not as important as middleware
-orders though, and they are typically irrelevant, ie. it doesn't matter in
-which order the extensions are loaded because they don't depend on each other
-[1].
+extension *loading* order. The specified :setting:`EXTENSIONS` setting is merged
+with the default one (i.e. it does not overwrite it) and then sorted by order
+to get the final sorted list of enabled extensions.
 
-However, this feature can be exploited if you need to add an extension which
-depends on other extensions already loaded.
-
-[1] This is is why the :setting:`EXTENSIONS_BASE` setting in Scrapy (which
-contains all built-in extensions enabled by default) defines all the extensions
-with the same order (``500``).
+As extensions typically do not depend on each other, their loading order is
+irrelevant in most cases. This is why the default :setting:`EXTENSIONS` setting
+defines all extensions with the same order (``500``). However, this feature can
+be exploited if you need to add an extension which depends on other extensions
+already loaded.
 
 Available, enabled and disabled extensions
 ==========================================
@@ -65,7 +63,7 @@ Disabling an extension
 ======================
 
 In order to disable an extension that comes enabled by default (ie. those
-included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
+included in the default :setting:`EXTENSIONS` setting) you must set its order to
 ``None``. For example::
 
     EXTENSIONS = {

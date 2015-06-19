@@ -1,6 +1,6 @@
 import os
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.conf import arglist_to_dict
+from scrapy.utils.conf import arglist_to_dict, remove_none_values
 from scrapy.exceptions import UsageError
 
 
@@ -34,10 +34,8 @@ class Command(ScrapyCommand):
                 self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
             else:
                 self.settings.set('FEED_URI', opts.output, priority='cmdline')
-            valid_output_formats = (
-                list(self.settings.getdict('FEED_EXPORTERS').keys()) +
-                list(self.settings.getdict('FEED_EXPORTERS_BASE').keys())
-            )
+            feed_exporters = remove_none_values(self.settings._getcomposite('FEED_EXPORTERS'))
+            valid_output_formats = feed_exporters.keys()
             if not opts.output_format:
                 opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
             if opts.output_format not in valid_output_formats:
