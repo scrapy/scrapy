@@ -2,7 +2,7 @@ import six
 import json
 import copy
 import warnings
-from collections import MutableMapping
+from collections import Mapping, MutableMapping
 from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
@@ -18,6 +18,12 @@ SETTINGS_PRIORITIES = {
     'spider': 30,
     'cmdline': 40,
 }
+
+def get_settings_priority(priority):
+    if isinstance(priority, six.string_types):
+        return SETTINGS_PRIORITIES[priority]
+    else:
+        return priority
 
 
 class SettingsAttribute(object):
@@ -45,20 +51,21 @@ class SettingsAttribute(object):
     __repr__ = __str__
 
 
-class Settings(object):
+class BaseSettings(MutableMapping):
 
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
-        self.setmodule(default_settings, priority='default')
-        if values is not None:
-            self.setdict(values, priority)
+        self.update(values, priority)
 
     def __getitem__(self, opt_name):
         value = None
-        if opt_name in self.attributes:
+        if opt_name in self:
             value = self.attributes[opt_name].value
         return value
+
+    def __contains__(self, name):
+        return name in self.attributes
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -88,19 +95,34 @@ class Settings(object):
             value = json.loads(value)
         return dict(value)
 
+    def getpriority(self, name):
+        prio = None
+        if name in self:
+            prio = self.attributes[name].priority
+        return prio
+
+    def maxpriority(self):
+        if len(self) > 0:
+            return max(self.getpriority(name) for name in self)
+        else:
+            return get_settings_priority('default')
+
+    def __setitem__(self, name, value):
+        self.set(name, value)
+
     def set(self, name, value, priority='project'):
         self._assert_mutability()
-        if isinstance(priority, six.string_types):
-            priority = SETTINGS_PRIORITIES[priority]
-        if name not in self.attributes:
-            self.attributes[name] = SettingsAttribute(value, priority)
+        priority = get_settings_priority(priority)
+        if name not in self:
+            if isinstance(value, SettingsAttribute):
+                self.attributes[name] = value
+            else:
+                self.attributes[name] = SettingsAttribute(value, priority)
         else:
             self.attributes[name].set(value, priority)
 
     def setdict(self, values, priority='project'):
-        self._assert_mutability()
-        for name, value in six.iteritems(values):
-            self.set(name, value, priority)
+        self.update(values, priority)
 
     def setmodule(self, module, priority='project'):
         self._assert_mutability()
@@ -109,6 +131,28 @@ class Settings(object):
         for key in dir(module):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
+
+    def update(self, values, priority='project'):
+        self._assert_mutability()
+        if isinstance(values, six.string_types):
+            values = json.loads(values)
+        if values is not None:
+            if isinstance(values, BaseSettings):
+                for name, value in six.iteritems(values):
+                    self.set(name, value, values.getpriority(name))
+            else:
+                for name, value in six.iteritems(values):
+                    self.set(name, value, priority)
+
+    def delete(self, name, priority='project'):
+        self._assert_mutability()
+        priority = get_settings_priority(priority)
+        if priority >= self.getpriority(name):
+            del self.attributes[name]
+
+    def __delitem__(self, name):
+        self._assert_mutability()
+        del self.attributes[name]
 
     def _assert_mutability(self):
         if self.frozen:
@@ -124,6 +168,17 @@ class Settings(object):
         copy = self.copy()
         copy.freeze()
         return copy
+
+    def __iter__(self):
+        return iter(self.attributes)
+
+    def __len__(self):
+        return len(self.attributes)
+
+    def __str__(self):
+        return str(self.attributes)
+
+    __repr__ = __str__
 
     @property
     def overrides(self):
@@ -172,6 +227,14 @@ class _DictProxy(MutableMapping):
 
     def __iter__(self, k, v):
         return iter(self.o)
+
+
+class Settings(BaseSettings):
+
+    def __init__(self, values=None, priority='project'):
+        super(Settings, self).__init__()
+        self.setmodule(default_settings, 'default')
+        self.update(values, priority)
 
 
 class CrawlerSettings(Settings):

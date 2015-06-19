@@ -1,4 +1,5 @@
 import os
+import json
 import sys
 import shutil
 import pstats
@@ -54,3 +55,16 @@ class CmdlineTest(unittest.TestCase):
             self.assertIn('tottime', stats)
         finally:
             shutil.rmtree(path)
+
+    def test_override_dict_settings(self):
+        settingsstr = self._execute('settings', '--get', 'EXTENSIONS', '-s',
+                                    ('EXTENSIONS={"tests.test_cmdline.extensions.TestExtension": '
+                                     '100, "tests.test_cmdline.extensions.DummyExtension": 200}'))
+        # XXX: There's gotta be a smarter way to do this...
+        self.assertNotIn("...", settingsstr)
+        for char in ("'", "<", ">", 'u"'):
+            settingsstr = settingsstr.replace(char, '"')
+        settingsdict = json.loads(settingsstr)
+        self.assertIn('tests.test_cmdline.extensions.DummyExtension', settingsdict)
+        self.assertIn('value=200', settingsdict['tests.test_cmdline.extensions.DummyExtension'])
+        self.assertIn('value=100', settingsdict['tests.test_cmdline.extensions.TestExtension'])
