@@ -17,10 +17,11 @@ from .handlers import DownloadHandlers
 class Slot(object):
     """Downloader slot"""
 
-    def __init__(self, concurrency, delay, settings):
+    def __init__(self, concurrency, delay, randomize_delay):
         self.concurrency = concurrency
         self.delay = delay
-        self.randomize_delay = settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
+        self.randomize_delay = randomize_delay
+
         self.active = set()
         self.queue = deque()
         self.transferring = set()
@@ -66,6 +67,7 @@ class Downloader(object):
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
+        self.randomize_delay = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
@@ -87,7 +89,7 @@ class Downloader(object):
         if key not in self.slots:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
             conc, delay = _get_concurrency_delay(conc, spider, self.settings)
-            self.slots[key] = Slot(conc, delay, self.settings)
+            self.slots[key] = Slot(conc, delay, self.randomize_delay)
 
         return key, self.slots[key]
 
