@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import random
 import warnings
 from time import time
+from datetime import datetime
 from collections import deque
 
 from twisted.internet import reactor, defer, task
@@ -8,7 +10,6 @@ from twisted.internet import reactor, defer, task
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy import signals
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
@@ -39,6 +40,21 @@ class Slot(object):
     def close(self):
         if self.latercall and self.latercall.active():
             self.latercall.cancel()
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return "%s(concurrency=%r, delay=%0.2f, randomize_delay=%r)" % (
+            cls_name, self.concurrency, self.delay, self.randomize_delay)
+
+    def __str__(self):
+        return (
+            "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
+            "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
+                self.concurrency, self.delay, self.randomize_delay,
+                len(self.active), len(self.queue), len(self.transferring),
+                datetime.fromtimestamp(self.lastseen).isoformat()
+            )
+        )
 
 
 def _get_concurrency_delay(concurrency, spider, settings):
