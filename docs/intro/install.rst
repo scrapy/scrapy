@@ -70,7 +70,7 @@ Windows
       pip install Scrapy
 
 Ubuntu 9.10 or above
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
 typically too old and slow to catch up with latest Scrapy.
@@ -80,7 +80,7 @@ solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
 Archlinux
-~~~~~~~~~
+---------
 
 You can follow the generic instructions or install Scrapy from `AUR Scrapy package`::
 
