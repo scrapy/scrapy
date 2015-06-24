@@ -30,7 +30,7 @@ In case of status 200 request, response.headers will come with two keys:
 
 import re
 from io import BytesIO
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse, unquote
 
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
@@ -73,7 +73,7 @@ class FTPDownloadHandler(object):
                                     request.meta["ftp_password"],
                                     passive=request.meta.get("ftp_passive", 1))
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
-                                request, parsed_url.path)
+                                request, unquote(parsed_url.path))
 
     def gotClient(self, client, request, filepath):
         self.client = client
