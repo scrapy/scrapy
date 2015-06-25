@@ -78,7 +78,7 @@ class SelectJmes(object):
 
     def __call__(self, value):
         """Query value for the jmespath query and return answer
-        :param str value: a string with JSON data to extract from
+        :param value: a data structure (dict, list) to extract from
         :return: Element extracted according to jmespath query
         """
         return self.compiled_path.search(value)
