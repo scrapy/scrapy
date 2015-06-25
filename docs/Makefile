@@ -27,7 +27,7 @@ help:
 
 build: 
 	mkdir -p build/$(BUILDER) build/doctrees
-	-sphinx-build $(ALLSPHINXOPTS)
+	sphinx-build $(ALLSPHINXOPTS)
 	@echo
 
 
