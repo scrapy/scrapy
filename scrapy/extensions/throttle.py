@@ -14,6 +14,7 @@ class AutoThrottle(object):
             raise NotConfigured
 
         self.debug = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
+        self.target_concurrency = crawler.settings.getfloat("AUTOTHROTTLE_TARGET_CONCURRENCY")
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(self._response_downloaded, signal=signals.response_downloaded)
 
@@ -67,12 +68,17 @@ class AutoThrottle(object):
     def _adjust_delay(self, slot, latency, response):
         """Define delay adjustment policy"""
 
-        # Adjust the delay to be closer to latency.
-        new_delay = (slot.delay + latency) / 2.0
+        # If a server needs `latency` seconds to respond then
+        # we should send a request each `latency/N` seconds
+        # to have N requests processed in parallel
+        target_delay = latency / self.target_concurrency
 
-        # If latency is bigger than old delay, then use latency instead of mean.
+        # Adjust the delay to make it closer to target_delay
+        new_delay = (slot.delay + target_delay) / 2.0
+
+        # If target delay is bigger than old delay, then use it instead of mean.
         # It works better with problematic sites.
-        new_delay = max(latency, new_delay)
+        new_delay = max(target_delay, new_delay)
 
         # Make sure self.mindelay <= new_delay <= self.max_delay
         new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
