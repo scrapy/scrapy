@@ -68,13 +68,22 @@ class AutoThrottle(object):
 
     def _adjust_delay(self, slot, latency, response):
         """Define delay adjustment policy"""
+
+        # Adjust the delay to be closer to latency.
+        new_delay = (slot.delay + latency) / 2.0
+
         # If latency is bigger than old delay, then use latency instead of mean.
-        # It works better with problematic sites
-        new_delay = min(max(self.mindelay, latency, (slot.delay + latency) / 2.0), self.maxdelay)
+        # It works better with problematic sites.
+        new_delay = max(latency, new_delay)
+
+        # Make sure self.mindelay <= new_delay <= self.max_delay
+        new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
 
         # Dont adjust delay if response status != 200 and new delay is smaller
         # than old one, as error pages (and redirections) are usually small and
         # so tend to reduce latency, thus provoking a positive feedback by
         # reducing delay instead of increase.
-        if response.status == 200 or new_delay > slot.delay:
-            slot.delay = new_delay
+        if response.status != 200 and new_delay <= slot.delay:
+            return
+
+        slot.delay = new_delay
