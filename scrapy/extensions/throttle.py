@@ -33,10 +33,10 @@ class AutoThrottle(object):
             s.getfloat('DOWNLOAD_DELAY')
 
     def _max_delay(self, spider):
-        return self.crawler.settings.getfloat('AUTOTHROTTLE_MAX_DELAY', 60.0)
+        return self.crawler.settings.getfloat('AUTOTHROTTLE_MAX_DELAY')
 
     def _start_delay(self, spider):
-        return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY', 5.0))
+        return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
 
     def _response_downloaded(self, response, request, spider):
         key, slot = self._get_slot(request, spider)
