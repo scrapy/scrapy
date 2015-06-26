@@ -11,3 +11,4 @@ recursive-include docs *
 prune docs/build
 recursive-include extras *
 recursive-include bin *
+recursive-include tests *
