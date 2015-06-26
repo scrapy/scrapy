@@ -28,9 +28,7 @@ class AutoThrottle(object):
 
     def _min_delay(self, spider):
         s = self.crawler.settings
-        return getattr(spider, 'download_delay', 0.0) or \
-            s.getfloat('AUTOTHROTTLE_MIN_DOWNLOAD_DELAY') or \
-            s.getfloat('DOWNLOAD_DELAY')
+        return getattr(spider, 'download_delay', 0.0) or s.getfloat('DOWNLOAD_DELAY')
 
     def _max_delay(self, spider):
         return self.crawler.settings.getfloat('AUTOTHROTTLE_MAX_DELAY')
