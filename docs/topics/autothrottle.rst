@@ -33,18 +33,18 @@ server) is, and this extension builds on that premise.
 Throttling algorithm
 ====================
 
-This adjusts download delays and concurrency based on the following rules:
+This adjusts download delays based on the following rules:
 
-1. spiders always start with one concurrent request and a download delay of
-   :setting:`AUTOTHROTTLE_START_DELAY`
+1. spiders always start with a download delay of
+   :setting:`AUTOTHROTTLE_START_DELAY`;
 2. when a response is received, the download delay is adjusted to the
    average of previous download delay and the latency of the response.
 
 .. note:: The AutoThrottle extension honours the standard Scrapy settings for
-   concurrency and delay. This means that it will never set a download delay
-   lower than :setting:`DOWNLOAD_DELAY` or a concurrency higher than
-   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-   (or :setting:`CONCURRENT_REQUESTS_PER_IP`, depending on which one you use).
+   concurrency and delay. This means that it will respect
+   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+   :setting:`CONCURRENT_REQUESTS_PER_IP` options and
+   never set a download delay lower than :setting:`DOWNLOAD_DELAY`.
 
 Settings
 ========
