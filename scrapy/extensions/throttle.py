@@ -14,6 +14,7 @@ class AutoThrottle(object):
             raise NotConfigured
 
         self.debug = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
+        self.target_concurrency = crawler.settings.getfloat("AUTOTHROTTLE_TARGET_CONCURRENCY")
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(self._response_downloaded, signal=signals.response_downloaded)
 
@@ -28,15 +29,13 @@ class AutoThrottle(object):
 
     def _min_delay(self, spider):
         s = self.crawler.settings
-        return getattr(spider, 'download_delay', 0.0) or \
-            s.getfloat('AUTOTHROTTLE_MIN_DOWNLOAD_DELAY') or \
-            s.getfloat('DOWNLOAD_DELAY')
+        return getattr(spider, 'download_delay', s.getfloat('DOWNLOAD_DELAY'))
 
     def _max_delay(self, spider):
-        return self.crawler.settings.getfloat('AUTOTHROTTLE_MAX_DELAY', 60.0)
+        return self.crawler.settings.getfloat('AUTOTHROTTLE_MAX_DELAY')
 
     def _start_delay(self, spider):
-        return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY', 5.0))
+        return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
 
     def _response_downloaded(self, response, request, spider):
         key, slot = self._get_slot(request, spider)
@@ -68,13 +67,27 @@ class AutoThrottle(object):
 
     def _adjust_delay(self, slot, latency, response):
         """Define delay adjustment policy"""
-        # If latency is bigger than old delay, then use latency instead of mean.
-        # It works better with problematic sites
-        new_delay = min(max(self.mindelay, latency, (slot.delay + latency) / 2.0), self.maxdelay)
+
+        # If a server needs `latency` seconds to respond then
+        # we should send a request each `latency/N` seconds
+        # to have N requests processed in parallel
+        target_delay = latency / self.target_concurrency
+
+        # Adjust the delay to make it closer to target_delay
+        new_delay = (slot.delay + target_delay) / 2.0
+
+        # If target delay is bigger than old delay, then use it instead of mean.
+        # It works better with problematic sites.
+        new_delay = max(target_delay, new_delay)
+
+        # Make sure self.mindelay <= new_delay <= self.max_delay
+        new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
 
         # Dont adjust delay if response status != 200 and new delay is smaller
         # than old one, as error pages (and redirections) are usually small and
         # so tend to reduce latency, thus provoking a positive feedback by
         # reducing delay instead of increase.
-        if response.status == 200 or new_delay > slot.delay:
-            slot.delay = new_delay
+        if response.status != 200 and new_delay <= slot.delay:
+            return
+
+        slot.delay = new_delay
