@@ -22,9 +22,9 @@ AJAXCRAWL_ENABLED = False
 
 BOT_NAME = 'scrapybot'
 
-CLOSESPIDER_TIMEOUT = 0
-CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_ITEMCOUNT = 0
+CLOSESPIDER_TIMEOUT    = 0
+CLOSESPIDER_PAGECOUNT  = 0
+CLOSESPIDER_ITEMCOUNT  = 0
 CLOSESPIDER_ERRORCOUNT = 0
 
 COMMANDS_MODULE = ''
@@ -58,6 +58,7 @@ DNS_TIMEOUT = 60
 DOWNLOAD_DELAY = 0
 
 DOWNLOAD_HANDLERS = {}
+SELENIUM_HANDLER = 'scrapy.core.downloader.handlers.webkit.http11.HTTPDownloadHander'
 DOWNLOAD_HANDLERS_BASE = {
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
     'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
