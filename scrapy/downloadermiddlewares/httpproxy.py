@@ -25,7 +25,7 @@ class HttpProxyMiddleware(object):
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
 
-        if user and password:
+        if user:
             user_pass = '%s:%s' % (unquote(user), unquote(password))
             creds = base64.b64encode(user_pass).strip()
         else:
