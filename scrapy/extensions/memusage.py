@@ -24,10 +24,9 @@ class MemoryUsage(object):
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
-        try:
-            # stdlib's resource module is only available on unix platforms.
-            self.resource = import_module('resource')
-        except ImportError:
+
+        self._get_rss = self._choose_rss_func()
+        if self._get_rss is None:
             raise NotConfigured
 
         self.crawler = crawler
@@ -45,11 +44,31 @@ class MemoryUsage(object):
         return cls(crawler)
 
     def get_virtual_size(self):
+        return self._get_rss()
+
+    def _get_rss_psutil(self):
+        return self.psutil_module.Process().memory_info()[0]
+
+    def _get_rss_resource(self):
         size = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
         if sys.platform != 'darwin':
             # on Mac OS X ru_maxrss is in bytes, on Linux it is in KB
             size *= 1024
         return size
+
+    def _choose_rss_func(self):
+        try:
+            # psutil is recommended as it can measure current RSS usage
+            self.psutil_module = import_module('psutil')
+            return self._get_rss_psutil
+        except ImportError:
+            pass
+        try:
+            # stdlib's resource module is only available on unix platforms.
+            self.resource = import_module('resource')
+            return self._get_rss_resource
+        except ImportError:
+            pass
 
     def engine_started(self):
         self.crawler.stats.set_value('memusage/startup', self.get_virtual_size())
@@ -96,6 +115,7 @@ class MemoryUsage(object):
     def _check_warning(self):
         if self.warned: # warn only once
             return
+
         if self.get_virtual_size() > self.warning:
             self.crawler.stats.set_value('memusage/warning_reached', 1)
             mem = self.warning/1024/1024
