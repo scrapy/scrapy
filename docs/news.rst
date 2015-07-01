@@ -3,8 +3,18 @@
 Release notes
 =============
 
-1.0 (2015-06-19)
-----------------
+1.0.1 (2015-07-01)
+------------------
+
+- Unquote request path before passing to FTPClient, it already escape paths (:commit:`cc00ad2`)
+- include tests/ to source distribution in MANIFEST.in (:commit:`eca227e`)
+- DOC Fix SelectJmes documentation (:commit:`b8567bc`)
+- DOC Bring Ubuntu and Archlinux outside of Windows subsection (:commit:`392233f`)
+- DOC remove version suffix from ubuntu package (:commit:`5303c66`)
+- DOC Update release date for 1.0 (:commit:`c89fa29`)
+
+1.0.0 (2015-06-19)
+------------------
 
 You will find a lot of new features and bugfixes in this major release.  Make
 sure to check our updated :ref:`overview <intro-overview>` to get a glance of
