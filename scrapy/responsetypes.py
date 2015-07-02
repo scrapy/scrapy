@@ -24,6 +24,7 @@ class ResponseTypes(object):
         'application/vnd.wap.xhtml+xml': 'scrapy.http.HtmlResponse',
         'application/xml': 'scrapy.http.XmlResponse',
         'application/json': 'scrapy.http.TextResponse',
+        'application/x-json': 'scrapy.http.TextResponse',
         'application/javascript': 'scrapy.http.TextResponse',
         'application/x-javascript': 'scrapy.http.TextResponse',
         'text/xml': 'scrapy.http.XmlResponse',
