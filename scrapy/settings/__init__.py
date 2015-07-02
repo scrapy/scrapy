@@ -20,6 +20,11 @@ SETTINGS_PRIORITIES = {
 }
 
 def get_settings_priority(priority):
+    """
+    Small helper function that looks up a given string priority in the
+    :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
+    numerical value, or directly returns a given numerical priority.
+    """
     if isinstance(priority, six.string_types):
         return SETTINGS_PRIORITIES[priority]
     else:
@@ -60,6 +65,26 @@ class SettingsAttribute(object):
 
 
 class BaseSettings(MutableMapping):
+    """
+    Instances of this class behave like dictionaries, but store priorities
+    along with their ``(key, value)`` pairs, and can be frozen (i.e. marked
+    immutable).
+
+    Key-value entries can be passed on initialization with the ``values``
+    argument, and they would take the ``priority`` level (unless ``values`` is
+    already an instance of :class:`~scrapy.settings.BaseSettings`, in which
+    case the existing priority levels will be kept).  If the ``priority``
+    argument is a string, the priority name will be looked up in
+    :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a specific integer
+    should be provided.
+
+    Once the object is created, new settings can be loaded or updated with the
+    :meth:`~scrapy.settings.BaseSettings.set` method, and can be accessed with
+    the square bracket notation of dictionaries, or with the
+    :meth:`~scrapy.settings.BaseSettings.get` method of the instance and its
+    value conversion variants. When requesting a stored key, the value with the
+    highest priority will be retrieved.
+    """
 
     def __init__(self, values=None, priority='project'):
         self.frozen = False
@@ -76,28 +101,94 @@ class BaseSettings(MutableMapping):
         return name in self.attributes
 
     def get(self, name, default=None):
+        """
+        Get a setting value without affecting its original type.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
         return self[name] if self[name] is not None else default
 
     def getbool(self, name, default=False):
         """
-        True is: 1, '1', True
-        False is: 0, '0', False, None
+        Get a setting value as a boolean.
+        
+        ``1``, ``'1'``, and ``True`` return ``True``, while ``0``, ``'0'``,
+        ``False`` and ``None`` return ``False``. 
+
+        For example, settings populated through environment variables set to
+        ``'0'`` will return ``False`` when using this method.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
         """
         return bool(int(self.get(name, default)))
 
     def getint(self, name, default=0):
+        """
+        Get a setting value as an int.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
         return int(self.get(name, default))
 
     def getfloat(self, name, default=0.0):
+        """
+        Get a setting value as a float.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
         return float(self.get(name, default))
 
     def getlist(self, name, default=None):
+        """
+        Get a setting value as a list. If the setting original type is a list, a
+        copy of it will be returned. If it's a string it will be split by ",".
+
+        For example, settings populated through environment variables set to
+        ``'one,two'`` will return a list ['one', 'two'] when using this method.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
         value = self.get(name, default or [])
         if isinstance(value, six.string_types):
             value = value.split(',')
         return list(value)
 
     def getdict(self, name, default=None):
+        """
+        Get a setting value as a dictionary. If the setting original type is a
+        dictionary, a copy of it will be returned. If it is a string it will be
+        evaluated as a JSON dictionary. In the case that it is a
+        :class:`~scrapy.settings.BaseSettings` instance itself, it will be
+        converted to a dictionary, containing all its current settings values
+        as they would be returned by :meth:`~scrapy.settings.BaseSettings.get`,
+        and losing all information about priority and mutability.
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
         value = self.get(name, default or {})
         if isinstance(value, six.string_types):
             value = json.loads(value)
@@ -118,12 +209,25 @@ class BaseSettings(MutableMapping):
             return self[name]
 
     def getpriority(self, name):
+        """
+        Return the current numerical priority value of a setting, or ``None`` if
+        the given ``name`` does not exist.
+
+        :param name: the setting name
+        :type name: string
+        """
         prio = None
         if name in self:
             prio = self.attributes[name].priority
         return prio
 
     def maxpriority(self):
+        """
+        Return the numerical value of the highest priority present throughout
+        all settings, or the numerical value for ``default`` from
+        :attr:`~scrapy.settings.SETTINGS_PRIORITIES` if there are no settings
+        stored.
+        """
         if len(self) > 0:
             return max(self.getpriority(name) for name in self)
         else:
@@ -133,6 +237,23 @@ class BaseSettings(MutableMapping):
         self.set(name, value)
 
     def set(self, name, value, priority='project'):
+        """
+        Store a key/value attribute with a given priority.
+
+        Settings should be populated *before* configuring the Crawler object
+        (through the :meth:`~scrapy.crawler.Crawler.configure` method),
+        otherwise they won't have any effect.
+
+        :param name: the setting name
+        :type name: string
+
+        :param value: the value to associate with the setting
+        :type value: any
+
+        :param priority: the priority of the setting. Should be a key of
+            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+        :type priority: string or int
+        """
         self._assert_mutability()
         priority = get_settings_priority(priority)
         if name not in self:
@@ -147,6 +268,20 @@ class BaseSettings(MutableMapping):
         self.update(values, priority)
 
     def setmodule(self, module, priority='project'):
+        """
+        Store settings from a module with a given priority.
+
+        This is a helper function that calls
+        :meth:`~scrapy.settings.BaseSettings.set` for every globally declared
+        uppercase variable of ``module`` with the provided ``priority``.
+
+        :param module: the module or the path of the module
+        :type module: module object or string
+
+        :param priority: the priority of the settings. Should be a key of
+            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+        :type priority: string or int
+        """
         self._assert_mutability()
         if isinstance(module, six.string_types):
             module = import_module(module)
@@ -155,6 +290,27 @@ class BaseSettings(MutableMapping):
                 self.set(key, getattr(module, key), priority)
 
     def update(self, values, priority='project'):
+        """
+        Store key/value pairs with a given priority.
+
+        This is a helper function that calls
+        :meth:`~scrapy.settings.BaseSettings.set` for every item of ``values``
+        with the provided ``priority``.
+
+        If ``values`` is a string, it is assumed to be JSON-encoded and parsed
+        into a dict with ``json.loads()`` first. If it is a
+        :class:`~scrapy.settings.BaseSettings` instance, the per-key priorities
+        will be used and the ``priority`` parameter ignored. This allows
+        inserting/updating settings with different priorities with a single
+        command.
+
+        :param values: the settings names and values
+        :type values: dict or string or :class:`~scrapy.settings.BaseSettings`
+
+        :param priority: the priority of the settings. Should be a key of
+            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+        :type priority: string or int
+        """
         self._assert_mutability()
         if isinstance(values, six.string_types):
             values = json.loads(values)
@@ -181,12 +337,33 @@ class BaseSettings(MutableMapping):
             raise TypeError("Trying to modify an immutable Settings object")
 
     def copy(self):
+        """
+        Make a deep copy of current settings.
+
+        This method returns a new instance of the :class:`Settings` class,
+        populated with the same values and their priorities.
+
+        Modifications to the new object won't be reflected on the original
+        settings.
+        """
         return copy.deepcopy(self)
 
     def freeze(self):
+        """
+        Disable further changes to the current settings.
+
+        After calling this method, the present state of the settings will become
+        immutable. Trying to change values through the :meth:`~set` method and
+        its variants won't be possible and will be alerted.
+        """
         self.frozen = True
 
     def frozencopy(self):
+        """
+        Return an immutable copy of the current settings.
+
+        Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`.
+        """
         copy = self.copy()
         copy.freeze()
         return copy
@@ -252,6 +429,15 @@ class _DictProxy(MutableMapping):
 
 
 class Settings(BaseSettings):
+    """
+    This object stores Scrapy settings for the configuration of internal
+    components, and can be used for any further customization.
+
+    It is a direct subclass and supports all methods of
+    :class:`~scrapy.settings.BaseSettings`. Additionally, after instantiation
+    of this class, the new object will have the global default settings
+    described on :ref:`topics-settings-ref` already populated.
+    """
 
     def __init__(self, values=None, priority='project'):
         # Do not pass kwarg values here. We don't want to promote user-defined
@@ -261,8 +447,7 @@ class Settings(BaseSettings):
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name in self:
-            val = self[name]
+        for name, val in six.iteritems(self):
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)
