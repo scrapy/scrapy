@@ -35,6 +35,7 @@ class ResponseTypesTest(unittest.TestCase):
             ('application/vnd.wap.xhtml+xml; charset=utf-8', HtmlResponse),
             ('application/xml; charset=UTF-8', XmlResponse),
             ('application/octet-stream', Response),
+            ('application/x-json; encoding=UTF8;charset=UTF-8', TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_type(source)
