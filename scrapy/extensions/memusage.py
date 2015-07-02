@@ -36,6 +36,7 @@ class MemoryUsage(object):
         self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
         self.report = crawler.settings.getbool('MEMUSAGE_REPORT')
+        self.check_interval = crawler.settings.getfloat('MEMUSAGE_CHECK_INTERVAL_SECONDS')
         self.mail = MailSender.from_settings(crawler.settings)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
@@ -56,15 +57,15 @@ class MemoryUsage(object):
         self.tasks = []
         tsk = task.LoopingCall(self.update)
         self.tasks.append(tsk)
-        tsk.start(60.0, now=True)
+        tsk.start(self.check_interval, now=True)
         if self.limit:
             tsk = task.LoopingCall(self._check_limit)
             self.tasks.append(tsk)
-            tsk.start(60.0, now=True)
+            tsk.start(self.check_interval, now=True)
         if self.warning:
             tsk = task.LoopingCall(self._check_warning)
             self.tasks.append(tsk)
-            tsk.start(60.0, now=True)
+            tsk.start(self.check_interval, now=True)
 
     def engine_stopped(self):
         for tsk in self.tasks:
