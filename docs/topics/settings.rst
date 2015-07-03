@@ -67,14 +67,22 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`scrapy.spiders.Spider.custom_settings` attribute.
+do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute::
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        custom_settings = {
+            'SOME_SETTING': 'some value',
+        }
 
 3. Project settings module
 --------------------------
 
 The project settings module is the standard configuration file for your Scrapy
-project.  It's where most of your custom settings will be populated. For
-example:: ``myproject.settings``.
+project, it's where most of your custom settings will be populated. For a
+standard Scrapy project, this means you'll be adding or changing the settings
+in the ``settings.py`` file created for your project.
 
 4. Default settings per-command
 -------------------------------
@@ -95,22 +103,39 @@ How to access settings
 
 .. highlight:: python
 
+In a spider, the settings are available through ``self.settings``::
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+        start_urls = ['http://example.com']
+
+        def parse(self, response):
+            print("Existing settings: %s" % self.settings.attributes.keys())
+
+.. note::
+    The ``settings`` attribute is set in the base Spider class after the spider
+    is initialized.  If you want to use the settings before the initialization
+    (e.g., in your spider's ``__init__()`` method), you'll need to override the
+    :meth:`~scrapy.spiders.Spider.from_crawler` method.
+
 Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions and middlewares::
+extensions, middlewares and item pipelines::
 
     class MyExtension(object):
+        def __init__(self, log_is_enabled=False):
+            if log_is_enabled:
+                print("log is enabled!")
 
         @classmethod
         def from_crawler(cls, crawler):
             settings = crawler.settings
-            if settings['LOG_ENABLED']:
-                print "log is enabled!"
+            return cls(settings.getbool('LOG_ENABLED'))
 
-In other words, settings can be accessed like a dict, but it's usually preferred
-to extract the setting in the format you need it to avoid type errors. In order
-to do that you'll have to use one of the methods provided the
-:class:`~scrapy.settings.Settings` API.
+The settings object can be used like a dict (e.g.,
+``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
+in the format you need it to avoid type errors, using one of the methods
+provided by the :class:`~scrapy.settings.Settings` API.
 
 Rationale for setting names
 ===========================

@@ -23,6 +23,7 @@ help:
 	@echo "  text      to make plain text files"
 	@echo "  changes   to make an overview over all changed/added/deprecated items"
 	@echo "  linkcheck to check all external links for integrity"
+	@echo "  watch     build HTML docs, open in browser and watch for changes"
 
 build-dirs:
 	mkdir -p build/$(BUILDER) build/doctrees
