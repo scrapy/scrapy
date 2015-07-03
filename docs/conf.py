@@ -19,6 +19,7 @@ from os import path
 # absolute, like shown here.
 sys.path.append(path.join(path.dirname(__file__), "_ext"))
 sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
+sys.path.insert(0, path.dirname(path.dirname(__file__)))
 
 
 # General configuration
