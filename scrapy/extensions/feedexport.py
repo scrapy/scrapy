@@ -154,6 +154,8 @@ class FeedExporter(object):
         self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
+        self.batch_size = settings['FEED_BATCH_SIZE']
+        self.start = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -164,34 +166,21 @@ class FeedExporter(object):
         return o
 
     def open_spider(self, spider):
-        uri = self.urifmt % self._get_uri_params(spider)
-        storage = self._get_storage(uri)
-        file = storage.open(spider)
-        exporter = self._get_exporter(file, fields_to_export=self.export_fields)
-        exporter.start_exporting()
-        self.slot = SpiderSlot(file, exporter, storage, uri)
+        self._start_export(spider)
 
     def close_spider(self, spider):
-        slot = self.slot
-        if not slot.itemcount and not self.store_empty:
-            return
-        slot.exporter.finish_exporting()
-        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
-        log_args = {'format': self.format,
-                    'itemcount': slot.itemcount,
-                    'uri': slot.uri}
-        d = defer.maybeDeferred(slot.storage.store, slot.file)
-        d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
-                                            extra={'spider': spider}))
-        d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                            exc_info=failure_to_exc_info(f),
-                                            extra={'spider': spider}))
-        return d
+        self._export(spider)
 
     def item_scraped(self, item, spider):
         slot = self.slot
         slot.exporter.export_item(item)
         slot.itemcount += 1
+        # Export batch feed
+        if self.batch_size and slot.itemcount == self.batch_size:
+            # Export
+            self._export(spider)
+            # Next export
+            self._start_export(spider)
         return item
 
     def _load_components(self, setting_prefix):
@@ -235,5 +224,33 @@ class FeedExporter(object):
             params[k] = getattr(spider, k)
         ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
+        params['start'] = self.start
         self._uripar(params, spider)
         return params
+
+    def _start_export(self, spider):
+        uri = self.urifmt % self._get_uri_params(spider)
+        storage = self._get_storage(uri)
+        file = storage.open(spider)
+        exporter = self._get_exporter(file, fields_to_export=self.export_fields)
+        exporter.start_exporting()
+        self.slot = SpiderSlot(file, exporter, storage, uri)
+
+    def _export(self, spider):
+        slot = self.slot
+        if not slot.itemcount and not self.store_empty:
+            return
+
+        # Export batch feed
+        slot.exporter.finish_exporting()
+        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
+        log_args = {'format': self.format,
+                    'itemcount': slot.itemcount,
+                    'uri': slot.uri}
+        d = defer.maybeDeferred(slot.storage.store, slot.file)
+        d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
+                                            extra={'spider': spider}))
+        d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
+                                            exc_info=failure_to_exc_info(f),
+                                            extra={'spider': spider}))
+        return d

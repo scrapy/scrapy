@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import six
 from six.moves.urllib.parse import urlparse
+import time
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -165,6 +166,36 @@ class FeedExportTest(unittest.TestCase):
         defer.returnValue(data)
 
     @defer.inlineCallbacks
+    def assertFileCount(self, items, file_count=1, settings=None):
+        settings = settings or {}
+        class BatchTestSpider(scrapy.Spider):
+            name = 'batchtestspider'
+            start_urls = ['http://localhost:8998/']
+
+            def parse(self, response):
+                for item in items:
+                    time.sleep(1)
+                    yield item
+
+        tmpdir = tempfile.mkdtemp() + '/res/'
+        res_name = tmpdir + '%(time)s'
+        defaults = {
+            'FEED_URI': 'file://' + res_name,
+            'FEED_FORMAT': 'csv',
+        }
+        defaults.update(settings or {})
+        try:
+            with MockServer() as s:
+                runner = CrawlerRunner(Settings(defaults))
+                yield runner.crawl(BatchTestSpider)
+
+            paths = os.listdir(tmpdir)
+            assert file_count == len(paths)
+
+        finally:
+            shutil.rmtree(tmpdir)
+
+    @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
         settings = settings or {}
         settings.update({'FEED_FORMAT': 'csv'})
@@ -295,3 +326,16 @@ class FeedExportTest(unittest.TestCase):
             ]
             yield self.assertExported(items, ['egg', 'baz'], rows,
                                       settings=settings, ordered=True)
+
+    @defer.inlineCallbacks
+    def test_export_batch_items(self):
+        # feed exporters use field names from Item
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar3', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar4', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar5', 'egg': 'spam2', 'baz': 'quux2'})
+        ]
+        settings = {'FEED_BATCH_SIZE': 2, 'FEED_FORMAT': 'jl'}
+        yield self.assertFileCount(items, 3, settings)
