@@ -45,4 +45,9 @@ setup(
         'cssselect>=0.9',
         'six>=1.5.2',
     ],
+    extras_require={
+        'IPython': ['ipython'],
+        'S3': ['boto'],
+        'JMESPath': ['jmespath'],
+    },
 )
