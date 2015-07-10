@@ -11,7 +11,7 @@ from scrapy.selector import Selector
 from scrapy.exceptions import NotConfigured, NotSupported
 
 
-class XMLFeedSpider(Spider):
+class XMLFeedMixin(object):
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
@@ -91,7 +91,11 @@ class XMLFeedSpider(Spider):
             selector.register_namespace(prefix, uri)
 
 
-class CSVFeedSpider(Spider):
+class XMLFeedSpider(XMLFeedMixin, Spider):
+    """Spider for parsing XML feeds."""
+
+
+class CSVFeedMixin(object):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
@@ -134,3 +138,6 @@ class CSVFeedSpider(Spider):
         response = self.adapt_response(response)
         return self.parse_rows(response)
 
+
+class CSVFeedSpider(CSVFeedMixin, Spider):
+    """Spider for parsing CSV feeds."""

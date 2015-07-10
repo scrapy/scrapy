@@ -8,8 +8,22 @@ from scrapy.utils.gz import gunzip, is_gzipped
 
 logger = logging.getLogger(__name__)
 
+def regex(x):
+    if isinstance(x, basestring):
+        return re.compile(x)
+    return x
 
-class SitemapSpider(Spider):
+def iterloc(it, alt=False):
+    for d in it:
+        yield d['loc']
+
+        # Also consider alternate URLs (xhtml:link rel="alternate")
+        if alt and 'alternate' in d:
+            for l in d['alternate']:
+                yield l
+
+
+class SitemapMixin(object):
 
     sitemap_urls = ()
     sitemap_rules = [('', 'parse')]
@@ -17,7 +31,7 @@ class SitemapSpider(Spider):
     sitemap_alternate_links = False
 
     def __init__(self, *a, **kw):
-        super(SitemapSpider, self).__init__(*a, **kw)
+        super(SitemapMixin, self).__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
             if isinstance(c, basestring):
@@ -64,16 +78,6 @@ class SitemapSpider(Spider):
         elif response.url.endswith('.xml.gz'):
             return gunzip(response.body)
 
-def regex(x):
-    if isinstance(x, basestring):
-        return re.compile(x)
-    return x
 
-def iterloc(it, alt=False):
-    for d in it:
-        yield d['loc']
-
-        # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and 'alternate' in d:
-            for l in d['alternate']:
-                yield l
+class SitemapSpider(SitemapMixin, Spider):
+    """SitemapSpider"""

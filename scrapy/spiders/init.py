@@ -1,11 +1,11 @@
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
 
-class InitSpider(Spider):
-    """Base Spider with initialization facilities"""
+class InitMixin(object):
+    """Spider with initialization facilities"""
 
     def start_requests(self):
-        self._postinit_reqs = super(InitSpider, self).start_requests()
+        self._postinit_reqs = super(InitMixin, self).start_requests()
         return iterate_spider_output(self.init_request())
 
     def initialized(self, response=None):
@@ -29,3 +29,6 @@ class InitSpider(Spider):
         """
         return self.initialized()
 
+
+class InitSpider(InitMixin, Spider):
+    """Spider with initialization facilities"""

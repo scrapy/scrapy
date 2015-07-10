@@ -27,12 +27,12 @@ class Rule(object):
         else:
             self.follow = follow
 
-class CrawlSpider(Spider):
+class CrawlMixin(object):
 
     rules = ()
 
     def __init__(self, *a, **kw):
-        super(CrawlSpider, self).__init__(*a, **kw)
+        super(CrawlMixin, self).__init__(*a, **kw)
         self._compile_rules()
 
     def parse(self, response):
@@ -88,11 +88,15 @@ class CrawlSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(CrawlSpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider = super(CrawlMixin, cls).from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool(
             'CRAWLSPIDER_FOLLOW_LINKS', True)
         return spider
 
     def set_crawler(self, crawler):
-        super(CrawlSpider, self).set_crawler(crawler)
+        super(CrawlMixin, self).set_crawler(crawler)
         self._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
+
+
+class CrawlSpider(CrawlMixin, Spider):
+    """CrawlSpider"""
