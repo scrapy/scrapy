@@ -14,7 +14,8 @@ The installation steps assume that you have the following things installed:
 * `Python`_ 2.7
 
 * `pip`_ and `setuptools`_ Python packages. Nowadays `pip`_ requires and
-  installs `setuptools`_ if not installed.
+  installs `setuptools`_ if not installed. Python 2.7.9 and later include
+  `pip`_ by default, so you may have it already.
 
 * `lxml`_. Most Linux distributions ships prepackaged versions of lxml.
   Otherwise refer to http://lxml.de/installation.html
@@ -58,7 +59,8 @@ Windows
 
   Be sure you download the architecture (win32 or amd64) that matches your system
 
-* Install `pip`_ from https://pip.pypa.io/en/latest/installing.html
+* *(Only required for Python<2.7.9)* Install `pip`_ from
+  https://pip.pypa.io/en/latest/installing.html
 
   Now open a Command prompt to check ``pip`` is installed correctly:: 
 
