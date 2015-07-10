@@ -79,6 +79,16 @@ Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
 solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
+If you prefer to build the python dependencies locally instead of relying on
+system packages you'll need to install their required non-python dependencies
+first::
+
+    sudo apt-get install python-dev python-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
+
+You can install Scrapy with ``pip`` after that::
+
+    pip install Scrapy
+
 Archlinux
 ---------
 
