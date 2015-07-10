@@ -505,8 +505,8 @@ doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
 Another common pattern is to build an item with data from more than one page,
-using a `trick to pass additional data to the callbacks
-<topics-request-response-ref-request-callback-arguments>`_.
+using a :ref:`trick to pass additional data to the callbacks
+<topics-request-response-ref-request-callback-arguments>`.
 
 
 .. note::
