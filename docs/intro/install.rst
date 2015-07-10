@@ -86,6 +86,67 @@ You can follow the generic instructions or install Scrapy from `AUR Scrapy packa
 
     yaourt -S scrapy
 
+Mac OS X
+--------
+
+Building Scrapy's dependencies requires the presence of a C compiler and
+development headers. On OS X this is typically provided by Apple’s Xcode
+development tools. To install the Xcode command line tools open a terminal
+window and run::
+
+    xcode-select --install
+
+There's a `known issue <https://github.com/pypa/pip/issues/2468>`_ that
+prevents ``pip`` from updating system packages. This has to be addressed to
+successfully install Scrapy and its dependencies. Here are some proposed
+solutions:
+
+* *(Recommended)* **Don't** use system python, install a new, updated version
+  that doesn't conflict with the rest of your system. Here's how to do it using
+  the `homebrew`_ package manager:
+
+  * Install `homebrew`_::
+
+      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+  * Update your ``PATH`` variable to state that homebrew packages should be
+    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
+    if you're using `zsh`_ as default shell)::
+
+      echo "export PATH=/usr/local/bin:/usr/local/sbin:$PATH" >> ~/.bashrc
+
+  * Reload ``.bashrc`` to ensure the changes have taken place::
+
+      source ~/.bashrc
+
+  * Install python::
+
+      brew install python
+
+  * Latest versions of python have ``pip`` bundled with them so you won't need
+    to install it separately. If this is not the case, upgrade python::
+
+      brew update; brew upgrade python
+
+* *(Alternative)* Force system python to load the user installed packages
+  first:
+
+  * Update your ``PYTHONPATH`` variable (Change ``.bashrc`` to ``.zshrc``
+    accordantly if you're using `zsh`_ as default shell)::
+
+      echo "export PYTHONPATH=/Library/Python/2.7/site-packages:$PYTHONPATH" >> ~/.bashrc
+
+  * Reload ``.bashrc`` to ensure the changes have taken place::
+
+      source ~/.bashrc
+
+  * Install ``pip``::
+
+     sudo easy_install pip
+
+After any of these workarounds you should be able to install Scrapy::
+
+  pip install Scrapy
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing.html
@@ -95,3 +156,5 @@ You can follow the generic instructions or install Scrapy from `AUR Scrapy packa
 .. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
+.. _homebrew: http://brew.sh/
+.. _zsh: http://www.zsh.org/
