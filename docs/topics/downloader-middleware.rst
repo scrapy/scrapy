@@ -373,6 +373,18 @@ what is implemented:
 * Revalidate stale responses based on `Last-Modified` response header
 * Revalidate stale responses based on `ETag` response header
 * Set `Date` header for any received response missing it
+* Support `max-stale` cache-control directive in requests
+
+  This allows spiders to be configured with the full RFC2616 cache policy,
+  but avoid revalidation on a request-by-request basis, while remaining
+  conformant with the HTTP spec.
+
+  Example:
+
+  Add `Cache-Control: max-stale=600` to Request headers to accept responses that
+  have exceeded their expiration time by no more than 600 seconds.
+
+  See also: RFC2616, 14.9.3
 
 what is missing:
 
@@ -575,6 +587,45 @@ Default: ``False``
 If enabled, will compress all cached data with gzip.
 This setting is specific to the Filesystem backend.
 
+.. setting:: HTTPCACHE_ALWAYS_STORE
+
+HTTPCACHE_ALWAYS_STORE
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.25
+
+Default: ``False``
+
+If enabled, will cache pages unconditionally.
+
+A spider may wish to have all responses available in the cache, for
+future use with `Cache-Control: max-stale`, for instance. The
+DummyPolicy caches all responses but never revalidates them, and
+sometimes a more nuanced policy is desirable.
+
+This setting still respects `Cache-Control: no-store` directives in responses.
+If you don't want that, filter `no-store` out of the Cache-Control headers in
+responses you feedto the cache middleware.
+
+.. setting:: HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
+
+HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.25
+
+Default: ``[]``
+
+List of Cache-Control directives in responses to be ignored.
+
+Sites often set "no-store", "no-cache", "must-revalidate", etc., but get
+upset at the traffic a spider can generate if it respects those
+directives. This allows to selectively ignore Cache-Control directives
+that are known to be unimportant for the sites being crawled.
+
+We assume that the spider will not issue Cache-Control directives
+in requests unless it actually needs them, so directives in requests are
+not filtered.
 
 HttpCompressionMiddleware
 -------------------------

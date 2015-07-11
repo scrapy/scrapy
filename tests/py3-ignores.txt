@@ -89,6 +89,7 @@ scrapy/linkextractors/sgml.py
 scrapy/linkextractors/regex.py
 scrapy/linkextractors/htmlparser.py
 scrapy/downloadermiddlewares/retry.py
+scrapy/downloadermiddlewares/httpcache.py
 scrapy/downloadermiddlewares/httpproxy.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
