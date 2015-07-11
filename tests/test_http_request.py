@@ -733,6 +733,40 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
 
+    def test_from_response_button_submit(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test1" value="val1">
+            <input type="hidden" name="test2" value="val2">
+            <button type="submit" name="button1" value="submit1">Submit</button>
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], b'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(fs[b'test1'], [b'val1'])
+        self.assertEqual(fs[b'test2'], [b'val2'])
+        self.assertEqual(fs[b'button1'], [b'submit1'])
+
+    def test_from_response_button_notype(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test1" value="val1">
+            <input type="hidden" name="test2" value="val2">
+            <button name="button1" value="submit1">Submit</button>
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], b'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(fs[b'test1'], [b'val1'])
+        self.assertEqual(fs[b'test2'], [b'val2'])
+        self.assertEqual(fs[b'button1'], [b'submit1'])
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
