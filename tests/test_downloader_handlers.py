@@ -403,6 +403,23 @@ class HttpDownloadHandlerMock(object):
     def download_request(self, request, spider):
         return request
 
+class S3AnonTestCase(unittest.TestCase):
+    skip = 'boto' not in optional_features and 'missing boto library'
+
+    def setUp(self):
+        self.s3reqh = S3DownloadHandler(Settings(),
+                httpdownloadhandler=HttpDownloadHandlerMock,
+                #anon=True, # is implicit
+        )
+        self.download_request = self.s3reqh.download_request
+        self.spider = Spider('foo')
+
+    def test_anon_request(self):
+        req = Request('s3://aws-publicdatasets/')
+        httpreq = self.download_request(req, self.spider)
+        self.assertEqual(hasattr(self.s3reqh.conn, 'anon'), True)
+        self.assertEqual(self.s3reqh.conn.anon, True)
+
 class S3TestCase(unittest.TestCase):
     download_handler_cls = S3DownloadHandler
     try:
@@ -420,8 +437,8 @@ class S3TestCase(unittest.TestCase):
     AWS_SECRET_ACCESS_KEY = 'uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o'
 
     def setUp(self):
-        s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID, \
-                self.AWS_SECRET_ACCESS_KEY, \
+        s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID,
+                self.AWS_SECRET_ACCESS_KEY,
                 httpdownloadhandler=HttpDownloadHandlerMock)
         self.download_request = s3reqh.download_request
         self.spider = Spider('foo')
