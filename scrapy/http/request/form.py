@@ -144,16 +144,17 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.xpath('descendant::input[@type="submit"]'
-                                          '|descendant::button[@type="submit"]'
-                                          '|descendant::button[not(@type)]')]
+    query = ('descendant::input[@name and not(@disabled) and @type="submit"]'
+             '|descendant::button[@name and not(@disabled)'
+             ' and (not(@type) or @type="submit")]')
+    clickables = [el for el in form.xpath(query)]
     if not clickables:
         return
 
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
-        return (el.get('name'), el.get('value'))
+        return (el.get('name'), el.get('value') or '')
 
     # If clickdata is given, we compare it to the clickable elements to find a
     # match. We first look to see if the number is specified in clickdata,
@@ -165,7 +166,7 @@ def _get_clickable(clickdata, form):
         except IndexError:
             pass
         else:
-            return (el.get('name'), el.get('value'))
+            return (el.get('name'), el.get('value') or '')
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
@@ -173,7 +174,7 @@ def _get_clickable(clickdata, form):
             u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
     el = form.xpath(xpath)
     if len(el) == 1:
-        return (el[0].get('name'), el[0].get('value'))
+        return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))
