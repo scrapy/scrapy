@@ -52,6 +52,9 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
@@ -59,6 +62,9 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
@@ -66,8 +72,11 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': None}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertNotIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
-        self.assertNotIn('scheme', dh._notconfigured)
+        self.assertIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
