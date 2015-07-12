@@ -84,6 +84,11 @@ class S3FilesStore(object):
     }
 
     def __init__(self, uri):
+        try:
+            from boto.s3.connection import S3Connection
+            self.S3Connection = S3Connection
+        except ImportError:
+            raise NotConfigured("missing boto library")
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
@@ -98,10 +103,9 @@ class S3FilesStore(object):
         return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
-        from boto.s3.connection import S3Connection
         # disable ssl (is_secure=False) because of this python bug:
         # http://bugs.python.org/issue5103
-        c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
+        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):

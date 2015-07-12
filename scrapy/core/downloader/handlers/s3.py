@@ -1,39 +1,44 @@
 from urlparse import unquote
 
-from scrapy import optional_features
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from .http import HTTPDownloadHandler
 
-try:
-    from boto.s3.connection import S3Connection
-except ImportError:
-    S3Connection = object
 
-class _v19_S3Connection(S3Connection):
-    """A dummy S3Connection wrapper that doesn't do any syncronous download"""
-    def _mexe(self, method, bucket, key, headers, *args, **kwargs):
-        return headers
+def get_s3_connection():
+    try:
+        from boto.s3.connection import S3Connection
+    except ImportError:
+        return None
 
-class _v20_S3Connection(S3Connection):
-    """A dummy S3Connection wrapper that doesn't do any syncronous download"""
-    def _mexe(self, http_request, *args, **kwargs):
-        http_request.authorize(connection=self)
-        return http_request.headers
+    class _v19_S3Connection(S3Connection):
+        """A dummy S3Connection wrapper that doesn't do any synchronous download"""
+        def _mexe(self, method, bucket, key, headers, *args, **kwargs):
+            return headers
 
-try:
-    import boto.auth
-except ImportError:
-    _S3Connection = _v19_S3Connection
-else:
-    _S3Connection = _v20_S3Connection
+    class _v20_S3Connection(S3Connection):
+        """A dummy S3Connection wrapper that doesn't do any synchronous download"""
+        def _mexe(self, http_request, *args, **kwargs):
+            http_request.authorize(connection=self)
+            return http_request.headers
+
+    try:
+        import boto.auth
+    except ImportError:
+        _S3Connection = _v19_S3Connection
+    else:
+        _S3Connection = _v20_S3Connection
+
+    return _S3Connection
 
 
 class S3DownloadHandler(object):
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
             httpdownloadhandler=HTTPDownloadHandler):
-        if 'boto' not in optional_features:
+
+        _S3Connection = get_s3_connection()
+        if _S3Connection is None:
             raise NotConfigured("missing boto library")
 
         if not aws_access_key_id:

@@ -31,13 +31,6 @@ del _monkeypatches
 optional_features = set()
 # TODO: backwards compatibility, remove for Scrapy 0.20
 optional_features.add('ssl')
-try:
-    import boto
-    del boto
-except ImportError:
-    pass
-else:
-    optional_features.add('boto')
 
 from twisted import version as _txv
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
