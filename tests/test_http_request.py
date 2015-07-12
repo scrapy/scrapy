@@ -707,6 +707,40 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['test2'], ['val2'])
         self.assertEqual(fs['button1'], ['submit1'])
 
+    def test_from_response_button_noname(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test1" value="val1">
+            <input type="hidden" name="test2" value="val2">
+            <button type="submit" value="submit1">Submit</button>
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(fs['test1'], ['val1'])
+        self.assertEqual(fs['test2'], ['val2'])
+        self.assertNotIn('button1', fs)
+
+    def test_from_response_button_novalue(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test1" value="val1">
+            <input type="hidden" name="test2" value="val2">
+            <button type="submit" name="button1">Submit</button>
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(fs['test1'], ['val1'])
+        self.assertEqual(fs['test2'], ['val2'])
+        self.assertEqual(fs['button1'], [''])
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
