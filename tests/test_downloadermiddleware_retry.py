@@ -4,7 +4,7 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionRefusedError, ConnectionDone, ConnectError, \
         ConnectionLost, TCPTimedOutError
 
-from scrapy import optional_features
+from scrapy import twisted_version
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.xlib.tx import ResponseFailed
 from scrapy.spiders import Spider
@@ -75,7 +75,7 @@ class RetryTest(unittest.TestCase):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
                 DNSLookupError, ConnectionRefusedError, ConnectionDone,
                 ConnectError, ConnectionLost]
-        if 'http11' in optional_features:
+        if twisted_version >= (11, 1, 0): # http11 available
             exceptions.append(ResponseFailed)
 
         for exc in exceptions:

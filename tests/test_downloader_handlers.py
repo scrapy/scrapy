@@ -27,7 +27,6 @@ from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
-from scrapy import optional_features
 from scrapy.utils.test import get_crawler
 from scrapy.exceptions import NotConfigured
 
@@ -220,7 +219,7 @@ class Http10TestCase(HttpTestCase):
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
     download_handler_cls = HTTP11DownloadHandler
-    if 'http11' not in optional_features:
+    if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def test_download_without_maxsize_limit(self):
@@ -267,7 +266,7 @@ class Http11TestCase(HttpTestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
-    if 'http11' not in optional_features:
+    if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def setUp(self):
@@ -392,7 +391,7 @@ class Http10ProxyTestCase(HttpProxyTestCase):
 
 class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
-    if 'http11' not in optional_features:
+    if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
 
