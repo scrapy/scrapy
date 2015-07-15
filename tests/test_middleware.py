@@ -91,3 +91,16 @@ class MiddlewareManagerTest(unittest.TestCase):
         mwman = TestMiddlewareManager.from_settings(settings)
         classes = [x.__class__ for x in mwman.middlewares]
         self.assertEqual(classes, [M1, M3])
+
+    def test_instances_from_settings(self):
+        settings = Settings()
+        myM3 = M3()
+        class InstanceTestMiddlewareManager(MiddlewareManager):
+            @classmethod
+            def _get_mwlist_from_settings(cls, settings):
+                return [ 'tests.test_middleware.M1', M2, myM3 ]
+        mwman = InstanceTestMiddlewareManager.from_settings(settings)
+        self.assertIsInstance(mwman.middlewares[0], M1)
+        self.assertIsInstance(mwman.middlewares[1], M2)
+        self.assertIs(mwman.middlewares[2], myM3)
+
