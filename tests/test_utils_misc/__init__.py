@@ -11,7 +11,9 @@ class UtilsMiscTestCase(unittest.TestCase):
 
     def test_load_object(self):
         obj = load_object('scrapy.utils.misc.load_object')
-        assert obj is load_object
+        self.assertIs(obj, load_object)
+        not_a_string = int(1000)
+        self.assertIs(load_object(not_a_string), not_a_string)
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
 

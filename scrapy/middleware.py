@@ -1,3 +1,4 @@
+from inspect import isclass
 import logging
 from collections import defaultdict
 
@@ -30,7 +31,9 @@ class MiddlewareManager(object):
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
-                if crawler and hasattr(mwcls, 'from_crawler'):
+                if not isclass(mwcls):
+                    mw = mwcls
+                elif crawler and hasattr(mwcls, 'from_crawler'):
                     mw = mwcls.from_crawler(crawler)
                 elif hasattr(mwcls, 'from_settings'):
                     mw = mwcls.from_settings(settings)
