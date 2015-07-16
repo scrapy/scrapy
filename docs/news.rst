@@ -938,7 +938,7 @@ Scrapy changes:
 - StackTraceDump extension: also dump trackref live references (:commit:`fe2ce93`)
 - nested items now fully supported in JSON and JSONLines exporters
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
-- decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that mdule
+- decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that module
 - dropped support for Python 2.5. See http://blog.scrapinghub.com/2012/02/27/scrapy-0-15-dropping-support-for-python-2-5/
 - dropped support for Twisted 2.5
 - added :setting:`REFERER_ENABLED` setting, to control referer middleware
@@ -1247,7 +1247,7 @@ New features
 - Added ``dont_click`` argument to ``FormRequest.from_response()`` method (:rev:`1813`, :rev:`1816`)
 - Added ``clickdata`` argument to ``FormRequest.from_response()`` method (:rev:`1802`, :rev:`1803`)
 - Added support for HTTP proxies (``HttpProxyMiddleware``) (:rev:`1781`, :rev:`1785`)
-- Offiste spider middleware now logs messages when filtering out requests (:rev:`1841`)
+- Offsite spider middleware now logs messages when filtering out requests (:rev:`1841`)
 
 Backwards-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
