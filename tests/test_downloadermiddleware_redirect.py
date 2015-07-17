@@ -134,7 +134,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         smartspider.handle_httpstatus_list = [404, 301, 302]
         url = 'http://www.example.com/301'
         url2 = 'http://www.example.com/redirected'
-        req = Request(url, meta={'dont_redirect': True})
+        req = Request(url)
         rsp = Response(url, headers={'Location': url2}, status=301)
         r = self.mw.process_response(req, rsp, smartspider)
         self.assertIs(r, rsp)
