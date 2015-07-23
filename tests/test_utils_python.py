@@ -24,8 +24,11 @@ class ToUnicodeTest(unittest.TestCase):
     def test_converting_a_strange_object_should_raise_TypeError(self):
         self.assertRaises(TypeError, to_unicode, 423)
 
-    def test_check_errors_argument_works(self):
-        self.assertIn(u'\ufffd', to_unicode(b'a\xedb', 'utf-8', errors='replace'))
+    def test_errors_argument(self):
+        self.assertEqual(
+            to_unicode(b'a\xedb', 'utf-8', errors='replace'),
+            u'a\ufffdb'
+        )
 
 
 class ToBytesTest(unittest.TestCase):
@@ -35,14 +38,17 @@ class ToBytesTest(unittest.TestCase):
     def test_converting_a_unicode_object_to_a_latin_1_encoded_string(self):
         self.assertEqual(to_bytes(u'\xa3 49', 'latin-1'), b'\xa3 49')
 
-    def test_converting_a_regular_string_to_string_should_return_the_same_object(self):
+    def test_converting_a_regular_bytes_to_bytes_should_return_the_same_object(self):
         self.assertEqual(to_bytes(b'lel\xf1e'), b'lel\xf1e')
 
     def test_converting_a_strange_object_should_raise_TypeError(self):
         self.assertRaises(TypeError, to_bytes, unittest)
 
-    def test_check_errors_argument_works(self):
-        self.assertIn(b'?', to_bytes(u'a\ufffdb', 'latin-1', errors='replace'))
+    def test_errors_argument(self):
+        self.assertEqual(
+            to_bytes(u'a\ufffdb', 'latin-1', errors='replace'),
+            b'a?b'
+        )
 
 
 class MemoizedMethodTest(unittest.TestCase):
@@ -68,13 +74,13 @@ class IsBinaryTextTest(unittest.TestCase):
     def test_isbinarytext(self):
         assert not isbinarytext(b"hello")
 
-    def utf_16_strings_contain_null_bytes(self):
+    def test_utf_16_strings_contain_null_bytes(self):
         assert not isbinarytext(u"hello".encode('utf-16'))
 
     def test_one_with_encoding(self):
         assert not isbinarytext(b"<div>Price \xa3</div>")
 
-    def test_finally_some_real_binary_bytes(self):
+    def test_real_binary_bytes(self):
         assert isbinarytext(b"\x02\xa3")
 
 
