@@ -7,7 +7,7 @@ import six
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.python import unicode_to_str, flatten, iflatten
+from scrapy.utils.python import to_bytes, flatten, iflatten
 from scrapy.utils.decorators import deprecated
 from scrapy.http import HtmlResponse, XmlResponse
 from .lxmldocument import LxmlDocument
@@ -44,7 +44,7 @@ def _st(response, st):
 def _response_from_text(text, st):
     rt = XmlResponse if st == 'xml' else HtmlResponse
     return rt(url='about:blank', encoding='utf-8',
-              body=unicode_to_str(text, 'utf-8'))
+              body=to_bytes(text, 'utf-8'))
 
 
 class Selector(object_ref):

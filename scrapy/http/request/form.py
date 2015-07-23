@@ -9,7 +9,7 @@ from six.moves.urllib.parse import urljoin, urlencode
 import lxml.html
 import six
 from scrapy.http.request import Request
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import to_bytes
 
 
 class FormRequest(Request):
@@ -48,7 +48,7 @@ def _get_form_url(form, url):
 
 
 def _urlencode(seq, enc):
-    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+    values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urlencode(values, doseq=1)

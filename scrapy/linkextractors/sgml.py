@@ -10,7 +10,7 @@ from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import unique as unique_list, str_to_unicode
+from scrapy.utils.python import unique as unique_list, to_unicode
 from scrapy.utils.response import get_base_url
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -44,7 +44,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
                 link.url = link.url.encode(response_encoding)
             link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = str_to_unicode(link.text, response_encoding, errors='replace').strip()
+            link.text = to_unicode(link.text, response_encoding, errors='replace').strip()
             ret.append(link)
 
         return ret

@@ -3,45 +3,48 @@ import operator
 import unittest
 from itertools import count
 
-from scrapy.utils.python import str_to_unicode, unicode_to_str, \
-    memoizemethod_noargs, isbinarytext, equal_attributes, \
-    WeakKeyCache, stringify_dict, get_func_args
+from scrapy.utils.python import (
+    memoizemethod_noargs, isbinarytext, equal_attributes,
+    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode)
 
 __doctests__ = ['scrapy.utils.python']
 
+
+class ToUnicodeTest(unittest.TestCase):
+    def test_converting_an_utf8_encoded_string_to_unicode(self):
+        self.assertEqual(to_unicode('lel\xc3\xb1e'), u'lel\xf1e')
+
+    def test_converting_a_latin_1_encoded_string_to_unicode(self):
+        self.assertEqual(to_unicode('lel\xf1e', 'latin-1'), u'lel\xf1e')
+
+    def test_converting_a_unicode_to_unicode_should_return_the_same_object(self):
+        self.assertEqual(to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
+
+    def test_converting_a_strange_object_should_raise_TypeError(self):
+        self.assertRaises(TypeError, to_unicode, 423)
+
+    def test_check_errors_argument_works(self):
+        self.assertIn(u'\ufffd', to_unicode('a\xedb', 'utf-8', errors='replace'))
+
+
+class ToBytesTest(unittest.TestCase):
+    def test_converting_a_unicode_object_to_an_utf_8_encoded_string(self):
+        self.assertEqual(to_bytes(u'\xa3 49'), '\xc2\xa3 49')
+
+    def test_converting_a_unicode_object_to_a_latin_1_encoded_string(self):
+        self.assertEqual(to_bytes(u'\xa3 49', 'latin-1'), '\xa3 49')
+
+    def test_converting_a_regular_string_to_string_should_return_the_same_object(self):
+        self.assertEqual(to_bytes('lel\xf1e'), 'lel\xf1e')
+
+    def test_converting_a_strange_object_should_raise_TypeError(self):
+        self.assertRaises(TypeError, to_bytes, unittest)
+
+    def test_check_errors_argument_works(self):
+        self.assertIn('?', to_bytes(u'a\ufffdb', 'latin-1', errors='replace'))
+
+
 class UtilsPythonTestCase(unittest.TestCase):
-    def test_str_to_unicode(self):
-        # converting an utf-8 encoded string to unicode
-        self.assertEqual(str_to_unicode('lel\xc3\xb1e'), u'lel\xf1e')
-
-        # converting a latin-1 encoded string to unicode
-        self.assertEqual(str_to_unicode('lel\xf1e', 'latin-1'), u'lel\xf1e')
-
-        # converting a unicode to unicode should return the same object
-        self.assertEqual(str_to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
-
-        # converting a strange object should raise TypeError
-        self.assertRaises(TypeError, str_to_unicode, 423)
-
-        # check errors argument works
-        assert u'\ufffd' in str_to_unicode('a\xedb', 'utf-8', errors='replace')
-
-    def test_unicode_to_str(self):
-        # converting a unicode object to an utf-8 encoded string
-        self.assertEqual(unicode_to_str(u'\xa3 49'), '\xc2\xa3 49')
-
-        # converting a unicode object to a latin-1 encoded string
-        self.assertEqual(unicode_to_str(u'\xa3 49', 'latin-1'), '\xa3 49')
-
-        # converting a regular string to string should return the same object
-        self.assertEqual(unicode_to_str('lel\xf1e'), 'lel\xf1e')
-
-        # converting a strange object should raise TypeError
-        self.assertRaises(TypeError, unicode_to_str, unittest)
-
-        # check errors argument works
-        assert '?' in unicode_to_str(u'a\ufffdb', 'latin-1', errors='replace')
-
     def test_memoizemethod_noargs(self):
         class A(object):
 

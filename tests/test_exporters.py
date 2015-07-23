@@ -8,7 +8,7 @@ from six.moves import cPickle as pickle
 import lxml.etree
 
 from scrapy.item import Item, Field
-from scrapy.utils.python import str_to_unicode
+from scrapy.utils.python import to_unicode
 from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
     XmlItemExporter, JsonLinesItemExporter, JsonItemExporter, PythonItemExporter
@@ -35,7 +35,7 @@ class BaseItemExporterTest(unittest.TestCase):
 
     def _assert_expected_item(self, exported_dict):
         for k, v in exported_dict.items():
-            exported_dict[k] = str_to_unicode(v)
+            exported_dict[k] = to_unicode(v)
         self.assertEqual(self.i, exported_dict)
 
     def assertItemExportWorks(self, item):

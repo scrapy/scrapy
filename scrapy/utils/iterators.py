@@ -11,7 +11,7 @@ import six
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
-from scrapy.utils.python import re_rsearch, str_to_unicode
+from scrapy.utils.python import re_rsearch, to_unicode
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
     def _getrow(csv_r):
-        return [str_to_unicode(field, encoding) for field in next(csv_r)]
+        return [to_unicode(field, encoding) for field in next(csv_r)]
 
     lines = BytesIO(_body_or_str(obj, unicode=False))
 

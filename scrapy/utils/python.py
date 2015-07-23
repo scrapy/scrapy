@@ -1,9 +1,5 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
-
-It also contains functions (or functionality) which is in Python versions
-higher than 2.5 which used to be the lowest version supported by Scrapy.
-
 """
 import os
 import re
@@ -12,6 +8,8 @@ import weakref
 import errno
 import six
 from functools import partial, wraps
+
+from scrapy.utils.decorators import deprecated
 
 
 def flatten(x):
@@ -56,37 +54,44 @@ def unique(list_, key=lambda x: x):
     return result
 
 
+@deprecated("scrapy.utils.python.to_unicode")
 def str_to_unicode(text, encoding=None, errors='strict'):
-    """Return the unicode representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a unicode
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
+    """ This function is deprecated.
+    Please use scrapy.utils.python.to_unicode. """
+    return to_unicode(text, encoding, errors)
 
-    if encoding is None:
-        encoding = 'utf-8'
-    if isinstance(text, str):
-        return text.decode(encoding, errors)
-    elif isinstance(text, unicode):
-        return text
-    else:
-        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
+@deprecated("scrapy.utils.python.to_bytes")
 def unicode_to_str(text, encoding=None, errors='strict'):
-    """Return the str representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a str
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
+    """ This function is deprecated. Please use scrapy.utils.python.to_bytes """
+    return to_bytes(text, encoding, errors)
 
+
+def to_unicode(text, encoding=None, errors='strict'):
+    """Return the unicode representation of a bytes object `text`. If `text`
+    is already an unicode object, return it as-is."""
+    if isinstance(text, six.text_type):
+        return text
+    if not isinstance(text, (bytes, six.text_type)):
+        raise TypeError('to_unicode must receive a bytes, str or unicode '
+                        'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, unicode):
-        return text.encode(encoding, errors)
-    elif isinstance(text, str):
+    return text.decode(encoding, errors)
+
+
+def to_bytes(text, encoding=None, errors='strict'):
+    """Return the binary representation of `text`. If `text`
+    is already a bytes object, return it as-is."""
+    if isinstance(text, bytes):
         return text
-    else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+    if not isinstance(text, six.string_types):
+        raise TypeError('to_bytes must receive a unicode, str or bytes '
+                        'object, got %s' % type(text).__name__)
+    if encoding is None:
+        encoding = 'utf-8'
+    return text.encode(encoding, errors)
+
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -117,6 +122,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
             return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
     return None
 
+
 def memoizemethod_noargs(method):
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
@@ -131,12 +137,14 @@ def memoizemethod_noargs(method):
 
 _BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
 
+
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
     assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
+
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
@@ -163,6 +171,7 @@ def get_func_args(func, stripself=False):
     if stripself:
         func_args.pop(0)
     return func_args
+
 
 def get_spec(func):
     """Returns (args, kwargs) tuple for a function
@@ -199,6 +208,7 @@ def get_spec(func):
     args = spec.args[:firstdefault]
     kwargs = dict(zip(spec.args[firstdefault:], defaults))
     return args, kwargs
+
 
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
@@ -249,6 +259,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
         d[k] = v
     return d
 
+
 def is_writable(path):
     """Return True if the given path can be written (if it exists) or created
     (if it doesn't exist)
@@ -257,6 +268,7 @@ def is_writable(path):
         return os.access(path, os.W_OK)
     else:
         return os.access(os.path.dirname(path), os.W_OK)
+
 
 def setattr_default(obj, name, value):
     """Set attribute value, but only if it's not already set. Similar to

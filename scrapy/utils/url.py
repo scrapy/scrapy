@@ -12,7 +12,7 @@ from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
 from w3lib.url import *
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import to_bytes
 
 
 def url_is_from_any_domain(url, domains):
@@ -72,8 +72,9 @@ def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """
-    return url if isinstance(url, ParseResult) else \
-        urlparse(unicode_to_str(url, encoding))
+    if isinstance(url, ParseResult):
+        return url
+    return urlparse(to_bytes(url, encoding))
 
 
 def escape_ajax(url):
