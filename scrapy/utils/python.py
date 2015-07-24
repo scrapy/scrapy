@@ -23,8 +23,12 @@ def flatten(x):
     >>> [1, 2, [3,4], (5,6)]
     [1, 2, [3, 4], (5, 6)]
     >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]"""
-
+    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
+    >>> flatten(["foo", "bar"])
+    ['foo', 'bar']
+    >>> flatten(["foo", ["baz", 42], "bar"])
+    ['foo', 'baz', 42, 'bar']
+    """
     return list(iflatten(x))
 
 
@@ -32,13 +36,36 @@ def iflatten(x):
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
-
     for el in x:
-        if hasattr(el, "__iter__"):
+        if is_listlike(el):
             for el_ in flatten(el):
                 yield el_
         else:
             yield el
+
+
+def is_listlike(x):
+    """
+    >>> is_listlike("foo")
+    False
+    >>> is_listlike(5)
+    False
+    >>> is_listlike(b"foo")
+    False
+    >>> is_listlike([b"foo"])
+    True
+    >>> is_listlike((b"foo",))
+    True
+    >>> is_listlike({})
+    True
+    >>> is_listlike(set())
+    True
+    >>> is_listlike((x for x in range(3)))
+    True
+    >>> is_listlike(six.moves.xrange(5))
+    True
+    """
+    return hasattr(x, "__iter__") and not isinstance(x, (six.text_type, bytes))
 
 
 def unique(list_, key=lambda x: x):
@@ -115,11 +142,14 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    pattern = re.compile(pattern) if isinstance(pattern, basestring) else pattern
+    if isinstance(pattern, six.string_types):
+        pattern = re.compile(pattern)
+
     for chunk, offset in _chunk_iter():
         matches = [match for match in pattern.finditer(chunk)]
         if matches:
-            return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
+            start, end = matches[-1].span()
+            return offset + start, offset + end
     return None
 
 
@@ -135,14 +165,16 @@ def memoizemethod_noargs(method):
         return cache[self]
     return new_method
 
-_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
+_BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 
 def isbinarytext(text):
-    """Return True if the given text is considered binary, or false
+    """Return True if the given text is considered binary, or False
     otherwise, by looking for binary bytes at their chars
     """
-    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
+    if not isinstance(text, bytes):
+        raise TypeError("text must be bytes, got '%s'" % type(text).__name__)
     return any(c in _BINARYCHARS for c in text)
 
 
@@ -246,20 +278,22 @@ class WeakKeyCache(object):
         return self._weakdict[key]
 
 
+@deprecated
 def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
-    """Return a (new) dict with the unicode keys (and values if, keys_only is
+    """Return a (new) dict with unicode keys (and values when "keys_only" is
     False) of the given dict converted to strings. `dct_or_tuples` can be a
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
     for k, v in six.iteritems(dict(dct_or_tuples)):
-        k = k.encode(encoding) if isinstance(k, unicode) else k
+        k = k.encode(encoding) if isinstance(k, six.text_type) else k
         if not keys_only:
-            v = v.encode(encoding) if isinstance(v, unicode) else v
+            v = v.encode(encoding) if isinstance(v, six.text_type) else v
         d[k] = v
     return d
 
 
+@deprecated
 def is_writable(path):
     """Return True if the given path can be written (if it exists) or created
     (if it doesn't exist)
@@ -270,6 +304,7 @@ def is_writable(path):
         return os.access(os.path.dirname(path), os.W_OK)
 
 
+@deprecated
 def setattr_default(obj, name, value):
     """Set attribute value, but only if it's not already set. Similar to
     setdefault() for dicts.
