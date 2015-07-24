@@ -10,19 +10,20 @@ from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
                                     urlparse, parse_qsl, urlencode,
                                     unquote)
 
-# scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
+# scrapy.utils.url was moved to w3lib.url and import * ensures this
+# move doesn't break old code
 from w3lib.url import *
-from scrapy.utils.python import to_bytes
+from w3lib.url import _safe_chars
+from scrapy.utils.python import to_native_str
 
 
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""
     host = parse_url(url).netloc.lower()
-
-    if host:
-        return any(((host == d.lower()) or (host.endswith('.%s' % d.lower())) for d in domains))
-    else:
+    if not host:
         return False
+    domains = [d.lower() for d in domains]
+    return any((host == d) or (host.endswith('.%s' % d)) for d in domains)
 
 
 def url_is_from_spider(url, spider):
@@ -36,7 +37,7 @@ def url_has_any_extension(url, extensions):
 
 
 def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
-        encoding=None):
+                     encoding=None):
     """Canonicalize the given url by applying the following procedures:
 
     - sort query arguments, first by key, then by value
@@ -57,6 +58,11 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urlencode(keyvals)
+
+    # XXX: copied from w3lib.url.safe_url_string to add encoding argument
+    # path = to_native_str(path, encoding)
+    # path = moves.urllib.parse.quote(path, _safe_chars, encoding='latin1') or '/'
+
     path = safe_url_string(_unquotepath(path)) or '/'
     fragment = '' if not keep_fragments else fragment
     return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
@@ -74,7 +80,7 @@ def parse_url(url, encoding=None):
     """
     if isinstance(url, ParseResult):
         return url
-    return urlparse(to_bytes(url, encoding))
+    return urlparse(to_native_str(url, encoding))
 
 
 def escape_ajax(url):

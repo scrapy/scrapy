@@ -120,6 +120,15 @@ def to_bytes(text, encoding=None, errors='strict'):
     return text.encode(encoding, errors)
 
 
+def to_native_str(text, encoding=None, errors='strict'):
+    """ Return str representation of `text`
+    (bytes in Python 2.x and unicode in Python 3.x). """
+    if six.PY2:
+        return to_bytes(text, encoding, errors)
+    else:
+        return to_unicode(text, encoding, errors)
+
+
 def re_rsearch(pattern, text, chunk_size=1024):
     """
     This function does a reverse search in a text using a regular expression
