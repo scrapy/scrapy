@@ -34,8 +34,14 @@ class FormRequest(Request):
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
-                      clickdata=None, dont_click=False, formxpath=None, **kwargs):
+                      clickdata=None, dont_click=False, formxpath=None, formcss=None, **kwargs):
+
         kwargs.setdefault('encoding', response.encoding)
+
+        if formcss is not None:
+            from parsel.csstranslator import HTMLTranslator
+            formxpath = HTMLTranslator().css_to_xpath(formcss)
+
         form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
@@ -73,7 +79,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
         f = root.xpath('//form[@id="%s"]' % formid)
         if f:
             return f[0]
-            
+
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
         nodes = root.xpath(formxpath)
