@@ -39,13 +39,6 @@ tests/test_responsetypes.py
 tests/test_selector_csstranslator.py
 tests/test_selector_lxmldocument.py
 tests/test_selector.py
-tests/test_settings/__init__.py
-tests/test_spiderloader/__init__.py
-tests/test_spiderloader/test_spiders/__init__.py
-tests/test_spiderloader/test_spiders/spider0.py
-tests/test_spiderloader/test_spiders/spider1.py
-tests/test_spiderloader/test_spiders/spider2.py
-tests/test_spiderloader/test_spiders/spider3.py
 tests/test_spidermiddleware_depth.py
 tests/test_spidermiddleware_httperror.py
 tests/test_spidermiddleware_offsite.py
@@ -58,10 +51,8 @@ tests/test_utils_log.py
 tests/test_utils_reqser.py
 tests/test_utils_request.py
 tests/test_utils_response.py
-tests/test_utils_serialize.py
 tests/test_utils_signal.py
 tests/test_utils_template.py
-tests/test_utils_url.py
 tests/test_webclient.py
 
 scrapy/xlib/tx/iweb.py
