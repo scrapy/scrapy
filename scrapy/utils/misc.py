@@ -7,7 +7,7 @@ from pkgutil import iter_modules
 import six
 from w3lib.html import replace_entities
 
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
@@ -81,7 +81,7 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, basestring):
+    if isinstance(regex, six.string_types):
         regex = re.compile(regex, re.UNICODE)
 
     try:
@@ -90,10 +90,11 @@ def extract_regex(regex, text, encoding='utf-8'):
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [replace_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+                for s in strings]
 
 
 def md5sum(file):

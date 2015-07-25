@@ -8,6 +8,7 @@ import six
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
+from scrapy.utils.python import to_native_str, to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
@@ -46,15 +47,12 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, str):
-            self._url = escape_ajax(safe_url_string(url))
-        elif isinstance(url, six.text_type):
-            if self.encoding is None:
-                raise TypeError('Cannot convert unicode url - %s has no encoding' %
-                                type(self).__name__)
-            self._set_url(url.encode(self.encoding))
-        else:
+        if not isinstance(url, six.string_types):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+
+        url = to_native_str(url, self.encoding)
+        self._url = escape_ajax(safe_url_string(url))
+
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
@@ -64,17 +62,10 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body):
-        if isinstance(body, str):
-            self._body = body
-        elif isinstance(body, six.text_type):
-            if self.encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
-            self._body = body.encode(self.encoding)
-        elif body is None:
-            self._body = ''
+        if body is None:
+            self._body = b''
         else:
-            raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
+            self._body = to_bytes(body, self.encoding)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 

@@ -121,7 +121,7 @@ class Selector(object_ref):
         try:
             return etree.tostring(self._root,
                                   method=self._tostring_method,
-                                  encoding=unicode,
+                                  encoding="unicode",
                                   with_tail=False)
         except (AttributeError, TypeError):
             if self._root is True:
@@ -129,7 +129,7 @@ class Selector(object_ref):
             elif self._root is False:
                 return u'0'
             else:
-                return unicode(self._root)
+                return six.text_type(self._root)
 
     def register_namespace(self, prefix, uri):
         if self.namespaces is None:
