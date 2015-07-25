@@ -5,3 +5,4 @@ cssselect>=0.9
 w3lib>=1.8.0
 queuelib
 six>=1.5.2
+PyDispatcher>=2.0.5

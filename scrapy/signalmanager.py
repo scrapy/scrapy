@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from scrapy.xlib.pydispatch import dispatcher
+from pydispatch import dispatcher
 from scrapy.utils import signal as _signal
 
 

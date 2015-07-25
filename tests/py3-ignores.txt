@@ -49,7 +49,6 @@ tests/test_utils_iterators.py
 tests/test_utils_log.py
 tests/test_utils_reqser.py
 tests/test_utils_response.py
-tests/test_utils_signal.py
 tests/test_utils_template.py
 tests/test_webclient.py
 
