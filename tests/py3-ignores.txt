@@ -30,7 +30,6 @@ tests/test_logformatter.py
 tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
-tests/test_pipeline_media.py
 tests/test_proxy_connect.py
 tests/test_responsetypes.py
 tests/test_selector_csstranslator.py
