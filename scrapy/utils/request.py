@@ -10,6 +10,7 @@ from six.moves.urllib.parse import urlunparse
 
 from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
+from scrapy.utils.python import to_bytes, to_native_str
 
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
@@ -44,13 +45,14 @@ def request_fingerprint(request, include_headers=None):
 
     """
     if include_headers:
-        include_headers = tuple([h.lower() for h in sorted(include_headers)])
+        include_headers = tuple([to_bytes(h.lower())
+                                 for h in sorted(include_headers)])
     cache = _fingerprint_cache.setdefault(request, {})
     if include_headers not in cache:
         fp = hashlib.sha1()
-        fp.update(request.method)
-        fp.update(canonicalize_url(request.url))
-        fp.update(request.body or '')
+        fp.update(to_bytes(request.method))
+        fp.update(to_bytes(canonicalize_url(request.url)))
+        fp.update(request.body or b'')
         if include_headers:
             for hdr in include_headers:
                 if hdr in request.headers:
@@ -60,11 +62,13 @@ def request_fingerprint(request, include_headers=None):
         cache[include_headers] = fp.hexdigest()
     return cache[include_headers]
 
+
 def request_authenticate(request, username, password):
     """Autenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
+
 
 def request_httprepr(request):
     """Return the raw HTTP representation (as string) of the given request.
@@ -74,11 +78,11 @@ def request_httprepr(request):
     """
     parsed = urlparse_cached(request)
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s  = "%s %s HTTP/1.1\r\n" % (request.method, path)
-    s += "Host: %s\r\n" % parsed.hostname
+    s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
+    s += b"Host: " + to_bytes(parsed.hostname) + b"\r\n"
     if request.headers:
-        s += request.headers.to_string() + "\r\n"
-    s += "\r\n"
+        s += request.headers.to_string() + b"\r\n"
+    s += b"\r\n"
     s += request.body
     return s
 
