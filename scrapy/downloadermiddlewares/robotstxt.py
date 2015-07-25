@@ -65,5 +65,17 @@ class RobotsTxtMiddleware(object):
 
     def _parse_robots(self, response):
         rp = robotparser.RobotFileParser(response.url)
-        rp.parse(response.body.splitlines())
+        body = ''
+        if hasattr(response, 'body_as_unicode'):
+            body = response.body_as_unicode()
+        else: # last effort try
+            try:
+                body = response.body.decode('utf-8')
+            except UnicodeDecodeError:
+                # If we found garbage, disregard it:,
+                # but keep the lookup cached (in self._parsers)
+                # Running rp.parse() will set rp state from
+                # 'disallow all' to 'allow any'.
+                pass
+        rp.parse(body.splitlines())
         self._parsers[urlparse_cached(response).netloc] = rp
