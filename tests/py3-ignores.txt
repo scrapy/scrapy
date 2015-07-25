@@ -12,7 +12,6 @@ tests/test_crawler.py
 tests/test_downloader_handlers.py
 tests/test_downloadermiddleware_ajaxcrawlable.py
 tests/test_downloadermiddleware_cookies.py
-tests/test_downloadermiddleware_decompression.py
 tests/test_downloadermiddleware_defaultheaders.py
 tests/test_downloadermiddleware_downloadtimeout.py
 tests/test_downloadermiddleware_httpauth.py
