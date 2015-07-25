@@ -5,6 +5,8 @@ from twisted.python.failure import Failure
 from scrapy.utils.defer import mustbe_deferred, process_chain, \
     process_chain_both, process_parallel, iter_errback
 
+from six.moves import xrange
+
 
 class MustbeDeferredTest(unittest.TestCase):
     def test_success_function(self):
@@ -86,7 +88,7 @@ class IterErrbackTest(unittest.TestCase):
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))
-        self.assertEqual(out, range(10))
+        self.assertEqual(out, list(range(10)))
         self.failIf(errors)
 
     def test_iter_errback_bad(self):
