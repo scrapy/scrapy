@@ -3,6 +3,7 @@ import unittest
 
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
+from scrapy.utils.python import to_bytes
 
 
 class RFPDupeFilterTest(unittest.TestCase):
@@ -43,7 +44,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             def request_fingerprint(self, request):
                 fp = hashlib.sha1()
-                fp.update(request.url.lower())
+                fp.update(to_bytes(request.url.lower()))
                 return fp.hexdigest()
 
         case_insensitive_dupefilter = CaseInsensitiveRFPDupeFilter()
