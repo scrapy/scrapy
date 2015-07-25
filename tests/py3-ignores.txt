@@ -46,7 +46,6 @@ tests/test_spiderloader/test_spiders/spider0.py
 tests/test_spiderloader/test_spiders/spider1.py
 tests/test_spiderloader/test_spiders/spider2.py
 tests/test_spiderloader/test_spiders/spider3.py
-tests/test_spiderloader/test_spiders/spider4.py
 tests/test_spidermiddleware_depth.py
 tests/test_spidermiddleware_httperror.py
 tests/test_spidermiddleware_offsite.py
@@ -55,7 +54,6 @@ tests/test_spider.py
 tests/test_stats.py
 tests/test_utils_defer.py
 tests/test_utils_iterators.py
-tests/test_utils_jsonrpc.py
 tests/test_utils_log.py
 tests/test_utils_reqser.py
 tests/test_utils_request.py
@@ -91,6 +89,5 @@ scrapy/downloadermiddlewares/httpproxy.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
 scrapy/extensions/memusage.py
-scrapy/commands/deploy.py
 scrapy/commands/bench.py
 scrapy/mail.py
