@@ -97,7 +97,7 @@ def iter_errback(iterable, errback, *a, **kw):
     iterating it.
     """
     it = iter(iterable)
-    while 1:
+    while True:
         try:
             yield next(it)
         except StopIteration:
