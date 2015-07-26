@@ -20,7 +20,7 @@ import pprint
 TCP_IP = '50.56.249.120'
 TCP_PORT = 50000
 BUFFER_SIZE = 1024
-message = ""
+message = "test"
 
 
 r = re.compile(r"#jbcrypt:[^<]+")
