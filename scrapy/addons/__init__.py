@@ -156,13 +156,15 @@ class AddonManager(Mapping):
     """This class facilitates loading and storing :ref:`topics-addons`.
 
     You can treat it like a read-only dictionary in which keys correspond to
-    add-on names and values correspond to the add-on objects::
+    add-on names and values correspond to the add-on objects. Add-on
+    configurations are saved in the :attr:`config` dictionary attribute::
 
         addons = AddonManager()
         # ... load some add-ons here
         print addons.enabled  # prints names of all enabled add-ons
         print addons['TestAddon'].version  # prints version of add-on with name
                                            # 'TestAddon'
+        print addons.configs['TestAddon']  # prints configuration of 'TestAddon'
 
     """
 
