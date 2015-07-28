@@ -206,6 +206,7 @@ Extending Scrapy
    :hidden:
 
    topics/architecture
+   topics/addons
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
@@ -216,6 +217,9 @@ Extending Scrapy
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
+
+:doc:`topics/addons`
+    Enable and configure built-in and third-party extensions.
 
 :doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.
