@@ -3,7 +3,7 @@ HTMLParser-based link extractor
 """
 
 import warnings
-from HTMLParser import HTMLParser
+from six.moves.html_parser import HTMLParser
 from six.moves.urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
