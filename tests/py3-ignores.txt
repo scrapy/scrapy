@@ -22,7 +22,6 @@ tests/test_downloadermiddleware_httpproxy.py
 tests/test_downloadermiddleware.py
 tests/test_downloadermiddleware_redirect.py
 tests/test_downloadermiddleware_retry.py
-tests/test_downloadermiddleware_robotstxt.py
 tests/test_downloadermiddleware_stats.py
 tests/test_downloadermiddleware_useragent.py
 tests/test_engine.py
