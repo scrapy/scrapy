@@ -90,6 +90,7 @@ class ResponseTypes(object):
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
+        chunk = to_bytes(chunk)
         if isbinarytext(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():
