@@ -1,0 +1,3 @@
+pytest>=2.6.0
+pytest-twisted
+testfixtures
