@@ -54,7 +54,7 @@ class ResponseTypes(object):
         header """
         if content_encoding:
             return Response
-        mimetype = content_type.split(';')[0].strip().lower()
+        mimetype = to_native_str(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
