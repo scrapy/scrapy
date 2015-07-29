@@ -4,7 +4,6 @@ tests/test_command_shell.py
 tests/test_commands.py
 tests/test_exporters.py
 tests/test_linkextractors.py
-tests/test_loader.py
 tests/test_crawl.py
 tests/test_crawler.py
 tests/test_downloader_handlers.py
