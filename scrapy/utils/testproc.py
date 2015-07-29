@@ -35,8 +35,8 @@ class TestProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self):
         self.deferred = defer.Deferred()
-        self.out = ''
-        self.err = ''
+        self.out = b''
+        self.err = b''
         self.exitcode = None
 
     def outReceived(self, data):
