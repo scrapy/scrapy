@@ -106,7 +106,7 @@ def md5sum(file):
     '784406af91dd5a54fbb9c84c2236595a'
     """
     m = hashlib.md5()
-    while 1:
+    while True:
         d = file.read(8096)
         if not d:
             break

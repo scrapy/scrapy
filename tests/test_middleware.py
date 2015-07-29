@@ -3,6 +3,7 @@ from twisted.trial import unittest
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
+import six
 
 class M1(object):
 
@@ -65,12 +66,20 @@ class MiddlewareManagerTest(unittest.TestCase):
 
     def test_methods(self):
         mwman = TestMiddlewareManager(M1(), M2(), M3())
-        self.assertEqual([x.im_class for x in mwman.methods['open_spider']],
-            [M1, M2])
-        self.assertEqual([x.im_class for x in mwman.methods['close_spider']],
-            [M2, M1])
-        self.assertEqual([x.im_class for x in mwman.methods['process']],
-            [M1, M3])
+        if six.PY2:
+            self.assertEqual([x.im_class for x in mwman.methods['open_spider']],
+                [M1, M2])
+            self.assertEqual([x.im_class for x in mwman.methods['close_spider']],
+                [M2, M1])
+            self.assertEqual([x.im_class for x in mwman.methods['process']],
+                [M1, M3])
+        else:
+            self.assertEqual([x.__self__.__class__ for x in mwman.methods['open_spider']],
+                [M1, M2])
+            self.assertEqual([x.__self__.__class__ for x in mwman.methods['close_spider']],
+                [M2, M1])
+            self.assertEqual([x.__self__.__class__ for x in mwman.methods['process']],
+                [M1, M3])
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()

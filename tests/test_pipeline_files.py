@@ -192,7 +192,7 @@ def _create_item_with_files(*files):
 def _prepare_request_object(item_url):
     return Request(
         item_url,
-        meta={'response': Response(item_url, status=200, body='data')})
+        meta={'response': Response(item_url, status=200, body=b'data')})
 
 
 if __name__ == "__main__":

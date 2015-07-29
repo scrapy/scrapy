@@ -7,9 +7,9 @@ See documentation in topics/media-pipeline.rst
 import hashlib
 import os
 import os.path
-import rfc822
 import time
 import logging
+from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
@@ -91,8 +91,8 @@ class S3FilesStore(object):
         def _onsuccess(boto_key):
             checksum = boto_key.etag.strip('"')
             last_modified = boto_key.last_modified
-            modified_tuple = rfc822.parsedate_tz(last_modified)
-            modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+            modified_tuple = parsedate_tz(last_modified)
+            modified_stamp = int(mktime_tz(modified_tuple))
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)

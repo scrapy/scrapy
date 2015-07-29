@@ -92,9 +92,9 @@ class ResponseTypes(object):
         chunk = body[:5000]
         if isbinarytext(chunk):
             return self.from_mimetype('application/octet-stream')
-        elif "<html>" in chunk.lower():
+        elif b"<html>" in chunk.lower():
             return self.from_mimetype('text/html')
-        elif "<?xml" in chunk.lower():
+        elif b"<?xml" in chunk.lower():
             return self.from_mimetype('text/xml')
         else:
             return self.from_mimetype('text')
