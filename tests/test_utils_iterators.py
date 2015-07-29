@@ -13,7 +13,7 @@ class XmliterTestCase(unittest.TestCase):
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):
-        body = """<?xml version="1.0" encoding="UTF-8"?>\
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>\
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
               <product id="001">\
                 <type>Type 1</type>\
@@ -40,7 +40,7 @@ class XmliterTestCase(unittest.TestCase):
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
-        body = """\
+        body = b"""\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
                 <channel>
@@ -83,7 +83,7 @@ class XmliterTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, next, iter)
 
     def test_xmliter_encoding(self):
-        body = '<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
+        body = b'<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
         response = XmlResponse('http://www.example.com', body=body)
         self.assertEqual(
             self.xmliter(response, 'item').next().extract(),
@@ -95,7 +95,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):
-        body = """\
+        body = b"""\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns="http://base.google.com/ns/1.0">
                 <channel>
@@ -124,7 +124,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
         self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
     def test_xmliter_namespaces_prefix(self):
-        body = """\
+        body = b"""\
         <?xml version="1.0" encoding="UTF-8"?>
         <root>
             <h:table xmlns:h="http://www.w3.org/TR/html4/">
