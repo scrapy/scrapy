@@ -26,6 +26,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +331,7 @@ class FilesPipeline(MediaPipeline):
             return self.file_key(url)
         ## end of deprecation warning block
 
-        media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
 

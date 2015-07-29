@@ -12,6 +12,7 @@ from scrapy.pipelines.files import FilesPipeline, FSFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
+from scrapy.utils.python import to_bytes
 
 from tests import mock
 
@@ -103,7 +104,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 class DeprecatedFilesPipeline(FilesPipeline):
     def file_key(self, url):
-        media_guid = hashlib.sha1(url).hexdigest()
+        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()
         media_ext = os.path.splitext(url)[1]
         return 'empty/%s%s' % (media_guid, media_ext)
 
