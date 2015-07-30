@@ -53,7 +53,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     For examples see the tests in tests/test_utils_url.py
     """
 
-    scheme, netloc, path, params, query, fragment = parse_url(url)
+    scheme, netloc, path, params, query, fragment = parse_url(url, encoding)
     keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urlencode(keyvals)

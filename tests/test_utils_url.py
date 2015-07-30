@@ -128,6 +128,10 @@ class UrlUtilsTest(unittest.TestCase):
                                           "http://www.example.com/a%20%20do?a=1"),
         self.assertEqual(canonicalize_url("http://www.example.com/a do\xc2\xa3.html?a=1"),
                                           "http://www.example.com/a%20do%C2%A3.html?a=1")
+        self.assertEqual(canonicalize_url(u"http://www.example.com/a do\xa3.html?a=1", encoding='utf-8'),
+                                          "http://www.example.com/a%20do%C2%A3.html?a=1")
+        self.assertEqual(canonicalize_url(u"http://www.example.com/a do\xc2\xa3.html?a=1", encoding='latin1'),
+                                          "http://www.example.com/a%20do%C2%A3.html?a=1")
         # non-ASCII percent-encoding in query arguments
         self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3"),
                                           u"http://www.example.com/do?a=5&price=%C2%A3500&z=3")
@@ -135,6 +139,10 @@ class UrlUtilsTest(unittest.TestCase):
                                           "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
         self.assertEqual(canonicalize_url("http://www.example.com/do?price(\xc2\xa3)=500&a=1"),
                                           "http://www.example.com/do?a=1&price%28%C2%A3%29=500")
+        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3", encoding='utf-8'),
+                                          "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
+        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xc2\xa3500&a=5&z=3", encoding='latin1'),
+                                          "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
 
         # urls containing auth and ports
         self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com:81/do?now=1"),
