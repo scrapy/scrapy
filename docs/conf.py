@@ -18,7 +18,6 @@ from os import path
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 sys.path.append(path.join(path.dirname(__file__), "_ext"))
-sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
 sys.path.insert(0, path.dirname(path.dirname(__file__)))
 
 
