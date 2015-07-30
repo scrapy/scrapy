@@ -44,5 +44,6 @@ setup(
         'pyOpenSSL',
         'cssselect>=0.9',
         'six>=1.5.2',
+        'PyDispatcher>=2.0.5',
     ],
 )

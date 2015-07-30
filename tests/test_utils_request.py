@@ -21,15 +21,15 @@ class UtilsRequestTest(unittest.TestCase):
 
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")
-        r2.headers['SESSIONID'] = "somehash"
+        r2.headers['SESSIONID'] = b"somehash"
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2))
 
         r1 = Request("http://www.example.com/")
         r2 = Request("http://www.example.com/")
-        r2.headers['Accept-Language'] = 'en'
+        r2.headers['Accept-Language'] = b'en'
         r3 = Request("http://www.example.com/")
-        r3.headers['Accept-Language'] = 'en'
-        r3.headers['SESSIONID'] = "somehash"
+        r3.headers['Accept-Language'] = b'en'
+        r3.headers['SESSIONID'] = b"somehash"
 
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2), request_fingerprint(r3))
 
@@ -44,7 +44,7 @@ class UtilsRequestTest(unittest.TestCase):
 
         r1 = Request("http://www.example.com")
         r2 = Request("http://www.example.com", method='POST')
-        r3 = Request("http://www.example.com", method='POST', body='request body')
+        r3 = Request("http://www.example.com", method='POST', body=b'request body')
 
         self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2))
         self.assertNotEqual(request_fingerprint(r2), request_fingerprint(r3))
@@ -52,24 +52,24 @@ class UtilsRequestTest(unittest.TestCase):
         # cached fingerprint must be cleared on request copy
         r1 = Request("http://www.example.com")
         fp1 = request_fingerprint(r1)
-        r2 = r1.replace(url = "http://www.example.com/other")
+        r2 = r1.replace(url="http://www.example.com/other")
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
         request_authenticate(r, 'someuser', 'somepass')
-        self.assertEqual(r.headers['Authorization'], 'Basic c29tZXVzZXI6c29tZXBhc3M=')
+        self.assertEqual(r.headers['Authorization'], b'Basic c29tZXVzZXI6c29tZXBhc3M=')
 
     def test_request_httprepr(self):
         r1 = Request("http://www.example.com")
-        self.assertEqual(request_httprepr(r1), 'GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+        self.assertEqual(request_httprepr(r1), b'GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
 
         r1 = Request("http://www.example.com/some/page.html?arg=1")
-        self.assertEqual(request_httprepr(r1), 'GET /some/page.html?arg=1 HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+        self.assertEqual(request_httprepr(r1), b'GET /some/page.html?arg=1 HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
 
-        r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
-        self.assertEqual(request_httprepr(r1), 'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
+        r1 = Request("http://www.example.com", method='POST', headers={"Content-type": b"text/html"}, body=b"Some body")
+        self.assertEqual(request_httprepr(r1), b'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
 
 if __name__ == "__main__":
     unittest.main()

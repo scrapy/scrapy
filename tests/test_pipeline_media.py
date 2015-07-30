@@ -44,7 +44,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def test_default_media_downloaded(self):
         request = Request('http://url')
-        response = Response('http://url', body='')
+        response = Response('http://url', body=b'')
         assert self.pipe.media_downloaded(response, request, self.info) is response
 
     def test_default_media_failed(self):

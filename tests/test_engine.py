@@ -20,7 +20,7 @@ from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.utils.test import get_crawler
-from scrapy.xlib.pydispatch import dispatcher
+from pydispatch import dispatcher
 from tests import tests_datadir
 from scrapy.spiders import Spider
 from scrapy.item import Item, Field
