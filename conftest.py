@@ -8,6 +8,7 @@ def _py_files(folder):
 
 
 collect_ignore = [
+    # deprecated or moved modules
     "scrapy/conf.py",
     "scrapy/stats.py",
     "scrapy/project.py",
@@ -19,6 +20,10 @@ collect_ignore = [
     "scrapy/command.py",
     "scrapy/linkextractor.py",
     "scrapy/spider.py",
+
+    # not a test, but looks like a test
+    "scrapy/utils/testsite.py",
+
 ] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
 
 
