@@ -538,6 +538,60 @@ class FormRequestTest(RequestTest):
         self.assertRaises(IndexError, self.request_class.from_response, \
                           response, formname="form3", formnumber=2)
 
+    def test_from_response_formid_exists(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form id="form2" action="post.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formid="form2")
+        self.assertEqual(r1.method, 'POST')
+        fs = _qs(r1)
+        self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
+
+    def test_from_response_formname_notexists_fallback_formid(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form id="form2" name="form2" action="post.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formname="form3", formid="form2")
+        self.assertEqual(r1.method, 'POST')
+        fs = _qs(r1)
+        self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
+
+    def test_from_response_formid_notexist(self):
+        response = _buildresponse(
+            """<form id="form1" action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            </form>
+            <form id="form2" action="post.php" method="POST">
+            <input type="hidden" name="two" value="2">
+            </form>""")
+        r1 = self.request_class.from_response(response, formid="form3")
+        self.assertEqual(r1.method, 'POST')
+        fs = _qs(r1)
+        self.assertEqual(fs, {'one': ['1']})
+
+    def test_from_response_formid_errors_formnumber(self):
+        response = _buildresponse(
+            """<form id="form1" action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            </form>
+            <form id="form2" name="form2" action="post.php" method="POST">
+            <input type="hidden" name="two" value="2">
+            </form>""")
+        self.assertRaises(IndexError, self.request_class.from_response, \
+                          response, formid="form3", formnumber=2)
+
     def test_from_response_select(self):
         res = _buildresponse(
             '''<form>

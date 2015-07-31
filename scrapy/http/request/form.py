@@ -31,10 +31,10 @@ class FormRequest(Request):
                 self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formnumber=0, formdata=None,
+    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, formxpath=None, **kwargs):
         kwargs.setdefault('encoding', response.encoding)
-        form = _get_form(response, formname, formnumber, formxpath)
+        form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
         method = kwargs.pop('method', form.method)
@@ -54,7 +54,7 @@ def _urlencode(seq, enc):
     return urlencode(values, doseq=1)
 
 
-def _get_form(response, formname, formnumber, formxpath):
+def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
     from scrapy.selector.lxmldocument import LxmlDocument
     root = LxmlDocument(response, lxml.html.HTMLParser)
@@ -67,6 +67,11 @@ def _get_form(response, formname, formnumber, formxpath):
         if f:
             return f[0]
 
+    if formid is not None:
+        f = root.xpath('//form[@id="%s"]' % formid)
+        if f:
+            return f[0]
+            
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
         nodes = root.xpath(formxpath)
