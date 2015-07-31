@@ -4,6 +4,7 @@ from six.moves.urllib.parse import urljoin
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+
 class SiteTest(object):
 
     def setUp(self):
@@ -17,6 +18,7 @@ class SiteTest(object):
 
     def url(self, path):
         return urljoin(self.baseurl, path)
+
 
 def test_site():
     r = resource.Resource()
