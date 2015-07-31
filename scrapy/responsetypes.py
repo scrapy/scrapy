@@ -1,9 +1,8 @@
 """
 This module implements a class which returns the appropriate Response class
 based on different criteria.
-
 """
-
+from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO
@@ -11,7 +10,8 @@ import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import isbinarytext
+from scrapy.utils.python import isbinarytext, to_bytes, to_native_str
+
 
 class ResponseTypes(object):
 
@@ -54,12 +54,12 @@ class ResponseTypes(object):
         header """
         if content_encoding:
             return Response
-        mimetype = content_type.split(';')[0].strip().lower()
+        mimetype = to_native_str(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = content_disposition.split(';')[1].split('=')[1]
+            filename = to_native_str(content_disposition).split(';')[1].split('=')[1]
             filename = filename.strip('"\'')
             return self.from_filename(filename)
         except IndexError:
@@ -69,11 +69,13 @@ class ResponseTypes(object):
         """Return the most appropriate Response class by looking at the HTTP
         headers"""
         cls = Response
-        if 'Content-Type' in headers:
-            cls = self.from_content_type(headers['Content-type'], \
-                headers.get('Content-Encoding'))
-        if cls is Response and 'Content-Disposition' in headers:
-            cls = self.from_content_disposition(headers['Content-Disposition'])
+        if b'Content-Type' in headers:
+            cls = self.from_content_type(
+                content_type=headers[b'Content-type'],
+                content_encoding=headers.get(b'Content-Encoding')
+            )
+        if cls is Response and b'Content-Disposition' in headers:
+            cls = self.from_content_disposition(headers[b'Content-Disposition'])
         return cls
 
     def from_filename(self, filename):
@@ -90,6 +92,7 @@ class ResponseTypes(object):
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
+        chunk = to_bytes(chunk)
         if isbinarytext(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():
@@ -100,7 +103,8 @@ class ResponseTypes(object):
             return self.from_mimetype('text')
 
     def from_args(self, headers=None, url=None, filename=None, body=None):
-        """Guess the most appropriate Response class based on the given arguments"""
+        """Guess the most appropriate Response class based on
+        the given arguments."""
         cls = Response
         if headers is not None:
             cls = self.from_headers(headers)
