@@ -71,7 +71,7 @@ def request_authenticate(request, username, password):
 
 
 def request_httprepr(request):
-    """Return the raw HTTP representation (as string) of the given request.
+    """Return the raw HTTP representation (as bytes) of the given request.
     This is provided only for reference since it's not the actual stream of
     bytes that will be send when performing the request (that's controlled
     by Twisted).
