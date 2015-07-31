@@ -1,13 +1,13 @@
 language: python
 python: 2.7
+sudo: false
 env:
-- TOXENV=py27
-- TOXENV=precise
-- TOXENV=py33
-- TOXENV=docs
+ - TOXENV=py27
+ - TOXENV=precise
+ - TOXENV=py33
+ - TOXENV=docs
 install:
-- "./.travis-workarounds.sh"
-- pip install -U tox
+ - pip install -U tox
 script: tox
 notifications:
   irc:
@@ -15,6 +15,9 @@ notifications:
     skip_join: true
     channels:
     - irc.freenode.org#scrapy
+cache:
+  directories:
+    - $HOME/.cache/pip
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"
