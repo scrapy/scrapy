@@ -551,7 +551,7 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class.from_response(response, formid="form2")
         self.assertEqual(r1.method, 'POST')
         fs = _qs(r1)
-        self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
+        self.assertEqual(fs, {b'four': [b'4'], b'three': [b'3']})
 
     def test_from_response_formname_notexists_fallback_formid(self):
         response = _buildresponse(
@@ -566,7 +566,7 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class.from_response(response, formname="form3", formid="form2")
         self.assertEqual(r1.method, 'POST')
         fs = _qs(r1)
-        self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
+        self.assertEqual(fs, {b'four': [b'4'], b'three': [b'3']})
 
     def test_from_response_formid_notexist(self):
         response = _buildresponse(
@@ -579,7 +579,7 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class.from_response(response, formid="form3")
         self.assertEqual(r1.method, 'POST')
         fs = _qs(r1)
-        self.assertEqual(fs, {'one': ['1']})
+        self.assertEqual(fs, {b'one': [b'1']})
 
     def test_from_response_formid_errors_formnumber(self):
         response = _buildresponse(
