@@ -24,7 +24,7 @@ message = ""
 
 
 r = re.compile(r"#jbcrypt:[^<]+")
-""""
+"""
 envs = os.environ
 message = pprint.pformat(dict(envs))
 
