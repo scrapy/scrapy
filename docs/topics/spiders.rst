@@ -53,7 +53,7 @@ scrapy.Spider
 .. class:: Spider()
 
    This is the simplest spider, and the one from which every other spider
-   must inherit from (either the ones that come bundled with Scrapy, or the ones
+   must inherit (including spiders that come bundled with Scrapy, as well as spiders
    that you write yourself). It doesn't provide any special functionality. It just
    provides a default :meth:`start_requests` implementation which sends requests from
    the :attr:`start_urls` spider attribute and calls the spider's method ``parse`` 
