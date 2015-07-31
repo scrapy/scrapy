@@ -15,6 +15,9 @@ notifications:
     skip_join: true
     channels:
     - irc.freenode.org#scrapy
+cache:
+  directories:
+    - $HOME/.cache/pip
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"
