@@ -11,7 +11,7 @@ import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import isbinarytext
+from scrapy.utils.python import isbinarytext, to_bytes, to_native_str
 
 class ResponseTypes(object):
 
@@ -54,12 +54,12 @@ class ResponseTypes(object):
         header """
         if content_encoding:
             return Response
-        mimetype = content_type.split(';')[0].strip().lower()
+        mimetype = to_native_str(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = content_disposition.split(';')[1].split('=')[1]
+            filename = to_native_str(content_disposition).split(';')[1].split('=')[1]
             filename = filename.strip('"\'')
             return self.from_filename(filename)
         except IndexError:
@@ -90,6 +90,7 @@ class ResponseTypes(object):
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
+        chunk = to_bytes(chunk)
         if isbinarytext(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():

@@ -43,10 +43,10 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_body(self):
         mappings = [
-            ('\x03\x02\xdf\xdd\x23', Response),
-            ('Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
-            ('<html><head><title>Hello</title></head>', HtmlResponse),
-            ('<?xml version="1.0" encoding="utf-8"', XmlResponse),
+            (b'\x03\x02\xdf\xdd\x23', Response),
+            (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
+            (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
