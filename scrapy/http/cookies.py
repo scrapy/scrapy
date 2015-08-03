@@ -149,11 +149,13 @@ class WrappedRequest(object):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_native_str(self.request.headers.get(name, default))
+        return to_native_str(self.request.headers.get(name, default),
+                             errors='replace')
 
     def header_items(self):
         return [
-            (to_native_str(k), [to_native_str(x) for x in v])
+            (to_native_str(k, errors='replace'),
+             [to_native_str(x, errors='replace') for x in v])
             for k, v in self.request.headers.items()
         ]
 
@@ -171,6 +173,7 @@ class WrappedResponse(object):
 
     # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
-        return [to_native_str(v) for v in self.response.headers.getlist(name)]
+        return [to_native_str(v, errors='replace')
+                for v in self.response.headers.getlist(name)]
     # python2 cookiejars calls getheaders
     getheaders = get_all

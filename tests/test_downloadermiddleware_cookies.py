@@ -22,19 +22,31 @@ class CookiesMiddlewareTest(TestCase):
         del self.mw
 
     def test_basic(self):
-        headers = {'Set-Cookie': 'C1=value1; path=/'}
         req = Request('http://scrapytest.org/')
         assert self.mw.process_request(req, self.spider) is None
         assert 'Cookie' not in req.headers
 
+        headers = {'Set-Cookie': 'C1=value1; path=/'}
         res = Response('http://scrapytest.org/', headers=headers)
         assert self.mw.process_response(req, res, self.spider) is res
-
-        #assert res.cookies
 
         req2 = Request('http://scrapytest.org/sub1/')
         assert self.mw.process_request(req2, self.spider) is None
         self.assertEquals(req2.headers.get('Cookie'), b"C1=value1")
+
+    def test_do_not_break_on_non_utf8_header(self):
+        req = Request('http://scrapytest.org/')
+        assert self.mw.process_request(req, self.spider) is None
+        assert 'Cookie' not in req.headers
+
+        headers = {'Set-Cookie': b'C1=in\xa3valid; path=/',
+                   'Other': b'ignore\xa3me'}
+        res = Response('http://scrapytest.org/', headers=headers)
+        assert self.mw.process_response(req, res, self.spider) is res
+
+        req2 = Request('http://scrapytest.org/sub1/')
+        assert self.mw.process_request(req2, self.spider) is None
+        self.assertIn('Cookie', req2.headers)
 
     def test_dont_merge_cookies(self):
         # merge some cookies into jar
