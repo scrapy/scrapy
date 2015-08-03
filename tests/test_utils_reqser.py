@@ -18,7 +18,7 @@ class RequestSerializationTest(unittest.TestCase):
             callback='parse_item',
             errback='handle_error',
             method="POST",
-            body="some body",
+            body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
             cookies={'currency': 'usd'},
             encoding='latin-1',
@@ -27,11 +27,11 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r)
 
     def test_latin1_body(self):
-        r = Request("http://www.example.com", body="\xa3")
+        r = Request("http://www.example.com", body=b"\xa3")
         self._assert_serializes_ok(r)
 
     def test_utf8_body(self):
-        r = Request("http://www.example.com", body="\xc2\xa3")
+        r = Request("http://www.example.com", body=b"\xc2\xa3")
         self._assert_serializes_ok(r)
 
     def _assert_serializes_ok(self, request, spider=None):

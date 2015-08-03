@@ -9,7 +9,7 @@ from cssselect.parser import SelectorSyntaxError
 from cssselect.xpath import ExpressionError
 
 
-HTMLBODY = '''
+HTMLBODY = b'''
 <html>
 <body>
 <div>

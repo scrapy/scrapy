@@ -11,10 +11,11 @@ class CmdlineTest(unittest.TestCase):
         self.env['SCRAPY_SETTINGS_MODULE'] = 'tests.test_cmdline.settings'
 
     def _execute(self, *new_args, **kwargs):
+        encoding = getattr(sys.stdout, 'encoding') or 'utf-8'
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         proc = Popen(args, stdout=PIPE, stderr=PIPE, env=self.env, **kwargs)
-        comm = proc.communicate()
-        return comm[0].strip()
+        comm = proc.communicate()[0].strip()
+        return comm.decode(encoding)
 
     def test_default_settings(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
