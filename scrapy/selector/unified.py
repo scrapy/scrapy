@@ -35,7 +35,9 @@ class Selector(ParselSelector, object_ref):
 
     def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
         st = _st(response, type or self._default_type)
-        root = kwargs.get('root', root)
+
+        # supporting legacy _root argument
+        root = kwargs.get('_root', root)
 
         self._parser = _ctgroup[st]['_parser']
 
