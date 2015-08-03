@@ -395,7 +395,13 @@ class HttpDownloadHandlerMock(object):
         return request
 
 class S3TestCase(unittest.TestCase):
-    skip = 'boto' not in optional_features and 'missing boto library'
+    download_handler_cls = S3DownloadHandler
+    try:
+        # can't instance without settings, but ignore that
+        download_handler_cls({})
+    except NotConfigured:
+        skip = 'missing boto library'
+    except KeyError: pass
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
