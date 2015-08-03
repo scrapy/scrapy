@@ -332,7 +332,7 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
-        x = self.sscls()
+        x = self.sscls(text='')
         weakref.ref(x)
         assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
             x.__class__.__name__
