@@ -63,6 +63,7 @@ class CookiesMiddlewareTest(TestCase):
         crawler = get_crawler(settings_dict={'COOKIES_DEBUG': True})
         mw = CookiesMiddleware.from_crawler(crawler)
         with LogCapture('scrapy.downloadermiddlewares.cookies',
+                        propagate=False,
                         level=logging.DEBUG) as l:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
@@ -86,6 +87,7 @@ class CookiesMiddlewareTest(TestCase):
         crawler = get_crawler(settings_dict={'COOKIES_DEBUG': False})
         mw = CookiesMiddleware.from_crawler(crawler)
         with LogCapture('scrapy.downloadermiddlewares.cookies',
+                        propagate=False,
                         level=logging.DEBUG) as l:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
