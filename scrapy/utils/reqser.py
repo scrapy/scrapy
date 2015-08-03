@@ -1,8 +1,11 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
+import six
 
 from scrapy.http import Request
+from scrapy.utils.python import to_unicode, to_native_str
+
 
 def request_to_dict(request, spider=None):
     """Convert Request object to a dict.
@@ -17,7 +20,7 @@ def request_to_dict(request, spider=None):
     if callable(eb):
         eb = _find_method(spider, eb)
     d = {
-        'url': request.url.decode('ascii'), # urls should be safe (safe_string_url)
+        'url': to_unicode(request.url),  # urls should be safe (safe_string_url)
         'callback': cb,
         'errback': eb,
         'method': request.method,
@@ -45,7 +48,7 @@ def request_from_dict(d, spider=None):
     if eb and spider:
         eb = _get_method(spider, eb)
     return Request(
-        url=d['url'].encode('ascii'),
+        url=to_native_str(d['url']),
         callback=cb,
         errback=eb,
         method=d['method'],
@@ -59,10 +62,16 @@ def request_from_dict(d, spider=None):
 
 
 def _find_method(obj, func):
-    if obj and hasattr(func, 'im_self') and func.im_self is obj:
-        return func.im_func.__name__
-    else:
-        raise ValueError("Function %s is not a method of: %s" % (func, obj))
+    if obj:
+        try:
+            func_self = six.get_method_self(func)
+        except AttributeError:  # func has no __self__
+            pass
+        else:
+            if func_self is obj:
+                return six.get_method_function(func).__name__
+    raise ValueError("Function %s is not a method of: %s" % (func, obj))
+
 
 def _get_method(obj, name):
     name = str(name)
