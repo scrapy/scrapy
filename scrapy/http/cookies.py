@@ -1,6 +1,9 @@
 import time
-from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from six.moves.http_cookiejar import (
+    CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+)
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_native_str
 
 
 class CookieJar(object):
@@ -97,6 +100,7 @@ def potential_domain_matches(domain):
         pass
     return matches + ['.' + d for d in matches]
 
+
 class _DummyLock(object):
     def acquire(self):
         pass
@@ -133,6 +137,11 @@ class WrappedRequest(object):
         """
         return self.request.meta.get('is_unverifiable', False)
 
+    # python3 uses request.unverifiable
+    @property
+    def unverifiable(self):
+        return self.is_unverifiable()
+
     def get_origin_req_host(self):
         return urlparse_cached(self.request).hostname
 
@@ -140,14 +149,18 @@ class WrappedRequest(object):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return self.request.headers.get(name, default)
+        return to_native_str(self.request.headers.get(name, default),
+                             errors='replace')
 
     def header_items(self):
-        return self.request.headers.items()
+        return [
+            (to_native_str(k, errors='replace'),
+             [to_native_str(x, errors='replace') for x in v])
+            for k, v in self.request.headers.items()
+        ]
 
     def add_unredirected_header(self, name, value):
         self.request.headers.appendlist(name, value)
-        #print 'add_unredirected_header', self.request.headers
 
 
 class WrappedResponse(object):
@@ -158,5 +171,9 @@ class WrappedResponse(object):
     def info(self):
         return self
 
-    def getheaders(self, name):
-        return self.response.headers.getlist(name)
+    # python3 cookiejars calls get_all
+    def get_all(self, name, default=None):
+        return [to_native_str(v, errors='replace')
+                for v in self.response.headers.getlist(name)]
+    # python2 cookiejars calls getheaders
+    getheaders = get_all

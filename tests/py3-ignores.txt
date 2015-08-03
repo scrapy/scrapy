@@ -11,7 +11,6 @@ tests/test_crawl.py
 tests/test_crawler.py
 tests/test_downloader_handlers.py
 tests/test_downloadermiddleware_ajaxcrawlable.py
-tests/test_downloadermiddleware_cookies.py
 tests/test_downloadermiddleware_defaultheaders.py
 tests/test_downloadermiddleware_downloadtimeout.py
 tests/test_downloadermiddleware_httpauth.py
@@ -24,7 +23,6 @@ tests/test_downloadermiddleware_retry.py
 tests/test_downloadermiddleware_stats.py
 tests/test_downloadermiddleware_useragent.py
 tests/test_engine.py
-tests/test_http_cookies.py
 tests/test_logformatter.py
 tests/test_mail.py
 tests/test_pipeline_files.py
@@ -51,7 +49,6 @@ scrapy/xlib/tx/endpoints.py
 scrapy/xlib/tx/client.py
 scrapy/xlib/tx/_newclient.py
 scrapy/xlib/tx/__init__.py
-scrapy/http/cookies.py
 scrapy/core/downloader/handlers/s3.py
 scrapy/core/downloader/handlers/http11.py
 scrapy/core/downloader/handlers/http.py
