@@ -20,7 +20,6 @@ else:
     from email import encoders as Encoders
 
 from twisted.internet import defer, reactor, ssl
-from twisted.mail.smtp import ESMTPSenderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +101,8 @@ class MailSender(object):
                       'mailattachs': nattachs, 'mailerr': errstr})
 
     def _sendmail(self, to_addrs, msg):
+        # Import twisted.mail here because it is not available in python3
+        from twisted.mail.smtp import ESMTPSenderFactory
         msg = StringIO(msg)
         d = defer.Deferred()
         factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \

@@ -1,8 +1,12 @@
-from unittest import TestCase
 import re
+import logging
+from unittest import TestCase
+from testfixtures import LogCapture
 
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
+from scrapy.exceptions import NotConfigured
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 
 
@@ -33,6 +37,64 @@ class CookiesMiddlewareTest(TestCase):
         req2 = Request('http://scrapytest.org/sub1/')
         assert self.mw.process_request(req2, self.spider) is None
         self.assertEquals(req2.headers.get('Cookie'), b"C1=value1")
+
+    def test_setting_false_cookies_enabled(self):
+        self.assertRaises(
+            NotConfigured,
+            CookiesMiddleware.from_crawler,
+            get_crawler(settings_dict={'COOKIES_ENABLED': False})
+        )
+
+    def test_setting_default_cookies_enabled(self):
+        self.assertIsInstance(
+            CookiesMiddleware.from_crawler(get_crawler()),
+            CookiesMiddleware
+        )
+
+    def test_setting_true_cookies_enabled(self):
+        self.assertIsInstance(
+            CookiesMiddleware.from_crawler(
+                get_crawler(settings_dict={'COOKIES_ENABLED': True})
+            ),
+            CookiesMiddleware
+        )
+
+    def test_setting_enabled_cookies_debug(self):
+        crawler = get_crawler(settings_dict={'COOKIES_DEBUG': True})
+        mw = CookiesMiddleware.from_crawler(crawler)
+        with LogCapture('scrapy.downloadermiddlewares.cookies',
+                        level=logging.DEBUG) as l:
+            req = Request('http://scrapytest.org/')
+            res = Response('http://scrapytest.org/',
+                           headers={'Set-Cookie': 'C1=value1; path=/'})
+            mw.process_response(req, res, crawler.spider)
+            req2 = Request('http://scrapytest.org/sub1/')
+            mw.process_request(req2, crawler.spider)
+
+            l.check(
+                ('scrapy.downloadermiddlewares.cookies',
+                 'DEBUG',
+                 'Received cookies from: <200 http://scrapytest.org/>\n'
+                 'Set-Cookie: C1=value1; path=/\n'),
+                ('scrapy.downloadermiddlewares.cookies',
+                 'DEBUG',
+                 'Sending cookies to: <GET http://scrapytest.org/sub1/>\n'
+                 'Cookie: C1=value1\n'),
+            )
+
+    def test_setting_disabled_cookies_debug(self):
+        crawler = get_crawler(settings_dict={'COOKIES_DEBUG': False})
+        mw = CookiesMiddleware.from_crawler(crawler)
+        with LogCapture('scrapy.downloadermiddlewares.cookies',
+                        level=logging.DEBUG) as l:
+            req = Request('http://scrapytest.org/')
+            res = Response('http://scrapytest.org/',
+                           headers={'Set-Cookie': 'C1=value1; path=/'})
+            mw.process_response(req, res, crawler.spider)
+            req2 = Request('http://scrapytest.org/sub1/')
+            mw.process_request(req2, crawler.spider)
+
+            l.check()
 
     def test_do_not_break_on_non_utf8_header(self):
         req = Request('http://scrapytest.org/')
