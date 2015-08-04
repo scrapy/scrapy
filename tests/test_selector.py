@@ -7,6 +7,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
+from lxml import etree
+from tests import mock
 
 
 class SelectorTestCase(unittest.TestCase):
@@ -36,6 +38,15 @@ class SelectorTestCase(unittest.TestCase):
                          [u'xpathrules'])
         self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
+
+    @mock.patch('scrapy.selector.unified.warnings')
+    def test_deprecated_root_argument(self, warnings):
+        root = etree.fromstring(u'<html/>')
+        sel = self.sscls(_root=root)
+        self.assertEqual(root, sel._root)
+        warnings.warn.assert_called_once_with(
+            'Argument `_root` is deprecated, use `root` instead',
+            mock.ANY, stacklevel=2)
 
     def test_representation_slice(self):
         body = u"<p><input name='{}' value='\xa9'/></p>".format(50 * 'b')
