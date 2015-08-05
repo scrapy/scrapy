@@ -290,7 +290,7 @@ More importantly ``response`` has a ``selector`` attribute which is an instance 
 :class:`~scrapy.selector.Selector` class, instantiated with this particular ``response``.
 You can run queries on ``response`` by calling ``response.selector.xpath()`` or
 ``response.selector.css()``. There are also some convenience shortcuts like ``response.xpath()``
-or ``response.xml()`` which map directly to ``response.selector.xpath()`` and
+or ``response.css()`` which map directly to ``response.selector.xpath()`` and
 ``response.selector.css()``.
 
 
