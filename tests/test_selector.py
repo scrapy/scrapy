@@ -43,7 +43,7 @@ class SelectorTestCase(unittest.TestCase):
     def test_deprecated_root_argument(self, warnings):
         root = etree.fromstring(u'<html/>')
         sel = self.sscls(_root=root)
-        self.assertEqual(root, sel._root)
+        self.assertIs(root, sel._root)
         warnings.warn.assert_called_once_with(
             'Argument `_root` is deprecated, use `root` instead',
             mock.ANY, stacklevel=2)
