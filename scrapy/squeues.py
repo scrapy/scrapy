@@ -27,6 +27,11 @@ def _pickle_serialize(obj):
         return pickle.dumps(obj, protocol=2)
     except pickle.PicklingError as e:
         raise ValueError(str(e))
+    # Workaround for Twisted bug #7989 present since Twisted 15.3.0
+    except AttributeError as e:
+        if '__qualname__' in str(e):
+            raise ValueError("can't pickle function objects")
+        raise
 
 PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
     _pickle_serialize, pickle.loads)
