@@ -127,7 +127,7 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
     def extract_links(self, response):
         base_url = None
         if self.restrict_xpaths:
-            sel = Selector(response)
+            sel = response.selector
             base_url = get_base_url(response)
             body = u''.join(f
                             for x in self.restrict_xpaths
