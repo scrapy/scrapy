@@ -25,7 +25,7 @@ class Slot(object):
 
     MIN_RESPONSE_SIZE = 1024
 
-    def __init__(self, max_active_size=5000000):
+    def __init__(self, max_active_size=5000000000):
         self.max_active_size = max_active_size
         self.queue = deque()
         self.active = set()
