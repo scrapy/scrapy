@@ -59,9 +59,12 @@ def _py33_pickle_serialize(obj):
 if six.PY2:
     _pickle_serialize = _py27_pickle_serialize
 else:
+    # The following module is imported by twisted.web.server
+    # and has the undesired side effect of altering pickle register
+    import twisted.persisted.styles  # NOQA
     try:
         ## Serializing lambdas must fail or it is a bug
-        pickle.dumps(lambda x: x)
+        pickle.dumps(lambda x: x, protocol=2)
     except pickle.PicklingError:
         _pickle_serialize = _sane_pickle_serialize
     else:
