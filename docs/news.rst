@@ -3,6 +3,16 @@
 Release notes
 =============
 
+1.0.2 (2015-08-06)
+------------------
+
+- Twisted 15.3.0 does not raises PicklingError serializing lambda functions (:commit:`b04dd7d`)
+- Minor method name fix (:commit:`6f85c7f`)
+- minor: scrapy.Spider grammar and clarity (:commit:`9c9d2e0`)
+- Put a blurb about support channels in CONTRIBUTING (:commit:`c63882b`)
+- Fixed typos (:commit:`a9ae7b0`)
+- Fix doc reference. (:commit:`7c8a4fe`)
+
 1.0.1 (2015-07-01)
 ------------------
 
