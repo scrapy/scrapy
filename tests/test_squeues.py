@@ -31,6 +31,8 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
         self.assertEqual(q.pop(), {'a': 'dict'})
 
     def test_nonserializable_object(self):
+        # Trigger Twisted bug #7989
+        import twisted.persisted.styles  # NOQA
         q = self.queue()
         self.assertRaises(ValueError, q.push, lambda x: x)
 
@@ -109,6 +111,8 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
         self.assertEqual(q.pop(), 'a')
 
     def test_nonserializable_object(self):
+        # Trigger Twisted bug #7989
+        import twisted.persisted.styles  # NOQA
         q = self.queue()
         self.assertRaises(ValueError, q.push, lambda x: x)
 
