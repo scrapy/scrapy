@@ -45,8 +45,7 @@ def _py27_pickle_serialize(obj):
 
 # Workaround for Python3.3 bug serializing lambda objects
 def _py33_pickle_serialize(obj):
-    if isinstance(obj, types.FunctionType) \
-            and getattr(obj, "__qualname__", "") == "<lambda>":
+    if isinstance(obj, types.FunctionType) and obj.__name__ == "<lambda>":
         raise ValueError("can't pickle function objects")
 
     try:
@@ -60,12 +59,20 @@ def _py33_pickle_serialize(obj):
 import twisted.persisted.styles  # NOQA
 try:
     _sane_pickle_serialize(lambda x: x)
-except pickle.PicklingError:
+except ValueError:
     _pickle_serialize = _sane_pickle_serialize
 except AttributeError:
     _pickle_serialize = _py27_pickle_serialize
 else:
     _pickle_serialize = _py33_pickle_serialize
+
+# Double check lambdas are not serializables
+try:
+    _pickle_serialize(lambda x: x)
+except ValueError:
+    pass
+else:
+    assert False, "Lambda functions are serializables"
 
 
 PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
