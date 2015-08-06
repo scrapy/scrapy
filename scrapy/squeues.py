@@ -5,7 +5,6 @@ Scheduler queues
 import types
 import marshal
 
-import six
 from six.moves import cPickle as pickle
 from queuelib import queue
 
@@ -56,19 +55,17 @@ def _py33_pickle_serialize(obj):
         raise ValueError(str(e))
 
 
-if six.PY2:
+# The following module is imported by twisted.web.server
+# and has the undesired side effect of altering pickle register
+import twisted.persisted.styles  # NOQA
+try:
+    _sane_pickle_serialize(lambda x: x)
+except pickle.PicklingError:
+    _pickle_serialize = _sane_pickle_serialize
+except AttributeError:
     _pickle_serialize = _py27_pickle_serialize
 else:
-    # The following module is imported by twisted.web.server
-    # and has the undesired side effect of altering pickle register
-    import twisted.persisted.styles  # NOQA
-    try:
-        ## Serializing lambdas must fail or it is a bug
-        pickle.dumps(lambda x: x, protocol=2)
-    except pickle.PicklingError:
-        _pickle_serialize = _sane_pickle_serialize
-    else:
-        _pickle_serialize = _py33_pickle_serialize
+    _pickle_serialize = _py33_pickle_serialize
 
 
 PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
