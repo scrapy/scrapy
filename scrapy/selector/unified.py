@@ -17,10 +17,7 @@ __all__ = ['Selector', 'SelectorList']
 def _st(response, st):
     if st is None:
         return 'xml' if isinstance(response, XmlResponse) else 'html'
-    elif st in ('xml', 'html'):
-        return st
-    else:
-        raise ValueError('Invalid type: %s' % st)
+    return st
 
 
 def _response_from_text(text, st):
