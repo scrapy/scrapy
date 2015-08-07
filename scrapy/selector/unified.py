@@ -48,6 +48,12 @@ class Selector(ParselSelector, object_ref):
         super(Selector, self).__init__(text=text, type=st, root=root, **kwargs)
 
     # Deprecated api
+    @property
+    def _root(self):
+        warnings.warn("Attribute `_root` is deprecated, use `root` instead",
+                      ScrapyDeprecationWarning, stacklevel=2)
+        return self.root
+
     @deprecated(use_instead='.xpath()')
     def select(self, xpath):
         return self.xpath(xpath)

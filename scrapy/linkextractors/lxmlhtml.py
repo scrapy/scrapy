@@ -47,7 +47,7 @@ class LxmlParserLinkExtractor(object):
     def _extract_links(self, selector, response_url, response_encoding, base_url):
         links = []
         # hacky way to get the underlying lxml parsed document
-        for el, attr, attr_val in self._iter_links(selector._root):
+        for el, attr, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             attr_val = urljoin(base_url, attr_val)
             url = self.process_attr(attr_val)
