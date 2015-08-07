@@ -7,4 +7,4 @@ queuelib
 six>=1.5.2
 PyDispatcher>=2.0.5
 service_identity
-parsel>=0.9.2
+parsel>=0.9.3
