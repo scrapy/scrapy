@@ -1,8 +1,17 @@
+import os
 import sys
+import shutil
+import pstats
+import tempfile
 from subprocess import Popen, PIPE
 import unittest
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from scrapy.utils.test import get_testenv
+
 
 class CmdlineTest(unittest.TestCase):
 
@@ -30,3 +39,18 @@ class CmdlineTest(unittest.TestCase):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
                          'override')
 
+    def test_profiling(self):
+        path = tempfile.mkdtemp()
+        filename = os.path.join(path, 'res.prof')
+        try:
+            self._execute('version', '--profile', filename)
+            self.assertTrue(os.path.exists(filename))
+            out = StringIO()
+            stats = pstats.Stats(filename, stream=out)
+            stats.print_stats()
+            out.seek(0)
+            stats = out.read()
+            self.assertIn('scrapy/commands/version.py', stats)
+            self.assertIn('tottime', stats)
+        finally:
+            shutil.rmtree(path)
