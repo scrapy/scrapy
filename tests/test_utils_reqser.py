@@ -20,7 +20,7 @@ class RequestSerializationTest(unittest.TestCase):
             callback='parse_item',
             errback='handle_error',
             method="POST",
-            body="some body",
+            body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
             cookies={'currency': u'руб'},
             encoding='latin-1',

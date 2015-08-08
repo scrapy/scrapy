@@ -15,6 +15,7 @@ except ImportError:
 from PIL import Image
 
 from scrapy.utils.misc import md5sum
+from scrapy.utils.python import to_bytes
 from scrapy.http import Request
 from scrapy.exceptions import DropItem
 #TODO: from scrapy.pipelines.media import MediaPipeline
@@ -138,7 +139,7 @@ class ImagesPipeline(FilesPipeline):
             return self.image_key(url)
         ## end of deprecation warning block
 
-        image_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
@@ -163,7 +164,7 @@ class ImagesPipeline(FilesPipeline):
             return self.thumb_key(url, thumb_id)
         ## end of deprecation warning block
 
-        thumb_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
 
     # deprecated

@@ -26,6 +26,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import to_bytes, to_native_str
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +199,7 @@ class FilesPipeline(MediaPipeline):
             if age_days > self.EXPIRES:
                 return  # returning None force download
 
-            referer = request.headers.get('Referer')
+            referer = _get_referer(request)
             logger.debug(
                 'File (uptodate): Downloaded %(medianame)s from %(request)s '
                 'referred in <%(referer)s>',
@@ -224,7 +225,7 @@ class FilesPipeline(MediaPipeline):
 
     def media_failed(self, failure, request, info):
         if not isinstance(failure.value, IgnoreRequest):
-            referer = request.headers.get('Referer')
+            referer = _get_referer(request)
             logger.warning(
                 'File (unknown-error): Error downloading %(medianame)s from '
                 '%(request)s referred in <%(referer)s>: %(exception)s',
@@ -236,7 +237,7 @@ class FilesPipeline(MediaPipeline):
         raise FileException
 
     def media_downloaded(self, response, request, info):
-        referer = request.headers.get('Referer')
+        referer = _get_referer(request)
 
         if response.status != 200:
             logger.warning(
@@ -330,7 +331,7 @@ class FilesPipeline(MediaPipeline):
             return self.file_key(url)
         ## end of deprecation warning block
 
-        media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
 
@@ -338,3 +339,11 @@ class FilesPipeline(MediaPipeline):
     def file_key(self, url):
         return self.file_path(url)
     file_key._base = True
+
+
+def _get_referer(request):
+    """ Return Referer HTTP header suitable for logging """
+    referrer = request.headers.get('Referer')
+    if referrer is None:
+        return referrer
+    return to_native_str(referrer, errors='replace')
