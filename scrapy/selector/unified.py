@@ -33,10 +33,13 @@ class Selector(ParselSelector, object_ref):
     def __init__(self, response=None, text=None, type=None, root=None, _root=None, **kwargs):
         st = _st(response, type or self._default_type)
 
-        if root is None and _root is not None:
+        if _root is not None:
             warnings.warn("Argument `_root` is deprecated, use `root` instead",
                           ScrapyDeprecationWarning, stacklevel=2)
-            root = _root
+            if root is None:
+                root = _root
+            else:
+                warnings.warn("Ignoring deprecated `_root` argument, using provided `root`")
 
         if text is not None:
             response = _response_from_text(text, st)
