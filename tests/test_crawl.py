@@ -226,3 +226,13 @@ with multiples lines
         s = dict(est[0])
         self.assertEqual(s['engine.spider.name'], crawler.spider.name)
         self.assertEqual(s['len(engine.scraper.slot.active)'], 1)
+
+    @defer.inlineCallbacks
+    def test_graceful_crawl_error_handling(self):
+        crawler = get_crawler(SimpleSpider)
+        class TestError(Exception):
+            pass
+        with mock.patch('scrapy.crawler.ExecutionEngine.open_spider') as mock_os:
+            mock_os.side_effect = TestError
+            yield self.assertFailure(crawler.crawl(), TestError)
+            self.assertFalse(crawler.crawling)

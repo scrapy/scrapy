@@ -72,9 +72,11 @@ class Crawler(object):
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
-        except Exception:
+        except Exception as e:
             self.crawling = False
-            raise
+            if self.engine is not None:
+                yield self.engine.close()
+            raise e
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
