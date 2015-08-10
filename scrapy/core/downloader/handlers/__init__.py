@@ -1,11 +1,15 @@
 """Download handlers for different schemes"""
 
+import logging
 from twisted.internet import defer
 import six
 from scrapy.exceptions import NotSupported, NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy import signals
+
+
+logger = logging.getLogger(__name__)
 
 
 class DownloadHandlers(object):
@@ -39,10 +43,14 @@ class DownloadHandlers(object):
                     'no handler available for that scheme'
             return None
 
-        dhcls = load_object(self._schemes[scheme])
         try:
+            dhcls = load_object(self._schemes[scheme])
             dh = dhcls(self._crawler_settings)
         except NotConfigured as ex:
+            self._notconfigured[scheme] = str(ex)
+            return None
+        except Exception as ex:
+            logger.exception()
             self._notconfigured[scheme] = str(ex)
             return None
         else:
