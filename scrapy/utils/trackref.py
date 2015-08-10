@@ -34,6 +34,7 @@ class object_ref(object):
 
 
 def format_live_refs(ignore=NoneType):
+    """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
     now = time()
     for cls, wdict in sorted(six.iteritems(live_refs),
@@ -50,10 +51,12 @@ def format_live_refs(ignore=NoneType):
 
 
 def print_live_refs(*a, **kw):
+    """Print tracked objects"""
     print(format_live_refs(*a, **kw))
 
 
 def get_oldest(class_name):
+    """Get the oldest object for a specific class name"""
     for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             if not wdict:
@@ -62,6 +65,7 @@ def get_oldest(class_name):
 
 
 def iter_all(class_name):
+    """Iterate over all objects of the same class by its class name"""
     for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             return six.iterkeys(wdict)
