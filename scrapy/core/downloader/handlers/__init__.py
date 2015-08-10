@@ -16,9 +16,9 @@ class DownloadHandlers(object):
 
     def __init__(self, crawler):
         self._crawler_settings = crawler.settings
-        self._schemes = {} # stores acceptable schemes on instancing
-        self._handlers = {} # stores instanced handlers for schemes
-        self._notconfigured = {} # remembers failed handlers
+        self._schemes = {}  # stores acceptable schemes on instancing
+        self._handlers = {}  # stores instanced handlers for schemes
+        self._notconfigured = {}  # remembers failed handlers
         handlers = crawler.settings.get('DOWNLOAD_HANDLERS_BASE')
         handlers.update(crawler.settings.get('DOWNLOAD_HANDLERS', {}))
         for scheme, clspath in six.iteritems(handlers):
@@ -39,8 +39,7 @@ class DownloadHandlers(object):
         if scheme in self._notconfigured:
             return None
         if scheme not in self._schemes:
-            self._notconfigured[scheme] = \
-                    'no handler available for that scheme'
+            self._notconfigured[scheme] = 'no handler available for that scheme'
             return None
 
         path = self._schemes[scheme]
@@ -51,7 +50,7 @@ class DownloadHandlers(object):
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.exception('Loading "{}" for scheme "{}" handler'\
+            logger.exception('Loading "{}" for scheme "{}" handler'
                              .format(path, scheme))
             self._notconfigured[scheme] = str(ex)
             return None
@@ -64,7 +63,7 @@ class DownloadHandlers(object):
         handler = self._get_handler(scheme)
         if not handler:
             raise NotSupported("Unsupported URL scheme '%s': %s" %
-                    (scheme, self._notconfigured[scheme]))
+                               (scheme, self._notconfigured[scheme]))
         return handler.download_request(request, spider)
 
     @defer.inlineCallbacks
