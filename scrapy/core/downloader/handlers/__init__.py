@@ -43,14 +43,16 @@ class DownloadHandlers(object):
                     'no handler available for that scheme'
             return None
 
+        path = self._schemes[scheme]
         try:
-            dhcls = load_object(self._schemes[scheme])
+            dhcls = load_object(path)
             dh = dhcls(self._crawler_settings)
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.exception()
+            logger.exception('Loading "{}" for scheme "{}" handler'\
+                             .format(path, scheme))
             self._notconfigured[scheme] = str(ex)
             return None
         else:
