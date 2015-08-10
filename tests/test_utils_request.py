@@ -71,5 +71,10 @@ class UtilsRequestTest(unittest.TestCase):
         r1 = Request("http://www.example.com", method='POST', headers={"Content-type": b"text/html"}, body=b"Some body")
         self.assertEqual(request_httprepr(r1), b'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
 
+    def test_request_httprepr_for_non_http_request(self):
+        # the representation is not important but it must not fail.
+        request_httprepr(Request("file:///tmp/foo.txt"))
+        request_httprepr(Request("ftp://localhost/tmp/foo.txt"))
+
 if __name__ == "__main__":
     unittest.main()
