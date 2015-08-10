@@ -7,7 +7,7 @@ env:
  - TOXENV=py33
  - TOXENV=docs
 install:
- - pip install -U tox
+ - pip install -U tox twine wheel
 script: tox
 notifications:
   irc:
