@@ -183,6 +183,9 @@ class SelectorList(list):
 
     def extract(self):
         return [x.extract() for x in self]
+    
+    def join(self, delimiter=''):
+        return delimiter.join([x.extract() for x in self])
 
     def extract_first(self, default=None):
         for x in self:
