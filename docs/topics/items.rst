@@ -236,4 +236,9 @@ Field objects
 
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
+Dynamic Items
+=============
+You can create your items dynamically during the runtime even if you didn't specify the items names inside your item class.
+An example of it would be in this repository
+https://github.com/WilliamKinaan/ScrapyDynamicItems
 
