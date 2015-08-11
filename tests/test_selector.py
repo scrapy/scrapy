@@ -33,6 +33,13 @@ class SelectorTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
+    def test_root_base_url(self):
+        body = b'<html><form action="/path"><input name="a" /></form></html>'
+        url = "http://example.com"
+        response = TextResponse(url=url, body=body, encoding='utf-8')
+        sel = Selector(response)
+        self.assertEqual(url, sel.root.base)
+
     def test_deprecated_root_argument(self):
         with warnings.catch_warnings(record=True) as w:
             root = etree.fromstring(u'<html/>')

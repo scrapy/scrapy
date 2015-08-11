@@ -46,6 +46,7 @@ class Selector(ParselSelector, object_ref):
 
         if response is not None:
             text = response.body_as_unicode()
+            kwargs.setdefault('base_url', response.url)
 
         self.response = response
         super(Selector, self).__init__(text=text, type=st, root=root, **kwargs)
