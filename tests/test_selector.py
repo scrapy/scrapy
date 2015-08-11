@@ -101,6 +101,28 @@ class SelectorTestCase(unittest.TestCase):
         assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
             x.__class__.__name__
 
+    def test_deprecated_selector_methods(self):
+        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
+
+        with warnings.catch_warnings(record=True) as w:
+            sel.select('//p')
+            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
+
+        with warnings.catch_warnings(record=True) as w:
+            sel.extract_unquoted()
+            self.assertSubstring('Use .extract() instead', str(w[-1].message))
+
+    def test_deprecated_selectorlist_methods(self):
+        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
+
+        with warnings.catch_warnings(record=True) as w:
+            sel.xpath('//p').select('.')
+            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
+
+        with warnings.catch_warnings(record=True) as w:
+            sel.xpath('//p').extract_unquoted()
+            self.assertSubstring('Use .extract() instead', str(w[-1].message))
+
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 

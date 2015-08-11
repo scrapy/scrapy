@@ -3,7 +3,7 @@ XPath selectors based on lxml
 """
 
 import warnings
-from parsel import Selector as ParselSelector, SelectorList
+from parsel import Selector as ParselSelector, SelectorList as ParselSelectorList
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import to_bytes
 from scrapy.http import HtmlResponse, XmlResponse
@@ -26,9 +26,24 @@ def _response_from_text(text, st):
               body=to_bytes(text, 'utf-8'))
 
 
+class SelectorList(ParselSelectorList, object_ref):
+    @deprecated(use_instead='.extract()')
+    def extract_unquoted(self):
+        return [x.extract_unquoted() for x in self]
+
+    @deprecated(use_instead='.xpath()')
+    def x(self, xpath):
+        return self.select(xpath)
+
+    @deprecated(use_instead='.xpath()')
+    def select(self, xpath):
+        return self.xpath(xpath)
+
+
 class Selector(ParselSelector, object_ref):
 
     __slots__ = ['response']
+    selectorlist_cls = SelectorList
 
     def __init__(self, response=None, text=None, type=None, root=None, _root=None, **kwargs):
         st = _st(response, type or self._default_type)
