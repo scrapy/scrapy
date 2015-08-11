@@ -1,9 +1,6 @@
-import re
 import warnings
 import weakref
-import six
 from twisted.trial import unittest
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
@@ -14,7 +11,7 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_simple_selection(self):
         """Simple selector tests"""
-        body = u"<p><input name='a'value='1'/><input name='b'value='2'/></p>"
+        body = b"<p><input name='a'value='1'/><input name='b'value='2'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf-8')
         sel = Selector(response)
 
@@ -53,7 +50,7 @@ class SelectorTestCase(unittest.TestCase):
             self.assertIn('Ignoring deprecated `_root` argument', str(w[-1].message))
 
     def test_flavor_detection(self):
-        text = u'<div><img src="a.jpg"><p>Hello</div>'
+        text = b'<div><img src="a.jpg"><p>Hello</div>'
         sel = Selector(XmlResponse('http://example.com', body=text, encoding='utf-8'))
         self.assertEqual(sel.type, 'xml')
         self.assertEqual(sel.xpath("//div").extract(),
@@ -86,7 +83,7 @@ class SelectorTestCase(unittest.TestCase):
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
         r1 = TextResponse('http://www.example.com', \
-                          body=u'<html><p>an Jos\xe9 de</p><html>', \
+                          body=b'<html><p>an Jos\xe9 de</p><html>', \
                           encoding='utf-8')
         Selector(r1).xpath('//text()').extract()
 
@@ -100,7 +97,7 @@ class SelectorTestCase(unittest.TestCase):
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 
-    text = u'<div><img src="a.jpg"><p>Hello</div>'
+    text = '<div><img src="a.jpg"><p>Hello</div>'
 
     def test_warnings_xpathselector(self):
         cls = XPathSelector
