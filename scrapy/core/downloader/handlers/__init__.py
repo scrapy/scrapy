@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class DownloadHandlers(object):
 
     def __init__(self, crawler):
-        self._crawler_settings = crawler.settings
+        self._crawler = crawler
         self._schemes = {}  # stores acceptable schemes on instancing
         self._handlers = {}  # stores instanced handlers for schemes
         self._notconfigured = {}  # remembers failed handlers
@@ -45,13 +45,14 @@ class DownloadHandlers(object):
         path = self._schemes[scheme]
         try:
             dhcls = load_object(path)
-            dh = dhcls(self._crawler_settings)
+            dh = dhcls(self._crawler.settings)
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.exception('Loading "{}" for scheme "{}" handler'
-                             .format(path, scheme))
+            logger.error('Loading "%(clspath)s" for scheme "%(scheme)s"',
+                         {"clspath": path, "scheme": scheme},
+                         exc_info=True,  extra={'crawler': self._crawler})
             self._notconfigured[scheme] = str(ex)
             return None
         else:
