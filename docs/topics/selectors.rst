@@ -160,6 +160,11 @@ pseudo-elements::
     >>> response.css('title::text').extract()
     [u'Example website']
 
+.. note::
+
+    These pseudo-elements are **not standard CSS3 syntax**.
+    See :ref:`topics-selectors-css3-extensions` for details.
+
 Now we're going to get the base URL and some image links::
 
     >>> response.xpath('//base/@href').extract()
@@ -195,6 +200,38 @@ Now we're going to get the base URL and some image links::
      u'image3_thumb.jpg',
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
+
+
+.. _topics-selectors-css3-extensions:
+
+Scrapy extensions to CSS selectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPath is very powerful but can be hard to read (and maintain) at times.
+CSS selectors' syntax is much simpler and provides helpful shortcuts
+to common selection patterns, but has less features for extracting data
+from HTML documents.
+
+To bridge the gap between the two (a little) Scrapy has added the following
+extensions as pseudo-elements:
+
+ * ``::text`` selects text nodes that are children of the current element
+ * ``::attr(attribute_name)`` selects the value of the attribute passed
+   as argument for the current element
+
+Scrapy also extends CSS3 selectors with the following `structural pseudo-classes`_,
+similar to the standard ``:first-child``, ``:last-child`` and ``:nth-child()``:
+ * ``:first`` and ``:last`` select first and last elements
+   satisfying the current selectors. For example, if you wanted to
+   select the last row with class "green" from a table, you could use
+   ``table tr.green:last``
+ * ``:nth(an+b)`` is similar to the previous ``:first`` except that you can
+   specify the position of the element you want, using the same *an+b*
+   notation as the other standard `structural pseudo-classes`_.
+   For example, for the 3rd row with class "green" from a table
+   you would use ``table tr.green:nth(3)``
+
+.. _structural pseudo-classes: http://www.w3.org/TR/selectors/#structural-pseudos
 
 .. _topics-selectors-nesting-selectors:
 
