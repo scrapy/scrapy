@@ -4,6 +4,7 @@ XPath selectors based on lxml
 
 from lxml import etree
 import six
+from scrapy.selector.querytranslator import QueryComparison, QueryTranslator
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
@@ -85,6 +86,7 @@ class Selector(object_ref):
             self.namespaces.update(namespaces)
         self._root = _root
         self._expr = _expr
+        self.query = QueryTranslator(self._root)
 
     def xpath(self, query):
         try:
@@ -107,6 +109,12 @@ class Selector(object_ref):
                                  type=self.type)
                   for x in result]
         return SelectorList(result)
+
+    def find(self, attrs, comparison=QueryComparison.equals):
+        return self.query.find(attrs, comparison)
+
+    def inside(self, element):
+        return self.query.inside(element)
 
     def css(self, query):
         return self.xpath(self._css2xpath(query))
