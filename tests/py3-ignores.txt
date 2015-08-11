@@ -25,9 +25,6 @@ tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_proxy_connect.py
-tests/test_selector_csstranslator.py
-tests/test_selector_lxmldocument.py
-tests/test_selector.py
 tests/test_spidermiddleware_depth.py
 tests/test_spidermiddleware_httperror.py
 tests/test_spidermiddleware_offsite.py

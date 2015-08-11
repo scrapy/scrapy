@@ -47,7 +47,7 @@ class LxmlParserLinkExtractor(object):
     def _extract_links(self, selector, response_url, response_encoding, base_url):
         links = []
         # hacky way to get the underlying lxml parsed document
-        for el, attr, attr_val in self._iter_links(selector._root):
+        for el, attr, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             attr_val = urljoin(base_url, attr_val)
             url = self.process_attr(attr_val)
@@ -65,9 +65,8 @@ class LxmlParserLinkExtractor(object):
                 if self.unique else links
 
     def extract_links(self, response):
-        html = Selector(response)
         base_url = get_base_url(response)
-        return self._extract_links(html, response.url, response.encoding, base_url)
+        return self._extract_links(response.selector, response.url, response.encoding, base_url)
 
     def _process_links(self, links):
         """ Normalize and filter extracted links
@@ -95,14 +94,13 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             canonicalize=canonicalize, deny_extensions=deny_extensions)
 
     def extract_links(self, response):
-        html = Selector(response)
         base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [subdoc
                     for x in self.restrict_xpaths
-                    for subdoc in html.xpath(x)]
+                    for subdoc in response.xpath(x)]
         else:
-            docs = [html]
+            docs = [response.selector]
         all_links = []
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)

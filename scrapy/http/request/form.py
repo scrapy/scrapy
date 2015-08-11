@@ -7,6 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from six.moves.urllib.parse import urljoin, urlencode
 import lxml.html
+from parsel.selector import create_root_node
 import six
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
@@ -56,8 +57,8 @@ def _urlencode(seq, enc):
 
 def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
-    from scrapy.selector.lxmldocument import LxmlDocument
-    root = LxmlDocument(response, lxml.html.HTMLParser)
+    text = response.body_as_unicode()
+    root = create_root_node(text, lxml.html.HTMLParser, base_url=response.url)
     forms = root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
