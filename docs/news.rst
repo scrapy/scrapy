@@ -3,6 +3,12 @@
 Release notes
 =============
 
+1.0.3 (2015-08-11)
+------------------
+
+- add service_identity to scrapy install_requires (:commit:`cbc2501`)
+- Workaround for travis#296 (:commit:`66af9cd`)
+
 1.0.2 (2015-08-06)
 ------------------
 
