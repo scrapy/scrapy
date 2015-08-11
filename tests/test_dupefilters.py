@@ -1,5 +1,7 @@
 import hashlib
+import tempfile
 import unittest
+import shutil
 
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
@@ -23,6 +25,27 @@ class RFPDupeFilterTest(unittest.TestCase):
         assert dupefilter.request_seen(r3)
 
         dupefilter.close('finished')
+
+    def test_dupefilter_path(self):
+        r1 = Request('http://scrapytest.org/1')
+        r2 = Request('http://scrapytest.org/2')
+
+        path = tempfile.mkdtemp()
+        try:
+            df = RFPDupeFilter(path)
+            df.open()
+            assert not df.request_seen(r1)
+            assert df.request_seen(r1)
+            df.close('finished')
+
+            df2 = RFPDupeFilter(path)
+            df2.open()
+            assert df2.request_seen(r1)
+            assert not df2.request_seen(r2)
+            assert df2.request_seen(r2)
+            df2.close('finished')
+        finally:
+            shutil.rmtree(path)
 
     def test_request_fingerprint(self):
         """Test if customization of request_fingerprint method will change
