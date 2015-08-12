@@ -13,6 +13,11 @@ Scrapy
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: Wheel Status
+   
+.. image:: http://static.scrapy.org/py3progress/badge.svg
+   :target: https://github.com/scrapy/scrapy/wiki/Python-3-Porting
+   :alt: Python 3 Porting Status
+
 
 Overview
 ========
