@@ -6,12 +6,14 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 import re
-from six.moves.urllib.parse import urlparse
 
-from scrapy.selector.csstranslator import ScrapyHTMLTranslator
-from scrapy.utils.url import url_is_from_any_domain
-from scrapy.utils.url import canonicalize_url, url_is_from_any_domain, url_has_any_extension
+from six.moves.urllib.parse import urlparse
+from parsel.csstranslator import HTMLTranslator
+
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.url import (
+    canonicalize_url, url_is_from_any_domain, url_has_any_extension,
+)
 
 
 # common file extensions that are not followed if they occur in links
@@ -42,7 +44,7 @@ _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'fil
 
 class FilteringLinkExtractor(object):
 
-    _csstranslator = ScrapyHTMLTranslator()
+    _csstranslator = HTMLTranslator()
 
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
                  restrict_xpaths, canonicalize, deny_extensions, restrict_css):
