@@ -1,3 +1,19 @@
 [run]
+branch = true
 include = scrapy/*
-omit = scrapy/xlib*,scrapy/tests*
+omit =
+  tests/*
+  scrapy/xlib/*
+  scrapy/conf.py
+  scrapy/stats.py
+  scrapy/project.py
+  scrapy/utils/decorator.py
+  scrapy/statscol.py
+  scrapy/squeue.py
+  scrapy/log.py
+  scrapy/dupefilter.py
+  scrapy/command.py
+  scrapy/linkextractor.py
+  scrapy/spider.py
+  scrapy/contrib/*
+  scrapy/contrib_exp/*

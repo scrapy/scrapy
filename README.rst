@@ -18,6 +18,10 @@ Scrapy
    :target: https://github.com/scrapy/scrapy/wiki/Python-3-Porting
    :alt: Python 3 Porting Status
 
+.. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
+   :target: http://codecov.io/github/scrapy/scrapy?branch=master
+   :alt: Coverage report
+
 
 Overview
 ========

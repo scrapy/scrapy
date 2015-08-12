@@ -1,4 +1,5 @@
 pytest>=2.6.0
 pytest-twisted
+pytest-cov
 testfixtures
 jmespath
