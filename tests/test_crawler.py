@@ -82,13 +82,22 @@ class CrawlerTestCase(BaseCrawlerTest):
             def update_addons(self, config, addons):
                 addons.spiderargs['addonkey'] = 'addonval'
                 addons.spiderargs['shared'] = 'addonval'
+                addons.spiderargs['defaultkey2'] = 'addonval'
+
+        class ArgumentSpider(DefaultSpider):
+            def __init__(self, defaultkey='def', defaultkey2='def2', **kwargs):
+                super(ArgumentSpider, self).__init__(defaultkey=defaultkey,
+                                                     defaultkey2=defaultkey2,
+                                                     **kwargs)
 
         addonmgr = AddonManager()
         addonmgr.add(MyAddon())
-        crawler = Crawler(DefaultSpider, Settings(), addonmgr)
-        spider = crawler._create_spider('default', cmdlinekey='cmdlineval',
-                                                   shared='cmdlineval')
+        crawler = Crawler(ArgumentSpider, Settings(), addonmgr)
+        spider = crawler._create_spider(cmdlinekey='cmdlineval',
+                                        shared='cmdlineval')
 
+        self.assertEqual(spider.defaultkey, 'def')
+        self.assertEqual(spider.defaultkey2, 'addonval')
         self.assertEqual(spider.addonkey, 'addonval')
         self.assertEqual(spider.shared, 'cmdlineval')
         self.assertEqual(spider.cmdlinekey, 'cmdlineval')

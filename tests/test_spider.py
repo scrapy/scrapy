@@ -98,7 +98,7 @@ class SpiderTest(unittest.TestCase):
         self.spider_class.custom_settings = spider_settings
         settings = Settings(project_settings, priority='project')
 
-        self.spider_class.update_settings(settings)
+        self.spider_class.update_settings({}, settings)
         self.assertEqual(settings.get('TEST1'), 'spider')
         self.assertEqual(settings.get('TEST2'), 'spider')
         self.assertEqual(settings.get('TEST3'), 'project')

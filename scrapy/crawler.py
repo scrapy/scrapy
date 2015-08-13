@@ -88,6 +88,7 @@ class Crawler(object):
 
     def _create_spider(self, *args, **kwargs):
         self.addons.spiderargs.update(kwargs)
+        self.addons._drop_positional_spiderargs(*args)
         return self.spidercls.from_crawler(self, *args, **self.addons.spiderargs)
 
     def _create_engine(self):

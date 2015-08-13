@@ -5,6 +5,7 @@ import re
 import sys
 import hashlib
 from importlib import import_module
+from inspect import getargspec
 from pkgutil import iter_modules
 
 import six
@@ -158,3 +159,12 @@ def md5sum(file):
         m.update(d)
     return m.hexdigest()
 
+
+def get_kwargs(obj):
+    try:
+        argspec = getargspec(obj)
+    except TypeError:
+        return {}
+    if not argspec.defaults:
+        return {}
+    return dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))

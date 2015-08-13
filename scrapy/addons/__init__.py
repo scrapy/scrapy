@@ -1,6 +1,6 @@
 from collections import defaultdict, Mapping
 from importlib import import_module
-from inspect import isclass
+from inspect import isclass, getargspec
 import os
 import six
 import warnings
@@ -13,7 +13,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
 from scrapy.settings import BaseSettings
 from scrapy.utils.conf import config_from_filepath, get_config
-from scrapy.utils.misc import load_module_or_object
+from scrapy.utils.misc import load_module_or_object, get_kwargs
 from scrapy.utils.project import get_project_path
 
 
@@ -490,13 +490,17 @@ class AddonManager(Mapping):
             self._call_if_exists(self[addonname], cbname,
                                  self.configs[addonname], *args, **kwargs)
 
+    def _call_spider(self, cbname, *args, **kwargs):
+        self._call_if_exists(self.spidercls, cbname, self.spiderargs, *args,
+                             **kwargs)
+
     def update_addons(self):
         """Call ``update_addons()`` of all held add-ons.
 
         This will also call ``update_addons()`` of all add-ons that are added
         last minute during the ``update_addons()`` routine of other add-ons.
         """
-        self._call_if_exists(self.spidercls, 'update_addons', self)
+        self._call_spider('update_addons', self)
         called_addons = set()
         while called_addons != set(self):
             for name in set(self).difference(called_addons):
@@ -512,7 +516,7 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, 'update_settings', settings)
-        self._call_if_exists(self.spidercls, 'update_settings', settings)
+        self._call_spider('update_settings', settings)
 
     def check_configuration(self, crawler):
         """Call ``check_configuration()`` of all held add-ons.
@@ -522,7 +526,7 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, 'check_configuration', crawler)
-        self._call_if_exists(self.spidercls, 'check_configuration', crawler)
+        self._call_spider('check_configuration', crawler)
 
 
 from scrapy.addons.builtins import *

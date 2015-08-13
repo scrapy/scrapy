@@ -76,7 +76,7 @@ class Spider(object_ref):
         raise NotImplementedError
 
     @classmethod
-    def update_settings(cls, settings):
+    def update_settings(cls, config, settings):
         settings.setdict(cls.custom_settings or {}, priority='spider')
 
     @classmethod
