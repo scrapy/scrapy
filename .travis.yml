@@ -7,8 +7,11 @@ env:
  - TOXENV=py33
  - TOXENV=docs
 install:
- - pip install -U tox twine wheel
+ - pip install -U tox twine wheel codecov coveralls
 script: tox
+after_success:
+  - codecov
+  - coveralls
 notifications:
   irc:
     use_notice: true

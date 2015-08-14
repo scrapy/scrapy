@@ -154,6 +154,13 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
     ``tox -- tests/test_loader.py``
 
+To see coverage report install `coverage`_ (``pip install coverage``) and run:
+
+    ``coverage report``
+
+see output of ``coverage --help`` for more options like html or xml report.
+
+.. _coverage: https://pypi.python.org/pypi/coverage
 
 Writing tests
 -------------
