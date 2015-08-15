@@ -189,6 +189,16 @@ The S3 hostname where your bucket is located at.
 (e.g. ``s3-us-west-1.amazonaws.com``) You need to specify this if you encounter
 ``socket.error: [Errno 32] Broken pipe``.
 
+.. setting:: AWS_S3_CONTENT_TYPE
+
+AWS_S3_CONTENT_TYPE
+---------------------
+
+Default: ``None``
+
+The ``Content-Type`` header of files being pushed to S3.
+(e.g. ``application/pdf``) For ImagesPipeline, default is ``image/jpeg``.
+
 .. setting:: BOT_NAME
 
 BOT_NAME

@@ -172,6 +172,8 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.AWS_S3_HOST = settings['AWS_S3_HOST']
+        if settings['AWS_S3_CONTENT_TYPE']:
+            s3store.HEADERS['Content-Type'] = settings['AWS_S3_CONTENT_TYPE']
 
         cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
         cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
