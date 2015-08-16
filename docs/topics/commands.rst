@@ -16,6 +16,8 @@ accepts a different set of arguments and options.
 (The ``scrapy deploy`` command has been removed in 1.0 in favor of the
 standalone ``scrapyd-deploy``. See `Deploying your project`_.)
 
+.. _topics-config-settings:
+
 Configuration settings
 ======================
 
@@ -34,8 +36,9 @@ and project-wide settings will override all others, when defined.
 Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
 
-* ``SCRAPY_SETTINGS_MODULE`` (See :ref:`topics-settings-module-envvar`)
+* ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
 * ``SCRAPY_PROJECT``
+* ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
 
 .. _topics-project-structure:
 
