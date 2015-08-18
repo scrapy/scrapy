@@ -6,10 +6,14 @@ Ubuntu packages
 
 .. versionadded:: 0.10
 
-`Scrapinghub`_ publishes apt-gettable packages which are generally fresher than
-those in Ubuntu, and more stable too since they're continuously built from
-`Github repo`_ (master & stable branches) and so they contain the latest bug
-fixes.
+`Scrapinghub`_ publishes debian packages, separated in three different
+distributions: `main` (stable) / `testing` / `unstable`. The
+most updated version will be always in the `unstable` distribution.
+
+The process is:
+ * Take the latest version from `unstable` weeky, copy it to `testing`.
+ * Run real world tests for some days.
+ * If the tests are successful, promote the package from `testing` to `main`.
 
 To use the packages:
 
@@ -20,6 +24,8 @@ To use the packages:
 2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command::
 
     echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
+
+.. note:: Replace `main` with `unstable` if you want to be on the bleeding edge.
 
 3. Update package lists and install the scrapy package:
 
