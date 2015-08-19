@@ -6,6 +6,7 @@ import inspect
 import pkg_resources
 
 import scrapy
+from scrapy.addons import AddonManager
 from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.commands import ScrapyCommand
@@ -118,6 +119,9 @@ def execute(argv=None, settings=None):
         conf.settings = settings
     # ------------------------------------------------------------------
 
+    addons = AddonManager()
+    addons.load_cfg()
+
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
@@ -139,7 +143,7 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings)
+    cmd.crawler_process = CrawlerProcess(settings, addons)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 

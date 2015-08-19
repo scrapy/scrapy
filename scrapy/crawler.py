@@ -6,6 +6,7 @@ import warnings
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
+from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
@@ -23,13 +24,19 @@ logger = logging.getLogger(__name__)
 
 class Crawler(object):
 
-    def __init__(self, spidercls, settings=None):
+    def __init__(self, spidercls, settings=None, addons=None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         self.spidercls = spidercls
         self.settings = settings.copy()
         self.spidercls.update_settings(self.settings)
+
+        self.addons = addons if addons is not None else AddonManager()
+        self.addons.load_settings(self.settings)
+        self.addons.update_addons()
+        self.addons.check_dependency_clashes()
+        self.addons.update_settings(self.settings)
 
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
@@ -69,6 +76,7 @@ class Crawler(object):
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
+            self.addons.check_configuration(self)
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
@@ -111,10 +119,11 @@ class CrawlerRunner(object):
             ":meth:`crawl` and managed by this class."
     )
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, addons=None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
+        self.addons = addons
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
@@ -181,7 +190,7 @@ class CrawlerRunner(object):
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings)
+        return Crawler(spidercls, self.settings, self.addons)
 
     def stop(self):
         """
@@ -223,8 +232,8 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None):
-        super(CrawlerProcess, self).__init__(settings)
+    def __init__(self, settings=None, addons=None):
+        super(CrawlerProcess, self).__init__(settings, addons)
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings)
         log_scrapy_info(self.settings)

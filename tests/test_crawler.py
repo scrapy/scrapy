@@ -2,6 +2,7 @@ import warnings
 import unittest
 
 import scrapy
+from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
@@ -50,6 +51,29 @@ class CrawlerTestCase(BaseCrawlerTest):
 
         self.assertFalse(settings.frozen)
         self.assertTrue(crawler.settings.frozen)
+
+    def test_populate_addons_settings(self):
+        class TestAddon(Addon):
+            name = 'TestAddon'
+            version = '1.0'
+        addonconfig = {'TEST1': 'addon', 'TEST2': 'addon', 'TEST3': 'addon'}
+        class TestAddon2(Addon):
+            name = 'testAddon2'
+            version = '1.0'
+        addonconfig2 = {'TEST': 'addon2'}
+
+        settings = Settings()
+        settings.set('TESTADDON_TEST1', 'project', priority='project')
+        settings.set('TESTADDON_TEST2', 'default', priority='default')
+        addonmgr = AddonManager()
+        addonmgr.add(TestAddon(), addonconfig)
+        addonmgr.add(TestAddon2(), addonconfig2)
+        crawler = Crawler(DefaultSpider, settings, addonmgr)
+
+        self.assertEqual(crawler.settings['TESTADDON_TEST1'], 'project')
+        self.assertEqual(crawler.settings['TESTADDON_TEST2'], 'addon')
+        self.assertEqual(crawler.settings['TESTADDON_TEST3'], 'addon')
+        self.assertEqual(crawler.settings['TESTADDON2_TEST'], 'addon2')
 
     def test_crawler_accepts_dict(self):
         crawler = Crawler(DefaultSpider, {'foo': 'bar'})

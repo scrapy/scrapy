@@ -6,6 +6,7 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
+from scrapy.addons import Addon, AddonManager
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 from tests import mock
@@ -266,3 +267,19 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
+
+    @defer.inlineCallbacks
+    def test_abort_on_addon_failed_check(self):
+        class FailedCheckAddon(Addon):
+            name = 'FailedCheckAddon'
+            version = '1.0'
+            def check_configuration(self, config, crawler):
+                raise ValueError
+        addonmgr = AddonManager()
+        addonmgr.add(FailedCheckAddon())
+        crawler = self.runner.create_crawler(SimpleSpider)
+        crawler.addons = addonmgr
+        # Doesn't work in 'precise' test environment:
+        #with self.assertRaises(ValueError):
+        #    yield crawler.crawl()
+        yield self.assertFailure(crawler.crawl(), ValueError)

@@ -20,7 +20,7 @@ def assert_aws_environ():
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
 
-def get_crawler(spidercls=None, settings_dict=None):
+def get_crawler(spidercls=None, settings_dict=None, addons=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
     priority.
@@ -28,7 +28,7 @@ def get_crawler(spidercls=None, settings_dict=None):
     from scrapy.crawler import CrawlerRunner
     from scrapy.spiders import Spider
 
-    runner = CrawlerRunner(settings_dict)
+    runner = CrawlerRunner(settings_dict, addons)
     return runner.create_crawler(spidercls or Spider)
 
 def get_pythonpath():
