@@ -30,10 +30,10 @@ class Crawler(object):
 
         self.spidercls = spidercls
         self.settings = settings.copy()
-        self.spidercls.update_settings(self.settings)
 
         self.addons = addons if addons is not None else AddonManager()
         self.addons.load_settings(self.settings)
+        self.addons.spidercls = spidercls
         self.addons.update_addons()
         self.addons.check_dependency_clashes()
         self.addons.update_settings(self.settings)

@@ -171,6 +171,7 @@ class AddonManager(Mapping):
     def __init__(self):
         self._addons = {}
         self.configs = {}
+        self.spidercls = None
         self._disable_on_add = []
 
     def __getitem__(self, name):
@@ -473,6 +474,7 @@ class AddonManager(Mapping):
         This will also call ``update_addons()`` of all add-ons that are added
         last minute during the ``update_addons()`` routine of other add-ons.
         """
+        self._call_if_exists(self.spidercls, 'update_addons', self)
         called_addons = set()
         while called_addons != set(self):
             for name in set(self).difference(called_addons):
@@ -488,6 +490,7 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, 'update_settings', settings)
+        self._call_if_exists(self.spidercls, 'update_settings', settings)
 
     def check_configuration(self, crawler):
         """Call ``check_configuration()`` of all held add-ons.
@@ -497,6 +500,7 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, 'check_configuration', crawler)
+        self._call_if_exists(self.spidercls, 'check_configuration', crawler)
 
 
 from scrapy.addons.builtins import *
