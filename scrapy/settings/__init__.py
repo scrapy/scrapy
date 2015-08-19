@@ -14,6 +14,7 @@ from . import default_settings
 SETTINGS_PRIORITIES = {
     'default': 0,
     'command': 10,
+    'addon': 15,
     'project': 20,
     'spider': 30,
     'cmdline': 40,
