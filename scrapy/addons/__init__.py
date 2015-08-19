@@ -171,6 +171,7 @@ class AddonManager(Mapping):
     def __init__(self):
         self._addons = {}
         self.configs = {}
+        self.spiderargs = BaseSettings()
         self.spidercls = None
         self._disable_on_add = []
 
@@ -186,6 +187,27 @@ class AddonManager(Mapping):
 
     def __len__(self):
         return len(self._addons)
+
+    @property
+    def spidercls(self):
+        return self._spidercls
+
+    @spidercls.setter
+    def spidercls(self, value):
+        self._spidercls = value
+        self.spiderargs.update(get_kwargs(value.__init__), priority='default')
+
+    def _drop_positional_spiderargs(self, *args):
+        """For every argument in *args, delete keys from self.spiderargs in the
+        order they are given in the signature of self.spidercls.__init__().
+        """
+        # Names of spidercls.__init__ arguments except for 'self'
+        spargnames = getargspec(self.spidercls.__init__).args[1:]
+        for argname in spargnames[:len(args)]:
+            try:
+                del self.spiderargs[argname]
+            except KeyError:
+                pass
 
     def add(self, addon, config=None):
         """Store an add-on.

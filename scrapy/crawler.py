@@ -87,7 +87,8 @@ class Crawler(object):
             raise e
 
     def _create_spider(self, *args, **kwargs):
-        return self.spidercls.from_crawler(self, *args, **kwargs)
+        self.addons.spiderargs.update(kwargs)
+        return self.spidercls.from_crawler(self, *args, **self.addons.spiderargs)
 
     def _create_engine(self):
         return ExecutionEngine(self, lambda _: self.stop())

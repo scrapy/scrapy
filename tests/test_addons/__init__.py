@@ -16,6 +16,7 @@ from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler
 from scrapy.interfaces import IAddon
 from scrapy.settings import BaseSettings, Settings
+from scrapy.utils.spider import DefaultSpider
 
 from . import addons
 from . import addonmod
@@ -111,6 +112,24 @@ class AddonManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.manager = AddonManager()
+
+    class ArgumentSpider(DefaultSpider):
+        def __init__(self, key1='val1', key2='val2'):
+            super(ArgumentSpider, self).__init__(key1=key1, key2=key2)
+
+    def test_spidercls_property(self):
+        self.manager.spiderargs = BaseSettings({'key2': 'prio'},
+                                               priority='cmdline')
+        self.manager.spidercls = self.ArgumentSpider
+        self.assertIs(self.manager.spidercls, self.ArgumentSpider)
+        self.assertEqual(self.manager.spiderargs,
+                         {'key1': 'val1', 'key2': 'prio'})
+
+    def test_drop_positional_spiderargs(self):
+        self.manager.spiderargs = BaseSettings({'key1': 'val1', 'key2': 'val2'})
+        self.manager.spidercls = self.ArgumentSpider
+        self.manager._drop_positional_spiderargs('positionalval')
+        self.assertEqual(self.manager.spiderargs, {'key2': 'val2'})
 
     def test_add(self):
         manager = AddonManager()

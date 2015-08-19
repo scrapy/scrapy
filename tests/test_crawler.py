@@ -75,6 +75,24 @@ class CrawlerTestCase(BaseCrawlerTest):
         self.assertEqual(crawler.settings['TESTADDON_TEST3'], 'addon')
         self.assertEqual(crawler.settings['TESTADDON2_TEST'], 'addon2')
 
+    def test_addons_set_spider_arguments(self):
+        class MyAddon(Addon):
+            name = 'MyAddon'
+            version = '1.0'
+            def update_addons(self, config, addons):
+                addons.spiderargs['addonkey'] = 'addonval'
+                addons.spiderargs['shared'] = 'addonval'
+
+        addonmgr = AddonManager()
+        addonmgr.add(MyAddon())
+        crawler = Crawler(DefaultSpider, Settings(), addonmgr)
+        spider = crawler._create_spider('default', cmdlinekey='cmdlineval',
+                                                   shared='cmdlineval')
+
+        self.assertEqual(spider.addonkey, 'addonval')
+        self.assertEqual(spider.shared, 'cmdlineval')
+        self.assertEqual(spider.cmdlinekey, 'cmdlineval')
+
     def test_crawler_accepts_dict(self):
         crawler = Crawler(DefaultSpider, {'foo': 'bar'})
         self.assertEqual(crawler.settings['foo'], 'bar')

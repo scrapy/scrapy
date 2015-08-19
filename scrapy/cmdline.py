@@ -142,6 +142,8 @@ def execute(argv=None, settings=None):
     cmd.add_options(parser)
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
+    if parser.has_option('spargs'):
+        addons.spiderargs.update(opts.spargs, priority='cmdline')
 
     cmd.crawler_process = CrawlerProcess(settings, addons)
     _run_print_help(parser, _run_command, cmd, args, opts)
