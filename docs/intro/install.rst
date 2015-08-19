@@ -138,21 +138,14 @@ solutions:
 
       brew update; brew upgrade python
 
-* *(Alternative)* Force system python to load the user installed packages
-  first:
+* *(Optional)* Install Scrapy inside an isolated python environment.
 
-  * Update your ``PYTHONPATH`` variable (Change ``.bashrc`` to ``.zshrc``
-    accordantly if you're using `zsh`_ as default shell)::
+  This method is a workaround for the above OS X issue, but it's an overall
+  good practice for managing dependencies and can complement the first method.
 
-      echo "export PYTHONPATH=/Library/Python/2.7/site-packages:$PYTHONPATH" >> ~/.bashrc
-
-  * Reload ``.bashrc`` to ensure the changes have taken place::
-
-      source ~/.bashrc
-
-  * Install ``pip``::
-
-     sudo easy_install pip
+  `virtualenv`_ is a tool you can use to create virtual environments in python.
+  We recommended reading a tutorial like
+  http://docs.python-guide.org/en/latest/dev/virtualenvs/ to get started.
 
 After any of these workarounds you should be able to install Scrapy::
 
@@ -168,3 +161,4 @@ After any of these workarounds you should be able to install Scrapy::
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
 .. _homebrew: http://brew.sh/
 .. _zsh: http://www.zsh.org/
+.. _virtualenv: https://virtualenv.pypa.io/en/latest/
