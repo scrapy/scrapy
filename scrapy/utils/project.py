@@ -71,3 +71,15 @@ def get_project_settings():
         settings.setdict(env_overrides, priority='project')
 
     return settings
+
+def get_project_path():
+    """Return the Python path of the current project.
+
+    This fails when the settings module does not live in the project's root.
+    """
+    if not inside_project():
+        raise NotConfigured("Not inside a project")
+    settings_module_path = os.environ.get(ENVVAR)
+    if not settings_module_path:
+        raise NotConfigured("Unable to locate project's python path")
+    return settings_module_path.rsplit('.', 1)[0]

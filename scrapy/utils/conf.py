@@ -82,12 +82,18 @@ def init_env(project='default', set_syspath=True):
             sys.path.append(projdir)
 
 
-def get_config(use_closest=True):
-    """Get Scrapy config file as a SafeConfigParser"""
-    sources = get_sources(use_closest)
+def config_from_filepath(sources):
+    """Create a SafeConfigParser and read in the given `sources`, which can be
+    either a filename or a list of filenames."""
     cfg = SafeConfigParser()
     cfg.read(sources)
     return cfg
+
+
+def get_config(use_closest=True):
+    """Get Scrapy config file as a SafeConfigParser"""
+    sources = get_sources(use_closest)
+    return config_from_filepath(sources)
 
 
 def get_sources(use_closest=True):

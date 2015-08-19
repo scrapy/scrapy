@@ -585,6 +585,15 @@ some of them need to be enabled through a setting.
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
+.. setting:: INSTALLED_ADDONS
+
+INSTALLED_ADDONS
+----------------
+
+Default: ``()``
+
+A tuple containing paths to the add-ons enabled in your project. For more
+information, see :ref:`topics-addons`.
 
 .. setting:: ITEM_PIPELINES
 
