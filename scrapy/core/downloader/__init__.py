@@ -7,6 +7,8 @@ from collections import deque
 
 import six
 from twisted.internet import reactor, defer, task
+from queuelib.pqueue import PriorityQueue
+from queuelib.queue import FifoMemoryQueue
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
@@ -25,7 +27,7 @@ class Slot(object):
         self.randomize_delay = randomize_delay
 
         self.active = set()
-        self.queue = deque()
+        self.queue = PriorityQueue(qfactory=lambda p: FifoMemoryQueue())
         self.transferring = set()
         self.lastseen = 0
         self.latercall = None
@@ -130,7 +132,7 @@ class Downloader(object):
 
         slot.active.add(request)
         deferred = defer.Deferred().addBoth(_deactivate)
-        slot.queue.append((request, deferred))
+        slot.queue.push((request, deferred), priority=-request.priority)
         self._process_queue(spider, slot)
         return deferred
 
@@ -150,7 +152,7 @@ class Downloader(object):
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
-            request, deferred = slot.queue.popleft()
+            request, deferred = slot.queue.pop()
             dfd = self._download(slot, request, spider)
             dfd.chainDeferred(deferred)
             # prevent burst if inter-request delays were configured
