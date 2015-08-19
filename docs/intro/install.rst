@@ -117,9 +117,7 @@ solutions:
   that doesn't conflict with the rest of your system. Here's how to do it using
   the `homebrew`_ package manager:
 
-  * Install `homebrew`_::
-
-      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  * Install `homebrew`_ following the instructions in http://brew.sh/
 
   * Update your ``PATH`` variable to state that homebrew packages should be
     used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
