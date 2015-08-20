@@ -241,15 +241,26 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_abort_on_addon_failed_check(self):
+        class AddonError(Exception): pass
         class FailedCheckAddon(Addon):
             name = 'FailedCheckAddon'
             version = '1.0'
             def check_configuration(self, config, crawler):
-                raise ValueError
+                raise AddonError
         addonmgr = AddonManager()
         addonmgr.add(FailedCheckAddon())
         crawler = get_crawler(SimpleSpider, addons=addonmgr)
         # Doesn't work in 'precise' test environment:
         #with self.assertRaises(ValueError):
         #    yield crawler.crawl()
-        yield self.assertFailure(crawler.crawl(), ValueError)
+        yield self.assertFailure(crawler.crawl(), AddonError)
+
+    @defer.inlineCallbacks
+    def test_abort_on_spider_failed_check(self):
+        class SpiderError(Exception): pass
+        class FailedCheckSpider(SimpleSpider):
+            @classmethod
+            def check_configuration(cls, config, crawler):
+                raise SpiderError
+        crawler = get_crawler(FailedCheckSpider)
+        yield self.assertFailure(crawler.crawl(), SpiderError)

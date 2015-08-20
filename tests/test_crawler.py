@@ -1,6 +1,8 @@
 import warnings
 import unittest
 
+import mock
+
 import scrapy
 from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
@@ -63,6 +65,20 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = Crawler(CustomSettingsSpider, settings)
         self.assertIn('GoodAddon', crawler.addons)
         self.assertEqual(crawler.addons.configs['GoodAddon'], addoncfg)
+
+    def test_spidercls_update_callbacks_called(self):
+        class CallbackSpider(DefaultSpider):
+            @classmethod
+            def update_addons(config, addons): pass
+            @classmethod
+            def update_settings(config, settings): pass
+        with mock.patch.object(CallbackSpider, 'update_addons') as mock_ua, \
+                mock.patch.object(CallbackSpider, 'update_settings') as mock_us:
+            addonmgr = AddonManager()
+            settings = Settings()
+            crawler = Crawler(CallbackSpider, settings, addonmgr)
+            mock_ua.assert_called_once_with(addonmgr.spiderargs, addonmgr)
+            mock_us.assert_called_once_with(addonmgr.spiderargs, settings)
 
     def test_populate_addons_settings(self):
         class TestAddon(Addon):
