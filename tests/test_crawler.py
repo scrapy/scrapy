@@ -52,6 +52,18 @@ class CrawlerTestCase(BaseCrawlerTest):
         self.assertFalse(settings.frozen)
         self.assertTrue(crawler.settings.frozen)
 
+    def test_configure_addons_from_spidercls_settings(self):
+        addoncfg = {'testkey': 'testval'}
+        class CustomSettingsSpider(DefaultSpider):
+            custom_settings = {
+                'INSTALLED_ADDONS': ('tests.test_addons.addons.GoodAddon', ),
+                'GOODADDON': addoncfg,
+                }
+        settings = Settings()
+        crawler = Crawler(CustomSettingsSpider, settings)
+        self.assertIn('GoodAddon', crawler.addons)
+        self.assertEqual(crawler.addons.configs['GoodAddon'], addoncfg)
+
     def test_populate_addons_settings(self):
         class TestAddon(Addon):
             name = 'TestAddon'

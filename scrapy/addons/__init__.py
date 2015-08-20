@@ -516,7 +516,8 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, 'update_settings', settings)
-        self._call_spider('update_settings', settings)
+        # Spider's update_settings() is called in crawler's __init__() to allow
+        # enabling/configuring add-ons via spider's custom_settings attribute
 
     def check_configuration(self, crawler):
         """Call ``check_configuration()`` of all held add-ons.
