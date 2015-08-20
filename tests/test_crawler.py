@@ -54,6 +54,17 @@ class CrawlerTestCase(BaseCrawlerTest):
         self.assertFalse(settings.frozen)
         self.assertTrue(crawler.settings.frozen)
 
+    def test_deprecated_spidercls_update_settings_signature(self):
+        class DeprecatedSpider(DefaultSpider):
+            @classmethod
+            def update_settings(cls, settings):
+                settings.set('INSERTED_KEY', 'val')
+        with warnings.catch_warnings(record=True) as w:
+            crawler = Crawler(DeprecatedSpider, Settings())
+            self.assertEqual(crawler.settings['INSERTED_KEY'], 'val')
+            self.assertEqual(len(w), 1)
+            self.assertIn("update_settings()", str(w[0].message))
+
     def test_configure_addons_from_spidercls_settings(self):
         addoncfg = {'testkey': 'testval'}
         class CustomSettingsSpider(DefaultSpider):

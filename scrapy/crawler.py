@@ -33,7 +33,13 @@ class Crawler(object):
 
         self.addons = addons if addons is not None else AddonManager()
         self.addons.spidercls = spidercls
-        self.addons._call_spider('update_settings', self.settings)
+        try:
+            self.addons._call_spider('update_settings', self.settings)
+        except TypeError:
+            warnings.warn('Spider update_settings() method should have '
+                          '(config, settings) signature.',
+                          category=ScrapyDeprecationWarning)
+            self.spidercls.update_settings(self.settings)
         self.addons.load_settings(self.settings)
         self.addons.update_addons()
         self.addons.check_dependency_clashes()
