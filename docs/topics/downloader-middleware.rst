@@ -724,6 +724,12 @@ responses (and pass them through to your spider) you can do this::
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [301, 302]
 
+The ``handle_httpstatus_list`` key of :attr:`Request.meta
+<scrapy.http.Request.meta>` can also be used to specify which response codes to
+allow on a per-request basis. You can also set the meta key
+``handle_httpstatus_all`` to ``True`` if you want to allow any response code
+for a request.
+
 
 RedirectMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

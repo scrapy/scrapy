@@ -55,7 +55,9 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
     def process_response(self, request, response, spider):
         if (request.meta.get('dont_redirect', False) or
-               response.status in getattr(spider, 'handle_httpstatus_list', [])):
+               response.status in getattr(spider, 'handle_httpstatus_list', []) or
+               response.status in request.meta.get('handle_httpstatus_list', []) or
+               request.meta.get('handle_httpstatus_all', False)):
             return response
 
         if request.method == 'HEAD':
