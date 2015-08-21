@@ -385,3 +385,126 @@ Forward to other add-ons depending on Python version::
         _addon = 'path.to.addon'
     else:
         _addon = 'path.to.other.addon'
+
+
+Built-in add-on reference
+=========================
+
+Scrapy comes with gateway add-ons that you can use to configure the built-in
+middlewares and extensions. For example, to activate and configure the
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`, instead
+of placing this in your ``settings.py``::
+
+    HTTPCACHE_ENABLED = True
+    HTTPCACHE_EXPIRATION_SECS = 60
+    HTTPCACHE_IGNORE_HTTP_CODES = [404]
+
+you can also use the add-on framework::
+
+    INSTALLED_ADDONS = (
+        # ...,
+        'httpcache',
+    )
+
+    HTTPCACHE = {
+        'expiration_secs': 60,
+        'ignore_http_codes': [404],
+        }
+
+Note that you *must* enable built-in addons by placing them in your
+``INSTALLED_ADDONS`` setting before you can use them for configuring built-in
+components. I.e., configuring the ``HTTPCACHE`` setting will have no effect
+when ``httpcache`` is not listed in ``INSTALLED_ADDONS``.
+
+In general, the add-on names match the lowercase name of the component, with its
+type suffix removed (i.e. the add-on configuring the
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` is called
+``httpcache``), and the configuration option names match the names of the
+settings they map to, with the component prefix removed (i.e.
+``expiration_secs`` maps to :setting:`HTTPCACHE_EXPIRATION_SECS`, as above).
+The available add-ons are:
+
+
++--------------------------------------+--------------------------------------+
+| Add-on                               | Notes                                |
++======================================+======================================+
+| **Spider middlewares**                                                      |
++--------------------------------------+--------------------------------------+
+| depth (:class:`~scrapy.spidermi\     |                                      |
+| ddlewares.depth.DepthMiddleware`)    |                                      |
++--------------------------------------+--------------------------------------+
+| httperror (:class:`~scrapy.spid\     |                                      |
+| ermiddlewares.httperror.HttpErrorMi\ |                                      |
+| ddleware`)                           |                                      |
++--------------------------------------+--------------------------------------+
+| offsite (:class:`~scrapy.spid\       |                                      |
+| ermiddlewares.offsite.OffsiteMiddle\ |                                      |
+| ware`)                               |                                      |
++--------------------------------------+--------------------------------------+
+| referer (:class:`~scrapy.spid\       |                                      |
+| ermiddlewares.referer.RefererMiddle\ |                                      |
+| ware`)                               |                                      |
++--------------------------------------+--------------------------------------+
+| urllength (:class:`~scrapy.spid\     |                                      |
+| ermiddlewares.urllength.UrlLengthMi\ |                                      |
+| ddleware`)                           |                                      |
++--------------------------------------+--------------------------------------+
+| **Downloader middlewares**                                                  |
++--------------------------------------+--------------------------------------+
+| ajaxcrawl (:class:`~scrapy.download\ |                                      |
+| ermiddlewares.ajaxcrawl.AjaxCrawlMi\ |                                      |
+| ddleware`)                           |                                      |
++--------------------------------------+--------------------------------------+
+| chunked (:class:`~scrapy.download\   |                                      |
+| ermiddlewares.chunked.ChunkedTrans\  |                                      |
+| ferMiddleware`)                      |                                      |
++--------------------------------------+--------------------------------------+
+| cookies (:class:`~scrapy.download\   |                                      |
+| ermiddlewares.cookies.CookiesMiddle\ |                                      |
+| ware`)                               |                                      |
++--------------------------------------+--------------------------------------+
+| defaultheaders (:class:`~scrapy.down\| Every configuration entry is treated |
+| loadermiddlewares.defaultheaders.Def\| as a default header.                 |
+| aultHeadersMiddleware`)              |                                      |
++--------------------------------------+--------------------------------------+
+| **Extensions**                                                              |
++--------------------------------------+--------------------------------------+
+| autothrottle                         | Installing sets                      |
+| (:ref:`topics-autothrottle`)         | :setting:`AUTOTHROTTLE_ENABLED` to   |
+|                                      | ``True``.                            |
++--------------------------------------+--------------------------------------+
+| corestats (:class:`~scrapy.exten\    |                                      |
+| sions.corestats.CoreStats`)          |                                      |
++--------------------------------------+--------------------------------------+
+| closespider (:class:`~scrapy.exten\  |                                      |
+| sions.closespider.CloseSpider`)      |                                      |
++--------------------------------------+--------------------------------------+
+| debugger (:class:`~scrapy.exten\     |                                      |
+| sions.debug.Debugger`)               |                                      |
++--------------------------------------+--------------------------------------+
+| feedexport (:ref:`topics-feed-expor\ |                                      |
+| ts`)                                 |                                      |
++--------------------------------------+--------------------------------------+
+| logstats (:class:`~scrapy.exten\     |                                      |
+| sions.logstats.LogStats`)            |                                      |
++--------------------------------------+--------------------------------------+
+| memdebug (:class:`~scrapy.exten\     | Installing sets                      |
+| sions.memdebug.MemoryDebugger`)      | :setting:`MEMDEBUG_ENABLED` to       |
+|                                      | ``True``.                            |
++--------------------------------------+--------------------------------------+
+| memusage (:class:`~scrapy.exten\     | Installing sets                      |
+| sions.memusage.MemoryUsage`)         | :setting:`MEMUSAGE_ENABLED` to       |
+|                                      | ``True``.                            |
++--------------------------------------+--------------------------------------+
+| spiderstate (:class:`~scrapy.exten\  |                                      |
+| sions.spiderstate.SpiderState`)      |                                      |
++--------------------------------------+--------------------------------------+
+| stacktracedump (:class:`~scrapy.ext\ |                                      |
+| ensions.debug.StackTraceDump`)       |                                      |
++--------------------------------------+--------------------------------------+
+| statsmailer (:class:`~scrapy.exten\  |                                      |
+| sions.statsmailer.StatsMailer`)      |                                      |
++--------------------------------------+--------------------------------------+
+| telnetconsole (:ref:`topics-telnet\  |                                      |
+| console`)                            |                                      |
++--------------------------------------+--------------------------------------+
