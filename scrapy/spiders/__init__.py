@@ -105,8 +105,10 @@ class Spider(object_ref):
         from scrapy.utils.spider import iterate_spider_output
 
         idled = getattr(spider, 'idled', None)
-        if callable(idled):
-            cb_response = iterate_spider_output(idled())
+        if not callable(idled):
+            return
+        cb_response = iterate_spider_output(idled())
+        if cb_response:
             for request in cb_response:
                 spider.crawler.engine.crawl(request, spider)
             raise DontCloseSpider
