@@ -139,6 +139,17 @@ class RedirectMiddlewareTest(unittest.TestCase):
         r = self.mw.process_response(req, rsp, smartspider)
         self.assertIs(r, rsp)
 
+    def test_request_meta_handling(self):
+        url = 'http://www.example.com/301'
+        url2 = 'http://www.example.com/redirected'
+        def _test_passthrough(req):
+            rsp = Response(url, headers={'Location': url2}, status=301, request=req)
+            r = self.mw.process_response(req, rsp, self.spider)
+            self.assertIs(r, rsp)
+        _test_passthrough(Request(url, meta={'handle_httpstatus_list':
+                                                           [404, 301, 302]}))
+        _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
+
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 
