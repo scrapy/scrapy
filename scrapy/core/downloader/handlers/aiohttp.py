@@ -17,36 +17,32 @@ class HTTPDownloadHandler(object):
         self.settings = settings
 
     def download_request(self, request, spider):
+        return _force_deferred(self._download_request(request, spider))
+
+    def _download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
         headers=list((k.decode('latin1'), v.decode('latin1'))
                      for k, vs in request.headers.items()
                      for v in vs)
 
-        dfd = _force_deferred(
-            aiohttp.request(
+        aioresponse = yield from aiohttp.request(
                 method=request.method,
                 url=request.url,
                 data=request.body,
                 allow_redirects=False,
                 headers=headers,
-            ))
-
-        def _on_response(aioresponse):
-            return _force_deferred(aioresponse.read()).addCallback(
-                _on_body, aioresponse=aioresponse)
-
-        def _on_body(body, aioresponse):
-            url = request.url
-            status = aioresponse.status
-            headers = Headers(
-                (k.encode('latin1'), [v.encode('latin1')])
-                for k, v in aioresponse.headers.items()
             )
-            respcls = responsetypes.from_args(headers=headers, url=url)
-            return respcls(url=url, status=status, headers=headers, body=body,
-                           flags=[])
 
-        return dfd.addCallback(_on_response)
+        body = yield from aioresponse.read()
+        url = request.url
+        status = aioresponse.status
+        headers = Headers(
+            (k.encode('latin1'), [v.encode('latin1')])
+            for k, v in aioresponse.headers.items()
+        )
+        respcls = responsetypes.from_args(headers=headers, url=url)
+        return respcls(url=url, status=status, headers=headers, body=body,
+                        flags=[])
 
 
 def _force_deferred(coro):
