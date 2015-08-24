@@ -83,6 +83,15 @@ class Request(object_ref):
 
     __repr__ = __str__
 
+    def keys(self):
+        return ['url', 'method', 'headers', 'body', 'cookies', 'meta',
+                'encoding', 'priority', 'dont_filter', 'callback', 'errback']
+
+    def __getitem__(self, item):
+        if item in self.keys():
+            return getattr(self, item)
+        raise KeyError(item)
+
     def copy(self):
         """Return a copy of this Request"""
         return self.replace()
@@ -91,8 +100,7 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
+        for x in self.keys():
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

@@ -67,6 +67,14 @@ class Response(object_ref):
 
     __repr__ = __str__
 
+    def keys(self):
+        return ['url', 'status', 'headers', 'body', 'request', 'flags']
+
+    def __getitem__(self, item):
+        if item in self.keys():
+            return getattr(self, item)
+        raise KeyError(item)
+
     def copy(self):
         """Return a copy of this Response"""
         return self.replace()
@@ -75,7 +83,7 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body', 'request', 'flags']:
+        for x in self.keys():
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
