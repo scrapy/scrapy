@@ -1,7 +1,5 @@
 import os.path
 import six
-from six.moves.configparser import SafeConfigParser
-import sys
 from tests import mock
 import unittest
 import warnings
@@ -15,7 +13,7 @@ import scrapy.addons
 from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler
 from scrapy.interfaces import IAddon
-from scrapy.settings import BaseSettings, Settings
+from scrapy.settings import BaseSettings
 
 from . import addons
 from . import addonmod

@@ -1,7 +1,5 @@
 from collections import defaultdict, Mapping
-from importlib import import_module
 from inspect import isclass
-import os
 import six
 import warnings
 
@@ -11,7 +9,6 @@ from zope.interface.verify import verifyObject
 
 from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
-from scrapy.settings import BaseSettings
 from scrapy.utils.conf import config_from_filepath, get_config
 from scrapy.utils.misc import load_module_or_object
 from scrapy.utils.project import get_project_path
