@@ -1,6 +1,6 @@
 from collections import defaultdict, Mapping
 from importlib import import_module
-from inspect import isclass, getargspec
+from inspect import isclass
 import os
 import six
 import warnings
@@ -13,8 +13,9 @@ from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
 from scrapy.settings import BaseSettings
 from scrapy.utils.conf import config_from_filepath, get_config
-from scrapy.utils.misc import load_module_or_object, get_kwargs
+from scrapy.utils.misc import load_module_or_object
 from scrapy.utils.project import get_project_path
+from scrapy.utils.python import get_spec, get_func_args
 
 
 @zope.interface.implementer(IAddon)
@@ -195,14 +196,15 @@ class AddonManager(Mapping):
     @spidercls.setter
     def spidercls(self, value):
         self._spidercls = value
-        self.spiderargs.update(get_kwargs(value.__init__), priority='default')
+        if value is not None:
+            spider_kwargs = get_spec(value.__init__)[1]
+            self.spiderargs.update(spider_kwargs, priority='default')
 
     def _drop_positional_spiderargs(self, *args):
         """For every argument in *args, delete keys from self.spiderargs in the
         order they are given in the signature of self.spidercls.__init__().
         """
-        # Names of spidercls.__init__ arguments except for 'self'
-        spargnames = getargspec(self.spidercls.__init__).args[1:]
+        spargnames = get_func_args(self.spidercls.__init__, stripself=True)
         for argname in spargnames[:len(args)]:
             try:
                 del self.spiderargs[argname]
