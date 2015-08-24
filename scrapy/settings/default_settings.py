@@ -66,8 +66,8 @@ DOWNLOAD_DELAY = 0
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
-    'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
-    'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
+    'http': 'scrapy.core.downloader.handlers.aiohttp.HTTPDownloadHandler',
+    'https': 'scrapy.core.downloader.handlers.aiohttp.HTTPDownloadHandler',
     's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
     'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
 }

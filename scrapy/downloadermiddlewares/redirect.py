@@ -60,23 +60,29 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         if request.method == 'HEAD':
             if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
-                redirected_url = urljoin(request.url, response.headers['location'])
+                redirected_url = self._urljoin_location(request, response)
                 redirected = request.replace(url=redirected_url)
                 return self._redirect(redirected, request, spider, response.status)
             else:
                 return response
 
         if response.status in [302, 303] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
+            redirected_url = self._urljoin_location(request, response)
             redirected = self._redirect_request_using_get(request, redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
         if response.status in [301, 307] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
+            redirected_url = self._urljoin_location(request, response)
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
         return response
+
+    def _urljoin_location(self, request, response):
+        return urljoin(
+            request.url,
+            response.headers['location'].decode('latin1')
+        )
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):

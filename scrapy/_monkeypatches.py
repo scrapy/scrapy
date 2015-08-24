@@ -1,4 +1,5 @@
 import sys
+import six
 from six.moves import copyreg
 
 if sys.version_info[0] == 2:
@@ -14,6 +15,10 @@ if sys.version_info[0] == 2:
         from urlparse import uses_query
         uses_query.append('s3')
 
+# Enable asyncio reactor
+if six.PY3:
+    from txtulip.reactor import install
+    install()
 
 # Undo what Twisted's perspective broker adds to pickle register
 # to prevent bugs like Twisted#7989 while serializing requests
