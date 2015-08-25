@@ -1,6 +1,5 @@
 import os
 import sys
-import warnings
 from operator import itemgetter
 
 import six
@@ -8,6 +7,7 @@ from six.moves.configparser import SafeConfigParser
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
+from scrapy.utils.python import without_none_values
 
 
 def build_component_list(compdict, convert=update_classpath):
@@ -37,13 +37,8 @@ def build_component_list(compdict, convert=update_classpath):
     if isinstance(compdict, (list, tuple)):
         _check_components(compdict)
         return type(compdict)(convert(c) for c in compdict)
-    compdict = remove_none_values(_map_keys(compdict))
+    compdict = without_none_values(_map_keys(compdict))
     return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
-
-
-def remove_none_values(compdict):
-    """Return dict with all pairs that have value 'None' removed"""
-    return {k: v for k, v in six.iteritems(compdict) if v is not None}
 
 
 def arglist_to_dict(arglist):

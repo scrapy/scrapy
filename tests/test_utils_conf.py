@@ -1,8 +1,7 @@
 import unittest
 
 from scrapy.settings import BaseSettings
-from scrapy.utils.conf import (build_component_list, arglist_to_dict,
-                               remove_none_values)
+from scrapy.utils.conf import build_component_list, arglist_to_dict
 
 
 class BuildComponentListTest(unittest.TestCase):
@@ -52,12 +51,6 @@ class BuildComponentListTest(unittest.TestCase):
 
 
 class UtilsConfTestCase(unittest.TestCase):
-
-    def test_remove_none_values(self):
-        comps = {'one': 1, 'none': None, 'three': 3, 'four': 4}
-        compscopy = dict(comps)
-        del compscopy['none']
-        self.assertEqual(remove_none_values(comps), compscopy)
 
     def test_arglist_to_dict(self):
         self.assertEqual(arglist_to_dict(['arg1=val1', 'arg2=val2']),

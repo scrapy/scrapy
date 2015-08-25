@@ -4,9 +4,9 @@ import logging
 from twisted.internet import defer
 import six
 from scrapy.exceptions import NotSupported, NotConfigured
-from scrapy.utils.conf import remove_none_values
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import without_none_values
 from scrapy import signals
 
 
@@ -20,7 +20,7 @@ class DownloadHandlers(object):
         self._schemes = {}  # stores acceptable schemes on instancing
         self._handlers = {}  # stores instanced handlers for schemes
         self._notconfigured = {}  # remembers failed handlers
-        handlers = remove_none_values(crawler.settings._getcomposite('DOWNLOAD_HANDLERS'))
+        handlers = without_none_values(crawler.settings._getcomposite('DOWNLOAD_HANDLERS'))
         for scheme, clspath in six.iteritems(handlers):
             self._schemes[scheme] = clspath
 

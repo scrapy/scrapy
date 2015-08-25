@@ -6,7 +6,8 @@ import six
 
 from scrapy.utils.python import (
     memoizemethod_noargs, isbinarytext, equal_attributes,
-    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode)
+    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
+    without_none_values)
 
 __doctests__ = ['scrapy.utils.python']
 
@@ -211,6 +212,13 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(six.text_type.split), [])
         self.assertEqual(get_func_args(" ".join), [])
         self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+
+    def test_without_none_values(self):
+        self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
+        self.assertEqual(without_none_values((1, None, 3, 4)), (1, 3, 4))
+        self.assertEqual(
+            without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
+            {'one': 1, 'three': 3, 'four': 4})
 
 if __name__ == "__main__":
     unittest.main()

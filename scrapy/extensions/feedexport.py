@@ -18,11 +18,11 @@ from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
 from scrapy import signals
-from scrapy.utils.conf import remove_none_values
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +196,7 @@ class FeedExporter(object):
         return item
 
     def _load_components(self, setting_prefix):
-        conf = remove_none_values(self.settings._getcomposite(setting_prefix))
+        conf = without_none_values(self.settings._getcomposite(setting_prefix))
         d = {}
         for k, v in conf.items():
             try:
