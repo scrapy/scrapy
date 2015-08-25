@@ -2,7 +2,7 @@ import six
 import json
 import copy
 import warnings
-from collections import Mapping, MutableMapping
+from collections import MutableMapping
 from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
