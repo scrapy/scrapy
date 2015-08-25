@@ -20,7 +20,6 @@ tests/test_downloadermiddleware_retry.py
 tests/test_downloadermiddleware_stats.py
 tests/test_downloadermiddleware_useragent.py
 tests/test_engine.py
-tests/test_logformatter.py
 tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
