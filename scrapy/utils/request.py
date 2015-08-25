@@ -8,7 +8,6 @@ import hashlib
 import weakref
 from six.moves.urllib.parse import urlunparse
 
-from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 from scrapy.utils.python import to_bytes, to_native_str
 
@@ -86,3 +85,10 @@ def request_httprepr(request):
     s += request.body
     return s
 
+
+def referer_str(request):
+    """ Return Referer HTTP header suitable for logging. """
+    referrer = request.headers.get('Referer')
+    if referrer is None:
+        return referrer
+    return to_native_str(referrer, errors='replace')
