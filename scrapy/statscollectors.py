@@ -50,6 +50,7 @@ class StatsCollector(object):
     def _persist_stats(self, stats, spider):
         pass
 
+
 class MemoryStatsCollector(StatsCollector):
 
     def __init__(self, crawler):
