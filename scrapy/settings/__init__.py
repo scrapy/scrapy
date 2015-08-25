@@ -19,6 +19,7 @@ SETTINGS_PRIORITIES = {
     'cmdline': 40,
 }
 
+
 def get_settings_priority(priority):
     """
     Small helper function that looks up a given string priority in the
@@ -196,8 +197,8 @@ class BaseSettings(MutableMapping):
 
     def _getcomposite(self, name):
         # DO NOT USE THIS FUNCTION IN YOUR CUSTOM PROJECTS
-        # It's for internal use in the transition away from the _BASE settings and
-        # will be removed along with _BASE support in a future release
+        # It's for internal use in the transition away from the _BASE settings
+        # and will be removed along with _BASE support in a future release
         basename = name + "_BASE"
         if basename in self:
             warnings.warn('_BASE settings are deprecated.',
@@ -481,6 +482,7 @@ def iter_default_settings():
     for name in dir(default_settings):
         if name.isupper():
             yield name, getattr(default_settings, name)
+
 
 def overridden_settings(settings):
     """Return a dict of the settings that have been overridden"""
