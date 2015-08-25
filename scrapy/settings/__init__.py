@@ -378,7 +378,8 @@ class BaseSettings(MutableMapping):
     def __str__(self):
         return str(self.attributes)
 
-    __repr__ = __str__
+    def __repr__(self):
+        return "<%s %s>" % (self.__class__.__name__, self.attributes)
 
     @property
     def overrides(self):
