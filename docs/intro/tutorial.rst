@@ -83,8 +83,8 @@ sites, we define fields for each of these three attributes. To do that, we edit
         link = scrapy.Field()
         desc = scrapy.Field()
 
-This may seem complicated at first, but defining the item allows you to use other handy
-components of Scrapy that need to know what does your item look like.
+This may seem complicated at first, but defining an item class allows you to use other handy
+components and helpers within Scrapy.
 
 Our first Spider
 ================
