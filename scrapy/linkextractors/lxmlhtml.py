@@ -7,7 +7,7 @@ from six.moves.urllib.parse import urlparse, urljoin
 import lxml.etree as etree
 
 from scrapy.link import Link
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.response import get_base_url
@@ -60,7 +60,7 @@ class LxmlParserLinkExtractor(object):
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
-                nofollow=True if el.get('rel') == 'nofollow' else False)
+                        nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
         return self._deduplicate_if_needed(links)
 

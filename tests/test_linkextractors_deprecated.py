@@ -149,12 +149,14 @@ class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
         html = """
         <a href="page.html?action=print" rel="nofollow">Printer-friendly page</a>
         <a href="about.html">About us</a>
+        <a href="http://google.com/something" rel="external nofollow">Something</a>
         """
         response = HtmlResponse("http://example.org/page.html", body=html)
         lx = SgmlLinkExtractor()
         self.assertEqual([link for link in lx.extract_links(response)], [
             Link(url='http://example.org/page.html?action=print', text=u'Printer-friendly page', nofollow=True),
             Link(url='http://example.org/about.html', text=u'About us', nofollow=False),
+            Link(url='http://google.com/something', text=u'Something', nofollow=True),
         ])
 
 

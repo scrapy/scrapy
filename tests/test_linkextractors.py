@@ -112,6 +112,9 @@ class Base:
             <div>
             <p><a href="/nofollow2.html" rel="blah">Choose to follow or not</a></p>
             </div>
+            <div>
+            <p><a href="http://google.com/something" rel="external nofollow">External link not to follow</a></p>
+            </div>
             </body></html>"""
             response = HtmlResponse("http://example.org/somepage/index.html", body=html)
 
@@ -121,6 +124,7 @@ class Base:
                 Link(url='http://example.org/follow.html', text=u'Follow this link'),
                 Link(url='http://example.org/nofollow.html', text=u'Dont follow this one', nofollow=True),
                 Link(url='http://example.org/nofollow2.html', text=u'Choose to follow or not'),
+                Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True),
             ])
 
         def test_matches(self):
@@ -369,6 +373,9 @@ class Base:
         <div>
         <p><a href="/nofollow2.html" rel="blah">Choose to follow or not</a></p>
         </div>
+        <div>
+        <p><a href="http://google.com/something" rel="external nofollow">External link not to follow</a></p>
+        </div>
     </body>
     </html>
             """
@@ -380,7 +387,8 @@ class Base:
                              [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
                               Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
                               Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
+                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
+                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
                             )
 
             response = XmlResponse("http://example.com/index.xhtml", body=xhtml)
@@ -390,7 +398,8 @@ class Base:
                              [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
                               Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
                               Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
+                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
+                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
                             )
 
         def test_link_wrong_href(self):
