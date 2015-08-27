@@ -5,6 +5,7 @@ See documentation in docs/topics/shell.rst
 """
 from __future__ import print_function
 
+import os
 import signal
 import warnings
 
@@ -21,6 +22,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.console import start_python_console
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
 class Shell(object):
@@ -52,7 +55,29 @@ class Shell(object):
         if self.code:
             print(eval(self.code, globals(), self.vars))
         else:
-            start_python_console(self.vars)
+            """
+            Detect interactive shell setting in scrapy.cfg
+            e.g.: ~/.config/scrapy.cfg or ~/.scrapy.cfg
+            [settings]
+            # shell can be one of ipython, bpython or python;
+            # to be used as the interactive python console, if available.
+            # (default is ipython, fallbacks in the order listed above)
+            shell = python
+            """
+            cfg = get_config()
+            section, option = 'settings', 'shell'
+            env = os.environ.get('SCRAPY_PYTHON_SHELL')
+            shells = []
+            if env:
+                shells += env.strip().lower().split(',')
+            elif cfg.has_option(section, option):
+                shells += [cfg.get(section, option).strip().lower()]
+            else:  # try all by default
+                shells += DEFAULT_PYTHON_SHELLS.keys()
+            # always add standard shell as fallback
+            shells += ['python']
+            start_python_console(self.vars, shells=shells,
+                                 banner=self.vars.pop('banner', ''))
 
     def _schedule(self, request, spider):
         spider = self._open_spider(request, spider)
@@ -103,21 +128,25 @@ class Shell(object):
         self.vars['shelp'] = self.print_help
         self.update_vars(self.vars)
         if not self.code:
-            self.print_help()
+            self.vars['banner'] = self.get_help()
 
     def print_help(self):
-        self.p("Available Scrapy objects:")
+        print(self.get_help())
+
+    def get_help(self):
+        b = []
+        b.append("Available Scrapy objects:")
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
-                self.p("  %-10s %s" % (k, v))
-        self.p("Useful shortcuts:")
-        self.p("  shelp()           Shell help (print this help)")
+                b.append("  %-10s %s" % (k, v))
+        b.append("Useful shortcuts:")
+        b.append("  shelp()           Shell help (print this help)")
         if self.inthread:
-            self.p("  fetch(req_or_url) Fetch request (or URL) and update local objects")
-        self.p("  view(response)    View response in a browser")
+            b.append("  fetch(req_or_url) Fetch request (or URL) and "
+                     "update local objects")
+        b.append("  view(response)    View response in a browser")
 
-    def p(self, line=''):
-        print("[s] %s" % line)
+        return "\n".join(["[s] %s" % l for l in b])
 
     def _is_relevant(self, value):
         return isinstance(value, self.relevant_classes)
@@ -141,6 +170,7 @@ def _request_deferred(request):
     """
     request_callback = request.callback
     request_errback = request.errback
+
     def _restore_callbacks(result):
         request.callback = request_callback
         request.errback = request_errback
