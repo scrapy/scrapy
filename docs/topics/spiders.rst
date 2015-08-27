@@ -108,7 +108,7 @@ scrapy.Spider
 
    .. attribute:: settings
 
-      Configuration on which this spider is been ran. This is a
+      Configuration for running this spider. This is a
       :class:`~scrapy.settings.Settings` instance, see the
       :ref:`topics-settings` topic for a detailed introduction on this subject.
 
@@ -122,12 +122,12 @@ scrapy.Spider
 
        This is the class method used by Scrapy to create your spiders.
 
-       You probably won't need to override this directly, since the default
+       You probably won't need to override this directly because the default
        implementation acts as a proxy to the :meth:`__init__` method, calling
        it with the given arguments `args` and named arguments `kwargs`.
 
        Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
-       attributes in the new instance, so they can be accessed later inside the
+       attributes in the new instance so they can be accessed later inside the
        spider's code.
 
        :param crawler: crawler to which the spider will be bound
