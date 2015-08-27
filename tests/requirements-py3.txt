@@ -3,3 +3,6 @@ pytest-twisted
 pytest-cov
 testfixtures
 jmespath
+# optional for shell wrapper tests
+bpython
+ipython
