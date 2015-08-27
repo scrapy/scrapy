@@ -1,5 +1,8 @@
 import re
 import unittest
+
+import pytest
+
 from scrapy.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
@@ -9,7 +12,7 @@ from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from tests import get_testdata
 
 
-class LinkExtractorTestCase(unittest.TestCase):
+class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
     def test_basic(self):
         html = """<html><head><title>Page title<title>
         <body><p><a href="item/12.html">Item 12</a></p>
@@ -92,30 +95,21 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), True)
 
-    def test_link_nofollow(self):
-        html = """
-        <a href="page.html?action=print" rel="nofollow">Printer-friendly page</a>
-        <a href="about.html">About us</a>
-        """
-        response = HtmlResponse("http://example.org/page.html", body=html)
-        lx = SgmlLinkExtractor()
-        self.assertEqual([link for link in lx.extract_links(response)], [
-            Link(url='http://example.org/page.html?action=print', text=u'Printer-friendly page', nofollow=True),
-            Link(url='http://example.org/about.html', text=u'About us', nofollow=False),
-        ])
 
-
-class SgmlLinkExtractorTestCase(unittest.TestCase):
-    extractor_cls = SgmlLinkExtractor
+class BaseLinkExtractorTestCase(unittest.TestCase):
+    extractor_cls = None
 
     def setUp(self):
+        if self.extractor_cls is None:
+            raise unittest.SkipTest()
         body = get_testdata('link_extractor', 'sgml_linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_urls_type(self):
-        '''Test that the resulting urls are regular strings and not a unicode objects'''
+        ''' Test that the resulting urls are str objects '''
         lx = self.extractor_cls()
-        self.assertTrue(all(isinstance(link.url, str) for link in lx.extract_links(self.response)))
+        self.assertTrue(all(isinstance(link.url, str)
+                            for link in lx.extract_links(self.response)))
 
     def test_extraction(self):
         '''Test the extractor's behaviour among different situations'''
@@ -271,7 +265,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
     def test_restrict_xpaths_with_html_entities(self):
         html = '<html><body><p><a href="/&hearts;/you?c=&euro;">text</a></p></body></html>'
         response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
-        links = SgmlLinkExtractor(restrict_xpaths='//p').extract_links(response)
+        links = self.extractor_cls(restrict_xpaths='//p').extract_links(response)
         self.assertEqual(links,
                          [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
 
@@ -326,7 +320,8 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://known.fm/AC%2FDC/?page=2', text=u'BinB', fragment='', nofollow=False),
         ])
 
-    def test_deny_extensions(self):
+    def test_ignored_extensions(self):
+        # jpg is ignored by default
         html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
         response = HtmlResponse("http://example.org/", body=html)
         lx = self.extractor_cls()
@@ -334,9 +329,10 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.org/page.html', text=u'asd'),
         ])
 
-        lx = SgmlLinkExtractor(deny_extensions="jpg")
+        # override denied extensions
+        lx = self.extractor_cls(deny_extensions=['html'])
         self.assertEqual(lx.extract_links(response), [
-            Link(url='http://example.org/page.html', text=u'asd'),
+            Link(url='http://example.org/photo.jpg'),
         ])
 
     def test_process_value(self):
@@ -387,13 +383,6 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
 
         lx = self.extractor_cls(attrs=None)
         self.assertEqual(lx.extract_links(self.response), [])
-
-        html = """<html><area href="sample1.html"></area><a ref="sample2.html">sample text 2</a></html>"""
-        response = HtmlResponse("http://example.com/index.html", body=html)
-        lx = SgmlLinkExtractor(attrs=("href"))
-        self.assertEqual(lx.extract_links(response), [
-            Link(url='http://example.com/sample1.html', text=u''),
-        ])
 
     def test_tags(self):
         html = """<html><area href="sample1.html"></area><a href="sample2.html">sample 2</a><img src="sample2.jpg"/></html>"""
@@ -505,7 +494,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         ])
 
 
-class LxmlLinkExtractorTestCase(SgmlLinkExtractorTestCase):
+class LxmlLinkExtractorTestCase(BaseLinkExtractorTestCase):
     extractor_cls = LxmlLinkExtractor
 
     def test_link_wrong_href(self):
@@ -520,6 +509,10 @@ class LxmlLinkExtractorTestCase(SgmlLinkExtractorTestCase):
             Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
         ])
+
+    @pytest.mark.xfail
+    def test_restrict_xpaths_with_html_entities(self):
+        super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 
 
 class HtmlParserLinkExtractorTestCase(unittest.TestCase):
@@ -552,6 +545,39 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
         ])
 
 
+class SgmlLinkExtractorTestCase(BaseLinkExtractorTestCase):
+    extractor_cls = SgmlLinkExtractor
+
+    def test_deny_extensions(self):
+        html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
+        response = HtmlResponse("http://example.org/", body=html)
+        lx = SgmlLinkExtractor(deny_extensions="jpg")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.org/page.html', text=u'asd'),
+        ])
+
+    def test_attrs_sgml(self):
+        html = """<html><area href="sample1.html"></area>
+        <a ref="sample2.html">sample text 2</a></html>"""
+        response = HtmlResponse("http://example.com/index.html", body=html)
+        lx = SgmlLinkExtractor(attrs="href")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+        ])
+
+    def test_link_nofollow(self):
+        html = """
+        <a href="page.html?action=print" rel="nofollow">Printer-friendly page</a>
+        <a href="about.html">About us</a>
+        """
+        response = HtmlResponse("http://example.org/page.html", body=html)
+        lx = SgmlLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/page.html?action=print', text=u'Printer-friendly page', nofollow=True),
+            Link(url='http://example.org/about.html', text=u'About us', nofollow=False),
+        ])
+
+
 class RegexLinkExtractorTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -579,7 +605,3 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
         ])
-
-
-if __name__ == "__main__":
-    unittest.main()
