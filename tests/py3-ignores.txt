@@ -5,7 +5,6 @@ tests/test_commands.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
-tests/test_crawler.py
 tests/test_downloader_handlers.py
 tests/test_downloadermiddleware_ajaxcrawlable.py
 tests/test_downloadermiddleware_defaultheaders.py
@@ -24,10 +23,7 @@ tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_proxy_connect.py
-tests/test_spidermiddleware_depth.py
 tests/test_spidermiddleware_httperror.py
-tests/test_spidermiddleware_offsite.py
-tests/test_spidermiddleware_referer.py
 tests/test_utils_iterators.py
 tests/test_utils_template.py
 tests/test_webclient.py
