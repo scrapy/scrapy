@@ -178,6 +178,27 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+.. setting:: AWS_S3_HOST
+
+AWS_S3_HOST
+---------------------
+
+Default: ``NoHostProvided``
+
+The S3 hostname where your bucket is located at.
+(e.g. ``s3-us-west-1.amazonaws.com``) You need to specify this if you encounter
+``socket.error: [Errno 32] Broken pipe``.
+
+.. setting:: AWS_S3_CONTENT_TYPE
+
+AWS_S3_CONTENT_TYPE
+---------------------
+
+Default: ``None``
+
+The ``Content-Type`` header of files being pushed to S3.
+(e.g. ``application/pdf``) For ImagesPipeline, default is ``image/jpeg``.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -749,8 +770,8 @@ Default: ``60.0``
 Scope: ``scrapy.extensions.memusage``
 
 The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
-checks the current memory usage, versus the limits set by 
-:setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`, 
+checks the current memory usage, versus the limits set by
+:setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`,
 at fixed time intervals.
 
 This sets the length of these intervals, in seconds.
