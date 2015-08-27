@@ -39,7 +39,7 @@ IGNORED_EXTENSIONS = [
 
 _re_type = type(re.compile("", 0))
 _matches = lambda url, regexs: any((r.search(url) for r in regexs))
-_is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file'}
 
 
 class FilteringLinkExtractor(object):
@@ -51,8 +51,10 @@ class FilteringLinkExtractor(object):
 
         self.link_extractor = link_extractor
 
-        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
-        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
+        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x)
+                          for x in arg_to_iter(allow)]
+        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x)
+                         for x in arg_to_iter(deny)]
 
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
@@ -64,7 +66,7 @@ class FilteringLinkExtractor(object):
         self.canonicalize = canonicalize
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
-        self.deny_extensions = set(['.' + e for e in arg_to_iter(deny_extensions)])
+        self.deny_extensions = {'.' + e for e in arg_to_iter(deny_extensions)}
 
     def _link_allowed(self, link):
         if not _is_valid_url(link.url):
@@ -103,6 +105,7 @@ class FilteringLinkExtractor(object):
 
     def _extract_links(self, *args, **kwargs):
         return self.link_extractor._extract_links(*args, **kwargs)
+
 
 # Top-level imports
 from .lxmlhtml import LxmlLinkExtractor as LinkExtractor

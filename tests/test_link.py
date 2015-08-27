@@ -1,7 +1,9 @@
 import unittest
 import warnings
+import six
 
 from scrapy.link import Link
+
 
 class LinkTest(unittest.TestCase):
 
@@ -43,9 +45,15 @@ class LinkTest(unittest.TestCase):
         l2 = eval(repr(l1))
         self._assert_same_links(l1, l2)
 
-    def test_unicode_url(self):
+    def test_non_str_url(self):
         with warnings.catch_warnings(record=True) as w:
-            link = Link(u"http://www.example.com/\xa3")
-            self.assertIsInstance(link.url, bytes)
-            self.assertEqual(link.url, b'http://www.example.com/\xc2\xa3')
-            assert len(w) == 1, "warning not issued"
+            if six.PY2:
+                link = Link(u"http://www.example.com/\xa3")
+                self.assertIsInstance(link.url, str)
+                self.assertEqual(link.url, b'http://www.example.com/\xc2\xa3')
+            else:
+                link = Link(b"http://www.example.com/\xc2\xa3")
+                self.assertIsInstance(link.url, str)
+                self.assertEqual(link.url, u'http://www.example.com/\xa3')
+
+        assert len(w) == 1, "warning not issued"

@@ -1,16 +1,14 @@
 """
 Link extractor based on lxml.html
 """
-
-import re
+import six
 from six.moves.urllib.parse import urlparse, urljoin
 
 import lxml.etree as etree
 
-from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import unique as unique_list
+from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.response import get_base_url
 
@@ -20,8 +18,9 @@ XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
 
 _collect_string_content = etree.XPath("string()")
 
+
 def _nons(tag):
-    if isinstance(tag, basestring):
+    if isinstance(tag, six.string_types):
         if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE)+1] == XHTML_NAMESPACE:
             return tag.split('}')[-1]
     return tag
@@ -57,16 +56,13 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            if isinstance(url, unicode):
-                url = url.encode(response_encoding)
+            url = to_native_str(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
                 nofollow=True if el.get('rel') == 'nofollow' else False)
             links.append(link)
-
-        return unique_list(links, key=lambda link: link.url) \
-                if self.unique else links
+        return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
         base_url = get_base_url(response)
@@ -77,7 +73,11 @@ class LxmlParserLinkExtractor(object):
 
         The subclass should override it if neccessary
         """
-        links = unique_list(links, key=lambda link: link.url) if self.unique else links
+        return self._deduplicate_if_needed(links)
+
+    def _deduplicate_if_needed(self, links):
+        if self.unique:
+            return unique_list(links, key=lambda link: link.url)
         return links
 
 
@@ -110,4 +110,3 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
         return unique_list(all_links)
-
