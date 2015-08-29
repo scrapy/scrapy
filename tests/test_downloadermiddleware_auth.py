@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.http import Request
-from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
+from scrapy.downloadermiddlewares.auth import AuthMiddleware
 from scrapy.spiders import Spider
 
 
@@ -10,10 +10,10 @@ class TestSpider(Spider):
     http_pass = 'bar'
 
 
-class HttpAuthMiddlewareTest(unittest.TestCase):
+class AuthMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        self.mw = HttpAuthMiddleware()
+        self.mw = AuthMiddleware()
         self.spider = TestSpider('foo')
         self.mw.spider_opened(self.spider)
 
