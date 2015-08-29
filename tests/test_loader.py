@@ -707,6 +707,11 @@ class SubselectorLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], [u'http://www.scrapy.org'])
         self.assertEqual(item['image'], [u'/images/logo.png'])
 
+    def test_nested_bad_arguments(self):
+        l = NestedItemLoader(response=self.response)
+        with self.assertRaises(ValueError):
+            l.nested_loader(css="#id", xpath="//footer")
+
 
 class SelectJmesTestCase(unittest.TestCase):
         test_list_equals = {
