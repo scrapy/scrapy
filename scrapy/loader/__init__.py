@@ -24,16 +24,46 @@ class ItemLoader(object):
     default_output_processor = Identity()
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, **context):
+    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
         if item is None:
             item = self.default_item_class()
-        self.item = context['item'] = item
         self.context = context
-        self._values = defaultdict(list)
+        self.parent = parent
+        self._local_item = context['item'] = item
+        self._local_values = defaultdict(list)
+
+    @property
+    def _values(self):
+        if self.parent is not None:
+            return self.parent._values
+        else:
+            return self._local_values
+
+    @property
+    def item(self):
+        if self.parent is not None:
+            return self.parent.item
+        else:
+            return self._local_item
+
+    def nested_loader(self, xpath=None, css=None):
+        if xpath is not None and css is not None:
+            raise ValueError("Cannot nest a loader with both a xpath selector and a css selector")
+
+        if xpath is not None:
+            selector = self.selector.xpath(xpath)
+
+        if css is not None:
+            selector = self.selector.css(css)
+
+        subloader = self.__class__(
+            item=self.item, selector=selector, parent=self
+        )
+        return subloader
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
@@ -84,6 +114,10 @@ class ItemLoader(object):
             value = self.get_output_value(field_name)
             if value is not None:
                 item[field_name] = value
+
+        # for loader in self._subloaders:
+        #     loader.load_item()
+
         return item
 
     def get_output_value(self, field_name):
@@ -167,6 +201,5 @@ class ItemLoader(object):
         self._check_selector_method()
         csss = arg_to_iter(csss)
         return flatten([self.selector.css(css).extract() for css in csss])
-
 
 XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)
