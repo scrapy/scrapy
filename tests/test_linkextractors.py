@@ -24,9 +24,7 @@ class Base:
             self.assertTrue(all(isinstance(link.url, str)
                                 for link in lx.extract_links(self.response)))
 
-        def test_extraction(self):
-            '''Test the extractor's behaviour among different situations'''
-
+        def test_extract_all_links(self):
             lx = self.extractor_cls()
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -36,6 +34,7 @@ class Base:
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
             ])
 
+        def test_extract_filter_allow(self):
             lx = self.extractor_cls(allow=('sample', ))
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -43,6 +42,7 @@ class Base:
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
             ])
 
+        def test_extract_filter_allow_with_duplicates(self):
             lx = self.extractor_cls(allow=('sample', ), unique=False)
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -51,19 +51,14 @@ class Base:
                 Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
             ])
 
-            lx = self.extractor_cls(allow=('sample', ))
-            self.assertEqual([link for link in lx.extract_links(self.response)], [
-                Link(url='http://example.com/sample1.html', text=u''),
-                Link(url='http://example.com/sample2.html', text=u'sample 2'),
-                Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
-            ])
-
+        def test_extract_filter_allow_and_deny(self):
             lx = self.extractor_cls(allow=('sample', ), deny=('3', ))
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
             ])
 
+        def test_extract_filter_allowed_domains(self):
             lx = self.extractor_cls(allow_domains=('google.com', ))
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://www.google.com/something', text=u''),
