@@ -35,14 +35,18 @@ class DepthMiddleware(object):
                 if self.prio:
                     request.priority -= depth * self.prio
                 if self.maxdepth and depth > self.maxdepth:
-                    logger.debug("Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
-                                 {'maxdepth': self.maxdepth, 'requrl': request.url},
-                                 extra={'spider': spider})
+                    logger.debug(
+                        "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
+                        {'maxdepth': self.maxdepth, 'requrl': request.url},
+                        extra={'spider': spider}
+                    )
                     return False
                 elif self.stats:
                     if self.verbose_stats:
-                        self.stats.inc_value('request_depth_count/%s' % depth, spider=spider)
-                    self.stats.max_value('request_depth_max', depth, spider=spider)
+                        self.stats.inc_value('request_depth_count/%s' % depth,
+                                             spider=spider)
+                    self.stats.max_value('request_depth_max', depth,
+                                         spider=spider)
             return True
 
         # base case (depth=0)

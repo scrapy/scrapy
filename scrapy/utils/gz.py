@@ -7,6 +7,7 @@ except ImportError:
 
 from gzip import GzipFile
 
+
 def gunzip(data):
     """Gunzip the given data and return as much data as possible.
 
@@ -31,7 +32,8 @@ def gunzip(data):
                 raise
     return output
 
+
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
-    ctype = response.headers.get('Content-Type', '')
-    return ctype in ('application/x-gzip', 'application/gzip')
+    ctype = response.headers.get('Content-Type', b'')
+    return ctype in (b'application/x-gzip', b'application/gzip')
