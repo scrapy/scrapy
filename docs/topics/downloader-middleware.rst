@@ -58,6 +58,8 @@ more of the following methods:
 
 .. class:: DownloaderMiddleware
 
+   .. note::  Any of the downloader middleware methods may also return a deferred.
+
    .. method:: process_request(request, spider)
 
       This method is called for each request that goes through the download
