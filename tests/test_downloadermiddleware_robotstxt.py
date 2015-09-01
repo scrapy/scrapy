@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import re
 from twisted.internet import reactor, error
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
@@ -44,32 +44,20 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
 
     def test_robotstxt(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
-        # There is a bit of neglect in robotstxt.py: robots.txt is fetched asynchronously,
-        # and it is actually fetched only *after* first process_request completes.
-        # So, first process_request will always succeed.
-        # We defer test() because otherwise robots.txt download mock will be called after assertRaises failure.
-        self.assertNotIgnored(Request('http://site.local'), middleware)
-        def test(r):
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
-            self.assertIgnored(Request('http://site.local/admin/main'), middleware)
+        return DeferredList([
+            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+            self.assertIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertIgnored(Request('http://site.local/static/'), middleware)
-        deferred = Deferred()
-        deferred.addCallback(test)
-        reactor.callFromThread(deferred.callback, None)
-        return deferred
+        ], fireOnOneErrback=True)
 
     def test_robotstxt_meta(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
         meta = {'dont_obey_robotstxt': True}
-        self.assertNotIgnored(Request('http://site.local', meta=meta), middleware)
-        def test(r):
-            self.assertNotIgnored(Request('http://site.local/allowed', meta=meta), middleware)
-            self.assertNotIgnored(Request('http://site.local/admin/main', meta=meta), middleware)
+        return DeferredList([
+            self.assertNotIgnored(Request('http://site.local/allowed', meta=meta), middleware),
+            self.assertNotIgnored(Request('http://site.local/admin/main', meta=meta), middleware),
             self.assertNotIgnored(Request('http://site.local/static/', meta=meta), middleware)
-        deferred = Deferred()
-        deferred.addCallback(test)
-        reactor.callFromThread(deferred.callback, None)
-        return deferred
+        ], fireOnOneErrback=True)
 
     def _get_garbage_crawler(self):
         crawler = self.crawler
@@ -85,17 +73,12 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_garbage(self):
         # garbage response should be discarded, equal 'allow all'
         middleware = RobotsTxtMiddleware(self._get_garbage_crawler())
-        middleware._logerror = mock.MagicMock()
-        middleware.process_request(Request('http://site.local'), None)
-        self.assertNotIgnored(Request('http://site.local'), middleware)
-        def test(r):
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
-            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware)
+        deferred = DeferredList([
+            self.assertNotIgnored(Request('http://site.local'), middleware),
+            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertNotIgnored(Request('http://site.local/static/'), middleware)
-        deferred = Deferred()
-        deferred.addCallback(test)
-        deferred.addErrback(lambda _: self.assertIsNone(middleware._logerror.assert_any_call()))
-        reactor.callFromThread(deferred.callback, None)
+        ], fireOnOneErrback=True)
         return deferred
 
     def _get_emptybody_crawler(self):
@@ -112,15 +95,11 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_empty_response(self):
         # empty response should equal 'allow all'
         middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
-        self.assertNotIgnored(Request('http://site.local'), middleware)
-        def test(r):
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
-            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware)
+        return DeferredList([
+            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertNotIgnored(Request('http://site.local/static/'), middleware)
-        deferred = Deferred()
-        deferred.addCallback(test)
-        reactor.callFromThread(deferred.callback, None)
-        return deferred
+        ], fireOnOneErrback=True)
 
     def test_robotstxt_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
@@ -132,17 +111,18 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         self.crawler.engine.download.side_effect = return_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
-        middleware._logerror = mock.MagicMock()
-        middleware.process_request(Request('http://site.local'), None)
-        deferred = Deferred()
-        deferred.addErrback(lambda _: self.assertIsNone(middleware._logerror.assert_any_call()))
-        reactor.callFromThread(deferred.callback, None)
+        middleware._logerror = mock.MagicMock(side_effect=lambda fail, req, spider: fail)
+        deferred = middleware.process_request(Request('http://site.local'), None)
+        deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
         return deferred
 
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
-        self.assertIsNone(middleware.process_request(request, spider))
+        dfd = maybeDeferred(middleware.process_request, request, spider)
+        dfd.addCallback(self.assertIsNone)
+        return dfd
 
     def assertIgnored(self, request, middleware):
         spider = None  # not actually used
-        self.assertRaises(IgnoreRequest, middleware.process_request, request, spider)
+        return self.assertFailure(maybeDeferred(middleware.process_request, request, spider),
+                                  IgnoreRequest)
