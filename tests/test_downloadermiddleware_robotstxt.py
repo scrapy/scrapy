@@ -4,7 +4,8 @@ from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
+from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
+                                                    logger as mw_module_logger)
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
@@ -121,6 +122,21 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         deferred = middleware.process_request(Request('http://site.local'), None)
         deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
         return deferred
+
+    def test_ignore_robotstxt_request(self):
+        self.crawler.settings.set('ROBOTSTXT_OBEY', True)
+        def ignore_request(request, spider):
+            deferred = Deferred()
+            reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
+            return deferred
+        self.crawler.engine.download.side_effect = ignore_request
+
+        middleware = RobotsTxtMiddleware(self.crawler)
+        mw_module_logger.error = mock.MagicMock()
+
+        d = self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
+        d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
+        return d
 
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
