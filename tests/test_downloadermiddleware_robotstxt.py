@@ -50,6 +50,12 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
             self.assertIgnored(Request('http://site.local/static/'), middleware)
         ], fireOnOneErrback=True)
 
+    def test_robotstxt_ready_parser(self):
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        d = self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
+        d.addCallback(lambda _: self.assertNotIgnored(Request('http://site.local/allowed'), middleware))
+        return d
+
     def test_robotstxt_meta(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
         meta = {'dont_obey_robotstxt': True}
