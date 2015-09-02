@@ -58,6 +58,8 @@ more of the following methods:
 
 .. class:: DownloaderMiddleware
 
+   .. note::  Any of the downloader middleware methods may also return a deferred.
+
    .. method:: process_request(request, spider)
 
       This method is called for each request that goes through the download
@@ -876,12 +878,6 @@ RobotsTxtMiddleware
 
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
-
-    .. warning:: Keep in mind that, if you crawl using multiple concurrent
-       requests per domain, Scrapy could still download some forbidden pages
-       if they were requested before the robots.txt file was downloaded. This
-       is a known limitation of the current robots.txt middleware and will
-       be fixed in the future.
 
 .. reqmeta:: dont_obey_robotstxt
 
