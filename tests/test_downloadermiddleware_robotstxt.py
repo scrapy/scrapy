@@ -111,7 +111,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         self.crawler.engine.download.side_effect = return_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
-        middleware._logerror = mock.MagicMock(side_effect=lambda fail, req, spider: fail)
+        middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
         deferred = middleware.process_request(Request('http://site.local'), None)
         deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
         return deferred
