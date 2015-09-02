@@ -27,5 +27,5 @@ class HttpAuthMiddleware(object):
 
     def process_request(self, request, spider):
         auth = getattr(self, 'auth', None)
-        if auth and 'Authorization' not in request.headers:
-            request.headers['Authorization'] = auth
+        if auth and b'Authorization' not in request.headers:
+            request.headers[b'Authorization'] = auth
