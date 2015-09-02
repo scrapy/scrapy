@@ -79,6 +79,12 @@ Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
 solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
+Debian 8.x
+----------
+
+If you get this error message during installation: Python.h not found. You need
+to install python-dev.
+
 Archlinux
 ---------
 
