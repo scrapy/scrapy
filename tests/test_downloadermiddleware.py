@@ -5,6 +5,7 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
+from tests import mock
 
 
 class ManagerTestCase(TestCase):
@@ -90,3 +91,24 @@ class DefaultsTest(ManagerTestCase):
             'Location': 'http://example.com/login',
         })
         self.assertRaises(IOError, self._download, request=req, response=resp)
+
+
+class ResponseFromProcessRequestTest(ManagerTestCase):
+    """Tests middleware returning a response from process_request."""
+
+    def test_download_func_not_called(self):
+        class ResponseMiddleware(object):
+            def process_request(self, request, spider):
+                return Response(request.url)
+
+        self.mwman._add_middleware(ResponseMiddleware())
+
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIsInstance(results[0], Response)
+        self.assertFalse(download_func.called)
