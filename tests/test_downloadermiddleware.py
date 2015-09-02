@@ -97,9 +97,11 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
     """Tests middleware returning a response from process_request."""
 
     def test_download_func_not_called(self):
+        resp = Response('http://example.com/index.html')
+
         class ResponseMiddleware(object):
             def process_request(self, request, spider):
-                return Response(request.url)
+                return resp
 
         self.mwman._add_middleware(ResponseMiddleware())
 
@@ -110,5 +112,5 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
         dfd.addBoth(results.append)
         self._wait(dfd)
 
-        self.assertIsInstance(results[0], Response)
+        self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
