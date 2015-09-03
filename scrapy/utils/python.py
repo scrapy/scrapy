@@ -257,20 +257,14 @@ def equal_attributes(obj1, obj2, attributes):
     if not attributes:
         return False
 
+    temp1, temp2 = object(), object()
     for attr in attributes:
         # support callables like itemgetter
         if callable(attr):
-            if not attr(obj1) == attr(obj2):
+            if attr(obj1) != attr(obj2):
                 return False
-        else:
-            # check that objects has attribute
-            if not hasattr(obj1, attr):
-                return False
-            if not hasattr(obj2, attr):
-                return False
-            # compare object attributes
-            if not getattr(obj1, attr) == getattr(obj2, attr):
-                return False
+        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
+            return False
     # all attributes equal
     return True
 
