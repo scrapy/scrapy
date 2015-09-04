@@ -9,8 +9,7 @@ import webbrowser
 import tempfile
 
 from twisted.web import http
-from twisted.web.http import RESPONSES
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
 
 from scrapy.utils.decorators import deprecated
@@ -55,7 +54,7 @@ def response_status_message(status):
     >>> response_status_message(404)
     '404 Not Found'
     """
-    return '%s %s' % (status, http.responses.get(int(status)))
+    return '%s %s' % (status, to_native_str(http.RESPONSES.get(int(status))))
 
 
 def response_httprepr(response):
@@ -64,7 +63,7 @@ def response_httprepr(response):
     that was received (that's not exposed by Twisted).
     """
     s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
-        to_bytes(RESPONSES.get(response.status, b'')) + b"\r\n"
+        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
     if response.headers:
         s += response.headers.to_string() + b"\r\n"
     s += b"\r\n"
