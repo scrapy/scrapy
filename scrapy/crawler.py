@@ -173,7 +173,7 @@ class CrawlerRunner(object):
 
         Returns a deferred that is fired when they all have ended.
         """
-        return defer.DeferredList([c.stop() for c in list(self.crawlers)])
+        return defer.DeferredList([c.stop() for c in self.crawlers])
 
     @defer.inlineCallbacks
     def join(self):

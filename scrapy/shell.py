@@ -146,7 +146,7 @@ class Shell(object):
                      "update local objects")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join(["[s] %s" % l for l in b])
+        return "\n".join("[s] %s" % l for l in b)
 
     def _is_relevant(self, value):
         return isinstance(value, self.relevant_classes)

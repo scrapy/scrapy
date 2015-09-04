@@ -62,7 +62,7 @@ class Command(ScrapyCommand):
             self.settings['SPIDER_CONTRACTS_BASE'],
             self.settings['SPIDER_CONTRACTS'],
         )
-        conman = ContractsManager([load_object(c) for c in contracts])
+        conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
