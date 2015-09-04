@@ -1,6 +1,10 @@
 language: python
 python: 2.7
 sudo: false
+branches:
+  only:
+    - master
+    - /^\d\.\d+$/
 env:
  - TOXENV=py27
  - TOXENV=precise
