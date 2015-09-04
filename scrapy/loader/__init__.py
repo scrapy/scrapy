@@ -50,18 +50,19 @@ class ItemLoader(object):
         else:
             return self._local_item
 
-    def nested_loader(self, xpath=None, css=None):
-        if xpath is not None and css is not None:
-            raise ValueError("Cannot nest a loader with both a xpath selector and a css selector")
-
-        if xpath is not None:
-            selector = self.selector.xpath(xpath)
-
-        if css is not None:
-            selector = self.selector.css(css)
-
+    def nested_xpath(self, xpath, **context):
+        selector = self.selector.xpath(xpath)
+        context.update(selector=selector)
         subloader = self.__class__(
-            item=self.item, selector=selector, parent=self
+            item=self.item, parent=self, **context
+        )
+        return subloader
+
+    def nested_css(self, css, **context):
+        selector = self.selector.css(css)
+        context.update(selector=selector)
+        subloader = self.__class__(
+            item=self.item, parent=self, **context
         )
         return subloader
 

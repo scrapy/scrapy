@@ -631,7 +631,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_xpath(self):
         l = NestedItemLoader(response=self.response)
-        nl = l.nested_loader(xpath="//header")
+        nl = l.nested_xpath("//header")
         nl.add_xpath('name', 'div/text()')
         nl.add_css('name_div', '#id')
         nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').extract())
@@ -646,7 +646,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_css(self):
         l = NestedItemLoader(response=self.response)
-        nl = l.nested_loader(css="header")
+        nl = l.nested_css("header")
         nl.add_xpath('name', 'div/text()')
         nl.add_css('name_div', '#id')
         nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').extract())
@@ -661,8 +661,8 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_replace(self):
         l = NestedItemLoader(response=self.response)
-        nl1 = l.nested_loader(xpath='//footer')
-        nl2 = nl1.nested_loader(xpath='a')
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('a')
 
         l.add_xpath('url', '//footer/a/@href')
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
@@ -673,8 +673,8 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_ordering(self):
         l = NestedItemLoader(response=self.response)
-        nl1 = l.nested_loader(xpath='//footer')
-        nl2 = nl1.nested_loader(xpath='a')
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('a')
 
         nl1.add_xpath('url', 'img/@src')
         l.add_xpath('url', '//footer/a/@href')
@@ -690,8 +690,8 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_load_item(self):
         l = NestedItemLoader(response=self.response)
-        nl1 = l.nested_loader(xpath='//footer')
-        nl2 = nl1.nested_loader(xpath='img')
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('img')
 
         l.add_xpath('name', '//header/div/text()')
         nl1.add_xpath('url', 'a/@href')
@@ -706,11 +706,6 @@ class SubselectorLoaderTest(unittest.TestCase):
         self.assertEqual(item['name'], [u'marta'])
         self.assertEqual(item['url'], [u'http://www.scrapy.org'])
         self.assertEqual(item['image'], [u'/images/logo.png'])
-
-    def test_nested_bad_arguments(self):
-        l = NestedItemLoader(response=self.response)
-        with self.assertRaises(ValueError):
-            l.nested_loader(css="#id", xpath="//footer")
 
 
 class SelectJmesTestCase(unittest.TestCase):
