@@ -2,7 +2,6 @@
 This module provides some useful functions for working with
 scrapy.http.Response objects
 """
-
 import os
 import re
 import weakref
@@ -10,11 +9,10 @@ import webbrowser
 import tempfile
 
 from twisted.web import http
-from twisted.web.http import RESPONSES
+from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
 
-from scrapy.http import HtmlResponse, TextResponse
-from scrapy.utils.decorator import deprecated
+from scrapy.utils.decorators import deprecated
 
 
 @deprecated
@@ -28,9 +26,10 @@ def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
         text = response.body_as_unicode()[0:4096]
-        _baseurl_cache[response] = html.get_base_url(text, response.url, \
+        _baseurl_cache[response] = html.get_base_url(text, response.url,
             response.encoding)
     return _baseurl_cache[response]
+
 
 _noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
 _script_re = re.compile(u'<script.*?>.*?</script>', re.IGNORECASE | re.DOTALL)
@@ -41,9 +40,10 @@ def get_meta_refresh(response):
         text = response.body_as_unicode()[0:4096]
         text = _noscript_re.sub(u'', text)
         text = _script_re.sub(u'', text)
-        _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
+        _metaref_cache[response] = html.get_meta_refresh(text, response.url,
             response.encoding)
     return _metaref_cache[response]
+
 
 def response_status_message(status):
     """Return status code plus status text descriptive message
@@ -54,36 +54,40 @@ def response_status_message(status):
     >>> response_status_message(404)
     '404 Not Found'
     """
-    return '%s %s' % (status, http.responses.get(int(status)))
+    return '%s %s' % (status, to_native_str(http.RESPONSES.get(int(status))))
+
 
 def response_httprepr(response):
-    """Return raw HTTP representation (as string) of the given response. This
+    """Return raw HTTP representation (as bytes) of the given response. This
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
     """
-
-    s = "HTTP/1.1 %d %s\r\n" % (response.status, RESPONSES.get(response.status, ''))
+    s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
+        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
     if response.headers:
-        s += response.headers.to_string() + "\r\n"
-    s += "\r\n"
+        s += response.headers.to_string() + b"\r\n"
+    s += b"\r\n"
     s += response.body
     return s
+
 
 def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """
+    from scrapy.http import HtmlResponse, TextResponse
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if '<base' not in body:
-            body = body.replace('<head>', '<head><base href="%s">' % response.url)
+        if b'<base' not in body:
+            repl = '<head><base href="%s">' % response.url
+            body = body.replace(b'<head>', to_bytes(repl))
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: %s" % \
-            response.__class__.__name__)
+        raise TypeError("Unsupported response type: %s" %
+                        response.__class__.__name__)
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

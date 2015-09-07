@@ -1,6 +1,6 @@
 import sys, os
 
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 
 class Command(ScrapyCommand):
@@ -27,7 +27,7 @@ class Command(ScrapyCommand):
 
         editor = self.settings['EDITOR']
         try:
-            spidercls = self.crawler_process.spiders.load(args[0])
+            spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
             return self._err("Spider not found: %s" % args[0])
 

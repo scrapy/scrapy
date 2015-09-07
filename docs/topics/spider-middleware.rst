@@ -43,7 +43,7 @@ value.  For example, if you want to disable the off-site middleware::
 
     SPIDER_MIDDLEWARES = {
         'myproject.middlewares.CustomSpiderMiddleware': 543,
-        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': None,
+        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -55,7 +55,7 @@ Writing your own spider middleware
 Each middleware component is a Python class that defines one or more of the
 following methods:
 
-.. module:: scrapy.contrib.spidermiddleware
+.. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
 
@@ -81,7 +81,7 @@ following methods:
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
     .. method:: process_spider_output(response, result, spider)
@@ -90,18 +90,19 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects.
+        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item` 
+        objects.
 
         :param response: the response which generated this output from the
           spider
-        :type response: class:`~scrapy.http.Response` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request` or
-          :class:`~scrapy.item.Item` objects
+        :type result: an iterable of :class:`~scrapy.http.Request`, dict
+          or :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.item.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
     .. method:: process_spider_exception(response, exception, spider)
@@ -110,7 +111,7 @@ following methods:
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response` or
+        iterable of :class:`~scrapy.http.Response`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -129,7 +130,7 @@ following methods:
         :type exception: `Exception`_ object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
 
@@ -156,10 +157,10 @@ following methods:
         :type start_requests: an iterable of :class:`~scrapy.http.Request`
 
         :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.item.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
-.. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
+.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
 
 .. _topics-spider-middleware-ref:
@@ -177,7 +178,7 @@ For a list of the components enabled by default (and their orders) see the
 DepthMiddleware
 ---------------
 
-.. module:: scrapy.contrib.spidermiddleware.depth
+.. module:: scrapy.spidermiddlewares.depth
    :synopsis: Depth Spider Middleware
 
 .. class:: DepthMiddleware
@@ -198,7 +199,7 @@ DepthMiddleware
 HttpErrorMiddleware
 -------------------
 
-.. module:: scrapy.contrib.spidermiddleware.httperror
+.. module:: scrapy.spidermiddlewares.httperror
    :synopsis: HTTP Error Spider Middleware
 
 .. class:: HttpErrorMiddleware
@@ -225,9 +226,12 @@ this::
 
 .. reqmeta:: handle_httpstatus_list
 
+.. reqmeta:: handle_httpstatus_all
+
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
 <scrapy.http.Request.meta>` can also be used to specify which response codes to
-allow on a per-request basis.
+allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
+to ``True`` if you want to allow any response code for a request.
 
 Keep in mind, however, that it's usually a bad idea to handle non-200
 responses, unless you really know what you're doing.
@@ -260,7 +264,7 @@ Pass all responses, regardless of its status code.
 OffsiteMiddleware
 -----------------
 
-.. module:: scrapy.contrib.spidermiddleware.offsite
+.. module:: scrapy.spidermiddlewares.offsite
    :synopsis: Offsite Spider Middleware
 
 .. class:: OffsiteMiddleware
@@ -268,7 +272,7 @@ OffsiteMiddleware
    Filters out Requests for URLs outside the domains covered by the spider.
 
    This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.spider.Spider.allowed_domains` attribute.
+   spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
 
    When your spider returns a request for a domain not belonging to those
    covered by the spider, this middleware will log a debug message similar to
@@ -283,7 +287,7 @@ OffsiteMiddleware
    will be printed (but only for the first request filtered).
 
    If the spider doesn't define an
-   :attr:`~scrapy.spider.Spider.allowed_domains` attribute, or the
+   :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
    If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
@@ -294,7 +298,7 @@ OffsiteMiddleware
 RefererMiddleware
 -----------------
 
-.. module:: scrapy.contrib.spidermiddleware.referer
+.. module:: scrapy.spidermiddlewares.referer
    :synopsis: Referer Spider Middleware
 
 .. class:: RefererMiddleware
@@ -319,7 +323,7 @@ Whether to enable referer middleware.
 UrlLengthMiddleware
 -------------------
 
-.. module:: scrapy.contrib.spidermiddleware.urllength
+.. module:: scrapy.spidermiddlewares.urllength
    :synopsis: URL Length Spider Middleware
 
 .. class:: UrlLengthMiddleware

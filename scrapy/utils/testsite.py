@@ -4,17 +4,21 @@ from six.moves.urllib.parse import urljoin
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+
 class SiteTest(object):
 
     def setUp(self):
+        super(SiteTest, self).setUp()
         self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
         self.baseurl = "http://localhost:%d/" % self.site.getHost().port
 
     def tearDown(self):
+        super(SiteTest, self).tearDown()
         self.site.stopListening()
 
     def url(self, path):
         return urljoin(self.baseurl, path)
+
 
 def test_site():
     r = resource.Resource()

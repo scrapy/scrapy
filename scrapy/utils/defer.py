@@ -8,19 +8,25 @@ from twisted.python import failure
 from scrapy.exceptions import IgnoreRequest
 
 def defer_fail(_failure):
-    """Same as twisted.internet.defer.fail, but delay calling errback until
+    """Same as twisted.internet.defer.fail but delay calling errback until
     next reactor loop
+
+    It delays by 100ms so reactor has a chance to go trough readers and writers
+    before attending pending delayed calls, so do not set delay to zero.
     """
     d = defer.Deferred()
-    reactor.callLater(0, d.errback, _failure)
+    reactor.callLater(0.1, d.errback, _failure)
     return d
 
 def defer_succeed(result):
-    """Same as twsited.internet.defer.succed, but delay calling callback until
+    """Same as twisted.internet.defer.succeed but delay calling callback until
     next reactor loop
+
+    It delays by 100ms so reactor has a chance to go trough readers and writers
+    before attending pending delayed calls, so do not set delay to zero.
     """
     d = defer.Deferred()
-    reactor.callLater(0, d.callback, result)
+    reactor.callLater(0.1, d.callback, result)
     return d
 
 def defer_result(result):
@@ -55,7 +61,7 @@ def parallel(iterable, count, callable, *args, **named):
     """
     coop = task.Cooperator()
     work = (callable(elem, *args, **named) for elem in iterable)
-    return defer.DeferredList([coop.coiterate(work) for i in xrange(count)])
+    return defer.DeferredList([coop.coiterate(work) for i in range(count)])
 
 def process_chain(callbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks"""
@@ -91,7 +97,7 @@ def iter_errback(iterable, errback, *a, **kw):
     iterating it.
     """
     it = iter(iterable)
-    while 1:
+    while True:
         try:
             yield next(it)
         except StopIteration:

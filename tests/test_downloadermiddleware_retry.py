@@ -5,9 +5,9 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionLost, TCPTimedOutError
 
 from scrapy import optional_features
-from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.xlib.tx import ResponseFailed
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.utils.test import get_crawler
 

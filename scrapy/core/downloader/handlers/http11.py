@@ -1,7 +1,7 @@
 """Download handlers for http and https schemes"""
 
 import re
-
+import logging
 from io import BytesIO
 from time import time
 from six.moves.urllib.parse import urldefrag
@@ -9,7 +9,7 @@ from six.moves.urllib.parse import urldefrag
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import IBodyProducer
+from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
@@ -19,6 +19,9 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
+from scrapy import twisted_version
+
+logger = logging.getLogger(__name__)
 
 
 class HTTP11DownloadHandler(object):
@@ -29,14 +32,36 @@ class HTTP11DownloadHandler(object):
         self._pool._factory.noisy = False
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
+        self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
+        self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
+        self._disconnect_timeout = 1
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
+        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool,
+            maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
+            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize))
         return agent.download_request(request)
 
     def close(self):
-        return self._pool.closeCachedConnections()
+        d = self._pool.closeCachedConnections()
+        # closeCachedConnections will hang on network or server issues, so
+        # we'll manually timeout the deferred.
+        #
+        # Twisted issue addressing this problem can be found here:
+        # https://twistedmatrix.com/trac/ticket/7738.
+        #
+        # closeCachedConnections doesn't handle external errbacks, so we'll
+        # issue a callback after `_disconnect_timeout` seconds.
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+
+        def cancel_delayed_call(result):
+            if delayed_call.active():
+                delayed_call.cancel()
+            return result
+
+        d.addBoth(cancel_delayed_call)
+        return d
 
 
 class TunnelError(Exception):
@@ -119,10 +144,19 @@ class TunnelingAgent(Agent):
         self._proxyConf = proxyConf
         self._contextFactory = contextFactory
 
-    def _getEndpoint(self, scheme, host, port):
-        return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
-            self._proxyConf, self._contextFactory, self._connectTimeout,
-            self._bindAddress)
+    if twisted_version >= (15, 0, 0):
+        def _getEndpoint(self, uri):
+            return TunnelingTCP4ClientEndpoint(
+                self._reactor, uri.host, uri.port, self._proxyConf,
+                self._contextFactory, self._endpointFactory._connectTimeout,
+                self._endpointFactory._bindAddress)
+    else:
+        def _getEndpoint(self, scheme, host, port):
+            return TunnelingTCP4ClientEndpoint(
+                self._reactor, host, port, self._proxyConf,
+                self._contextFactory, self._connectTimeout,
+                self._bindAddress)
+
 
 
 class ScrapyAgent(object):
@@ -131,11 +165,14 @@ class ScrapyAgent(object):
     _ProxyAgent = ProxyAgent
     _TunnelingAgent = TunnelingAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
+                 maxsize=0, warnsize=0):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
         self._pool = pool
+        self._maxsize = maxsize
+        self._warnsize = warnsize
 
     def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
@@ -197,11 +234,27 @@ class ScrapyAgent(object):
         if txresponse.length == 0:
             return txresponse, '', None
 
+        maxsize = request.meta.get('download_maxsize', self._maxsize)
+        warnsize = request.meta.get('download_warnsize', self._warnsize)
+        expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
+
+        if maxsize and expected_size > maxsize:
+            logger.error("Expected response size (%(size)s) larger than "
+                         "download max size (%(maxsize)s).",
+                         {'size': expected_size, 'maxsize': maxsize})
+            txresponse._transport._producer.loseConnection()
+            raise defer.CancelledError()
+
+        if warnsize and expected_size > warnsize:
+            logger.warning("Expected response size (%(size)s) larger than "
+                           "download warn size (%(warnsize)s).",
+                           {'size': expected_size, 'warnsize': warnsize})
+
         def _cancel(_):
             txresponse._transport._producer.loseConnection()
 
         d = defer.Deferred(_cancel)
-        txresponse.deliverBody(_ResponseReader(d, txresponse, request))
+        txresponse.deliverBody(_ResponseReader(d, txresponse, request, maxsize, warnsize))
         return d
 
     def _cb_bodydone(self, result, request, url):
@@ -232,14 +285,31 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request):
+    def __init__(self, finished, txresponse, request, maxsize, warnsize):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
         self._bodybuf = BytesIO()
+        self._maxsize  = maxsize
+        self._warnsize  = warnsize
+        self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)
+        self._bytes_received += len(bodyBytes)
+
+        if self._maxsize and self._bytes_received > self._maxsize:
+            logger.error("Received (%(bytes)s) bytes larger than download "
+                         "max size (%(maxsize)s).",
+                         {'bytes': self._bytes_received,
+                          'maxsize': self._maxsize})
+            self._finished.cancel()
+
+        if self._warnsize and self._bytes_received > self._warnsize:
+            logger.warning("Received (%(bytes)s) bytes larger than download "
+                           "warn size (%(warnsize)s).",
+                           {'bytes': self._bytes_received,
+                            'warnsize': self._warnsize})
 
     def connectionLost(self, reason):
         if self._finished.called:

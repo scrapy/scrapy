@@ -1,14 +1,19 @@
-import re, csv, six
+import re
+import csv
+import logging
 
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
 
+import six
+
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
-from scrapy import log
-from scrapy.utils.python import re_rsearch, str_to_unicode
+from scrapy.utils.python import re_rsearch, to_unicode
+
+logger = logging.getLogger(__name__)
 
 
 def xmliter(obj, nodename):
@@ -35,6 +40,46 @@ def xmliter(obj, nodename):
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
 
 
+def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
+    from lxml import etree
+    reader = _StreamReader(obj)
+    tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
+    iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
+    selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
+    for _, node in iterable:
+        nodetext = etree.tostring(node)
+        node.clear()
+        xs = Selector(text=nodetext, type='xml')
+        if namespace:
+            xs.register_namespace(prefix, namespace)
+        yield xs.xpath(selxpath)[0]
+
+
+class _StreamReader(object):
+
+    def __init__(self, obj):
+        self._ptr = 0
+        if isinstance(obj, Response):
+            self._text, self.encoding = obj.body, obj.encoding
+        else:
+            self._text, self.encoding = obj, 'utf-8'
+        self._is_unicode = isinstance(self._text, unicode)
+
+    def read(self, n=65535):
+        self.read = self._read_unicode if self._is_unicode else self._read_string
+        return self.read(n).lstrip()
+
+    def _read_string(self, n=65535):
+        s, e = self._ptr, self._ptr + n
+        self._ptr = e
+        return self._text[s:e]
+
+    def _read_unicode(self, n=65535):
+        s, e = self._ptr, self._ptr + n
+        self._ptr = e
+        return self._text[s:e].encode('utf-8')
+
+
 def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     """ Returns an iterator of dictionaries from the given csv object
 
@@ -53,7 +98,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
     def _getrow(csv_r):
-        return [str_to_unicode(field, encoding) for field in next(csv_r)]
+        return [to_unicode(field, encoding) for field in next(csv_r)]
 
     lines = BytesIO(_body_or_str(obj, unicode=False))
 
@@ -68,8 +113,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     while True:
         row = _getrow(csv_r)
         if len(row) != len(headers):
-            log.msg(format="ignoring row %(csvlnum)d (length: %(csvrow)d, should be: %(csvheader)d)",
-                    level=log.WARNING, csvlnum=csv_r.line_num, csvrow=len(row), csvheader=len(headers))
+            logger.warning("ignoring row %(csvlnum)d (length: %(csvrow)d, "
+                           "should be: %(csvheader)d)",
+                           {'csvlnum': csv_r.line_num, 'csvrow': len(row),
+                            'csvheader': len(headers)})
             continue
         else:
             yield dict(zip(headers, row))

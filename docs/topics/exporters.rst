@@ -4,10 +4,10 @@
 Item Exporters
 ==============
 
-.. module:: scrapy.contrib.exporter
+.. module:: scrapy.exporters
    :synopsis: Item Exporters
 
-Once you have scraped your Items, you often want to persist or export those
+Once you have scraped your items, you often want to persist or export those
 items, to use the data in some other application. That is, after all, the whole
 purpose of the scraping process.
 
@@ -40,7 +40,7 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses an Item
 Exporter to export scraped items to different files, one per spider::
 
    from scrapy import signals
-   from scrapy.contrib.exporter import XmlItemExporter
+   from scrapy.exporters import XmlItemExporter
 
    class XmlExportPipeline(object):
 
@@ -90,9 +90,9 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-You can declare a serializer in the :ref:`field metadata
-<topics-items-fields>`. The serializer must be a callable which receives a
-value and returns its serialized form.
+If you use :class:`~.Item` you can declare a serializer in the 
+:ref:`field metadata <topics-items-fields>`. The serializer must be 
+a callable which receives a value and returns its serialized form.
 
 Example::
 
@@ -117,7 +117,7 @@ after your custom code.
 
 Example::
 
-      from scrapy.contrib.exporter import XmlItemExporter
+      from scrapy.exporter import XmlItemExporter
 
       class ProductXmlExporter(XmlItemExporter):
 
@@ -167,8 +167,9 @@ BaseItemExporter
       value unchanged except for ``unicode`` values which are encoded to
       ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
-      :param field: the field being serialized
-      :type field: :class:`~scrapy.item.Field` object
+      :param field: the field being serialized. If a raw dict is being 
+          exported (not :class:`~.Item`) *field* value is an empty dict.
+      :type field: :class:`~scrapy.item.Field` object or an empty dict 
 
       :param name: the name of the field being serialized
       :type name: str
@@ -197,11 +198,16 @@ BaseItemExporter
       Some exporters (like :class:`CsvItemExporter`) respect the order of the
       fields defined in this attribute.
 
+      Some exporters may require fields_to_export list in order to export the
+      data properly when spiders return dicts (not :class:`~Item` instances).
+
    .. attribute:: export_empty_fields
 
       Whether to include empty/unpopulated item fields in the exported data.
       Defaults to ``False``. Some exporters (like :class:`CsvItemExporter`)
       ignore this attribute and always export all empty fields.
+
+      This option is ignored for dict items.
 
    .. attribute:: encoding
 
@@ -297,7 +303,7 @@ CsvItemExporter
       Color TV,1200
       DVD player,200
 
-.. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
+.. _csv.writer: https://docs.python.org/2/library/csv.html#csv.writer
 
 PickleItemExporter
 ------------------
@@ -318,7 +324,7 @@ PickleItemExporter
 
    Pickle isn't a human readable format, so no output examples are provided.
 
-.. _pickle module documentation: http://docs.python.org/library/pickle.html
+.. _pickle module documentation: https://docs.python.org/2/library/pickle.html
 
 PprintItemExporter
 ------------------
@@ -367,7 +373,7 @@ JsonItemExporter
       stream-friendly format, consider using :class:`JsonLinesItemExporter`
       instead, or splitting the output in multiple chunks.
 
-.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
+.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
 
 JsonLinesItemExporter
 ---------------------
@@ -390,4 +396,4 @@ JsonLinesItemExporter
    Unlike the one produced by :class:`JsonItemExporter`, the format produced by
    this exporter is well suited for serializing large amounts of data.
 
-.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
+.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder

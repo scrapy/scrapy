@@ -1,12 +1,9 @@
 import six
 import unittest
 import warnings
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from scrapy.settings import Settings, SettingsAttribute, CrawlerSettings
+from tests import mock
 from . import default_settings
 
 
@@ -32,6 +29,9 @@ class SettingsAttributeTest(unittest.TestCase):
 
 
 class SettingsTest(unittest.TestCase):
+
+    if six.PY3:
+        assertItemsEqual = unittest.TestCase.assertCountEqual
 
     def setUp(self):
         self.settings = Settings()
@@ -219,12 +219,9 @@ class SettingsTest(unittest.TestCase):
                              "Trying to modify an immutable Settings object")
 
     def test_frozencopy(self):
-        with mock.patch.object(self.settings, 'copy') as mock_copy:
-            with mock.patch.object(mock_copy, 'freeze') as mock_freeze:
-                mock_object = self.settings.frozencopy()
-                mock_copy.assert_call_once()
-                mock_freeze.assert_call_once()
-                self.assertEqual(mock_object, mock_copy.return_value)
+        frozencopy = self.settings.frozencopy()
+        self.assertTrue(frozencopy.frozen)
+        self.assertIsNot(frozencopy, self.settings)
 
     def test_deprecated_attribute_overrides(self):
         self.settings.set('BAR', 'fuz', priority='cmdline')

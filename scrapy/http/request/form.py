@@ -1,16 +1,16 @@
 """
-This module implements the FormRequest class which is a more covenient class
+This module implements the FormRequest class which is a more convenient class
 (than Request) to generate Requests based on form data.
 
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, urlencode
 import lxml.html
+from parsel.selector import create_root_node
 import six
 from scrapy.http.request import Request
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import to_bytes, is_listlike
 
 
 class FormRequest(Request):
@@ -26,16 +26,16 @@ class FormRequest(Request):
             items = formdata.items() if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
-                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
                 self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formnumber=0, formdata=None,
+    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, formxpath=None, **kwargs):
         kwargs.setdefault('encoding', response.encoding)
-        form = _get_form(response, formname, formnumber, formxpath)
+        form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
         method = kwargs.pop('method', form.method)
@@ -49,16 +49,16 @@ def _get_form_url(form, url):
 
 
 def _urlencode(seq, enc):
-    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+    values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
-              for v in (vs if hasattr(vs, '__iter__') else [vs])]
-    return urllib.urlencode(values, doseq=1)
+              for v in (vs if is_listlike(vs) else [vs])]
+    return urlencode(values, doseq=1)
 
 
-def _get_form(response, formname, formnumber, formxpath):
+def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
-    from scrapy.selector.lxmldocument import LxmlDocument
-    root = LxmlDocument(response, lxml.html.HTMLParser)
+    text = response.body_as_unicode()
+    root = create_root_node(text, lxml.html.HTMLParser, base_url=response.url)
     forms = root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
@@ -68,6 +68,11 @@ def _get_form(response, formname, formnumber, formxpath):
         if f:
             return f[0]
 
+    if formid is not None:
+        f = root.xpath('//form[@id="%s"]' % formid)
+        if f:
+            return f[0]
+            
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
         nodes = root.xpath(formxpath)
@@ -145,14 +150,16 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.xpath('.//input[@type="submit"]')]
+    clickables = [el for el in form.xpath('descendant::input[@type="submit"]'
+                                          '|descendant::button[@type="submit"]'
+                                          '|descendant::button[not(@type)]')]
     if not clickables:
         return
 
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
-        return (el.name, el.value)
+        return (el.get('name'), el.get('value') or '')
 
     # If clickdata is given, we compare it to the clickable elements to find a
     # match. We first look to see if the number is specified in clickdata,
@@ -164,7 +171,7 @@ def _get_clickable(clickdata, form):
         except IndexError:
             pass
         else:
-            return (el.name, el.value)
+            return (el.get('name'), el.get('value') or '')
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
@@ -172,7 +179,7 @@ def _get_clickable(clickdata, form):
             u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
     el = form.xpath(xpath)
     if len(el) == 1:
-        return (el[0].name, el[0].value)
+        return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))

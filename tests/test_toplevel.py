@@ -21,7 +21,7 @@ class ToplevelTestCase(TestCase):
         self.assertIs(scrapy.FormRequest, FormRequest)
 
     def test_spider_shortcut(self):
-        from scrapy.spider import Spider
+        from scrapy.spiders import Spider
         self.assertIs(scrapy.Spider, Spider)
 
     def test_selector_shortcut(self):

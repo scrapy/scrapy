@@ -7,7 +7,7 @@ from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
@@ -65,7 +65,7 @@ class Command(ScrapyCommand):
             return
 
         try:
-            spidercls = self.crawler_process.spiders.load(name)
+            spidercls = self.crawler_process.spider_loader.load(name)
         except KeyError:
             pass
         else:

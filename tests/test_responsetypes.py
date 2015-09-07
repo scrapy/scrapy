@@ -35,6 +35,7 @@ class ResponseTypesTest(unittest.TestCase):
             ('application/vnd.wap.xhtml+xml; charset=utf-8', HtmlResponse),
             ('application/xml; charset=UTF-8', XmlResponse),
             ('application/octet-stream', Response),
+            ('application/x-json; encoding=UTF8;charset=UTF-8', TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_type(source)
@@ -42,15 +43,15 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_body(self):
         mappings = [
-            ('\x03\x02\xdf\xdd\x23', Response),
-            ('Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
-            ('<html><head><title>Hello</title></head>', HtmlResponse),
-            ('<?xml version="1.0" encoding="utf-8"', XmlResponse),
+            (b'\x03\x02\xdf\xdd\x23', Response),
+            (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
+            (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
-        
+
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),

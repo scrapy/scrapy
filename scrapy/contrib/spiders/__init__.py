@@ -1,3 +1,7 @@
-from scrapy.contrib.spiders.crawl import CrawlSpider, Rule
-from scrapy.contrib.spiders.feed import XMLFeedSpider, CSVFeedSpider
-from scrapy.contrib.spiders.sitemap import SitemapSpider
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+warnings.warn("Module `scrapy.contrib.spiders` is deprecated, "
+              "use `scrapy.spiders` instead",
+              ScrapyDeprecationWarning, stacklevel=2)
+
+from scrapy.spiders import *

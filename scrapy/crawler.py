@@ -1,30 +1,51 @@
 import six
 import signal
+import logging
 import warnings
 
 from twisted.internet import reactor, defer
+from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
+from scrapy.interfaces import ISpiderLoader
 from scrapy.extension import ExtensionManager
+from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy import log, signals
+from scrapy.utils.log import LogCounterHandler, configure_logging, log_scrapy_info
+from scrapy import signals
+
+logger = logging.getLogger(__name__)
 
 
 class Crawler(object):
 
-    def __init__(self, spidercls, settings):
+    def __init__(self, spidercls, settings=None):
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
+
         self.spidercls = spidercls
-        self.settings = settings
+        self.settings = settings.copy()
+        self.spidercls.update_settings(self.settings)
+
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
+
+        handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
+        logging.root.addHandler(handler)
+        # lambda is assigned to Crawler attribute because this way it is not
+        # garbage collected after leaving __init__ scope
+        self.__remove_handler = lambda: logging.root.removeHandler(handler)
+        self.signals.connect(self.__remove_handler, signals.engine_stopped)
+
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
 
+        self.settings.freeze()
         self.crawling = False
         self.spider = None
         self.engine = None
@@ -33,12 +54,11 @@ class Crawler(object):
     def spiders(self):
         if not hasattr(self, '_spiders'):
             warnings.warn("Crawler.spiders is deprecated, use "
-                          "CrawlerRunner.spiders or instantiate "
-                          "scrapy.spidermanager.SpiderManager with your "
+                          "CrawlerRunner.spider_loader or instantiate "
+                          "scrapy.spiderloader.SpiderLoader with your "
                           "settings.",
                           category=ScrapyDeprecationWarning, stacklevel=2)
-            spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-            self._spiders = spman_cls.from_settings(self.settings)
+            self._spiders = _get_spider_loader(self.settings.frozencopy())
         return self._spiders
 
     @defer.inlineCallbacks
@@ -70,17 +90,67 @@ class Crawler(object):
 
 
 class CrawlerRunner(object):
+    """
+    This is a convenient helper class that keeps track of, manages and runs
+    crawlers inside an already setup Twisted `reactor`_.
 
-    def __init__(self, settings):
+    The CrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
+
+    crawlers = property(
+        lambda self: self._crawlers,
+        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
+            ":meth:`crawl` and managed by this class."
+    )
+
+    def __init__(self, settings=None):
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
         self.settings = settings
-        smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = smcls.from_settings(settings.frozencopy())
-        self.crawlers = set()
+        self.spider_loader = _get_spider_loader(settings)
+        self._crawlers = set()
         self._active = set()
 
-    def crawl(self, spidercls, *args, **kwargs):
-        crawler = self._create_crawler(spidercls)
-        self._setup_crawler_logging(crawler)
+    @property
+    def spiders(self):
+        warnings.warn("CrawlerRunner.spiders attribute is renamed to "
+                      "CrawlerRunner.spider_loader.",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        return self.spider_loader
+
+    def crawl(self, crawler_or_spidercls, *args, **kwargs):
+        """
+        Run a crawler with the provided arguments.
+
+        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
+        keeping track of it so it can be stopped later.
+
+        If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
+        instance, this method will try to create one using this parameter as
+        the spider class given to it.
+
+        Returns a deferred that is fired when the crawling is finished.
+
+        :param crawler_or_spidercls: already created crawler, or a spider class
+            or spider's name inside the project to create it
+        :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
+            :class:`~scrapy.spiders.Spider` subclass or string
+
+        :param list args: arguments to initialize the spider
+
+        :param dict kwargs: keyword arguments to initialize the spider
+        """
+        crawler = crawler_or_spidercls
+        if not isinstance(crawler_or_spidercls, Crawler):
+            crawler = self._create_crawler(crawler_or_spidercls)
+        return self._crawl(crawler, *args, **kwargs)
+
+    def _crawl(self, crawler, *args, **kwargs):
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
@@ -94,73 +164,135 @@ class CrawlerRunner(object):
 
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
-            spidercls = self.spiders.load(spidercls)
-
-        crawler_settings = self.settings.copy()
-        spidercls.update_settings(crawler_settings)
-        crawler_settings.freeze()
-        return Crawler(spidercls, crawler_settings)
-
-    def _setup_crawler_logging(self, crawler):
-        log_observer = log.start_from_crawler(crawler)
-        if log_observer:
-            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
+            spidercls = self.spider_loader.load(spidercls)
+        return Crawler(spidercls, self.settings)
 
     def stop(self):
+        """
+        Stops simultaneously all the crawling jobs taking place.
+
+        Returns a deferred that is fired when they all have ended.
+        """
         return defer.DeferredList([c.stop() for c in list(self.crawlers)])
 
     @defer.inlineCallbacks
     def join(self):
-        """Wait for all managed crawlers to complete"""
+        """
+        join()
+
+        Returns a deferred that is fired when all managed :attr:`crawlers` have
+        completed their executions.
+        """
         while self._active:
             yield defer.DeferredList(self._active)
 
 
 class CrawlerProcess(CrawlerRunner):
-    """A class to run multiple scrapy crawlers in a process simultaneously"""
+    """
+    A class to run multiple scrapy crawlers in a process simultaneously.
 
-    def __init__(self, settings):
+    This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
+    for starting a Twisted `reactor`_ and handling shutdown signals, like the
+    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+
+    This utility should be a better fit than
+    :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
+    Twisted `reactor`_ within your application.
+
+    The CrawlerProcess object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
+
+    def __init__(self, settings=None):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        self.stopping = False
-        self.log_observer = log.start_from_settings(self.settings)
-        log.scrapy_info(settings)
+        configure_logging(self.settings)
+        log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        log.msg(format="Received %(signame)s, shutting down gracefully. Send again to force ",
-                level=log.INFO, signame=signame)
-        reactor.callFromThread(self.stop)
+        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
+                    {'signame': signame})
+        reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
-                level=log.INFO, signame=signame)
-        self._stop_logging()
+        logger.info('Received %(signame)s twice, forcing unclean shutdown',
+                    {'signame': signame})
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
+        """
+        This method starts a Twisted `reactor`_, adjusts its pool size to
+        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
+        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+
+        If `stop_after_crawl` is True, the reactor will be stopped after all
+        crawlers have finished, using :meth:`join`.
+
+        :param boolean stop_after_crawl: stop or not the reactor when all
+            crawlers have finished
+        """
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
             if d.called:
                 return
-            d.addBoth(lambda _: self._stop_reactor())
+            d.addBoth(self._stop_reactor)
 
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            reactor.installResolver(CachingThreadedResolver(reactor))
-
+        reactor.installResolver(self._get_dns_resolver())
+        tp = reactor.getThreadPool()
+        tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
 
-    def _stop_logging(self):
-        if self.log_observer:
-            self.log_observer.stop()
+    def _get_dns_resolver(self):
+        if self.settings.getbool('DNSCACHE_ENABLED'):
+            cache_size = self.settings.getint('DNSCACHE_SIZE')
+        else:
+            cache_size = 0
+        return CachingThreadedResolver(
+            reactor=reactor,
+            cache_size=cache_size,
+            timeout=self.settings.getfloat('DNS_TIMEOUT')
+        )
+
+    def _graceful_stop_reactor(self):
+        d = self.stop()
+        d.addBoth(self._stop_reactor)
+        return d
 
     def _stop_reactor(self, _=None):
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+
+def _get_spider_loader(settings):
+    """ Get SpiderLoader instance from settings """
+    if settings.get('SPIDER_MANAGER_CLASS'):
+        warnings.warn(
+            'SPIDER_MANAGER_CLASS option is deprecated. '
+            'Please use SPIDER_LOADER_CLASS.',
+            category=ScrapyDeprecationWarning, stacklevel=2
+        )
+    cls_path = settings.get('SPIDER_MANAGER_CLASS',
+                            settings.get('SPIDER_LOADER_CLASS'))
+    loader_cls = load_object(cls_path)
+    try:
+        verifyClass(ISpiderLoader, loader_cls)
+    except DoesNotImplement:
+        warnings.warn(
+            'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
+            'not fully implement scrapy.interfaces.ISpiderLoader interface. '
+            'Please add all missing methods to avoid unexpected runtime errors.',
+            category=ScrapyDeprecationWarning, stacklevel=2
+        )
+    return loader_cls.from_settings(settings.frozencopy())

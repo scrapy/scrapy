@@ -5,14 +5,14 @@ Item Pipeline
 =============
 
 After an item has been scraped by a spider, it is sent to the Item Pipeline
-which process it through several components that are executed sequentially.
+which processes it through several components that are executed sequentially.
 
 Each item pipeline component (sometimes referred as just "Item Pipeline") is a
-Python class that implements a simple method. They receive an Item and perform
-an action over it, also deciding if the Item should continue through the
+Python class that implements a simple method. They receive an item and perform
+an action over it, also deciding if the item should continue through the
 pipeline or be dropped and no longer processed.
 
-Typical use for item pipelines are:
+Typical uses of item pipelines are:
 
 * cleansing HTML data
 * validating scraped data (checking that the items contain certain fields)
@@ -28,15 +28,15 @@ Each item pipeline component is a Python class that must implement the following
 .. method:: process_item(self, item, spider)
 
    This method is called for every item pipeline component and must either return
-   a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
+   a dict with data, :class:`~scrapy.item.Item` (or any descendant class) object 
+   or raise a :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
    :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object
+   :type item: :class:`~scrapy.item.Item` object or a dict
 
    :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spider.Spider` object
+   :type spider: :class:`~scrapy.spiders.Spider` object
 
 Additionally, they may also implement the following methods:
 
@@ -45,14 +45,14 @@ Additionally, they may also implement the following methods:
    This method is called when the spider is opened.
 
    :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spider.Spider` object
+   :type spider: :class:`~scrapy.spiders.Spider` object
 
 .. method:: close_spider(self, spider)
 
    This method is called when the spider is closed.
 
    :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spider.Spider` object
+   :type spider: :class:`~scrapy.spiders.Spider` object
 
 .. method:: from_crawler(cls, crawler)
 
@@ -135,6 +135,8 @@ method and how to clean up the resources properly.
     import pymongo
 
     class MongoPipeline(object):
+    
+        collection_name = 'scrapy_items'
 
         def __init__(self, mongo_uri, mongo_db):
             self.mongo_uri = mongo_uri
@@ -155,8 +157,7 @@ method and how to clean up the resources properly.
             self.client.close()
 
         def process_item(self, item, spider):
-            collection_name = item.__class__.__name__
-            self.db[collection_name].insert(dict(item))
+            self.db[self.collection_name].insert(dict(item))
             return item
 
 .. _MongoDB: http://www.mongodb.org/
@@ -166,7 +167,7 @@ Duplicates filter
 -----------------
 
 A filter that looks for duplicate items, and drops those items that were
-already processed. Let say that our items have an unique id, but our spider
+already processed. Let's say that our items have a unique id, but our spider
 returns multiples items with the same id::
 
 
@@ -197,6 +198,6 @@ To activate an Item Pipeline component you must add its class to the
    }
 
 The integer values you assign to classes in this setting determine the
-order they run in- items go through pipelines from order number low to
-high. It's customary to define these numbers in the 0-1000 range.
+order in which they run: items go through from lower valued to higher
+valued classes. It's customary to define these numbers in the 0-1000 range.
 

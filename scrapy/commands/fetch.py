@@ -1,7 +1,7 @@
 from __future__ import print_function
 from w3lib.url import is_url
 
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
@@ -48,10 +48,10 @@ class Command(ScrapyCommand):
         request.meta['handle_httpstatus_all'] = True
 
         spidercls = DefaultSpider
-        spiders = self.crawler_process.spiders
+        spider_loader = self.crawler_process.spider_loader
         if opts.spider:
-            spidercls = spiders.load(opts.spider)
+            spidercls = spider_loader.load(opts.spider)
         else:
-            spidercls = spidercls_for_request(spiders, request, spidercls)
+            spidercls = spidercls_for_request(spider_loader, request, spidercls)
         self.crawler_process.crawl(spidercls, start_requests=lambda: [request])
         self.crawler_process.start()

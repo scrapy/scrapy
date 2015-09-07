@@ -3,7 +3,7 @@ from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
 
-from scrapy.contrib.spiders import CrawlSpider
+from scrapy.spiders import CrawlSpider
 
 
 class MyBaseSpider(CrawlSpider):

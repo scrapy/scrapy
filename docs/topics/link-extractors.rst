@@ -8,7 +8,7 @@ Link extractors are objects whose only purpose is to extract links from web
 pages (:class:`scrapy.http.Response` objects) which will be eventually
 followed.
 
-There is ``scrapy.contrib.linkextractors import LinkExtractor`` available
+There is ``scrapy.linkextractors import LinkExtractor`` available
 in Scrapy, but you can create your own custom Link Extractors to suit your
 needs by implementing a simple interface.
 
@@ -18,10 +18,10 @@ of :class:`scrapy.link.Link` objects. Link extractors are meant to be
 instantiated once and their ``extract_links`` method called several times
 with different responses to extract links to follow.
 
-Link extractors are used in the :class:`~scrapy.contrib.spiders.CrawlSpider`
+Link extractors are used in the :class:`~scrapy.spiders.CrawlSpider`
 class (available in Scrapy), through a set of rules, but you can also use it in
 your spiders, even if you don't subclass from
-:class:`~scrapy.contrib.spiders.CrawlSpider`, as its purpose is very simple: to
+:class:`~scrapy.spiders.CrawlSpider`, as its purpose is very simple: to
 extract links.
 
 
@@ -30,16 +30,16 @@ extract links.
 Built-in link extractors reference
 ==================================
 
-.. module:: scrapy.contrib.linkextractors
+.. module:: scrapy.linkextractors
    :synopsis: Link extractors classes
 
 Link extractors classes bundled with Scrapy are provided in the
-:mod:`scrapy.contrib.linkextractors` module.
+:mod:`scrapy.linkextractors` module.
 
 The default link extractor is ``LinkExtractor``, which is the same as
 :class:`~.LxmlLinkExtractor`::
 
-    from scrapy.contrib.linkextractors import LinkExtractor
+    from scrapy.linkextractors import LinkExtractor
 
 There used to be other link extractor classes in previous Scrapy versions,
 but they are deprecated now.
@@ -47,11 +47,11 @@ but they are deprecated now.
 LxmlLinkExtractor
 -----------------
 
-.. module:: scrapy.contrib.linkextractors.lxmlhtml
+.. module:: scrapy.linkextractors.lxmlhtml
    :synopsis: lxml's HTMLParser-based link extractors
 
 
-.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
+.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
 
     LxmlLinkExtractor is the recommended link extractor with handy filtering
     options. It is implemented using lxml's robust HTMLParser.
@@ -78,15 +78,20 @@ LxmlLinkExtractor
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links.
         If not given, it will default to the
-        ``IGNORED_EXTENSIONS`` list defined in the `scrapy.linkextractor`_
-        module.
+        ``IGNORED_EXTENSIONS`` list defined in the
+        `scrapy.linkextractors`_ package.
     :type deny_extensions: list
 
-    :param restrict_xpaths: is a XPath (or list of XPath's) which defines
+    :param restrict_xpaths: is an XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from.
         If given, only the text selected by those XPath will be scanned for
         links. See examples below.
     :type restrict_xpaths: str or list
+
+    :param restrict_css: a CSS selector (or list of selectors) which defines
+        regions inside the response where links should be extracted from.
+        Has the same behaviour as ``restrict_xpaths``.
+    :type restrict_css: str or list
 
     :param tags: a tag or a list of tags to consider when extracting links.
         Defaults to ``('a', 'area')``.
@@ -127,4 +132,4 @@ LxmlLinkExtractor
 
     :type process_value: callable
 
-.. _scrapy.linkextractor: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractor.py
+.. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

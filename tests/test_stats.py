@@ -1,8 +1,9 @@
 import unittest
 
-from scrapy.spider import Spider
-from scrapy.statscol import StatsCollector, DummyStatsCollector
+from scrapy.spiders import Spider
+from scrapy.statscollectors import StatsCollector, DummyStatsCollector
 from scrapy.utils.test import get_crawler
+
 
 class StatsCollectorTest(unittest.TestCase):
 
@@ -50,6 +51,3 @@ class StatsCollectorTest(unittest.TestCase):
         stats.set_value('test', 'value', spider=self.spider)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_stats('a'), {})
-
-if __name__ == "__main__":
-    unittest.main()

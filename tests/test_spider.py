@@ -2,23 +2,22 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+
+from testfixtures import LogCapture
 from twisted.trial import unittest
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from scrapy import signals
-from scrapy.spider import Spider, BaseSpider
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
-from scrapy.contrib.spiders.init import InitSpider
-from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
+from scrapy.spiders.init import InitSpider
+from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
+
+from tests import mock
 
 
 class SpiderTest(unittest.TestCase):
@@ -103,6 +102,23 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(settings.get('TEST1'), 'spider')
         self.assertEqual(settings.get('TEST2'), 'spider')
         self.assertEqual(settings.get('TEST3'), 'project')
+
+    def test_logger(self):
+        spider = self.spider_class('example.com')
+        with LogCapture() as l:
+            spider.logger.info('test log msg')
+        l.check(('example.com', 'INFO', 'test log msg'))
+
+        record = l.records[0]
+        self.assertIn('spider', record.__dict__)
+        self.assertIs(record.spider, spider)
+
+    def test_log(self):
+        spider = self.spider_class('example.com')
+        with mock.patch('scrapy.spiders.Spider.logger') as mock_logger:
+            spider.log('test log msg', 'INFO')
+        mock_logger.log.assert_called_once_with('INFO', 'test log msg')
+
 
 class InitSpiderTest(SpiderTest):
 
@@ -285,26 +301,32 @@ class SitemapSpiderTest(SpiderTest):
     g.close()
     GZBODY = f.getvalue()
 
-    def test_get_sitemap_body(self):
+    def assertSitemapBody(self, response, body):
         spider = self.spider_class("example.com")
+        self.assertEqual(spider._get_sitemap_body(response), body)
 
+    def test_get_sitemap_body(self):
         r = XmlResponse(url="http://www.example.com/", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
         r = HtmlResponse(url="http://www.example.com/", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), None)
+        self.assertSitemapBody(r, None)
 
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), None)
+        self.assertSitemapBody(r, None)
 
-        r = Response(url="http://www.example.com/sitemap", body=self.GZBODY, headers={"content-type": "application/gzip"})
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+    def test_get_sitemap_body_gzip_headers(self):
+        r = Response(url="http://www.example.com/sitemap", body=self.GZBODY,
+                     headers={"content-type": "application/gzip"})
+        self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url(self):
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url_compressed(self):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
 
 class BaseSpiderDeprecationTest(unittest.TestCase):

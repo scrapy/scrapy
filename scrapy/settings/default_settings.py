@@ -20,6 +20,12 @@ from os.path import join, abspath, dirname
 
 AJAXCRAWL_ENABLED = False
 
+AUTOTHROTTLE_ENABLED = False
+AUTOTHROTTLE_DEBUG = False
+AUTOTHROTTLE_MAX_DELAY = 60.0
+AUTOTHROTTLE_START_DELAY = 5.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+
 BOT_NAME = 'scrapybot'
 
 CLOSESPIDER_TIMEOUT = 0
@@ -52,6 +58,8 @@ DEPTH_STATS = True
 DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
+DNSCACHE_SIZE = 10000
+DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
 
@@ -66,6 +74,9 @@ DOWNLOAD_HANDLERS_BASE = {
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
+DOWNLOAD_MAXSIZE = 1024*1024*1024   # 1024m
+DOWNLOAD_WARNSIZE = 32*1024*1024    # 32m
+
 DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
@@ -75,27 +86,27 @@ DOWNLOADER_MIDDLEWARES = {}
 
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
-    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
-    'scrapy.contrib.downloadermiddleware.downloadtimeout.DownloadTimeoutMiddleware': 350,
-    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
-    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
-    'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
-    'scrapy.contrib.downloadermiddleware.ajaxcrawl.AjaxCrawlMiddleware': 560,
-    'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
-    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
-    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
-    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
-    'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-    'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
-    'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-    'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
+    'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
+    'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
+    'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
+    'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware': 560,
+    'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
+    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
+    'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
+    'scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware': 830,
+    'scrapy.downloadermiddlewares.stats.DownloaderStats': 850,
+    'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     # Downloader side
 }
 
 DOWNLOADER_STATS = True
 
-DUPEFILTER_CLASS = 'scrapy.dupefilter.RFPDupeFilter'
+DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
 
 try:
     EDITOR = os.environ['EDITOR']
@@ -108,51 +119,55 @@ except KeyError:
 EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
-    'scrapy.contrib.corestats.CoreStats': 0,
+    'scrapy.extensions.corestats.CoreStats': 0,
     'scrapy.telnet.TelnetConsole': 0,
-    'scrapy.contrib.memusage.MemoryUsage': 0,
-    'scrapy.contrib.memdebug.MemoryDebugger': 0,
-    'scrapy.contrib.closespider.CloseSpider': 0,
-    'scrapy.contrib.feedexport.FeedExporter': 0,
-    'scrapy.contrib.logstats.LogStats': 0,
-    'scrapy.contrib.spiderstate.SpiderState': 0,
-    'scrapy.contrib.throttle.AutoThrottle': 0,
+    'scrapy.extensions.memusage.MemoryUsage': 0,
+    'scrapy.extensions.memdebug.MemoryDebugger': 0,
+    'scrapy.extensions.closespider.CloseSpider': 0,
+    'scrapy.extensions.feedexport.FeedExporter': 0,
+    'scrapy.extensions.logstats.LogStats': 0,
+    'scrapy.extensions.spiderstate.SpiderState': 0,
+    'scrapy.extensions.throttle.AutoThrottle': 0,
 }
 
 FEED_URI = None
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
+FEED_EXPORT_FIELDS = None
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
-    '': 'scrapy.contrib.feedexport.FileFeedStorage',
-    'file': 'scrapy.contrib.feedexport.FileFeedStorage',
-    'stdout': 'scrapy.contrib.feedexport.StdoutFeedStorage',
-    's3': 'scrapy.contrib.feedexport.S3FeedStorage',
-    'ftp': 'scrapy.contrib.feedexport.FTPFeedStorage',
+    '': 'scrapy.extensions.feedexport.FileFeedStorage',
+    'file': 'scrapy.extensions.feedexport.FileFeedStorage',
+    'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
+    's3': 'scrapy.extensions.feedexport.S3FeedStorage',
+    'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
 }
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
-    'json': 'scrapy.contrib.exporter.JsonItemExporter',
-    'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
-    'jl': 'scrapy.contrib.exporter.JsonLinesItemExporter',
-    'csv': 'scrapy.contrib.exporter.CsvItemExporter',
-    'xml': 'scrapy.contrib.exporter.XmlItemExporter',
-    'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
-    'pickle': 'scrapy.contrib.exporter.PickleItemExporter',
+    'json': 'scrapy.exporters.JsonItemExporter',
+    'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+    'jl': 'scrapy.exporters.JsonLinesItemExporter',
+    'csv': 'scrapy.exporters.CsvItemExporter',
+    'xml': 'scrapy.exporters.XmlItemExporter',
+    'marshal': 'scrapy.exporters.MarshalItemExporter',
+    'pickle': 'scrapy.exporters.PickleItemExporter',
 }
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
-HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
+HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0
+HTTPCACHE_ALWAYS_STORE = False
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
+HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
 HTTPCACHE_DBM_MODULE = 'anydbm'
-HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
+HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
+HTTPCACHE_GZIP = False
 
-ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
+ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
@@ -160,6 +175,8 @@ ITEM_PIPELINES_BASE = {}
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
 LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
+LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
+LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
@@ -177,6 +194,7 @@ MAIL_USER = None
 MEMDEBUG_ENABLED = False        # enable memory debugging
 MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown
 
+MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_ENABLED = False
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
@@ -190,6 +208,8 @@ NEWSPIDER_MODULE = ''
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 
+REACTOR_THREADPOOL_MAXSIZE = 10
+
 REDIRECT_ENABLED = True
 REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
@@ -198,32 +218,32 @@ REFERER_ENABLED = True
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 400, 408]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
-SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
+SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 
-SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
+SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
 SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
-    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
-    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
+    'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+    'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+    'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+    'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+    'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     # Spider side
 }
 
 SPIDER_MODULES = []
 
-STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
+STATS_CLASS = 'scrapy.statscollectors.MemoryStatsCollector'
 STATS_DUMP = True
 
 STATSMAILER_RCPTS = []

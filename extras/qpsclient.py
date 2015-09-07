@@ -7,7 +7,7 @@ usage:
 
 """
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 
 

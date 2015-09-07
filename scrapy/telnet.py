@@ -5,13 +5,18 @@ See documentation in docs/topics/telnetconsole.rst
 """
 
 import pprint
+import logging
 
-from twisted.conch import manhole, telnet
-from twisted.conch.insults import insults
 from twisted.internet import protocol
+try:
+    from twisted.conch import manhole, telnet
+    from twisted.conch.insults import insults
+    TWISTED_CONCH_AVAILABLE = True
+except ImportError:
+    TWISTED_CONCH_AVAILABLE = False
 
 from scrapy.exceptions import NotConfigured
-from scrapy import log, signals
+from scrapy import signals
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
@@ -22,6 +27,8 @@ try:
 except ImportError:
     hpy = None
 
+logger = logging.getLogger(__name__)
+
 # signal to update telnet variables
 # args: telnet_vars
 update_telnet_vars = object()
@@ -31,6 +38,8 @@ class TelnetConsole(protocol.ServerFactory):
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
+            raise NotConfigured
+        if not TWISTED_CONCH_AVAILABLE:
             raise NotConfigured
         self.crawler = crawler
         self.noisy = False
@@ -46,8 +55,9 @@ class TelnetConsole(protocol.ServerFactory):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        log.msg(format="Telnet console listening on %(host)s:%(port)d",
-                level=log.DEBUG, host=h.host, port=h.port)
+        logger.debug("Telnet console listening on %(host)s:%(port)d",
+                     {'host': h.host, 'port': h.port},
+                     extra={'crawler': self.crawler})
 
     def stop_listening(self):
         self.port.stopListening()
@@ -66,7 +76,6 @@ class TelnetConsole(protocol.ServerFactory):
             'crawler': self.crawler,
             'extensions': self.crawler.extensions,
             'stats': self.crawler.stats,
-            'spiders': self.crawler.spiders,
             'settings': self.crawler.settings,
             'est': lambda: print_engine_status(self.crawler.engine),
             'p': pprint.pprint,

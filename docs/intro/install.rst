@@ -37,13 +37,13 @@ Platform specific installation notes
 Windows
 -------
 
-* Install Python 2.7 from http://python.org/download/
+* Install Python 2.7 from https://www.python.org/downloads/
 
   You need to adjust ``PATH`` environment variable to include paths to
   the Python executable and additional scripts. The following paths need to be
   added to ``PATH``::
 
-      C:\Python2.7\;C:\Python2.7\Scripts\;
+      C:\Python27\;C:\Python27\Scripts\;
 
   To update the ``PATH`` open a Command prompt and run::
 
@@ -53,6 +53,10 @@ Windows
   following command and check it shows the expected Python version::
 
       python --version
+
+* Install `pywin32` from http://sourceforge.net/projects/pywin32/
+
+  Be sure you download the architecture (win32 or amd64) that matches your system
 
 * Install `pip`_ from https://pip.pypa.io/en/latest/installing.html
 
@@ -66,7 +70,7 @@ Windows
       pip install Scrapy
 
 Ubuntu 9.10 or above
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
 typically too old and slow to catch up with latest Scrapy.
@@ -76,15 +80,15 @@ solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
 Archlinux
-~~~~~~~~~
+---------
 
 You can follow the generic instructions or install Scrapy from `AUR Scrapy package`::
 
     yaourt -S scrapy
 
 
-.. _Python: http://www.python.org
-.. _pip: http://www.pip-installer.org/en/latest/installing.html
+.. _Python: https://www.python.org/
+.. _pip: https://pip.pypa.io/en/latest/installing.html
 .. _easy_install: http://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/

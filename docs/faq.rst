@@ -21,8 +21,8 @@ comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
-.. _jinja2: http://jinja.pocoo.org/2/
-.. _Django: http://www.djangoproject.com
+.. _jinja2: http://jinja.pocoo.org/
+.. _Django: https://www.djangoproject.com/
 
 .. _faq-python-versions:
 
@@ -57,14 +57,14 @@ focus on the real problems we need to solve.
 We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
 to steal from us!
 
-.. _Django: http://www.djangoproject.com
+.. _Django: https://www.djangoproject.com/
 
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
 Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
-:class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -94,8 +94,8 @@ in most cases. If you do want to crawl in true `BFO order`_, you can do it by
 setting the following settings::
 
     DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
+    SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
+    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -113,7 +113,7 @@ See previous question.
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
-Yes, see :class:`~scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware`.
+Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------
@@ -149,18 +149,18 @@ middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 
 For more info see:
-:class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
 
-See :ref:`topics-scrapyd`.
+See :ref:`topics-deploy`.
 
 Can I use JSON for large exports?
 ---------------------------------
 
 It'll depend on how large your output is. See :ref:`this warning
-<json-with-large-data>` in :class:`~scrapy.contrib.exporter.JsonItemExporter`
+<json-with-large-data>` in :class:`~scrapy.exporters.JsonItemExporter`
 documentation.
 
 Can I return (Twisted) deferreds from signal handlers?
@@ -190,7 +190,7 @@ Or by setting a global download delay in your project with the
 Can I call ``pdb.set_trace()`` from my spiders to debug them?
 -------------------------------------------------------------
 
-Yes, but you can also use the Scrapy shell which allows you too quickly analyze
+Yes, but you can also use the Scrapy shell which allows you to quickly analyze
 (and even modify) the response being processed by your spider, which is, quite
 often, more useful than plain old ``pdb.set_trace()``.
 
@@ -221,7 +221,7 @@ more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
 .. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
-.. _example spider: http://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
+.. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
 ----------------------------------------------------

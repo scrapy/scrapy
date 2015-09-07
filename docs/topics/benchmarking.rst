@@ -19,20 +19,20 @@ To run it use::
 You should see an output like this::
 
     2013-05-16 13:08:46-0300 [scrapy] INFO: Scrapy 0.17.0 started (bot: scrapybot)
-    2013-05-16 13:08:47-0300 [follow] INFO: Spider opened
-    2013-05-16 13:08:47-0300 [follow] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:48-0300 [follow] INFO: Crawled 74 pages (at 4440 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:49-0300 [follow] INFO: Crawled 143 pages (at 4140 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:50-0300 [follow] INFO: Crawled 210 pages (at 4020 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:51-0300 [follow] INFO: Crawled 274 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:52-0300 [follow] INFO: Crawled 343 pages (at 4140 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:53-0300 [follow] INFO: Crawled 410 pages (at 4020 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:54-0300 [follow] INFO: Crawled 474 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:55-0300 [follow] INFO: Crawled 538 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:56-0300 [follow] INFO: Crawled 602 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:57-0300 [follow] INFO: Closing spider (closespider_timeout)
-    2013-05-16 13:08:57-0300 [follow] INFO: Crawled 666 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
-    2013-05-16 13:08:57-0300 [follow] INFO: Dumping Scrapy stats:
+    2013-05-16 13:08:47-0300 [scrapy] INFO: Spider opened
+    2013-05-16 13:08:47-0300 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:48-0300 [scrapy] INFO: Crawled 74 pages (at 4440 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:49-0300 [scrapy] INFO: Crawled 143 pages (at 4140 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:50-0300 [scrapy] INFO: Crawled 210 pages (at 4020 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:51-0300 [scrapy] INFO: Crawled 274 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:52-0300 [scrapy] INFO: Crawled 343 pages (at 4140 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:53-0300 [scrapy] INFO: Crawled 410 pages (at 4020 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:54-0300 [scrapy] INFO: Crawled 474 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:55-0300 [scrapy] INFO: Crawled 538 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:56-0300 [scrapy] INFO: Crawled 602 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:57-0300 [scrapy] INFO: Closing spider (closespider_timeout)
+    2013-05-16 13:08:57-0300 [scrapy] INFO: Crawled 666 pages (at 3840 pages/min), scraped 0 items (at 0 items/min)
+    2013-05-16 13:08:57-0300 [scrapy] INFO: Dumping Scrapy stats:
         {'downloader/request_bytes': 231508,
          'downloader/request_count': 682,
          'downloader/request_method_count/GET': 682,
@@ -49,7 +49,7 @@ You should see an output like this::
          'scheduler/enqueued': 12767,
          'scheduler/enqueued/memory': 12767,
          'start_time': datetime.datetime(2013, 5, 16, 16, 8, 47, 676539)}
-    2013-05-16 13:08:57-0300 [follow] INFO: Spider closed (closespider_timeout)
+    2013-05-16 13:08:57-0300 [scrapy] INFO: Spider closed (closespider_timeout)
 
 That tells you that Scrapy is able to crawl about 3900 pages per minute in the
 hardware where you run it. Note that this is a very simple spider intended to

@@ -37,7 +37,7 @@ Request objects
        request (once its downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spider.Spider.parse` method will be used.
+       :meth:`~scrapy.spiders.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: callable
@@ -157,7 +157,7 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
-    .. _shallow copied: http://docs.python.org/library/copy.html
+    .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
 
@@ -189,7 +189,7 @@ Example::
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
-        self.log("Visited %s" % response.url)
+        self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback. You
@@ -224,12 +224,16 @@ Those are:
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`handle_httpstatus_all`
 * ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
 * :reqmeta:`cookiejar`
+  :reqmeta:`dont_cache`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`download_timeout`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`proxy`
 
 .. reqmeta:: bindaddress
 
@@ -378,7 +382,7 @@ method for this job. Here's an example spider which uses it::
         def after_login(self, response):
             # check login succeed before going on
             if "authentication failed" in response.body:
-                self.log("Login failed", level=log.ERROR)
+                self.logger.error("Login failed")
                 return
 
             # continue scraping with authenticated session...
@@ -488,6 +492,18 @@ Response objects
        Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Response.meta` is copied by default.
+
+    .. method:: Response.urljoin(url)
+
+        Constructs an absolute url by combining the Response's :attr:`url` with
+        a possible relative url.
+
+        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        making this call::
+
+            urlparse.urljoin(response.url, url)
+
+.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 

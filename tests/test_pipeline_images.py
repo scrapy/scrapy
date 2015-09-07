@@ -9,7 +9,8 @@ from twisted.trial import unittest
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.contrib.pipeline.images import ImagesPipeline
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.utils.python import to_bytes
 
 skip = False
 try:
@@ -100,11 +101,11 @@ class DeprecatedImagesPipeline(ImagesPipeline):
         return self.image_key(url)
 
     def image_key(self, url):
-        image_guid = hashlib.sha1(url).hexdigest()
+        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
         return 'empty/%s.jpg' % (image_guid)
 
     def thumb_key(self, url, thumb_id):
-        thumb_guid = hashlib.sha1(url).hexdigest()
+        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
 
 
@@ -168,35 +169,40 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
 class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
-        from scrapy.contrib.pipeline.images import ImagesPipeline
         class TestItem(Item):
             name = Field()
             image_urls = Field()
             images = Field()
-        url = 'http://www.example.com/images/1.jpg'
-        item = TestItem({'name': 'item1', 'image_urls': [url]})
-        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
-        requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
-        pipeline.item_completed(results, item, None)
-        self.assertEqual(item['images'], [results[0][1]])
+
+        for cls in TestItem, dict:
+            url = 'http://www.example.com/images/1.jpg'
+            item = cls({'name': 'item1', 'image_urls': [url]})
+            pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+            requests = list(pipeline.get_media_requests(item, None))
+            self.assertEqual(requests[0].url, url)
+            results = [(True, {'url': url})]
+            pipeline.item_completed(results, item, None)
+            self.assertEqual(item['images'], [results[0][1]])
 
     def test_item_fields_override_settings(self):
-        from scrapy.contrib.pipeline.images import ImagesPipeline
         class TestItem(Item):
             name = Field()
             image = Field()
             stored_image = Field()
-        url = 'http://www.example.com/images/1.jpg'
-        item = TestItem({'name': 'item1', 'image': [url]})
-        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/',
-                'IMAGES_URLS_FIELD': 'image', 'IMAGES_RESULT_FIELD': 'stored_image'}))
-        requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
-        pipeline.item_completed(results, item, None)
-        self.assertEqual(item['stored_image'], [results[0][1]])
+
+        for cls in TestItem, dict:
+            url = 'http://www.example.com/images/1.jpg'
+            item = cls({'name': 'item1', 'image': [url]})
+            pipeline = ImagesPipeline.from_settings(Settings({
+                'IMAGES_STORE': 's3://example/images/',
+                'IMAGES_URLS_FIELD': 'image',
+                'IMAGES_RESULT_FIELD': 'stored_image'
+            }))
+            requests = list(pipeline.get_media_requests(item, None))
+            self.assertEqual(requests[0].url, url)
+            results = [(True, {'url': url})]
+            pipeline.item_completed(results, item, None)
+            self.assertEqual(item['stored_image'], [results[0][1]])
 
 
 def _create_image(format, *a, **kw):

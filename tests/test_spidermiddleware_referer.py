@@ -1,8 +1,8 @@
 from unittest import TestCase
 
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
-from scrapy.contrib.spidermiddleware.referer import RefererMiddleware
+from scrapy.spiders import Spider
+from scrapy.spidermiddlewares.referer import RefererMiddleware
 
 
 class TestRefererMiddleware(TestCase):
@@ -17,5 +17,5 @@ class TestRefererMiddleware(TestCase):
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out[0].headers.get('Referer'),
-                          'http://scrapytest.org')
+                          b'http://scrapytest.org')
 

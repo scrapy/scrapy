@@ -13,6 +13,33 @@ just call "commands" or "Scrapy commands".
 The Scrapy tool provides several commands, for multiple purposes, and each one
 accepts a different set of arguments and options.
 
+(The ``scrapy deploy`` command has been removed in 1.0 in favor of the
+standalone ``scrapyd-deploy``. See `Deploying your project`_.)
+
+.. _topics-config-settings:
+
+Configuration settings
+======================
+
+Scrapy will look for configuration parameters in ini-style ``scrapy.cfg`` files
+in standard locations:
+
+1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
+2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
+   for global (user-wide) settings, and
+3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
+
+Settings from these files are merged in the listed order of preference:
+user-defined values have higher priority than system-wide defaults
+and project-wide settings will override all others, when defined.
+
+Scrapy also understands, and can be configured through, a number of environment
+variables. Currently these are:
+
+* ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
+* ``SCRAPY_PROJECT``
+* ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
+
 .. _topics-project-structure:
 
 Default structure of Scrapy projects
@@ -59,8 +86,8 @@ some usage help and the available commands::
       fetch         Fetch a URL using the Scrapy downloader
     [...]
 
-The first line will print the currently active project, if you're inside a
-Scrapy project. In this, it was run from outside a project. If run from inside
+The first line will print the currently active project if you're inside a
+Scrapy project. In this example it was run from outside a project. If run from inside
 a project it would have printed something like this::
 
     Scrapy X.Y - project: myproject
@@ -114,7 +141,7 @@ Available tool commands
 =======================
 
 This section contains a list of the available built-in commands with a
-description and some usage examples. Remember you can always get more info
+description and some usage examples. Remember, you can always get more info
 about each command by running::
 
     scrapy <command> -h
@@ -147,7 +174,6 @@ Project-only commands:
 * :command:`edit`
 * :command:`parse`
 * :command:`genspider`
-* :command:`deploy`
 * :command:`bench`
 
 .. command:: startproject
@@ -175,7 +201,7 @@ genspider
 
 Create a new spider in the current project.
 
-This is just a convenient shortcut command for creating spiders based on
+This is just a convenience shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
@@ -277,7 +303,7 @@ edit
 Edit the given spider using the editor defined in the :setting:`EDITOR`
 setting.
 
-This command is provided only as a convenient shortcut for the most common
+This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug his spiders.
 
@@ -297,7 +323,7 @@ Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
 The interesting thing about this command is that it fetches the page how the
-spider would download it. For example, if the spider has an ``USER_AGENT``
+spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
 So this command can be used to "see" how your spider would fetch a certain page.
@@ -376,7 +402,7 @@ Supported options:
 
 * ``--pipelines``: process items through pipelines
 
-* ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
+* ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the
   response
 
@@ -453,18 +479,6 @@ version
 Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
 and Platform info, which is useful for bug reports.
 
-.. command:: deploy
-
-deploy
-------
-
-.. versionadded:: 0.11
-
-* Syntax: ``scrapy deploy [ <target:project> | -l <target> | -L ]``
-* Requires project: *yes*
-
-Deploy the project into a Scrapyd server. See `Deploying your project`_.
-
 .. command:: bench
 
 bench
@@ -484,7 +498,7 @@ You can also add your custom project commands by using the
 :setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
 `scrapy/commands`_ for examples on how to implement your commands.
 
-.. _scrapy/commands: https://github.com/scrapy/scrapy/blob/master/scrapy/commands
+.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE
@@ -500,3 +514,24 @@ Example::
     COMMANDS_MODULE = 'mybot.commands'
 
 .. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/deploy.html
+
+Register commands via setup.py entry points
+-------------------------------------------
+
+.. note:: This is an experimental feature, use with caution.
+
+You can also add Scrapy commands from an external library by adding a
+``scrapy.commands`` section in the entry points of the library ``setup.py``
+file.
+
+The following example adds ``my_command`` command::
+
+  from setuptools import setup, find_packages
+
+  setup(name='scrapy-mymodule',
+    entry_points={
+      'scrapy.commands': [
+        'my_command=my_scrapy_module.commands:MyCommand',
+      ],
+    },
+   )

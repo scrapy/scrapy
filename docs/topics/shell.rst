@@ -17,6 +17,9 @@ spider, without having to run the spider to test every change.
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
+Configuring the shell
+=====================
+
 If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
 standard Python console). The `IPython`_ console is much more powerful and
 provides smart auto-completion and colorized output, among other things.
@@ -25,8 +28,20 @@ We highly recommend you install `IPython`_, specially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 
+Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
+is unavailable.
+
+Through scrapy's settings you can configure it to use any one of
+``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
+are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
+variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+
+    [settings]
+    shell = bpython
+
 .. _IPython: http://ipython.org/
 .. _IPython installation guide: http://ipython.org/install.html
+.. _bpython: http://www.bpython-interpreter.org/
 
 Launch the shell
 ================
@@ -74,7 +89,7 @@ Those objects are:
  * ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
 
  * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.spider.Spider` object if there is no spider found for
+   :class:`~scrapy.spiders.Spider` object if there is no spider found for
    the current URL
 
  * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
@@ -84,9 +99,6 @@ Those objects are:
 
  * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
-
- * ``sel`` - a :class:`~scrapy.selector.Selector` object constructed
-   with the last response fetched
 
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
 
@@ -117,7 +129,6 @@ all start with the ``[s]`` prefix)::
     [s]   item       {}
     [s]   request    <GET http://scrapy.org>
     [s]   response   <200 http://scrapy.org>
-    [s]   sel        <Selector xpath=None data=u'<html>\n  <head>\n    <meta charset="utf-8'>
     [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
@@ -129,8 +140,8 @@ all start with the ``[s]`` prefix)::
 
 After that, we can start playing with the objects::
 
-    >>> sel.xpath("//h2/text()").extract()[0]
-    u'Welcome to Scrapy'
+    >>> response.xpath("//h1/text()").extract()[0]
+    u'Meet Scrapy'
 
     >>> fetch("http://slashdot.org")
     [s] Available Scrapy objects:
@@ -138,7 +149,6 @@ After that, we can start playing with the objects::
     [s]   item       {}
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
-    [s]   sel        <Selector xpath=None data=u'<html lang="en">\n<head>\n\n\n\n\n<script id="'>
     [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
@@ -146,7 +156,7 @@ After that, we can start playing with the objects::
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    >>> sel.xpath('//title/text()').extract()
+    >>> response.xpath('//title/text()').extract()
     [u'Slashdot: News for nerds, stuff that matters']
 
     >>> request = request.replace(method="POST")
@@ -192,8 +202,8 @@ Here's an example of how you would call it from your spider::
 
 When you run the spider, you will get something similar to this::
 
-    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
-    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
     [s] Available Scrapy objects:
     [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
     ...
@@ -203,7 +213,7 @@ When you run the spider, you will get something similar to this::
 
 Then, you can check if the extraction code is working::
 
-    >>> sel.xpath('//h1[@class="fn"]')
+    >>> response.xpath('//h1[@class="fn"]')
     []
 
 Nope, it doesn't. So you can open the response in your web browser and see if
@@ -216,7 +226,7 @@ Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::
 
     >>> ^D
-    2014-01-23 17:50:03-0400 [myspider] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
+    2014-01-23 17:50:03-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is

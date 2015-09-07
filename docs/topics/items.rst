@@ -8,14 +8,23 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. Scrapy provides the :class:`Item` class for this
-purpose.
+sources, typically, web pages. Scrapy spiders can return the extracted data
+as Python dicts. While convenient and familiar, Python dicts lack structure:
+it is easy to make a typo in a field name or return inconsistent data,
+especially in a larger project with many spiders.
 
+To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields.
+their available fields. 
 
-.. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
+Various Scrapy components use extra information provided by Items: 
+exporters look at declared fields to figure out columns to export,
+serialization can be customized using Item fields metadata, :mod:`trackref`
+tracks Item instances to help finding memory leaks 
+(see :ref:`topics-leaks-trackrefs`), etc.
+
+.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -37,8 +46,8 @@ objects. Here is an example::
    declared similar to `Django Models`_, except that Scrapy Items are much
    simpler as there is no concept of different field types.
 
-.. _Django: http://www.djangoproject.com/
-.. _Django Models: http://docs.djangoproject.com/en/dev/topics/db/models/
+.. _Django: https://www.djangoproject.com/
+.. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
 
 .. _topics-items-fields:
 
@@ -63,8 +72,6 @@ documentation to see which metadata keys are used by each component.
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
-
-And that's all you need to know about declaring items.
 
 Working with Items
 ==================
@@ -214,7 +221,7 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: http://docs.python.org/library/stdtypes.html#dict
+.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
 
 Field objects
 =============
@@ -227,6 +234,6 @@ Field objects
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
 
-.. _dict: http://docs.python.org/library/stdtypes.html#dict
+.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 

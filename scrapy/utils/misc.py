@@ -7,7 +7,7 @@ from pkgutil import iter_modules
 import six
 from w3lib.html import replace_entities
 
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
@@ -32,7 +32,7 @@ def load_object(path):
     """Load an object given its absolute object path, and return it.
 
     object can be a class, function, variable o instance.
-    path ie: 'scrapy.contrib.downloadermiddelware.redirect.RedirectMiddleware'
+    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
     try:
@@ -81,7 +81,7 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, basestring):
+    if isinstance(regex, six.string_types):
         regex = re.compile(regex, re.UNICODE)
 
     try:
@@ -90,10 +90,11 @@ def extract_regex(regex, text, encoding='utf-8'):
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [replace_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+                for s in strings]
 
 
 def md5sum(file):
@@ -105,9 +106,14 @@ def md5sum(file):
     '784406af91dd5a54fbb9c84c2236595a'
     """
     m = hashlib.md5()
-    while 1:
+    while True:
         d = file.read(8096)
         if not d:
             break
         m.update(d)
     return m.hexdigest()
+
+def rel_has_nofollow(rel):
+    """Return True if link rel attribute has nofollow type"""
+    return True if rel is not None and 'nofollow' in rel.split() else False
+    

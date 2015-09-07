@@ -8,14 +8,14 @@ When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
 achieve this:
 
- * `BeautifulSoup`_ is a very popular screen scraping library among Python
+ * `BeautifulSoup`_ is a very popular web scraping library among Python
    programmers which constructs a Python object based on the structure of the
    HTML code and also deals with bad markup reasonably well, but it has one
    drawback: it's slow.
 
- * `lxml`_ is a XML parsing library (which also parses HTML) with a pythonic
-   API based on `ElementTree`_ (which is not part of the Python standard
-   library).
+ * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
+   API based on `ElementTree`_. (lxml is not part of the Python standard
+   library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
 selectors because they "select" certain parts of the HTML document specified
@@ -38,7 +38,7 @@ For a complete reference of the selectors API see
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
-.. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
+.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
 .. _XPath: http://www.w3.org/TR/xpath
 .. _CSS: http://www.w3.org/TR/selectors
@@ -72,7 +72,7 @@ Constructing from response::
     >>> Selector(response=response).xpath('//span/text()').extract()
     [u'good']
 
-For convenience, response objects exposes a selector on `.selector` attribute,
+For convenience, response objects expose a selector on `.selector` attribute,
 it's totally OK to use this shortcut when possible::
 
     >>> response.selector.xpath('//span/text()').extract()
@@ -114,17 +114,17 @@ page, let's construct an XPath for selecting the text inside the title tag::
     >>> response.selector.xpath('//title/text()')
     [<Selector (text) xpath=//title/text()>]
 
-Querying responses using XPath and CSS is so common that responses includes two
-convenient shortcuts: ``response.xpath()`` and ``response.css()``::
+Querying responses using XPath and CSS is so common that responses include two
+convenience shortcuts: ``response.xpath()`` and ``response.css()``::
 
     >>> response.xpath('//title/text()')
     [<Selector (text) xpath=//title/text()>]
     >>> response.css('title::text')
     [<Selector (text) xpath=//title/text()>]
 
-As you can see, ``.xpath()`` and ``.css()`` methods returns an
+As you can see, ``.xpath()`` and ``.css()`` methods return a
 :class:`~scrapy.selector.SelectorList` instance, which is a list of new
-selectors. This API can be used quickly for selecting nested data::
+selectors. This API can be used for quickly selecting nested data::
 
     >>> response.css('img').xpath('@src').extract()
     [u'image1_thumb.jpg',
@@ -138,6 +138,21 @@ method, as follows::
 
     >>> response.xpath('//title/text()').extract()
     [u'Example website']
+
+If you want to extract only first matched element, you can call the selector ``.extract_first()``
+
+    >>> response.xpath('//div[@id="images"]/a/text()').extract_first()
+    u'Name: My image 1 '
+
+It returns ``None`` if no element was found:
+
+    >>> response.xpath('//div/[id="not-exists"]/text()').extract_first() is None
+    True
+
+A default return value can be provided as an argument, to be used instead of ``None``:
+
+    >>> sel.xpath('//div/[id="not-exists"]/text()').extract_first(default='not-found')
+    'not-found'
 
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
@@ -186,7 +201,7 @@ Now we're going to get the base URL and some image links::
 Nesting selectors
 -----------------
 
-The selection methods (``.xpath()`` or ``.css()``) returns a list of selectors
+The selection methods (``.xpath()`` or ``.css()``) return a list of selectors
 of the same type, so you can call the selection methods for those selectors
 too. Here's an example::
 
@@ -211,12 +226,12 @@ too. Here's an example::
 Using selectors with regular expressions
 ----------------------------------------
 
-:class:`~scrapy.selector.Selector` also have a ``.re()`` method for extracting
+:class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
-``.css()`` methods, ``.re()`` method returns a list of unicode strings. So you
+``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
 can't construct nested ``.re()`` calls.
 
-Here's an example used to extract images names from the :ref:`HTML code
+Here's an example used to extract image names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
@@ -225,6 +240,12 @@ Here's an example used to extract images names from the :ref:`HTML code
      u'My image 3',
      u'My image 4',
      u'My image 5']
+
+There's an additional helper reciprocating ``.extract_first()`` for ``.re()``,
+named ``.re_first()``. Use it to extract just the first matching string::
+
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
+    u'My image 1'
 
 .. _topics-selectors-relative-xpaths:
 
@@ -279,7 +300,7 @@ set     \http://exslt.org/sets                   `set manipulation`_
 Regular expressions
 ~~~~~~~~~~~~~~~~~~~
 
-The ``test()`` function for example can prove quite useful when XPath's
+The ``test()`` function, for example, can prove quite useful when XPath's
 ``starts-with()`` or ``contains()`` are not sufficient.
 
 Example selecting links in list item with a "class" attribute ending with a digit::
@@ -367,7 +388,7 @@ with groups of itemscopes and corresponding itemprops::
     ...   ...
     ... </div>
     ... """
-    >>>
+    >>> sel = Selector(text=doc, type="html")
     >>> for scope in sel.xpath('//div[@itemscope]'):
     ...     print "current scope:", scope.xpath('@itemtype').extract()
     ...     props = scope.xpath('''
@@ -403,9 +424,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-.. _EXSLT: http://www.exslt.org/
-.. _regular expressions: http://www.exslt.org/regexp/index.html
-.. _set manipulation: http://www.exslt.org/set/index.html
+.. _EXSLT: http://exslt.org/
+.. _regular expressions: http://exslt.org/regexp/index.html
+.. _set manipulation: http://exslt.org/set/index.html
 
 
 Some XPath tips
@@ -424,7 +445,7 @@ you may want to take a look first at this `XPath tutorial`_.
 Using text nodes in a condition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you need to use the text content as argument to a `XPath string function`_,
+When you need to use the text content as argument to an `XPath string function`_,
 avoid using ``.//text()`` and use just ``.`` instead.
 
 This is because the expression ``.//text()`` yields a collection of text elements -- a *node-set*.
@@ -462,8 +483,8 @@ But using the ``.`` to mean the node, works::
 
 .. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
 
-Beware the difference between //node[1] and (//node)[1]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Beware of the difference between //node[1] and (//node)[1]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``//node[1]`` selects all the nodes occurring first under their respective parents.
 
@@ -543,7 +564,7 @@ Built-in Selectors reference
   An instance of :class:`Selector` is a wrapper over response to select
   certain parts of its content.
 
-  ``response`` is a :class:`~scrapy.http.HtmlResponse` or
+  ``response`` is an :class:`~scrapy.http.HtmlResponse` or an
   :class:`~scrapy.http.XmlResponse` object that will be used for selecting and
   extracting data.
 
@@ -577,7 +598,7 @@ Built-in Selectors reference
 
       .. note::
 
-          For convenience this method can be called as ``response.xpath()``
+          For convenience, this method can be called as ``response.xpath()``
 
   .. method:: css(query)
 
@@ -628,7 +649,7 @@ SelectorList objects
 
 .. class:: SelectorList
 
-   The :class:`SelectorList` class is subclass of the builtin ``list``
+   The :class:`SelectorList` class is a subclass of the builtin ``list``
    class, which provides a few additional methods.
 
    .. method:: xpath(query)
@@ -647,12 +668,12 @@ SelectorList objects
 
    .. method:: extract()
 
-       Call the ``.extract()`` method for each element is this list and return
+       Call the ``.extract()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
    .. method:: re()
 
-       Call the ``.re()`` method for each element is this list and return
+       Call the ``.re()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
    .. method:: __nonzero__()
@@ -664,17 +685,17 @@ Selector examples on HTML response
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`Selector` examples to illustrate several concepts.
-In all cases, we assume there is already an :class:`Selector` instantiated with
+In all cases, we assume there is already a :class:`Selector` instantiated with
 a :class:`~scrapy.http.HtmlResponse` object like this::
 
       sel = Selector(html_response)
 
-1. Select all ``<h1>`` elements from a HTML response body, returning a list of
+1. Select all ``<h1>`` elements from an HTML response body, returning a list of
    :class:`Selector` objects (ie. a :class:`SelectorList` object)::
 
       sel.xpath("//h1")
 
-2. Extract the text of all ``<h1>`` elements from a HTML response body,
+2. Extract the text of all ``<h1>`` elements from an HTML response body,
    returning a list of unicode strings::
 
       sel.xpath("//h1").extract()         # this includes the h1 tag
@@ -689,12 +710,12 @@ Selector examples on XML response
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of examples to illustrate several concepts. In both cases we
-assume there is already an :class:`Selector` instantiated with a
+assume there is already a :class:`Selector` instantiated with an
 :class:`~scrapy.http.XmlResponse` object like this::
 
       sel = Selector(xml_response)
 
-1. Select all ``<product>`` elements from a XML response body, returning a list
+1. Select all ``<product>`` elements from an XML response body, returning a list
    of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
 
       sel.xpath("//product")
@@ -736,12 +757,12 @@ nodes can be accessed directly by their names::
      <Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      ...
 
-If you wonder why the namespace removal procedure is not always called, instead
-of having to call it manually. This is because of two reasons which, in order
+If you wonder why the namespace removal procedure isn't called always by default
+instead of having to call it manually, this is because of two reasons, which, in order
 of relevance, are:
 
 1. Removing namespaces requires to iterate and modify all nodes in the
-   document, which is a reasonably expensive operation to performs for all
+   document, which is a reasonably expensive operation to perform for all
    documents crawled by Scrapy
 
 2. There could be some cases where using namespaces is actually required, in

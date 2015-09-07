@@ -1,7 +1,7 @@
 import unittest
 
-from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware, MetaRefreshMiddleware
-from scrapy.spider import Spider
+from scrapy.downloadermiddlewares.redirect import RedirectMiddleware, MetaRefreshMiddleware
+from scrapy.spiders import Spider
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, HtmlResponse
 from scrapy.utils.test import get_crawler
@@ -10,9 +10,9 @@ from scrapy.utils.test import get_crawler
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        crawler = get_crawler(Spider)
-        self.spider = crawler._create_spider('foo')
-        self.mw = RedirectMiddleware.from_crawler(crawler)
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('foo')
+        self.mw = RedirectMiddleware.from_crawler(self.crawler)
 
     def test_priority_adjust(self):
         req = Request('http://a.com')
@@ -128,6 +128,28 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
+    def test_spider_handling(self):
+        smartspider = self.crawler._create_spider('smarty')
+        smartspider.handle_httpstatus_list = [404, 301, 302]
+        url = 'http://www.example.com/301'
+        url2 = 'http://www.example.com/redirected'
+        req = Request(url)
+        rsp = Response(url, headers={'Location': url2}, status=301)
+        r = self.mw.process_response(req, rsp, smartspider)
+        self.assertIs(r, rsp)
+
+    def test_request_meta_handling(self):
+        url = 'http://www.example.com/301'
+        url2 = 'http://www.example.com/redirected'
+        def _test_passthrough(req):
+            rsp = Response(url, headers={'Location': url2}, status=301, request=req)
+            r = self.mw.process_response(req, rsp, self.spider)
+            self.assertIs(r, rsp)
+        _test_passthrough(Request(url, meta={'handle_httpstatus_list':
+                                                           [404, 301, 302]}))
+        _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
+
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 

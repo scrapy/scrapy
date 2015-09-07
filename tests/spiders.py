@@ -5,10 +5,10 @@ Some spiders used for testing and benchmarking
 import time
 from six.moves.urllib.parse import urlencode
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 
 
 class MetaSpider(Spider):
@@ -74,7 +74,7 @@ class SimpleSpider(MetaSpider):
         self.start_urls = [url]
 
     def parse(self, response):
-        self.log("Got response %d" % response.status)
+        self.logger.info("Got response %d" % response.status)
 
 
 class ItemSpider(FollowAllSpider):
@@ -85,6 +85,7 @@ class ItemSpider(FollowAllSpider):
         for request in super(ItemSpider, self).parse(response):
             yield request
             yield Item()
+            yield {}
 
 
 class DefaultError(Exception):

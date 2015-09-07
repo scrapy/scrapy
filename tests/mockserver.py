@@ -1,5 +1,7 @@
 from __future__ import print_function
-import sys, time, random, urllib, os, json
+import sys, time, random, os, json
+import six
+from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
@@ -72,7 +74,7 @@ class Follow(LeafResource):
         args = request.args.copy()
         for nl in nlist:
             args["n"] = [str(nl)]
-            argstr = urllib.urlencode(args, doseq=True)
+            argstr = urlencode(args, doseq=True)
             s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
         s += """</body>"""
         request.write(s)
@@ -168,6 +170,13 @@ class Root(Resource):
         self.putChild("raw", Raw())
         self.putChild("echo", Echo())
 
+        if six.PY2 and twisted_version > (12, 3, 0):
+            from twisted.web.test.test_webclient import PayloadResource
+            from twisted.web.server import GzipEncoderFactory
+            from twisted.web.resource import EncodingResourceWrapper
+            self.putChild('payload', PayloadResource())
+            self.putChild("xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+
     def getChild(self, name, request):
         return self
 
@@ -182,6 +191,7 @@ class MockServer():
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
         self.proc.stdout.readline()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()

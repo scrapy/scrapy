@@ -1,46 +1,37 @@
+import glob
 import six
 import pytest
-from twisted.python import log
 
-from scrapy import optional_features
 
-collect_ignore = ["scrapy/stats.py", "scrapy/project.py"]
-if 'django' not in optional_features:
-    collect_ignore.append("tests/test_djangoitem/models.py")
+def _py_files(folder):
+    return glob.glob(folder + "/*.py") + glob.glob(folder + "/*/*.py")
+
+
+collect_ignore = [
+    # deprecated or moved modules
+    "scrapy/conf.py",
+    "scrapy/stats.py",
+    "scrapy/project.py",
+    "scrapy/utils/decorator.py",
+    "scrapy/statscol.py",
+    "scrapy/squeue.py",
+    "scrapy/log.py",
+    "scrapy/dupefilter.py",
+    "scrapy/command.py",
+    "scrapy/linkextractor.py",
+    "scrapy/spider.py",
+
+    # not a test, but looks like a test
+    "scrapy/utils/testsite.py",
+
+] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
+
 
 if six.PY3:
-    for fn in open('tests/py3-ignores.txt'):
-        if fn.strip():
-            collect_ignore.append(fn.strip())
-
-class LogObservers:
-    """Class for keeping track of log observers across test modules"""
-
-    def __init__(self):
-        self.observers = []
-
-    def add(self, logfile='test.log'):
-        fileobj = open(logfile, 'wb')
-        observer = log.FileLogObserver(fileobj)
-        log.startLoggingWithObserver(observer.emit, 0)
-        self.observers.append((fileobj, observer))
-
-    def remove(self):
-        fileobj, observer = self.observers.pop()
-        log.removeObserver(observer.emit)
-        fileobj.close()
-
-
-@pytest.fixture(scope='module')
-def log_observers():
-    return LogObservers()
-
-
-@pytest.fixture()
-def setlog(request, log_observers):
-    """Attach test.log file observer to twisted log, for trial compatibility"""
-    log_observers.add()
-    request.addfinalizer(log_observers.remove)
+    for line in open('tests/py3-ignores.txt'):
+        file_path = line.strip()
+        if len(file_path) > 0 and file_path[0] != '#':
+            collect_ignore.append(file_path)
 
 
 @pytest.fixture()

@@ -20,18 +20,20 @@ from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.utils.test import get_crawler
-from scrapy.xlib.pydispatch import dispatcher
+from pydispatch import dispatcher
 from tests import tests_datadir
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.item import Item, Field
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
+
 
 class TestItem(Item):
     name = Field()
     url = Field()
     price = Field()
+
 
 class TestSpider(Spider):
     name = "scrapytest.org"
@@ -41,6 +43,8 @@ class TestSpider(Spider):
     name_re = re.compile("<h1>(.*?)</h1>", re.M)
     price_re = re.compile(">Price: \$(.*?)<", re.M)
 
+    item_cls = TestItem
+
     def parse(self, response):
         xlink = LinkExtractor()
         itemre = re.compile(self.itemurl_re)
@@ -49,7 +53,7 @@ class TestSpider(Spider):
                 yield Request(url=link.url, callback=self.parse_item)
 
     def parse_item(self, response):
-        item = TestItem()
+        item = self.item_cls()
         m = self.name_re.search(response.body)
         if m:
             item['name'] = m.group(1)
@@ -58,6 +62,16 @@ class TestSpider(Spider):
         if m:
             item['price'] = m.group(1)
         return item
+
+
+class TestDupeFilterSpider(TestSpider):
+    def make_requests_from_url(self, url):
+        return Request(url)  # dont_filter=False
+
+
+class DictItemsSpider(TestSpider):
+    item_cls = dict
+
 
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
@@ -75,26 +89,30 @@ def start_test_site(debug=False):
 class CrawlerRun(object):
     """A class to run the crawler and keep track of events occurred"""
 
-    def __init__(self):
+    def __init__(self, spider_class):
         self.spider = None
         self.respplug = []
         self.reqplug = []
+        self.reqdropped = []
         self.itemresp = []
         self.signals_catched = {}
+        self.spider_class = spider_class
 
     def run(self):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        start_urls = [self.geturl("/"), self.geturl("/redirect")]
+        start_urls = [self.geturl("/"), self.geturl("/redirect"),
+                      self.geturl("/redirect")]  # a duplicate
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 dispatcher.connect(self.record_signal, signal)
 
-        self.crawler = get_crawler(TestSpider)
+        self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
+        self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(start_urls=start_urls)
         self.spider = self.crawler.spider
@@ -123,6 +141,9 @@ class CrawlerRun(object):
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
 
+    def request_dropped(self, request, spider):
+        self.reqdropped.append((request, spider))
+
     def response_downloaded(self, response, spider):
         self.respplug.append((response, spider))
 
@@ -138,13 +159,20 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-        self.run = CrawlerRun()
+
+        for spider in TestSpider, DictItemsSpider:
+            self.run = CrawlerRun(spider)
+            yield self.run.run()
+            self._assert_visited_urls()
+            self._assert_scheduled_requests(urls_to_visit=8)
+            self._assert_downloaded_responses()
+            self._assert_scraped_items()
+            self._assert_signals_catched()
+
+        self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
-        self._assert_visited_urls()
-        self._assert_scheduled_requests()
-        self._assert_downloaded_responses()
-        self._assert_scraped_items()
-        self._assert_signals_catched()
+        self._assert_scheduled_requests(urls_to_visit=7)
+        self._assert_dropped_requests()
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
@@ -153,18 +181,26 @@ class EngineTest(unittest.TestCase):
         urls_expected = set([self.run.geturl(p) for p in must_be_visited])
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
-    def _assert_scheduled_requests(self):
-        self.assertEqual(6, len(self.run.reqplug))
+    def _assert_scheduled_requests(self, urls_to_visit=None):
+        self.assertEqual(urls_to_visit, len(self.run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
         urls_requested = set([rq[0].url for rq in self.run.reqplug])
         urls_expected = set([self.run.geturl(p) for p in paths_expected])
         assert urls_expected <= urls_requested
+        scheduled_requests_count = len(self.run.reqplug)
+        dropped_requests_count = len(self.run.reqdropped)
+        responses_count = len(self.run.respplug)
+        self.assertEqual(scheduled_requests_count,
+                         dropped_requests_count + responses_count)
+
+    def _assert_dropped_requests(self):
+        self.assertEqual(len(self.run.reqdropped), 1)
 
     def _assert_downloaded_responses(self):
         # response tests
-        self.assertEqual(6, len(self.run.respplug))
+        self.assertEqual(8, len(self.run.respplug))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':

@@ -14,7 +14,7 @@ interfering with the non-blocking IO of the crawler. It also provides a
 simple API for sending attachments and it's very easy to configure, with a few
 :ref:`settings <topics-email-settings>`.
 
-.. _smtplib: http://docs.python.org/library/smtplib.html
+.. _smtplib: https://docs.python.org/2/library/smtplib.html
 .. _Twisted non-blocking IO: http://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 
 Quick example
@@ -63,10 +63,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :type smtpport: int
 
     :param smtptls: enforce using SMTP STARTTLS
-    :type smtpport: boolean
+    :type smtptls: boolean
 
     :param smtpssl: enforce using a secure SSL connection
-    :type smtpport: boolean
+    :type smtpssl: boolean
 
     .. classmethod:: from_settings(settings)
 

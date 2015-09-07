@@ -1,12 +1,15 @@
 import os
 import json
+import logging
 from os.path import join, exists
 
 from queuelib import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
-from scrapy import log
+
+logger = logging.getLogger(__name__)
+
 
 class Scheduler(object):
 
@@ -47,7 +50,7 @@ class Scheduler(object):
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
-            return
+            return False
         dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
@@ -55,6 +58,7 @@ class Scheduler(object):
             self._mqpush(request)
             self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
+        return True
 
     def next_request(self):
         request = self.mqs.pop()
@@ -79,9 +83,9 @@ class Scheduler(object):
             self.dqs.push(reqd, -request.priority)
         except ValueError as e: # non serializable request
             if self.logunser:
-                log.msg(format="Unable to serialize request: %(request)s - reason: %(reason)s",
-                        level=log.ERROR, spider=self.spider,
-                        request=request, reason=e)
+                logger.error("Unable to serialize request: %(request)s - reason: %(reason)s",
+                             {'request': request, 'reason': e},
+                             exc_info=True, extra={'spider': self.spider})
             return
         else:
             return True
@@ -110,8 +114,8 @@ class Scheduler(object):
             prios = ()
         q = PriorityQueue(self._newdq, startprios=prios)
         if q:
-            log.msg(format="Resuming crawl (%(queuesize)d requests scheduled)",
-                    spider=self.spider, queuesize=len(q))
+            logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
+                        {'queuesize': len(q)}, extra={'spider': self.spider})
         return q
 
     def _dqdir(self, jobdir):

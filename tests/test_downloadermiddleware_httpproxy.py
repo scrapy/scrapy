@@ -2,10 +2,10 @@ import os
 import sys
 from twisted.trial.unittest import TestCase, SkipTest
 
-from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
+from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 spider = Spider('foo')
 
@@ -53,6 +53,14 @@ class TestDefaultHeadersMiddleware(TestCase):
         assert mw.process_request(req, spider) is None
         self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
         self.assertEquals(req.headers.get('Proxy-Authorization'), 'Basic dXNlcjpwYXNz')
+
+    def test_proxy_auth_empty_passwd(self):
+        os.environ['http_proxy'] = 'https://user:@proxy:3128'
+        mw = HttpProxyMiddleware()
+        req = Request('http://scrapytest.org')
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
+        self.assertEquals(req.headers.get('Proxy-Authorization'), 'Basic dXNlcjo=')
 
     def test_proxy_already_seted(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'

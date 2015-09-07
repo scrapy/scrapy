@@ -18,8 +18,8 @@ Having trouble? We'd like to help!
 * Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 
-.. _archives of the scrapy-users mailing list: http://groups.google.com/group/scrapy-users/
-.. _post a question: http://groups.google.com/group/scrapy-users/
+.. _archives of the scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
+.. _post a question: https://groups.google.com/forum/#!forum/scrapy-users
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 
@@ -56,20 +56,21 @@ Basic concepts
    :hidden:
 
    topics/commands
-   topics/items
    topics/spiders
    topics/selectors
+   topics/items
    topics/loaders
    topics/shell
    topics/item-pipeline
    topics/feed-exports
+   topics/request-response
    topics/link-extractors
+   topics/settings
+   topics/exceptions
+
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
-
-:doc:`topics/items`
-    Define the data you want to scrape.
 
 :doc:`topics/spiders`
     Write the rules to crawl your websites.
@@ -80,6 +81,9 @@ Basic concepts
 :doc:`topics/shell`
     Test your extraction code in an interactive environment.
 
+:doc:`topics/items`
+    Define the data you want to scrape.
+
 :doc:`topics/loaders`
     Populate your items with the extracted data.
 
@@ -89,8 +93,18 @@ Basic concepts
 :doc:`topics/feed-exports`
     Output your scraped data using different formats and storages.
 
+:doc:`topics/request-response`
+    Understand the classes used to represent HTTP requests and responses.
+
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
+
+:doc:`topics/settings`
+    Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
+
+:doc:`topics/exceptions`
+    See all available exceptions and their meaning.
+
 
 Built-in services
 =================
@@ -105,8 +119,8 @@ Built-in services
    topics/webservice
 
 :doc:`topics/logging`
-    Understand the simple logging facility provided by Scrapy.
-   
+    Learn how to use Python's builtin logging on Scrapy.
+
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
 
@@ -134,13 +148,12 @@ Solving specific problems
    topics/firefox
    topics/firebug
    topics/leaks
-   topics/images
+   topics/media-pipeline
    topics/ubuntu
-   topics/scrapyd
+   topics/deploy
    topics/autothrottle
    topics/benchmarking
    topics/jobs
-   topics/djangoitem
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -166,14 +179,14 @@ Solving specific problems
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
-:doc:`topics/images`
-    Download static images associated with your scraped items.
+:doc:`topics/media-pipeline`
+    Download files and/or images associated with your scraped items.
 
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu
 
-:doc:`topics/scrapyd`
-    Deploying your Scrapy project in production.
+:doc:`topics/deploy`
+    Deploying your Scrapy spiders and run them in a remote server.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.
@@ -183,9 +196,6 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
-
-:doc:`topics/djangoitem`
-    Write scraped items using Django models.
 
 .. _extending-scrapy:
 
@@ -200,6 +210,9 @@ Extending Scrapy
    topics/spider-middleware
    topics/extensions
    topics/api
+   topics/signals
+   topics/exporters
+
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
@@ -216,32 +229,8 @@ Extending Scrapy
 :doc:`topics/api`
     Use it on extensions and middlewares to extend Scrapy functionality
 
-Reference
-=========
-
-.. toctree::
-   :hidden:
-
-   topics/request-response
-   topics/settings
-   topics/signals
-   topics/exceptions
-   topics/exporters
-
-:doc:`topics/commands`
-    Learn about the command-line tool and see all :ref:`available commands <topics-commands-ref>`.
-
-:doc:`topics/request-response`
-    Understand the classes used to represent HTTP requests and responses.
-
-:doc:`topics/settings`
-    Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
-
-:doc:`topics/exceptions`
-    See all available exceptions and their meaning.
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
@@ -256,7 +245,6 @@ All the rest
    news
    contributing
    versioning
-   experimental/index
 
 :doc:`news`
     See what has changed in recent Scrapy versions.
@@ -266,6 +254,3 @@ All the rest
 
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
-
-:doc:`experimental/index`
-    Learn about bleeding-edge features.

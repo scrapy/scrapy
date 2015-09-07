@@ -1,5 +1,6 @@
 import os
 import twisted
+import six
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -23,13 +24,15 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy import optional_features
 from scrapy.utils.test import get_crawler
 from scrapy.exceptions import NotConfigured
 
+from tests.mockserver import MockServer
+from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
 
@@ -49,6 +52,9 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
@@ -56,6 +62,9 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
@@ -63,8 +72,11 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': None}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
+        self.assertNotIn('scheme', dh._schemes)
+        for scheme in handlers: # force load handlers
+            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
-        self.assertNotIn('scheme', dh._notconfigured)
+        self.assertIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
@@ -211,6 +223,103 @@ class Http11TestCase(HttpTestCase):
     if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
+    def test_download_without_maxsize_limit(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize(self):
+        request = Request(self.getURL('file'))
+
+        # 10 is minimal size for this request and the limit is only counted on
+        # response body. (regardless of headers)
+        d = self.download_request(request, Spider('foo', download_maxsize=10))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        yield d
+
+        d = self.download_request(request, Spider('foo', download_maxsize=9))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_per_req(self):
+        meta = {'download_maxsize': 2}
+        request = Request(self.getURL('file'), meta=meta)
+        d = self.download_request(request, Spider('foo'))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_small_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=2))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    def test_download_with_large_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=100))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+
+class Http11MockServerTestCase(unittest.TestCase):
+    """HTTP 1.1 test case with MockServer"""
+    if 'http11' not in optional_features:
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_download_with_content_length(self):
+        crawler = get_crawler(SingleRequestSpider)
+        # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
+        # download it
+        yield crawler.crawl(seed=Request(url='http://localhost:8998/partial', meta={'download_maxsize': 1000}))
+        failure = crawler.spider.meta['failure']
+        self.assertIsInstance(failure.value, defer.CancelledError)
+
+    @defer.inlineCallbacks
+    def test_download(self):
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure == None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
+
+    @defer.inlineCallbacks
+    def test_download_gzip_response(self):
+
+        if six.PY2 and twisted_version > (12, 3, 0):
+
+            crawler = get_crawler(SingleRequestSpider)
+            body = '1'*100 # PayloadResource requires body length to be 100
+            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+            yield crawler.crawl(seed=request)
+            failure = crawler.spider.meta['failure']
+            # download_maxsize < 100, hence the CancelledError
+            self.assertIsInstance(failure.value, defer.CancelledError)
+
+            request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+            request = request.replace(url='http://localhost:8998/xpayload')
+            yield crawler.crawl(seed=request)
+
+            # download_maxsize = 50 is enough for the gzipped response
+            failure = crawler.spider.meta.get('failure')
+            self.assertTrue(failure == None)
+            reason = crawler.spider.meta['close_reason']
+            self.assertTrue(reason, 'finished')
+        else:
+            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0 and python 2.x")
+
 
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
@@ -295,7 +404,13 @@ class HttpDownloadHandlerMock(object):
         return request
 
 class S3TestCase(unittest.TestCase):
-    skip = 'boto' not in optional_features and 'missing boto library'
+    download_handler_cls = S3DownloadHandler
+    try:
+        # can't instance without settings, but ignore that
+        download_handler_cls({})
+    except NotConfigured:
+        skip = 'missing boto library'
+    except KeyError: pass
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
@@ -382,6 +497,21 @@ class S3TestCase(unittest.TestCase):
         self.assertEqual(httpreq.headers['Authorization'], \
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
+    def test_request_signing7(self):
+        # ensure that spaces are quoted properly before signing
+        req = Request(
+            ("s3://johnsmith/photos/my puppy.jpg"
+             "?response-content-disposition=my puppy.jpg"),
+            method='GET',
+            headers={
+                'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
+            })
+        httpreq = self.download_request(req, self.spider)
+        self.assertEqual(
+            httpreq.headers['Authorization'],
+            'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
+
+
 class FTPTestCase(unittest.TestCase):
 
     username = "scrapy"
@@ -396,7 +526,9 @@ class FTPTestCase(unittest.TestCase):
         os.mkdir(self.directory)
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
-        FilePath(userdir).child('file.txt').setContent("I have the power!")
+        fp = FilePath(userdir)
+        fp.child('file.txt').setContent("I have the power!")
+        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -450,6 +582,19 @@ class FTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, 'I have the power!')
             self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_download_path_with_spaces(self):
+        request = Request(
+            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            meta={"ftp_user": self.username, "ftp_password": self.password}
+        )
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.body, 'Moooooooooo power!')
+            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['18']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):

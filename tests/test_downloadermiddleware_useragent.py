@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
-from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.utils.test import get_crawler
 
 
@@ -17,7 +17,7 @@ class UserAgentMiddlewareTest(TestCase):
         spider, mw = self.get_spider_and_mw('default_useragent')
         req = Request('http://scrapytest.org/')
         assert mw.process_request(req, spider) is None
-        self.assertEquals(req.headers['User-Agent'], 'default_useragent')
+        self.assertEquals(req.headers['User-Agent'], b'default_useragent')
 
     def test_remove_agent(self):
         # settings UESR_AGENT to None should remove the user agent
@@ -34,15 +34,16 @@ class UserAgentMiddlewareTest(TestCase):
         mw.spider_opened(spider)
         req = Request('http://scrapytest.org/')
         assert mw.process_request(req, spider) is None
-        self.assertEquals(req.headers['User-Agent'], 'spider_useragent')
+        self.assertEquals(req.headers['User-Agent'], b'spider_useragent')
 
     def test_header_agent(self):
         spider, mw = self.get_spider_and_mw('default_useragent')
         spider.user_agent = 'spider_useragent'
         mw.spider_opened(spider)
-        req = Request('http://scrapytest.org/', headers={'User-Agent': 'header_useragent'})
+        req = Request('http://scrapytest.org/',
+                      headers={'User-Agent': 'header_useragent'})
         assert mw.process_request(req, spider) is None
-        self.assertEquals(req.headers['User-Agent'], 'header_useragent')
+        self.assertEquals(req.headers['User-Agent'], b'header_useragent')
 
     def test_no_agent(self):
         spider, mw = self.get_spider_and_mw(None)
