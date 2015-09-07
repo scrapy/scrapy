@@ -79,6 +79,25 @@ Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
 solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
+Debian Jessie
+~~~~~~~~~~~~~
+
+In order to use the ``pip`` method, you will need to install the following packages:
+
+* libxml2-dev
+
+* libxslt1-dev
+
+* pkg-config
+
+* libffi-dev
+
+* python-dev
+
+* zlib1g-dev
+
+* libssl-dev
+
 Archlinux
 ---------
 
