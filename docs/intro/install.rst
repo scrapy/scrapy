@@ -91,6 +91,11 @@ You can install Scrapy with ``pip`` after that::
 
     pip install Scrapy
 
+.. note::
+
+    The same non-python dependencies can be used to install Scrapy in Debian
+    Wheezy (7.0) and above.
+
 Archlinux
 ---------
 
