@@ -142,7 +142,7 @@ class XmlItemExporter(BaseItemExporter):
         elif hasattr(serialized_value, '__iter__'):
             for value in serialized_value:
                 self._export_xml_field('value', value)
-        else:
+        elif serialized_value:
             self._xg_characters(serialized_value)
         self.xg.endElement(name)
 
