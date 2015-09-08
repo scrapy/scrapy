@@ -42,5 +42,5 @@ class AuthMiddleware(object):
                 request.headers['Authorization'] = basic_auth_header(url.username, url.password)
 
             # no credentials in new url
-            new_url = url.scheme + '://' + url.hostname + url.path
+            new_url = url.scheme + '://' + request.url.split('@')[-1]
             return request.replace(url=new_url)
