@@ -19,7 +19,7 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
     chunksize = 100000
 
     def queue(self):
-        return MarshalFifoDiskQueue(self.qdir, chunksize=self.chunksize)
+        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize(self):
         q = self.queue()
@@ -54,7 +54,7 @@ class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 100000
 
     def queue(self):
-        return PickleFifoDiskQueue(self.qdir, chunksize=self.chunksize)
+        return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -99,7 +99,7 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
 
     def queue(self):
-        return MarshalLifoDiskQueue(self.path)
+        return MarshalLifoDiskQueue(self.qpath)
 
     def test_serialize(self):
         q = self.queue()
@@ -120,7 +120,7 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
 class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
 
     def queue(self):
-        return PickleLifoDiskQueue(self.path)
+        return PickleLifoDiskQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
