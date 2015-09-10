@@ -62,7 +62,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         location = None
         if 'Location' in response.headers:
-            location = response.headers['location']
+            location = response.headers['location'].decode('latin1')
 
         if location is not None and response.status in [301, 302, 303, 307]:
             redirected_url = urljoin(request.url, location)

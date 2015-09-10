@@ -164,13 +164,13 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def test_priority_adjust(self):
         req = Request('http://a.com')
-        rsp = HtmlResponse(req.url, body=self._body())
+        rsp = HtmlResponse(req.url, body=self._body(), encoding='utf-8')
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert req2.priority > req.priority
 
     def test_meta_refresh(self):
         req = Request(url='http://example.org')
-        rsp = HtmlResponse(req.url, body=self._body())
+        rsp = HtmlResponse(req.url, body=self._body(), encoding='utf-8')
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
@@ -178,14 +178,16 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
     def test_meta_refresh_with_high_interval(self):
         # meta-refresh with high intervals don't trigger redirects
         req = Request(url='http://example.org')
-        rsp = HtmlResponse(url='http://example.org', body=self._body(interval=1000))
+        rsp = HtmlResponse(url='http://example.org',
+                           body=self._body(interval=1000),
+                           encoding='utf-8')
         rsp2 = self.mw.process_response(req, rsp, self.spider)
         assert rsp is rsp2
 
     def test_meta_refresh_trough_posted_request(self):
         req = Request(url='http://example.org', method='POST', body='test',
                       headers={'Content-Type': 'text/plain', 'Content-length': '4'})
-        rsp = HtmlResponse(req.url, body=self._body())
+        rsp = HtmlResponse(req.url, body=self._body(), encoding='utf-8')
         req2 = self.mw.process_response(req, rsp, self.spider)
 
         assert isinstance(req2, Request)
@@ -201,7 +203,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
         req = Request('http://scrapytest.org/max')
-        rsp = HtmlResponse(req.url, body=self._body())
+        rsp = HtmlResponse(req.url, body=self._body(), encoding='utf-8')
 
         req = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req, Request)
@@ -212,7 +214,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
     def test_ttl(self):
         self.mw.max_redirect_times = 100
         req = Request('http://scrapytest.org/302', meta={'redirect_ttl': 1})
-        rsp = HtmlResponse(req.url, body=self._body())
+        rsp = HtmlResponse(req.url, body=self._body(), encoding='utf-8')
 
         req = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req, Request)
@@ -220,16 +222,17 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def test_redirect_urls(self):
         req1 = Request('http://scrapytest.org/first')
-        rsp1 = HtmlResponse(req1.url, body=self._body(url='/redirected'))
+        rsp1 = HtmlResponse(req1.url, body=self._body(url='/redirected'), encoding='utf-8')
         req2 = self.mw.process_response(req1, rsp1, self.spider)
         assert isinstance(req2, Request), req2
-        rsp2 = HtmlResponse(req2.url, body=self._body(url='/redirected2'))
+        rsp2 = HtmlResponse(req2.url, body=self._body(url='/redirected2'), encoding='utf-8')
         req3 = self.mw.process_response(req2, rsp2, self.spider)
         assert isinstance(req3, Request), req3
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
 
 if __name__ == "__main__":
     unittest.main()

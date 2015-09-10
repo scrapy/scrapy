@@ -10,7 +10,6 @@ tests/test_downloadermiddleware_httpcache.py
 tests/test_downloadermiddleware_httpcompression.py
 tests/test_downloadermiddleware_httpproxy.py
 tests/test_downloadermiddleware.py
-tests/test_downloadermiddleware_redirect.py
 tests/test_downloadermiddleware_retry.py
 tests/test_engine.py
 tests/test_mail.py
