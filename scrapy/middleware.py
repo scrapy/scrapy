@@ -1,5 +1,6 @@
-import logging
 from collections import defaultdict
+import logging
+import pprint
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
@@ -43,11 +44,9 @@ class MiddlewareManager(object):
                     logger.warning("Disabled %(clsname)s: %(eargs)s",
                                    {'clsname': clsname, 'eargs': e.args[0]},
                                    extra={'crawler': crawler})
-
-        enabled = [x.__class__.__name__ for x in middlewares]
-        logger.info("Enabled %(componentname)ss: %(enabledlist)s",
+        logger.info("Enabled %(componentname)ss:\n%(enabledlist)s",
                     {'componentname': cls.component_name,
-                     'enabledlist': ', '.join(enabled)},
+                     'enabledlist': pprint.pformat(mwlist)},
                     extra={'crawler': crawler})
         return cls(*middlewares)
 
