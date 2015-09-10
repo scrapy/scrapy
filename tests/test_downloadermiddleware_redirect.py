@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware, MetaRefreshMiddleware
@@ -149,6 +151,14 @@ class RedirectMiddlewareTest(unittest.TestCase):
         _test_passthrough(Request(url, meta={'handle_httpstatus_list':
                                                            [404, 301, 302]}))
         _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
+
+    def test_latin1_location(self):
+        req = Request('http://scrapytest.org/first')
+        latin1_path = u'/ação'.encode('latin1')
+        resp = Response('http://scrapytest.org/first', headers={'Location': latin1_path}, status=302)
+        req_result = self.mw.process_response(req, resp, self.spider)
+        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
+        self.assertEquals(perc_encoded_utf8_url, req_result.url)
 
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
