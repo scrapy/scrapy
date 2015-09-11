@@ -3,6 +3,7 @@ from six.moves.urllib.parse import urljoin
 
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
+from scrapy.utils.python import to_native_str
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         location = None
         if 'Location' in response.headers:
-            location = response.headers['location'].decode('latin1')
+            # HTTP header is ascii or latin1, redirected url will be percent-encoded utf-8
+            location = to_native_str(response.headers['location'].decode('latin1'))
 
         if location is not None and response.status in [301, 302, 303, 307]:
             redirected_url = urljoin(request.url, location)
