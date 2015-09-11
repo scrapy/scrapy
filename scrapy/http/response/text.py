@@ -40,7 +40,7 @@ class TextResponse(Response):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
                     type(self).__name__)
-            self._body = body.encode(self._encoding)
+            self._body = body.encode(self.encoding)
         else:
             super(TextResponse, self)._set_body(body)
 
