@@ -3,14 +3,17 @@ This module provides some commonly used processors for Item Loaders.
 
 See documentation in docs/topics/loaders.rst
 """
+from scrapy.utils.python import iflatten
+
+from itertools import repeat, izip, chain
+from functools import partial
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
 
 
-class MapCompose(object):
-
+class BaseMapCompose(object):
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
         self.default_loader_context = default_loader_context
@@ -21,7 +24,13 @@ class MapCompose(object):
             context = MergeDict(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
+        wrapped_funcs = (wrap_loader_context(f, context) for f in self.functions)
+        return self._compose(values, wrapped_funcs)
+
+
+class MapCompose(BaseMapCompose):
+    @staticmethod
+    def _compose(values, wrapped_funcs):
         for func in wrapped_funcs:
             next_values = []
             for v in values:
@@ -29,6 +38,12 @@ class MapCompose(object):
             values = next_values
         return values
 
+class IMapCompose(BaseMapCompose):
+    @staticmethod
+    def _compose(values, wrapped_funcs):
+        for wf in wrapped_funcs:
+            values = chain.from_iterable(arg_to_iter(f(v)) for v, f in izip(values, partial(repeat, wf)()))
+        return values
 
 class Compose(object):
 
