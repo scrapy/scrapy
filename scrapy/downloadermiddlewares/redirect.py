@@ -61,23 +61,21 @@ class RedirectMiddleware(BaseRedirectMiddleware):
                 request.meta.get('handle_httpstatus_all', False)):
             return response
 
-        location = None
-        if 'Location' in response.headers:
-            # HTTP header is ascii or latin1, redirected url will be percent-encoded utf-8
-            location = to_native_str(response.headers['location'].decode('latin1'))
+        allowed_status = (301, 302, 303, 307)
+        if 'Location' not in response.headers or response.status not in allowed_status:
+            return response
 
-        if location is not None and response.status in [301, 302, 303, 307]:
-            redirected_url = urljoin(request.url, location)
+        # HTTP header is ascii or latin1, redirected url will be percent-encoded utf-8
+        location = to_native_str(response.headers['location'].decode('latin1'))
 
-            if response.status in [301, 307] or request.method == 'HEAD':
-                redirected = request.replace(url=redirected_url)
-                return self._redirect(redirected, request, spider, response.status)
+        redirected_url = urljoin(request.url, location)
 
-            if response.status in [302, 303]:
-                redirected = self._redirect_request_using_get(request, redirected_url)
-                return self._redirect(redirected, request, spider, response.status)
+        if response.status in (301, 307) or request.method == 'HEAD':
+            redirected = request.replace(url=redirected_url)
+            return self._redirect(redirected, request, spider, response.status)
 
-        return response
+        redirected = self._redirect_request_using_get(request, redirected_url)
+        return self._redirect(redirected, request, spider, response.status)
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
