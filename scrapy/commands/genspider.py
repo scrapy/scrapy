@@ -88,8 +88,8 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
-            'classname': '%sSpider' % ''.join([s.capitalize() \
-                for s in module.split('_')])
+            'classname': '%sSpider' % ''.join(s.capitalize() \
+                for s in module.split('_'))
         }
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
         spiders_dir = abspath(dirname(spiders_module.__file__))

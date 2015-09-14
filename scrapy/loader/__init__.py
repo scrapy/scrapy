@@ -69,7 +69,7 @@ class ItemLoader(object):
         regex = kw.get('re', None)
         if regex:
             value = arg_to_iter(value)
-            value = flatten([extract_regex(regex, x) for x in value])
+            value = flatten(extract_regex(regex, x) for x in value)
 
         for proc in processors:
             if value is None:
@@ -149,7 +149,7 @@ class ItemLoader(object):
     def _get_xpathvalues(self, xpaths, **kw):
         self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
-        return flatten([self.selector.xpath(xpath).extract() for xpath in xpaths])
+        return flatten(self.selector.xpath(xpath).extract() for xpath in xpaths)
 
     def add_css(self, field_name, css, *processors, **kw):
         values = self._get_cssvalues(css, **kw)
@@ -166,7 +166,7 @@ class ItemLoader(object):
     def _get_cssvalues(self, csss, **kw):
         self._check_selector_method()
         csss = arg_to_iter(csss)
-        return flatten([self.selector.css(css).extract() for css in csss])
+        return flatten(self.selector.css(css).extract() for css in csss)
 
 
 XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)
