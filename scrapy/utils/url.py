@@ -110,3 +110,11 @@ def escape_ajax(url):
     if not frag.startswith('!'):
         return url
     return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
+
+def add_scheme_if_missing(url):
+    parser = parse_url(url)
+    if not parser.scheme:
+        if not parser.netloc:
+            parser = parser._replace(netloc=parser.path, path='')
+        parser = parser._replace(scheme='http')
+    return parser.geturl() 

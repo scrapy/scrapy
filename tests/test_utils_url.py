@@ -4,7 +4,7 @@ import unittest
 import six
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              canonicalize_url)
+                              canonicalize_url, add_scheme_if_missing)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -72,6 +72,22 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', MySpider))
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
+
+    def test_add_scheme_if_missing(self):
+        self.assertEqual(add_scheme_if_missing('http://www.example.com'),
+                                               'http://www.example.com')
+        self.assertEqual(add_scheme_if_missing('http://www.example.com/some/page.html'),
+                                               'http://www.example.com/some/page.html')
+        self.assertEqual(add_scheme_if_missing('http://example.com'),
+                                               'http://example.com')
+        self.assertEqual(add_scheme_if_missing('www.example.com'),
+                                               'http://www.example.com')
+        self.assertEqual(add_scheme_if_missing('example.com'),
+                                               'http://example.com')
+        self.assertEqual(add_scheme_if_missing('//example.com'),
+                                               'http://example.com')
+        self.assertEqual(add_scheme_if_missing('https://www.example.com'),
+                                               'https://www.example.com')
 
 
 class CanonicalizeUrlTest(unittest.TestCase):
