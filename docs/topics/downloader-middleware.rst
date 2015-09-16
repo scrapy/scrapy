@@ -804,7 +804,7 @@ RetryMiddleware
 
 .. class:: RetryMiddleware
 
-   A middlware to retry failed requests that are potentially caused by
+   A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
 
 Failed pages are collected on the scraping process and rescheduled at the
