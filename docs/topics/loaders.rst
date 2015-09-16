@@ -432,9 +432,17 @@ ItemLoader objects
         <topics-loaders-processors>` to get the final value to assign to each
         item field.
 
-    .. method:: nested_loader(xpath=selector, css=selector)
+    .. method:: nested_xpath(xpath)
 
-        Create a nested loader with either an xpath selector or css selector.
+        Create a nested loader with an xpath selector.
+        The supplied selector is applied relative to selector associated
+        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
+        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
+        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected.
+
+    .. method:: nested_css(css)
+
+        Create a nested loader with a css selector.
         The supplied selector is applied relative to selector associated
         with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
         with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
@@ -534,7 +542,7 @@ Example::
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
-    footer_loader = loader.nested_loader(xpath='//footer')
+    footer_loader = loader.nested_xpath('//footer')
     footer_loader.add_xpath('social', 'a[@class = "social"]/@href')
     footer_loader.add_xpath('email', 'a[@class = "email"]/@href')
     # no need to call footer_loader.load_item()
