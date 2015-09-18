@@ -9,5 +9,3 @@ testfixtures
 # optional for shell wrapper tests
 bpython
 ipython
-# required because squeue tests extend from queuelib testsuite
-queuelib>=1.4.2
