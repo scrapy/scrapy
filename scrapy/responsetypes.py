@@ -25,6 +25,7 @@ class ResponseTypes(object):
         'application/xml': 'scrapy.http.XmlResponse',
         'application/json': 'scrapy.http.TextResponse',
         'application/x-json': 'scrapy.http.TextResponse',
+        'application/json-amazonui-streaming': 'scrapy.http.TextResponse',
         'application/javascript': 'scrapy.http.TextResponse',
         'application/x-javascript': 'scrapy.http.TextResponse',
         'text/xml': 'scrapy.http.XmlResponse',
