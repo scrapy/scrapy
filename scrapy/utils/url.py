@@ -111,10 +111,11 @@ def escape_ajax(url):
         return url
     return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
 
-def add_scheme_if_missing(url):
+def add_http_if_no_scheme(url):
+    """Adds http as the default scheme if it is missing from the url"""
     parser = parse_url(url)
-    if not parser.scheme:
-        if not parser.netloc:
-            parser = parser._replace(netloc=parser.path, path='')
-        parser = parser._replace(scheme='http')
-    return parser.geturl() 
+    if url.startswith('//'):
+        url = 'http:' + url
+    elif not parser.scheme or not parser.netloc:
+        url = 'http://' + url
+    return url

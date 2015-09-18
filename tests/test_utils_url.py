@@ -4,7 +4,7 @@ import unittest
 import six
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              canonicalize_url, add_scheme_if_missing)
+                              canonicalize_url, add_http_if_no_scheme)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -73,21 +73,47 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
 
-    def test_add_scheme_if_missing(self):
-        self.assertEqual(add_scheme_if_missing('http://www.example.com'),
+    def test_add_http_if_no_scheme(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com'),
                                                'http://www.example.com')
-        self.assertEqual(add_scheme_if_missing('http://www.example.com/some/page.html'),
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page.html'),
                                                'http://www.example.com/some/page.html')
-        self.assertEqual(add_scheme_if_missing('http://example.com'),
+        self.assertEqual(add_http_if_no_scheme('http://example.com'),
                                                'http://example.com')
-        self.assertEqual(add_scheme_if_missing('www.example.com'),
+        self.assertEqual(add_http_if_no_scheme('www.example.com'),
                                                'http://www.example.com')
-        self.assertEqual(add_scheme_if_missing('example.com'),
+        self.assertEqual(add_http_if_no_scheme('example.com'),
                                                'http://example.com')
-        self.assertEqual(add_scheme_if_missing('//example.com'),
+        self.assertEqual(add_http_if_no_scheme('//example.com'),
                                                'http://example.com')
-        self.assertEqual(add_scheme_if_missing('https://www.example.com'),
+        self.assertEqual(add_http_if_no_scheme('//www.example.com/some/page.html'),
+                                               'http://www.example.com/some/page.html')
+        self.assertEqual(add_http_if_no_scheme('www.example.com:80'),
+                                               'http://www.example.com:80')
+        self.assertEqual(add_http_if_no_scheme('www.example.com:80/some/page.html'),
+                                               'http://www.example.com:80/some/page.html')
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com:80/some/page.html'),
+                                               'http://www.example.com:80/some/page.html')
+        self.assertEqual(add_http_if_no_scheme('www.example.com/some/page#frag'),
+                                               'http://www.example.com/some/page#frag')
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page#frag'),
+                                               'http://www.example.com/some/page#frag')
+        self.assertEqual(add_http_if_no_scheme('www.example.com/do?a=1&b=2&c=3'),
+                                               'http://www.example.com/do?a=1&b=2&c=3')
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/do?a=1&b=2&c=3'),
+                                               'http://www.example.com/do?a=1&b=2&c=3')
+        self.assertEqual(add_http_if_no_scheme('username:password@example.com/some/page.html'),
+                                               'http://username:password@example.com/some/page.html')
+        self.assertEqual(add_http_if_no_scheme('http://username:password@example.com/some/page.html'),
+                                               'http://username:password@example.com/some/page.html')
+        self.assertEqual(add_http_if_no_scheme('username:password@example.com:80/some/part?a=1&b=2&c=3#frag'),
+                                               'http://username:password@example.com:80/some/part?a=1&b=2&c=3#frag')
+        self.assertEqual(add_http_if_no_scheme('http://username:password@example.com:80/some/part?a=1&b=2&c=3#frag'),
+                                               'http://username:password@example.com:80/some/part?a=1&b=2&c=3#frag')
+        self.assertEqual(add_http_if_no_scheme('https://www.example.com'),
                                                'https://www.example.com')
+        self.assertEqual(add_http_if_no_scheme('ftp://www.example.com'),
+                                               'ftp://www.example.com')
 
 
 class CanonicalizeUrlTest(unittest.TestCase):
