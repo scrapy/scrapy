@@ -2,6 +2,7 @@
 mock
 mitmproxy==0.10.1
 netlib==0.10.1
+pytest==2.7.3
 pytest-twisted
 pytest-cov
 jmespath

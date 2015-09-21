@@ -1,4 +1,4 @@
-pytest>=2.6.0
+pytest==2.7.3
 pytest-twisted
 pytest-cov
 testfixtures
