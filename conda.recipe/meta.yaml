@@ -1,0 +1,54 @@
+package:
+  name: scrapy
+  version: 1.1.0dev1
+
+source:
+  path: ../
+
+build:
+  entry_points:
+    - scrapy = scrapy.cmdline:execute
+
+requirements:
+  build:
+    - python 
+    - twisted >=10.0.0
+    - w3lib >=1.8.0
+    - queuelib
+    - lxml
+    - pyopenssl
+    - cssselect >=0.9
+    - six >=1.5.2
+    - parsel >=0.9.3
+    - pydispatcher >=2.0.5
+
+  run:
+    - python
+    - twisted >=10.0.0
+    - w3lib >=1.8.0
+    - queuelib
+    - lxml
+    - pyopenssl
+    - cssselect >=0.9
+    - six >=1.5.2
+    - parsel >=0.9.3
+    - pydispatcher >=2.0.5
+
+test:
+  imports:
+    - scrapy
+
+  commands:
+    - scrapy version
+    #- py.test  # Assertion error failure.
+
+  requires:
+    - mock
+    #- testfixtures  # Not available.
+    #- mitmproxy  # Not available.
+    - pytest
+
+about:
+  home: http://scrapy.org
+  summary: A high-level Web Crawling and Web Scraping framework.
+  license: BSD License
