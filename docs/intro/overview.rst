@@ -12,6 +12,14 @@ Even though Scrapy was originally designed for `web scraping`_, it can also be
 used to extract data using APIs (such as `Amazon Associates Web Services`_) or
 as a general purpose web crawler.
 
+Why use Scrapy?
+===============
+
+Scrapy takes care of the dirty work so you can focus on data extraction instead of boilerplate code.
+
+Scrapy handles requests and provides :ref:`selectors <topics-selectors>` so you can easily extract data using CSS or XPath. Its pipeline architecture makes it simple to process, validate and output data.
+
+Scrapy scales out of the box and benefits from an ecosystem that offers :ref:`deployment tools <topics-deploy>`, `link analysis <https://github.com/scrapinghub/aduana>`_ and `URL storage <https://github.com/scrapinghub/frontera>`_ among others.
 
 Walk-through of an example spider
 =================================
