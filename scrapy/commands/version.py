@@ -11,6 +11,8 @@ from scrapy.commands import ScrapyCommand
 
 class Command(ScrapyCommand):
 
+    default_settings = {'LOG_ENABLED': False}
+
     def syntax(self):
         return "[-v]"
 
