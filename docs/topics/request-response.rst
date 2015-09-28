@@ -227,7 +227,7 @@ Those are:
 * :reqmeta:`handle_httpstatus_all`
 * ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
 * :reqmeta:`cookiejar`
-  :reqmeta:`dont_cache`
+* :reqmeta:`dont_cache`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
 * :reqmeta:`dont_obey_robotstxt`
