@@ -53,7 +53,10 @@ def response_status_message(status):
     >>> response_status_message(404)
     '404 Not Found'
     """
-    return '%s %s' % (status, http.responses.get(int(status)))
+    # Implicit decode/encode is on purpose to force native strings
+    # This is properly fixed in Scrapy >=1.1 at revision faf9265
+    reason = http.RESPONSES.get(int(status)).decode('utf8', errors='replace')
+    return '{} {}'.format(status, reason)
 
 def response_httprepr(response):
     """Return raw HTTP representation (as string) of the given response. This
