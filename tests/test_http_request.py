@@ -733,6 +733,31 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
 
+    def test_from_response_multiple_xpaths(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            <input type="hidden" name="three" value="3">
+            </form>
+            <form action="post.php" method="POST">
+            <input type="hidden" name="three" value="3xxx">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formxpath="//form[@action='post.php']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'one'], [b'1'])
+        self.assertEqual(fs[b'three'], [b'3'])
+        self.assertEqual(fs[b'four'], [b'4'])
+
+        # Ascend to the parent form
+        r1 = self.request_class.from_response(response, formxpath="//form/input[@name='four']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'three'], [b'3xxx'])
+
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, formxpath="//form/input[@name='abc']")
+
     def test_from_response_button_submit(self):
         response = _buildresponse(
             """<form action="post.php" method="POST">

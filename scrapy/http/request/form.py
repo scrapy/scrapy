@@ -35,10 +35,18 @@ class FormRequest(Request):
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, formxpath=None, **kwargs):
         kwargs.setdefault('encoding', response.encoding)
-        form = _get_form(response, formname, formid, formnumber, formxpath)
-        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
-        url = _get_form_url(form, kwargs.pop('url', None))
-        method = kwargs.pop('method', form.method)
+        for form_idx, form in enumerate(_get_form(response, formname, formid, formnumber, formxpath)):
+            # Use the url and method from the first matched forms
+            if form_idx == 0:
+                url = _get_form_url(form, kwargs.pop('url', None))
+                method = kwargs.pop('method', form.method)
+            # Collect and merge the formdata from all matched forms
+            _formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+            if formdata is None:
+                formdata = list()
+                formdata.extend(_formdata)
+            else:
+                formdata = _formdata
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
@@ -66,24 +74,26 @@ def _get_form(response, formname, formid, formnumber, formxpath):
     if formname is not None:
         f = root.xpath('//form[@name="%s"]' % formname)
         if f:
-            return f[0]
+            return f
 
     if formid is not None:
         f = root.xpath('//form[@id="%s"]' % formid)
         if f:
-            return f[0]
+            return f
             
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
         nodes = root.xpath(formxpath)
         if nodes:
-            el = nodes[0]
-            while True:
-                if el.tag == 'form':
-                    return el
-                el = el.getparent()
-                if el is None:
-                    break
+            els = list()
+            for el in nodes:
+                while True:
+                    if el.tag == 'form':
+                        els.append(el)
+                    el = el.getparent()
+                    if el is None:
+                        break
+            return els
         raise ValueError('No <form> element found with %s' % formxpath)
 
     # If we get here, it means that either formname was None
@@ -95,7 +105,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
             raise IndexError("Form number %d not found in %s" %
                              (formnumber, response))
         else:
-            return form
+            return [form]
 
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
