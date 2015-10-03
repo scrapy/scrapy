@@ -548,7 +548,7 @@ Example::
     # no need to call footer_loader.load_item()
     loader.load_item()
 
-You can nest loaders arbitrarilly and they work with either xpath or css selectors.
+You can nest loaders arbitrarily and they work with either xpath or css selectors.
 As a general guideline, use nested loaders when they make your code simpler but do
 not go overboard with nesting or your parser can become difficult to read.
 
