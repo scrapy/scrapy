@@ -36,7 +36,7 @@ by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': 500,
-        'scrapy.telnet.TelnetConsole': 500,
+        'scrapy.extensions.telnet.TelnetConsole': 500,
     }
 
 
@@ -181,10 +181,10 @@ enabled (see :ref:`topics-stats`).
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.telnet
+.. module:: scrapy.extensions.telnet
    :synopsis: Telnet console
 
-.. class:: scrapy.telnet.TelnetConsole
+.. class:: scrapy.extensions.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging.
