@@ -30,7 +30,7 @@ def get_crawler(spidercls=None, settings_dict=None):
     from scrapy.spiders import Spider
 
     runner = CrawlerRunner(Settings(settings_dict))
-    return runner._create_crawler(spidercls or Spider)
+    return runner.create_crawler(spidercls or Spider)
 
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
