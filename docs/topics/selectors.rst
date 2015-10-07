@@ -146,7 +146,7 @@ If you want to extract only first matched element, you can call the selector ``.
 
 It returns ``None`` if no element was found:
 
-    >>> response.xpath('//div/[id="not-exists"]/text()').extract_first() is None
+    >>> response.xpath('//div[@id="not-exists"]/text()').extract_first() is None
     True
 
 A default return value can be provided as an argument, to be used instead of ``None``:
