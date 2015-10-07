@@ -4,6 +4,7 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
+import math
 import os
 import sys
 import logging
@@ -84,6 +85,8 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
+    chunk_size = 52428800  # 50 MiB
+
     def __init__(self, uri):
         from scrapy.conf import settings
         try:
@@ -98,12 +101,21 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path
 
     def _store_in_thread(self, file):
-        file.seek(0)
+        file.flush()
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
         conn = self.connect_s3(self.access_key, self.secret_key)
         bucket = conn.get_bucket(self.bucketname, validate=False)
-        key = bucket.new_key(self.keyname)
-        key.set_contents_from_file(file)
-        key.close()
+        mp = bucket.initiate_multipart_upload(self.keyname)
+        chunk_count = int(math.ceil(file_size / float(self.chunk_size)))
+        for i in range(chunk_count):
+            offset = self.chunk_size * i
+            file.seek(offset)
+            mp.upload_part_from_file(
+                file,
+                part_num=i + 1,
+                size=min(self.chunk_size, file_size - offset))
+        mp.complete_upload()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
