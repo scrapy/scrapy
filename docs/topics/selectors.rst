@@ -151,7 +151,7 @@ It returns ``None`` if no element was found:
 
 A default return value can be provided as an argument, to be used instead of ``None``:
 
-    >>> sel.xpath('//div/[id="not-exists"]/text()').extract_first(default='not-found')
+    >>> sel.xpath('//div[@id="not-exists"]/text()').extract_first(default='not-found')
     'not-found'
 
 Notice that CSS selectors can select text or attribute nodes using CSS3
