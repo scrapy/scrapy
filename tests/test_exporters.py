@@ -23,7 +23,7 @@ class TestItem(Item):
 class BaseItemExporterTest(unittest.TestCase):
 
     def setUp(self):
-        self.i = TestItem(name=u'John\xa3', age='22')
+        self.i = TestItem(name=u'John\xa3', age=u'22')
         self.output = BytesIO()
         self.ie = self._get_exporter()
 
@@ -56,12 +56,51 @@ class BaseItemExporterTest(unittest.TestCase):
 
     def test_serialize_field(self):
         res = self.ie.serialize_field(self.i.fields['name'], 'name', self.i['name'])
+        self.assertEqual(res, u'John\xa3')
+
+        res = self.ie.serialize_field(self.i.fields['age'], 'age', self.i['age'])
+        self.assertEqual(res, u'22')
+
+    def test_fields_to_export(self):
+        ie = self._get_exporter(fields_to_export=['name'])
+        self.assertEqual(list(ie._get_serialized_fields(self.i)), [('name', u'John\xa3')])
+
+    def test_field_custom_serializer(self):
+        def custom_serializer(value):
+            return str(int(value) + 2)
+
+        class CustomFieldItem(Item):
+            name = Field()
+            age = Field(serializer=custom_serializer)
+
+        i = CustomFieldItem(name=u'John\xa3', age=u'22')
+
+        ie = self._get_exporter()
+        self.assertEqual(ie.serialize_field(i.fields['name'], 'name', i['name']), u'John\xa3')
+        self.assertEqual(ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
+
+
+class MidRefactoringBaseItemExporterTest(BaseItemExporterTest):
+    """Class introduced just to keep old behavior of BaseItemExporterTest for the
+    test cases that inherit from it while we make changes to exporters one by
+    one -- a needed refactoring trick because the test cases are quite coupled.
+
+    When we're done with the changes, we'll have ditched this class.
+    """
+    def test_serialize_field(self):
+        if self.ie.__class__ is BaseItemExporter:
+            return
+
+        res = self.ie.serialize_field(self.i.fields['name'], 'name', self.i['name'])
         self.assertEqual(res, 'John\xc2\xa3')
 
         res = self.ie.serialize_field(self.i.fields['age'], 'age', self.i['age'])
         self.assertEqual(res, '22')
 
     def test_fields_to_export(self):
+        if self.ie.__class__ is BaseItemExporter:
+            return
+
         ie = self._get_exporter(fields_to_export=['name'])
         self.assertEqual(list(ie._get_serialized_fields(self.i)), [('name', 'John\xc2\xa3')])
 
@@ -71,6 +110,9 @@ class BaseItemExporterTest(unittest.TestCase):
         self.assertEqual(name, 'John\xa3')
 
     def test_field_custom_serializer(self):
+        if self.ie.__class__ is BaseItemExporter:
+            return
+
         def custom_serializer(value):
             return str(int(value) + 2)
 
@@ -85,7 +127,7 @@ class BaseItemExporterTest(unittest.TestCase):
         self.assertEqual(ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
 
 
-class PythonItemExporterTest(BaseItemExporterTest):
+class PythonItemExporterTest(MidRefactoringBaseItemExporterTest):
     def _get_exporter(self, **kwargs):
         return PythonItemExporter(**kwargs)
 
@@ -152,7 +194,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         self.assertEqual(pickle.load(f), i2)
 
 
-class CsvItemExporterTest(BaseItemExporterTest):
+class CsvItemExporterTest(MidRefactoringBaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
         return CsvItemExporter(self.output, **kwargs)

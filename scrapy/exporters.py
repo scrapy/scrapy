@@ -38,7 +38,7 @@ class BaseItemExporter(object):
         raise NotImplementedError
 
     def serialize_field(self, field, name, value):
-        serializer = field.get('serializer', self._to_str_if_unicode)
+        serializer = field.get('serializer', lambda x: x)
         return serializer(value)
 
     def start_exporting(self):
@@ -46,9 +46,6 @@ class BaseItemExporter(object):
 
     def finish_exporting(self):
         pass
-
-    def _to_str_if_unicode(self, value):
-        return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples
@@ -89,7 +86,7 @@ class JsonLinesItemExporter(BaseItemExporter):
         self.file.write(self.encoder.encode(itemdict) + '\n')
 
 
-class JsonItemExporter(JsonLinesItemExporter):
+class JsonItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
@@ -170,13 +167,17 @@ class CsvItemExporter(BaseItemExporter):
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
+    def serialize_field(self, field, name, value):
+        serializer = field.get('serializer', self._to_str_if_unicode)
+        return serializer(value)
+
     def _to_str_if_unicode(self, value):
         if isinstance(value, (list, tuple)):
             try:
                 value = self._join_multivalued.join(value)
             except TypeError:  # list in value may not contain strings
                 pass
-        return super(CsvItemExporter, self)._to_str_if_unicode(value)
+        return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def export_item(self, item):
         if self._headers_not_written:
@@ -251,7 +252,7 @@ class PythonItemExporter(BaseItemExporter):
             return dict(self._serialize_dict(value))
         if hasattr(value, '__iter__'):
             return [self._serialize_value(v) for v in value]
-        return self._to_str_if_unicode(value)
+        return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def _serialize_dict(self, value):
         for key, val in six.iteritems(value):
