@@ -23,9 +23,7 @@ The installation steps assume that you have the following things installed:
   where the Python installer ships it bundled.
 
 You can install Scrapy using pip (which is the canonical way to install Python
-packages).
-
-To install using pip::
+packages). To install using ``pip`` run::
 
    pip install Scrapy
 
@@ -33,6 +31,20 @@ To install using pip::
 
 Platform specific installation notes
 ====================================
+
+Anaconda
+--------
+
+.. note::
+
+  For Windows users, or if you have issues installing through `pip`, this is
+  the recommended way to install Scrapy.
+
+If you already have installed `Anaconda`_ or `Miniconda`_, the company
+`Scrapinghub`_ provides official packages for Linux, Windows and OS X. To
+install Scrapy using ``conda``, use the following command::
+
+  conda install -c Scrapinghub Scrapy 
 
 Windows
 -------
@@ -95,3 +107,6 @@ You can follow the generic instructions or install Scrapy from `AUR Scrapy packa
 .. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
+.. _Scrapinghub: http://scrapinghub.com
+.. _Anaconda: http://docs.continuum.io/anaconda/index
+.. _Miniconda: http://conda.pydata.org/docs/install/quick.html
