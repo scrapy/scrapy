@@ -6,10 +6,12 @@ from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree
 from tempfile import mkdtemp
+import six
 
 from twisted.trial import unittest
 from twisted.internet import defer
 
+from scrapy.utils.python import to_native_str
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
@@ -94,11 +96,11 @@ class GenspiderCommandTest(CommandTest):
         args = ['--template=%s' % tplname] if tplname else []
         spname = 'test_spider'
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = retry_on_eintr(p.stdout.read)
+        out = to_native_str(retry_on_eintr(p.stdout.read))
         self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = retry_on_eintr(p.stdout.read)
+        out = to_native_str(retry_on_eintr(p.stdout.read))
         self.assertIn("Spider %r already exists in module" % spname, out)
 
     def test_template_basic(self):
@@ -146,7 +148,7 @@ class MySpider(scrapy.Spider):
         return []
 """)
         p = self.proc('runspider', fname)
-        log = p.stderr.read()
+        log = to_native_str(p.stderr.read())
         self.assertIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
         self.assertIn("INFO: Closing spider (finished)", log)
@@ -161,12 +163,12 @@ class MySpider(scrapy.Spider):
 from scrapy.spiders import Spider
 """)
         p = self.proc('runspider', fname)
-        log = p.stderr.read()
+        log = to_native_str(p.stderr.read())
         self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
         p = self.proc('runspider', 'some_non_existent_file')
-        log = p.stderr.read()
+        log = to_native_str(p.stderr.read())
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
@@ -176,11 +178,12 @@ from scrapy.spiders import Spider
         with open(fname, 'w') as f:
             f.write("")
         p = self.proc('runspider', fname)
-        log = p.stderr.read()
+        log = to_native_str(p.stderr.read())
         self.assertIn("Unable to load", log)
 
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
+    skip = not six.PY2
 
     command = 'parse'
 
@@ -226,7 +229,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '-a', 'test_arg=1',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assertIn("DEBUG: It Works!", stderr)
+        self.assertIn("DEBUG: It Works!", to_native_str(stderr))
 
     @defer.inlineCallbacks
     def test_pipelines(self):
@@ -234,14 +237,14 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '--pipelines',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assertIn("INFO: It Works!", stderr)
+        self.assertIn("INFO: It Works!", to_native_str(stderr))
 
     @defer.inlineCallbacks
     def test_parse_items(self):
         status, out, stderr = yield self.execute(
             ['--spider', self.spider_name, '-c', 'parse', self.url('/html')]
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", out)
+        self.assertIn("""[{}, {'foo': 'bar'}]""", to_native_str(out))
 
 
 
@@ -250,5 +253,5 @@ class BenchCommandTest(CommandTest):
     def test_run(self):
         p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
-        log = p.stderr.read()
+        log = to_native_str(p.stderr.read())
         self.assertIn('INFO: Crawled', log)
