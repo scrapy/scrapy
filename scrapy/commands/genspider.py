@@ -11,6 +11,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
+
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
     with underscores and prefixing it with a letter if it doesn't start
@@ -20,6 +21,7 @@ def sanitize_module_name(module_name):
     if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
+
 
 class Command(ScrapyCommand):
 
@@ -52,7 +54,8 @@ class Command(ScrapyCommand):
         if opts.dump:
             template_file = self._find_template(opts.dump)
             if template_file:
-                print(open(template_file, 'r').read())
+                with open(template_file, "r") as f:
+                    print(f.read())
             return
         if len(args) != 2:
             raise UsageError()

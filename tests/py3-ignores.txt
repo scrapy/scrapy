@@ -1,7 +1,6 @@
 tests/test_closespider.py
 tests/test_command_fetch.py
 tests/test_command_shell.py
-tests/test_commands.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
@@ -43,5 +42,4 @@ scrapy/downloadermiddlewares/httpproxy.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
 scrapy/extensions/memusage.py
-scrapy/commands/bench.py
 scrapy/mail.py
