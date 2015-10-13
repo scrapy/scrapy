@@ -10,12 +10,6 @@ Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages. Once
 there is no more failed pages to retry this middleware sends a signal
 (retry_complete), so other extensions could connect to that signal.
-
-About HTTP errors to consider:
-
-- You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the HTTP
-  protocol. It's included by default because it's a common code used to
-  indicate server overload, which would be something we want to retry
 """
 import logging
 
