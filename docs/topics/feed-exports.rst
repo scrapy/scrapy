@@ -208,6 +208,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_FIELDS`
+ * :setting:`FEED_BATCH_SIZE`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -319,3 +320,16 @@ A dict containing the built-in feed exporters supported by Scrapy.
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
 .. _boto: http://code.google.com/p/boto/
+
+FEED_BATCH_SIZE
+---------------
+
+Default: ``None``
+
+Allows to control the number of item exported in one file.
+
+The storage URI should define parameters to create a new file that get replaced when the feed is
+being created. These parameters are:
+
+ * ``%(start)s`` - gets replaced by a timestamp when the spider is being started
+ * ``%(time)s`` - gets replaced by a timestamp when the batch feed is being created
