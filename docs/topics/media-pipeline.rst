@@ -7,7 +7,7 @@ Downloading and processing files and images
 .. currentmodule:: scrapy.pipelines.images
 
 Scrapy provides reusable :doc:`item pipelines </topics/item-pipeline>` for
-downloading fies attached to a particular item (for example, when you scrape
+downloading files attached to a particular item (for example, when you scrape
 products and also want to download their images locally). These pipelines share
 a bit of functionality and structure (we refer to them as media pipelines), but
 typically you'll either use the Files Pipeline or the Images Pipeline.

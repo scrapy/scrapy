@@ -120,7 +120,7 @@ EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
     'scrapy.extensions.corestats.CoreStats': 0,
-    'scrapy.telnet.TelnetConsole': 0,
+    'scrapy.extensions.telnet.TelnetConsole': 0,
     'scrapy.extensions.memusage.MemoryUsage': 0,
     'scrapy.extensions.memdebug.MemoryDebugger': 0,
     'scrapy.extensions.closespider.CloseSpider': 0,
@@ -180,6 +180,7 @@ LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
+LOG_SHORT_NAMES = False
 
 LOG_UNSERIALIZABLE_REQUESTS = False
 

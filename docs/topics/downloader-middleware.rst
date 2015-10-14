@@ -24,10 +24,10 @@ Here's an example::
     }
 
 The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
-:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
-be overridden) and then sorted by order to get the final sorted list of enabled
-middlewares: the first middleware is the one closer to the engine and the last
-is the one closer to the downloader.
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
+to be overridden) and then sorted by order to get the final sorted list of
+enabled middlewares: the first middleware is the one closer to the engine and
+the last is the one closer to the downloader.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to

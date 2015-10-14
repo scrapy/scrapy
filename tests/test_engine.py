@@ -19,6 +19,7 @@ from twisted.web import server, static, util
 from twisted.trial import unittest
 
 from scrapy import signals
+from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.test import get_crawler
 from pydispatch import dispatcher
 from tests import tests_datadir
@@ -233,6 +234,29 @@ class EngineTest(unittest.TestCase):
         self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
+
+    @defer.inlineCallbacks
+    def test_close_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        yield e.close()
+
+    @defer.inlineCallbacks
+    def test_close_spiders_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        yield e.open_spider(TestSpider(), [])
+        self.assertEqual(len(e.open_spiders), 1)
+        yield e.close()
+        self.assertEqual(len(e.open_spiders), 0)
+
+    @defer.inlineCallbacks
+    def test_close_engine_spiders_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        yield e.open_spider(TestSpider(), [])
+        e.start()
+        self.assertTrue(e.running)
+        yield e.close()
+        self.assertFalse(e.running)
+        self.assertEqual(len(e.open_spiders), 0)
 
 
 if __name__ == "__main__":

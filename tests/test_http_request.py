@@ -801,6 +801,25 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'test2'], [b'val2'])
         self.assertEqual(fs[b'button1'], [b''])
 
+    def test_html_base_form_action(self):
+        response = _buildresponse(
+            """
+            <html>
+                <head>
+                    <base href="http://b.com/">
+                </head>
+                <body>
+                    <form action="test_form">
+                    </form>
+                </body>
+            </html>
+            """,
+            url='http://a.com/'
+        )
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.url, 'http://b.com/test_form')
+
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')

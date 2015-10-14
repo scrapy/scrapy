@@ -11,6 +11,7 @@ from parsel.selector import create_root_node
 import six
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
+from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
@@ -44,7 +45,7 @@ class FormRequest(Request):
 
 def _get_form_url(form, url):
     if url is None:
-        return form.action or form.base_url
+        return urljoin(form.base_url, form.action)
     return urljoin(form.base_url, url)
 
 
@@ -58,7 +59,7 @@ def _urlencode(seq, enc):
 def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
     text = response.body_as_unicode()
-    root = create_root_node(text, lxml.html.HTMLParser, base_url=response.url)
+    root = create_root_node(text, lxml.html.HTMLParser, base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
