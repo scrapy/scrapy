@@ -140,6 +140,8 @@ class FeedExporter(object):
 
     def __init__(self, settings):
         self.settings = settings
+        self.indexfmt = '{:05d}'
+        self.index = 1
         self.urifmt = settings['FEED_URI']
         if not self.urifmt:
             raise NotConfigured
@@ -225,6 +227,8 @@ class FeedExporter(object):
         ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
         params['start'] = self.start
+        params['index'] = self.indexfmt.format(self.index)
+        self.index += 1
         self._uripar(params, spider)
         return params
 

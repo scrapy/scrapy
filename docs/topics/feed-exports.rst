@@ -324,7 +324,7 @@ A dict containing the built-in feed exporters supported by Scrapy.
 FEED_BATCH_SIZE
 ---------------
 
-Default: ``None``
+Default: ``None``. (a single file is created)
 
 Allows to control the number of item exported in one file.
 
@@ -333,3 +333,22 @@ being created. These parameters are:
 
  * ``%(start)s`` - gets replaced by a timestamp when the spider is being started
  * ``%(time)s`` - gets replaced by a timestamp when the batch feed is being created
+ * ``%(index)s`` - gets replaced by an index when the batch feed is being created
+
+Here's an example using the ```time``` to batch feed ::
+
+    Storage URI : /tmp/%(start)s/%(time)s.json
+
+    /tmp
+      |_ 2015-07-03T20-29-01 (start)
+         |_ 2015-07-03T20-29-04.json (time)
+         |_ 2015-07-03T20-52-06.json (time)
+
+Here's an example using the ```index``` to batch feed ::
+
+    Storage URI : /tmp/%(start)s/feed-%(index)s.json
+
+    /tmp
+      |_ 2015-07-03T20-29-01 (start)
+         |_ feed-00001.json (index)
+         |_ feed-00002.json (index)
