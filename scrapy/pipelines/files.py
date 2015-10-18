@@ -334,6 +334,9 @@ class FilesPipeline(MediaPipeline):
 
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        if not media_ext[1:].isalpha():
+            media_base_url = url.split('?', 1)[0]  # change to request.url after deprecation
+            media_ext = os.path.splitext(media_base_url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated
