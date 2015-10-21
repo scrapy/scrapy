@@ -24,10 +24,12 @@ from twisted.internet import defer, threads
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
+
 
 logger = logging.getLogger(__name__)
 
@@ -335,7 +337,7 @@ class FilesPipeline(MediaPipeline):
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         if not media_ext or not all([char.isalpha() or char.isdigit() for char in media_ext[1:]]):
-            media_base_url = url.split('?', 1)[0]  # change to request.url after deprecation
+            media_base_url = urlparse_cached(request).path
             media_ext = os.path.splitext(media_base_url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
 
