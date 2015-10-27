@@ -116,9 +116,9 @@ class BaseSettings(MutableMapping):
     def getbool(self, name, default=False):
         """
         Get a setting value as a boolean.
-        
+
         ``1``, ``'1'``, and ``True`` return ``True``, while ``0``, ``'0'``,
-        ``False`` and ``None`` return ``False``. 
+        ``False`` and ``None`` return ``False``.
 
         For example, settings populated through environment variables set to
         ``'0'`` will return ``False`` when using this method.
@@ -203,11 +203,17 @@ class BaseSettings(MutableMapping):
         if basename in self:
             warnings.warn('_BASE settings are deprecated.',
                           category=ScrapyDeprecationWarning)
-            compsett = BaseSettings(self[name + "_BASE"], priority='default')
-            compsett.update(self[name])
+            # When users defined a _BASE setting, they explicitly don't want to
+            # use any of Scrapy's defaults. Therefore, we only use these entries
+            # from self[name] (where the defaults now live) that have a priority
+            # higher than 'default'
+            compsett = BaseSettings(self[basename], priority='default')
+            for k in self[name]:
+                prio = self[name].getpriority(k)
+                if prio > get_settings_priority('default'):
+                    compsett.set(k, self[name][k], prio)
             return compsett
-        else:
-            return self[name]
+        return self[name]
 
     def getpriority(self, name):
         """

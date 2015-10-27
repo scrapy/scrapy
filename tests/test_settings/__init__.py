@@ -252,12 +252,17 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_getcomposite(self):
         s = BaseSettings({'TEST_BASE': {1: 1, 2: 2},
-                          'TEST': BaseSettings({1: 10}),
-                          'HASNOBASE': BaseSettings({1: 1})})
+                          'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
+                          'HASNOBASE': BaseSettings({1: 1}, 'default')})
+        s['TEST'].set(4, 4, priority='project')
+        # When users specify a _BASE setting they explicitly don't want to use
+        # Scrapy's defaults, so we don't want to see anything that has a
+        # 'default' priority from TEST
         cs = s._getcomposite('TEST')
-        self.assertEqual(len(cs), 2)
-        self.assertEqual(cs[1], 10)
+        self.assertEqual(len(cs), 3)
+        self.assertEqual(cs[1], 1)
         self.assertEqual(cs[2], 2)
+        self.assertEqual(cs[4], 4)
         cs = s._getcomposite('HASNOBASE')
         self.assertEqual(len(cs), 1)
         self.assertEqual(cs[1], 1)
