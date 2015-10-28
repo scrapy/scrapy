@@ -63,8 +63,7 @@ DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
 
-DOWNLOAD_HANDLERS = {}
-DOWNLOAD_HANDLERS_BASE = {
+DOWNLOAD_HANDLERS = {
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
     'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -82,9 +81,7 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 
-DOWNLOADER_MIDDLEWARES = {}
-
-DOWNLOADER_MIDDLEWARES_BASE = {
+DOWNLOADER_MIDDLEWARES = {
     # Engine side
     'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
     'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
@@ -116,9 +113,7 @@ except KeyError:
     else:
         EDITOR = 'vi'
 
-EXTENSIONS = {}
-
-EXTENSIONS_BASE = {
+EXTENSIONS = {
     'scrapy.extensions.corestats.CoreStats': 0,
     'scrapy.telnet.TelnetConsole': 0,
     'scrapy.extensions.memusage.MemoryUsage': 0,
@@ -135,16 +130,14 @@ FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
 FEED_EXPORT_FIELDS = None
-FEED_STORAGES = {}
-FEED_STORAGES_BASE = {
+FEED_STORAGES = {
     '': 'scrapy.extensions.feedexport.FileFeedStorage',
     'file': 'scrapy.extensions.feedexport.FileFeedStorage',
     'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
     's3': 'scrapy.extensions.feedexport.S3FeedStorage',
     'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
 }
-FEED_EXPORTERS = {}
-FEED_EXPORTERS_BASE = {
+FEED_EXPORTERS = {
     'json': 'scrapy.exporters.JsonItemExporter',
     'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
     'jl': 'scrapy.exporters.JsonLinesItemExporter',
@@ -170,7 +163,6 @@ HTTPCACHE_GZIP = False
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
 ITEM_PIPELINES = {}
-ITEM_PIPELINES_BASE = {}
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
@@ -229,9 +221,7 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
-SPIDER_MIDDLEWARES = {}
-
-SPIDER_MIDDLEWARES_BASE = {
+SPIDER_MIDDLEWARES = {
     # Engine side
     'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
     'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
@@ -258,8 +248,7 @@ TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
 
-SPIDER_CONTRACTS = {}
-SPIDER_CONTRACTS_BASE = {
+SPIDER_CONTRACTS = {
     'scrapy.contracts.default.UrlContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,

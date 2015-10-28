@@ -6,6 +6,7 @@ import six
 from scrapy.exceptions import NotSupported, NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import without_none_values
 from scrapy import signals
 
 
@@ -19,13 +20,8 @@ class DownloadHandlers(object):
         self._schemes = {}  # stores acceptable schemes on instancing
         self._handlers = {}  # stores instanced handlers for schemes
         self._notconfigured = {}  # remembers failed handlers
-        handlers = crawler.settings.get('DOWNLOAD_HANDLERS_BASE')
-        handlers.update(crawler.settings.get('DOWNLOAD_HANDLERS', {}))
+        handlers = without_none_values(crawler.settings._getcomposite('DOWNLOAD_HANDLERS'))
         for scheme, clspath in six.iteritems(handlers):
-            # Allow to disable a handler just like any other
-            # component (extension, middleware, etc).
-            if clspath is None:
-                continue
             self._schemes[scheme] = clspath
 
         crawler.signals.connect(self._close, signals.engine_stopped)
