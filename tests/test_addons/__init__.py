@@ -14,6 +14,7 @@ from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler
 from scrapy.interfaces import IAddon
 from scrapy.settings import BaseSettings
+from scrapy.utils.conf import config_from_filepath
 
 from . import addons
 from . import addonmod
@@ -244,16 +245,22 @@ class AddonManagerTest(unittest.TestCase):
         _test_load_method('load_settings', settings)
 
     def test_load_cfg(self):
+        def _check_loaded_addons(manager):
+            six.assertCountEqual(self, manager, ['GoodAddon', 'AddonModule'])
+            self.assertIsInstance(manager['GoodAddon'], addons.GoodAddon)
+            six.assertCountEqual(self, manager.configs['GoodAddon'], ['key'])
+            self.assertEqual(manager.configs['GoodAddon']['key'], 'val1')
+            # XXX: Check module equality, see above
+            self.assertEqual(manager['AddonModule'].name, addonmod.name)
+            six.assertCountEqual(self, manager.configs['AddonModule'], ['key'])
+            self.assertEqual(manager.configs['AddonModule']['key'], 'val2')
         manager = AddonManager()
         manager.load_cfg(self.TESTCFGPATH)
-        six.assertCountEqual(self, manager, ['GoodAddon', 'AddonModule'])
-        self.assertIsInstance(manager['GoodAddon'], addons.GoodAddon)
-        six.assertCountEqual(self, manager.configs['GoodAddon'], ['key'])
-        self.assertEqual(manager.configs['GoodAddon']['key'], 'val1')
-        # XXX: Check module equality, see above
-        self.assertEqual(manager['AddonModule'].name, addonmod.name)
-        six.assertCountEqual(self, manager.configs['AddonModule'], ['key'])
-        self.assertEqual(manager.configs['AddonModule']['key'], 'val2')
+        _check_loaded_addons(manager)
+        manager = AddonManager()
+        preloaded_cfg = config_from_filepath(self.TESTCFGPATH)
+        manager.load_cfg(preloaded_cfg)
+        _check_loaded_addons(manager)
 
     def test_enabled_disabled(self):
         manager = AddonManager()
@@ -329,6 +336,11 @@ class AddonManagerTest(unittest.TestCase):
             manager.update_settings(settings)
             self.assertEqual(us_first.call_count, 1)
             self.assertEqual(us_second.call_count, 2)
+
+        # This will become relevant when we let spiders implement the add-on
+        # interface and should be replaced with a test where
+        # AddonManager.spidercls = None then.
+        manager._call_if_exists(None, 'irrelevant')
 
     def test_update_addons_last_minute_add(self):
         class AddedAddon(addons.GoodAddon):
