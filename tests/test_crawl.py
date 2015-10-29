@@ -226,3 +226,24 @@ with multiples lines
         s = dict(est[0])
         self.assertEqual(s['engine.spider.name'], crawler.spider.name)
         self.assertEqual(s['len(engine.scraper.slot.active)'], 1)
+
+    @defer.inlineCallbacks
+    def test_graceful_crawl_error_handling(self):
+        """
+        Test whether errors happening anywhere in Crawler.crawl() are properly
+        reported (and not somehow swallowed) after a graceful engine shutdown.
+        The errors should not come from within Scrapy's core but from within
+        spiders/middlewares/etc., e.g. raised in Spider.start_requests(),
+        SpiderMiddleware.process_start_requests(), etc.
+        """
+
+        class TestError(Exception):
+            pass
+
+        class FaultySpider(SimpleSpider):
+            def start_requests(self):
+                raise TestError
+
+        crawler = get_crawler(FaultySpider)
+        yield self.assertFailure(crawler.crawl(), TestError)
+        self.assertFalse(crawler.crawling)
