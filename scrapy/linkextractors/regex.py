@@ -1,7 +1,7 @@
 import re
 from six.moves.urllib.parse import urljoin
 
-from w3lib.html import remove_tags, replace_entities, replace_escape_chars
+from w3lib.html import remove_tags, replace_entities, replace_escape_chars, get_base_url
 
 from scrapy.link import Link
 from .sgml import SgmlLinkExtractor
@@ -31,7 +31,7 @@ class RegexLinkExtractor(SgmlLinkExtractor):
             return clean_url
 
         if base_url is None:
-            base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
+            base_url = get_base_url(response_text, response_url, response_encoding)
 
         links_text = linkre.findall(response_text)
         return [Link(clean_url(url).encode(response_encoding),
