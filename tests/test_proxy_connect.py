@@ -40,8 +40,8 @@ class ProxyConnectTestCase(TestCase):
         self._proxy.start()
         # Wait for the proxy to start.
         time.sleep(1.0)
-        os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:8888'
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+        os.environ['http_proxy'] = 'http://scrapy:scrapy@127.9.9.9:8888'
+        os.environ['https_proxy'] = 'http://scrapy:scrapy@127.9.9.9:8888'
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
@@ -52,15 +52,15 @@ class ProxyConnectTestCase(TestCase):
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl("https://127.9.9.9:8999/status?n=200")
         self._assert_got_response_code(200, l)
 
     @defer.inlineCallbacks
     def test_https_noconnect(self):
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
+        os.environ['https_proxy'] = 'http://scrapy:scrapy@127.9.9.9:8888?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl("https://127.9.9.9:8999/status?n=200")
         self._assert_got_response_code(200, l)
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
 
@@ -68,15 +68,15 @@ class ProxyConnectTestCase(TestCase):
     def test_https_connect_tunnel_error(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:99999/status?n=200")
+            yield crawler.crawl("https://127.9.9.9:99999/status?n=200")
         self._assert_got_tunnel_error(l)
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888'
+        os.environ['https_proxy'] = 'http://wrong:wronger@127.9.9.9:8888'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl("https://127.9.9.9:8999/status?n=200")
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(l)
@@ -84,7 +84,7 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
-        request = Request("https://localhost:8999/echo")
+        request = Request("https://127.9.9.9:8999/echo")
         crawler = get_crawler(SingleRequestSpider)
         with LogCapture() as l:
             yield crawler.crawl(seed=request)
@@ -94,10 +94,10 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
+        os.environ['https_proxy'] = 'http://wrong:wronger@127.9.9.9:8888?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl("https://127.9.9.9:8999/status?n=200")
         self._assert_got_response_code(407, l)
 
     def _assert_got_response_code(self, code, log):

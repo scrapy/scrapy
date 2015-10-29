@@ -15,10 +15,10 @@ from scrapy.settings import Settings
 class _HttpErrorSpider(Spider):
     name = 'httperror'
     start_urls = [
-        "http://localhost:8998/status?n=200",
-        "http://localhost:8998/status?n=404",
-        "http://localhost:8998/status?n=402",
-        "http://localhost:8998/status?n=500",
+        "http://127.9.9.9:8998/status?n=200",
+        "http://127.9.9.9:8998/status?n=404",
+        "http://127.9.9.9:8998/status?n=402",
+        "http://127.9.9.9:8998/status?n=500",
     ]
     bypass_status_codes = set()
 

@@ -202,12 +202,12 @@ class MockServer():
 if __name__ == "__main__":
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(8998, factory)
+    httpPort = reactor.listenTCP(8998, factory, interface='0.0.0.0')
     contextFactory = ssl.DefaultOpenSSLContextFactory(
          os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
          os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
          )
-    httpsPort = reactor.listenSSL(8999, factory, contextFactory)
+    httpsPort = reactor.listenSSL(8999, factory, contextFactory, interface='0.0.0.0')
 
     def print_listening():
         httpHost = httpPort.getHost()

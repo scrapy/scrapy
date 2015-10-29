@@ -38,7 +38,7 @@ class TestItem(Item):
 
 class TestSpider(Spider):
     name = "scrapytest.org"
-    allowed_domains = ["scrapytest.org", "localhost"]
+    allowed_domains = ["scrapytest.org", "127.9.9.9"]
 
     itemurl_re = re.compile("item\d+.html")
     name_re = re.compile("<h1>(.*?)</h1>", re.M)
@@ -80,9 +80,9 @@ def start_test_site(debug=False):
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
 
-    port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
+    port = reactor.listenTCP(0, server.Site(r), interface="127.9.9.9")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
+        print("Test server running at http://127.9.9.9:%d/ - hit Ctrl-C to finish." \
             % port.getHost().port)
     return port
 
@@ -130,7 +130,7 @@ class CrawlerRun(object):
         self.deferred.callback(None)
 
     def geturl(self, path):
-        return "http://localhost:%s%s" % (self.portno, path)
+        return "http://127.9.9.9:%s%s" % (self.portno, path)
 
     def getpath(self, url):
         u = urlparse(url)
