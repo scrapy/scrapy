@@ -92,18 +92,21 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         assert_aws_environ()
-        uri = os.environ.get('FEEDTEST_S3_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
+        uri = 's3://testbucket/foo'
+        from moto import mock_s3
         from boto import connect_s3
-        storage = S3FeedStorage(uri)
-        verifyObject(IFeedStorage, storage)
-        file = storage.open(scrapy.Spider("default"))
-        file.write("content")
-        yield storage.store(file)
         u = urlparse(uri)
-        key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
-        self.assertEqual(key.get_contents_as_string(), "content")
+        bucketname = u.hostname
+        with mock_s3():
+            conn = connect_s3()
+            conn.create_bucket(bucketname)
+            storage = S3FeedStorage(uri)
+            verifyObject(IFeedStorage, storage)
+            file = storage.open(scrapy.Spider("default"))
+            file.write("content")
+            yield storage.store(file)
+            key = conn.get_bucket(bucketname, validate=False).get_key(u.path)
+            self.assertEqual(key.get_contents_as_string(), "content")
 
 
 class StdoutFeedStorageTest(unittest.TestCase):

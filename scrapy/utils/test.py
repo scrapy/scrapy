@@ -14,11 +14,9 @@ def assert_aws_environ():
     """
     try:
         import boto
+        import moto
     except ImportError as e:
         raise SkipTest(str(e))
-
-    if 'AWS_ACCESS_KEY_ID' not in os.environ:
-        raise SkipTest("AWS keys not found")
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
