@@ -39,8 +39,7 @@ class SettingsAttributeTest(unittest.TestCase):
 
     def test_set_per_key_priorities(self):
         attribute = SettingsAttribute(
-                        BaseSettings({'one': 10, 'two': 20}, 0),
-                        0)
+            BaseSettings({'one': 10, 'two': 20}, 0), 0)
 
         new_dict = {'one': 11, 'two': 21}
         attribute.set(new_dict, 10)
@@ -77,7 +76,7 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(attr.priority, 0)
 
     def test_set_settingsattribute(self):
-        myattr = SettingsAttribute(0, 30) # Note priority 30
+        myattr = SettingsAttribute(0, 30)  # Note priority 30
         self.settings.set('TEST_ATTR', myattr, 10)
         self.assertEqual(self.settings.get('TEST_ATTR'), 0)
         self.assertEqual(self.settings.getpriority('TEST_ATTR'), 30)
@@ -165,7 +164,8 @@ class BaseSettingsTest(unittest.TestCase):
     def test_update(self):
         settings = BaseSettings({'key_lowprio': 0}, priority=0)
         settings.set('key_highprio', 10, priority=50)
-        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11}, priority=30)
+        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11},
+                                       priority=30)
         custom_settings.set('newkey_one', None, priority=50)
         custom_dict = {'key_lowprio': 2, 'key_highprio': 12, 'newkey_two': None}
 
