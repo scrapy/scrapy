@@ -26,10 +26,9 @@ def get_crawler(spidercls=None, settings_dict=None):
     priority.
     """
     from scrapy.crawler import CrawlerRunner
-    from scrapy.settings import Settings
     from scrapy.spiders import Spider
 
-    runner = CrawlerRunner(Settings(settings_dict))
+    runner = CrawlerRunner(settings_dict)
     return runner.create_crawler(spidercls or Spider)
 
 def get_pythonpath():
