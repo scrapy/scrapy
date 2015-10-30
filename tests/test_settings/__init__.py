@@ -3,9 +3,18 @@ import unittest
 import warnings
 
 from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
-                             CrawlerSettings)
+                             CrawlerSettings, SETTINGS_PRIORITIES,
+                             get_settings_priority)
 from tests import mock
 from . import default_settings
+
+
+class SettingsGlobalFuncsTest(unittest.TestCase):
+
+    def test_get_settings_priority(self):
+        for prio_str, prio_num in six.iteritems(SETTINGS_PRIORITIES):
+            self.assertEqual(get_settings_priority(prio_str), prio_num)
+        self.assertEqual(get_settings_priority(99), 99)
 
 
 class SettingsAttributeTest(unittest.TestCase):
@@ -30,8 +39,7 @@ class SettingsAttributeTest(unittest.TestCase):
 
     def test_set_per_key_priorities(self):
         attribute = SettingsAttribute(
-                        BaseSettings({'one': 10, 'two': 20}, 0),
-                        0)
+            BaseSettings({'one': 10, 'two': 20}, 0), 0)
 
         new_dict = {'one': 11, 'two': 21}
         attribute.set(new_dict, 10)
@@ -44,6 +52,10 @@ class SettingsAttributeTest(unittest.TestCase):
         attribute.set(new_settings, 0)
         self.assertEqual(attribute.value['one'], 12)
         self.assertEqual(attribute.value['two'], 21)
+
+    def test_repr(self):
+        self.assertEqual(repr(self.attribute),
+                         "<SettingsAttribute value='value' priority=10>")
 
 
 class BaseSettingsTest(unittest.TestCase):
@@ -64,7 +76,7 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(attr.priority, 0)
 
     def test_set_settingsattribute(self):
-        myattr = SettingsAttribute(0, 30) # Note priority 30
+        myattr = SettingsAttribute(0, 30)  # Note priority 30
         self.settings.set('TEST_ATTR', myattr, 10)
         self.assertEqual(self.settings.get('TEST_ATTR'), 0)
         self.assertEqual(self.settings.getpriority('TEST_ATTR'), 30)
@@ -152,7 +164,8 @@ class BaseSettingsTest(unittest.TestCase):
     def test_update(self):
         settings = BaseSettings({'key_lowprio': 0}, priority=0)
         settings.set('key_highprio', 10, priority=50)
-        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11}, priority=30)
+        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11},
+                                       priority=30)
         custom_settings.set('newkey_one', None, priority=50)
         custom_dict = {'key_lowprio': 2, 'key_highprio': 12, 'newkey_two': None}
 
@@ -329,7 +342,6 @@ class BaseSettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('FOO'), 'fez')
             self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
 
-
     def test_deprecated_attribute_defaults(self):
         self.settings.set('BAR', 'fuz', priority='default')
         with warnings.catch_warnings(record=True) as w:
@@ -338,6 +350,14 @@ class BaseSettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('BAR'), 'foo')
             self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
             self.assertIn('BAR', self.settings.defaults)
+
+    def test_repr(self):
+        settings = BaseSettings()
+        self.assertEqual(repr(settings), "<BaseSettings {}>")
+        attr = SettingsAttribute('testval', 15)
+        settings['testkey'] = attr
+        self.assertEqual(repr(settings),
+                         "<BaseSettings {'testkey': %s}>" % repr(attr))
 
 
 class SettingsTest(unittest.TestCase):
