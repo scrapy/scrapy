@@ -51,8 +51,11 @@ class ContractsManager(object):
             # calculate request args
             args, kwargs = get_spec(Request.__init__)
             kwargs['callback'] = method
+            ignored_errors = []
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
+                if contract.name is 'ignore':
+                    ignored_errors = getattr(contract, 'ignored_errors') or []
 
             # create and prepare request
             args.remove('self')
@@ -65,14 +68,13 @@ class ContractsManager(object):
                 for contract in contracts:
                     request = contract.add_post_hook(request, results)
 
-                self._clean_req(request, method, results)
+                self._clean_req(request, method, results, ignored_errors)
                 return request
 
-    def _clean_req(self, request, method, results):
+    def _clean_req(self, request, method, results, ignored_errors):
         """ stop the request from returning objects and records any errors """
 
         cb = request.callback
-
         @wraps(cb)
         def cb_wrapper(response):
             try:
@@ -84,8 +86,11 @@ class ContractsManager(object):
 
         def eb_wrapper(failure):
             case = _create_testcase(method, 'errback')
-            exc_info = failure.value, failure.type, failure.getTracebackObject()
-            results.addError(case, exc_info)
+            exc_info = failure.type, failure.value, failure.getTracebackObject()
+            if failure.type.__name__ in ignored_errors:
+                results.addSkip(case, exc_info)
+            else:
+                results.addError(case, exc_info)
 
         request.callback = cb_wrapper
         request.errback = eb_wrapper

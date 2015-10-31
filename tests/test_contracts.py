@@ -1,7 +1,10 @@
 from unittest import TextTestResult
 
+from twisted.internet.defer import TimeoutError, CancelledError
+from twisted.python.failure import Failure
 from twisted.trial import unittest
 
+from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field
@@ -10,7 +13,7 @@ from scrapy.contracts.default import (
     UrlContract,
     ReturnsContract,
     ScrapesContract,
-)
+    IgnoreContract)
 
 
 class TestItem(Item):
@@ -98,9 +101,25 @@ class TestSpider(Spider):
         """
         pass
 
+    def ignore_timeout_error(self, response):
+        """ should return an item but ignore TimeoutError if occurs
+        @url http://scrapy.org
+        @ignore TimeoutError
+        @returns items 1 1
+        """
+        return TestItem(url=response.url)
+
+    def ignore_timeout_and_http_errors(self, response):
+        """ should return an item but ignore TimeoutError and HttpError if occurs
+        @url http://scrapy.org
+        @ignore TimeoutError HttpError
+        @returns items 1 1
+        """
+        return TestItem(url=response.url)
+
 
 class ContractsManagerTest(unittest.TestCase):
-    contracts = [UrlContract, ReturnsContract, ScrapesContract]
+    contracts = [UrlContract, ReturnsContract, ScrapesContract, IgnoreContract]
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
@@ -113,6 +132,10 @@ class ContractsManagerTest(unittest.TestCase):
     def should_fail(self):
         self.assertTrue(self.results.failures)
         self.assertFalse(self.results.errors)
+
+    def should_error(self):
+        self.assertFalse(self.results.failures)
+        self.assertTrue(self.results.errors)
 
     def test_contracts(self):
         spider = TestSpider()
@@ -185,3 +208,41 @@ class ContractsManagerTest(unittest.TestCase):
                 self.results)
         request.callback(response)
         self.should_fail()
+
+    def test_ignore_a_single_error_ok(self):
+        spider = TestSpider()
+
+        # ignore TimeoutError AND a TimeoutError is raised => SUCCESS
+        request = self.conman.from_method(spider.ignore_timeout_error, self.results)
+        failure = Failure(TimeoutError(), TimeoutError)
+        request.errback(failure)
+        self.should_succeed()
+
+    def test_ignore_a_single_error_ko(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        # ignore TimeoutError BUT an HttpError is raised => ERROR
+        request = self.conman.from_method(spider.ignore_timeout_error, self.results)
+        failure = Failure(HttpError(response), HttpError)
+        request.errback(failure)
+        self.should_error()
+
+    def test_ignore_multiple_errors_ok(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        # ignore TimeoutError and HttpError AND an HttpError is raised => SUCCESS
+        request = self.conman.from_method(spider.ignore_timeout_and_http_errors, self.results)
+        failure = Failure(HttpError(response), HttpError)
+        request.errback(failure)
+        self.should_succeed()
+
+    def test_ignore_multiple_errors_ko(self):
+        spider = TestSpider()
+
+        # ignore TimeoutError and HttpError BUT a CancelledError is raised => SUCCESS
+        request = self.conman.from_method(spider.ignore_timeout_and_http_errors, self.results)
+        failure = Failure(CancelledError(), CancelledError)
+        request.errback(failure)
+        self.should_error()
