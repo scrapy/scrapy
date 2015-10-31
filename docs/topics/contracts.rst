@@ -55,6 +55,15 @@ This callback is tested using three built-in contracts:
 
     @scrapes field_1 field_2 ...
 
+.. class:: IgnoreContract
+
+    This contract (``@ignore``) allows to ignore some errors which might occurred
+    sometimes when a website is slow or temporarily unavailable. In a context of
+    continuous integration this contract prevents to break the build for external reasons.
+    This contract is optional and must be used with caution::
+
+    @ignore TimeoutError
+
 Use the :command:`check` command to run the contract checks.
 
 Custom Contracts
