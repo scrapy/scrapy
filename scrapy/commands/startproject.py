@@ -1,18 +1,15 @@
 from __future__ import print_function
 import re
-import shutil
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
-from shutil import copytree, ignore_patterns
+from shutil import copytree, ignore_patterns, move
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
-
-TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
 TEMPLATES_TO_RENDER = (
     ('scrapy.cfg',),
@@ -63,17 +60,24 @@ class Command(ScrapyCommand):
             self.exitcode = 1
             return
 
-        moduletpl = join(TEMPLATES_PATH, 'module')
-        copytree(moduletpl, join(project_name, project_name), ignore=IGNORE)
-        shutil.copy(join(TEMPLATES_PATH, 'scrapy.cfg'), project_name)
+        copytree(self.templates_dir, project_name, ignore=IGNORE)
+        move(join(project_name, 'module'), join(project_name, project_name))
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
             tplfile = join(project_name,
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
-        print("New Scrapy project %r created in:" % project_name)
+        print("New Scrapy project %r, using template directory %r, created in:" % \
+              (project_name, self.templates_dir))
         print("    %s\n" % abspath(project_name))
         print("You can start your first spider with:")
         print("    cd %s" % project_name)
         print("    scrapy genspider example example.com")
+
+    @property
+    def templates_dir(self):
+        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
+            join(scrapy.__path__[0], 'templates')
+        return join(_templates_base_dir, 'project')
+    
