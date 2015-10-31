@@ -1,8 +1,10 @@
-from unittest import TextTestResult
+import sys
+from unittest import TextTestRunner
 
 from twisted.internet.defer import TimeoutError, CancelledError
 from twisted.python.failure import Failure
 from twisted.trial import unittest
+from scrapy.commands.check import TextTestResult
 
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
@@ -123,7 +125,9 @@ class ContractsManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
-        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
+        # Change the verbosity to display the test results
+        runner = TextTestRunner(verbosity=1)
+        self.results = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
     def should_succeed(self):
         self.assertFalse(self.results.failures)
