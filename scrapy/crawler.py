@@ -43,9 +43,7 @@ class Crawler(object):
 
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
-        self.extensions = ExtensionManager.from_crawler(self)
 
-        self.settings.freeze()
         self.crawling = False
         self.spider = None
         self.engine = None
@@ -67,6 +65,9 @@ class Crawler(object):
         self.crawling = True
 
         try:
+            self.settings.freeze()
+            self.extensions = ExtensionManager.from_crawler(self)
+
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
