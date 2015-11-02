@@ -65,7 +65,7 @@ class Crawler(object):
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
-            self.spidercls.update_settings(self.settings)
+            self.spider.update_settings(self.settings)
             self.settings.freeze()
             self.extensions = ExtensionManager.from_crawler(self)
 
