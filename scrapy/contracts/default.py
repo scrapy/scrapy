@@ -103,4 +103,4 @@ class IgnoreContract(Contract):
 
     def __init__(self, *args, **kwargs):
         super(IgnoreContract, self).__init__(*args, **kwargs)
-        self.ignored_errors = list(self.args)
+        self.ignored_errors = set(self.args)

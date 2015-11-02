@@ -1,11 +1,10 @@
-import sys
 from unittest import TextTestRunner
 
 from twisted.internet.defer import TimeoutError, CancelledError
 from twisted.python.failure import Failure
 from twisted.trial import unittest
-from scrapy.commands.check import TextTestResult
 
+from scrapy.commands.check import TextTestResult
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request

@@ -51,7 +51,7 @@ class ContractsManager(object):
             # calculate request args
             args, kwargs = get_spec(Request.__init__)
             kwargs['callback'] = method
-            ignored_errors = []
+            ignored_errors = set()
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
                 if contract.name is 'ignore':
