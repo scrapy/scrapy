@@ -6,6 +6,7 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
+from urlparse import urlsplit, urlunsplit
 from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
                                     urlparse, parse_qsl, urlencode,
                                     unquote)
@@ -114,10 +115,16 @@ def escape_ajax(url):
 
 def add_http_if_no_scheme(url):
     """Add http as the default scheme if it is missing from the url."""
-    if url.startswith('//'):
-        url = 'http:' + url
-        return url
-    parser = parse_url(url)
-    if not parser.scheme or not parser.netloc:
-        url = 'http://' + url
-    return url
+    parts = urlsplit(url)
+    scheme = parts.scheme or "http"
+    if parts.netloc:
+        netloc = parts.netloc
+        path = parts.path
+    else:
+        path_parts = url.split("/", 1)
+        netloc = path_parts[0]
+        path = path_parts[1] if len(path_parts) > 1 else "/"
+
+    return urlunsplit((
+        scheme, netloc, path, parts.query, parts.fragment
+    ))
