@@ -51,11 +51,11 @@ class ContractsManager(object):
             # calculate request args
             args, kwargs = get_spec(Request.__init__)
             kwargs['callback'] = method
-            ignored_errors = set()
+            ignored_errors = []
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
                 if contract.name == 'ignore':
-                    ignored_errors = getattr(contract, 'ignored_errors') or []
+                    ignored_errors += getattr(contract, 'ignored_errors') or []
 
             # create and prepare request
             args.remove('self')
@@ -68,7 +68,7 @@ class ContractsManager(object):
                 for contract in contracts:
                     request = contract.add_post_hook(request, results)
 
-                self._clean_req(request, method, results, ignored_errors)
+                self._clean_req(request, method, results, set(ignored_errors))
                 return request
 
     def _clean_req(self, request, method, results, ignored_errors):

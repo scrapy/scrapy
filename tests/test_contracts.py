@@ -118,6 +118,15 @@ class TestSpider(Spider):
         """
         return TestItem(url=response.url)
 
+    def ignore_timeout_and_http_errors_with_two_contracts(self, response):
+        """ should return an item but ignore TimeoutError and HttpError if occurs
+        @url http://scrapy.org
+        @ignore TimeoutError
+        @ignore HttpError
+        @returns items 1 1
+        """
+        return TestItem(url=response.url)
+
 
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract, IgnoreContract]
@@ -246,6 +255,25 @@ class ContractsManagerTest(unittest.TestCase):
 
         # ignore TimeoutError and HttpError BUT a CancelledError is raised => SUCCESS
         request = self.conman.from_method(spider.ignore_timeout_and_http_errors, self.results)
+        failure = Failure(CancelledError(), CancelledError)
+        request.errback(failure)
+        self.should_error()
+
+    def test_ignore_multiple_errors_with_two_contracts_ok(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        # ignore TimeoutError and HttpError AND an HttpError is raised => SUCCESS
+        request = self.conman.from_method(spider.ignore_timeout_and_http_errors_with_two_contracts, self.results)
+        failure = Failure(HttpError(response), HttpError)
+        request.errback(failure)
+        self.should_succeed()
+
+    def test_ignore_multiple_errors_with_two_contracts_ko(self):
+        spider = TestSpider()
+
+        # ignore TimeoutError and HttpError BUT a CancelledError is raised => SUCCESS
+        request = self.conman.from_method(spider.ignore_timeout_and_http_errors_with_two_contracts, self.results)
         failure = Failure(CancelledError(), CancelledError)
         request.errback(failure)
         self.should_error()
