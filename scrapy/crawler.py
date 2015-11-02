@@ -29,7 +29,6 @@ class Crawler(object):
 
         self.spidercls = spidercls
         self.settings = settings.copy()
-        self.spidercls.update_settings(self.settings)
 
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
@@ -65,6 +64,7 @@ class Crawler(object):
         self.crawling = True
 
         try:
+            self.spidercls.update_settings(self.settings)
             self.settings.freeze()
             self.extensions = ExtensionManager.from_crawler(self)
 
