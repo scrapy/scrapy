@@ -54,7 +54,7 @@ class ContractsManager(object):
             ignored_errors = set()
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
-                if contract.name is 'ignore':
+                if contract.name == 'ignore':
                     ignored_errors = getattr(contract, 'ignored_errors') or []
 
             # create and prepare request
