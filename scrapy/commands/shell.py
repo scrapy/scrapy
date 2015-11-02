@@ -5,11 +5,11 @@ See documentation in docs/topics/shell.rst
 """
 
 from threading import Thread
+from w3lib.url import any_to_uri
 
 from scrapy.commands import ScrapyCommand
 from scrapy.shell import Shell
 from scrapy.http import Request
-from scrapy.utils.url import add_http_if_no_scheme
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 
@@ -43,7 +43,8 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         url = args[0] if args else None
         if url:
-            url = add_http_if_no_scheme(url)
+            url = any_to_uri(url)
+
         spider_loader = self.crawler_process.spider_loader
 
         spidercls = DefaultSpider
