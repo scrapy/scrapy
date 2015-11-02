@@ -64,11 +64,11 @@ class Crawler(object):
         self.crawling = True
 
         try:
+            self.spider = self._create_spider(*args, **kwargs)
             self.spidercls.update_settings(self.settings)
             self.settings.freeze()
             self.extensions = ExtensionManager.from_crawler(self)
 
-            self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
