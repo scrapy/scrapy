@@ -150,6 +150,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_FORMAT`
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
+* :setting:`LOG_SHORT_NAMES`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -169,6 +170,10 @@ listed in `logging's logrecord attributes docs
 `datetime's strftime and strptime directives
 <https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
 respectively.
+
+If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
+component that prints the log. It is unset by default, hence logs contain the 
+scrapy component responsible for that log output.
 
 Command-line options
 --------------------
