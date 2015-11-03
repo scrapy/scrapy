@@ -4,8 +4,9 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
+import re
+from six.moves.urllib.parse import urlparse, urlunparse
 from threading import Thread
-import urlparse
 from w3lib.url import any_to_uri
 
 from scrapy.commands import ScrapyCommand
@@ -45,7 +46,7 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         url = args[0] if args else None
         if url:
-            parts = urlparse.urlsplit(url)
+            parts = urlparse(url)
             if not parts.scheme:
                 if "." not in parts.path.split("/", 1)[0]:
                     url = any_to_uri(url)
