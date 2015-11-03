@@ -666,6 +666,14 @@ TextResponse objects
         The same as :attr:`text`, but available as a method. This method is
         kept for backwards compatibility; please prefer ``response.text``.
 
+    .. method:: TextResponse.urljoin(url)
+
+        Constructs an absolute url by combining the Response's base url with
+        a possible relative url. The base url shall be extracted from the
+        ``<base>`` tag, or just the Response's :attr:`url` if there is no such
+        tag.
+
+
 
 HtmlResponse objects
 --------------------
