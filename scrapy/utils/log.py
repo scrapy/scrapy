@@ -119,7 +119,7 @@ def _get_handler(settings):
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
     if settings.getbool('LOG_TOPLEVEL'):
-	handler.addFilter(TopLevelFormatter(['scrapy']))
+        handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
 
 
