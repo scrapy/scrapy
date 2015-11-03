@@ -40,10 +40,10 @@ def project_data_dir(project='default'):
     return d
 
 def data_path(path, createdir=False):
-    """If path is relative, return the given path inside the project data dir,
-    otherwise return the path unmodified
+    """If inside the project and path is relative, return the given path
+    as relative the project data dir, otherwise return it unmodified
     """
-    if not isabs(path):
+    if inside_project() and not isabs(path):
         path = join(project_data_dir(), path)
     if createdir and not exists(path):
         os.makedirs(path)
