@@ -31,17 +31,6 @@ class Crawler(object):
         self.settings = settings.copy()
 
         self.signals = SignalManager(self)
-        self.stats = load_object(self.settings['STATS_CLASS'])(self)
-
-        handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
-        logging.root.addHandler(handler)
-        # lambda is assigned to Crawler attribute because this way it is not
-        # garbage collected after leaving __init__ scope
-        self.__remove_handler = lambda: logging.root.removeHandler(handler)
-        self.signals.connect(self.__remove_handler, signals.engine_stopped)
-
-        lf_cls = load_object(self.settings['LOG_FORMATTER'])
-        self.logformatter = lf_cls.from_crawler(self)
 
         self.crawling = False
         self.spider = None
@@ -74,6 +63,20 @@ class Crawler(object):
             self.spider = self._create_spider(*args, **kwargs)
             self.spider.update_settings(self.settings)
             self.settings.freeze()
+
+            self.stats = load_object(self.settings['STATS_CLASS'])(self)
+
+            handler = LogCounterHandler(self,
+                                        level=self.settings.get('LOG_LEVEL'))
+            logging.root.addHandler(handler)
+            # lambda is assigned to Crawler attribute because this way it is not
+            # garbage collected after leaving __init__ scope
+            self.__remove_handler = lambda: logging.root.removeHandler(handler)
+            self.signals.connect(self.__remove_handler, signals.engine_stopped)
+
+            lf_cls = load_object(self.settings['LOG_FORMATTER'])
+            self.logformatter = lf_cls.from_crawler(self)
+
             self.extensions = ExtensionManager.from_crawler(self)
 
             self.engine = self._create_engine()
