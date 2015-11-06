@@ -49,14 +49,11 @@ class SettingsAttribute(object):
 
     def set(self, value, priority):
         """Sets value if priority is higher or equal than current priority."""
-        if isinstance(self.value, BaseSettings):
-            # Ignore self.priority if self.value has per-key priorities
-            self.value.update(value, priority)
-            self.priority = max(self.value.maxpriority(), priority)
-        else:
-            if priority >= self.priority:
-                self.value = value
-                self.priority = priority
+        if priority >= self.priority:
+            if isinstance(self.value, BaseSettings):
+                value = BaseSettings(value, priority=priority)
+            self.value = value
+            self.priority = priority
 
     def __str__(self):
         return "<SettingsAttribute value={self.value!r} " \

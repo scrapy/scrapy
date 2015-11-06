@@ -37,21 +37,22 @@ class SettingsAttributeTest(unittest.TestCase):
         self.assertEqual(self.attribute.value, 'value')
         self.assertEqual(self.attribute.priority, 10)
 
-    def test_set_per_key_priorities(self):
-        attribute = SettingsAttribute(
-            BaseSettings({'one': 10, 'two': 20}, 0), 0)
+    def test_overwrite_basesettings(self):
+        original_dict = {'one': 10, 'two': 20}
+        original_settings = BaseSettings(original_dict, 0)
+        attribute = SettingsAttribute(original_settings, 0)
 
-        new_dict = {'one': 11, 'two': 21}
+        new_dict = {'three': 11, 'four': 21}
         attribute.set(new_dict, 10)
-        self.assertEqual(attribute.value['one'], 11)
-        self.assertEqual(attribute.value['two'], 21)
+        self.assertIsInstance(attribute.value, BaseSettings)
+        six.assertCountEqual(self, attribute.value, new_dict)
+        six.assertCountEqual(self, original_settings, original_dict)
 
-        new_settings = BaseSettings()
-        new_settings.set('one', 12, 20)
-        new_settings.set('two', 12, 0)
-        attribute.set(new_settings, 0)
-        self.assertEqual(attribute.value['one'], 12)
-        self.assertEqual(attribute.value['two'], 21)
+        new_settings = BaseSettings({'five': 12}, 0)
+        attribute.set(new_settings, 0)  # Insufficient priority
+        six.assertCountEqual(self, attribute.value, new_dict)
+        attribute.set(new_settings, 10)
+        six.assertCountEqual(self, attribute.value, new_settings)
 
     def test_repr(self):
         self.assertEqual(repr(self.attribute),
