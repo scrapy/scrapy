@@ -265,6 +265,16 @@ Whether to export empty feeds (ie. feeds with no items).
 FEED_STORAGES
 -------------
 
+Default:: ``{}``
+
+A dict containing additional feed storage backends supported by your project.
+The keys are URI schemes and the values are paths to storage classes.
+
+.. setting:: FEED_STORAGES_BASE
+
+FEED_STORAGES_BASE
+------------------
+
 Default::
 
     {
@@ -275,19 +285,30 @@ Default::
         'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
     }
 
-A dict containing all feed storage backends supported by your project. The keys
-are URI schemes and the values are paths to storage classes.
+A dict containing the built-in feed storage backends supported by Scrapy. You
+can disable any of these backends by assigning ``None`` to their URI scheme in
+:setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
+(without replacement), place this in your ``settings.py``::
 
-When you set :setting:`FEED_STORAGES` manually, e.g. in your project's settings
-module, it will be merged with the default, not overwrite it. If you want to
-disable any of the default feed storage backends, you must assign ``None`` as
-their value.
+    FEED_STORAGES = {
+        'ftp': None,
+    }
 
 .. setting:: FEED_EXPORTERS
 
 FEED_EXPORTERS
 --------------
 
+Default:: ``{}``
+
+A dict containing additional exporters supported by your project. The keys are
+serialization formats and the values are paths to :ref:`Item exporter
+<topics-exporters>` classes.
+
+.. setting:: FEED_EXPORTERS_BASE
+
+FEED_EXPORTERS_BASE
+-------------------
 Default::
 
     {
@@ -300,14 +321,14 @@ Default::
         'pickle': 'scrapy.exporters.PickleItemExporter',
     }
 
-A dict containing all feed exporters supported by your project. The keys are
-URI schemes and the values are paths to :ref:`Item exporter <topics-exporters>`
-classes.
+A dict containing the built-in feed exporters supported by Scrapy. You can
+disable any of these exporters by assigning ``None`` to their serialization
+format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
+(without replacement), place this in your ``settings.py``::
 
-When you set :setting:`FEED_EXPORTERS` manually, e.g. in your project's settings
-module, it will be merged with the default, not overwrite it. If you want to
-disable any of the default feed exporters, you must assign ``None`` as their
-value.
+    FEED_EXPORTERS = {
+        'csv': None,
+    }
 
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
