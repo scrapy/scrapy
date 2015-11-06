@@ -18,7 +18,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(settings._getcomposite('SPIDER_MIDDLEWARES'))
+        return build_component_list(settings.getwithbase('SPIDER_MIDDLEWARES'))
 
     def _add_middleware(self, mw):
         super(SpiderMiddlewareManager, self)._add_middleware(mw)

@@ -20,7 +20,8 @@ class DownloadHandlers(object):
         self._schemes = {}  # stores acceptable schemes on instancing
         self._handlers = {}  # stores instanced handlers for schemes
         self._notconfigured = {}  # remembers failed handlers
-        handlers = without_none_values(crawler.settings._getcomposite('DOWNLOAD_HANDLERS'))
+        handlers = without_none_values(
+            crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
         for scheme, clspath in six.iteritems(handlers):
             self._schemes[scheme] = clspath
 

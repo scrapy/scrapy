@@ -196,7 +196,7 @@ class FeedExporter(object):
         return item
 
     def _load_components(self, setting_prefix):
-        conf = without_none_values(self.settings._getcomposite(setting_prefix))
+        conf = without_none_values(self.settings.getwithbase(setting_prefix))
         d = {}
         for k, v in conf.items():
             try:

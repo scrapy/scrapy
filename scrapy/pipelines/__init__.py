@@ -13,7 +13,7 @@ class ItemPipelineManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(settings._getcomposite('ITEM_PIPELINES'))
+        return build_component_list(settings.getwithbase('ITEM_PIPELINES'))
 
     def _add_middleware(self, pipe):
         super(ItemPipelineManager, self)._add_middleware(pipe)

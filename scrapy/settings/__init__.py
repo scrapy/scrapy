@@ -195,25 +195,17 @@ class BaseSettings(MutableMapping):
             value = json.loads(value)
         return dict(value)
 
-    def _getcomposite(self, name):
-        # DO NOT USE THIS FUNCTION IN YOUR CUSTOM PROJECTS
-        # It's for internal use in the transition away from the _BASE settings
-        # and will be removed along with _BASE support in a future release
-        basename = name + "_BASE"
-        if basename in self:
-            warnings.warn('_BASE settings are deprecated.',
-                          category=ScrapyDeprecationWarning)
-            # When users defined a _BASE setting, they explicitly don't want to
-            # use any of Scrapy's defaults. Therefore, we only use these entries
-            # from self[name] (where the defaults now live) that have a priority
-            # higher than 'default'
-            compsett = BaseSettings(self[basename], priority='default')
-            for k in self[name]:
-                prio = self[name].getpriority(k)
-                if prio > get_settings_priority('default'):
-                    compsett.set(k, self[name][k], prio)
-            return compsett
-        return self[name]
+    def getwithbase(self, name):
+        """Get a composition of a dictionary-like setting and its `_BASE`
+        counterpart.
+
+        :param name: name of the dictionary-like setting
+        :type name: string
+        """
+        compbs = BaseSettings()
+        compbs.update(self[name + '_BASE'])
+        compbs.update(self[name])
+        return compbs
 
     def getpriority(self, name):
         """

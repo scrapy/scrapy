@@ -263,24 +263,15 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getpriority('key'), 99)
         self.assertEqual(settings.getpriority('nonexistentkey'), None)
 
-    def test_getcomposite(self):
-        s = BaseSettings({'TEST_BASE': {1: 1, 2: 2},
+    def test_getwithbase(self):
+        s = BaseSettings({'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
-                          'HASNOBASE': BaseSettings({1: 1}, 'default')})
-        s['TEST'].set(4, 4, priority='project')
-        # When users specify a _BASE setting they explicitly don't want to use
-        # Scrapy's defaults, so we don't want to see anything that has a
-        # 'default' priority from TEST
-        cs = s._getcomposite('TEST')
-        self.assertEqual(len(cs), 3)
-        self.assertEqual(cs[1], 1)
-        self.assertEqual(cs[2], 2)
-        self.assertEqual(cs[4], 4)
-        cs = s._getcomposite('HASNOBASE')
-        self.assertEqual(len(cs), 1)
-        self.assertEqual(cs[1], 1)
-        cs = s._getcomposite('NONEXISTENT')
-        self.assertIsNone(cs)
+                          'HASNOBASE': BaseSettings({3: 3000}, 'default')})
+        s['TEST'].set(2, 200, 'cmdline')
+        six.assertCountEqual(self, s.getwithbase('TEST'),
+                             {1: 1, 2: 200, 3: 30})
+        six.assertCountEqual(self, s.getwithbase('HASNOBASE'), s['HASNOBASE'])
+        self.assertEqual(s.getwithbase('NONEXISTENT'), {})
 
     def test_maxpriority(self):
         # Empty settings should return 'default'
