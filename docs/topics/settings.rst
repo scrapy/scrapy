@@ -662,9 +662,9 @@ If ``True``, all standard output (and error) of your process will be redirected
 to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
 log.
 
-.. setting:: LOG_TOPLEVEL
+.. setting:: LOG_SHORT_NAMES
 
-LOG_TOPLEVEL
+LOG_SHORT_NAMES
 ____________
 
 Default: ``False``
