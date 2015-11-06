@@ -279,3 +279,7 @@ class UpdateClassPathTest(unittest.TestCase):
             output = update_classpath('scrapy.unmatched.Path')
         self.assertEqual(output, 'scrapy.unmatched.Path')
         self.assertEqual(len(w), 0)
+
+    def test_returns_nonstring(self):
+        for notastring in [None, True, [1, 2, 3], object()]:
+            self.assertEqual(update_classpath(notastring), notastring)

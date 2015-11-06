@@ -1,5 +1,6 @@
 """Some helpers for deprecation messages"""
 
+import six
 import warnings
 import inspect
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -149,6 +150,8 @@ DEPRECATION_RULES = [
 
 def update_classpath(path):
     """Update a deprecated path from an object with its new location"""
+    if not isinstance(path, six.string_types):
+        return path
     for prefix, replacement in DEPRECATION_RULES:
         if path.startswith(prefix):
             new_path = path.replace(prefix, replacement, 1)
