@@ -18,6 +18,8 @@ import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
 
+ADDONS = {}
+
 AJAXCRAWL_ENABLED = False
 
 AUTOTHROTTLE_ENABLED = False
@@ -166,8 +168,6 @@ HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
 HTTPCACHE_DBM_MODULE = 'anydbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
-
-INSTALLED_ADDONS = ()
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 

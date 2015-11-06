@@ -1,4 +1,4 @@
-from collections import defaultdict, Mapping
+from collections import defaultdict, Mapping, OrderedDict
 from inspect import isclass
 import six
 import warnings
@@ -9,7 +9,8 @@ from zope.interface.verify import verifyObject
 
 from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
-from scrapy.utils.conf import config_from_filepath, get_config
+from scrapy.utils.conf import (build_component_list, config_from_filepath,
+                               get_config)
 from scrapy.utils.misc import load_module_or_object
 from scrapy.utils.project import get_project_path
 
@@ -166,7 +167,7 @@ class AddonManager(Mapping):
     """
 
     def __init__(self):
-        self._addons = {}
+        self._addons = OrderedDict()
         self.configs = {}
         self._disable_on_add = []
 
@@ -310,15 +311,15 @@ class AddonManager(Mapping):
         """Load add-ons and configurations from settings object.
 
         This will invoke :meth:`get_addon` for every add-on path in the
-        ``INSTALLED_ADDONS`` setting. For each of these add-ons, the
-        configuration will be read from the dictionary setting whose name
-        matches the uppercase add-on name.
+        ``ADDONS`` setting. For each of these add-ons, the configuration will be
+        read from the dictionary setting whose name matches the uppercase add-on
+        name.
 
         :param settings: The :class:`~scrapy.settings.Settings` object from \
             which to read the add-on configuration
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        paths = settings.getlist('INSTALLED_ADDONS')
+        paths = build_component_list(settings['ADDONS'])
         addons = [self.get_addon(path) for path in paths]
         configs = [settings.getdict(addon.name.upper()) for addon in addons]
         for a, c in zip(addons, configs):

@@ -1,3 +1,5 @@
+from collections import OrderedDict
+import itertools
 import os.path
 import six
 from tests import mock
@@ -236,13 +238,29 @@ class AddonManagerTest(unittest.TestCase):
         _test_load_method('load_dict', addonsdict)
 
         settings = BaseSettings()
-        settings.set('INSTALLED_ADDONS', [
-                self.ADDONMODPATH,
-                'tests.test_addons.addons.GoodAddon',
-                ])
+        settings.set('ADDONS', {self.ADDONMODPATH: 0,
+                                'tests.test_addons.addons.GoodAddon': 0})
         settings.set('ADDONMODULE', {'key': 'val1'})
         settings.set('GOODADDON', {'key': 'val2'})
         _test_load_method('load_settings', settings)
+
+    def test_load_dict_load_settings_order(self):
+        def _test_load_method(expected_order, func, *args, **kwargs):
+            manager = AddonManager()
+            getattr(manager, func)(*args, **kwargs)
+            self.assertEqual(list(manager.keys()), expected_order)
+
+        # Get three addons named 0, 1, 2
+        addonlist = [addons.GoodAddon(str(x)) for x in range(3)]
+        # Test both methods for every possible mutation
+        for ordered_addons in itertools.permutations(addonlist):
+            expected_order = [a.name for a in ordered_addons]
+            addonsdict = OrderedDict((a, {}) for a in ordered_addons)
+            _test_load_method(expected_order, 'load_dict', addonsdict)
+            settings = BaseSettings({
+                'ADDONS': {a: i for i, a in enumerate(ordered_addons)}
+            })
+            _test_load_method(expected_order, 'load_settings', settings)
 
     def test_load_cfg(self):
         def _check_loaded_addons(manager):
