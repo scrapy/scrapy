@@ -9,8 +9,7 @@ from zope.interface.verify import verifyObject
 
 from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
-from scrapy.utils.conf import (build_component_list, config_from_filepath,
-                               get_config)
+from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import load_module_or_object
 from scrapy.utils.project import get_project_path
 
@@ -324,31 +323,6 @@ class AddonManager(Mapping):
         configs = [settings.getdict(addon.name.upper()) for addon in addons]
         for a, c in zip(addons, configs):
             self.add(a, c)
-
-    def load_cfg(self, cfg=None):
-        """Load add-ons and configurations from given ``ConfigParser`` object or
-        config file path.
-
-        Each add-on should have its own section, where the section has a name in
-        the form ``addon:my_addon_path``. The add-on object is searched for via
-        the :meth:`get_addon` method, ``my_addon_path`` can be either a Python
-        or a file path.
-
-        If ``cfg`` is ``None``, ``scrapy.cfg`` will be used.
-
-        :param cfg: ``ConfigParser`` object or config file path from which to \
-            read add-on configuration
-        :type cfg: ``ConfigParser`` or ``str``
-        """
-        if cfg is None:
-            cfg = get_config()
-        elif isinstance(cfg, six.string_types):
-            cfg = config_from_filepath(cfg)
-        for secname in cfg.sections():
-            if secname.startswith("addon:"):
-                addonkey = secname.split("addon:", 1)[1]
-                addoncfg = dict(cfg.items(secname))
-                self.add(addonkey, addoncfg)
 
     def check_dependency_clashes(self):
         """Check for incompatibilities in add-on dependencies.

@@ -120,7 +120,6 @@ def execute(argv=None, settings=None):
     # ------------------------------------------------------------------
 
     addons = AddonManager()
-    addons.load_cfg()
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
