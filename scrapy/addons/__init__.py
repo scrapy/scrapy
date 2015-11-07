@@ -7,11 +7,9 @@ from pkg_resources import WorkingSet, Distribution, Requirement
 import zope.interface
 from zope.interface.verify import verifyObject
 
-from scrapy.exceptions import NotConfigured
 from scrapy.interfaces import IAddon
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import load_module_or_object
-from scrapy.utils.project import get_project_path
 
 
 @zope.interface.implementer(IAddon)
@@ -244,14 +242,8 @@ class AddonManager(Mapping):
         """Get an add-on object by its Python or file path.
 
         ``path`` is assumed to be either a Python or a file path of a Scrapy
-        add-on. If no object is found at ``path``, it is tried again first with
-        ``projectname.addons`` prepended (pointing to the current project's
-        ``addons`` folder), then with ``scrapy.addons`` prepended (poiting to
-        Scrapy's built-in add-ons). These convenience shortcuts will only work
-        with Python paths, not file paths.
-
-        If the object or module pointed to by ``path`` has an attribute named
-        ``_addon`` that attribute will be assumed to be the add-on.
+        add-on. If the object or module pointed to by ``path`` has an attribute
+        named ``_addon`` that attribute will be assumed to be the add-on.
         :meth:`get_addon` will keep following ``_addon`` attributes until it
         finds an object that does not have an attribute named ``_addon``.
 
@@ -259,20 +251,9 @@ class AddonManager(Mapping):
         :type path: ``str``
         """
         if isinstance(path, six.string_types):
-            prefixes = ['', 'scrapy.addons.']
             try:
-                prefixes.insert(1, get_project_path() + '.addons.')
-            except NotConfigured:
-                warnings.warn("Unable to locate project Python path")
-            for prefix in prefixes:
-                fullpath = prefix + path
-                try:
-                    obj = load_module_or_object(fullpath)
-                except NameError:
-                    pass
-                else:
-                    break
-            else:
+                obj = load_module_or_object(path)
+            except NameError:
                 raise NameError("Could not find add-on '%s'" % path)
         else:
             obj = path

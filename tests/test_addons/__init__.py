@@ -11,7 +11,6 @@ import zope.interface
 from zope.interface.verify import verifyObject
 from zope.interface.exceptions import BrokenImplementation
 
-import scrapy.addons
 from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import Crawler
 from scrapy.interfaces import IAddon
@@ -186,32 +185,6 @@ class AddonManagerTest(unittest.TestCase):
         x._addon = addons.GoodAddon('middle')
         x._addon._addon = addons.GoodAddon('inner')
         self.assertIs(self.manager.get_addon(x), x._addon._addon)
-
-    @mock.patch.object(scrapy.addons, 'get_project_path',
-                       return_value='tests.test_addons.project')
-    def test_get_addon_prefixes(self, get_project_path_mock):
-        # From python path
-        self.assertEqual(self.manager.get_addon('addonmod').FROM,
-                         'test_addons.addonmod')
-
-        # From project 'addons' folder
-        self.assertEqual(self.manager.get_addon('addonmod2').FROM,
-                         'test_addons.project.addons.addonmod2')
-        # Assert prefix priority '' > 'project.addons'
-        self.assertEqual(self.manager.get_addon('addonmod').FROM,
-                         'test_addons.addonmod')
-
-        # From scrapy's 'addons'
-        from . import scrapy_addons
-        with mock.patch.dict('sys.modules', {'scrapy.addons': scrapy_addons}):
-            self.assertEqual(self.manager.get_addon('addonmod3').FROM,
-                             'test_addons.scrapy_addons.addonmod3')
-            # Assert prefix priority 'project.addons' > 'scrapy.addons'
-            self.assertEqual(self.manager.get_addon('addonmod2').FROM,
-                             'test_addons.project.addons.addonmod2')
-            # Assert prefix priority '' > 'scrapy.addons.'
-            self.assertEqual(self.manager.get_addon('addonmod').FROM,
-                             'test_addons.addonmod')
 
     def test_load_dict_load_settings(self):
         def _test_load_method(func, *args, **kwargs):
