@@ -84,7 +84,7 @@ class Addon(object):
                 # e.g. for DOWNLOADER_MIDDLEWARES: {'myclass': 100}
                 k = comp
                 v = config.get('order', self.component_order)
-            settings.set(self.component_type, {k: v}, 'addon')
+            settings[self.component_type].update({k: v}, 'addon')
 
     def export_basics(self, settings):
         """Export the :attr:`basic_settings` attribute into the settings object.

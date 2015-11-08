@@ -38,7 +38,9 @@ class AddonTest(unittest.TestCase):
         verifyObject(IAddon, self.testaddon)
 
     def test_export_component(self):
-        settings = BaseSettings({'ITEM_PIPELINES': {}}, 'default')
+        settings = BaseSettings({'ITEM_PIPELINES': BaseSettings(),
+                                 'DOWNLOAD_HANDLERS': BaseSettings()},
+                                'default')
         self.testaddon.component_type = None
         self.testaddon.export_component({}, settings)
         self.assertEqual(len(settings['ITEM_PIPELINES']), 0)
