@@ -7,7 +7,6 @@ from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
-from scrapy.extensions.throttle import AutoThrottle
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -33,24 +32,6 @@ class CrawlerTestCase(BaseCrawlerTest):
             self.crawler.spiders
             self.assertEqual(len(w), 1, "Warn deprecated access only once")
 
-    def test_populate_spidercls_settings(self):
-        spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
-        project_settings = {'TEST1': 'project', 'TEST3': 'project'}
-
-        class CustomSettingsSpider(DefaultSpider):
-            custom_settings = spider_settings
-
-        settings = Settings()
-        settings.setdict(project_settings, priority='project')
-        crawler = Crawler(CustomSettingsSpider, settings)
-
-        self.assertEqual(crawler.settings.get('TEST1'), 'spider')
-        self.assertEqual(crawler.settings.get('TEST2'), 'spider')
-        self.assertEqual(crawler.settings.get('TEST3'), 'project')
-
-        self.assertFalse(settings.frozen)
-        self.assertTrue(crawler.settings.frozen)
-
     def test_crawler_accepts_dict(self):
         crawler = Crawler(DefaultSpider, {'foo': 'bar'})
         self.assertEqual(crawler.settings['foo'], 'bar')
@@ -59,19 +40,6 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_crawler_accepts_None(self):
         crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
-
-
-class SpiderSettingsTestCase(unittest.TestCase):
-    def test_spider_custom_settings(self):
-        class MySpider(scrapy.Spider):
-            name = 'spider'
-            custom_settings = {
-                'AUTOTHROTTLE_ENABLED': True
-            }
-
-        crawler = Crawler(MySpider, {})
-        enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
-        self.assertIn(AutoThrottle, enabled_exts)
 
 
 class SpiderLoaderWithWrongInterface(object):

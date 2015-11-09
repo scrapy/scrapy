@@ -7,7 +7,10 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
-from scrapy.crawler import CrawlerRunner
+from scrapy.crawler import Crawler, CrawlerRunner
+from scrapy.extensions.throttle import AutoThrottle
+from scrapy.settings import Settings
+from scrapy.utils.spider import DefaultSpider
 from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
@@ -272,3 +275,30 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
+
+    @defer.inlineCallbacks
+    def test_populate_spider_settings(self):
+        spider_settings = {'TEST1': 'spider', 'TEST2': 'spider',
+                           'AUTOTHROTTLE_ENABLED': True}
+        project_settings = {'TEST1': 'project', 'TEST3': 'project'}
+
+        class CustomSettingsSpider(DefaultSpider):
+            custom_settings = spider_settings
+
+            def parse(self, response):
+                return
+
+        settings = Settings()
+        settings.setdict(project_settings, priority='project')
+        crawler = Crawler(CustomSettingsSpider, settings)
+        yield crawler.crawl()
+
+        self.assertEqual(crawler.settings.get('TEST1'), 'spider')
+        self.assertEqual(crawler.settings.get('TEST2'), 'spider')
+        self.assertEqual(crawler.settings.get('TEST3'), 'project')
+
+        enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
+        self.assertIn(AutoThrottle, enabled_exts)
+
+        self.assertFalse(settings.frozen)
+        self.assertTrue(crawler.settings.frozen)
