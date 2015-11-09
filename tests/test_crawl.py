@@ -61,14 +61,16 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_failure(self):
-        crawler = CrawlerRunner({"DOWNLOAD_TIMEOUT": 0.35}).create_crawler(DelaySpider)
-        yield crawler.crawl(n=0.5)
+        runner = CrawlerRunner({"DOWNLOAD_TIMEOUT": 0.35})
+        crawler = runner.create_crawler(DelaySpider)
+        yield runner.crawl(crawler, n=0.5)
         self.assertTrue(crawler.spider.t1 > 0)
         self.assertTrue(crawler.spider.t2 == 0)
         self.assertTrue(crawler.spider.t2_err > 0)
         self.assertTrue(crawler.spider.t2_err > crawler.spider.t1)
         # server hangs after receiving response headers
-        yield crawler.crawl(n=0.5, b=1)
+        crawler = runner.create_crawler(DelaySpider)
+        yield runner.crawl(crawler, n=0.5, b=1)
         self.assertTrue(crawler.spider.t1 > 0)
         self.assertTrue(crawler.spider.t2 == 0)
         self.assertTrue(crawler.spider.t2_err > 0)
@@ -131,11 +133,15 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = CrawlerRunner(settings).create_crawler(DuplicateStartRequestsSpider)
-        yield crawler.crawl(dont_filter=True, distinct_urls=2, dupe_factor=3)
+        runner = CrawlerRunner(settings)
+        crawler = runner.create_crawler(DuplicateStartRequestsSpider)
+        yield runner.crawl(crawler, dont_filter=True, distinct_urls=2,
+                           dupe_factor=3)
         self.assertEqual(crawler.spider.visited, 6)
 
-        yield crawler.crawl(dont_filter=False, distinct_urls=3, dupe_factor=4)
+        crawler = runner.create_crawler(DuplicateStartRequestsSpider)
+        yield runner.crawl(crawler, dont_filter=False, distinct_urls=3,
+                           dupe_factor=4)
         self.assertEqual(crawler.spider.visited, 3)
 
     @defer.inlineCallbacks

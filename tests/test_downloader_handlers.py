@@ -308,6 +308,7 @@ class Http11MockServerTestCase(unittest.TestCase):
             # download_maxsize < 100, hence the CancelledError
             self.assertIsInstance(failure.value, defer.CancelledError)
 
+            crawler = get_crawler(SingleRequestSpider)
             request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
             request = request.replace(url='http://localhost:8998/xpayload')
             yield crawler.crawl(seed=request)
