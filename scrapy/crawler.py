@@ -64,13 +64,6 @@ class Crawler(object):
         self.crawling = True
 
         try:
-            # Support multiple calls to crawl()
-            if self.settings.frozen:
-                # Dirty hack, this should probably be more like
-                # self.settings = self.settings.mutable_copy()
-                # or maybe
-                # self.settings.unfreeze()
-                self.settings.frozen = False
             self.spider = self._create_spider(*args, **kwargs)
             self.spider.update_settings(self.settings)
             self.settings.freeze()
