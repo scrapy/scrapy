@@ -323,6 +323,7 @@ class AddonManager(Mapping):
         """
         # Collect all active add-ons and the components they provide
         ws = WorkingSet('')
+
         def add_dist(project_name, version, **kwargs):
             if project_name in ws.entry_keys.get('scrapy', []):
                 raise ImportError("Component {} provided by multiple add-ons"
@@ -354,8 +355,9 @@ class AddonManager(Mapping):
             # our own exception or is it helpful enough?
             if ws.find(req) is None:
                 raise ImportError(
-                          "Add-ons {} require or modify missing component {}"
-                          "".format(required[reqstr]+modified[reqstr], reqstr))
+                    "Add-ons {} require or modify missing component {}"
+                    "".format(required[reqstr]+modified[reqstr], reqstr)
+                )
 
         mod_and_req = set(required.keys()).intersection(modified.keys())
         for conflict in mod_and_req:

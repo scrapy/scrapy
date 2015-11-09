@@ -24,6 +24,7 @@ class AddonTest(unittest.TestCase):
 
     def setUp(self):
         self.rawaddon = Addon()
+
         class AddonWithAttributes(Addon):
             name = 'Test'
             version = '1.0'
@@ -132,7 +133,7 @@ class AddonManagerTest(unittest.TestCase):
 
     def test_add_verifies(self):
         brokenaddon = self.manager.get_addon(
-                                    'tests.test_addons.addons.BrokenAddon')
+            'tests.test_addons.addons.BrokenAddon')
         self.assertRaises(zope.interface.exceptions.BrokenImplementation,
                           self.manager.add,
                           brokenaddon)
@@ -145,11 +146,13 @@ class AddonManagerTest(unittest.TestCase):
 
     def test_remove(self):
         manager = AddonManager()
+
         def test_gets_removed(removearg):
             manager.add(addonmod)
             self.assertIn('AddonModule', manager)
             manager.remove(removearg)
             self.assertNotIn('AddonModule', manager)
+
         test_gets_removed('AddonModule')
         test_gets_removed(addonmod)
         test_gets_removed('tests.test_addons.addonmod')
@@ -158,8 +161,7 @@ class AddonManagerTest(unittest.TestCase):
         self.assertRaises(KeyError, manager.remove, addons.GoodAddon())
 
     def test_get_addon(self):
-        goodaddon = self.manager.get_addon(
-                                      'tests.test_addons.addons.GoodAddon')
+        goodaddon = self.manager.get_addon('tests.test_addons.addons.GoodAddon')
         self.assertIs(goodaddon, addons.GoodAddon)
 
         loaded_addonmod = self.manager.get_addon(self.ADDONMODPATH)
@@ -194,8 +196,7 @@ class AddonManagerTest(unittest.TestCase):
             getattr(manager, func)(*args, **kwargs)
             six.assertCountEqual(self, manager, ['GoodAddon', 'AddonModule'])
             self.assertIsInstance(manager['GoodAddon'], addons.GoodAddon)
-            six.assertCountEqual(self, manager.configs['GoodAddon'],
-                                       ['key'])
+            six.assertCountEqual(self, manager.configs['GoodAddon'], ['key'])
             self.assertEqual(manager.configs['GoodAddon']['key'], 'val2')
             # XXX: Check module equality, see above
             self.assertEqual(manager['AddonModule'].name, addonmod.name)
@@ -284,17 +285,17 @@ class AddonManagerTest(unittest.TestCase):
             ua_first.assert_called_once_with(manager.configs['FirstAddon'],
                                              manager)
             ua_second.assert_called_once_with(manager.configs['SecondAddon'],
-                                             manager)
+                                              manager)
             manager.update_settings(settings)
             us_first.assert_called_once_with(manager.configs['FirstAddon'],
                                              settings)
             us_second.assert_called_once_with(manager.configs['SecondAddon'],
-                                             settings)
+                                              settings)
             manager.check_configuration(crawler)
             cc_first.assert_called_once_with(manager.configs['FirstAddon'],
                                              crawler)
             cc_second.assert_called_once_with(manager.configs['SecondAddon'],
-                                             crawler)
+                                              crawler)
             self.assertEqual(ua_first.call_count, 1)
             self.assertEqual(ua_second.call_count, 1)
             self.assertEqual(us_first.call_count, 1)
@@ -321,6 +322,7 @@ class AddonManagerTest(unittest.TestCase):
 
         class FirstAddon(addons.GoodAddon):
             name = 'FirstAddon'
+
             def update_addons(self, config, addons):
                 addons.add(AddedAddon())
 
