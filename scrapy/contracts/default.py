@@ -87,3 +87,20 @@ class ScrapesContract(Contract):
                 for arg in self.args:
                     if not arg in x:
                         raise ContractFail("'%s' field is missing" % arg)
+
+
+class IgnoreContract(Contract):
+    """
+    This contract allows to ignore some errors which might occurred
+    sometimes when a website is slow or temporarily unavailable. In a context of
+    continuous integration this contract prevents to break the build for external reasons.
+    This contract is optional and must be used with caution
+
+    @ignore TimeoutError
+    """
+
+    name = "ignore"
+
+    def __init__(self, *args, **kwargs):
+        super(IgnoreContract, self).__init__(*args, **kwargs)
+        self.ignored_errors = list(self.args)

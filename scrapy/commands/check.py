@@ -38,6 +38,14 @@ class TextTestResult(_TextTestResult):
         else:
             write("\n")
 
+    def addSkip(self, test, reason):
+        self.skipped.append((test, reason))
+        if self.showAll:
+            self.stream.writeln("IGNORED".format(reason))
+        elif self.dots:
+            self.stream.write("I")
+            self.stream.flush()
+
 
 class Command(ScrapyCommand):
     requires_project = True

@@ -249,7 +249,8 @@ TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
 
 SPIDER_CONTRACTS = {
-    'scrapy.contracts.default.UrlContract': 1,
-    'scrapy.contracts.default.ReturnsContract': 2,
-    'scrapy.contracts.default.ScrapesContract': 3,
+    'scrapy.contracts.default.IgnoreContract': 1,
+    'scrapy.contracts.default.UrlContract': 2,
+    'scrapy.contracts.default.ReturnsContract': 3,
+    'scrapy.contracts.default.ScrapesContract': 4,
 }
