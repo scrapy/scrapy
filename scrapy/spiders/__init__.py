@@ -75,9 +75,8 @@ class Spider(object_ref):
     def parse(self, response):
         raise NotImplementedError
 
-    @classmethod
-    def update_settings(cls, settings):
-        settings.setdict(cls.custom_settings or {}, priority='spider')
+    def update_settings(self, settings):
+        settings.setdict(self.custom_settings or {}, priority='spider')
 
     @classmethod
     def handles_request(cls, request):
