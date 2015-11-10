@@ -90,10 +90,9 @@ class BaseSettings(MutableMapping):
         self.update(values, priority)
 
     def __getitem__(self, opt_name):
-        value = None
-        if opt_name in self:
-            value = self.attributes[opt_name].value
-        return value
+        if opt_name not in self:
+            return None
+        return self.attributes[opt_name].value
 
     def __contains__(self, name):
         return name in self.attributes
@@ -212,10 +211,9 @@ class BaseSettings(MutableMapping):
         :param name: the setting name
         :type name: string
         """
-        prio = None
-        if name in self:
-            prio = self.attributes[name].priority
-        return prio
+        if name not in self:
+            return None
+        return self.attributes[name].priority
 
     def maxpriority(self):
         """
