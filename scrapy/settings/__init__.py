@@ -250,10 +250,10 @@ class BaseSettings(MutableMapping):
         if you wish to update, not replace, the dictionary. E.g.::
 
             >>> mysettings = BaseSettings({'MYDICT': {'key': 'val'}})
-            >>> mysettings['MYDICT']
+            >>> mysettings['MYDICT'] # doctest: +SKIP
             {'key': 'val'}
             >>> mysettings.set('update:MYDICT', {'new_key': 'new_val'})
-            >>> mysettings['MYDICT']
+            >>> mysettings['MYDICT'] # doctest: +SKIP
             {'new_key': 'new_val', 'key': 'val'}
 
         This is particularly useful when dealing with dictionary-like settings
