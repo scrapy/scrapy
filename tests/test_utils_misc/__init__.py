@@ -4,7 +4,7 @@ import unittest
 
 from scrapy.item import Item, Field
 from scrapy.utils.misc import (load_object, load_module_or_object, arg_to_iter,
-                               walk_modules, get_module_from_filepath)
+                               walk_modules)
 
 __doctests__ = ['scrapy.utils.misc']
 
@@ -20,9 +20,6 @@ class UtilsMiscTestCase(unittest.TestCase):
 
     def test_load_module_or_object(self):
         testmod = load_module_or_object(__name__ + '.testmod')
-        self.assertTrue(hasattr(testmod, 'TESTVAR'))
-        testmod = load_module_or_object(
-                    os.path.join(os.path.dirname(__file__), 'testmod.py'))
         self.assertTrue(hasattr(testmod, 'TESTVAR'))
         obj = load_object('scrapy.utils.misc.load_object')
         self.assertIs(obj, load_object)
@@ -66,20 +63,6 @@ class UtilsMiscTestCase(unittest.TestCase):
             self.assertEquals(set([m.__name__ for m in mods]), set(expected))
         finally:
             sys.path.remove(egg)
-
-    def test_get_module_from_filepath(self):
-        testmodpath = os.path.join(os.path.dirname(__file__), 'testmod.py')
-        testmod = get_module_from_filepath(testmodpath)
-        self.assertTrue(hasattr(testmod, 'TESTVAR'))
-
-        testpkgpath = os.path.join(os.path.dirname(__file__), 'testpkg')
-        testpkg = get_module_from_filepath(testpkgpath)
-        self.assertTrue(hasattr(testpkg, 'TESTVAR2'))
-        # Check submodule access
-        import testpkg.submod
-        self.assertTrue(hasattr(testpkg.submod, 'TESTVAR3'))
-        self.assertIs(testpkg.submod.TESTVAR3,
-                      load_object(testpkg.__name__ + ".submod.TESTVAR3"))
 
     def test_arg_to_iter(self):
 

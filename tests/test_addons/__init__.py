@@ -108,8 +108,6 @@ class AddonTest(unittest.TestCase):
 
 class AddonManagerTest(unittest.TestCase):
 
-    ADDONMODPATH = os.path.join(os.path.dirname(__file__), 'addonmod.py')
-
     def setUp(self):
         self.manager = AddonManager()
 
@@ -156,7 +154,6 @@ class AddonManagerTest(unittest.TestCase):
         test_gets_removed('AddonModule')
         test_gets_removed(addonmod)
         test_gets_removed('tests.test_addons.addonmod')
-        test_gets_removed(self.ADDONMODPATH)
         self.assertRaises(KeyError, manager.remove, 'nonexistent')
         self.assertRaises(KeyError, manager.remove, addons.GoodAddon())
 
@@ -164,18 +161,12 @@ class AddonManagerTest(unittest.TestCase):
         goodaddon = self.manager.get_addon('tests.test_addons.addons.GoodAddon')
         self.assertIs(goodaddon, addons.GoodAddon)
 
-        loaded_addonmod = self.manager.get_addon(self.ADDONMODPATH)
-        # XXX: The module is in fact imported twice under different names into
-        #      sys.modules, is there a good assertion for module equality?
-        self.assertEqual(loaded_addonmod.name, addonmod.name)
+        loaded_addonmod = self.manager.get_addon("tests.test_addons.addonmod")
+        self.assertIs(loaded_addonmod, addonmod)
 
-        # Does not provide interface, but has _addon attribute pointing to
-        # GoodAddon instance
         addonspath = os.path.join(os.path.dirname(__file__), 'addons.py')
-        goodaddon = self.manager.get_addon(addonspath)
-        # XXX: Again, the imported class and addons.GoodAddon are different
-        #      since they are imported twice. How to use isInstance?
-        self.assertEqual(goodaddon.name, addons.GoodAddon.name)
+        goodaddon = self.manager.get_addon("tests.test_addons.addons")
+        self.assertIsInstance(goodaddon, addons.GoodAddon)
 
         self.assertRaises(NameError, self.manager.get_addon, 'xy.n_onexistent')
 
@@ -198,21 +189,18 @@ class AddonManagerTest(unittest.TestCase):
             self.assertIsInstance(manager['GoodAddon'], addons.GoodAddon)
             six.assertCountEqual(self, manager.configs['GoodAddon'], ['key'])
             self.assertEqual(manager.configs['GoodAddon']['key'], 'val2')
-            # XXX: Check module equality, see above
-            self.assertEqual(manager['AddonModule'].name, addonmod.name)
+            self.assertEqual(manager['AddonModule'], addonmod)
             self.assertIn('key', manager.configs['AddonModule'])
             self.assertEqual(manager.configs['AddonModule']['key'], 'val1')
 
         addonsdict = {
-            self.ADDONMODPATH: {
-                'key': 'val1',
-                },
+            "tests.test_addons.addonmod": {'key': 'val1'},
             'tests.test_addons.addons.GoodAddon': {'key': 'val2'},
             }
         _test_load_method('load_dict', addonsdict)
 
         settings = BaseSettings()
-        settings.set('ADDONS', {self.ADDONMODPATH: 0,
+        settings.set('ADDONS', {"tests.test_addons.addonmod": 0,
                                 'tests.test_addons.addons.GoodAddon': 0})
         settings.set('ADDONMODULE', {'key': 'val1'})
         settings.set('GOODADDON', {'key': 'val2'})

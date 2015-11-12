@@ -1,8 +1,5 @@
 """Helper functions which doesn't fit anywhere else"""
-import itertools
-import os.path
 import re
-import sys
 import hashlib
 from importlib import import_module
 from pkgutil import iter_modules
@@ -72,10 +69,6 @@ def load_module_or_object(path):
         return load_object(path)
     except (ValueError, NameError, ImportError):
         pass
-    try:
-        return get_module_from_filepath(path)
-    except ImportError:
-        pass
     raise NameError("Could not load '%s'" % path)
 
 
@@ -99,23 +92,6 @@ def walk_modules(path):
                 submod = import_module(fullpath)
                 mods.append(submod)
     return mods
-
-
-def get_module_from_filepath(path):
-    """Load and return a python module/package from a file path"""
-    path = path.rstrip("/")
-    if path.endswith('.py'):
-        path = path.rsplit('.py', 1)[0]
-    basefolder, modname = os.path.split(path)
-    # XXX: There are other ways to import modules from a full path which don't
-    #      need to modify PYTHONPATH, see
-    #          https://stackoverflow.com/questions/67631/
-    #      These methods differ between py2 and py3, and apparently the
-    #      py3 method was deprecated in Python 3.4
-    sys.path.insert(0, basefolder)
-    mod = import_module(modname)
-    sys.path.pop(0)
-    return mod
 
 
 def extract_regex(regex, text, encoding='utf-8'):
