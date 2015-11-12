@@ -98,6 +98,58 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+.. _topics-settings-update-dicts:
+
+Updating dictionary settings
+============================
+
+Scrapy has a few dictionary-valued settings, e.g. for managing middlewares
+and extensions (:setting:`SPIDER_MIDDLEWARES`,
+:setting:`DOWNLOADER_MIDDLEWARES`, :setting:`EXTENSIONS`). Sometimes, it is
+desirable to *update*, not replace, these dictionaries. For these cases, you
+can add the prefix ``update:`` to the setting name. This is particularly useful
+when you cannot use Python code to update the setting, e.g. on the command line
+or in a spider's :attr:`~scrapy.spiders.Spider.custom_settings` attribute.
+
+For example, say you enabled two spider middlewares in a project,
+
+.. code-block:: python
+
+    # in settings.py
+
+    SPIDER_MIDDLEWARES = {
+        'myproject.spidermw.FirstSMW':  100,
+        'myproject.spidermw.SecondSMW': 200,
+    }
+
+and now wish to enable a third spider middleware for a specific spider only.
+You can achieve this in the spider's
+:attr:`~scrapy.spiders.Spider.custom_settings` attribute without having to
+repeat the above configuration::
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        custom_settings = {
+            'update:SPIDER_MIDDLEWARES': {'myproject.spidermw.SpecialSMW': 300},
+        }
+
+Similarly, you can enable an additional spider middleware from the command line
+without repeating the project configuration:
+
+.. code-block:: sh
+
+    scrapy crawl myspider -s 'update:SPIDER_MIDDLEWARES={"myproject.spidermw.SpecialSMW": 300}'
+
+In both cases, the final value of the :setting:`SPIDER_MIDDLEWARES` setting
+would be::
+
+    {
+        'myproject.spidermw.FirstSMW':   100,
+        'myproject.spidermw.SecondSMW':  200,
+        'myproject.spidermw.SpecialSMW': 300,
+    }
+
 How to access settings
 ======================
 

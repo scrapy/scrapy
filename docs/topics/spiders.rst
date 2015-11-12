@@ -92,17 +92,9 @@ scrapy.Spider
       configuration when running this spider. It must be defined as a class
       attribute since the settings are updated before instantiation.
 
-      If you wish to update, not replace, dictionary-like settings (e.g.), you
-      can prefix their name with ``update:``. For example, this will completely
-      overwrite the :setting:`SPIDER_MIDDLEWARES` setting, making
-      ``my_middleware`` the only enabled spider middleware::
-
-          custom_settings = {'SPIDER_MIDDLEWARES': {'my_middleware': 100}}
-
-      On the other hand, this will enable ``my_middleware`` *in addition to* all
-      other previously enabled spider middlewares::
-
-          custom_settings = {'update:SPIDER_MIDDLEWARES': {'my_middleware': 100}}
+      If you wish to update, not replace, dictionary-like settings (e.g.
+      :setting:`SPIDER_MIDDLEWARES`), you can prefix their name with
+      ``update:``. See: :ref:`topics-settings-update-dicts`.
 
       For a list of available built-in settings see:
       :ref:`topics-settings-ref`.

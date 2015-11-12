@@ -247,18 +247,8 @@ class BaseSettings(MutableMapping):
         Store a key/value attribute with a given priority.
 
         For dictionary-like settings, you can prefix ``name`` with ``update:``
-        if you wish to update, not replace, the dictionary. E.g.::
-
-            >>> mysettings = BaseSettings({'MYDICT': {'key': 'val'}})
-            >>> mysettings['MYDICT'] # doctest: +SKIP
-            {'key': 'val'}
-            >>> mysettings.set('update:MYDICT', {'new_key': 'new_val'})
-            >>> mysettings['MYDICT'] # doctest: +SKIP
-            {'new_key': 'new_val', 'key': 'val'}
-
-        This is particularly useful when dealing with dictionary-like settings
-        from the command line or in a spider's
-        :attr:`~scrapy.spiders.Spider.custom_settings` attribute.
+        if you wish to update, not replace, the dictionary. See:
+        :ref:`topics-settings-update-dicts`.
 
         :param name: the setting name
         :type name: string
