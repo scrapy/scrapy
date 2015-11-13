@@ -107,7 +107,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
 
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
-                        '|descendant::input[@type['
+                        '|descendant::input[not(@type) or @type['
                         ' translate(., "SUBMIT", "submit") != "submit"'
                         ' and translate(., "IMAGE", "image") !="image"'
                         ' and translate(., "RESET", "reset") != "reset"'
