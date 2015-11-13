@@ -305,6 +305,19 @@ class FormRequestTest(RequestTest):
         request = FormRequest.from_response(response, url='/relative')
         self.assertEqual(request.url, 'http://example.com/relative')
 
+    def test_from_response_case_insensitive(self):
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="SuBmIt" name="clickable1" value="clicked1">
+            <input type="iMaGe" name="i1" src="http://my.image.org/1.jpg">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
+        req = self.request_class.from_response(response)
+        fs = _qs(req)
+        self.assertEqual(fs['clickable1'], ['clicked1'])
+        self.assertFalse('i1' in fs, fs)  # xpath in _get_inputs()
+        self.assertFalse('clickable2' in fs, fs)  # xpath in _get_clickable()
+
     def test_from_response_submit_first_clickable(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">
