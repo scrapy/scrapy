@@ -675,10 +675,11 @@ class FormRequestTest(RequestTest):
             <input type="text" name="i2">
             <input type="text" value="i3v1">
             <input type="text">
+            <input name="i4" value="i4v1">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
+        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': [''], 'i4': ['i4v1']})
 
     def test_from_response_input_hidden(self):
         res = _buildresponse(
