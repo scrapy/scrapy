@@ -107,8 +107,13 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
 
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
-                        '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
-                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
+                        '|descendant::input[@type['
+                        ' translate(., "SUBMIT", "submit") != "submit"'
+                        ' and translate(., "IMAGE", "image") !="image"'
+                        ' and translate(., "RESET", "reset") != "reset"'
+                        ' and (../@checked or ('
+                        '  translate(., "CHECKBOX", "checkbox") != "checkbox"'
+                        '  and translate(., "RADIO", "radio") != "radio"))]]')
     values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata]
@@ -151,9 +156,11 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.xpath('descendant::input[@type="submit"]'
-                                          '|descendant::button[@type="submit"]'
-                                          '|descendant::button[not(@type)]')]
+    clickables = [
+        el for el in form.xpath(
+            'descendant::*[(self::input or self::button)'
+            ' and translate(@type, "SUBMIT", "submit") = "submit"]'
+            '|descendant::button[not(@type)]')]
     if not clickables:
         return
 
