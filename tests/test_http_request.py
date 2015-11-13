@@ -1,5 +1,6 @@
 import cgi
 import unittest
+import re
 
 import six
 from six.moves import xmlrpc_client as xmlrpclib
@@ -746,6 +747,18 @@ class FormRequestTest(RequestTest):
 
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
+
+    def test_from_response_unicode_xpath(self):
+        response = _buildresponse(b'<form name="\xd1\x8a"></form>')
+        r = self.request_class.from_response(response, formxpath=u"//form[@name='\u044a']")
+        fs = _qs(r)
+        self.assertEqual(fs, {})
+
+        xpath = u"//form[@name='\u03b1']"
+        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
+        self.assertRaisesRegexp(ValueError, re.escape(encoded),
+                                self.request_class.from_response,
+                                response, formxpath=xpath)
 
     def test_from_response_button_submit(self):
         response = _buildresponse(
