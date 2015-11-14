@@ -109,12 +109,11 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
-                        ' translate(., "SUBMIT", "submit") != "submit"'
-                        ' and translate(., "IMAGE", "image") !="image"'
-                        ' and translate(., "RESET", "reset") != "reset"'
-                        ' and (../@checked or ('
-                        '  translate(., "CHECKBOX", "checkbox") != "checkbox"'
-                        '  and translate(., "RADIO", "radio") != "radio"))]]')
+                        ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
+                        ' and (../@checked or'
+                        '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
+                        namespaces={
+                            "re": "http://exslt.org/regular-expressions"})
     values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata]
@@ -160,8 +159,10 @@ def _get_clickable(clickdata, form):
     clickables = [
         el for el in form.xpath(
             'descendant::*[(self::input or self::button)'
-            ' and translate(@type, "SUBMIT", "submit") = "submit"]'
-            '|descendant::button[not(@type)]')]
+            ' and re:test(@type, "^submit$", "i")]'
+            '|descendant::button[not(@type)]',
+            namespaces={"re": "http://exslt.org/regular-expressions"})
+        ]
     if not clickables:
         return
 
