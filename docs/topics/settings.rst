@@ -665,7 +665,7 @@ log.
 .. setting:: LOG_SHORT_NAMES
 
 LOG_SHORT_NAMES
-____________
+---------------
 
 Default: ``False``
 
