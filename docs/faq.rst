@@ -144,7 +144,7 @@ I get "Filtered offsite request" messages. How can I fix them?
 Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
-Those message are thrown by the Offsite Spider Middleware, which is a spider
+Those messages are thrown by the Offsite Spider Middleware, which is a spider
 middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 

@@ -97,7 +97,7 @@ subclasses):
 A real example
 --------------
 
-Let's see a concrete example of an hypothetical case of memory leaks.
+Let's see a concrete example of a hypothetical case of memory leaks.
 Suppose we have some spider with a line similar to this one::
 
     return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,

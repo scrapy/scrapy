@@ -95,7 +95,7 @@ contain a price::
 Write items to a JSON file
 --------------------------
 
-The following pipeline stores all scraped items (from all spiders) into a a
+The following pipeline stores all scraped items (from all spiders) into a
 single ``items.jl`` file, containing one item per line serialized in JSON
 format::
 
