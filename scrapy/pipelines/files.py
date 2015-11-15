@@ -336,7 +336,8 @@ class FilesPipeline(MediaPipeline):
 
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
-        if not media_ext or not all([char.isalpha() or char.isdigit() for char in media_ext[1:]]):
+        # if result is a querystring fragment, ignore url params and use path only
+        if not media_ext[1:].isalnum():
             media_base_url = urlparse_cached(request).path
             media_ext = os.path.splitext(media_base_url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
