@@ -41,7 +41,7 @@ class LxmlParserLinkExtractor(object):
             for attrib in attribs:
                 if not self.scan_attr(attrib):
                     continue
-                yield (el, attrib, attribs[attrib])
+                yield (el, attrib, attribs[attrib].strip("\t\r\n '\""))
 
     def _extract_links(self, selector, response_url, response_encoding, base_url):
         links = []
