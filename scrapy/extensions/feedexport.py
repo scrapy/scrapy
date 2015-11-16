@@ -21,7 +21,7 @@ from w3lib.url import file_uri_to_path
 from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
 from scrapy.utils.boto import is_botocore
@@ -181,6 +181,7 @@ class FeedExporter(object):
     @classmethod
     def from_crawler(cls, crawler):
         o = cls(crawler.settings)
+        o.crawler = crawler
         crawler.signals.connect(o.open_spider, signals.spider_opened)
         crawler.signals.connect(o.close_spider, signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signals.item_scraped)
@@ -253,11 +254,16 @@ class FeedExporter(object):
             logger.error("Unknown feed storage scheme: %(scheme)s",
                          {'scheme': scheme})
 
+    def _get_instance(self, objcls, *args, **kwargs):
+        return create_instance(
+            objcls, self.settings, getattr(self, 'crawler', None),
+            *args, **kwargs)
+
     def _get_exporter(self, *args, **kwargs):
-        return self.exporters[self.format](*args, **kwargs)
+        return self._get_instance(self.exporters[self.format], *args, **kwargs)
 
     def _get_storage(self, uri):
-        return self.storages[urlparse(uri).scheme](uri)
+        return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
     def _get_uri_params(self, spider):
         params = {}

@@ -3,7 +3,7 @@ import logging
 import pprint
 
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
 
 logger = logging.getLogger(__name__)
@@ -32,12 +32,7 @@ class MiddlewareManager(object):
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
-                if crawler and hasattr(mwcls, 'from_crawler'):
-                    mw = mwcls.from_crawler(crawler)
-                elif hasattr(mwcls, 'from_settings'):
-                    mw = mwcls.from_settings(settings)
-                else:
-                    mw = mwcls()
+                mw = create_instance(mwcls, settings, crawler)
                 middlewares.append(mw)
                 enabled.append(clspath)
             except NotConfigured as e:

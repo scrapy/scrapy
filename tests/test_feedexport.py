@@ -16,6 +16,7 @@ from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
 import scrapy
+from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage,
@@ -157,6 +158,23 @@ class StdoutFeedStorageTest(unittest.TestCase):
         file.write(b"content")
         yield storage.store(file)
         self.assertEqual(out.getvalue(), b"content")
+
+
+class FromCrawlerMixin(object):
+    init_with_crawler = False
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        cls.init_with_crawler = True
+        return cls(*args, **kwargs)
+
+
+class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
+    pass
+
+
+class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
+    pass
 
 
 class FeedExportTest(unittest.TestCase):
@@ -599,3 +617,15 @@ class FeedExportTest(unittest.TestCase):
             data = yield self.exported_data(items, settings)
             print(row['format'], row['indent'])
             self.assertEqual(row['expected'], data)
+
+    @defer.inlineCallbacks
+    def test_init_exporters_storages_with_crawler(self):
+        settings = {
+            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.'
+                                      'FromCrawlerCsvItemExporter'},
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.'
+                                      'FromCrawlerFileFeedStorage'},
+        }
+        yield self.exported_data({}, settings)
+        self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
+        self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
