@@ -96,4 +96,6 @@ But this will::
         somearg = response.meta['somearg']
         print "the argument passed is:", somearg
 
+If you wish to log the requests that couldn't be serialized, you can set the ``SCHEDULER_DEBUG`` setting to ``True`` in the project's settings page. It is ``False`` by default.
+
 .. _pickle: http://docs.python.org/library/pickle.html

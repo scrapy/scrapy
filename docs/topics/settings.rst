@@ -1026,6 +1026,16 @@ Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
 
+.. setting:: SCHEDULER_DEBUG
+
+SCHEDULER_DEBUG
+---------------
+
+Default: ``False``
+
+Setting to ``True`` will log the first unserializable request encountered.
+Stats collected.
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
