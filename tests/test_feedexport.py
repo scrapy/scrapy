@@ -6,12 +6,14 @@ from io import BytesIO
 import tempfile
 import shutil
 from six.moves.urllib.parse import urlparse
+import warnings
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.settings import Settings
+from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
@@ -131,13 +133,47 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
+    @mock.patch('scrapy.conf.settings', new={'AWS_ACCESS_KEY_ID': 'conf_key',
+                'AWS_SECRET_ACCESS_KEY': 'conf_secret'}, create=True)
+    def test_parse_credentials(self):
+        try:
+            import boto
+        except ImportError:
+            raise unittest.SkipTest("S3FeedStorage requires boto")
+        aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
+                           'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
+        crawler = get_crawler(settings_dict=aws_credentials)
+        # Instantiate with crawler
+        storage = S3FeedStorage.from_crawler(crawler,
+                                             's3://mybucket/export.csv')
+        self.assertEqual(storage.access_key, 'settings_key')
+        self.assertEqual(storage.secret_key, 'settings_secret')
+        # Instantiate directly
+        storage = S3FeedStorage('s3://mybucket/export.csv',
+                                aws_credentials['AWS_ACCESS_KEY_ID'],
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        self.assertEqual(storage.access_key, 'settings_key')
+        self.assertEqual(storage.secret_key, 'settings_secret')
+        # URI priority > settings priority
+        storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
+                                aws_credentials['AWS_ACCESS_KEY_ID'],
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        self.assertEqual(storage.access_key, 'uri_key')
+        self.assertEqual(storage.secret_key, 'uri_secret')
+        # Backwards compatibility for initialising without settings
+        with warnings.catch_warnings(record=True) as w:
+            storage = S3FeedStorage('s3://mybucket/export.csv')
+            self.assertEqual(storage.access_key, 'conf_key')
+            self.assertEqual(storage.secret_key, 'conf_secret')
+            self.assertTrue('without AWS keys' in str(w[-1].message))
+
     @defer.inlineCallbacks
     def test_store(self):
         assert_aws_environ()
         uri = os.environ.get('S3_TEST_FILE_URI')
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
-        storage = S3FeedStorage(uri)
+        storage = S3FeedStorage(uri, Settings())
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         expected_content = b"content: \xe2\x98\x83"
