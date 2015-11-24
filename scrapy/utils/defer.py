@@ -61,7 +61,7 @@ def parallel(iterable, count, callable, *args, **named):
     """
     coop = task.Cooperator()
     work = (callable(elem, *args, **named) for elem in iterable)
-    return defer.DeferredList([coop.coiterate(work) for i in range(count)])
+    return defer.DeferredList([coop.coiterate(work) for _ in range(count)])
 
 def process_chain(callbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks"""

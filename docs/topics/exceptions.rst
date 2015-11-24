@@ -57,7 +57,7 @@ remain disabled. Those components include:
 
  * Extensions
  * Item pipelines
- * Downloader middlwares
+ * Downloader middlewares
  * Spider middlewares
 
 The exception must be raised in the component constructor.

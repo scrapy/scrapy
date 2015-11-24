@@ -25,8 +25,10 @@ def xmliter(obj, nodename):
     - a unicode string
     - a string encoded as utf-8
     """
-    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename, re.S)
-    HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename, re.S)
+    nodename_patt = re.escape(nodename)
+
+    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
+    HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename_patt, re.S)
     text = _body_or_str(obj)
 
     header_start = re.search(HEADER_START_RE, text)
@@ -34,7 +36,7 @@ def xmliter(obj, nodename):
     header_end = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end[1]:].strip() if header_end else ''
 
-    r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
+    r = re.compile(r"<{0}[\s>].*?</{0}>".format(nodename_patt), re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]

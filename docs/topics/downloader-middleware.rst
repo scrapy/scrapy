@@ -24,10 +24,10 @@ Here's an example::
     }
 
 The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
-:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
-be overridden) and then sorted by order to get the final sorted list of enabled
-middlewares: the first middleware is the one closer to the engine and the last
-is the one closer to the downloader.
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
+to be overridden) and then sorted by order to get the final sorted list of
+enabled middlewares: the first middleware is the one closer to the engine and
+the last is the one closer to the downloader.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
@@ -804,7 +804,7 @@ RetryMiddleware
 
 .. class:: RetryMiddleware
 
-   A middlware to retry failed requests that are potentially caused by
+   A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
 
 Failed pages are collected on the scraping process and rescheduled at the
@@ -818,12 +818,6 @@ settings (see the settings documentation for more info):
 * :setting:`RETRY_ENABLED`
 * :setting:`RETRY_TIMES`
 * :setting:`RETRY_HTTP_CODES`
-
-About HTTP errors to consider:
-
-You may want to remove 400 from :setting:`RETRY_HTTP_CODES`, if you stick to the
-HTTP protocol. It's included by default because it's a common code used
-to indicate server overload, which would be something we want to retry.
 
 .. reqmeta:: dont_retry
 
@@ -858,10 +852,15 @@ Maximum number of times to retry, in addition to the first download.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 400, 408]``
+Default: ``[500, 502, 503, 504, 408]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
+
+In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
+it is a common code used to indicate server overload. It is not included by
+default because HTTP specs say so.
+
 
 .. _topics-dlmw-robots:
 

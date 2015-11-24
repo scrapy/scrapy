@@ -84,6 +84,21 @@ class ExecutionEngine(object):
         dfd = self._close_all_spiders()
         return dfd.addBoth(lambda _: self._finish_stopping_engine())
 
+    def close(self):
+        """Close the execution engine gracefully.
+
+        If it has already been started, stop it. In all cases, close all spiders
+        and the downloader.
+        """
+        if self.running:
+            # Will also close spiders and downloader
+            return self.stop()
+        elif self.open_spiders:
+            # Will also close downloader
+            return self._close_all_spiders()
+        else:
+            return defer.succeed(self.downloader.close())
+
     def pause(self):
         """Pause the execution engine"""
         self.paused = True

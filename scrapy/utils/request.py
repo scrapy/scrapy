@@ -44,8 +44,8 @@ def request_fingerprint(request, include_headers=None):
 
     """
     if include_headers:
-        include_headers = tuple([to_bytes(h.lower())
-                                 for h in sorted(include_headers)])
+        include_headers = tuple(to_bytes(h.lower())
+                                 for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
     if include_headers not in cache:
         fp = hashlib.sha1()

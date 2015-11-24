@@ -24,16 +24,47 @@ class ItemLoader(object):
     default_output_processor = Identity()
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, **context):
+    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
         if item is None:
             item = self.default_item_class()
-        self.item = context['item'] = item
         self.context = context
-        self._values = defaultdict(list)
+        self.parent = parent
+        self._local_item = context['item'] = item
+        self._local_values = defaultdict(list)
+
+    @property
+    def _values(self):
+        if self.parent is not None:
+            return self.parent._values
+        else:
+            return self._local_values
+
+    @property
+    def item(self):
+        if self.parent is not None:
+            return self.parent.item
+        else:
+            return self._local_item
+
+    def nested_xpath(self, xpath, **context):
+        selector = self.selector.xpath(xpath)
+        context.update(selector=selector)
+        subloader = self.__class__(
+            item=self.item, parent=self, **context
+        )
+        return subloader
+
+    def nested_css(self, css, **context):
+        selector = self.selector.css(css)
+        context.update(selector=selector)
+        subloader = self.__class__(
+            item=self.item, parent=self, **context
+        )
+        return subloader
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
@@ -69,7 +100,7 @@ class ItemLoader(object):
         regex = kw.get('re', None)
         if regex:
             value = arg_to_iter(value)
-            value = flatten([extract_regex(regex, x) for x in value])
+            value = flatten(extract_regex(regex, x) for x in value)
 
         for proc in processors:
             if value is None:
@@ -84,6 +115,7 @@ class ItemLoader(object):
             value = self.get_output_value(field_name)
             if value is not None:
                 item[field_name] = value
+
         return item
 
     def get_output_value(self, field_name):
@@ -149,7 +181,7 @@ class ItemLoader(object):
     def _get_xpathvalues(self, xpaths, **kw):
         self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
-        return flatten([self.selector.xpath(xpath).extract() for xpath in xpaths])
+        return flatten(self.selector.xpath(xpath).extract() for xpath in xpaths)
 
     def add_css(self, field_name, css, *processors, **kw):
         values = self._get_cssvalues(css, **kw)
@@ -166,7 +198,6 @@ class ItemLoader(object):
     def _get_cssvalues(self, csss, **kw):
         self._check_selector_method()
         csss = arg_to_iter(csss)
-        return flatten([self.selector.css(css).extract() for css in csss])
-
+        return flatten(self.selector.css(css).extract() for css in csss)
 
 XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)

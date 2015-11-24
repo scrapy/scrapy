@@ -8,10 +8,12 @@ from twisted.trial import unittest
 
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
+import scrapy
 from scrapy.interfaces import ISpiderLoader
 from scrapy.spiderloader import SpiderLoader
 from scrapy.settings import Settings
 from scrapy.http import Request
+from scrapy.crawler import CrawlerRunner
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,3 +78,14 @@ class SpiderLoaderTest(unittest.TestCase):
         settings = Settings({'SPIDER_MODULES': [module]})
         self.spider_loader = SpiderLoader.from_settings(settings)
         assert len(self.spider_loader._spiders) == 0
+
+    def test_crawler_runner_loading(self):
+        module = 'tests.test_spiderloader.test_spiders.spider1'
+        runner = CrawlerRunner({'SPIDER_MODULES': [module]})
+
+        self.assertRaisesRegexp(KeyError, 'Spider not found',
+                                runner.create_crawler, 'spider2')
+
+        crawler = runner.create_crawler('spider1')
+        self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
+        self.assertEqual(crawler.spidercls.name, 'spider1')

@@ -4,7 +4,7 @@
 Telnet Console
 ==============
 
-.. module:: scrapy.telnet
+.. module:: scrapy.extensions.telnet
    :synopsis: The Telnet Console
 
 Scrapy comes with a built-in telnet console for inspecting and controlling a

@@ -375,7 +375,7 @@ Crawling rules
 
    ``follow`` is a boolean which specifies if links should be followed from each
    response extracted with this rule. If ``callback`` is None ``follow`` defaults
-   to ``True``, otherwise it default to ``False``.
+   to ``True``, otherwise it defaults to ``False``.
 
    ``process_links`` is a callable, or a string (in which case a method from the
    spider object with that name will be used) which will be called for each list

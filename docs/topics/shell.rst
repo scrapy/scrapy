@@ -71,7 +71,7 @@ Available Shortcuts
  * ``view(response)`` - open the given response in your local web browser, for
    inspection. This will add a `\<base\> tag`_ to the response body in order
    for external links (such as images and style sheets) to display properly.
-   Note, however,that this will create a temporary file in your computer,
+   Note, however, that this will create a temporary file in your computer,
    which won't be removed automatically.
 
 .. _<base> tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base

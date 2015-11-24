@@ -9,6 +9,7 @@ from threading import Thread
 from scrapy.commands import ScrapyCommand
 from scrapy.shell import Shell
 from scrapy.http import Request
+from scrapy.utils.url import add_http_if_no_scheme
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 
@@ -41,6 +42,8 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         url = args[0] if args else None
+        if url:
+            url = add_http_if_no_scheme(url)
         spider_loader = self.crawler_process.spider_loader
 
         spidercls = DefaultSpider

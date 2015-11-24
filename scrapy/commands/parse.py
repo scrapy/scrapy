@@ -32,33 +32,34 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider", default=None, \
+        parser.add_option("--spider", dest="spider", default=None,
             help="use this spider without looking for one")
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
             help="set spider argument (may be repeated)")
-        parser.add_option("--pipelines", action="store_true", \
+        parser.add_option("--pipelines", action="store_true",
             help="process items through pipelines")
-        parser.add_option("--nolinks", dest="nolinks", action="store_true", \
+        parser.add_option("--nolinks", dest="nolinks", action="store_true",
             help="don't show links to follow (extracted requests)")
-        parser.add_option("--noitems", dest="noitems", action="store_true", \
+        parser.add_option("--noitems", dest="noitems", action="store_true",
             help="don't show scraped items")
-        parser.add_option("--nocolour", dest="nocolour", action="store_true", \
+        parser.add_option("--nocolour", dest="nocolour", action="store_true",
             help="avoid using pygments to colorize the output")
-        parser.add_option("-r", "--rules", dest="rules", action="store_true", \
+        parser.add_option("-r", "--rules", dest="rules", action="store_true",
             help="use CrawlSpider rules to discover the callback")
-        parser.add_option("-c", "--callback", dest="callback", \
+        parser.add_option("-c", "--callback", dest="callback",
             help="use this callback for parsing, instead looking for a callback")
-        parser.add_option("-d", "--depth", dest="depth", type="int", default=1, \
+        parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
             help="maximum depth for parsing requests [default: %default]")
-        parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
+        parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
             help="print each depth level one by one")
 
 
     @property
     def max_level(self):
-        levels = self.items.keys() + self.requests.keys()
-        if levels: return max(levels)
-        else: return 0
+        levels = list(self.items.keys()) + list(self.requests.keys())
+        if not levels:
+            return 0
+        return max(levels)
 
     def add_items(self, lvl, new_items):
         old_items = self.items.get(lvl, [])
@@ -79,7 +80,7 @@ class Command(ScrapyCommand):
 
     def print_requests(self, lvl=None, colour=True):
         if lvl is None:
-            levels = self.requests.keys()
+            levels = list(self.requests.keys())
             if levels:
                 requests = self.requests[max(levels)]
             else:
@@ -94,7 +95,7 @@ class Command(ScrapyCommand):
         colour = not opts.nocolour
 
         if opts.verbose:
-            for level in xrange(1, self.max_level+1):
+            for level in range(1, self.max_level+1):
                 print('\n>>> DEPTH LEVEL: %s <<<' % level)
                 if not opts.noitems:
                     self.print_items(level, colour)
@@ -106,7 +107,6 @@ class Command(ScrapyCommand):
                 self.print_items(colour=colour)
             if not opts.nolinks:
                 self.print_requests(colour=colour)
-
 
     def run_callback(self, response, cb):
         items, requests = [], []
@@ -145,7 +145,6 @@ class Command(ScrapyCommand):
         request = Request(url, opts.callback)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
         self.spidercls.start_requests = _start_requests
-
 
     def start_parsing(self, url, opts):
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
