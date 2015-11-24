@@ -80,6 +80,8 @@ class FTPDownloadHandler(object):
 
     def gotClient(self, client, request, filepath):
         self.client = client
+        if filepath == "":
+            filepath = "/"
         if filepath.endswith('/'):
             protocol = FTPFileListProtocol()
             return client.list(filepath, protocol)\

@@ -733,8 +733,19 @@ class FTPTestCase(unittest.TestCase):
             deferred.addErrback(errback)
         return deferred
 
-    def test_ftp_list_success(self):
+    def test_ftp_list_root(self):
         request = Request(url="ftp://127.0.0.1:%s/" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+            self.assertEqual(len(r.files), 2)
+            self.assertEqual(r.headers, {'Size': ['2']})
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_list_root_without_slash(self):
+        request = Request(url="ftp://127.0.0.1:%s" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": self.password})
         d = self.download_handler.download_request(request, None)
 
