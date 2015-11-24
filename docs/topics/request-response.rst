@@ -610,3 +610,31 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _Twisted Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+
+
+FTPListResponse objects
+-----------------------
+
+.. class:: FTPListResponse(url, [...])
+
+    :class:`FTPListResponse` adds a list of files in a FTP folder to a
+    :class:`Response` class.
+
+    :class:`FTPListResponse` objects support the following attributes in
+    addition to the standard :class:`Response` ones:
+
+    .. attribute:: TextResponse.files
+
+       A list of dictionaries, each representing data about a file in a FTP
+       folder. Dictionary keys (taken from
+       :class:`twisted.protocols.ftp.FTPFileListProtocol`):
+
+       - filetype: e.g. 'd' for directories, or '-' for an ordinary file
+       - perms: e.g. 'rw-r--r--'
+       - nlinks: e.g. 1
+       - owner: e.g. 'root'
+       - group: e.g. 'other'
+       - size: e.g. 531
+       - date: e.g. 'Jan 29 03:26'
+       - filename: e.g. 'README'
+       - linktarget: e.g. 'some/file'

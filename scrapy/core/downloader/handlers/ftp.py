@@ -40,8 +40,6 @@ from scrapy.http import Response
 from scrapy.http.response.ftplist import FTPListResponse
 from scrapy.responsetypes import responsetypes
 
-class ListDataProtocol(FTPFileListProtocol):
-    pass
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
@@ -59,6 +57,7 @@ class ReceivedDataProtocol(Protocol):
 
     def close(self):
         self.body.close() if self.filename else self.body.seek(0)
+
 
 _CODE_RE = re.compile("\d+")
 class FTPDownloadHandler(object):
@@ -81,8 +80,10 @@ class FTPDownloadHandler(object):
 
     def gotClient(self, client, request, filepath):
         self.client = client
+        if filepath == "":
+            filepath = "/"
         if filepath.endswith('/'):
-            protocol = ListDataProtocol()
+            protocol = FTPFileListProtocol()
             return client.list(filepath, protocol)\
                 .addCallbacks(callback=self._build_list_response,
                         callbackArgs=(request, protocol),
@@ -120,4 +121,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-

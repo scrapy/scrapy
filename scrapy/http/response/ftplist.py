@@ -1,7 +1,6 @@
 """
-This module implements the FTPListResponse class which stores files
-listed in FTP folders, in a dict structure. Other attributes are typical
-of Response.
+This module implements the FTPListResponse class which adds information about
+stored files in a particular FTP folder to the Response.
 
 See documentation in docs/topics/request-response.rst
 """
