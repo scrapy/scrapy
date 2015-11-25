@@ -30,7 +30,7 @@ class Scheduler(object):
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
-        logunser = settings.getbool('SCHEDULER_DEBUG')
+        logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS', settings.getbool('SCHEDULER_DEBUG'))
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
