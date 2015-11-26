@@ -7,7 +7,7 @@ For more information see docs/topics/architecture.rst
 import logging
 from time import time
 
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -30,6 +30,7 @@ class Slot(object):
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
         self.scheduler = scheduler
+        self.heartbeat = task.LoopingCall(nextcall.schedule)
 
     def add_request(self, request):
         self.inprogress.add(request)
@@ -47,6 +48,7 @@ class Slot(object):
         if self.closing and not self.inprogress:
             if self.nextcall:
                 self.nextcall.cancel()
+                self.heartbeat.stop()
             self.closing.callback(None)
 
 
@@ -98,7 +100,6 @@ class ExecutionEngine(object):
             return
 
         if self.paused:
-            slot.nextcall.schedule(5)
             return
 
         while not self._needs_backout(spider):
@@ -239,6 +240,7 @@ class ExecutionEngine(object):
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         slot.nextcall.schedule()
+        slot.heartbeat.start(5)
 
     def _spider_idle(self, spider):
         """Called when a spider gets idle. This function is called when there
@@ -252,7 +254,6 @@ class ExecutionEngine(object):
             spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
-            self.slot.nextcall.schedule(5)
             return
 
         if self.spider_is_idle(spider):
