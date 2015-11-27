@@ -257,7 +257,7 @@ class CrawlerProcess(CrawlerRunner):
         """
         if stop_after_crawl:
             d = self.join()
-            # Don't start the reactor if the deferreds are already fired
+            # Don't stop the reactor if the deferreds are already fired
             if d.called:
                 return
             d.addBoth(self._stop_reactor)
