@@ -525,7 +525,7 @@ These spiders are pretty easy to use, let's have a look at one example::
         itertag = 'item'
 
         def parse_node(self, response, node):
-            self.logger.info('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
+            self.logger.info('Hi, this is a <%s> node!: %r' % (self.itertag, node.extract()))
 
             item = TestItem()
             item['id'] = node.xpath('@id').extract()
