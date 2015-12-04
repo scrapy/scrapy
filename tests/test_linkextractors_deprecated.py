@@ -190,3 +190,20 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
         ])
+
+    def test_html_base_href(self):
+        html = """
+        <html>
+            <head>
+                <base href="http://b.com/">
+            </head>
+            <body>
+                <a href="test.html"></a>
+            </body>
+        </html>
+        """
+        response = HtmlResponse("http://a.com/", body=html)
+        lx = RegexLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://b.com/test.html', text=u'', nofollow=False),
+        ])

@@ -124,9 +124,6 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
             restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
             canonicalize=canonicalize, deny_extensions=deny_extensions)
 
-        # FIXME: was added to fix a RegexLinkExtractor testcase
-        self.base_url = None
-
     def extract_links(self, response):
         base_url = None
         if self.restrict_xpaths:
