@@ -16,7 +16,11 @@ from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'KEEP_ALIVE': True, 'LOGSTATS_INTERVAL': 0}
+    default_settings = {
+        'KEEP_ALIVE': True,
+        'LOGSTATS_INTERVAL': 0,
+        'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
+    }
 
     def syntax(self):
         return "[url|file]"
