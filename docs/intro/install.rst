@@ -44,13 +44,10 @@ Anaconda
 If you already have installed `Anaconda`_ or `Miniconda`_, the company
 `Scrapinghub`_ maintains official conda packages for Linux, Windows and OS X.
 
-To install Scrapy in Linux or OS X, use:
+To install Scrapy using ``conda``, run::
 
   conda install -c scrapinghub scrapy 
 
-To install Scrapy in Windows, use:
-
-  conda install -c scrapinghub scrapy pywin32
 
 Windows
 -------
