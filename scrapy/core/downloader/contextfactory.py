@@ -14,9 +14,7 @@ class ScrapyClientContextFactory(ClientContextFactory):
     # and https://github.com/scrapy/scrapy/issues/981
 
     def __init__(self):
-        # see this issue on why we use TLSv1_METHOD by default
-        # https://github.com/scrapy/scrapy/issues/194
-        self.method = SSL.TLSv1_METHOD
+        self.method = SSL.SSLv23_METHOD
 
     def getContext(self, hostname=None, port=None):
         ctx = ClientContextFactory.getContext(self)
