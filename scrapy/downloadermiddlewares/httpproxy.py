@@ -9,7 +9,7 @@ from six.moves.urllib.parse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured
-
+from scrapy.utils.python import to_bytes
 
 class HttpProxyMiddleware(object):
 
@@ -26,7 +26,7 @@ class HttpProxyMiddleware(object):
         proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
 
         if user:
-            user_pass = '%s:%s' % (unquote(user), unquote(password))
+            user_pass = to_bytes('%s:%s' % (unquote(user), unquote(password)))
             creds = base64.b64encode(user_pass).strip()
         else:
             creds = None
@@ -52,4 +52,4 @@ class HttpProxyMiddleware(object):
         creds, proxy = self.proxies[scheme]
         request.meta['proxy'] = proxy
         if creds:
-            request.headers['Proxy-Authorization'] = 'Basic ' + creds
+            request.headers['Proxy-Authorization'] = b'Basic ' + creds

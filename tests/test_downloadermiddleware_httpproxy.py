@@ -52,7 +52,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://scrapytest.org')
         assert mw.process_request(req, spider) is None
         self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
-        self.assertEquals(req.headers.get('Proxy-Authorization'), 'Basic dXNlcjpwYXNz')
+        self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic dXNlcjpwYXNz')
 
     def test_proxy_auth_empty_passwd(self):
         os.environ['http_proxy'] = 'https://user:@proxy:3128'
@@ -60,7 +60,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://scrapytest.org')
         assert mw.process_request(req, spider) is None
         self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
-        self.assertEquals(req.headers.get('Proxy-Authorization'), 'Basic dXNlcjo=')
+        self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic dXNlcjo=')
 
     def test_proxy_already_seted(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
