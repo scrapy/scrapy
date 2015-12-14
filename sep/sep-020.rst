@@ -23,9 +23,9 @@ Rationale
 =========
 
 There are certain markup patterns that lend themselves quite nicely to
-automated parsing, for example the ``<table>`` tag outlilnes such a pattern
+automated parsing, for example the ``<table>`` tag outlines such a pattern
 for populating a database table with the embedded ``<tr>`` elements denoting
-the rows and the furthur embedded ``<td>`` elements denoting the individual
+the rows and the further embedded ``<td>`` elements denoting the individual
 fields.
 
 One pattern that is particularly well suited for auto-populating an Item Loader
