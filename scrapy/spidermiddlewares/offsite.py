@@ -42,7 +42,8 @@ class OffsiteMiddleware(object):
                 yield x
 
     def should_follow(self, request, spider):
-        regex = self.host_regex
+        # Possibly update allowed_domains.
+        regex = self.get_host_regex(spider)
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ''
         return bool(regex.search(host))

@@ -37,6 +37,38 @@ class TestOffsiteMiddleware(TestCase):
         self.assertEquals(out, onsite_reqs)
 
 
+    def test_updating_allowed_domains(self):
+        res = Response('http://scrapytest.org')
+
+        onsite_reqs0 = [Request('http://scrapytest.org/1'),
+                        Request('http://offsite.tld/letmepass',
+                                dont_filter=True)]
+        onsite_reqs1 = [Request('http://scrapy.org/1'),
+                        Request('http://sub.scrapy.org/1')]
+        offsite_reqs = [Request('http://scrapy2.org'),
+                        Request('http://offsite.tld/'),
+                        Request('http://offsite.tld/scrapytest.org'),
+                        Request('http://offsite.tld/rogue.scrapytest.org'),
+                        Request('http://rogue.scrapytest.org.haha.com'),
+                        Request('http://roguescrapytest.org')]
+        reqs = onsite_reqs0 + onsite_reqs1 + offsite_reqs
+
+        # Start with only one domain allowed.
+        self.spider.allowed_domains = ['scrapytest.org']
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEquals(out, onsite_reqs0)
+
+        # Add another domain.
+        self.spider.allowed_domains.append('scrapy.org')
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEquals(out, onsite_reqs0 + onsite_reqs1)
+
+        # Remove this last domain.
+        self.spider.allowed_domains.pop()
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEquals(out, onsite_reqs0)
+
+
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
     def _get_spiderargs(self):
