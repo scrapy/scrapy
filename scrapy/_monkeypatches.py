@@ -20,6 +20,6 @@ if sys.version_info[0] == 2:
 import twisted.persisted.styles  # NOQA
 # Remove only entries with twisted serializers for non-twisted types.
 for k, v in frozenset(copyreg.dispatch_table.items()):
-    if not getattr(k, '__module__', '').startswith('twisted') \
-            and getattr(v, '__module__', '').startswith('twisted'):
+    if not str(getattr(k, '__module__', '')).startswith('twisted') \
+            and str(getattr(v, '__module__', '')).startswith('twisted'):
         copyreg.dispatch_table.pop(k)
