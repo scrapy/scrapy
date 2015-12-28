@@ -48,8 +48,9 @@ class SpiderTest(unittest.TestCase):
 
     def test_spider_without_name(self):
         """Constructor arguments are assigned to spider attributes"""
-        self.assertRaises(ValueError, self.spider_class)
-        self.assertRaises(ValueError, self.spider_class, somearg='foo')
+        spider = self.spider_class()
+        self.assertEqual(spider.name, self.spider_class.__name__)
+        self.assertEqual(self.spider_class.name, self.spider_class.__name__)
 
     def test_deprecated_set_crawler_method(self):
         spider = self.spider_class('example.com')

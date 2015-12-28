@@ -14,19 +14,24 @@ from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
+class classproperty(object):
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, cls, owner):
+        return self.fget(owner)
+
+
 class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
-
-    name = None
     custom_settings = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
-        elif not getattr(self, 'name', None):
-            raise ValueError("%s must have a name" % type(self).__name__)
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
@@ -44,6 +49,10 @@ class Spider(object_ref):
         Python logger too.
         """
         self.logger.log(level, message, **kw)
+
+    @classproperty
+    def name(cls):
+        return cls.__name__
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
