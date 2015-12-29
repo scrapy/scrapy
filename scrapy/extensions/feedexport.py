@@ -19,6 +19,7 @@ from w3lib.url import file_uri_to_path
 
 from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
+from scrapy.utils.sftp import sftp_makedirs
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import failure_to_exc_info
@@ -126,6 +127,37 @@ class FTPFeedStorage(BlockingFeedStorage):
         ftp_makedirs_cwd(ftp, dirname)
         ftp.storbinary('STOR %s' % filename, file)
         ftp.quit()
+
+
+class SFTPFeedStorage(BlockingFeedStorage):
+    def __init__(self, uri):
+        try:
+            import paramiko
+        except ImportError:
+            raise NotConfigured
+        self.paramiko = paramiko
+        u = urlparse(uri)
+        self.host = u.hostname
+        self.port = int(u.port or '22')
+        self.username = u.username
+        self.password = u.password
+        self.path = u.path
+
+    def _store_in_thread(self, file):
+        file.seek(0)
+        transport = self.paramiko.Transport((self.host, self.port))
+        transport.connect(username=self.username, password=self.password)
+        sftp = self.paramiko.SFTPClient.from_transport(transport)
+        sftp_makedirs(sftp, posixpath.dirname(self.path))
+        chunk_size = 1024**2
+        with sftp.file(self.path, 'w') as f:
+            while True:
+                data = file.read(chunk_size)
+                if not data:
+                    break
+                f.write(data)
+        sftp.close()
+        transport.close()
 
 
 class SpiderSlot(object):
