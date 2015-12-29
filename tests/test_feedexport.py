@@ -18,7 +18,7 @@ from w3lib.url import path_to_file_uri
 
 import scrapy
 from scrapy.extensions.feedexport import (
-    IFeedStorage, FileFeedStorage, FTPFeedStorage,
+    IFeedStorage, FileFeedStorage, FTPFeedStorage, SFTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage
 )
 from scrapy.utils.test import assert_aws_environ
@@ -85,6 +85,18 @@ class FTPFeedStorageTest(unittest.TestCase):
         yield storage.store(BytesIO(b"new content"))
         with open(path, 'rb') as fp:
             self.assertEqual(fp.read(), b"new content")
+
+
+class SFTPFeedStorageTest(FTPFeedStorageTest):
+
+    def test_store(self):
+        uri = os.environ.get('FEEDTEST_SFTP_URI')
+        path = os.environ.get('FEEDTEST_SFTP_PATH')
+        if not (uri and path):
+            raise unittest.SkipTest("No SFTP server available for testing")
+        st = SFTPFeedStorage(uri)
+        verifyObject(IFeedStorage, st)
+        return self._assert_stores(st, path)
 
 
 class S3FeedStorageTest(unittest.TestCase):

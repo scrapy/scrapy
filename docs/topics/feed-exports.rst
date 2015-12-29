@@ -99,6 +99,7 @@ The storages backends supported out of the box are:
 
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
+ * :ref:`topics-feed-storage-sftp` (requires paramiko_)
  * :ref:`topics-feed-storage-s3` (requires boto_)
  * :ref:`topics-feed-storage-stdout`
 
@@ -163,6 +164,17 @@ The feeds are stored in a FTP server.
  * URI scheme: ``ftp``
  * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
  * Required external libraries: none
+
+.. _topics-feed-storage-sftp:
+
+SFTP
+----
+
+The feeds are stored in a SFTP server.
+
+ * URI scheme: ``sftp``
+ * Example URI: ``sftp://user:pass@ftp.example.com/path/to/export.csv``
+ * Required external libraries: paramiko
 
 .. _topics-feed-storage-s3:
 
@@ -283,6 +295,7 @@ Default::
         'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
         's3': 'scrapy.extensions.feedexport.S3FeedStorage',
         'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
+        'sftp': 'scrapy.extensions.feedexport.SFTPFeedStorage',
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy. You
@@ -333,3 +346,4 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
 .. _boto: http://code.google.com/p/boto/
+.. _paramiko: http://www.paramiko.org/
