@@ -33,6 +33,19 @@ class XmliterTestCase(unittest.TestCase):
         self.assertEqual(attrs,
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
 
+    def test_xmliter_unusual_node(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+            <root>
+                <matchme...></matchme...>
+                <matchmenot></matchmenot>
+            </root>
+        """
+        response = XmlResponse(url="http://example.com", body=body)
+        nodenames = [e.xpath('name()').extract()
+                 for e in self.xmliter(response, 'matchme...')]
+        self.assertEqual(nodenames, [['matchme...']])
+
+
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
 

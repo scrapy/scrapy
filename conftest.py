@@ -1,6 +1,7 @@
 import glob
 import six
 import pytest
+from twisted import version as twisted_version
 
 
 def _py_files(folder):
@@ -20,6 +21,9 @@ collect_ignore = [
     "scrapy/linkextractor.py",
     "scrapy/spider.py",
 ] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
+
+if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15, 5, 0):
+    collect_ignore += _py_files("scrapy/xlib/tx")
 
 
 if six.PY3:

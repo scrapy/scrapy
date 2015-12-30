@@ -17,7 +17,7 @@ Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
 settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, an
+avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
 `GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
 
@@ -145,7 +145,7 @@ Here is the code of such extension::
             self.items_scraped += 1
             if self.items_scraped % self.item_count == 0:
                 logger.info("scraped %d items", self.items_scraped)
-                
+
 
 .. _topics-extensions-ref:
 

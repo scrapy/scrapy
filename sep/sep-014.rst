@@ -54,7 +54,7 @@ Request Extractors
 
 Request Extractors takes response object and determines which requests follow.
 
-This is an enhancemente to ``LinkExtractors`` which returns urls (links),
+This is an enhancement to ``LinkExtractors`` which returns urls (links),
 Request Extractors return Request objects. 
 
 Request Processors

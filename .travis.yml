@@ -1,12 +1,16 @@
 language: python
 python: 2.7
+sudo: false
+branches:
+  only:
+    - master
+    - /^\d\.\d+$/
 env:
 - TOXENV=py27
 - TOXENV=precise
 - TOXENV=py33
 - TOXENV=docs
 install:
-- "./.travis-workarounds.sh"
 - pip install -U tox twine wheel
 script: tox
 notifications:
@@ -15,6 +19,9 @@ notifications:
     skip_join: true
     channels:
     - irc.freenode.org#scrapy
+cache:
+  directories:
+    - $HOME/.cache/pip
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"

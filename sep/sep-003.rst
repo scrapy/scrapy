@@ -146,7 +146,7 @@ Default values
 
    p['numbers'] # returns []
 
-Accesing and changing nested item values
+Accessing and changing nested item values
 ----------------------------------------
 
 ::

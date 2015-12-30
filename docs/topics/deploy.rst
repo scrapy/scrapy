@@ -8,7 +8,7 @@ This section describes the different options you have for deploying your Scrapy
 spiders to run them on a regular basis. Running Scrapy spiders in your local
 machine is very convenient for the (early) development stage, but not so much
 when you need to execute long-running spiders or move spiders to run in
-production continously. This is where the solutions for deploying Scrapy
+production continuously. This is where the solutions for deploying Scrapy
 spiders come in.
 
 Popular choices for deploying Scrapy spiders are:

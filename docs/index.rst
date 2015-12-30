@@ -28,6 +28,7 @@ First steps
 ===========
 
 .. toctree::
+   :caption: First steps
    :hidden:
 
    intro/overview
@@ -53,6 +54,7 @@ Basic concepts
 ==============
 
 .. toctree::
+   :caption: Basic concepts
    :hidden:
 
    topics/commands
@@ -110,6 +112,7 @@ Built-in services
 =================
 
 .. toctree::
+   :caption: Built-in services
    :hidden:
 
    topics/logging
@@ -138,6 +141,7 @@ Solving specific problems
 =========================
 
 .. toctree::
+   :caption: Solving specific problems
    :hidden:
 
    faq
@@ -203,6 +207,7 @@ Extending Scrapy
 ================
 
 .. toctree::
+   :caption: Extending Scrapy
    :hidden:
 
    topics/architecture
@@ -240,6 +245,7 @@ All the rest
 ============
 
 .. toctree::
+   :caption: All the rest
    :hidden:
 
    news

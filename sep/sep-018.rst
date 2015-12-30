@@ -477,7 +477,7 @@ This is a port of the Offsite middleware to the new spider middleware API:
     
        def should_follow(self, request, spider):
            info = self.spiders[spider]
-           # hostanme can be None for wrong urls (like javascript links)
+           # hostname can be None for wrong urls (like javascript links)
            host = urlparse_cached(request).hostname or ''
            return bool(info.regex.search(host))
 

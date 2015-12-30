@@ -61,7 +61,7 @@ project as example.
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    process.crawl('testspider', domain='scrapinghub.com')
+    process.crawl('followall', domain='scrapinghub.com')
     process.start() # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
@@ -228,7 +228,7 @@ with varying degrees of sophistication. Getting around those measures can be
 difficult and tricky, and may sometimes require special infrastructure. Please
 consider contacting `commercial support`_ if in doubt.
 
-Here are some tips to keep in mind when dealing with these kind of sites:
+Here are some tips to keep in mind when dealing with these kinds of sites:
 
 * rotate your user agent from a pool of well-known ones from browsers (google
   around to get a list of them)

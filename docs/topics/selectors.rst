@@ -146,12 +146,12 @@ If you want to extract only first matched element, you can call the selector ``.
 
 It returns ``None`` if no element was found:
 
-    >>> response.xpath('//div/[id="not-exists"]/text()').extract_first() is None
+    >>> response.xpath('//div[@id="not-exists"]/text()').extract_first() is None
     True
 
 A default return value can be provided as an argument, to be used instead of ``None``:
 
-    >>> sel.xpath('//div/[id="not-exists"]/text()').extract_first(default='not-found')
+    >>> sel.xpath('//div[@id="not-exists"]/text()').extract_first(default='not-found')
     'not-found'
 
 Notice that CSS selectors can select text or attribute nodes using CSS3
@@ -579,7 +579,7 @@ Built-in Selectors reference
     is used together with ``text``.
 
     If ``type`` is ``None`` and a ``response`` is passed, the selector type is
-    inferred from the response type as follow:
+    inferred from the response type as follows:
 
         * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
         * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
@@ -757,7 +757,7 @@ nodes can be accessed directly by their names::
      <Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      ...
 
-If you wonder why the namespace removal procedure isn't called always by default
+If you wonder why the namespace removal procedure isn't always called by default
 instead of having to call it manually, this is because of two reasons, which, in order
 of relevance, are:
 
