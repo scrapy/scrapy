@@ -5,6 +5,7 @@ branches:
   only:
     - master
     - /^\d\.\d+$/
+    - /^\d\.\d+\.\d+$/
 env:
 - TOXENV=py27
 - TOXENV=precise
