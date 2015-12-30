@@ -30,6 +30,5 @@ deploy:
     secure: JaAKcy1AXWXDK3LXdjOtKyaVPCSFoCGCnW15g4f65E/8Fsi9ZzDfmBa4Equs3IQb/vs/if2SVrzJSr7arN7r9Z38Iv1mUXHkFAyA3Ym8mThfABBzzcUWEQhIHrCX0Tdlx9wQkkhs+PZhorlmRS4gg5s6DzPaeA2g8SCgmlRmFfA=
   on:
     tags: true
-    all_branches: true
     repo: scrapy/scrapy
     condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9][.][0-9]*[02468][.]"
