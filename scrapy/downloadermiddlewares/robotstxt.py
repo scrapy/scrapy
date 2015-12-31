@@ -8,6 +8,7 @@ import logging
 
 from six.moves.urllib import robotparser
 
+from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -34,17 +35,22 @@ class RobotsTxtMiddleware(object):
     def process_request(self, request, spider):
         if request.meta.get('dont_obey_robotstxt'):
             return
-        rp = self.robot_parser(request, spider)
-        if rp and not rp.can_fetch(self._useragent, request.url):
+        d = maybeDeferred(self.robot_parser, request, spider)
+        d.addCallback(self.process_request_2, request, spider)
+        return d
+
+    def process_request_2(self, rp, request, spider):
+        if rp is not None and not rp.can_fetch(self._useragent, request.url):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
-            raise IgnoreRequest
+            raise IgnoreRequest()
 
     def robot_parser(self, request, spider):
         url = urlparse_cached(request)
         netloc = url.netloc
+
         if netloc not in self._parsers:
-            self._parsers[netloc] = None
+            self._parsers[netloc] = Deferred()
             robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
             robotsreq = Request(
                 robotsurl,
@@ -52,9 +58,19 @@ class RobotsTxtMiddleware(object):
                 meta={'dont_obey_robotstxt': True}
             )
             dfd = self.crawler.engine.download(robotsreq, spider)
-            dfd.addCallback(self._parse_robots)
+            dfd.addCallback(self._parse_robots, netloc)
             dfd.addErrback(self._logerror, robotsreq, spider)
-        return self._parsers[netloc]
+            dfd.addErrback(self._robots_error, netloc)
+
+        if isinstance(self._parsers[netloc], Deferred):
+            d = Deferred()
+            def cb(result):
+                d.callback(result)
+                return result
+            self._parsers[netloc].addCallback(cb)
+            return d
+        else:
+            return self._parsers[netloc]
 
     def _logerror(self, failure, request, spider):
         if failure.type is not IgnoreRequest:
@@ -62,8 +78,9 @@ class RobotsTxtMiddleware(object):
                          {'request': request, 'f_exception': failure.value},
                          exc_info=failure_to_exc_info(failure),
                          extra={'spider': spider})
+        return failure
 
-    def _parse_robots(self, response):
+    def _parse_robots(self, response, netloc):
         rp = robotparser.RobotFileParser(response.url)
         body = ''
         if hasattr(response, 'body_as_unicode'):
@@ -78,4 +95,10 @@ class RobotsTxtMiddleware(object):
                 # 'disallow all' to 'allow any'.
                 pass
         rp.parse(body.splitlines())
-        self._parsers[urlparse_cached(response).netloc] = rp
+
+        rp_dfd = self._parsers[netloc]
+        self._parsers[netloc] = rp
+        rp_dfd.callback(rp)
+
+    def _robots_error(self, failure, netloc):
+        self._parsers.pop(netloc).callback(None)

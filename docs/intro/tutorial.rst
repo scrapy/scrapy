@@ -83,8 +83,8 @@ sites, we define fields for each of these three attributes. To do that, we edit
         link = scrapy.Field()
         desc = scrapy.Field()
 
-This may seem complicated at first, but defining the item allows you to use other handy
-components of Scrapy that need to know what does your item look like.
+This may seem complicated at first, but defining an item class allows you to use other handy
+components and helpers within Scrapy.
 
 Our first Spider
 ================
@@ -498,7 +498,7 @@ for it::
         next_page = response.css("ul.navigation > li.next-page > a::attr('href')")
         if next_page:
             url = response.urljoin(next_page[0].extract())
-            yield Request(url, self.parse_articles_follow_next_page)
+            yield scrapy.Request(url, self.parse_articles_follow_next_page)
 
 This creates a sort of loop, following all the links to the next page until it
 doesn't find one -- handy for crawling blogs, forums and other sites with

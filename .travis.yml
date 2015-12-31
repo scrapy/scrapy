@@ -1,17 +1,20 @@
 language: python
 python: 2.7
 sudo: false
+branches:
+  only:
+    - master
+    - /^\d\.\d+$/
 env:
  - TOXENV=py27
  - TOXENV=precise
  - TOXENV=py33
  - TOXENV=docs
 install:
- - pip install -U tox twine wheel codecov coveralls
+ - pip install -U tox twine wheel codecov
 script: tox
 after_success:
   - codecov
-  - coveralls
 notifications:
   irc:
     use_notice: true

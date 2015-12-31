@@ -9,7 +9,7 @@ from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_unicode
 from scrapy.utils.response import get_base_url
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -80,7 +80,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
                 if self.scan_attr(attr):
                     url = self.process_value(value)
                     if url is not None:
-                        link = Link(url=url, nofollow=True if dict(attrs).get('rel') == 'nofollow' else False)
+                        link = Link(url=url, nofollow=rel_has_nofollow(dict(attrs).get('rel')))
                         self.links.append(link)
                         self.current_link = link
 
@@ -123,9 +123,6 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
             allow_domains=allow_domains, deny_domains=deny_domains,
             restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
             canonicalize=canonicalize, deny_extensions=deny_extensions)
-
-        # FIXME: was added to fix a RegexLinkExtractor testcase
-        self.base_url = None
 
     def extract_links(self, response):
         base_url = None

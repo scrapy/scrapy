@@ -301,26 +301,32 @@ class SitemapSpiderTest(SpiderTest):
     g.close()
     GZBODY = f.getvalue()
 
-    def test_get_sitemap_body(self):
+    def assertSitemapBody(self, response, body):
         spider = self.spider_class("example.com")
+        self.assertEqual(spider._get_sitemap_body(response), body)
 
+    def test_get_sitemap_body(self):
         r = XmlResponse(url="http://www.example.com/", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
         r = HtmlResponse(url="http://www.example.com/", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), None)
+        self.assertSitemapBody(r, None)
 
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), None)
+        self.assertSitemapBody(r, None)
 
-        r = Response(url="http://www.example.com/sitemap", body=self.GZBODY, headers={"content-type": "application/gzip"})
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+    def test_get_sitemap_body_gzip_headers(self):
+        r = Response(url="http://www.example.com/sitemap", body=self.GZBODY,
+                     headers={"content-type": "application/gzip"})
+        self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url(self):
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=self.BODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url_compressed(self):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
-        self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
 
 class BaseSpiderDeprecationTest(unittest.TestCase):

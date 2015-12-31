@@ -73,8 +73,11 @@ class Crawler(object):
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
+            exc = defer.fail()
             self.crawling = False
-            raise
+            if self.engine is not None:
+                yield self.engine.close()
+            yield exc
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
@@ -145,9 +148,7 @@ class CrawlerRunner(object):
 
         :param dict kwargs: keyword arguments to initialize the spider
         """
-        crawler = crawler_or_spidercls
-        if not isinstance(crawler_or_spidercls, Crawler):
-            crawler = self._create_crawler(crawler_or_spidercls)
+        crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
     def _crawl(self, crawler, *args, **kwargs):
@@ -162,6 +163,21 @@ class CrawlerRunner(object):
 
         return d.addBoth(_done)
 
+    def create_crawler(self, crawler_or_spidercls):
+        """
+        Return a :class:`~scrapy.crawler.Crawler` object.
+
+        * If `crawler_or_spidercls` is a Crawler, it is returned as-is.
+        * If `crawler_or_spidercls` is a Spider subclass, a new Crawler
+          is constructed for it.
+        * If `crawler_or_spidercls` is a string, this function finds
+          a spider with this name in a Scrapy project (using spider loader),
+          then creates a Crawler instance for it.
+        """
+        if isinstance(crawler_or_spidercls, Crawler):
+            return crawler_or_spidercls
+        return self._create_crawler(crawler_or_spidercls)
+
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spider_loader.load(spidercls)
@@ -173,7 +189,7 @@ class CrawlerRunner(object):
 
         Returns a deferred that is fired when they all have ended.
         """
-        return defer.DeferredList([c.stop() for c in list(self.crawlers)])
+        return defer.DeferredList([c.stop() for c in self.crawlers])
 
     @defer.inlineCallbacks
     def join(self):

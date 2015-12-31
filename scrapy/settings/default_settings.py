@@ -120,7 +120,7 @@ EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
     'scrapy.extensions.corestats.CoreStats': 0,
-    'scrapy.telnet.TelnetConsole': 0,
+    'scrapy.extensions.telnet.TelnetConsole': 0,
     'scrapy.extensions.memusage.MemoryUsage': 0,
     'scrapy.extensions.memdebug.MemoryDebugger': 0,
     'scrapy.extensions.closespider.CloseSpider': 0,
@@ -218,7 +218,7 @@ REFERER_ENABLED = True
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 400, 408]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False

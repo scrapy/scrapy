@@ -126,9 +126,6 @@ def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
 
-    logger.info("Optional features available: %(features)s",
-                {'features': ", ".join(scrapy.optional_features)})
-
     d = dict(overridden_settings(settings))
     logger.info("Overridden settings: %(settings)r", {'settings': d})
 

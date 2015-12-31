@@ -38,7 +38,7 @@ def iflatten(x):
     Similar to ``.flatten()``, but returns iterator instead"""
     for el in x:
         if is_listlike(el):
-            for el_ in flatten(el):
+            for el_ in iflatten(el):
                 yield el_
         else:
             yield el
@@ -257,20 +257,14 @@ def equal_attributes(obj1, obj2, attributes):
     if not attributes:
         return False
 
+    temp1, temp2 = object(), object()
     for attr in attributes:
         # support callables like itemgetter
         if callable(attr):
-            if not attr(obj1) == attr(obj2):
+            if attr(obj1) != attr(obj2):
                 return False
-        else:
-            # check that objects has attribute
-            if not hasattr(obj1, attr):
-                return False
-            if not hasattr(obj2, attr):
-                return False
-            # compare object attributes
-            if not getattr(obj1, attr) == getattr(obj2, attr):
-                return False
+        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
+            return False
     # all attributes equal
     return True
 
@@ -330,3 +324,15 @@ def retry_on_eintr(function, *args, **kw):
         except IOError as e:
             if e.errno != errno.EINTR:
                 raise
+
+
+def without_none_values(iterable):
+    """Return a copy of `iterable` with all `None` entries removed.
+
+    If `iterable` is a mapping, return a dictionary where all pairs that have
+    value `None` have been removed.
+    """
+    try:
+        return {k: v for k, v in six.iteritems(iterable) if v is not None}
+    except AttributeError:
+        return type(iterable)((v for v in iterable if v is not None))

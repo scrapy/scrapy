@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware, MetaRefreshMiddleware
@@ -150,6 +152,22 @@ class RedirectMiddlewareTest(unittest.TestCase):
                                                            [404, 301, 302]}))
         _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
 
+    def test_latin1_location(self):
+        req = Request('http://scrapytest.org/first')
+        latin1_location = u'/ação'.encode('latin1')  # HTTP historically supports latin1
+        resp = Response('http://scrapytest.org/first', headers={'Location': latin1_location}, status=302)
+        req_result = self.mw.process_response(req, resp, self.spider)
+        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
+        self.assertEquals(perc_encoded_utf8_url, req_result.url)
+
+    def test_location_with_wrong_encoding(self):
+        req = Request('http://scrapytest.org/first')
+        utf8_location = u'/ação'  # header with wrong encoding (utf-8)
+        resp = Response('http://scrapytest.org/first', headers={'Location': utf8_location}, status=302)
+        req_result = self.mw.process_response(req, resp, self.spider)
+        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%83%C2%A7%C3%83%C2%A3o'
+        self.assertEquals(perc_encoded_utf8_url, req_result.url)
+
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 
@@ -159,8 +177,8 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):
-        return """<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""\
-                .format(interval, url)
+        html = u"""<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""
+        return html.format(interval, url).encode('utf-8')
 
     def test_priority_adjust(self):
         req = Request('http://a.com')
@@ -178,7 +196,9 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
     def test_meta_refresh_with_high_interval(self):
         # meta-refresh with high intervals don't trigger redirects
         req = Request(url='http://example.org')
-        rsp = HtmlResponse(url='http://example.org', body=self._body(interval=1000))
+        rsp = HtmlResponse(url='http://example.org',
+                           body=self._body(interval=1000),
+                           encoding='utf-8')
         rsp2 = self.mw.process_response(req, rsp, self.spider)
         assert rsp is rsp2
 
@@ -230,6 +250,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
 
 if __name__ == "__main__":
     unittest.main()

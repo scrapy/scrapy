@@ -146,6 +146,14 @@ tests requires `tox`_.
 Running tests
 -------------
 
+Make sure you have a recent enough `tox`_ installation:
+
+    ``tox --version``
+
+If your version is older than 1.7.0, please update it first:
+
+    ``pip install -U tox``
+
 To run all tests go to the root directory of Scrapy source code and run:
 
     ``tox``

@@ -285,7 +285,14 @@ Default::
         'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
     }
 
-A dict containing the built-in feed storage backends supported by Scrapy.
+A dict containing the built-in feed storage backends supported by Scrapy. You
+can disable any of these backends by assigning ``None`` to their URI scheme in
+:setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
+(without replacement), place this in your ``settings.py``::
+
+    FEED_STORAGES = {
+        'ftp': None,
+    }
 
 .. setting:: FEED_EXPORTERS
 
@@ -295,26 +302,33 @@ FEED_EXPORTERS
 Default:: ``{}``
 
 A dict containing additional exporters supported by your project. The keys are
-URI schemes and the values are paths to :ref:`Item exporter <topics-exporters>`
-classes.
+serialization formats and the values are paths to :ref:`Item exporter
+<topics-exporters>` classes.
 
 .. setting:: FEED_EXPORTERS_BASE
 
 FEED_EXPORTERS_BASE
 -------------------
-
 Default::
 
-    FEED_EXPORTERS_BASE = {
+    {
         'json': 'scrapy.exporters.JsonItemExporter',
         'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+        'jl': 'scrapy.exporters.JsonLinesItemExporter',
         'csv': 'scrapy.exporters.CsvItemExporter',
         'xml': 'scrapy.exporters.XmlItemExporter',
         'marshal': 'scrapy.exporters.MarshalItemExporter',
+        'pickle': 'scrapy.exporters.PickleItemExporter',
     }
 
-A dict containing the built-in feed exporters supported by Scrapy.
+A dict containing the built-in feed exporters supported by Scrapy. You can
+disable any of these exporters by assigning ``None`` to their serialization
+format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
+(without replacement), place this in your ``settings.py``::
 
+    FEED_EXPORTERS = {
+        'csv': None,
+    }
 
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/

@@ -138,6 +138,7 @@ DEPRECATION_RULES = [
     ('scrapy.command.', 'scrapy.commands.'),
     ('scrapy.dupefilter.', 'scrapy.dupefilters.'),
     ('scrapy.linkextractor.', 'scrapy.linkextractors.'),
+    ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
     ('scrapy.spider.', 'scrapy.spiders.'),
     ('scrapy.squeue.', 'scrapy.squeues.'),
     ('scrapy.statscol.', 'scrapy.statscollectors.'),
