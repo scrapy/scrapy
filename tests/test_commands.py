@@ -83,7 +83,8 @@ class StartprojectTemplatesTest(ProjectTest):
         
     def test_startproject_template_override(self):
         copytree(join(scrapy.__path__[0], 'templates'), self.tmpl)
-        os.mknod(join(self.tmpl_proj, 'root_template'))
+        with open(join(self.tmpl_proj, 'root_template'), 'w'):
+            pass
         assert exists(join(self.tmpl_proj, 'root_template'))
 
         args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
