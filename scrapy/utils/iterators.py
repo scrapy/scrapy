@@ -8,6 +8,8 @@ except ImportError:
     from io import BytesIO
 
 import six
+if six.PY3:
+    from io import StringIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
@@ -65,7 +67,7 @@ class _StreamReader(object):
             self._text, self.encoding = obj.body, obj.encoding
         else:
             self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, unicode)
+        self._is_unicode = isinstance(self._text, six.text_type)
 
     def read(self, n=65535):
         self.read = self._read_unicode if self._is_unicode else self._read_string
@@ -94,7 +96,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
-    
+
     quotechar is the character used to enclosure fields on the given obj.
     """
 
@@ -102,7 +104,11 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     def _getrow(csv_r):
         return [to_unicode(field, encoding) for field in next(csv_r)]
 
-    lines = BytesIO(_body_or_str(obj, unicode=False))
+    # Python 3 csv reader input object needs to return strings
+    if six.PY3:
+        lines = StringIO(_body_or_str(obj, unicode=True))
+    else:
+        lines = BytesIO(_body_or_str(obj, unicode=False))
 
     kwargs = {}
     if delimiter: kwargs["delimiter"] = delimiter
@@ -125,7 +131,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, six.string_types)), \
+    assert isinstance(obj, (Response, six.string_types, six.binary_type)), \
         "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
         if not unicode:
