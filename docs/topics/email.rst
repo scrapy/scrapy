@@ -76,7 +76,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         :param settings: the e-mail recipients
         :type settings: :class:`scrapy.settings.Settings` object
 
-    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain')
+    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
 
         Send email to the given recipients.
 
@@ -101,6 +101,9 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
         :param mimetype: the MIME type of the e-mail
         :type mimetype: str
+
+        :param charset: the character encoding to use for the e-mail contents
+        :type charset: str
 
 
 .. _topics-email-settings:
