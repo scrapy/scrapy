@@ -115,6 +115,7 @@ class ItemLoader(object):
             value = self.get_output_value(field_name)
             if value is not None:
                 item[field_name] = value
+
         return item
 
     def get_output_value(self, field_name):

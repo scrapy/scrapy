@@ -248,8 +248,9 @@ class BasicItemLoaderTest(unittest.TestCase):
         i['summary'] = u'lala'
 
         output = []
+        item = i
         for times in range(10):
-            il = DefaultedItemLoader(item=i)
+            il = DefaultedItemLoader(item=item)
             il.add_value('name', u'lolo')
             output.append(u'lol')
             item = il.load_item()
