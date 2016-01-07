@@ -34,7 +34,7 @@ class ItemLoader(object):
         self.context = context
         self.parent = parent
         self._local_item = context['item'] = item
-        self._local_values = defaultdict(list)
+        self._local_values = defaultdict(list, item)
 
     @property
     def _values(self):
@@ -114,10 +114,7 @@ class ItemLoader(object):
         for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
-                if item.get(field_name) and isinstance(item[field_name], list):
-                    item[field_name] += value
-                else:
-                    item[field_name] = value
+                item[field_name] = value
         return item
 
     def get_output_value(self, field_name):
