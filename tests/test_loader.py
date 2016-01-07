@@ -210,14 +210,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'mart'])
 
-    def test_load_item_from_previous_item(self):
-        il1 = DefaultedItemLoader()
-        il1.add_value('name', u'marta')
-
-        il2 = DefaultedItemLoader(item=il1.load_item())
-        self.assertEqual(il2.load_item()['name'], [u'mart'])
-
-    def test_load_item_from_previous_item_with_no_output_value(self):
+    def test_load_item_and_output_value_from_previous_item(self):
         il1 = DefaultedItemLoader()
         il1.add_value('name', u'marta')
 
