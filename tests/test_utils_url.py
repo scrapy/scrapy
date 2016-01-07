@@ -122,14 +122,16 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
                                           "http://www.example.com/do?a=1&q=a+space")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_normalize_percent_encoding_in_paths(self):
-        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
+        self.assertEqual(canonicalize_url("http://www.example.com/a%c2%b1b"),
+                                          "http://www.example.com/a%C2%B1b"),
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do", encoding='latin-1'),
                                           "http://www.example.com/a%A3do"),
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_normalize_percent_encoding_in_query_arguments(self):
-        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=a%c2%b1b"),
+                                          "http://www.example.com/do?k=a%C2%B1b")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3", encoding='latin-1'),
                                           "http://www.example.com/do?k=b%A3")
 
     def test_non_ascii_percent_encoding_in_paths(self):
@@ -166,14 +168,15 @@ class CanonicalizeUrlTest(unittest.TestCase):
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html"),
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_safe_characters_unicode(self):
         # urllib.quote uses a mapping cache of encoded characters. when parsing
         # an already percent-encoded url, it will fail if that url was not
         # percent-encoded as utf-8, that's why canonicalize_url must always
         # convert the urls to string. the following test asserts that
         # functionality.
-        self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
+        self.assertEqual(canonicalize_url(u'http://www.example.com/caf%C3%A9-con-leche.htm'),
+                                           'http://www.example.com/caf%C3%A9-con-leche.htm')
+        self.assertEqual(canonicalize_url(u'http://www.example.com/caf%e9-con-leche.htm', encoding='latin-1'),
                                            'http://www.example.com/caf%E9-con-leche.htm')
 
     def test_domains_are_case_insensitive(self):
@@ -188,7 +191,7 @@ class CanonicalizeUrlTest(unittest.TestCase):
 
 
 class AddHttpIfNoScheme(unittest.TestCase):
-    
+
     def test_add_scheme(self):
         self.assertEqual(add_http_if_no_scheme('www.example.com'),
                                                'http://www.example.com')
@@ -216,7 +219,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
     def test_username_password(self):
         self.assertEqual(add_http_if_no_scheme('username:password@www.example.com'),
                                                'http://username:password@www.example.com')
-    
+
     def test_complete_url(self):
         self.assertEqual(add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
                                                'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
