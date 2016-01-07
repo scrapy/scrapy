@@ -210,6 +210,40 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'mart'])
 
+    def test_load_item_from_previous_item(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        self.assertEqual(il2.load_item()['name'], [u'mart'])
+
+    def test_load_item_from_previous_item_with_no_output_value(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        self.assertEqual(il2.get_output_value('name'), [])
+        self.assertEqual(il2.load_item()['name'], [u'mart'])
+
+    def test_load_item_from_previous_item_adding_more_values(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        il2.add_value('name', u'maria')
+        self.assertEqual(il2.get_output_value('name'), [u'mari'])
+        self.assertEqual(il2.load_item()['name'], [u'mart', u'mari'])
+
+    def test_load_item_from_previous_item_adding_item_without_field_type(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        item = il1.load_item()
+        il2 = DefaultedItemLoader(item=item)
+        il2.add_value(None, item)
+        self.assertEqual(il2.get_output_value('name'), [u'mar'])
+        self.assertEqual(il2.load_item()['name'], [u'mart', u'mar'])
+
     def test_inherited_default_input_processor(self):
         class InheritDefaultedItemLoader(DefaultedItemLoader):
             pass

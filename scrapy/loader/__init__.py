@@ -114,8 +114,10 @@ class ItemLoader(object):
         for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
-                item[field_name] = value
-
+                if item.get(field_name) and isinstance(item[field_name], list):
+                    item[field_name] += value
+                else:
+                    item[field_name] = value
         return item
 
     def get_output_value(self, field_name):
