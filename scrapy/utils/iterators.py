@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def xmliter(obj, nodename):
     """Return a iterator of Selector's over all nodes of a XML document,
-       given tha name of the node to iterate. Useful for parsing XML feeds.
+       given the name of the node to iterate. Useful for parsing XML feeds.
 
     obj can be:
     - a Response object
@@ -36,7 +36,7 @@ def xmliter(obj, nodename):
     header_end = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end[1]:].strip() if header_end else ''
 
-    r = re.compile(r"<{0}[\s>].*?</{0}>".format(nodename_patt), re.DOTALL)
+    r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
@@ -49,7 +49,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
-        nodetext = etree.tostring(node)
+        nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
@@ -94,7 +94,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
-    
+
     quotechar is the character used to enclosure fields on the given obj.
     """
 
@@ -125,7 +125,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, six.string_types)), \
+    assert isinstance(obj, (Response, six.string_types, bytes)), \
         "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
         if not unicode:

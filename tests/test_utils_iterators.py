@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from twisted.trial import unittest
 
@@ -45,6 +46,54 @@ class XmliterTestCase(unittest.TestCase):
                  for e in self.xmliter(response, 'matchme...')]
         self.assertEqual(nodenames, [['matchme...']])
 
+    def test_xmliter_unicode(self):
+        # example taken from https://github.com/scrapy/scrapy/issues/1665
+        body = """<?xml version="1.0" encoding="UTF-8"?>
+            <þingflokkar>
+               <þingflokkur id="26">
+                  <heiti />
+                  <skammstafanir>
+                     <stuttskammstöfun>-</stuttskammstöfun>
+                     <löngskammstöfun />
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>80</fyrstaþing>
+                  </tímabil>
+               </þingflokkur>
+               <þingflokkur id="21">
+                  <heiti>Alþýðubandalag</heiti>
+                  <skammstafanir>
+                     <stuttskammstöfun>Ab</stuttskammstöfun>
+                     <löngskammstöfun>Alþb.</löngskammstöfun>
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>76</fyrstaþing>
+                     <síðastaþing>123</síðastaþing>
+                  </tímabil>
+               </þingflokkur>
+               <þingflokkur id="27">
+                  <heiti>Alþýðuflokkur</heiti>
+                  <skammstafanir>
+                     <stuttskammstöfun>A</stuttskammstöfun>
+                     <löngskammstöfun>Alþfl.</löngskammstöfun>
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>27</fyrstaþing>
+                     <síðastaþing>120</síðastaþing>
+                  </tímabil>
+               </þingflokkur>
+            </þingflokkar>"""
+        response = XmlResponse(url="http://example.com", body=body)
+        attrs = []
+        for x in self.xmliter(response, u'þingflokkur'):
+            attrs.append((x.xpath('@id').extract(),
+                          x.xpath(u'./skammstafanir/stuttskammstöfun/text()').extract(),
+                          x.xpath(u'./tímabil/fyrstaþing/text()').extract()))
+
+        self.assertEqual(attrs,
+                         [([u'26'], [u'-'], [u'80']),
+                          ([u'21'], [u'Ab'], [u'76']),
+                          ([u'27'], [u'A'], [u'27'])])
 
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
@@ -206,7 +255,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_csviter_quotechar(self):
         body1 = get_testdata('feeds', 'feed-sample6.csv')
         body2 = get_testdata('feeds', 'feed-sample6.csv').replace(",", '|')
-        
+
         response1 = TextResponse(url="http://example.com/", body=body1)
         csv1 = csviter(response1, quotechar="'")
 
