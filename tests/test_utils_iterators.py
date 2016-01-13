@@ -49,7 +49,7 @@ class XmliterTestCase(unittest.TestCase):
 
     def test_xmliter_unicode(self):
         # example taken from https://github.com/scrapy/scrapy/issues/1665
-        body = """<?xml version="1.0" encoding="UTF-8"?>
+        body = u"""<?xml version="1.0" encoding="UTF-8"?>
             <þingflokkar>
                <þingflokkur id="26">
                   <heiti />
@@ -84,7 +84,22 @@ class XmliterTestCase(unittest.TestCase):
                   </tímabil>
                </þingflokkur>
             </þingflokkar>"""
-        response = XmlResponse(url="http://example.com", body=body)
+
+        # with bytes
+        response = XmlResponse(url="http://example.com", body=body.encode('utf-8'))
+        attrs = []
+        for x in self.xmliter(response, u'þingflokkur'):
+            attrs.append((x.xpath('@id').extract(),
+                          x.xpath(u'./skammstafanir/stuttskammstöfun/text()').extract(),
+                          x.xpath(u'./tímabil/fyrstaþing/text()').extract()))
+
+        self.assertEqual(attrs,
+                         [([u'26'], [u'-'], [u'80']),
+                          ([u'21'], [u'Ab'], [u'76']),
+                          ([u'27'], [u'A'], [u'27'])])
+
+        # Unicode body needs encoding information
+        response = XmlResponse(url="http://example.com", body=body, encoding='utf-8')
         attrs = []
         for x in self.xmliter(response, u'þingflokkur'):
             attrs.append((x.xpath('@id').extract(),

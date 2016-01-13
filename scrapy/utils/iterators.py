@@ -48,7 +48,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
-        nodetext = etree.tostring(node, encoding='unicode')
+        nodetext = etree.tostring(node, encoding=six.text_type)
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
@@ -128,8 +128,11 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, six.string_types, bytes)), \
-        "obj must be Response or basestring, not %s" % type(obj).__name__
+    expected_types = (Response, six.text_type, six.binary_type)
+    assert isinstance(obj, expected_types), \
+        "obj must be %s, not %s" % (
+            " or ".join(t.__name__ for t in expected_types),
+            type(obj).__name__)
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
