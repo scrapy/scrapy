@@ -16,7 +16,6 @@ tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_proxy_connect.py
 tests/test_spidermiddleware_httperror.py
-tests/test_utils_iterators.py
 tests/test_utils_template.py
 tests/test_webclient.py
 
