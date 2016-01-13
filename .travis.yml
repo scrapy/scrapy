@@ -9,6 +9,7 @@ env:
  - TOXENV=py27
  - TOXENV=precise
  - TOXENV=py33
+ - TOXENV=py34
  - TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
