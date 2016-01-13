@@ -85,31 +85,22 @@ class XmliterTestCase(unittest.TestCase):
                </þingflokkur>
             </þingflokkar>"""
 
-        # with bytes
-        response = XmlResponse(url="http://example.com", body=body.encode('utf-8'))
-        attrs = []
-        for x in self.xmliter(response, u'þingflokkur'):
-            attrs.append((x.xpath('@id').extract(),
-                          x.xpath(u'./skammstafanir/stuttskammstöfun/text()').extract(),
-                          x.xpath(u'./tímabil/fyrstaþing/text()').extract()))
+        for r in (
+            # with bytes
+            XmlResponse(url="http://example.com", body=body.encode('utf-8')),
+            # Unicode body needs encoding information
+            XmlResponse(url="http://example.com", body=body, encoding='utf-8')):
 
-        self.assertEqual(attrs,
-                         [([u'26'], [u'-'], [u'80']),
-                          ([u'21'], [u'Ab'], [u'76']),
-                          ([u'27'], [u'A'], [u'27'])])
+            attrs = []
+            for x in self.xmliter(r, u'þingflokkur'):
+                attrs.append((x.xpath('@id').extract(),
+                              x.xpath(u'./skammstafanir/stuttskammstöfun/text()').extract(),
+                              x.xpath(u'./tímabil/fyrstaþing/text()').extract()))
 
-        # Unicode body needs encoding information
-        response = XmlResponse(url="http://example.com", body=body, encoding='utf-8')
-        attrs = []
-        for x in self.xmliter(response, u'þingflokkur'):
-            attrs.append((x.xpath('@id').extract(),
-                          x.xpath(u'./skammstafanir/stuttskammstöfun/text()').extract(),
-                          x.xpath(u'./tímabil/fyrstaþing/text()').extract()))
-
-        self.assertEqual(attrs,
-                         [([u'26'], [u'-'], [u'80']),
-                          ([u'21'], [u'Ab'], [u'76']),
-                          ([u'27'], [u'A'], [u'27'])])
+            self.assertEqual(attrs,
+                             [([u'26'], [u'-'], [u'80']),
+                              ([u'21'], [u'Ab'], [u'76']),
+                              ([u'27'], [u'A'], [u'27'])])
 
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
