@@ -160,6 +160,10 @@ class XmliterTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, next, iter)
 
+    def test_xmliter_objtype_exception(self):
+        i = self.xmliter(42, 'product')
+        self.assertRaises(AssertionError, next, i)
+
     def test_xmliter_encoding(self):
         body = b'<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
         response = XmlResponse('http://www.example.com', body=body)
@@ -233,6 +237,9 @@ class LxmlXmliterTestCase(XmliterTestCase):
         node = next(my_iter)
         self.assertEqual(node.xpath('f:name/text()').extract(), ['African Coffee Table'])
 
+    def test_xmliter_objtype_exception(self):
+        i = self.xmliter(42, 'product')
+        self.assertRaises(TypeError, next, i)
 
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
