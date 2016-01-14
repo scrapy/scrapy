@@ -223,7 +223,7 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
     @defer.inlineCallbacks
@@ -234,7 +234,7 @@ class Http11TestCase(HttpTestCase):
         # response body. (regardless of headers)
         d = self.download_request(request, Spider('foo', download_maxsize=10))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         yield d
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
@@ -257,7 +257,7 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo', download_maxsize=100))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
 
