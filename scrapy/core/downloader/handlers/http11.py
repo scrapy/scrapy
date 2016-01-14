@@ -6,7 +6,7 @@ from io import BytesIO
 from time import time
 from six.moves.urllib.parse import urldefrag
 
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
@@ -265,8 +265,8 @@ class ScrapyAgent(object):
         return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
 
 
+@implementer(IBodyProducer)
 class _RequestBodyProducer(object):
-    implements(IBodyProducer)
 
     def __init__(self, body):
         self.body = body

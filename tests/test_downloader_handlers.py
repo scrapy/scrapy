@@ -10,9 +10,7 @@ from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
-from twisted.protocols.ftp import FTPRealm, FTPFactory
 from twisted.cred import portal, checkers, credentials
-from twisted.protocols.ftp import FTPClient, ConnectionLost
 from w3lib.url import path_to_file_uri
 
 from scrapy import twisted_version
@@ -22,7 +20,6 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownlo
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
 from scrapy.spiders import Spider
 from scrapy.http import Request
@@ -520,6 +517,9 @@ class FTPTestCase(unittest.TestCase):
         skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
 
     def setUp(self):
+        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
         # setup dirs and test file
         self.directory = self.mktemp()
         os.mkdir(self.directory)
@@ -601,6 +601,8 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_invalid_credentials(self):
+        from twisted.protocols.ftp import ConnectionLost
+
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": 'invalid'})
         d = self.download_handler.download_request(request, None)
