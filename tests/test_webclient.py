@@ -220,7 +220,7 @@ class WebClientTestCase(unittest.TestCase):
         os.mkdir(name)
         FilePath(name).child("file").setContent(b"0123456789")
         r = static.File(name)
-        r.putChild(b"redirect", util.Redirect("/file"))
+        r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"error", ErrorResource())
         r.putChild(b"nolength", NoLengthResource())
