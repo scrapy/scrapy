@@ -483,7 +483,7 @@ Using this, you can build complex crawlers that follow links according to rules
 you define, and extract different kinds of data depending on the page it's
 visiting.
 
-A common pattern is a callback method that extract some items, looks for a link
+A common pattern is a callback method that extracts some items, looks for a link
 to follow to the next page and then yields a `Request` with the same callback
 for it::
 
