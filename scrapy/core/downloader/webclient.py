@@ -12,13 +12,15 @@ from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
+    b = lambda x: to_bytes(x, encoding='ascii')
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    host = parsed.hostname
+    path = to_bytes(path)  # FIXME
+    host = b(parsed.hostname)  # FIXME
     port = parsed.port
-    scheme = parsed.scheme
-    netloc = parsed.netloc
+    scheme = b(parsed.scheme)
+    netloc = b(parsed.netloc)  # FIXME - host + port
     if port is None:
-        port = 443 if scheme == 'https' else 80
+        port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
 
 
@@ -36,11 +38,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.headers = Headers() # bucket for response headers
 
         # Method command
-        self.sendCommand(
-            to_bytes(self.factory.method, encoding='ascii'),
-            # XXX - do we need to percent-encode path somewhere?
-            # https://en.wikipedia.org/wiki/Percent-encoding#Character_data
-            to_bytes(self.factory.path))
+        self.sendCommand(self.factory.method, self.factory.path)
         # Headers
         for key, values in self.factory.headers.items():
             for value in values:
@@ -96,8 +94,10 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     afterFoundGet = False
 
     def __init__(self, request, timeout=180):
-        self.url = urldefrag(request.url)[0]
-        self.method = request.method
+        self._url = urldefrag(request.url)[0]
+        # converting to bytes to comply to Twisted interface
+        self.url = to_bytes(self._url)  # FIXME
+        self.method = to_bytes(request.method, encoding='ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
         self.response_headers = None
@@ -131,11 +131,11 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         request.meta['download_latency'] = self.headers_time-self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self.url)
+        respcls = responsetypes.from_args(headers=headers, url=self._url)
         # XXX - scrapy response stores body as bytes,
         # but maybe it makes sense to be able to store unicode?
         body = to_bytes(body)
-        return respcls(url=self.url, status=status, headers=headers, body=body)
+        return respcls(url=self._url, status=status, headers=headers, body=body)
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
