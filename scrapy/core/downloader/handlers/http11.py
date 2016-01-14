@@ -19,6 +19,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
 
 logger = logging.getLogger(__name__)
@@ -200,8 +201,8 @@ class ScrapyAgent(object):
         agent = self._get_agent(request, timeout)
 
         # request details
-        url = urldefrag(request.url)[0]
-        method = request.method
+        url = to_bytes(urldefrag(request.url)[0])
+        method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader('Proxy-Authorization')
@@ -261,8 +262,10 @@ class ScrapyAgent(object):
         txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
+        url = to_unicode(url)
         respcls = responsetypes.from_args(headers=headers, url=url)
-        return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
+        return respcls(
+            url=url, status=status, headers=headers, body=body, flags=flags)
 
 
 @implementer(IBodyProducer)

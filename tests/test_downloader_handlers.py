@@ -88,7 +88,7 @@ class FileTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.url, request.url)
             self.assertEquals(response.status, 200)
-            self.assertEquals(response.body, '0123456789')
+            self.assertEquals(response.body, b'0123456789')
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
@@ -107,15 +107,15 @@ class HttpTestCase(unittest.TestCase):
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
-        FilePath(name).child("file").setContent("0123456789")
+        FilePath(name).child("file").setContent(b"0123456789")
         r = static.File(name)
-        r.putChild("redirect", util.Redirect("/file"))
-        r.putChild("wait", ForeverTakingResource())
-        r.putChild("hang-after-headers", ForeverTakingResource(write=True))
-        r.putChild("nolength", NoLengthResource())
-        r.putChild("host", HostHeaderResource())
-        r.putChild("payload", PayloadResource())
-        r.putChild("broken", BrokenDownloadResource())
+        r.putChild(b"redirect", util.Redirect(b"/file"))
+        r.putChild(b"wait", ForeverTakingResource())
+        r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
+        r.putChild(b"nolength", NoLengthResource())
+        r.putChild(b"host", HostHeaderResource())
+        r.putChild(b"payload", PayloadResource())
+        r.putChild(b"broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
@@ -136,7 +136,7 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
     def test_download_head(self):
