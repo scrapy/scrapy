@@ -132,6 +132,9 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self.url)
+        # XXX - scrapy response stores body as bytes,
+        # but maybe it makes sense to be able to store unicode?
+        body = to_bytes(body)
         return respcls(url=self.url, status=status, headers=headers, body=body)
 
     def _set_connection_attributes(self, request):
