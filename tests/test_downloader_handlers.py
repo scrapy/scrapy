@@ -1,5 +1,4 @@
 import os
-import twisted
 import six
 
 from twisted.trial import unittest
@@ -25,6 +24,7 @@ from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
+from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
 from tests.mockserver import MockServer
@@ -143,7 +143,7 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('file'), method='HEAD')
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, '')
+        d.addCallback(self.assertEquals, b'')
         return d
 
     def test_redirect_status(self):
@@ -175,7 +175,7 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, '127.0.0.1:%d' % self.portno)
+            self.assertEquals(response.body, to_bytes('127.0.0.1:%d' % self.portno))
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -183,19 +183,19 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_seted_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, 'example.com')
-            self.assertEquals(request.headers.get('Host'), 'example.com')
+            self.assertEquals(response.body, b'example.com')
+            self.assertEquals(request.headers.get('Host'), b'example.com')
 
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, 'example.com')
+        d.addCallback(self.assertEquals, b'example.com')
         return d
 
     def test_payload(self):
-        body = '1'*100 # PayloadResource requires body length to be 100
+        body = b'1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)

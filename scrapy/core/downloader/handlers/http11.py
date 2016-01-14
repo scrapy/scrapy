@@ -182,7 +182,7 @@ class ScrapyAgent(object):
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             omitConnectTunnel = proxyParams.find('noconnect') >= 0
-            if  scheme == 'https' and not omitConnectTunnel:
+            if  scheme == b'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
                              request.headers.get('Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
@@ -233,7 +233,7 @@ class ScrapyAgent(object):
     def _cb_bodyready(self, txresponse, request):
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
-            return txresponse, '', None
+            return txresponse, b'', None
 
         maxsize = request.meta.get('download_maxsize', self._maxsize)
         warnsize = request.meta.get('download_warnsize', self._warnsize)
