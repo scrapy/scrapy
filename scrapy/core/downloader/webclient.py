@@ -65,7 +65,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.factory.noPage(reason)
 
     def handleResponse(self, response):
-        if self.factory.method.upper() == 'HEAD':
+        if self.factory.method.upper() == b'HEAD':
             self.factory.page('')
         elif self.length is not None and self.length > 0:
             self.factory.noPage(self._connection_lost_reason)
@@ -123,7 +123,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
         # Content-Length must be specified in POST method even with no body
-        elif self.method == 'POST':
+        elif self.method == b'POST':
             self.headers['Content-Length'] = 0
 
     def _build_response(self, body, request):

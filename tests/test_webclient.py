@@ -68,6 +68,8 @@ class ParseUrlTestCase(unittest.TestCase):
     )
 
         for url, test in tests:
+            test = tuple(
+                to_bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEquals(client._parse(url), test, url)
 
     def test_externalUnicodeInterference(self):
@@ -82,10 +84,10 @@ class ParseUrlTestCase(unittest.TestCase):
             goodInput, badInput = badInput, goodInput
         urlparse(badInput)
         scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, str))
-        self.assertTrue(isinstance(netloc, str))
-        self.assertTrue(isinstance(host, str))
-        self.assertTrue(isinstance(path, str))
+        self.assertTrue(isinstance(scheme, bytes))
+        self.assertTrue(isinstance(netloc, bytes))
+        self.assertTrue(isinstance(host, bytes))
+        self.assertTrue(isinstance(path, bytes))
         self.assertTrue(isinstance(port, int))
 
 
@@ -317,9 +319,9 @@ class WebClientTestCase(unittest.TestCase):
 
     def testFactoryInfo(self):
         url = self.getURL('file')
-        scheme, netloc, host, port, path = client._parse(url)
+        _, _, host, port, _ = client._parse(url)
         factory = client.ScrapyHTTPClientFactory(Request(url))
-        reactor.connectTCP(host, port, factory)
+        reactor.connectTCP(to_unicode(host), port, factory)
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
     def _cbFactoryInfo(self, ignoredResult, factory):
