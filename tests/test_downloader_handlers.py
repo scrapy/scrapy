@@ -515,6 +515,8 @@ class FTPTestCase(unittest.TestCase):
 
     if twisted_version < (10, 2, 0):
         skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
+    if six.PY3:
+        skip = "Twisted missing ftp support for PY3"
 
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
