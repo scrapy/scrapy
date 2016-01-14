@@ -105,22 +105,22 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 'Useful': 'value'}))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Content-Length: 9\r\n"
-            "Useful: value\r\n"
-            "Connection: close\r\n"
-            "User-Agent: fooble\r\n"
-            "Host: example.net\r\n"
-            "Cookie: blah blah\r\n"
-            "\r\n"
-            "some data")
+            b"GET /bar HTTP/1.0\r\n"
+            b"Content-Length: 9\r\n"
+            b"Useful: value\r\n"
+            b"Connection: close\r\n"
+            b"User-Agent: fooble\r\n"
+            b"Host: example.net\r\n"
+            b"Cookie: blah blah\r\n"
+            b"\r\n"
+            b"some data")
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "\r\n")
+            b"GET /bar HTTP/1.0\r\n"
+            b"Host: foo\r\n"
+            b"\r\n")
 
         # test a simple POST with body and content-type
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -130,13 +130,13 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers={'Content-Type': 'application/x-www-form-urlencoded'}))
 
         self._test(factory,
-            "POST /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "Connection: close\r\n"
-            "Content-Type: application/x-www-form-urlencoded\r\n"
-            "Content-Length: 10\r\n"
-            "\r\n"
-            "name=value")
+            b"POST /bar HTTP/1.0\r\n"
+            b"Host: foo\r\n"
+            b"Connection: close\r\n"
+            b"Content-Type: application/x-www-form-urlencoded\r\n"
+            b"Content-Length: 10\r\n"
+            b"\r\n"
+            b"name=value")
 
         # test a POST method with no body provided
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -145,10 +145,10 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         ))
 
         self._test(factory,
-                   "POST /bar HTTP/1.0\r\n"
-                   "Host: foo\r\n"
-                   "Content-Length: 0\r\n"
-                   "\r\n")
+            b"POST /bar HTTP/1.0\r\n"
+            b"Host: foo\r\n"
+            b"Content-Length: 0\r\n"
+            b"\r\n")
 
         # test with single and multivalued headers
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -159,12 +159,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 }))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "X-Meta-Multivalued: value1\r\n"
-            "X-Meta-Multivalued: value2\r\n"
-            "X-Meta-Single: single\r\n"
-            "\r\n")
+            b"GET /bar HTTP/1.0\r\n"
+            b"Host: foo\r\n"
+            b"X-Meta-Multivalued: value1\r\n"
+            b"X-Meta-Multivalued: value2\r\n"
+            b"X-Meta-Single: single\r\n"
+            b"\r\n")
 
         # same test with single and multivalued headers but using Headers class
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -175,12 +175,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 })))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "X-Meta-Multivalued: value1\r\n"
-            "X-Meta-Multivalued: value2\r\n"
-            "X-Meta-Single: single\r\n"
-            "\r\n")
+            b"GET /bar HTTP/1.0\r\n"
+            b"Host: foo\r\n"
+            b"X-Meta-Multivalued: value1\r\n"
+            b"X-Meta-Multivalued: value2\r\n"
+            b"X-Meta-Single: single\r\n"
+            b"\r\n")
 
     def _test(self, factory, testvalue):
         transport = StringTransport()
@@ -199,10 +199,10 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol = client.ScrapyHTTPPageGetter()
         protocol.factory = factory
         protocol.headers = Headers()
-        protocol.dataReceived("HTTP/1.0 200 OK\n")
-        protocol.dataReceived("Hello: World\n")
-        protocol.dataReceived("Foo: Bar\n")
-        protocol.dataReceived("\n")
+        protocol.dataReceived(b"HTTP/1.0 200 OK\n")
+        protocol.dataReceived(b"Hello: World\n")
+        protocol.dataReceived(b"Foo: Bar\n")
+        protocol.dataReceived(b"\n")
         self.assertEqual(protocol.headers,
             Headers({'Hello': ['World'], 'Foo': ['Bar']}))
 
