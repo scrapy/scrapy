@@ -12,13 +12,12 @@ from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
-    b = lambda x: to_bytes(x, encoding='ascii')
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = to_bytes(path)  # FIXME
-    host = b(parsed.hostname)  # FIXME
+    path = to_bytes(path)
+    host = to_bytes(parsed.hostname)
     port = parsed.port
-    scheme = b(parsed.scheme)
-    netloc = b(parsed.netloc)  # FIXME - host + port
+    scheme = to_bytes(parsed.scheme, encoding='ascii')
+    netloc = to_bytes(parsed.netloc)
     if port is None:
         port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
@@ -96,7 +95,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def __init__(self, request, timeout=180):
         self._url = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = to_bytes(self._url)  # FIXME
+        self.url = to_bytes(self._url)
         self.method = to_bytes(request.method, encoding='ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
