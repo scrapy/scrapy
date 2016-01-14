@@ -4,7 +4,6 @@ tests/test_command_shell.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
-tests/test_downloader_handlers.py
 tests/test_downloadermiddleware_httpcache.py
 tests/test_downloadermiddleware_httpcompression.py
 tests/test_downloadermiddleware_httpproxy.py
@@ -25,8 +24,6 @@ scrapy/xlib/tx/client.py
 scrapy/xlib/tx/_newclient.py
 scrapy/xlib/tx/__init__.py
 scrapy/core/downloader/handlers/s3.py
-scrapy/core/downloader/handlers/http11.py
-scrapy/core/downloader/handlers/http.py
 scrapy/core/downloader/handlers/ftp.py
 scrapy/pipelines/images.py
 scrapy/pipelines/files.py
