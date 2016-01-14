@@ -3,6 +3,7 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
+import six
 from six.moves.urllib.parse import urlparse
 
 from twisted.trial import unittest
@@ -75,8 +76,10 @@ class ParseUrlTestCase(unittest.TestCase):
         elements of its return tuple, even when passed an URL which has
         previously been passed to L{urlparse} as a C{unicode} string.
         """
-        badInput = u'http://example.com/path'
-        goodInput = badInput.encode('ascii')
+        goodInput = u'http://example.com/path'
+        badInput = goodInput.encode('ascii')
+        if six.PY2:
+            goodInput, badInput = badInput, goodInput
         urlparse(badInput)
         scheme, netloc, host, port, path = self._parse(goodInput)
         self.assertTrue(isinstance(scheme, str))
