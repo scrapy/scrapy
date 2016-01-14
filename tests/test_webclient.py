@@ -240,14 +240,17 @@ class WebClientTestCase(unittest.TestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(self.assertEquals, s)
+        return getPage(self.getURL("payload"), body=s).addCallback(
+            self.assertEquals, to_bytes(s))
 
     def testHostHeader(self):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
         return defer.gatherResults([
-            getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
-            getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
+            getPage(self.getURL("host")).addCallback(
+                self.assertEquals, to_bytes("127.0.0.1:%d" % self.portno)),
+            getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
+                self.assertEquals, to_bytes("www.example.com"))])
 
 
     def test_getPage(self):
@@ -280,7 +283,8 @@ class WebClientTestCase(unittest.TestCase):
         called back with the contents of the page.
         """
         d = getPage(self.getURL("host"), timeout=100)
-        d.addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno)
+        d.addCallback(
+            self.assertEquals, to_bytes("127.0.0.1:%d" % self.portno))
         return d
 
 
@@ -309,7 +313,7 @@ class WebClientTestCase(unittest.TestCase):
         return getPage(self.getURL('notsuchfile')).addCallback(self._cbNoSuchFile)
 
     def _cbNoSuchFile(self, pageData):
-        self.assert_('404 - No Such Resource' in pageData)
+        self.assert_(b'404 - No Such Resource' in pageData)
 
     def testFactoryInfo(self):
         url = self.getURL('file')
@@ -329,6 +333,6 @@ class WebClientTestCase(unittest.TestCase):
 
     def _cbRedirect(self, pageData):
         self.assertEquals(pageData,
-                '\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
-                '    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-                '<a href="/file">click here</a>\n    </body>\n</html>\n')
+                b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
+                b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
+                b'<a href="/file">click here</a>\n    </body>\n</html>\n')
