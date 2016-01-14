@@ -14,18 +14,21 @@ from twisted.protocols.policies import WrappingFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.http import Request, Headers
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 def getPage(url, contextFactory=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
-    def _clientfactory(*args, **kwargs):
+    def _clientfactory(url, *args, **kwargs):
+        url = to_unicode(url)
         timeout = kwargs.pop('timeout', 0)
-        f = client.ScrapyHTTPClientFactory(Request(*args, **kwargs), timeout=timeout)
+        f = client.ScrapyHTTPClientFactory(
+            Request(url, *args, **kwargs), timeout=timeout)
         f.deferred.addCallback(lambda r: r.body)
         return f
 
     from twisted.web.client import _makeGetterFactory
-    return _makeGetterFactory(url, _clientfactory,
+    return _makeGetterFactory(to_bytes(url), _clientfactory,
         contextFactory=contextFactory, *args, **kwargs).deferred
 
 
@@ -212,7 +215,7 @@ class WebClientTestCase(unittest.TestCase):
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
-        FilePath(name).child("file").setContent("0123456789")
+        FilePath(name).child("file").setContent(b"0123456789")
         r = static.File(name)
         r.putChild("redirect", util.Redirect("/file"))
         r.putChild("wait", ForeverTakingResource())
@@ -250,7 +253,7 @@ class WebClientTestCase(unittest.TestCase):
         the body of the response if the default method B{GET} is used.
         """
         d = getPage(self.getURL("file"))
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
 
