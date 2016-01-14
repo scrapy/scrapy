@@ -323,10 +323,10 @@ class WebClientTestCase(unittest.TestCase):
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
     def _cbFactoryInfo(self, ignoredResult, factory):
-        self.assertEquals(factory.status, '200')
-        self.assert_(factory.version.startswith('HTTP/'))
-        self.assertEquals(factory.message, 'OK')
-        self.assertEquals(factory.response_headers['content-length'], '10')
+        self.assertEquals(factory.status, b'200')
+        self.assert_(factory.version.startswith(b'HTTP/'))
+        self.assertEquals(factory.message, b'OK')
+        self.assertEquals(factory.response_headers[b'content-length'], b'10')
 
     def testRedirect(self):
         return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
