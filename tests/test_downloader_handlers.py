@@ -351,7 +351,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, 'http://example.com')
+            self.assertEquals(response.body, b'http://example.com')
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -361,7 +361,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, 'https://example.com')
+            self.assertEquals(response.body, b'https://example.com')
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
@@ -371,7 +371,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, '/path/to/resource')
+            self.assertEquals(response.body, b'/path/to/resource')
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, Spider('foo')).addCallback(_test)

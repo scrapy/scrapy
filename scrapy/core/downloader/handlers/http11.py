@@ -181,10 +181,11 @@ class ScrapyAgent(object):
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            omitConnectTunnel = proxyParams.find('noconnect') >= 0
+            proxyHost = to_unicode(proxyHost)
+            omitConnectTunnel = proxyParams.find(b'noconnect') >= 0
             if  scheme == b'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
-                             request.headers.get('Proxy-Authorization', None))
+                             request.headers.get(b'Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
@@ -205,7 +206,7 @@ class ScrapyAgent(object):
         method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
-            headers.removeHeader('Proxy-Authorization')
+            headers.removeHeader(b'Proxy-Authorization')
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
