@@ -7,6 +7,7 @@ from twisted.internet import defer
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
 from scrapy.responsetypes import responsetypes
 
 
@@ -29,13 +30,17 @@ def _parse(url):
 
 class ScrapyHTTPPageGetter(HTTPClient):
 
-    delimiter = '\n'
+    delimiter = b'\n'
 
     def connectionMade(self):
         self.headers = Headers() # bucket for response headers
 
         # Method command
-        self.sendCommand(self.factory.method, self.factory.path)
+        self.sendCommand(
+            to_bytes(self.factory.method, encoding='ascii'),
+            # XXX - do we need to percent-encode path somewhere?
+            # https://en.wikipedia.org/wiki/Percent-encoding#Character_data
+            to_bytes(self.factory.path))
         # Headers
         for key, values in self.factory.headers.items():
             for value in values:
