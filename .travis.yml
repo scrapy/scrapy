@@ -1,5 +1,5 @@
 language: python
-python: 2.7
+python: 3.5
 sudo: false
 branches:
   only:
@@ -9,7 +9,7 @@ env:
  - TOXENV=py27
  - TOXENV=precise
  - TOXENV=py33
- - TOXENV=py34
+ - TOXENV=py35
  - TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
