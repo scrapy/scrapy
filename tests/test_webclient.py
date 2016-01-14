@@ -266,8 +266,8 @@ class WebClientTestCase(unittest.TestCase):
         def _getPage(method):
             return getPage(self.getURL("file"), method=method)
         return defer.gatherResults([
-            _getPage("head").addCallback(self.assertEqual, ""),
-            _getPage("HEAD").addCallback(self.assertEqual, "")])
+            _getPage("head").addCallback(self.assertEqual, b""),
+            _getPage("HEAD").addCallback(self.assertEqual, b"")])
 
 
     def test_timeoutNotTriggering(self):
