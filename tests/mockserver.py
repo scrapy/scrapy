@@ -170,12 +170,12 @@ class Root(Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
 
-        if six.PY2 and twisted_version > (12, 3, 0):
+        if twisted_version > (12, 3, 0):
             from twisted.web.test.test_webclient import PayloadResource
             from twisted.web.server import GzipEncoderFactory
             from twisted.web.resource import EncodingResourceWrapper
-            self.putChild('payload', PayloadResource())
-            self.putChild("xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+            self.putChild(b"payload", PayloadResource())
+            self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
 
     def getChild(self, name, request):
         return self
