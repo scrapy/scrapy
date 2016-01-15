@@ -291,7 +291,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
             self.assertEqualResponse(res2, res3)
             # request with no-cache directive must not return cached response
             # but it allows new response to be stored
-            res0b = res0.replace(body='foo')
+            res0b = res0.replace(body=b'foo')
             res4 = self._process_requestresponse(mw, req2, res0b)
             self.assertEqualResponse(res4, res0b)
             assert 'cached' not in res4.flags
@@ -435,7 +435,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 assert 'cached' not in res1.flags
                 # Same request but as cached response is stale a new response must
                 # be returned
-                res0b = res0a.replace(body='bar')
+                res0b = res0a.replace(body=b'bar')
                 res2 = self._process_requestresponse(mw, req0, res0b)
                 self.assertEqualResponse(res2, res0b)
                 assert 'cached' not in res2.flags
