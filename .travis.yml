@@ -1,5 +1,11 @@
 language: python
+
+os:
+  - linux
+  - osx
+
 python: 2.7
+
 sudo: false
 branches:
   only:
