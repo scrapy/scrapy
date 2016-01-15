@@ -1,7 +1,7 @@
 language: python
 
 os:
-  - linux
+  #- linux
   - osx
 
 python: 2.7
