@@ -12,6 +12,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
 
 
 class DummyPolicy(object):
@@ -305,7 +306,7 @@ class FilesystemCacheStorage(object):
             'timestamp': time(),
         }
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
-            f.write(repr(metadata))
+            f.write(to_bytes(repr(metadata)))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=2)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
@@ -373,14 +374,14 @@ class LeveldbCacheStorage(object):
             'body': response.body,
         }
         batch = self._leveldb.WriteBatch()
-        batch.Put('%s_data' % key, pickle.dumps(data, protocol=2))
-        batch.Put('%s_time' % key, str(time()))
+        batch.Put(key + b'_data', pickle.dumps(data, protocol=2))
+        batch.Put(key + b'_time', to_bytes(str(time())))
         self.db.Write(batch)
 
     def _read_data(self, spider, request):
         key = self._request_key(request)
         try:
-            ts = self.db.Get('%s_time' % key)
+            ts = self.db.Get(key + b'_time')
         except KeyError:
             return  # not found or invalid entry
 
@@ -388,14 +389,14 @@ class LeveldbCacheStorage(object):
             return  # expired
 
         try:
-            data = self.db.Get('%s_data' % key)
+            data = self.db.Get(key + b'_data')
         except KeyError:
             return  # invalid entry
         else:
             return pickle.loads(data)
 
     def _request_key(self, request):
-        return request_fingerprint(request)
+        return to_bytes(request_fingerprint(request))
 
 
 
