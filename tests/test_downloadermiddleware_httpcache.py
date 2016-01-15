@@ -257,6 +257,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
     policy_class = 'scrapy.extensions.httpcache.RFC2616Policy'
 
     def _process_requestresponse(self, mw, request, response):
+        result = None
         try:
             result = mw.process_request(request, self.spider)
             if result:
