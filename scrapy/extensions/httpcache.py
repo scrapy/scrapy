@@ -12,7 +12,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 class DummyPolicy(object):
@@ -423,6 +423,7 @@ def parse_cachecontrol(header):
 
 def rfc1123_to_epoch(date_str):
     try:
+        date_str = to_unicode(date_str, encoding='ascii')
         return mktime_tz(parsedate_tz(date_str))
     except Exception:
         return None
