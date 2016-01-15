@@ -47,7 +47,7 @@ Set stat value::
 
 Increment stat value::
 
-    stats.inc_value('downloader/response_count')
+    stats.inc_value('custom_count')
 
 Set stat value only if greater than previous::
 
@@ -59,13 +59,13 @@ Set stat value only if lower than previous::
 
 Get stat value::
 
-    >>> stats.get_value('downloader/response_count')
-    8
+    >>> stats.get_value('custom_count')
+    1
 
 Get all stats::
 
     >>> stats.get_stats()
-    {'downloader/response_count': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================
