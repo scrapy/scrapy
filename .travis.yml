@@ -11,9 +11,6 @@ env:
  - TOXENV=py33
  - TOXENV=py35
  - TOXENV=docs
-matrix:
-  allow_failures:
-    - env: TOXENV=py35
 install:
  - pip install -U tox twine wheel codecov
 script: tox

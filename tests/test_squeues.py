@@ -34,7 +34,7 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
         # Trigger Twisted bug #7989
         import twisted.persisted.styles  # NOQA
         q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+        self.assertRaises((ValueError, AttributeError), q.push, lambda x: x)
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 1
@@ -114,7 +114,7 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
         # Trigger Twisted bug #7989
         import twisted.persisted.styles  # NOQA
         q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+        self.assertRaises((ValueError, AttributeError), q.push, lambda x: x)
 
 
 class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
