@@ -1,0 +1,3 @@
+[submodule "terryfy"]
+	path = terryfy
+	url = git@github.com:MacPython/terryfy.git
