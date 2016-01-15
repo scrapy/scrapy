@@ -48,7 +48,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
-        nodetext = etree.tostring(node, encoding=six.text_type)
+        nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
