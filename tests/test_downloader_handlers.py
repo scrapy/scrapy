@@ -27,7 +27,7 @@ from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer
+from tests.mockserver import MockServer, ssl_context_factory
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -102,6 +102,7 @@ class FileTestCase(unittest.TestCase):
 
 class HttpTestCase(unittest.TestCase):
 
+    scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
     def setUp(self):
@@ -118,7 +119,12 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
+        self.host = '127.0.0.1'
+        if self.scheme == 'https':
+            self.port = reactor.listenSSL(
+                0, self.wrapper, ssl_context_factory(), interface=self.host)
+        else:
+            self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(Settings())
         self.download_request = self.download_handler.download_request
@@ -130,7 +136,7 @@ class HttpTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -211,6 +217,12 @@ class DeprecatedHttpTestCase(HttpTestCase):
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls = HTTP10DownloadHandler
+
+
+class Https10TestCase(Http10TestCase):
+    scheme = 'https'
+    def test_timeout_download_from_spider(self):
+        raise unittest.SkipTest("test_timeout_download_from_spider skipped under https")
 
 
 class Http11TestCase(HttpTestCase):
