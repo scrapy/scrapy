@@ -45,7 +45,7 @@ class RFC2616Policy(object):
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
-            cch = r.headers.get('Cache-Control', '')
+            cch = r.headers.get(b'Cache-Control', b'')
             parsed = parse_cachecontrol(cch)
             if isinstance(r, Response):
                 for key in self.ignore_response_cache_controls:
@@ -58,7 +58,7 @@ class RFC2616Policy(object):
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if 'no-store' in cc:
+        if b'no-store' in cc:
             return False
         # Any other is eligible for caching
         return True
@@ -69,7 +69,7 @@ class RFC2616Policy(object):
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
-        if 'no-store' in cc:
+        if b'no-store' in cc:
             return False
         # Never cache 304 (Not Modified) responses
         elif response.status == 304:
@@ -78,14 +78,14 @@ class RFC2616Policy(object):
         elif self.always_store:
             return True
         # Any hint on response expiration is good
-        elif 'max-age' in cc or 'Expires' in response.headers:
+        elif b'max-age' in cc or b'Expires' in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
         elif response.status in (300, 301, 308):
             return True
         # Other statuses without expiration requires at least one validator
         elif response.status in (200, 203, 401):
-            return 'Last-Modified' in response.headers or 'ETag' in response.headers
+            return b'Last-Modified' in response.headers or b'ETag' in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
         # info and can not be revalidated
@@ -95,7 +95,7 @@ class RFC2616Policy(object):
     def is_cached_response_fresh(self, cachedresponse, request):
         cc = self._parse_cachecontrol(cachedresponse)
         ccreq = self._parse_cachecontrol(request)
-        if 'no-cache' in cc or 'no-cache' in ccreq:
+        if b'no-cache' in cc or b'no-cache' in ccreq:
             return False
 
         now = time()
@@ -109,7 +109,7 @@ class RFC2616Policy(object):
         if currentage < freshnesslifetime:
             return True
 
-        if 'max-stale' in ccreq and 'must-revalidate' not in cc:
+        if b'max-stale' in ccreq and b'must-revalidate' not in cc:
             # From RFC2616: "Indicates that the client is willing to
             # accept a response that has exceeded its expiration time.
             # If max-stale is assigned a value, then the client is
@@ -117,7 +117,7 @@ class RFC2616Policy(object):
             # expiration time by no more than the specified number of
             # seconds. If no value is assigned to max-stale, then the
             # client is willing to accept a stale response of any age."
-            staleage = ccreq['max-stale']
+            staleage = ccreq[b'max-stale']
             if staleage is None:
                 return True
 
@@ -136,22 +136,22 @@ class RFC2616Policy(object):
         # as long as the old response didn't specify must-revalidate.
         if response.status >= 500:
             cc = self._parse_cachecontrol(cachedresponse)
-            if 'must-revalidate' not in cc:
+            if b'must-revalidate' not in cc:
                 return True
 
         # Use the cached response if the server says it hasn't changed.
         return response.status == 304
 
     def _set_conditional_validators(self, request, cachedresponse):
-        if 'Last-Modified' in cachedresponse.headers:
-            request.headers['If-Modified-Since'] = cachedresponse.headers['Last-Modified']
+        if b'Last-Modified' in cachedresponse.headers:
+            request.headers[b'If-Modified-Since'] = cachedresponse.headers[b'Last-Modified']
 
-        if 'ETag' in cachedresponse.headers:
-            request.headers['If-None-Match'] = cachedresponse.headers['ETag']
+        if b'ETag' in cachedresponse.headers:
+            request.headers[b'If-None-Match'] = cachedresponse.headers[b'ETag']
 
     def _get_max_age(self, cc):
         try:
-            return max(0, int(cc['max-age']))
+            return max(0, int(cc[b'max-age']))
         except (KeyError, ValueError):
             return None
 
@@ -164,18 +164,18 @@ class RFC2616Policy(object):
             return maxage
 
         # Parse date header or synthesize it if none exists
-        date = rfc1123_to_epoch(response.headers.get('Date')) or now
+        date = rfc1123_to_epoch(response.headers.get(b'Date')) or now
 
         # Try HTTP/1.0 Expires header
-        if 'Expires' in response.headers:
-            expires = rfc1123_to_epoch(response.headers['Expires'])
+        if b'Expires' in response.headers:
+            expires = rfc1123_to_epoch(response.headers[b'Expires'])
             # When parsing Expires header fails RFC 2616 section 14.21 says we
             # should treat this as an expiration time in the past.
             return max(0, expires - date) if expires else 0
 
         # Fallback to heuristic using last-modified header
         # This is not in RFC but on Firefox caching implementation
-        lastmodified = rfc1123_to_epoch(response.headers.get('Last-Modified'))
+        lastmodified = rfc1123_to_epoch(response.headers.get(b'Last-Modified'))
         if lastmodified and lastmodified <= date:
             return (date - lastmodified) / 10
 
@@ -192,13 +192,13 @@ class RFC2616Policy(object):
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
-        date = rfc1123_to_epoch(response.headers.get('Date')) or now
+        date = rfc1123_to_epoch(response.headers.get(b'Date')) or now
         if now > date:
             currentage = now - date
 
-        if 'Age' in response.headers:
+        if b'Age' in response.headers:
             try:
-                age = int(response.headers['Age'])
+                age = int(response.headers[b'Age'])
                 currentage = max(currentage, age)
             except ValueError:
                 pass
@@ -404,16 +404,16 @@ def parse_cachecontrol(header):
 
     http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
-    >>> parse_cachecontrol('public, max-age=3600') == {'public': None,
-    ...                                                'max-age': '3600'}
+    >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
+    ...                                                 b'max-age': b'3600'}
     True
-    >>> parse_cachecontrol('') == {}
+    >>> parse_cachecontrol(b'') == {}
     True
 
     """
     directives = {}
-    for directive in header.split(','):
-        key, sep, val = directive.strip().partition('=')
+    for directive in header.split(b','):
+        key, sep, val = directive.strip().partition(b'=')
         if key:
             directives[key.lower()] = val if sep else None
     return directives
