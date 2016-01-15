@@ -31,7 +31,7 @@ class _BaseTest(unittest.TestCase):
                                headers={'User-Agent': 'test'})
         self.response = Response('http://www.example.com',
                                  headers={'Content-Type': 'text/html'},
-                                 body='test body',
+                                 body=b'test body',
                                  status=202)
         self.crawler.stats.open_spider(self.spider)
 
@@ -84,9 +84,9 @@ class _BaseTest(unittest.TestCase):
 
     def assertEqualRequestButWithCacheValidators(self, request1, request2):
         self.assertEqual(request1.url, request2.url)
-        assert not 'If-None-Match' in request1.headers
-        assert not 'If-Modified-Since' in request1.headers
-        assert any(h in request2.headers for h in ('If-None-Match', 'If-Modified-Since'))
+        assert not b'If-None-Match' in request1.headers
+        assert not b'If-Modified-Since' in request1.headers
+        assert any(h in request2.headers for h in (b'If-None-Match', b'If-Modified-Since'))
         self.assertEqual(request1.body, request2.body)
 
     def test_dont_cache(self):
