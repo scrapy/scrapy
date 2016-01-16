@@ -90,8 +90,8 @@ class StartprojectTemplatesTest(ProjectTest):
         args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
         p = self.proc('startproject', self.project_name, *args)
         out = to_native_str(retry_on_eintr(p.stdout.read))
-        self.assertIn("New Scrapy project %r, using template directory %r, created in:" % \
-                      (self.project_name, join(self.tmpl, 'project')), out)
+        self.assertIn("New Scrapy project %r, using template directory" % self.project_name, out)
+        self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
 
 
