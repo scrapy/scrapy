@@ -12,18 +12,26 @@ from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
+    # Assume parsed is urlparse-d from Request.url,
+    # which was passed via safe_url_string and is ascii-only.
+    b = lambda s: to_bytes(s, encoding='ascii')
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = to_bytes(path)
-    host = to_bytes(parsed.hostname)
+    path = b(path)
+    host = b(parsed.hostname)
     port = parsed.port
-    scheme = to_bytes(parsed.scheme, encoding='ascii')
-    netloc = to_bytes(parsed.netloc)
+    scheme = b(parsed.scheme)
+    netloc = b(parsed.netloc)
     if port is None:
         port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
 
 
 def _parse(url):
+    """ Return tuple of (scheme, netloc, host, port, path),
+    all in bytes except for port which is int.
+    Assume url is from Request.url, which was passed via safe_url_string
+    and is ascii-only.
+    """
     url = url.strip()
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
@@ -66,7 +74,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def handleResponse(self, response):
         if self.factory.method.upper() == b'HEAD':
-            self.factory.page('')
+            self.factory.page(b'')
         elif self.length is not None and self.length > 0:
             self.factory.noPage(self._connection_lost_reason)
         else:
@@ -95,7 +103,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def __init__(self, request, timeout=180):
         self._url = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = to_bytes(self._url)
+        self.url = to_bytes(self._url, encoding='ascii')
         self.method = to_bytes(request.method, encoding='ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
@@ -131,7 +139,6 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)
-        body = to_bytes(body)
         return respcls(url=self._url, status=status, headers=headers, body=body)
 
     def _set_connection_attributes(self, request):

@@ -7,7 +7,7 @@ import six
 from six.moves.urllib.parse import urlparse
 
 from twisted.trial import unittest
-from twisted.web import server, static, error, util
+from twisted.web import server, static, util, resource
 from twisted.internet import reactor, defer
 from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
@@ -18,14 +18,14 @@ from scrapy.http import Request, Headers
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-def getPage(url, contextFactory=None, *args, **kwargs):
+def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
     def _clientfactory(url, *args, **kwargs):
         url = to_unicode(url)
         timeout = kwargs.pop('timeout', 0)
         f = client.ScrapyHTTPClientFactory(
             Request(url, *args, **kwargs), timeout=timeout)
-        f.deferred.addCallback(lambda r: r.body)
+        f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
 
     from twisted.web.client import _makeGetterFactory
@@ -78,16 +78,17 @@ class ParseUrlTestCase(unittest.TestCase):
         elements of its return tuple, even when passed an URL which has
         previously been passed to L{urlparse} as a C{unicode} string.
         """
-        goodInput = u'http://example.com/path'
-        badInput = goodInput.encode('ascii')
-        if six.PY2:
-            goodInput, badInput = badInput, goodInput
-        urlparse(badInput)
+        if not six.PY2:
+            raise unittest.SkipTest(
+                "Applies only to Py2, as urls can be ONLY unicode on Py3")
+        badInput = u'http://example.com/path'
+        goodInput = badInput.encode('ascii')
+        self._parse(badInput)  # cache badInput in urlparse_cached
         scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, bytes))
-        self.assertTrue(isinstance(netloc, bytes))
-        self.assertTrue(isinstance(host, bytes))
-        self.assertTrue(isinstance(path, bytes))
+        self.assertTrue(isinstance(scheme, str))
+        self.assertTrue(isinstance(netloc, str))
+        self.assertTrue(isinstance(host, str))
+        self.assertTrue(isinstance(path, str))
         self.assertTrue(isinstance(port, int))
 
 
@@ -213,6 +214,16 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         ErrorResource, NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
 
+
+class EncodingResource(resource.Resource):
+    out_encoding = 'cp1251'
+
+    def render(self, request):
+        body = to_unicode(request.content.read())
+        request.setHeader(b'content-encoding', self.out_encoding)
+        return body.encode(self.out_encoding)
+
+
 class WebClientTestCase(unittest.TestCase):
     def _listen(self, site):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
@@ -229,6 +240,7 @@ class WebClientTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"encoding", EncodingResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.port = self._listen(self.wrapper)
@@ -338,3 +350,17 @@ class WebClientTestCase(unittest.TestCase):
                 b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
                 b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
                 b'<a href="/file">click here</a>\n    </body>\n</html>\n')
+
+    def test_Encoding(self):
+        """ Test that non-standart body encoding matches
+        Content-Encoding header """
+        body = b'\xd0\x81\xd1\x8e\xd0\xaf'
+        return getPage(
+            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
+            .addCallback(self._check_Encoding, body)
+
+    def _check_Encoding(self, response, original_body):
+        content_encoding = to_unicode(response.headers[b'Content-Encoding'])
+        self.assertEquals(content_encoding, EncodingResource.out_encoding)
+        self.assertEquals(
+            response.body.decode(content_encoding), to_unicode(original_body))

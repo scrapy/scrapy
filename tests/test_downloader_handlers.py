@@ -119,7 +119,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.host = '127.0.0.1'
+        self.host = 'localhost'
         if self.scheme == 'https':
             self.port = reactor.listenSSL(
                 0, self.wrapper, ssl_context_factory(), interface=self.host)
@@ -168,6 +168,9 @@ class HttpTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider(self):
+        if self.scheme == 'https':
+            raise unittest.SkipTest(
+                'test_timeout_download_from_spider skipped under https')
         spider = Spider('foo')
         meta = {'download_timeout': 0.2}
         # client connects but no data is received
@@ -181,7 +184,8 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, to_bytes('127.0.0.1:%d' % self.portno))
+            self.assertEquals(
+                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -221,8 +225,6 @@ class Http10TestCase(HttpTestCase):
 
 class Https10TestCase(Http10TestCase):
     scheme = 'https'
-    def test_timeout_download_from_spider(self):
-        raise unittest.SkipTest("test_timeout_download_from_spider skipped under https")
 
 
 class Http11TestCase(HttpTestCase):
@@ -271,6 +273,10 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+
+class Https11TestCase(Http11TestCase):
+    scheme = 'https'
 
 
 class Http11MockServerTestCase(unittest.TestCase):
@@ -405,6 +411,17 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
     if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    @defer.inlineCallbacks
+    def test_download_with_proxy_https_timeout(self):
+        """ Test TunnelingTCP4ClientEndpoint """
+        http_proxy = self.getURL('')
+        domain = 'https://no-such-domain.nosuch'
+        request = Request(
+            domain, meta={'proxy': http_proxy, 'download_timeout': 0.2})
+        d = self.download_request(request, Spider('foo'))
+        timeout = yield self.assertFailure(d, error.TimeoutError)
+        self.assertIn(domain, timeout.osError)
 
 
 class HttpDownloadHandlerMock(object):

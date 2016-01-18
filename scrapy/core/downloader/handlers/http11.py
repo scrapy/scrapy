@@ -78,7 +78,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile('HTTP/1\.. 200')
+    _responseMatcher = re.compile(b'HTTP/1\.. 200')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
@@ -92,11 +92,15 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = 'CONNECT %s:%s HTTP/1.1\r\n' % (self._tunneledHost,
-                                                  self._tunneledPort)
+        tunnelReq = (
+            b'CONNECT ' +
+            to_bytes(self._tunneledHost, encoding='ascii') + b':' +
+            to_bytes(str(self._tunneledPort)) +
+            b' HTTP/1.1\r\n')
         if self._proxyAuthHeader:
-            tunnelReq += 'Proxy-Authorization: %s\r\n' % self._proxyAuthHeader
-        tunnelReq += '\r\n'
+            tunnelReq += \
+                b'Proxy-Authorization: ' + self._proxyAuthHeader + b'\r\n'
+        tunnelReq += b'\r\n'
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
@@ -202,7 +206,7 @@ class ScrapyAgent(object):
         agent = self._get_agent(request, timeout)
 
         # request details
-        url = to_bytes(urldefrag(request.url)[0])
+        url = urldefrag(request.url)[0]
         method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
@@ -210,7 +214,8 @@ class ScrapyAgent(object):
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
-        d = agent.request(method, url, headers, bodyproducer)
+        d = agent.request(
+            method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
@@ -263,10 +268,8 @@ class ScrapyAgent(object):
         txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
-        url = to_unicode(url)
         respcls = responsetypes.from_args(headers=headers, url=url)
-        return respcls(
-            url=url, status=status, headers=headers, body=body, flags=flags)
+        return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
 
 
 @implementer(IBodyProducer)
