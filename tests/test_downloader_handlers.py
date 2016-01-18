@@ -327,12 +327,12 @@ class Http11MockServerTestCase(unittest.TestCase):
                 request = request.replace(url='http://localhost:8998/xpayload')
                 yield crawler.crawl(seed=request)
                 # download_maxsize = 50 is enough for the gzipped response
-                # See issue https://twistedmatrix.com/trac/ticket/8175
                 failure = crawler.spider.meta.get('failure')
                 self.assertTrue(failure == None)
                 reason = crawler.spider.meta['close_reason']
                 self.assertTrue(reason, 'finished')
             else:
+                # See issue https://twistedmatrix.com/trac/ticket/8175
                 raise unittest.SkipTest("xpayload only enabled for PY2")
         else:
             raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0")
