@@ -168,6 +168,9 @@ class HttpTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider(self):
+        if self.scheme == 'https':
+            raise unittest.SkipTest(
+                'test_timeout_download_from_spider skipped under https')
         spider = Spider('foo')
         meta = {'download_timeout': 0.2}
         # client connects but no data is received
@@ -181,7 +184,8 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, to_bytes('127.0.0.1:%d' % self.portno))
+            self.assertEquals(
+                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -221,8 +225,6 @@ class Http10TestCase(HttpTestCase):
 
 class Https10TestCase(Http10TestCase):
     scheme = 'https'
-    def test_timeout_download_from_spider(self):
-        raise unittest.SkipTest("test_timeout_download_from_spider skipped under https")
 
 
 class Http11TestCase(HttpTestCase):
