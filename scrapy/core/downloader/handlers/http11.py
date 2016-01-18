@@ -239,11 +239,14 @@ class ScrapyAgent(object):
         expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
 
         if maxsize and expected_size > maxsize:
-            logger.error("Expected response size (%(size)s) larger than "
-                         "download max size (%(maxsize)s).",
-                         {'size': expected_size, 'maxsize': maxsize})
+            error_message = ("Cancelling download of {url}: expected response "
+                             "size ({size}) larger than "
+                             "download max size ({maxsize})."
+            ).format(url=request.url, size=expected_size, maxsize=maxsize)
+
+            logger.error(error_message)
             txresponse._transport._producer.loseConnection()
-            raise defer.CancelledError()
+            raise defer.CancelledError(error_message)
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
