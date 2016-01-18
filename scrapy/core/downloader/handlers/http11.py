@@ -78,7 +78,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile('HTTP/1\.. 200')
+    _responseMatcher = re.compile(b'HTTP/1\.. 200')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
@@ -92,11 +92,15 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = 'CONNECT %s:%s HTTP/1.1\r\n' % (self._tunneledHost,
-                                                  self._tunneledPort)
+        tunnelReq = (
+            b'CONNECT ' +
+            to_bytes(self._tunneledHost, encoding='ascii') + b':' +
+            to_bytes(str(self._tunneledPort)) +
+            b' HTTP/1.1\r\n')
         if self._proxyAuthHeader:
-            tunnelReq += 'Proxy-Authorization: %s\r\n' % self._proxyAuthHeader
-        tunnelReq += '\r\n'
+            tunnelReq += \
+                b'Proxy-Authorization: ' + self._proxyAuthHeader + b'\r\n'
+        tunnelReq += b'\r\n'
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
