@@ -35,7 +35,7 @@ class Response(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, six.string_types):
+        if isinstance(url, str):
             self._url = url
         else:
             raise TypeError('%s url must be str, got %s:' % (type(self).__name__,
