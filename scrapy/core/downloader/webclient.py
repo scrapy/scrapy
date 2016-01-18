@@ -66,7 +66,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def handleResponse(self, response):
         if self.factory.method.upper() == b'HEAD':
-            self.factory.page('')
+            self.factory.page(b'')
         elif self.length is not None and self.length > 0:
             self.factory.noPage(self._connection_lost_reason)
         else:
@@ -131,7 +131,6 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)
-        body = to_bytes(body)
         return respcls(url=self._url, status=status, headers=headers, body=body)
 
     def _set_connection_attributes(self, request):
