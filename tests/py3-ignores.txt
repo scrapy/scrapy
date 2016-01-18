@@ -4,7 +4,6 @@ tests/test_command_shell.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
-tests/test_downloadermiddleware_httpcompression.py
 tests/test_downloadermiddleware_httpproxy.py
 tests/test_downloadermiddleware.py
 tests/test_downloadermiddleware_retry.py
