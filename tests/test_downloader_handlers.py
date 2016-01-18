@@ -322,18 +322,18 @@ class Http11MockServerTestCase(unittest.TestCase):
             # download_maxsize < 100, hence the CancelledError
             self.assertIsInstance(failure.value, defer.CancelledError)
 
-            request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-            request = request.replace(url='http://localhost:8998/xpayload')
-            yield crawler.crawl(seed=request)
-
             if six.PY2:
+                request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+                request = request.replace(url='http://localhost:8998/xpayload')
+                yield crawler.crawl(seed=request)
                 # download_maxsize = 50 is enough for the gzipped response
                 # See issue https://twistedmatrix.com/trac/ticket/8175
-                raise unittest.SkipTest("xpayload only enabled for PY2")
                 failure = crawler.spider.meta.get('failure')
                 self.assertTrue(failure == None)
                 reason = crawler.spider.meta['close_reason']
                 self.assertTrue(reason, 'finished')
+            else:
+                raise unittest.SkipTest("xpayload only enabled for PY2")
         else:
             raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0")
 
