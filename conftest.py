@@ -34,7 +34,7 @@ if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15,
 if six.PY3:
     for line in open('tests/py3-ignores.txt'):
         file_path = line.strip()
-        if len(file_path) > 0 and file_path[0] != '#':
+        if file_path and file_path[0] != '#':
             collect_ignore.append(file_path)
 
 
