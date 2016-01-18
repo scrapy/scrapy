@@ -42,7 +42,8 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 
     - sort query arguments, first by key, then by value
     - percent encode paths and query arguments. non-ASCII characters are
-      percent-encoded using UTF-8 (RFC-3986)
+      percent-encoded using UTF-8 (RFC-3986) unless different input
+      encoding is specified
     - normalize all spaces (in query arguments) '+' (plus symbol)
     - normalize percent encodings case (%2f -> %2F)
     - remove query arguments with blank values (unless keep_blank_values is True)
@@ -55,23 +56,32 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     """
 
     scheme, netloc, path, params, query, fragment = parse_url(url)
-    keyvals = parse_qsl(query, keep_blank_values)
+    if six.PY3:
+        keyvals = parse_qsl(query, keep_blank_values, encoding=encoding)
+    else:
+        keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
-    query = urlencode(keyvals)
+    if six.PY3:
+        query = urlencode(keyvals, encoding=encoding)
+    else:
+        query = urlencode(keyvals)
 
     # XXX: copied from w3lib.url.safe_url_string to add encoding argument
     # path = to_native_str(path, encoding)
     # path = moves.urllib.parse.quote(path, _safe_chars, encoding='latin1') or '/'
 
-    path = safe_url_string(_unquotepath(path)) or '/'
+    path = safe_url_string(_unquotepath(path, encoding), encoding=encoding) or '/'
     fragment = '' if not keep_fragments else fragment
     return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
 
 
-def _unquotepath(path):
+def _unquotepath(path, encoding='utf-8'):
     for reserved in ('2f', '2F', '3f', '3F'):
         path = path.replace('%' + reserved, '%25' + reserved.upper())
-    return unquote(path)
+    if six.PY3:
+        return unquote(path, encoding=encoding)
+    else:
+        return unquote(path)
 
 
 def parse_url(url, encoding=None):
