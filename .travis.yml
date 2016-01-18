@@ -1,5 +1,11 @@
 language: python
+
+os:
+  #- linux
+  - osx
+
 python: 2.7
+
 sudo: false
 branches:
   only:
@@ -10,8 +16,13 @@ env:
  - TOXENV=precise
  - TOXENV=py33
  - TOXENV=docs
+
 install:
+ - source terryfy/travis_tools.sh
+ - get_python_environment macpython $VERSION venv
  - pip install -U tox twine wheel codecov
+ - pip install delocate
+
 script: tox
 after_success:
   - codecov
