@@ -119,7 +119,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.host = '127.0.0.1'
+        self.host = 'localhost'
         if self.scheme == 'https':
             self.port = reactor.listenSSL(
                 0, self.wrapper, ssl_context_factory(), interface=self.host)
@@ -271,6 +271,10 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+
+class Https11TestCase(Http11TestCase):
+    scheme = 'https'
 
 
 class Http11MockServerTestCase(unittest.TestCase):
