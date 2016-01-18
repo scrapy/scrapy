@@ -388,16 +388,6 @@ class HttpProxyTestCase(unittest.TestCase):
         request = Request('https://example.com', meta={'proxy': http_proxy})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
-    @defer.inlineCallbacks
-    def test_download_with_proxy_https_timeout(self):
-        http_proxy = self.getURL('')
-        domain = 'https://no-such-domain.nosuch'
-        request = Request(
-            domain, meta={'proxy': http_proxy, 'download_timeout': 0.2})
-        d = self.download_request(request, Spider('foo'))
-        timeout = yield self.assertFailure(d, error.TimeoutError)
-        self.assertIn(domain, timeout.osError)
-
     def test_download_without_proxy(self):
         def _test(response):
             self.assertEquals(response.status, 200)
@@ -421,6 +411,17 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
     if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    @defer.inlineCallbacks
+    def test_download_with_proxy_https_timeout(self):
+        """ Test TunnelingTCP4ClientEndpoint """
+        http_proxy = self.getURL('')
+        domain = 'https://no-such-domain.nosuch'
+        request = Request(
+            domain, meta={'proxy': http_proxy, 'download_timeout': 0.2})
+        d = self.download_request(request, Spider('foo'))
+        timeout = yield self.assertFailure(d, error.TimeoutError)
+        self.assertIn(domain, timeout.osError)
 
 
 class HttpDownloadHandlerMock(object):
