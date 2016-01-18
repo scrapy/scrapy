@@ -18,14 +18,14 @@ from scrapy.http import Request, Headers
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-def getPage(url, contextFactory=None, r_transform=None, *args, **kwargs):
+def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
     def _clientfactory(url, *args, **kwargs):
         url = to_unicode(url)
         timeout = kwargs.pop('timeout', 0)
         f = client.ScrapyHTTPClientFactory(
             Request(url, *args, **kwargs), timeout=timeout)
-        f.deferred.addCallback(r_transform or (lambda r: r.body))
+        f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
 
     from twisted.web.client import _makeGetterFactory
@@ -355,7 +355,7 @@ class WebClientTestCase(unittest.TestCase):
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
         return getPage(
-            self.getURL('encoding'), body=body, r_transform=lambda r: r)\
+            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
             .addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
