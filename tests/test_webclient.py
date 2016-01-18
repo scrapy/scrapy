@@ -18,14 +18,14 @@ from scrapy.http import Request, Headers
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-def getPage(url, contextFactory=None, r_transform=None, *args, **kwargs):
+def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
     def _clientfactory(url, *args, **kwargs):
         url = to_unicode(url)
         timeout = kwargs.pop('timeout', 0)
         f = client.ScrapyHTTPClientFactory(
             Request(url, *args, **kwargs), timeout=timeout)
-        f.deferred.addCallback(r_transform or (lambda r: r.body))
+        f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
 
     from twisted.web.client import _makeGetterFactory
@@ -78,16 +78,17 @@ class ParseUrlTestCase(unittest.TestCase):
         elements of its return tuple, even when passed an URL which has
         previously been passed to L{urlparse} as a C{unicode} string.
         """
-        goodInput = u'http://example.com/path'
-        badInput = goodInput.encode('ascii')
-        if six.PY2:
-            goodInput, badInput = badInput, goodInput
-        urlparse(badInput)
+        if not six.PY2:
+            raise unittest.SkipTest(
+                "Applies only to Py2, as urls can be ONLY unicode on Py3")
+        badInput = u'http://example.com/path'
+        goodInput = badInput.encode('ascii')
+        self._parse(badInput)  # cache badInput in urlparse_cached
         scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, bytes))
-        self.assertTrue(isinstance(netloc, bytes))
-        self.assertTrue(isinstance(host, bytes))
-        self.assertTrue(isinstance(path, bytes))
+        self.assertTrue(isinstance(scheme, str))
+        self.assertTrue(isinstance(netloc, str))
+        self.assertTrue(isinstance(host, str))
+        self.assertTrue(isinstance(path, str))
         self.assertTrue(isinstance(port, int))
 
 
@@ -355,7 +356,7 @@ class WebClientTestCase(unittest.TestCase):
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
         return getPage(
-            self.getURL('encoding'), body=body, r_transform=lambda r: r)\
+            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
             .addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
