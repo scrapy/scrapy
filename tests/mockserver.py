@@ -7,6 +7,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor, defer, ssl
 from scrapy import twisted_version
+from scrapy.utils.python import to_bytes
 
 
 if twisted_version < (11, 0, 0):
@@ -55,12 +56,12 @@ class LeafResource(Resource):
 class Follow(LeafResource):
 
     def render(self, request):
-        total = getarg(request, "total", 100, type=int)
-        show = getarg(request, "show", 1, type=int)
-        order = getarg(request, "order", "desc")
-        maxlatency = getarg(request, "maxlatency", 0, type=float)
-        n = getarg(request, "n", total, type=int)
-        if order == "rand":
+        total = getarg(request, b"total", 100, type=int)
+        show = getarg(request, b"show", 1, type=int)
+        order = getarg(request, b"order", b"desc")
+        maxlatency = getarg(request, b"maxlatency", 0, type=float)
+        n = getarg(request, b"n", total, type=int)
+        if order == b"rand":
             nlist = [random.randint(1, total) for _ in range(show)]
         else:  # order == "desc"
             nlist = range(n, max(n - show, 0), -1)
@@ -73,19 +74,19 @@ class Follow(LeafResource):
         s = """<html> <head></head> <body>"""
         args = request.args.copy()
         for nl in nlist:
-            args["n"] = [str(nl)]
+            args[b"n"] = [to_bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
             s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
         s += """</body>"""
-        request.write(s)
+        request.write(to_bytes(s))
         request.finish()
 
 
 class Delay(LeafResource):
 
     def render_GET(self, request):
-        n = getarg(request, "n", 1, type=float)
-        b = getarg(request, "b", 1, type=int)
+        n = getarg(request, b"n", 1, type=float)
+        b = getarg(request, b"b", 1, type=int)
         if b:
             # send headers now and delay body
             request.write('')
@@ -93,16 +94,16 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write("Response delayed for %0.3f seconds\n" % n)
+        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
         request.finish()
 
 
 class Status(LeafResource):
 
     def render_GET(self, request):
-        n = getarg(request, "n", 200, type=int)
+        n = getarg(request, b"n", 200, type=int)
         request.setResponseCode(n)
-        return ""
+        return b""
 
 
 class Raw(LeafResource):
@@ -114,7 +115,7 @@ class Raw(LeafResource):
     render_POST = render_GET
 
     def _delayedRender(self, request):
-        raw = getarg(request, 'raw', 'HTTP 1.1 200 OK\n')
+        raw = getarg(request, b'raw', b'HTTP 1.1 200 OK\n')
         request.startedWriting = 1
         request.write(raw)
         request.channel.transport.loseConnection()
@@ -128,7 +129,7 @@ class Echo(LeafResource):
             'headers': dict(request.requestHeaders.getAllRawHeaders()),
             'body': request.content.read(),
         }
-        return json.dumps(output)
+        return to_bytes(json.dumps(output))
 
 
 class Partial(LeafResource):
@@ -146,7 +147,7 @@ class Partial(LeafResource):
 class Drop(Partial):
 
     def _delayedRender(self, request):
-        abort = getarg(request, "abort", 0, type=int)
+        abort = getarg(request, b"abort", 0, type=int)
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
