@@ -30,9 +30,12 @@ else:
     from twisted.internet.task import deferLater
 
 
-def getarg(request, name, default=None, type=str):
+def getarg(request, name, default=None, type=None):
     if name in request.args:
-        return type(request.args[name][0])
+        value = request.args[name][0]
+        if type is not None:
+            value = type(value)
+        return value
     else:
         return default
 
