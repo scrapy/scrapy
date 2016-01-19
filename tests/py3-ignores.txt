@@ -1,4 +1,3 @@
-tests/test_closespider.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_mail.py
