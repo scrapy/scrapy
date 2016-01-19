@@ -1,13 +1,12 @@
 from __future__ import print_function
 import sys, time, random, os, json
-import six
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor, defer, ssl
 from scrapy import twisted_version
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 if twisted_version < (11, 0, 0):
@@ -126,8 +125,10 @@ class Echo(LeafResource):
 
     def render_GET(self, request):
         output = {
-            'headers': dict(request.requestHeaders.getAllRawHeaders()),
-            'body': request.content.read(),
+            'headers': dict(
+                (to_unicode(k), [to_unicode(v) for v in vs])
+                for k, vs in request.requestHeaders.getAllRawHeaders()),
+            'body': to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
 
