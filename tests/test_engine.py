@@ -238,12 +238,12 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.close()
 
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         self.assertEqual(len(e.open_spiders), 1)
         yield e.close()
@@ -251,7 +251,7 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         e.start()
         self.assertTrue(e.running)
