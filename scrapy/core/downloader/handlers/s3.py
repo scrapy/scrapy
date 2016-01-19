@@ -35,7 +35,7 @@ def get_s3_connection():
 class S3DownloadHandler(object):
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler):
+            httpdownloadhandler=HTTPDownloadHandler, **kw):
 
         _S3Connection = get_s3_connection()
         if _S3Connection is None:
@@ -46,8 +46,15 @@ class S3DownloadHandler(object):
         if not aws_secret_access_key:
             aws_secret_access_key = settings['AWS_SECRET_ACCESS_KEY']
 
+        # If no credentials could be found anywhere,
+        # consider this an anonymous connection request by default;
+        # unless 'anon' was set explicitly (True/False).
+        anon = kw.get('anon', None)
+        if anon is None and not aws_access_key_id and not aws_secret_access_key:
+            kw['anon'] = True
+
         try:
-            self.conn = _S3Connection(aws_access_key_id, aws_secret_access_key)
+            self.conn = _S3Connection(aws_access_key_id, aws_secret_access_key, **kw)
         except Exception as ex:
             raise NotConfigured(str(ex))
         self._download_http = httpdownloadhandler(settings).download_request
