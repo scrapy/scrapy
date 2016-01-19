@@ -4,7 +4,6 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-import six
 from six.moves.urllib.parse import urljoin
 
 from scrapy.http.headers import Headers
