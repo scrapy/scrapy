@@ -50,7 +50,7 @@ many different domains in parallel, so you will want to increase it. How much
 to increase it will depend on how much CPU you crawler will have available. A
 good starting point is ``100``, but the best way to find out is by doing some
 trials and identifying at what concurrency your Scrapy process gets CPU
-bounded. For optimum performance, You should pick a concurrency where CPU usage
+bounded. For optimum performance, you should pick a concurrency where CPU usage
 is at 80-90%.
 
 To increase the global concurrency use::
