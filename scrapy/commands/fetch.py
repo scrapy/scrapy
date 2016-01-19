@@ -5,6 +5,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.utils.python import to_unicode
 
 class Command(ScrapyCommand):
 
@@ -30,7 +31,8 @@ class Command(ScrapyCommand):
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
             for value in values:
-                print('%s %s: %s' % (prefix, key, value))
+                print('%s %s: %s' % (
+                      prefix, to_unicode(key), to_unicode(value)))
 
     def _print_response(self, response, opts):
         if opts.headers:
@@ -38,7 +40,7 @@ class Command(ScrapyCommand):
             print('>')
             self._print_headers(response.headers, '<')
         else:
-            print(response.body)
+            print(to_unicode(response.body))
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
