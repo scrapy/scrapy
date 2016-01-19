@@ -6,7 +6,6 @@ tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
 tests/test_downloadermiddleware_httpproxy.py
 tests/test_downloadermiddleware_retry.py
-tests/test_engine.py
 tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
