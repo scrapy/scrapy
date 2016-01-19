@@ -857,16 +857,6 @@ Defines the maximum times a request can be redirected. After this maximum the
 request's response is returned as is. We used Firefox default value for the
 same task.
 
-.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
-
-REDIRECT_MAX_METAREFRESH_DELAY
-------------------------------
-
-Default: ``100``
-
-Some sites use meta-refresh for redirecting to a session expired page, so we
-restrict automatic redirection to a maximum delay (in seconds)
-
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
