@@ -1,5 +1,4 @@
 import os
-import twisted
 import six
 
 from twisted.trial import unittest
@@ -10,9 +9,7 @@ from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
-from twisted.protocols.ftp import FTPRealm, FTPFactory
 from twisted.cred import portal, checkers, credentials
-from twisted.protocols.ftp import FTPClient, ConnectionLost
 from w3lib.url import path_to_file_uri
 
 from scrapy import twisted_version
@@ -22,15 +19,15 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownlo
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
+from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer
+from tests.mockserver import MockServer, ssl_context_factory
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -91,7 +88,7 @@ class FileTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.url, request.url)
             self.assertEquals(response.status, 200)
-            self.assertEquals(response.body, '0123456789')
+            self.assertEquals(response.body, b'0123456789')
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
@@ -105,23 +102,29 @@ class FileTestCase(unittest.TestCase):
 
 class HttpTestCase(unittest.TestCase):
 
+    scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
-        FilePath(name).child("file").setContent("0123456789")
+        FilePath(name).child("file").setContent(b"0123456789")
         r = static.File(name)
-        r.putChild("redirect", util.Redirect("/file"))
-        r.putChild("wait", ForeverTakingResource())
-        r.putChild("hang-after-headers", ForeverTakingResource(write=True))
-        r.putChild("nolength", NoLengthResource())
-        r.putChild("host", HostHeaderResource())
-        r.putChild("payload", PayloadResource())
-        r.putChild("broken", BrokenDownloadResource())
+        r.putChild(b"redirect", util.Redirect(b"/file"))
+        r.putChild(b"wait", ForeverTakingResource())
+        r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
+        r.putChild(b"nolength", NoLengthResource())
+        r.putChild(b"host", HostHeaderResource())
+        r.putChild(b"payload", PayloadResource())
+        r.putChild(b"broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
+        self.host = 'localhost'
+        if self.scheme == 'https':
+            self.port = reactor.listenSSL(
+                0, self.wrapper, ssl_context_factory(), interface=self.host)
+        else:
+            self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(Settings())
         self.download_request = self.download_handler.download_request
@@ -133,20 +136,20 @@ class HttpTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
 
     def test_download(self):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
     def test_download_head(self):
         request = Request(self.getURL('file'), method='HEAD')
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, '')
+        d.addCallback(self.assertEquals, b'')
         return d
 
     def test_redirect_status(self):
@@ -165,6 +168,9 @@ class HttpTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider(self):
+        if self.scheme == 'https':
+            raise unittest.SkipTest(
+                'test_timeout_download_from_spider skipped under https')
         spider = Spider('foo')
         meta = {'download_timeout': 0.2}
         # client connects but no data is received
@@ -178,7 +184,8 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, '127.0.0.1:%d' % self.portno)
+            self.assertEquals(
+                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -186,19 +193,19 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_seted_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, 'example.com')
-            self.assertEquals(request.headers.get('Host'), 'example.com')
+            self.assertEquals(response.body, b'example.com')
+            self.assertEquals(request.headers.get('Host'), b'example.com')
 
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, 'example.com')
+        d.addCallback(self.assertEquals, b'example.com')
         return d
 
     def test_payload(self):
-        body = '1'*100 # PayloadResource requires body length to be 100
+        body = b'1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
@@ -216,6 +223,10 @@ class Http10TestCase(HttpTestCase):
     download_handler_cls = HTTP10DownloadHandler
 
 
+class Https10TestCase(Http10TestCase):
+    scheme = 'https'
+
+
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
     download_handler_cls = HTTP11DownloadHandler
@@ -226,7 +237,7 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
 
     @defer.inlineCallbacks
@@ -237,7 +248,7 @@ class Http11TestCase(HttpTestCase):
         # response body. (regardless of headers)
         d = self.download_request(request, Spider('foo', download_maxsize=10))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         yield d
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
@@ -260,8 +271,12 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo', download_maxsize=100))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, "0123456789")
+        d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+
+class Https11TestCase(Http11TestCase):
+    scheme = 'https'
 
 
 class Http11MockServerTestCase(unittest.TestCase):
@@ -297,27 +312,30 @@ class Http11MockServerTestCase(unittest.TestCase):
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
 
-        if six.PY2 and twisted_version > (12, 3, 0):
+        if twisted_version > (12, 3, 0):
 
             crawler = get_crawler(SingleRequestSpider)
-            body = '1'*100 # PayloadResource requires body length to be 100
+            body = b'1'*100 # PayloadResource requires body length to be 100
             request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
             yield crawler.crawl(seed=request)
             failure = crawler.spider.meta['failure']
             # download_maxsize < 100, hence the CancelledError
             self.assertIsInstance(failure.value, defer.CancelledError)
 
-            request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
-            request = request.replace(url='http://localhost:8998/xpayload')
-            yield crawler.crawl(seed=request)
-
-            # download_maxsize = 50 is enough for the gzipped response
-            failure = crawler.spider.meta.get('failure')
-            self.assertTrue(failure == None)
-            reason = crawler.spider.meta['close_reason']
-            self.assertTrue(reason, 'finished')
+            if six.PY2:
+                request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+                request = request.replace(url='http://localhost:8998/xpayload')
+                yield crawler.crawl(seed=request)
+                # download_maxsize = 50 is enough for the gzipped response
+                failure = crawler.spider.meta.get('failure')
+                self.assertTrue(failure == None)
+                reason = crawler.spider.meta['close_reason']
+                self.assertTrue(reason, 'finished')
+            else:
+                # See issue https://twistedmatrix.com/trac/ticket/8175
+                raise unittest.SkipTest("xpayload only enabled for PY2")
         else:
-            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0 and python 2.x")
+            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0")
 
 
 class UriResource(resource.Resource):
@@ -354,7 +372,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, 'http://example.com')
+            self.assertEquals(response.body, b'http://example.com')
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -364,7 +382,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, 'https://example.com')
+            self.assertEquals(response.body, b'https://example.com')
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
@@ -374,7 +392,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, '/path/to/resource')
+            self.assertEquals(response.body, b'/path/to/resource')
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -393,6 +411,17 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
     if twisted_version < (11, 1, 0):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    @defer.inlineCallbacks
+    def test_download_with_proxy_https_timeout(self):
+        """ Test TunnelingTCP4ClientEndpoint """
+        http_proxy = self.getURL('')
+        domain = 'https://no-such-domain.nosuch'
+        request = Request(
+            domain, meta={'proxy': http_proxy, 'download_timeout': 0.2})
+        d = self.download_request(request, Spider('foo'))
+        timeout = yield self.assertFailure(d, error.TimeoutError)
+        self.assertIn(domain, timeout.osError)
 
 
 class HttpDownloadHandlerMock(object):
@@ -518,8 +547,13 @@ class FTPTestCase(unittest.TestCase):
 
     if twisted_version < (10, 2, 0):
         skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
+    if six.PY3:
+        skip = "Twisted missing ftp support for PY3"
 
     def setUp(self):
+        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
         # setup dirs and test file
         self.directory = self.mktemp()
         os.mkdir(self.directory)
@@ -601,6 +635,8 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_invalid_credentials(self):
+        from twisted.protocols.ftp import ConnectionLost
+
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": 'invalid'})
         d = self.download_handler.download_request(request, None)

@@ -134,12 +134,12 @@ class Echo(LeafResource):
 class Partial(LeafResource):
 
     def render_GET(self, request):
-        request.setHeader("Content-Length", "1024")
+        request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
 
     def _delayedRender(self, request):
-        request.write("partial content\n")
+        request.write(b"partial content\n")
         request.finish()
 
 
@@ -147,7 +147,7 @@ class Drop(Partial):
 
     def _delayedRender(self, request):
         abort = getarg(request, "abort", 0, type=int)
-        request.write("this connection will be dropped\n")
+        request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
             if abort and hasattr(tr, 'abortConnection'):
@@ -162,26 +162,26 @@ class Root(Resource):
 
     def __init__(self):
         Resource.__init__(self)
-        self.putChild("status", Status())
-        self.putChild("follow", Follow())
-        self.putChild("delay", Delay())
-        self.putChild("partial", Partial())
-        self.putChild("drop", Drop())
-        self.putChild("raw", Raw())
-        self.putChild("echo", Echo())
+        self.putChild(b"status", Status())
+        self.putChild(b"follow", Follow())
+        self.putChild(b"delay", Delay())
+        self.putChild(b"partial", Partial())
+        self.putChild(b"drop", Drop())
+        self.putChild(b"raw", Raw())
+        self.putChild(b"echo", Echo())
 
-        if six.PY2 and twisted_version > (12, 3, 0):
+        if twisted_version > (12, 3, 0):
             from twisted.web.test.test_webclient import PayloadResource
             from twisted.web.server import GzipEncoderFactory
             from twisted.web.resource import EncodingResourceWrapper
-            self.putChild('payload', PayloadResource())
-            self.putChild("xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+            self.putChild(b"payload", PayloadResource())
+            self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
 
     def getChild(self, name, request):
         return self
 
     def render(self, request):
-        return 'Scrapy mock HTTP server\n'
+        return b'Scrapy mock HTTP server\n'
 
 
 class MockServer():
@@ -199,14 +199,18 @@ class MockServer():
         time.sleep(0.2)
 
 
+def ssl_context_factory():
+    return ssl.DefaultOpenSSLContextFactory(
+         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
+         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
+         )
+
+
 if __name__ == "__main__":
     root = Root()
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, factory)
-    contextFactory = ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
-         )
+    contextFactory = ssl_context_factory()
     httpsPort = reactor.listenSSL(8999, factory, contextFactory)
 
     def print_listening():
