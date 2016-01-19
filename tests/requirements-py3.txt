@@ -3,6 +3,7 @@ pytest-twisted
 pytest-cov
 testfixtures
 jmespath
+leveldb
 # optional for shell wrapper tests
 bpython
 ipython
