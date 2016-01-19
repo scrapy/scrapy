@@ -1,9 +1,8 @@
-TRIAL := $(shell which trial)
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 export PYTHONPATH=$(PWD)
 
 test:
-	coverage run --branch $(TRIAL) --reporter=text tests
+	py.test --cov=scrapy --cov-report= scrapy tests
 	rm -rf htmlcov && coverage html
 	-s3cmd sync -P htmlcov/ s3://static.scrapy.org/coverage-scrapy-$(BRANCH)/
 
