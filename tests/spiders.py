@@ -119,7 +119,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
         if self.fail_before_yield:
             1 / 0
 
-        for s in xrange(100):
+        for s in range(100):
             qargs = {'total': 10, 'seed': s}
             url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
             yield Request(url, meta={'seed': s})
