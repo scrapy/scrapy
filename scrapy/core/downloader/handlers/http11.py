@@ -302,6 +302,7 @@ class _ResponseReader(protocol.Protocol):
         self._bodybuf = BytesIO()
         self._maxsize  = maxsize
         self._warnsize  = warnsize
+        self._reached_warnsize = False
         self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
@@ -315,11 +316,12 @@ class _ResponseReader(protocol.Protocol):
                           'maxsize': self._maxsize})
             self._finished.cancel()
 
-        if self._warnsize and self._bytes_received > self._warnsize:
-            logger.warning("Received (%(bytes)s) bytes larger than download "
-                           "warn size (%(warnsize)s).",
-                           {'bytes': self._bytes_received,
-                            'warnsize': self._warnsize})
+        if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:
+            self._reached_warnsize = True
+            logger.warning("Received more bytes than download "
+                           "warn size (%(warnsize)s) in request %(request)s.",
+                           {'warnsize': self._warnsize,
+                            'request': self._request})
 
     def connectionLost(self, reason):
         if self._finished.called:
