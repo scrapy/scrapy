@@ -186,7 +186,7 @@ class ScrapyAgent(object):
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
-            omitConnectTunnel = proxyParams.find(b'noconnect') >= 0
+            omitConnectTunnel = b'noconnect' in proxyParams
             if  scheme == b'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
                              request.headers.get(b'Proxy-Authorization', None))
