@@ -431,8 +431,12 @@ class HttpDownloadHandlerMock(object):
     def download_request(self, request, spider):
         return request
 
+
 class S3AnonTestCase(unittest.TestCase):
-    skip = 'boto' not in optional_features and 'missing boto library'
+    try:
+        import boto
+    except ImportError:
+        skip = 'missing boto library'
 
     def setUp(self):
         self.s3reqh = S3DownloadHandler(Settings(),
@@ -448,14 +452,13 @@ class S3AnonTestCase(unittest.TestCase):
         self.assertEqual(hasattr(self.s3reqh.conn, 'anon'), True)
         self.assertEqual(self.s3reqh.conn.anon, True)
 
+
 class S3TestCase(unittest.TestCase):
     download_handler_cls = S3DownloadHandler
     try:
-        # can't instance without settings, but ignore that
-        download_handler_cls({})
-    except NotConfigured:
+        import boto
+    except ImportError:
         skip = 'missing boto library'
-    except KeyError: pass
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
