@@ -92,11 +92,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = (
-            b'CONNECT ' +
-            to_bytes(self._tunneledHost, encoding='ascii') + b':' +
-            to_bytes(str(self._tunneledPort)) +
-            b' HTTP/1.1\r\n')
+        tunnelReq = to_bytes(
+            'CONNECT %s:%s HTTP/1.1\r\n' % (
+                self._tunneledHost, self._tunneledPort), encoding='ascii')
         if self._proxyAuthHeader:
             tunnelReq += \
                 b'Proxy-Authorization: ' + self._proxyAuthHeader + b'\r\n'
