@@ -5,6 +5,7 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
+from scrapy.utils.python import to_bytes
 from tests import mock
 
 
@@ -68,7 +69,7 @@ class DefaultsTest(ManagerTestCase):
 
         """
         req = Request('http://example.com')
-        body = '<p>You are being redirected</p>'
+        body = b'<p>You are being redirected</p>'
         resp = Response(req.url, status=302, body=body, headers={
             'Content-Length': str(len(body)),
             'Content-Type': 'text/html',
@@ -78,12 +79,12 @@ class DefaultsTest(ManagerTestCase):
         ret = self._download(request=req, response=resp)
         self.assertTrue(isinstance(ret, Request),
                         "Not redirected: {0!r}".format(ret))
-        self.assertEqual(ret.url, resp.headers['Location'],
+        self.assertEqual(to_bytes(ret.url), resp.headers['Location'],
                          "Not redirected to location header")
 
     def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request('http://example.com')
-        body = '<p>You are being redirected</p>'
+        body = b'<p>You are being redirected</p>'
         resp = Response(req.url, status=200, body=body, headers={
             'Content-Length': str(len(body)),
             'Content-Type': 'text/html',

@@ -9,13 +9,13 @@ from scrapy.exceptions import NotConfigured
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-    
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
         return cls()
-    
+
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
 
@@ -39,10 +39,10 @@ class HttpCompressionMiddleware(object):
         return response
 
     def _decode(self, body, encoding):
-        if encoding == 'gzip' or encoding == 'x-gzip':
+        if encoding == b'gzip' or encoding == b'x-gzip':
             body = gunzip(body)
 
-        if encoding == 'deflate':
+        if encoding == b'deflate':
             try:
                 body = zlib.decompress(body)
             except zlib.error:
