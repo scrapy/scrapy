@@ -16,12 +16,12 @@ import six
 #   works here but is only available from Python>=3.3
 # - scrapy does not support Python 3.2
 # - Python 2.7 GzipFile works fine with standard read() + extrabuf
-if six.PY3:
-    def read1(gzf, size=-1):
-        return gzf.read1(size)
-else:
+if six.PY2:
     def read1(gzf, size=-1):
         return gzf.read(size)
+else:
+    def read1(gzf, size=-1):
+        return gzf.read1(size)
 
 
 def gunzip(data):
