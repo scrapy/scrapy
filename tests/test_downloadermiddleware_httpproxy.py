@@ -9,6 +9,7 @@ from scrapy.spiders import Spider
 
 spider = Spider('foo')
 
+
 class TestDefaultHeadersMiddleware(TestCase):
 
     failureException = AssertionError
@@ -62,13 +63,28 @@ class TestDefaultHeadersMiddleware(TestCase):
         self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
         self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic dXNlcjo=')
 
+    def test_proxy_auth_encoding(self):
+        # utf-8 encoding
+        os.environ['http_proxy'] = u'https://m\u00E1n:pass@proxy:3128'
+        mw = HttpProxyMiddleware(auth_encoding='utf-8')
+        req = Request('http://scrapytest.org')
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
+        self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic bcOhbjpwYXNz')
+
+        # default latin-1 encoding
+        mw = HttpProxyMiddleware(auth_encoding='latin-1')
+        req = Request('http://scrapytest.org')
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
+        self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic beFuOnBhc3M=')
+
     def test_proxy_already_seted(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
         mw = HttpProxyMiddleware()
         req = Request('http://noproxy.com', meta={'proxy': None})
         assert mw.process_request(req, spider) is None
         assert 'proxy' in req.meta and req.meta['proxy'] is None
-
 
     def test_no_proxy(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
@@ -88,4 +104,3 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com')
         assert mw.process_request(req, spider) is None
         assert 'proxy' not in req.meta
-

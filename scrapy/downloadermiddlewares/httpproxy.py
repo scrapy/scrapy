@@ -11,9 +11,11 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.python import to_bytes
 
+
 class HttpProxyMiddleware(object):
 
-    def __init__(self):
+    def __init__(self, auth_encoding='latin-1'):
+        self.auth_encoding = auth_encoding
         self.proxies = {}
         for type, url in getproxies().items():
             self.proxies[type] = self._get_proxy(url, type)
@@ -21,12 +23,19 @@ class HttpProxyMiddleware(object):
         if not self.proxies:
             raise NotConfigured
 
+    @classmethod
+    def from_crawler(cls, crawler):
+        auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING')
+        return cls(auth_encoding)
+
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
 
         if user:
-            user_pass = to_bytes('%s:%s' % (unquote(user), unquote(password)))
+            user_pass = to_bytes(
+                '%s:%s' % (unquote(user), unquote(password)),
+                encoding=self.auth_encoding)
             creds = base64.b64encode(user_pass).strip()
         else:
             creds = None

@@ -169,6 +169,8 @@ HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
+HTTPPROXY_AUTH_ENCODING = 'latin-1'
+
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
 ITEM_PIPELINES = {}
