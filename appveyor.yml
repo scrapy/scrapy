@@ -1,0 +1,39 @@
+environment:
+  global:
+    LXML_CACHE_DIR: "%APPVEYOR_BUILD_FOLDER%\\lxml-binaries"
+    TOX_TESTENV_PASSENV: "USERNAME"
+  matrix:
+    - PYTHON: "C:\\Python27-x64"
+      TOXENV: "py27-win"
+    - PYTHON: "C:\\Python33-x64"
+      TOXENV: "py33-win"
+    - PYTHON: "C:\\Python35-x64"
+      TOXENV: "py35-win"
+
+version: '{branch}-{build}'
+
+branches:
+  only:
+    - master
+    - /^v\d+\.\d+\.\d+[\w\-]*$/
+
+cache:
+  - '%LXML_CACHE_DIR%'
+
+install:
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - ps: >-
+      If(!(Test-Path $env:LXML_CACHE_DIR)) {
+        Write-Host "Downloading lxml binaries";
+        Start-Process -FilePath "git" -ArgumentList "clone https://gist.github.com/36d27f9b57f6e33bae0d.git $env:LXML_CACHE_DIR" -Wait;
+      } Else {
+        Write-Host "Updating lxml binaries";
+        Start-Process -FilePath "git" -ArgumentList "pull" -WorkingDirectory "$env:LXML_CACHE_DIR" -Wait;
+      }
+  - "python -m pip install tox twine wheel"
+
+build: off
+
+test_script:
+  - "python --version"
+  - "python -m tox"
