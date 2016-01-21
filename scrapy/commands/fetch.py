@@ -1,4 +1,5 @@
 from __future__ import print_function
+import sys, six
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
@@ -30,15 +31,19 @@ class Command(ScrapyCommand):
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
             for value in values:
-                print('%s %s: %s' % (prefix, key, value))
+                self._print_bytes(prefix + b' ' + key + b': ' + value)
 
     def _print_response(self, response, opts):
         if opts.headers:
-            self._print_headers(response.request.headers, '>')
+            self._print_headers(response.request.headers, b'>')
             print('>')
-            self._print_headers(response.headers, '<')
+            self._print_headers(response.headers, b'<')
         else:
-            print(response.body)
+            self._print_bytes(response.body)
+
+    def _print_bytes(self, bytes_):
+        bytes_writer = sys.stdout if six.PY2 else sys.stdout.buffer
+        bytes_writer.write(bytes_ + b'\n')
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):

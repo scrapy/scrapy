@@ -1,6 +1,4 @@
 tests/test_closespider.py
-tests/test_command_fetch.py
-tests/test_command_shell.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
@@ -11,7 +9,6 @@ tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_proxy_connect.py
 tests/test_spidermiddleware_httperror.py
-tests/test_utils_template.py
 
 scrapy/xlib/tx/iweb.py
 scrapy/xlib/tx/interfaces.py
