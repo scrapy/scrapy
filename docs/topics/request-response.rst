@@ -342,7 +342,7 @@ fields with form data from :class:`Response` objects.
        .. versionadded:: 0.17
           The ``formxpath`` parameter.
 
-       .. versionadded:: 1.1.5
+       .. versionadded:: 1.1.0
           The ``formcss`` parameter.
 
 Request usage examples
