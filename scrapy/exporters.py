@@ -11,7 +11,7 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 import warnings
 
@@ -139,8 +139,7 @@ class XmlItemExporter(BaseItemExporter):
         if hasattr(serialized_value, 'items'):
             for subname, value in serialized_value.items():
                 self._export_xml_field(subname, value)
-        elif (hasattr(serialized_value, '__iter__')
-              and not isinstance(serialized_value, six.string_types)):
+        elif is_listlike(serialized_value):
               for value in serialized_value:
                 self._export_xml_field('value', value)
         else:
@@ -261,8 +260,7 @@ class PythonItemExporter(BaseItemExporter):
             return self.export_item(value)
         if isinstance(value, dict):
             return dict(self._serialize_dict(value))
-        if hasattr(value, '__iter__') \
-                and not isinstance(value, six.string_types):
+        if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         if self.binary:
             return to_bytes(value, encoding=self.encoding)
