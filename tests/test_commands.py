@@ -72,7 +72,7 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(1, self.call('startproject', self.project_name))
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
         self.assertEqual(1, self.call('startproject', 'sys'))
-    
+
 
 class StartprojectTemplatesTest(ProjectTest):
 
@@ -80,7 +80,7 @@ class StartprojectTemplatesTest(ProjectTest):
         super(StartprojectTemplatesTest, self).setUp()
         self.tmpl = join(self.temp_path, 'templates')
         self.tmpl_proj = join(self.tmpl, 'project')
-        
+
     def test_startproject_template_override(self):
         copytree(join(scrapy.__path__[0], 'templates'), self.tmpl)
         with open(join(self.tmpl_proj, 'root_template'), 'w'):
@@ -277,3 +277,4 @@ class BenchCommandTest(CommandTest):
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = to_native_str(p.stderr.read())
         self.assertIn('INFO: Crawled', log)
+        self.assertNotIn('Unhandled Error', log)
