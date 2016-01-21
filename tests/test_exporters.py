@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import re
 import json
 import unittest
+import warnings
 from io import BytesIO
 from six.moves import cPickle as pickle
 
@@ -114,6 +115,12 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
+
+    def test_export_binary(self):
+        exporter = PythonItemExporter(binary=True)
+        value = TestItem(name=u'John\xa3', age=u'22')
+        expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
+        self.assertEqual(expected, exporter.export_item(value))
 
 
 class PprintItemExporterTest(BaseItemExporterTest):

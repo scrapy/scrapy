@@ -272,7 +272,11 @@ class PythonItemExporter(BaseItemExporter):
 
     def _serialize_dict(self, value):
         for key, val in six.iteritems(value):
+            key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 
     def export_item(self, item):
-        return dict(self._get_serialized_fields(item))
+        result = dict(self._get_serialized_fields(item))
+        if self.binary:
+            result = dict(self._serialize_dict(result))
+        return result
