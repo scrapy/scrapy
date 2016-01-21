@@ -846,6 +846,26 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response)
         self.assertEqual(req.url, 'http://b.com/test_form')
 
+    def test_from_response_css(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form action="post2.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formcss="form[action='post.php']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'one'], [b'1'])
+
+        r1 = self.request_class.from_response(response, formcss="input[name='four']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'three'], [b'3'])
+
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, formcss="input[name='abc']")
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
