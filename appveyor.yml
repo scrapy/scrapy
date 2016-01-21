@@ -1,0 +1,31 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+      TOXENV: "py27"
+    - PYTHON: "C:\\Python33"
+      TOXENV: "py33"
+    - PYTHON: "C:\\Python35"
+      TOXENV: "py35"
+    # - PYTHON: "C:\\Python27-x64"
+    # - PYTHON: "C:\\Python33-x64"
+    #   DISTUTILS_USE_SDK: "1"
+    # - PYTHON: "C:\\Python35-x64"
+
+version: '{branch}-{build}'
+
+branches:
+  only:
+    - master
+    - /^v\d+\.\d+\.\d+[\w\-]*$/
+
+install:
+  - "%PYTHON%\\python.exe -m pip install wheel"
+  - "SET TOX_TESTENV_PASSENV=DISTUTILS_USE_SDK MSSdk INCLUDE LIB"
+#  - "SET PATH=C:\\Python27;C:\\Python27\\Scripts;%PATH%"
+#  - "SET TOX_TESTENV_PASSENV=HOME USERPROFILE HOMEPATH HOMEDRIVE"
+#  - "pip install -U tox twine wheel"
+
+build: off
+
+test_script:
+  - "%PYTHON% -m tox"
