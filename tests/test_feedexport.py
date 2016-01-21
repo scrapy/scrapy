@@ -22,6 +22,7 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage, StdoutFeedStorage
 )
 from scrapy.utils.test import assert_aws_environ
+from scrapy.utils.python import to_native_str
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -120,8 +121,6 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
 class FeedExportTest(unittest.TestCase):
 
-    skip = not six.PY2
-
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
@@ -170,7 +169,7 @@ class FeedExportTest(unittest.TestCase):
         settings.update({'FEED_FORMAT': 'csv'})
         data = yield self.exported_data(items, settings)
 
-        reader = csv.DictReader(data.splitlines())
+        reader = csv.DictReader(to_native_str(data).splitlines())
         got_rows = list(reader)
         if ordered:
             self.assertEqual(reader.fieldnames, header)
@@ -184,7 +183,7 @@ class FeedExportTest(unittest.TestCase):
         settings = settings or {}
         settings.update({'FEED_FORMAT': 'jl'})
         data = yield self.exported_data(items, settings)
-        parsed = [json.loads(line) for line in data.splitlines()]
+        parsed = [json.loads(to_native_str(line)) for line in data.splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
