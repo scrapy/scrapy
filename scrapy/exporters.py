@@ -11,7 +11,10 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.item import BaseItem
+import warnings
+
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
@@ -83,7 +86,7 @@ class JsonLinesItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(self.encoder.encode(itemdict) + '\n')
+        self.file.write(to_bytes(self.encoder.encode(itemdict) + '\n'))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -95,18 +98,18 @@ class JsonItemExporter(BaseItemExporter):
         self.first_item = True
 
     def start_exporting(self):
-        self.file.write("[")
+        self.file.write(b"[")
 
     def finish_exporting(self):
-        self.file.write("]")
+        self.file.write(b"]")
 
     def export_item(self, item):
         if self.first_item:
             self.first_item = False
         else:
-            self.file.write(',\n')
+            self.file.write(b',\n')
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(self.encoder.encode(itemdict))
+        self.file.write(to_bytes(self.encoder.encode(itemdict)))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -136,8 +139,9 @@ class XmlItemExporter(BaseItemExporter):
         if hasattr(serialized_value, 'items'):
             for subname, value in serialized_value.items():
                 self._export_xml_field(subname, value)
-        elif hasattr(serialized_value, '__iter__'):
-            for value in serialized_value:
+        elif (hasattr(serialized_value, '__iter__')
+              and not isinstance(serialized_value, six.string_types)):
+              for value in serialized_value:
                 self._export_xml_field('value', value)
         else:
             self._xg_characters(serialized_value)
@@ -150,7 +154,7 @@ class XmlItemExporter(BaseItemExporter):
     # and Python 3.x will require unicode, so ">= 2.7.4" should be fine.
     if sys.version_info[:3] >= (2, 7, 4):
         def _xg_characters(self, serialized_value):
-            if not isinstance(serialized_value, unicode):
+            if not isinstance(serialized_value, six.text_type):
                 serialized_value = serialized_value.decode(self.encoding)
             return self.xg.characters(serialized_value)
     else:
@@ -177,7 +181,7 @@ class CsvItemExporter(BaseItemExporter):
                 value = self._join_multivalued.join(value)
             except TypeError:  # list in value may not contain strings
                 pass
-        return value.encode(self.encoding) if isinstance(value, unicode) else value
+        return value.encode(self.encoding) if isinstance(value, six.text_type) else value
 
     def export_item(self, item):
         if self._headers_not_written:
@@ -231,7 +235,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(pprint.pformat(itemdict) + '\n')
+        self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -240,6 +244,13 @@ class PythonItemExporter(BaseItemExporter):
     json, msgpack, binc, etc) can be used on top of it. Its main goal is to
     seamless support what BaseItemExporter does plus nested items.
     """
+    def _configure(self, options, dont_fail=False):
+        self.binary = options.pop('binary', True)
+        super(PythonItemExporter, self)._configure(options, dont_fail)
+        if self.binary:
+            warnings.warn(
+                "PythonItemExporter will drop support for binary export in the future",
+                PendingDeprecationWarning)
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._serialize_value)
@@ -250,9 +261,13 @@ class PythonItemExporter(BaseItemExporter):
             return self.export_item(value)
         if isinstance(value, dict):
             return dict(self._serialize_dict(value))
-        if hasattr(value, '__iter__'):
+        if hasattr(value, '__iter__') \
+                and not isinstance(value, six.string_types):
             return [self._serialize_value(v) for v in value]
-        return value.encode(self.encoding) if isinstance(value, unicode) else value
+        if self.binary:
+            return to_bytes(value, encoding=self.encoding)
+        else:
+            return to_unicode(value, encoding=self.encoding)
 
     def _serialize_dict(self, value):
         for key, val in six.iteritems(value):
