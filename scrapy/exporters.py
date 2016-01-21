@@ -140,7 +140,7 @@ class XmlItemExporter(BaseItemExporter):
             for subname, value in serialized_value.items():
                 self._export_xml_field(subname, value)
         elif is_listlike(serialized_value):
-              for value in serialized_value:
+            for value in serialized_value:
                 self._export_xml_field('value', value)
         else:
             self._xg_characters(serialized_value)
