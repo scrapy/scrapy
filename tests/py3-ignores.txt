@@ -2,8 +2,6 @@ tests/test_closespider.py
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
 tests/test_crawl.py
-tests/test_downloadermiddleware_httpproxy.py
-tests/test_downloadermiddleware_retry.py
 tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
@@ -23,8 +21,6 @@ scrapy/pipelines/files.py
 scrapy/linkextractors/sgml.py
 scrapy/linkextractors/regex.py
 scrapy/linkextractors/htmlparser.py
-scrapy/downloadermiddlewares/retry.py
-scrapy/downloadermiddlewares/httpproxy.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
 scrapy/extensions/memusage.py

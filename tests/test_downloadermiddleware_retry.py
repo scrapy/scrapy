@@ -21,20 +21,20 @@ class RetryTest(unittest.TestCase):
 
     def test_priority_adjust(self):
         req = Request('http://www.scrapytest.org/503')
-        rsp = Response('http://www.scrapytest.org/503', body='', status=503)
+        rsp = Response('http://www.scrapytest.org/503', body=b'', status=503)
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert req2.priority < req.priority
 
     def test_404(self):
         req = Request('http://www.scrapytest.org/404')
-        rsp = Response('http://www.scrapytest.org/404', body='', status=404)
+        rsp = Response('http://www.scrapytest.org/404', body=b'', status=404)
 
         # dont retry 404s
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
     def test_dont_retry(self):
         req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
-        rsp = Response('http://www.scrapytest.org/503', body='', status=503)
+        rsp = Response('http://www.scrapytest.org/503', body=b'', status=503)
 
         # first retry
         r = self.mw.process_response(req, rsp, self.spider)
@@ -56,7 +56,7 @@ class RetryTest(unittest.TestCase):
 
     def test_503(self):
         req = Request('http://www.scrapytest.org/503')
-        rsp = Response('http://www.scrapytest.org/503', body='', status=503)
+        rsp = Response('http://www.scrapytest.org/503', body=b'', status=503)
 
         # first retry
         req = self.mw.process_response(req, rsp, self.spider)
