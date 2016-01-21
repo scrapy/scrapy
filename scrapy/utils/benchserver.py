@@ -13,8 +13,8 @@ class Root(Resource):
         return self
 
     def render(self, request):
-        total = _getarg(request, 'total', 100, int)
-        show = _getarg(request, 'show', 10, int)
+        total = _getarg(request, b'total', 100, int)
+        show = _getarg(request, b'show', 10, int)
         nlist = [random.randint(1, total) for _ in range(show)]
         request.write(b"<html><head></head><body>")
         args = request.args.copy()
