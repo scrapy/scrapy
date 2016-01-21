@@ -83,14 +83,15 @@ class StartprojectTemplatesTest(ProjectTest):
         
     def test_startproject_template_override(self):
         copytree(join(scrapy.__path__[0], 'templates'), self.tmpl)
-        os.mknod(join(self.tmpl_proj, 'root_template'))
+        with open(join(self.tmpl_proj, 'root_template'), 'w'):
+            pass
         assert exists(join(self.tmpl_proj, 'root_template'))
 
         args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
         p = self.proc('startproject', self.project_name, *args)
         out = to_native_str(retry_on_eintr(p.stdout.read))
-        self.assertIn("New Scrapy project %r, using template directory %r, created in:" % \
-                      (self.project_name, join(self.tmpl, 'project')), out)
+        self.assertIn("New Scrapy project %r, using template directory" % self.project_name, out)
+        self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
 
 
