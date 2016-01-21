@@ -1,8 +1,13 @@
+from os.path import join, abspath, dirname, relpath, commonprefix
+import os
+
 from twisted.trial import unittest
 from twisted.internet import defer
 
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+
+from tests import tests_datadir
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -51,3 +56,39 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
         errcode, out, _ = yield self.execute(['-c', code.format(url)])
         self.assertEqual(errcode, 0, out)
+
+    @defer.inlineCallbacks
+    def test_local_files(self):
+        test_file_path = join(tests_datadir, 'test_site/index.html')
+        valid_paths = [
+            test_file_path,
+            relpath(test_file_path),
+            'file://'+test_file_path,
+            './tests/sample_data/test_site/index.html',
+            'tests/sample_data/test_site/index.html',
+        ]
+        for filepath in valid_paths:
+            _, out, _ = yield self.execute([filepath, '-c', 'item'])
+            assert b'{}' in out
+
+    @defer.inlineCallbacks
+    def test_local_files_invalid(self):
+        invalid_filepaths = [
+            '../nothinghere.html',
+            './tests/sample_data/test_site/nothinghere.html'
+        ]
+        for filepath in invalid_filepaths:
+            errcode, out, err = yield self.execute([filepath, '-c', 'item'],
+                                           check_code=False)
+            self.assertEqual(errcode, 1, out or err)
+            self.assertIn(b'No such file or directory', err)
+
+        # currently, this will try to find a host...
+        invalid_paths = [
+            'nothinghere.html',
+        ]
+        for filepath in invalid_paths:
+            errcode, out, err = yield self.execute([filepath, '-c', 'item'],
+                                           check_code=False)
+            self.assertEqual(errcode, 1, out or err)
+            self.assertIn(b'DNS lookup failed', err)
