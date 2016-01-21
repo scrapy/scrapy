@@ -3,6 +3,7 @@ Item Exporters are used to export/serialize items into different formats.
 """
 
 import csv
+import io
 import sys
 import pprint
 import marshal
@@ -11,7 +12,7 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, is_listlike
+from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
 from scrapy.item import BaseItem
 import warnings
 
@@ -166,21 +167,22 @@ class CsvItemExporter(BaseItemExporter):
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.include_headers_line = include_headers_line
+        file = file if six.PY2 else io.TextIOWrapper(file, line_buffering=True)
         self.csv_writer = csv.writer(file, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
     def serialize_field(self, field, name, value):
-        serializer = field.get('serializer', self._to_str_if_unicode)
+        serializer = field.get('serializer', self._join_if_needed)
         return serializer(value)
 
-    def _to_str_if_unicode(self, value):
+    def _join_if_needed(self, value):
         if isinstance(value, (list, tuple)):
             try:
-                value = self._join_multivalued.join(value)
+                return self._join_multivalued.join(value)
             except TypeError:  # list in value may not contain strings
                 pass
-        return value.encode(self.encoding) if isinstance(value, six.text_type) else value
+        return value
 
     def export_item(self, item):
         if self._headers_not_written:
@@ -189,7 +191,7 @@ class CsvItemExporter(BaseItemExporter):
 
         fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
-        values = [x[1] for x in fields]
+        values = [to_native_str(x) for _, x in fields]
         self.csv_writer.writerow(values)
 
     def _write_headers_and_set_fields_to_export(self, item):
@@ -201,7 +203,8 @@ class CsvItemExporter(BaseItemExporter):
                 else:
                     # use fields declared in Item
                     self.fields_to_export = list(item.fields.keys())
-            self.csv_writer.writerow(self.fields_to_export)
+            row = [to_native_str(s) for s in self.fields_to_export]
+            self.csv_writer.writerow(row)
 
 
 class PickleItemExporter(BaseItemExporter):
