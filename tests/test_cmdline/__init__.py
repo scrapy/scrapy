@@ -1,10 +1,11 @@
-import os
 import json
-import sys
-import shutil
+import os
 import pstats
-import tempfile
+import shutil
+import six
 from subprocess import Popen, PIPE
+import sys
+import tempfile
 import unittest
 try:
     from cStringIO import StringIO
@@ -57,14 +58,14 @@ class CmdlineTest(unittest.TestCase):
             shutil.rmtree(path)
 
     def test_override_dict_settings(self):
+        EXT_PATH = "tests.test_cmdline.extensions.DummyExtension"
+        EXTENSIONS = {EXT_PATH: 200}
         settingsstr = self._execute('settings', '--get', 'EXTENSIONS', '-s',
-                                    ('EXTENSIONS={"tests.test_cmdline.extensions.TestExtension": '
-                                     '100, "tests.test_cmdline.extensions.DummyExtension": 200}'))
+                                    'EXTENSIONS=' + json.dumps(EXTENSIONS))
         # XXX: There's gotta be a smarter way to do this...
         self.assertNotIn("...", settingsstr)
         for char in ("'", "<", ">", 'u"'):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
-        self.assertIn('tests.test_cmdline.extensions.DummyExtension', settingsdict)
-        self.assertIn('value=200', settingsdict['tests.test_cmdline.extensions.DummyExtension'])
-        self.assertIn('value=100', settingsdict['tests.test_cmdline.extensions.TestExtension'])
+        six.assertCountEqual(self, settingsdict.keys(), EXTENSIONS.keys())
+        self.assertIn('value=200', settingsdict[EXT_PATH])

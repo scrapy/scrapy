@@ -1,5 +1,6 @@
 import cgi
 import unittest
+import re
 
 import six
 from six.moves import xmlrpc_client as xmlrpclib
@@ -304,6 +305,19 @@ class FormRequestTest(RequestTest):
         self.assertEqual(request.url, 'http://foo.bar/absolute')
         request = FormRequest.from_response(response, url='/relative')
         self.assertEqual(request.url, 'http://example.com/relative')
+
+    def test_from_response_case_insensitive(self):
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="SuBmIt" name="clickable1" value="clicked1">
+            <input type="iMaGe" name="i1" src="http://my.image.org/1.jpg">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
+        req = self.request_class.from_response(response)
+        fs = _qs(req)
+        self.assertEqual(fs['clickable1'], ['clicked1'])
+        self.assertFalse('i1' in fs, fs)  # xpath in _get_inputs()
+        self.assertFalse('clickable2' in fs, fs)  # xpath in _get_clickable()
 
     def test_from_response_submit_first_clickable(self):
         response = _buildresponse(
@@ -662,10 +676,11 @@ class FormRequestTest(RequestTest):
             <input type="text" name="i2">
             <input type="text" value="i3v1">
             <input type="text">
+            <input name="i4" value="i4v1">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
+        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': [''], 'i4': ['i4v1']})
 
     def test_from_response_input_hidden(self):
         res = _buildresponse(
@@ -732,6 +747,18 @@ class FormRequestTest(RequestTest):
 
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
+
+    def test_from_response_unicode_xpath(self):
+        response = _buildresponse(b'<form name="\xd1\x8a"></form>')
+        r = self.request_class.from_response(response, formxpath=u"//form[@name='\u044a']")
+        fs = _qs(r)
+        self.assertEqual(fs, {})
+
+        xpath = u"//form[@name='\u03b1']"
+        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
+        self.assertRaisesRegexp(ValueError, re.escape(encoded),
+                                self.request_class.from_response,
+                                response, formxpath=xpath)
 
     def test_from_response_button_submit(self):
         response = _buildresponse(
@@ -800,6 +827,45 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'test1'], [b'val1'])
         self.assertEqual(fs[b'test2'], [b'val2'])
         self.assertEqual(fs[b'button1'], [b''])
+
+    def test_html_base_form_action(self):
+        response = _buildresponse(
+            """
+            <html>
+                <head>
+                    <base href="http://b.com/">
+                </head>
+                <body>
+                    <form action="test_form">
+                    </form>
+                </body>
+            </html>
+            """,
+            url='http://a.com/'
+        )
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.url, 'http://b.com/test_form')
+
+    def test_from_response_css(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form action="post2.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formcss="form[action='post.php']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'one'], [b'1'])
+
+        r1 = self.request_class.from_response(response, formcss="input[name='four']")
+        fs = _qs(r1)
+        self.assertEqual(fs[b'three'], [b'3'])
+
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, formcss="input[name='abc']")
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)

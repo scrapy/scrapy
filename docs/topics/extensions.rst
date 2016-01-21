@@ -17,7 +17,7 @@ Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
 settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, an
+avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
 `GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
 
@@ -42,13 +42,14 @@ by a string: the full Python path to the extension's class name. For example::
 
 As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
 the extension paths, and their values are the orders, which define the
-extension *loading* order. The specified :setting:`EXTENSIONS` setting is merged
-with the default one (i.e. it does not overwrite it) and then sorted by order
-to get the final sorted list of enabled extensions.
+extension *loading* order. The :setting:`EXTENSIONS` setting is merged with the
+:setting:`EXTENSIONS_BASE` setting defined in Scrapy (and not meant to be
+overridden) and then sorted by order to get the final sorted list of enabled
+extensions.
 
 As extensions typically do not depend on each other, their loading order is
-irrelevant in most cases. This is why the default :setting:`EXTENSIONS` setting
-defines all extensions with the same order (``500``). However, this feature can
+irrelevant in most cases. This is why the :setting:`EXTENSIONS_BASE` setting
+defines all extensions with the same order (``0``). However, this feature can
 be exploited if you need to add an extension which depends on other extensions
 already loaded.
 
@@ -63,7 +64,7 @@ Disabling an extension
 ======================
 
 In order to disable an extension that comes enabled by default (ie. those
-included in the default :setting:`EXTENSIONS` setting) you must set its order to
+included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 ``None``. For example::
 
     EXTENSIONS = {
@@ -143,7 +144,7 @@ Here is the code of such extension::
             self.items_scraped += 1
             if self.items_scraped % self.item_count == 0:
                 logger.info("scraped %d items", self.items_scraped)
-                
+
 
 .. _topics-extensions-ref:
 

@@ -23,20 +23,22 @@ Here's an example::
         'myproject.middlewares.CustomDownloaderMiddleware': 543,
     }
 
-The specified :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
-default one (i.e. it does not overwrite it) and then sorted by order to get the
-final sorted list of enabled middlewares: the first middleware is the one
-closer to the engine and the last is the one closer to the downloader.
+The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
+to be overridden) and then sorted by order to get the final sorted list of
+enabled middlewares: the first middleware is the one closer to the engine and
+the last is the one closer to the downloader.
 
-To decide which order to assign to your middleware see the default
-:setting:`DOWNLOADER_MIDDLEWARES` setting and pick a value according to
+To decide which order to assign to your middleware see the
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
 where you want to insert the middleware. The order does matter because each
 middleware performs a different action and your middleware could depend on some
 previous (or subsequent) middleware being applied.
 
-If you want to disable a built-in middleware you must define it in your
-project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None`` as its
-value. For example, if you want to disable the user-agent middleware::
+If you want to disable a built-in middleware (the ones defined in
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
+in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign `None`
+as its value.  For example, if you want to disable the user-agent middleware::
 
     DOWNLOADER_MIDDLEWARES = {
         'myproject.middlewares.CustomDownloaderMiddleware': 543,
@@ -162,7 +164,7 @@ middleware, see the :ref:`downloader middleware usage guide
 <topics-downloader-middleware>`.
 
 For a list of the components enabled by default (and their orders) see the
-:setting:`DOWNLOADER_MIDDLEWARES` setting.
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
 .. _cookies-mw:
 
@@ -785,14 +787,16 @@ Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
 
-.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
+.. setting:: METAREFRESH_MAXDELAY
 
-REDIRECT_MAX_METAREFRESH_DELAY
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+METAREFRESH_MAXDELAY
+^^^^^^^^^^^^^^^^^^^^
 
 Default: ``100``
 
 The maximum meta-refresh delay (in seconds) to follow the redirection.
+Some sites use meta-refresh for redirecting to a session expired page, so we
+restrict automatic redirection to the maximum delay.
 
 RetryMiddleware
 ---------------
@@ -946,6 +950,18 @@ Default: ``False``
 
 Whether the AjaxCrawlMiddleware will be enabled. You may want to
 enable it for :ref:`broad crawls <topics-broad-crawls>`.
+
+HttpProxyMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_AUTH_ENCODING
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``"latin-1"``
+
+The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: http://en.wikipedia.org/wiki/Dbm

@@ -55,11 +55,12 @@ class TestSpider(Spider):
 
     def parse_item(self, response):
         item = self.item_cls()
-        m = self.name_re.search(response.body)
+        body = response.body_as_unicode()
+        m = self.name_re.search(body)
         if m:
             item['name'] = m.group(1)
         item['url'] = response.url
-        m = self.price_re.search(response.body)
+        m = self.price_re.search(body)
         if m:
             item['price'] = m.group(1)
         return item
@@ -77,8 +78,8 @@ class DictItemsSpider(TestSpider):
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
-    r.putChild("redirect", util.Redirect("/redirected"))
-    r.putChild("redirected", static.Data("Redirected here", "text/plain"))
+    r.putChild(b"redirect", util.Redirect(b"/redirected"))
+    r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
@@ -237,12 +238,12 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.close()
 
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         self.assertEqual(len(e.open_spiders), 1)
         yield e.close()
@@ -250,7 +251,7 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda: None)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         e.start()
         self.assertTrue(e.running)

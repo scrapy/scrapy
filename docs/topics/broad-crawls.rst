@@ -34,7 +34,7 @@ These are some common properties often found in broad crawls:
 
 As said above, Scrapy default settings are optimized for focused crawls, not
 broad crawls. However, due to its asynchronous architecture, Scrapy is very
-well suited for performing fast broad crawls. This page summarize some things
+well suited for performing fast broad crawls. This page summarizes some things
 you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
@@ -46,11 +46,11 @@ Concurrency is the number of requests that are processed in parallel. There is
 a global limit and a per-domain limit.
 
 The default global concurrency limit in Scrapy is not suitable for crawling
-many different  domains in parallel, so you will want to increase it. How much
+many different domains in parallel, so you will want to increase it. How much
 to increase it will depend on how much CPU you crawler will have available. A
 good starting point is ``100``, but the best way to find out is by doing some
 trials and identifying at what concurrency your Scrapy process gets CPU
-bounded. For optimum performance, You should pick a concurrency where CPU usage
+bounded. For optimum performance, you should pick a concurrency where CPU usage
 is at 80-90%.
 
 To increase the global concurrency use::

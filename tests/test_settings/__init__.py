@@ -37,21 +37,22 @@ class SettingsAttributeTest(unittest.TestCase):
         self.assertEqual(self.attribute.value, 'value')
         self.assertEqual(self.attribute.priority, 10)
 
-    def test_set_per_key_priorities(self):
-        attribute = SettingsAttribute(
-            BaseSettings({'one': 10, 'two': 20}, 0), 0)
+    def test_overwrite_basesettings(self):
+        original_dict = {'one': 10, 'two': 20}
+        original_settings = BaseSettings(original_dict, 0)
+        attribute = SettingsAttribute(original_settings, 0)
 
-        new_dict = {'one': 11, 'two': 21}
+        new_dict = {'three': 11, 'four': 21}
         attribute.set(new_dict, 10)
-        self.assertEqual(attribute.value['one'], 11)
-        self.assertEqual(attribute.value['two'], 21)
+        self.assertIsInstance(attribute.value, BaseSettings)
+        six.assertCountEqual(self, attribute.value, new_dict)
+        six.assertCountEqual(self, original_settings, original_dict)
 
-        new_settings = BaseSettings()
-        new_settings.set('one', 12, 20)
-        new_settings.set('two', 12, 0)
-        attribute.set(new_settings, 0)
-        self.assertEqual(attribute.value['one'], 12)
-        self.assertEqual(attribute.value['two'], 21)
+        new_settings = BaseSettings({'five': 12}, 0)
+        attribute.set(new_settings, 0)  # Insufficient priority
+        six.assertCountEqual(self, attribute.value, new_dict)
+        attribute.set(new_settings, 10)
+        six.assertCountEqual(self, attribute.value, new_settings)
 
     def test_repr(self):
         self.assertEqual(repr(self.attribute),
@@ -263,24 +264,15 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getpriority('key'), 99)
         self.assertEqual(settings.getpriority('nonexistentkey'), None)
 
-    def test_getcomposite(self):
-        s = BaseSettings({'TEST_BASE': {1: 1, 2: 2},
+    def test_getwithbase(self):
+        s = BaseSettings({'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
-                          'HASNOBASE': BaseSettings({1: 1}, 'default')})
-        s['TEST'].set(4, 4, priority='project')
-        # When users specify a _BASE setting they explicitly don't want to use
-        # Scrapy's defaults, so we don't want to see anything that has a
-        # 'default' priority from TEST
-        cs = s._getcomposite('TEST')
-        self.assertEqual(len(cs), 3)
-        self.assertEqual(cs[1], 1)
-        self.assertEqual(cs[2], 2)
-        self.assertEqual(cs[4], 4)
-        cs = s._getcomposite('HASNOBASE')
-        self.assertEqual(len(cs), 1)
-        self.assertEqual(cs[1], 1)
-        cs = s._getcomposite('NONEXISTENT')
-        self.assertIsNone(cs)
+                          'HASNOBASE': BaseSettings({3: 3000}, 'default')})
+        s['TEST'].set(2, 200, 'cmdline')
+        six.assertCountEqual(self, s.getwithbase('TEST'),
+                             {1: 1, 2: 200, 3: 30})
+        six.assertCountEqual(self, s.getwithbase('HASNOBASE'), s['HASNOBASE'])
+        self.assertEqual(s.getwithbase('NONEXISTENT'), {})
 
     def test_maxpriority(self):
         # Empty settings should return 'default'

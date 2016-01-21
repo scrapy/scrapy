@@ -269,11 +269,6 @@ Default::
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
-When you set :setting:`DEFAULT_REQUEST_HEADERS` manually, e.g. in your
-project's settings module, it will be merged with the default, not overwrite it.
-If you want to disable any of the default request headers (and not replace them)
-you must assign ``None`` as their value.
-
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
@@ -355,6 +350,16 @@ The downloader to use for crawling.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
+Default:: ``{}``
+
+A dict containing the downloader middlewares enabled in your project, and their
+orders. For more info see :ref:`topics-downloader-middleware-setting`.
+
+.. setting:: DOWNLOADER_MIDDLEWARES_BASE
+
+DOWNLOADER_MIDDLEWARES_BASE
+---------------------------
+
 Default::
 
     {
@@ -375,16 +380,11 @@ Default::
         'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     }
 
-A dict containing the downloader middlewares enabled in your project, and their
-orders. Low orders are closer to the engine, high orders are closer to the
-downloader.
-
-When you set :setting:`DOWNLOADER_MIDDLEWARES` manually, e.g. in your project's
-settings module, it will be merged with the default, not overwrite it. If you
-want to disable any of the default downloader middlewares you must assign
-``None`` as their value.
-
-For more info see :ref:`topics-downloader-middleware-setting`.
+A dict containing the downloader middlewares enabled by default in Scrapy. Low
+orders are closer to the engine, high orders are closer to the downloader. You
+should never modify this setting in your project, modify
+:setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
+:ref:`topics-downloader-middleware-setting`.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -425,6 +425,16 @@ spider attribute.
 DOWNLOAD_HANDLERS
 -----------------
 
+Default: ``{}``
+
+A dict containing the request downloader handlers enabled in your project.
+See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
+
+.. setting:: DOWNLOAD_HANDLERS_BASE
+
+DOWNLOAD_HANDLERS_BASE
+----------------------
+
 Default::
 
     {
@@ -436,15 +446,16 @@ Default::
     }
 
 
-A dict containing the request downloader handlers enabled in your project.
+A dict containing the request download handlers enabled by default in Scrapy.
+You should never modify this setting in your project, modify
+:setting:`DOWNLOAD_HANDLERS` instead.
 
-When you set :setting:`DOWNLOAD_HANDLERS` manually, e.g. in your project's
-settings module, it will be merged with the default, not overwrite it. If you
-want to disable any of the default download handlers you must assign ``None``
-as their value. For example, if you want to disable the file download handler::
+You can disable any of these download handlers by assigning ``None`` to their
+URI scheme in :setting:`DOWNLOAD_HANDLERS`. E.g., to disable the built-in FTP
+handler (without replacement), place this in your ``settings.py``::
 
     DOWNLOAD_HANDLERS = {
-        'file': None,
+        'ftp': None,
     }
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -544,6 +555,15 @@ to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
 EXTENSIONS
 ----------
 
+Default:: ``{}``
+
+A dict containing the extensions enabled in your project, and their orders.
+
+.. setting:: EXTENSIONS_BASE
+
+EXTENSIONS_BASE
+---------------
+
 Default::
 
     {
@@ -558,14 +578,9 @@ Default::
         'scrapy.extensions.throttle.AutoThrottle': 0,
     }
 
-A dict containing the extensions enabled in your project, and their orders. By
-default, this setting contains all stable built-in extensions. Keep in mind that
+A dict containing the extensions available by default in Scrapy, and their
+orders. This setting contains all stable built-in extensions. Keep in mind that
 some of them need to be enabled through a setting.
-
-When you set :setting:`EXTENSIONS` manually, e.g. in your project's settings
-module, it will be merged with the default, not overwrite it. If you want to
-disable any of the default enabled extensions you must assign ``None`` as their
-value.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
@@ -588,6 +603,16 @@ Example::
        'mybot.pipelines.validate.ValidateMyItem': 300,
        'mybot.pipelines.validate.StoreMyItem': 800,
    }
+
+.. setting:: ITEM_PIPELINES_BASE
+
+ITEM_PIPELINES_BASE
+-------------------
+
+Default: ``{}``
+
+A dict containing the pipelines enabled by default in Scrapy. You should never
+modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
 .. setting:: LOG_ENABLED
 
@@ -832,16 +857,6 @@ Defines the maximum times a request can be redirected. After this maximum the
 request's response is returned as is. We used Firefox default value for the
 same task.
 
-.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
-
-REDIRECT_MAX_METAREFRESH_DELAY
-------------------------------
-
-Default: ``100``
-
-Some sites use meta-refresh for redirecting to a session expired page, so we
-restrict automatic redirection to a maximum delay (in seconds)
-
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
@@ -878,6 +893,16 @@ The scheduler to use for crawling.
 SPIDER_CONTRACTS
 ----------------
 
+Default:: ``{}``
+
+A dict containing the spider contracts enabled in your project, used for
+testing spiders. For more info see :ref:`topics-contracts`.
+
+.. setting:: SPIDER_CONTRACTS_BASE
+
+SPIDER_CONTRACTS_BASE
+---------------------
+
 Default::
 
     {
@@ -886,13 +911,17 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled in your project, used for
-testing spiders. For more info see :ref:`topics-contracts`.
+A dict containing the scrapy contracts enabled by default in Scrapy. You should
+never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
+instead. For more info see :ref:`topics-contracts`.
 
-When you set :setting:`SPIDER_CONTRACTS` manually, e.g. in your project's
-settings module, it will be merged with the default, not overwrite it. If you
-want to disable any of the default contracts you must assign ``None`` as their
-value.
+You can disable any of these contracts by assigning ``None`` to their class
+path in :setting:`SPIDER_CONTRACTS`. E.g., to disable the built-in
+``ScrapesContract``, place this in your ``settings.py``::
+
+    SPIDER_CONTRACTS = {
+        'scrapy.contracts.default.ScrapesContract': None,
+    }
 
 .. setting:: SPIDER_LOADER_CLASS
 
@@ -909,6 +938,16 @@ The class that will be used for loading spiders, which must implement the
 SPIDER_MIDDLEWARES
 ------------------
 
+Default:: ``{}``
+
+A dict containing the spider middlewares enabled in your project, and their
+orders. For more info see :ref:`topics-spider-middleware-setting`.
+
+.. setting:: SPIDER_MIDDLEWARES_BASE
+
+SPIDER_MIDDLEWARES_BASE
+-----------------------
+
 Default::
 
     {
@@ -919,14 +958,9 @@ Default::
         'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     }
 
-A dict containing the spider middlewares enabled in your project, and their
-orders. Low orders are closer to the engine, high orders are closer to the
-spider. For more info see :ref:`topics-spider-middleware-setting`.
-
-When you set :setting:`SPIDER_MIDDLEWARES` manually, e.g. in your project's
-settings module, it will be merged with the default, not overwrite it. If you
-want to disable any of the default spider middlewares you must assign ``None``
-as their value.
+A dict containing the spider middlewares enabled by default in Scrapy, and
+their orders. Low orders are closer to the engine, high orders are closer to
+the spider. For more info see :ref:`topics-spider-middleware-setting`.
 
 .. setting:: SPIDER_MODULES
 
@@ -1002,7 +1036,12 @@ TEMPLATES_DIR
 Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
-:command:`startproject` command.
+:command:`startproject` command and new spiders with :command:`genspider` 
+command.
+
+The project name must not conflict with the name of custom files or directories
+in the ``project`` subdirectory.
+
 
 .. setting:: URLLENGTH_LIMIT
 

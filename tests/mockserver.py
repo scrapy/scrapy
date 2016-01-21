@@ -1,12 +1,12 @@
 from __future__ import print_function
 import sys, time, random, os, json
-import six
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor, defer, ssl
 from scrapy import twisted_version
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 if twisted_version < (11, 0, 0):
@@ -30,9 +30,12 @@ else:
     from twisted.internet.task import deferLater
 
 
-def getarg(request, name, default=None, type=str):
+def getarg(request, name, default=None, type=None):
     if name in request.args:
-        return type(request.args[name][0])
+        value = request.args[name][0]
+        if type is not None:
+            value = type(value)
+        return value
     else:
         return default
 
@@ -55,12 +58,12 @@ class LeafResource(Resource):
 class Follow(LeafResource):
 
     def render(self, request):
-        total = getarg(request, "total", 100, type=int)
-        show = getarg(request, "show", 1, type=int)
-        order = getarg(request, "order", "desc")
-        maxlatency = getarg(request, "maxlatency", 0, type=float)
-        n = getarg(request, "n", total, type=int)
-        if order == "rand":
+        total = getarg(request, b"total", 100, type=int)
+        show = getarg(request, b"show", 1, type=int)
+        order = getarg(request, b"order", b"desc")
+        maxlatency = getarg(request, b"maxlatency", 0, type=float)
+        n = getarg(request, b"n", total, type=int)
+        if order == b"rand":
             nlist = [random.randint(1, total) for _ in range(show)]
         else:  # order == "desc"
             nlist = range(n, max(n - show, 0), -1)
@@ -73,19 +76,19 @@ class Follow(LeafResource):
         s = """<html> <head></head> <body>"""
         args = request.args.copy()
         for nl in nlist:
-            args["n"] = [str(nl)]
+            args[b"n"] = [to_bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
             s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
         s += """</body>"""
-        request.write(s)
+        request.write(to_bytes(s))
         request.finish()
 
 
 class Delay(LeafResource):
 
     def render_GET(self, request):
-        n = getarg(request, "n", 1, type=float)
-        b = getarg(request, "b", 1, type=int)
+        n = getarg(request, b"n", 1, type=float)
+        b = getarg(request, b"b", 1, type=int)
         if b:
             # send headers now and delay body
             request.write('')
@@ -93,16 +96,16 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write("Response delayed for %0.3f seconds\n" % n)
+        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
         request.finish()
 
 
 class Status(LeafResource):
 
     def render_GET(self, request):
-        n = getarg(request, "n", 200, type=int)
+        n = getarg(request, b"n", 200, type=int)
         request.setResponseCode(n)
-        return ""
+        return b""
 
 
 class Raw(LeafResource):
@@ -114,7 +117,7 @@ class Raw(LeafResource):
     render_POST = render_GET
 
     def _delayedRender(self, request):
-        raw = getarg(request, 'raw', 'HTTP 1.1 200 OK\n')
+        raw = getarg(request, b'raw', b'HTTP 1.1 200 OK\n')
         request.startedWriting = 1
         request.write(raw)
         request.channel.transport.loseConnection()
@@ -125,29 +128,31 @@ class Echo(LeafResource):
 
     def render_GET(self, request):
         output = {
-            'headers': dict(request.requestHeaders.getAllRawHeaders()),
-            'body': request.content.read(),
+            'headers': dict(
+                (to_unicode(k), [to_unicode(v) for v in vs])
+                for k, vs in request.requestHeaders.getAllRawHeaders()),
+            'body': to_unicode(request.content.read()),
         }
-        return json.dumps(output)
+        return to_bytes(json.dumps(output))
 
 
 class Partial(LeafResource):
 
     def render_GET(self, request):
-        request.setHeader("Content-Length", "1024")
+        request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
 
     def _delayedRender(self, request):
-        request.write("partial content\n")
+        request.write(b"partial content\n")
         request.finish()
 
 
 class Drop(Partial):
 
     def _delayedRender(self, request):
-        abort = getarg(request, "abort", 0, type=int)
-        request.write("this connection will be dropped\n")
+        abort = getarg(request, b"abort", 0, type=int)
+        request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
             if abort and hasattr(tr, 'abortConnection'):
@@ -162,26 +167,26 @@ class Root(Resource):
 
     def __init__(self):
         Resource.__init__(self)
-        self.putChild("status", Status())
-        self.putChild("follow", Follow())
-        self.putChild("delay", Delay())
-        self.putChild("partial", Partial())
-        self.putChild("drop", Drop())
-        self.putChild("raw", Raw())
-        self.putChild("echo", Echo())
+        self.putChild(b"status", Status())
+        self.putChild(b"follow", Follow())
+        self.putChild(b"delay", Delay())
+        self.putChild(b"partial", Partial())
+        self.putChild(b"drop", Drop())
+        self.putChild(b"raw", Raw())
+        self.putChild(b"echo", Echo())
 
-        if six.PY2 and twisted_version > (12, 3, 0):
+        if twisted_version > (12, 3, 0):
             from twisted.web.test.test_webclient import PayloadResource
             from twisted.web.server import GzipEncoderFactory
             from twisted.web.resource import EncodingResourceWrapper
-            self.putChild('payload', PayloadResource())
-            self.putChild("xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+            self.putChild(b"payload", PayloadResource())
+            self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
 
     def getChild(self, name, request):
         return self
 
     def render(self, request):
-        return 'Scrapy mock HTTP server\n'
+        return b'Scrapy mock HTTP server\n'
 
 
 class MockServer():
@@ -199,14 +204,18 @@ class MockServer():
         time.sleep(0.2)
 
 
+def ssl_context_factory():
+    return ssl.DefaultOpenSSLContextFactory(
+         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
+         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
+         )
+
+
 if __name__ == "__main__":
     root = Root()
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, factory)
-    contextFactory = ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
-         )
+    contextFactory = ssl_context_factory()
     httpsPort = reactor.listenSSL(8999, factory, contextFactory)
 
     def print_listening():

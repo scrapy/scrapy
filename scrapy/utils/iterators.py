@@ -1,12 +1,11 @@
 import re
 import csv
 import logging
-
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
-
+from io import StringIO
 import six
 
 from scrapy.http import TextResponse, Response
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def xmliter(obj, nodename):
     """Return a iterator of Selector's over all nodes of a XML document,
-       given tha name of the node to iterate. Useful for parsing XML feeds.
+       given the name of the node to iterate. Useful for parsing XML feeds.
 
     obj can be:
     - a Response object
@@ -36,7 +35,7 @@ def xmliter(obj, nodename):
     header_end = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end[1]:].strip() if header_end else ''
 
-    r = re.compile(r"<{0}[\s>].*?</{0}>".format(nodename_patt), re.DOTALL)
+    r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
@@ -49,7 +48,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
-        nodetext = etree.tostring(node)
+        nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
@@ -65,7 +64,7 @@ class _StreamReader(object):
             self._text, self.encoding = obj.body, obj.encoding
         else:
             self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, unicode)
+        self._is_unicode = isinstance(self._text, six.text_type)
 
     def read(self, n=65535):
         self.read = self._read_unicode if self._is_unicode else self._read_string
@@ -94,7 +93,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
-    
+
     quotechar is the character used to enclosure fields on the given obj.
     """
 
@@ -102,7 +101,11 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     def _getrow(csv_r):
         return [to_unicode(field, encoding) for field in next(csv_r)]
 
-    lines = BytesIO(_body_or_str(obj, unicode=False))
+    # Python 3 csv reader input object needs to return strings
+    if six.PY3:
+        lines = StringIO(_body_or_str(obj, unicode=True))
+    else:
+        lines = BytesIO(_body_or_str(obj, unicode=False))
 
     kwargs = {}
     if delimiter: kwargs["delimiter"] = delimiter
@@ -125,8 +128,11 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, six.string_types)), \
-        "obj must be Response or basestring, not %s" % type(obj).__name__
+    expected_types = (Response, six.text_type, six.binary_type)
+    assert isinstance(obj, expected_types), \
+        "obj must be %s, not %s" % (
+            " or ".join(t.__name__ for t in expected_types),
+            type(obj).__name__)
     if isinstance(obj, Response):
         if not unicode:
             return obj.body

@@ -10,7 +10,7 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 
-def build_component_list(compdict, convert=update_classpath):
+def build_component_list(compdict, custom=None, convert=update_classpath):
     """Compose a component list from a { class: order } dictionary."""
 
     def _check_components(complist):
@@ -34,9 +34,15 @@ def build_component_list(compdict, convert=update_classpath):
             _check_components(compdict)
             return {convert(k): v for k, v in six.iteritems(compdict)}
 
-    if isinstance(compdict, (list, tuple)):
-        _check_components(compdict)
-        return type(compdict)(convert(c) for c in compdict)
+    # BEGIN Backwards compatibility for old (base, custom) call signature
+    if isinstance(custom, (list, tuple)):
+        _check_components(custom)
+        return type(custom)(convert(c) for c in custom)
+
+    if custom is not None:
+        compdict.update(custom)
+    # END Backwards compatibility
+
     compdict = without_none_values(_map_keys(compdict))
     return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
 

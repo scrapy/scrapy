@@ -6,7 +6,7 @@ from io import BytesIO
 from time import time
 from six.moves.urllib.parse import urldefrag
 
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
@@ -19,6 +19,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile('HTTP/1\.. 200')
+    _responseMatcher = re.compile(b'HTTP/1\.. 200')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
@@ -91,11 +92,13 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = 'CONNECT %s:%s HTTP/1.1\r\n' % (self._tunneledHost,
-                                                  self._tunneledPort)
+        tunnelReq = to_bytes(
+            'CONNECT %s:%s HTTP/1.1\r\n' % (
+                self._tunneledHost, self._tunneledPort), encoding='ascii')
         if self._proxyAuthHeader:
-            tunnelReq += 'Proxy-Authorization: %s\r\n' % self._proxyAuthHeader
-        tunnelReq += '\r\n'
+            tunnelReq += \
+                b'Proxy-Authorization: ' + self._proxyAuthHeader + b'\r\n'
+        tunnelReq += b'\r\n'
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
@@ -180,10 +183,11 @@ class ScrapyAgent(object):
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            omitConnectTunnel = proxyParams.find('noconnect') >= 0
-            if  scheme == 'https' and not omitConnectTunnel:
+            proxyHost = to_unicode(proxyHost)
+            omitConnectTunnel = b'noconnect' in proxyParams
+            if  scheme == b'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
-                             request.headers.get('Proxy-Authorization', None))
+                             request.headers.get(b'Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
@@ -201,14 +205,15 @@ class ScrapyAgent(object):
 
         # request details
         url = urldefrag(request.url)[0]
-        method = request.method
+        method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
-            headers.removeHeader('Proxy-Authorization')
+            headers.removeHeader(b'Proxy-Authorization')
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
-        d = agent.request(method, url, headers, bodyproducer)
+        d = agent.request(
+            method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
@@ -232,18 +237,21 @@ class ScrapyAgent(object):
     def _cb_bodyready(self, txresponse, request):
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
-            return txresponse, '', None
+            return txresponse, b'', None
 
         maxsize = request.meta.get('download_maxsize', self._maxsize)
         warnsize = request.meta.get('download_warnsize', self._warnsize)
         expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
 
         if maxsize and expected_size > maxsize:
-            logger.error("Expected response size (%(size)s) larger than "
-                         "download max size (%(maxsize)s).",
-                         {'size': expected_size, 'maxsize': maxsize})
+            error_message = ("Cancelling download of {url}: expected response "
+                             "size ({size}) larger than "
+                             "download max size ({maxsize})."
+            ).format(url=request.url, size=expected_size, maxsize=maxsize)
+
+            logger.error(error_message)
             txresponse._transport._producer.loseConnection()
-            raise defer.CancelledError()
+            raise defer.CancelledError(error_message)
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
@@ -265,8 +273,8 @@ class ScrapyAgent(object):
         return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
 
 
+@implementer(IBodyProducer)
 class _RequestBodyProducer(object):
-    implements(IBodyProducer)
 
     def __init__(self, body):
         self.body = body
@@ -292,6 +300,7 @@ class _ResponseReader(protocol.Protocol):
         self._bodybuf = BytesIO()
         self._maxsize  = maxsize
         self._warnsize  = warnsize
+        self._reached_warnsize = False
         self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
@@ -305,11 +314,12 @@ class _ResponseReader(protocol.Protocol):
                           'maxsize': self._maxsize})
             self._finished.cancel()
 
-        if self._warnsize and self._bytes_received > self._warnsize:
-            logger.warning("Received (%(bytes)s) bytes larger than download "
-                           "warn size (%(warnsize)s).",
-                           {'bytes': self._bytes_received,
-                            'warnsize': self._warnsize})
+        if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:
+            self._reached_warnsize = True
+            logger.warning("Received more bytes than download "
+                           "warn size (%(warnsize)s) in request %(request)s.",
+                           {'warnsize': self._warnsize,
+                            'request': self._request})
 
     def connectionLost(self, reason):
         if self._finished.called:

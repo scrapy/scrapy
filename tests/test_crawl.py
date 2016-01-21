@@ -8,6 +8,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.python import to_unicode
 from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
@@ -201,16 +202,16 @@ with multiples lines
         self.assertIn('responses', crawler.spider.meta)
         self.assertNotIn('failures', crawler.spider.meta)
         # start requests doesn't set Referer header
-        echo0 = json.loads(crawler.spider.meta['responses'][2].body)
+        echo0 = json.loads(to_unicode(crawler.spider.meta['responses'][2].body))
         self.assertNotIn('Referer', echo0['headers'])
         # following request sets Referer to start request url
-        echo1 = json.loads(crawler.spider.meta['responses'][1].body)
+        echo1 = json.loads(to_unicode(crawler.spider.meta['responses'][1].body))
         self.assertEqual(echo1['headers'].get('Referer'), [req0.url])
         # next request avoids Referer header
-        echo2 = json.loads(crawler.spider.meta['responses'][2].body)
+        echo2 = json.loads(to_unicode(crawler.spider.meta['responses'][2].body))
         self.assertNotIn('Referer', echo2['headers'])
         # last request explicitly sets a Referer header
-        echo3 = json.loads(crawler.spider.meta['responses'][3].body)
+        echo3 = json.loads(to_unicode(crawler.spider.meta['responses'][3].body))
         self.assertEqual(echo3['headers'].get('Referer'), ['http://example.com'])
 
     @defer.inlineCallbacks

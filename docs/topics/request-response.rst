@@ -282,7 +282,7 @@ fields with form data from :class:`Response` objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, formxpath=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -309,6 +309,9 @@ fields with form data from :class:`Response` objects.
 
        :param formxpath: if given, the first form that matches the xpath will be used.
        :type formxpath: string
+
+       :param formcss: if given, the first form that matches the css selector will be used.
+       :type formcss: string
 
        :param formnumber: the number of form to use, when the response contains
           multiple forms. The first one (and also the default) is ``0``.
@@ -338,6 +341,9 @@ fields with form data from :class:`Response` objects.
 
        .. versionadded:: 0.17
           The ``formxpath`` parameter.
+
+       .. versionadded:: 1.1.0
+          The ``formcss`` parameter.
 
 Request usage examples
 ----------------------

@@ -58,7 +58,7 @@ class Command(ScrapyCommand):
                 self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
             else:
                 self.settings.set('FEED_URI', opts.output, priority='cmdline')
-            feed_exporters = without_none_values(self.settings._getcomposite('FEED_EXPORTERS'))
+            feed_exporters = without_none_values(self.settings.getwithbase('FEED_EXPORTERS'))
             valid_output_formats = feed_exporters.keys()
             if not opts.output_format:
                 opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")

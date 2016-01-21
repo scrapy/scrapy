@@ -4,13 +4,14 @@ import subprocess
 import tempfile
 from time import sleep
 from os.path import exists, join, abspath
-from shutil import rmtree
+from shutil import rmtree, copytree
 from tempfile import mkdtemp
 import six
 
 from twisted.trial import unittest
 from twisted.internet import defer
 
+import scrapy
 from scrapy.utils.python import to_native_str
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
@@ -71,6 +72,27 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(1, self.call('startproject', self.project_name))
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
         self.assertEqual(1, self.call('startproject', 'sys'))
+
+
+class StartprojectTemplatesTest(ProjectTest):
+
+    def setUp(self):
+        super(StartprojectTemplatesTest, self).setUp()
+        self.tmpl = join(self.temp_path, 'templates')
+        self.tmpl_proj = join(self.tmpl, 'project')
+
+    def test_startproject_template_override(self):
+        copytree(join(scrapy.__path__[0], 'templates'), self.tmpl)
+        with open(join(self.tmpl_proj, 'root_template'), 'w'):
+            pass
+        assert exists(join(self.tmpl_proj, 'root_template'))
+
+        args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
+        p = self.proc('startproject', self.project_name, *args)
+        out = to_native_str(retry_on_eintr(p.stdout.read))
+        self.assertIn("New Scrapy project %r, using template directory" % self.project_name, out)
+        self.assertIn(self.tmpl_proj, out)
+        assert exists(join(self.proj_path, 'root_template'))
 
 
 class CommandTest(ProjectTest):
@@ -255,3 +277,4 @@ class BenchCommandTest(CommandTest):
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = to_native_str(p.stderr.read())
         self.assertIn('INFO: Crawled', log)
+        self.assertNotIn('Unhandled Error', log)

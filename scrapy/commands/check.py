@@ -58,7 +58,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         # load contracts
-        contracts = build_component_list(self.settings._getcomposite('SPIDER_CONTRACTS'))
+        contracts = build_component_list(self.settings.getwithbase('SPIDER_CONTRACTS'))
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)

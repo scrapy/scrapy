@@ -7,7 +7,6 @@ import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.xlib import lsprofcalltree
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
@@ -144,7 +143,7 @@ def execute(argv=None, settings=None):
     sys.exit(cmd.exitcode)
 
 def _run_command(cmd, args, opts):
-    if opts.profile or opts.lsprof:
+    if opts.profile:
         _run_command_profiled(cmd, args, opts)
     else:
         cmd.run(args, opts)
@@ -152,17 +151,11 @@ def _run_command(cmd, args, opts):
 def _run_command_profiled(cmd, args, opts):
     if opts.profile:
         sys.stderr.write("scrapy: writing cProfile stats to %r\n" % opts.profile)
-    if opts.lsprof:
-        sys.stderr.write("scrapy: writing lsprof stats to %r\n" % opts.lsprof)
     loc = locals()
     p = cProfile.Profile()
     p.runctx('cmd.run(args, opts)', globals(), loc)
     if opts.profile:
         p.dump_stats(opts.profile)
-    k = lsprofcalltree.KCacheGrind(p)
-    if opts.lsprof:
-        with open(opts.lsprof, 'w') as f:
-            k.output(f)
 
 if __name__ == '__main__':
     execute()
