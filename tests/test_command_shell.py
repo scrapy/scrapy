@@ -3,10 +3,75 @@ from os.path import join
 from twisted.trial import unittest
 from twisted.internet import defer
 
+from scrapy.commands.shell import guess_scheme
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 
 from tests import tests_datadir
+
+
+class ShellURLTest(unittest.TestCase):
+
+    def test_file_uri_relative001(self):
+        # FIXME: 'index.html' is interpreted as a domain name
+        #        is this correct?
+        url = guess_scheme('index.html')
+        assert url.startswith('http://')
+
+    def test_file_uri_relative002(self):
+        url = guess_scheme('./index.html')
+        assert url.startswith('file://')
+
+    def test_file_uri_relative003(self):
+        url = guess_scheme('../data/index.html')
+        assert url.startswith('file://')
+
+    def test_file_uri_relative004(self):
+        url = guess_scheme('subdir/index.html')
+        assert url.startswith('file://')
+
+    def test_file_uri_absolute001(self):
+        """Absolute file paths get prepended with "file://" scheme"""
+        iurl = '/home/user/www/index.html'
+        url = guess_scheme(iurl)
+        self.assertEquals(url, 'file://'+iurl)
+
+    def test_file_uri_scheme(self):
+        """Output File URI does not change if "file://" scheme is set"""
+        iurl = 'file:///home/user/www/index.html'
+        url = guess_scheme(iurl)
+        self.assertEquals(url, iurl)
+
+    def test_file_uri_windows(self):
+        raise unittest.SkipTest("Windows filepath are not supported for scrapy shell")
+        url = guess_scheme('C:\absolute\path\to\a\file.html')
+        assert url.startswith('file://')
+
+    def test_http_url_001(self):
+        url = guess_scheme('index.html')
+        assert url.startswith('http://')
+
+    def test_http_url_002(self):
+        url = guess_scheme('example.com')
+        assert url.startswith('http://')
+
+    def test_http_url_003(self):
+        url = guess_scheme('www.example.com')
+        assert url.startswith('http://')
+
+    def test_http_url_004(self):
+        url = guess_scheme('www.example.com/index')
+        assert url.startswith('http://')
+
+    def test_http_url_005(self):
+        url = guess_scheme('www.example.com/index.html')
+        assert url.startswith('http://')
+
+    def test_http_url_scheme(self):
+        """An full HTTP URL is unaltered"""
+        iurl = 'http://www.example.com/index.html'
+        url = guess_scheme(iurl)
+        self.assertEquals(url, iurl)
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -57,37 +122,23 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks
-    def test_local_files(self):
-        test_file_path = join(tests_datadir, 'test_site/index.html')
-        valid_paths = [
-            test_file_path,
-            # relpath(test_file_path),
-            'file://'+test_file_path,
-            './tests/sample_data/test_site/index.html',
-            'tests/sample_data/test_site/index.html',
-        ]
-        for filepath in valid_paths:
-            _, out, _ = yield self.execute([filepath, '-c', 'item'])
-            assert b'{}' in out
+    def test_local_file(self):
+        filepath = join(tests_datadir, 'test_site/index.html')
+        _, out, _ = yield self.execute([filepath, '-c', 'item'])
+        assert b'{}' in out
 
     @defer.inlineCallbacks
-    def test_local_files_invalid(self):
-        invalid_filepaths = [
-            '../nothinghere.html',
-            './tests/sample_data/test_site/nothinghere.html'
-        ]
-        for filepath in invalid_filepaths:
-            errcode, out, err = yield self.execute([filepath, '-c', 'item'],
-                                           check_code=False)
-            self.assertEqual(errcode, 1, out or err)
-            self.assertIn(b'No such file or directory', err)
+    def test_local_nofile(self):
+        filepath = 'file:///tests/sample_data/test_site/nothinghere.html'
+        errcode, out, err = yield self.execute([filepath, '-c', 'item'],
+                                       check_code=False)
+        self.assertEqual(errcode, 1, out or err)
+        self.assertIn(b'No such file or directory', err)
 
-        # currently, this will try to find a host...
-        invalid_paths = [
-            'nothinghere.html',
-        ]
-        for filepath in invalid_paths:
-            errcode, out, err = yield self.execute([filepath, '-c', 'item'],
-                                           check_code=False)
-            self.assertEqual(errcode, 1, out or err)
-            self.assertIn(b'DNS lookup failed', err)
+    @defer.inlineCallbacks
+    def test_dns_failures(self):
+        url = 'www.somedomainthatdoesntexi.st'
+        errcode, out, err = yield self.execute([url, '-c', 'item'],
+                                       check_code=False)
+        self.assertEqual(errcode, 1, out or err)
+        self.assertIn(b'DNS lookup failed', err)

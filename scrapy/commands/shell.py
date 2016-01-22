@@ -16,6 +16,24 @@ from scrapy.utils.url import add_http_if_no_scheme
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 
+def guess_scheme(url):
+    """Given an URL as string,
+    returns a FileURI if it looks like a file path,
+    otherwise returns an HTTP URL
+    """
+    parts = urlparse(url)
+    if not parts.scheme:
+        if "." not in parts.path.split("/", 1)[0]:
+            url = any_to_uri(url)
+
+        for pattern in ["/", "./", "../"]:
+            if url.startswith(pattern):
+                url = any_to_uri(url)
+                break
+        url = add_http_if_no_scheme(url)
+    return url
+
+
 class Command(ScrapyCommand):
 
     requires_project = False
@@ -50,16 +68,8 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         url = args[0] if args else None
         if url:
-            parts = urlparse(url)
-            if not parts.scheme:
-                if "." not in parts.path.split("/", 1)[0]:
-                    url = any_to_uri(url)
-
-                for pattern in ["/", "./", "../"]:
-                    if url.startswith(pattern):
-                        url = any_to_uri(url)
-                        break
-                url = add_http_if_no_scheme(url)
+            # first argument may be a local file
+            url = guess_scheme(url)
 
         spider_loader = self.crawler_process.spider_loader
 
