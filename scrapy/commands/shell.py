@@ -4,7 +4,6 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-import re
 from six.moves.urllib.parse import urlparse
 from threading import Thread
 from w3lib.url import any_to_uri
