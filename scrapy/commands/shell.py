@@ -3,7 +3,7 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
-
+import re
 from six.moves.urllib.parse import urlparse
 from threading import Thread
 from w3lib.url import any_to_uri
@@ -21,16 +21,22 @@ def guess_scheme(url):
     otherwise returns an HTTP URL
     """
     parts = urlparse(url)
-    if not parts.scheme:
-        if "." not in parts.path.split("/", 1)[0]:
-            url = any_to_uri(url)
-
-        for pattern in ["/", "./", "../"]:
-            if url.startswith(pattern):
-                url = any_to_uri(url)
-                break
-        url = add_http_if_no_scheme(url)
-    return url
+    if parts.scheme:
+        return url
+    # Note: this does not match Windows filepath
+    if re.match(r'''^                   # start with...
+                    (
+                        \.              # ...a single dot,
+                        (
+                            \. | [^/\.]+  # optionally followed by
+                        )?                # either a second dot or some characters
+                    )?      # optional match of ".", ".." or ".blabla"
+                    /       # at least one "/" for a file path,
+                    .       # and something after the "/"
+                    ''', parts.path, flags=re.VERBOSE):
+        return any_to_uri(url)
+    else:
+        return add_http_if_no_scheme(url)
 
 
 class Command(ScrapyCommand):

@@ -11,67 +11,61 @@ from tests import tests_datadir
 
 
 class ShellURLTest(unittest.TestCase):
+    pass
 
-    def test_file_uri_relative001(self):
-        # FIXME: 'index.html' is interpreted as a domain name
-        #        is this correct?
-        url = guess_scheme('index.html')
-        assert url.startswith('http://')
+def create_guess_scheme_t(args):
+    def do_expected(self):
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1]), \
+            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
+                args[0], url, args[1])
+    return do_expected
 
-    def test_file_uri_relative002(self):
-        url = guess_scheme('./index.html')
-        assert url.startswith('file://')
+def create_skipped_scheme_t(args):
+    def do_expected(self):
+        raise unittest.SkipTest(args[2])
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1])
+    return do_expected
 
-    def test_file_uri_relative003(self):
-        url = guess_scheme('../data/index.html')
-        assert url.startswith('file://')
+for k, args in enumerate ([
+            ('/index',                              'file://'),
+            ('/index.html',                         'file://'),
+            ('./index.html',                        'file://'),
+            ('../index.html',                       'file://'),
+            ('../../index.html',                    'file://'),
+            ('./data/index.html',                   'file://'),
+            ('.hidden/data/index.html',             'file://'),
+            ('/home/user/www/index.html',           'file://'),
+            ('//home/user/www/index.html',          'file://'),
+            ('file:///home/user/www/index.html',    'file://'),
 
-    def test_file_uri_relative004(self):
-        url = guess_scheme('subdir/index.html')
-        assert url.startswith('file://')
+            ('index.html',                          'http://'),
+            ('example.com',                         'http://'),
+            ('www.example.com',                     'http://'),
+            ('www.example.com/index.html',          'http://'),
+            ('http://example.com',                  'http://'),
+            ('http://example.com/index.html',       'http://'),
+            ('localhost',                           'http://'),
+            ('localhost/index.html',                'http://'),
 
-    def test_file_uri_absolute001(self):
-        """Absolute file paths get prepended with "file://" scheme"""
-        iurl = '/home/user/www/index.html'
-        url = guess_scheme(iurl)
-        self.assertEquals(url, 'file://'+iurl)
+            # some corner cases (default to http://)
+            ('/',                                   'http://'),
+            ('.../test',                            'http://'),
 
-    def test_file_uri_scheme(self):
-        """Output File URI does not change if "file://" scheme is set"""
-        iurl = 'file:///home/user/www/index.html'
-        url = guess_scheme(iurl)
-        self.assertEquals(url, iurl)
+        ], start=1):
+    t_method = create_guess_scheme_t(args)
+    t_method.__name__ = 'test_uri_%03d' % k
+    setattr (ShellURLTest, t_method.__name__, t_method)
 
-    def test_file_uri_windows(self):
-        raise unittest.SkipTest("Windows filepath are not supported for scrapy shell")
-        url = guess_scheme('C:\absolute\path\to\a\file.html')
-        assert url.startswith('file://')
-
-    def test_http_url_001(self):
-        url = guess_scheme('index.html')
-        assert url.startswith('http://')
-
-    def test_http_url_002(self):
-        url = guess_scheme('example.com')
-        assert url.startswith('http://')
-
-    def test_http_url_003(self):
-        url = guess_scheme('www.example.com')
-        assert url.startswith('http://')
-
-    def test_http_url_004(self):
-        url = guess_scheme('www.example.com/index')
-        assert url.startswith('http://')
-
-    def test_http_url_005(self):
-        url = guess_scheme('www.example.com/index.html')
-        assert url.startswith('http://')
-
-    def test_http_url_scheme(self):
-        """An full HTTP URL is unaltered"""
-        iurl = 'http://www.example.com/index.html'
-        url = guess_scheme(iurl)
-        self.assertEquals(url, iurl)
+# TODO: the following tests do not pass with current implementation
+for k, args in enumerate ([
+            ('C:\absolute\path\to\a\file.html',     'file://',
+             'Windows filepath are not supported for scrapy shell'),
+        ], start=1):
+    t_method = create_skipped_scheme_t(args)
+    t_method.__name__ = 'test_uri_skipped_%03d' % k
+    setattr (ShellURLTest, t_method.__name__, t_method)
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
