@@ -205,8 +205,6 @@ from scrapy.spiders import Spider
 
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
-    skip = not six.PY2
-
     command = 'parse'
 
     def setUp(self):
