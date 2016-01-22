@@ -2,11 +2,11 @@ from __future__ import absolute_import
 import re
 import json
 import unittest
-import warnings
 from io import BytesIO
 from six.moves import cPickle as pickle
 
 import lxml.etree
+import six
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
@@ -65,6 +65,11 @@ class BaseItemExporterTest(unittest.TestCase):
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=['name'])
         self.assertEqual(list(ie._get_serialized_fields(self.i)), [('name', u'John\xa3')])
+
+        ie = self._get_exporter(fields_to_export=['name'], encoding='latin-1')
+        _, name = list(ie._get_serialized_fields(self.i))[0]
+        assert isinstance(name, six.text_type)
+        self.assertEqual(name, u'John\xa3')
 
     def test_field_custom_serializer(self):
         def custom_serializer(value):
