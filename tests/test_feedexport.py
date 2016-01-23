@@ -5,7 +5,6 @@ import json
 from io import BytesIO
 import tempfile
 import shutil
-import six
 from six.moves.urllib.parse import urlparse
 
 from zope.interface.verify import verifyObject
@@ -188,9 +187,21 @@ class FeedExportTest(unittest.TestCase):
         self.assertEqual(rows, parsed)
 
     @defer.inlineCallbacks
+    def assertExportedXml(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({'FEED_FORMAT': 'xml'})
+        data = yield self.exported_data(items, settings)
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        import lxml.etree
+        root = lxml.etree.fromstring(data)
+        got_rows = [{e.tag: e.text for e in it} for it in root.findall('item')]
+        self.assertEqual(rows, got_rows)
+
+    @defer.inlineCallbacks
     def assertExported(self, items, header, rows, settings=None, ordered=True):
         yield self.assertExportedCsv(items, header, rows, settings, ordered)
         yield self.assertExportedJsonLines(items, rows, settings)
+        yield self.assertExportedXml(items, rows, settings)
 
     @defer.inlineCallbacks
     def test_export_items(self):
