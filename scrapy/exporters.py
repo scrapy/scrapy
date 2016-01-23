@@ -14,6 +14,7 @@ from xml.sax.saxutils import XMLGenerator
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
 from scrapy.item import BaseItem
+from scrapy.exceptions import ScrapyDeprecationWarning
 import warnings
 
 
@@ -252,7 +253,7 @@ class PythonItemExporter(BaseItemExporter):
         if self.binary:
             warnings.warn(
                 "PythonItemExporter will drop support for binary export in the future",
-                PendingDeprecationWarning)
+                ScrapyDeprecationWarning)
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._serialize_value)
