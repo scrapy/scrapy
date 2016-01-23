@@ -261,13 +261,13 @@ class XmlItemExporterTest(BaseItemExporterTest):
         self.assertXmlEquivalent(fp.getvalue(), expected_value)
 
     def _check_output(self):
-        expected_value = u'<?xml version="1.0" ?>\n<items><item><age>22</age><name>John\xa3</name></item></items>'
+        expected_value = b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
         self.assertXmlEquivalent(self.output.getvalue(), expected_value)
 
     def test_multivalued_fields(self):
         self.assertExportResult(
             TestItem(name=[u'John\xa3', u'Doe']),
-            u'<?xml version="1.0" ?>\n<items><item><name><value>John\xa3</value><value>Doe</value></name></item></items>'
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
         )
 
     def test_nested_item(self):
@@ -276,19 +276,19 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'buz', age=i2)
 
         self.assertExportResult(i3,
-            u'<?xml version="1.0" ?>\n'
-            u'<items>'
-                u'<item>'
-                    u'<age>'
-                        u'<age>'
-                            u'<age>22</age>'
-                            u'<name>foo\xa3hoo</name>'
-                        u'</age>'
-                        u'<name>bar</name>'
-                    u'</age>'
-                    u'<name>buz</name>'
-                u'</item>'
-            u'</items>'
+            b'<?xml version="1.0" encoding="utf-8"?>\n'
+            b'<items>'
+                b'<item>'
+                    b'<age>'
+                        b'<age>'
+                            b'<age>22</age>'
+                            b'<name>foo\xc2\xa3hoo</name>'
+                        b'</age>'
+                        b'<name>bar</name>'
+                    b'</age>'
+                    b'<name>buz</name>'
+                b'</item>'
+            b'</items>'
         )
 
     def test_nested_list_item(self):
@@ -297,16 +297,16 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'buz', age=[i1, i2])
 
         self.assertExportResult(i3,
-            u'<?xml version="1.0" ?>\n'
-            u'<items>'
-                u'<item>'
-                    u'<age>'
-                        u'<value><name>foo</name></value>'
-                        u'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
-                    u'</age>'
-                    u'<name>buz</name>'
-                u'</item>'
-            u'</items>'
+            b'<?xml version="1.0" encoding="utf-8"?>\n'
+            b'<items>'
+                b'<item>'
+                    b'<age>'
+                        b'<value><name>foo</name></value>'
+                        b'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
+                    b'</age>'
+                    b'<name>buz</name>'
+                b'</item>'
+            b'</items>'
         )
 
 
