@@ -197,11 +197,42 @@ class FeedExportTest(unittest.TestCase):
         got_rows = [{e.tag: e.text for e in it} for it in root.findall('item')]
         self.assertEqual(rows, got_rows)
 
+    def _load_until_eof(self, data, load_func):
+        bytes_output = BytesIO(data)
+        result = []
+        while True:
+            try:
+                result.append(load_func(bytes_output))
+            except EOFError:
+                break
+        return result
+
+    @defer.inlineCallbacks
+    def assertExportedPickle(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({'FEED_FORMAT': 'pickle'})
+        data = yield self.exported_data(items, settings)
+        expected = [{k: v for k, v in row.items() if v} for row in rows]
+        import pickle
+        result = self._load_until_eof(data, load_func=pickle.load)
+        self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def assertExportedMarshal(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({'FEED_FORMAT': 'marshal'})
+        data = yield self.exported_data(items, settings)
+        expected = [{k: v for k, v in row.items() if v} for row in rows]
+        import marshal
+        result = self._load_until_eof(data, load_func=marshal.load)
+        self.assertEqual(expected, result)
+
     @defer.inlineCallbacks
     def assertExported(self, items, header, rows, settings=None, ordered=True):
         yield self.assertExportedCsv(items, header, rows, settings, ordered)
         yield self.assertExportedJsonLines(items, rows, settings)
         yield self.assertExportedXml(items, rows, settings)
+        yield self.assertExportedPickle(items, rows, settings)
 
     @defer.inlineCallbacks
     def test_export_items(self):
