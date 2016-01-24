@@ -1,6 +1,5 @@
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
-tests/test_mail.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_proxy_connect.py
@@ -22,4 +21,3 @@ scrapy/linkextractors/htmlparser.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
 scrapy/extensions/memusage.py
-scrapy/mail.py
