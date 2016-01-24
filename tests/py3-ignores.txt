@@ -1,7 +1,5 @@
 tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
-tests/test_pipeline_files.py
-tests/test_pipeline_images.py
 tests/test_proxy_connect.py
 tests/test_spidermiddleware_httperror.py
 
