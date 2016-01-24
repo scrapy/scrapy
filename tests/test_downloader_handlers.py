@@ -437,6 +437,8 @@ class S3AnonTestCase(unittest.TestCase):
         import boto
     except ImportError:
         skip = 'missing boto library'
+    if six.PY3:
+        skip = 'S3 not supported on Py3'
 
     def setUp(self):
         self.s3reqh = S3DownloadHandler(Settings(),
@@ -459,6 +461,8 @@ class S3TestCase(unittest.TestCase):
         import boto
     except ImportError:
         skip = 'missing boto library'
+    if six.PY3:
+        skip = 'S3 not supported on Py3'
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
