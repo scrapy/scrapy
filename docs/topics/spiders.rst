@@ -283,7 +283,19 @@ Spider arguments are passed through the :command:`crawl` command using the
 
     scrapy crawl myspider -a category=electronics
 
-Spiders receive arguments in their constructors::
+Spider arguments are exposed as attributes::
+
+    import scrapy
+    
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        def __init__(self, *args, **kwargs):
+            super(MySpider, self).__init__(*args, **kwargs)
+            self.start_urls = ['http://www.example.com/categories/%s' % self.category]
+            # ...
+            
+And arguments are also received in spider constructors::
 
     import scrapy
 
