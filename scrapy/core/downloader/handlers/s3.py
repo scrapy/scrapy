@@ -19,6 +19,7 @@ def get_s3_connection():
     class _v20_S3Connection(S3Connection):
         """A dummy S3Connection wrapper that doesn't do any synchronous download"""
         def _mexe(self, http_request, *args, **kwargs):
+            http_request._headers_quoted = True  # FIXME - hack hack
             http_request.authorize(connection=self)
             return http_request.headers
 
@@ -70,7 +71,10 @@ class S3DownloadHandler(object):
                 bucket=bucket,
                 key=unquote(p.path),
                 query_args=unquote(p.query),
-                headers=request.headers,
+                headers={ # FIXME - encoding, multiple values
+                    k.decode('utf-8'): vs[0].decode('utf-8')
+                    for k, vs in request.headers.items()},
+               #headers=request.headers,
                 data=request.body)
         httpreq = request.replace(url=url, headers=signed_headers)
         return self._download_http(httpreq, spider)
