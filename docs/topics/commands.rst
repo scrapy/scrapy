@@ -373,7 +373,9 @@ shell
 * Requires project: *no*
 
 Starts the Scrapy shell for the given URL (if given) or empty if no URL is
-given. See :ref:`topics-shell` for more info.
+given. Also supports UNIX-style local file paths, either relative with
+``./`` or ``../`` prefixes or absolute file paths.
+See :ref:`topics-shell` for more info.
 
 Usage example::
 

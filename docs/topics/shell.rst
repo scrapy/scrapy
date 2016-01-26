@@ -53,6 +53,36 @@ this::
 
 Where the ``<url>`` is the URL you want to scrape.
 
+:command:`shell` also works for local files. This can be handy if you want
+to play around with a local copy of a web page. :command:`shell` understands
+the following syntaxes for local files::
+
+    # UNIX-style
+    scrapy shell ./path/to/file.html
+    scrapy shell ../other/path/to/file.html
+    scrapy shell /absolute/path/to/file.html
+
+    # File URI
+    scrapy shell file:///absolute/path/to/file.html
+
+.. warning:: :command:`shell` will interpret ``index.html`` as a domain name,
+   not as a relative path to a local file, and will trigger a DNS lookup error::
+
+    $ scrapy shell index.html
+    [ ... scrapy shell starts ... ]
+    2016-01-26 10:29:51 [scrapy] DEBUG: Gave up retrying <GET http://index.html>
+    (failed 3 times): DNS lookup failed:
+    address 'index.html' not found: [Errno -5] No address associated with hostname.
+    [ ... traceback ... ]
+    twisted.internet.error.DNSLookupError: DNS lookup failed:
+    address 'index.html' not found: [Errno -5] No address associated with hostname.
+
+   Use ``./`` prefix instead::
+
+    $ scrapy shell ./index.html
+    [ ... scrapy shell starts ... ]
+
+
 Using the shell
 ===============
 
