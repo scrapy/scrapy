@@ -4,6 +4,8 @@ from twisted.trial import unittest
 
 from scrapy.extensions.spiderstate import SpiderState
 from scrapy.spiders import Spider
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.test import get_crawler
 
 
 class SpiderStateTest(unittest.TestCase):
@@ -34,3 +36,7 @@ class SpiderStateTest(unittest.TestCase):
         ss.spider_opened(spider)
         self.assertEqual(spider.state, {})
         ss.spider_closed(spider)
+
+    def test_not_configured(self):
+        crawler = get_crawler(Spider)
+        self.assertRaises(NotConfigured, SpiderState.from_crawler, crawler)
