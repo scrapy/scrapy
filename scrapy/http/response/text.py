@@ -67,6 +67,11 @@ class TextResponse(Response):
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
+    @property
+    def text(self):
+        """ Body as unicode """
+        return self.body_as_unicode()
+
     def urljoin(self, url):
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""

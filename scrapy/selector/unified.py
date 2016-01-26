@@ -60,7 +60,7 @@ class Selector(_ParselSelector, object_ref):
             response = _response_from_text(text, st)
 
         if response is not None:
-            text = response.body_as_unicode()
+            text = response.text
             kwargs.setdefault('base_url', response.url)
 
         self.response = response

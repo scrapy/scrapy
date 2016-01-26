@@ -137,7 +137,7 @@ def _body_or_str(obj, unicode=True):
         if not unicode:
             return obj.body
         elif isinstance(obj, TextResponse):
-            return obj.body_as_unicode()
+            return obj.text
         else:
             return obj.body.decode('utf-8')
     elif isinstance(obj, six.text_type):
