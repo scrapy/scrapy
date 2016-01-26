@@ -66,10 +66,20 @@ class Spider(object_ref):
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self):
-        for url in self.start_urls:
-            yield self.make_requests_from_url(url)
+        if self.make_requests_from_url is not Spider.make_requests_from_url:
+            warnings.warn(
+                "Spider.make_requests_from_url method is deprecated; "
+                "it won't be called in future Scrapy releases. "
+                "Please override start_requests method instead."
+            )
+            for url in self.start_urls:
+                yield self.make_requests_from_url(url)
+        else:
+            for url in self.start_urls:
+                yield Request(url, dont_filter=True)
 
     def make_requests_from_url(self, url):
+        """ This method is deprecated. """
         return Request(url, dont_filter=True)
 
     def parse(self, response):
