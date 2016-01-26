@@ -273,6 +273,9 @@ OffsiteMiddleware
 
    This middleware filters out every request whose host names aren't in the
    spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
+   All subdomains of any domain in the list are also allowed.
+   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
+   but not ``www2.example.com`` nor ``example.com``.
 
    When your spider returns a request for a domain not belonging to those
    covered by the spider, this middleware will log a debug message similar to

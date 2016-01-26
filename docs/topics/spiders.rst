@@ -76,7 +76,7 @@ scrapy.Spider
 
        An optional list of strings containing domains that this spider is
        allowed to crawl. Requests for URLs not belonging to the domain names
-       specified in this list won't be followed if
+       specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
 
    .. attribute:: start_urls
