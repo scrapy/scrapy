@@ -65,22 +65,24 @@ the following syntaxes for local files::
     # File URI
     scrapy shell file:///absolute/path/to/file.html
 
-.. warning:: :command:`shell` will interpret ``index.html`` as a domain name,
-   not as a relative path to a local file, and will trigger a DNS lookup error::
+.. note:: When using relative file paths, be explicit and prepend them
+    with ``./`` (or ``../`` when relevant).
+    ``scrapy shell index.html`` will not work as one might expect (and
+    this is by design, not a bug).
 
-    $ scrapy shell index.html
-    [ ... scrapy shell starts ... ]
-    2016-01-26 10:29:51 [scrapy] DEBUG: Gave up retrying <GET http://index.html>
-    (failed 3 times): DNS lookup failed:
-    address 'index.html' not found: [Errno -5] No address associated with hostname.
-    [ ... traceback ... ]
-    twisted.internet.error.DNSLookupError: DNS lookup failed:
-    address 'index.html' not found: [Errno -5] No address associated with hostname.
+    Because :command:`shell` favors HTTP URLs over File URIs,
+    and ``index.html`` being syntactically similar to ``example.com``,
+    :command:`shell` will treat ``index.html`` as a domain name and trigger
+    a DNS lookup error::
 
-   Use ``./`` prefix instead::
+        $ scrapy shell index.html
+        [ ... scrapy shell starts ... ]
+        [ ... traceback ... ]
+        twisted.internet.error.DNSLookupError: DNS lookup failed:
+        address 'index.html' not found: [Errno -5] No address associated with hostname.
 
-    $ scrapy shell ./index.html
-    [ ... scrapy shell starts ... ]
+    :command:`shell` will not test beforehand if a file called ``index.html``
+    exists in the current directory. Again, be explicit.
 
 
 Using the shell
