@@ -44,9 +44,11 @@ class MiddlewareManager(object):
                     logger.warning("Disabled %(clsname)s: %(eargs)s",
                                    {'clsname': clsname, 'eargs': e.args[0]},
                                    extra={'crawler': crawler})
+
+        enabled = [x.__class__.__name__ for x in middlewares]
         logger.info("Enabled %(componentname)ss:\n%(enabledlist)s",
                     {'componentname': cls.component_name,
-                     'enabledlist': pprint.pformat(mwlist)},
+                     'enabledlist': pprint.pformat(enabled)},
                     extra={'crawler': crawler})
         return cls(*middlewares)
 
