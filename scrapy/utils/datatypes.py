@@ -137,10 +137,18 @@ class MultiValueDict(dict):
         for key, value in six.iteritems(kwargs):
             self.setlistdefault(key, []).append(value)
 
+
 class SiteNode(object):
     """Class to represent a site node (page, image or any other file)"""
 
     def __init__(self, url):
+        warnings.warn(
+            "scrapy.utils.datatypes.SiteNode is deprecated "
+            "and will be removed in future releases.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2
+        )
+
         self.url = url
         self.itemnames = []
         self.children = []
