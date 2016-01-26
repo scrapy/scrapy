@@ -7,11 +7,22 @@ This module must not depend on any module outside the Standard Library.
 
 import copy
 import six
+import warnings
 from collections import OrderedDict
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class MultiValueDictKeyError(KeyError):
-    pass
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "scrapy.utils.datatypes.MultiValueDictKeyError is deprecated "
+            "and will be removed in future releases.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2
+        )
+        super(MultiValueDictKeyError, self).__init__(*args, **kwargs)
+
 
 class MultiValueDict(dict):
     """
@@ -31,6 +42,10 @@ class MultiValueDict(dict):
     single name-value pairs.
     """
     def __init__(self, key_to_list_mapping=()):
+        warnings.warn("scrapy.utils.datatypes.MultiValueDict is deprecated "
+                      "and will be removed in future releases.",
+                      category=ScrapyDeprecationWarning,
+                      stacklevel=2)
         dict.__init__(self, key_to_list_mapping)
 
     def __repr__(self):
