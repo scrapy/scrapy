@@ -750,8 +750,8 @@ Default: ``60.0``
 Scope: ``scrapy.extensions.memusage``
 
 The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
-checks the current memory usage, versus the limits set by 
-:setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`, 
+checks the current memory usage, versus the limits set by
+:setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`,
 at fixed time intervals.
 
 This sets the length of these intervals, in seconds.
@@ -877,7 +877,13 @@ Default: ``False``
 Scope: ``scrapy.downloadermiddlewares.robotstxt``
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
-:ref:`topics-dlmw-robots`
+:ref:`topics-dlmw-robots`.
+
+.. note::
+
+    While the default value is ``False`` for historical reasons,
+    this option is enabled by default in settings.py file generated
+    by ``scrapy startproject`` command.
 
 .. setting:: SCHEDULER
 
@@ -1036,7 +1042,7 @@ TEMPLATES_DIR
 Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
-:command:`startproject` command and new spiders with :command:`genspider` 
+:command:`startproject` command and new spiders with :command:`genspider`
 command.
 
 The project name must not conflict with the name of custom files or directories
