@@ -90,6 +90,10 @@ class PythonItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
         return PythonItemExporter(binary=False, **kwargs)
 
+    def test_invalid_option(self):
+        with self.assertRaisesRegexp(TypeError, "Unexpected options: invalid_option"):
+            PythonItemExporter(invalid_option='something')
+
     def test_nested_item(self):
         i1 = TestItem(name=u'Joseph', age='22')
         i2 = dict(name=u'Maria', age=i1)
