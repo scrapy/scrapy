@@ -158,7 +158,7 @@ class XmlItemExporter(BaseItemExporter):
             if not isinstance(serialized_value, six.text_type):
                 serialized_value = serialized_value.decode(self.encoding)
             return self.xg.characters(serialized_value)
-    else:
+    else:  # pragma: no cover
         def _xg_characters(self, serialized_value):
             return self.xg.characters(serialized_value)
 

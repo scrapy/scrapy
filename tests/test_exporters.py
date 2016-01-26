@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import re
 import json
+import marshal
+import tempfile
 import unittest
 from io import BytesIO
 from six.moves import cPickle as pickle
@@ -12,7 +14,8 @@ from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
 from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
-    XmlItemExporter, JsonLinesItemExporter, JsonItemExporter, PythonItemExporter
+    XmlItemExporter, JsonLinesItemExporter, JsonItemExporter,
+    PythonItemExporter, MarshalItemExporter
 )
 
 
@@ -161,6 +164,17 @@ class PickleItemExporterTest(BaseItemExporterTest):
         f.seek(0)
         self.assertEqual(pickle.load(f), i1)
         self.assertEqual(pickle.load(f), i2)
+
+
+class MarshalItemExporterTest(BaseItemExporterTest):
+
+    def _get_exporter(self, **kwargs):
+        self.output = tempfile.TemporaryFile()
+        return MarshalItemExporter(self.output, **kwargs)
+
+    def _check_output(self):
+        self.output.seek(0)
+        self._assert_expected_item(marshal.load(self.output))
 
 
 class CsvItemExporterTest(BaseItemExporterTest):
