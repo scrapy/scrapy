@@ -192,8 +192,15 @@ class CsvItemExporter(BaseItemExporter):
 
         fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
-        values = [to_native_str(x) for _, x in fields]
+        values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
+
+    def _build_row(self, values):
+        for s in values:
+            try:
+                yield to_native_str(s)
+            except TypeError:
+                yield to_native_str(repr(s))
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
@@ -204,7 +211,7 @@ class CsvItemExporter(BaseItemExporter):
                 else:
                     # use fields declared in Item
                     self.fields_to_export = list(item.fields.keys())
-            row = [to_native_str(s) for s in self.fields_to_export]
+            row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
 
 

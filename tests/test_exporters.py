@@ -237,6 +237,13 @@ class CsvItemExporterTest(BaseItemExporterTest):
                 expected='"Mary,Paul",John\r\n',
             )
 
+    def test_join_multivalue_not_strings(self):
+        self.assertExportResult(
+            item=dict(name='John', friends=[4, 8]),
+            include_headers_line=False,
+            expected='"[4, 8]",John\r\n',
+        )
+
 
 class XmlItemExporterTest(BaseItemExporterTest):
 
