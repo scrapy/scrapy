@@ -447,7 +447,7 @@ Response objects
 
         The body of this Response. Keep in mind that Response.body
         is always a bytes object. If you want the unicode version use
-        :attr:`TextResponse.txt` (only available in :class:`TextResponse`
+        :attr:`TextResponse.text` (only available in :class:`TextResponse`
         and subclasses).
 
         This attribute is read-only. To change the body of a Response use
