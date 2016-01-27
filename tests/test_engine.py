@@ -55,12 +55,11 @@ class TestSpider(Spider):
 
     def parse_item(self, response):
         item = self.item_cls()
-        body = response.body_as_unicode()
-        m = self.name_re.search(body)
+        m = self.name_re.search(response.text)
         if m:
             item['name'] = m.group(1)
         item['url'] = response.url
-        m = self.price_re.search(body)
+        m = self.price_re.search(response.text)
         if m:
             item['price'] = m.group(1)
         return item

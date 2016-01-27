@@ -83,8 +83,8 @@ class RobotsTxtMiddleware(object):
     def _parse_robots(self, response, netloc):
         rp = robotparser.RobotFileParser(response.url)
         body = ''
-        if hasattr(response, 'body_as_unicode'):
-            body = response.body_as_unicode()
+        if hasattr(response, 'text'):
+            body = response.text
         else: # last effort try
             try:
                 body = response.body.decode('utf-8')

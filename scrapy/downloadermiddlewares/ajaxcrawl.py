@@ -63,7 +63,7 @@ class AjaxCrawlMiddleware(object):
         Return True if a page without hash fragment could be "AJAX crawlable"
         according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
         """
-        body = response.body_as_unicode()[:self.lookup_bytes]
+        body = response.text[:self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)
 
 
