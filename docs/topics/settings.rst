@@ -276,6 +276,8 @@ DEPTH_LIMIT
 
 Default: ``0``
 
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
+
 The maximum depth that will be allowed to crawl for any site. If zero, no limit
 will be imposed.
 
@@ -286,9 +288,20 @@ DEPTH_PRIORITY
 
 Default: ``0``
 
-An integer that is used to adjust the request priority based on its depth.
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-If zero, no priority adjustment is made from depth.
+An integer that is used to adjust the request priority based on its depth:
+
+- **a positive value will decrease the priority**
+- a negative value will increase priority
+
+If zero (default), no priority adjustment is made from depth.
+
+.. note::
+
+    This setting adjusts priority **in the opposite way** compared to
+    other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
+    and :setting:`RETRY_PRIORITY_ADJUST`.
 
 .. setting:: DEPTH_STATS
 
@@ -296,6 +309,8 @@ DEPTH_STATS
 -----------
 
 Default: ``True``
+
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
 Whether to collect maximum depth stats.
 
@@ -305,6 +320,8 @@ DEPTH_STATS_VERBOSE
 -------------------
 
 Default: ``False``
+
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
 Whether to collect verbose depth stats. If this is enabled, the number of
 requests for each depth is collected in the stats.
