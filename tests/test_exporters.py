@@ -134,6 +134,19 @@ class PythonItemExporterTest(BaseItemExporterTest):
         expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
         self.assertEqual(expected, exporter.export_item(value))
 
+    def test_other_python_types_item(self):
+        from datetime import datetime
+        now = datetime.now()
+        item = {
+            'boolean': False,
+            'number': 22,
+            'time': now,
+            'float': 3.14,
+        }
+        ie = self._get_exporter()
+        exported = ie.export_item(item)
+        self.assertEqual(exported, item)
+
 
 class PprintItemExporterTest(BaseItemExporterTest):
 
@@ -256,6 +269,21 @@ class CsvItemExporterTest(BaseItemExporterTest):
             item=dict(name='John', friends=[4, 8]),
             include_headers_line=False,
             expected='"[4, 8]",John\r\n',
+        )
+
+    def test_other_python_types_item(self):
+        from datetime import datetime
+        now = datetime(2015, 1, 1, 1, 1, 1)
+        item = {
+            'boolean': False,
+            'number': 22,
+            'time': now,
+            'float': 3.14,
+        }
+        self.assertExportResult(
+            item=item,
+            include_headers_line=False,
+            expected='22,False,3.14,2015-01-01 01:01:01\r\n'
         )
 
 

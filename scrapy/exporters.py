@@ -200,7 +200,7 @@ class CsvItemExporter(BaseItemExporter):
             try:
                 yield to_native_str(s)
             except TypeError:
-                yield to_native_str(repr(s))
+                yield s
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
@@ -273,10 +273,10 @@ class PythonItemExporter(BaseItemExporter):
             return dict(self._serialize_dict(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        if self.binary:
-            return to_bytes(value, encoding=self.encoding)
-        else:
-            return to_unicode(value, encoding=self.encoding)
+        encode_func = to_bytes if self.binary else to_unicode
+        if isinstance(value, (six.text_type, bytes)):
+            return encode_func(value, encoding=self.encoding)
+        return value
 
     def _serialize_dict(self, value):
         for key, val in six.iteritems(value):
