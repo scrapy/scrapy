@@ -276,6 +276,8 @@ DEPTH_LIMIT
 
 Default: ``0``
 
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
+
 The maximum depth that will be allowed to crawl for any site. If zero, no limit
 will be imposed.
 
@@ -286,9 +288,24 @@ DEPTH_PRIORITY
 
 Default: ``0``
 
-An integer that is used to adjust the request priority based on its depth.
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-If zero, no priority adjustment is made from depth.
+An integer that is used to adjust the request priority based on its depth:
+
+- if zero (default), no priority adjustment is made from depth
+- **a positive value will decrease the priority, i.e. higher depth
+  requests will be processed later** ; this is commonly used when doing
+  breadth-first crawls (BFO)
+- a negative value will increase priority, i.e., higher depth requests
+  will be processed sooner (DFO)
+
+See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
+
+.. note::
+
+    This setting adjusts priority **in the opposite way** compared to
+    other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
+    and :setting:`RETRY_PRIORITY_ADJUST`.
 
 .. setting:: DEPTH_STATS
 
@@ -296,6 +313,8 @@ DEPTH_STATS
 -----------
 
 Default: ``True``
+
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
 Whether to collect maximum depth stats.
 
@@ -305,6 +324,8 @@ DEPTH_STATS_VERBOSE
 -------------------
 
 Default: ``False``
+
+Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
 Whether to collect verbose depth stats. If this is enabled, the number of
 requests for each depth is collected in the stats.
@@ -864,8 +885,26 @@ REDIRECT_PRIORITY_ADJUST
 
 Default: ``+2``
 
-Adjust redirect request priority relative to original request.
-A negative priority adjust means more priority.
+Scope: ``scrapy.downloadermiddlewares.redirect.RedirectMiddleware``
+
+Adjust redirect request priority relative to original request:
+
+- **a positive priority adjust (default) means higher priority.**
+- a negative priority adjust means lower priority.
+
+.. setting:: RETRY_PRIORITY_ADJUST
+
+RETRY_PRIORITY_ADJUST
+---------------------
+
+Default: ``-1``
+
+Scope: ``scrapy.downloadermiddlewares.retry.RetryMiddleware``
+
+Adjust retry request priority relative to original request:
+
+- a positive priority adjust means higher priority.
+- **a negative priority adjust (default) means lower priority.**
 
 .. setting:: ROBOTSTXT_OBEY
 
