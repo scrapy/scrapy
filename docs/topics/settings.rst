@@ -292,10 +292,14 @@ Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
 An integer that is used to adjust the request priority based on its depth:
 
-- **a positive value will decrease the priority**
-- a negative value will increase priority
+- if zero (default), no priority adjustment is made from depth
+- **a positive value will decrease the priority, i.e. higher depth
+  requests will be processed later** ; this is commonly used when doing
+  breadth-first crawls (BFO)
+- a negative value will increase priority, i.e., higher depth requests
+  will be processed sooner (DFO)
 
-If zero (default), no priority adjustment is made from depth.
+See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
 
 .. note::
 
