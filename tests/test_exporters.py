@@ -271,6 +271,21 @@ class CsvItemExporterTest(BaseItemExporterTest):
             expected='"[4, 8]",John\r\n',
         )
 
+    def test_other_python_types_item(self):
+        from datetime import datetime
+        now = datetime(2015, 1, 1, 1, 1, 1)
+        item = {
+            'boolean': False,
+            'number': 22,
+            'time': now,
+            'float': 3.14,
+        }
+        self.assertExportResult(
+            item=item,
+            include_headers_line=False,
+            expected='22,False,3.14,2015-01-01 01:01:01\r\n'
+        )
+
 
 class XmlItemExporterTest(BaseItemExporterTest):
 

@@ -200,7 +200,7 @@ class CsvItemExporter(BaseItemExporter):
             try:
                 yield to_native_str(s)
             except TypeError:
-                yield to_native_str(repr(s))
+                yield to_native_str(str(s))
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
