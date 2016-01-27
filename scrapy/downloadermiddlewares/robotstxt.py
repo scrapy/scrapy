@@ -8,9 +8,7 @@ import logging
 
 from six.moves.urllib import robotparser
 
-from twisted.internet import reactor
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.task import deferLater
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -59,13 +57,7 @@ class RobotsTxtMiddleware(object):
                 priority=self.DOWNLOAD_PRIORITY,
                 meta={'dont_obey_robotstxt': True}
             )
-            # engine.download() can return an already-called deferred, e.g. if a
-            # middleware returns a response in process_request(). Using
-            # deferLater() ensures that the error callback isn't called
-            # immediately upon being added, so that it doesn't remove the key
-            # before we check for it.
-            dfd = deferLater(reactor, 0, self.crawler.engine.download,
-                             robotsreq, spider)
+            dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots, netloc)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
@@ -109,4 +101,6 @@ class RobotsTxtMiddleware(object):
         rp_dfd.callback(rp)
 
     def _robots_error(self, failure, netloc):
-        self._parsers.pop(netloc).callback(None)
+        rp_dfd = self._parsers[netloc]
+        self._parsers[netloc] = None
+        rp_dfd.callback(None)
