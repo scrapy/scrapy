@@ -134,6 +134,19 @@ class PythonItemExporterTest(BaseItemExporterTest):
         expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
         self.assertEqual(expected, exporter.export_item(value))
 
+    def test_other_python_types_item(self):
+        from datetime import datetime
+        now = datetime.now()
+        item = {
+            'boolean': False,
+            'number': 22,
+            'time': now,
+            'float': 3.14,
+        }
+        ie = self._get_exporter()
+        exported = ie.export_item(item)
+        self.assertEqual(exported, item)
+
 
 class PprintItemExporterTest(BaseItemExporterTest):
 
