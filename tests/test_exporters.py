@@ -5,6 +5,7 @@ import marshal
 import tempfile
 import unittest
 from io import BytesIO
+from datetime import datetime
 from six.moves import cPickle as pickle
 
 import lxml.etree
@@ -41,6 +42,14 @@ class BaseItemExporterTest(unittest.TestCase):
         for k, v in exported_dict.items():
             exported_dict[k] = to_unicode(v)
         self.assertEqual(self.i, exported_dict)
+
+    def _get_nonstring_types_item(self):
+        return {
+            'boolean': False,
+            'number': 22,
+            'time': datetime(2015, 1, 1, 1, 1, 1),
+            'float': 3.14,
+        }
 
     def assertItemExportWorks(self, item):
         self.ie.start_exporting()
@@ -134,15 +143,8 @@ class PythonItemExporterTest(BaseItemExporterTest):
         expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
         self.assertEqual(expected, exporter.export_item(value))
 
-    def test_other_python_types_item(self):
-        from datetime import datetime
-        now = datetime.now()
-        item = {
-            'boolean': False,
-            'number': 22,
-            'time': now,
-            'float': 3.14,
-        }
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
         ie = self._get_exporter()
         exported = ie.export_item(item)
         self.assertEqual(exported, item)
@@ -178,6 +180,15 @@ class PickleItemExporterTest(BaseItemExporterTest):
         self.assertEqual(pickle.load(f), i1)
         self.assertEqual(pickle.load(f), i2)
 
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
+        fp = BytesIO()
+        ie = PickleItemExporter(fp)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.finish_exporting()
+        self.assertEqual(pickle.loads(fp.getvalue()), item)
+
 
 class MarshalItemExporterTest(BaseItemExporterTest):
 
@@ -188,6 +199,17 @@ class MarshalItemExporterTest(BaseItemExporterTest):
     def _check_output(self):
         self.output.seek(0)
         self._assert_expected_item(marshal.load(self.output))
+
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
+        item.pop('time')  # datetime is not marshallable
+        fp = tempfile.TemporaryFile()
+        ie = MarshalItemExporter(fp)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.finish_exporting()
+        fp.seek(0)
+        self.assertEqual(marshal.load(fp), item)
 
 
 class CsvItemExporterTest(BaseItemExporterTest):
@@ -271,17 +293,9 @@ class CsvItemExporterTest(BaseItemExporterTest):
             expected='"[4, 8]",John\r\n',
         )
 
-    def test_other_python_types_item(self):
-        from datetime import datetime
-        now = datetime(2015, 1, 1, 1, 1, 1)
-        item = {
-            'boolean': False,
-            'number': 22,
-            'time': now,
-            'float': 3.14,
-        }
+    def test_nonstring_types_item(self):
         self.assertExportResult(
-            item=item,
+            item=self._get_nonstring_types_item(),
             include_headers_line=False,
             expected='22,False,3.14,2015-01-01 01:01:01\r\n'
         )
@@ -390,6 +404,15 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self._check_output()
         self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
 
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
+        self.ie.start_exporting()
+        self.ie.export_item(item)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue()))
+        item['time'] = str(item['time'])
+        self.assertEqual(exported, item)
+
 
 class JsonItemExporterTest(JsonLinesItemExporterTest):
 
@@ -437,6 +460,15 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         exported = json.loads(to_unicode(self.output.getvalue()))
         expected = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': i1}}
         self.assertEqual(exported, [expected])
+
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
+        self.ie.start_exporting()
+        self.ie.export_item(item)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue()))
+        item['time'] = str(item['time'])
+        self.assertEqual(exported, [item])
 
 
 class CustomItemExporterTest(unittest.TestCase):
