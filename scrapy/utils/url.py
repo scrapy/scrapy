@@ -125,10 +125,7 @@ def add_http_if_no_scheme(url):
 
 
 def guess_scheme(url):
-    """Given an URL as string,
-    returns a FileURI if it looks like a file path,
-    otherwise returns an HTTP URL
-    """
+    """Add an URL scheme if missing: file:// for filepath-like input or http:// otherwise."""
     parts = urlparse(url)
     if parts.scheme:
         return url
