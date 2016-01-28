@@ -59,7 +59,12 @@ class TextResponse(Response):
 
     def body_as_unicode(self):
         """Return body as unicode"""
-        # check for self.encoding before _cached_ubody just in
+        return self.text
+
+    @property
+    def text(self):
+        """ Body as unicode """
+        # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
         benc = self.encoding
         if self._cached_ubody is None:

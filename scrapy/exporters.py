@@ -3,6 +3,7 @@ Item Exporters are used to export/serialize items into different formats.
 """
 
 import csv
+import io
 import sys
 import pprint
 import marshal
@@ -11,7 +12,11 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
+from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
 from scrapy.item import BaseItem
+from scrapy.exceptions import ScrapyDeprecationWarning
+import warnings
+
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
@@ -38,7 +43,7 @@ class BaseItemExporter(object):
         raise NotImplementedError
 
     def serialize_field(self, field, name, value):
-        serializer = field.get('serializer', self._to_str_if_unicode)
+        serializer = field.get('serializer', lambda x: x)
         return serializer(value)
 
     def start_exporting(self):
@@ -46,9 +51,6 @@ class BaseItemExporter(object):
 
     def finish_exporting(self):
         pass
-
-    def _to_str_if_unicode(self, value):
-        return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples
@@ -86,10 +88,10 @@ class JsonLinesItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(self.encoder.encode(itemdict) + '\n')
+        self.file.write(to_bytes(self.encoder.encode(itemdict) + '\n'))
 
 
-class JsonItemExporter(JsonLinesItemExporter):
+class JsonItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
@@ -98,18 +100,18 @@ class JsonItemExporter(JsonLinesItemExporter):
         self.first_item = True
 
     def start_exporting(self):
-        self.file.write("[")
+        self.file.write(b"[")
 
     def finish_exporting(self):
-        self.file.write("]")
+        self.file.write(b"]")
 
     def export_item(self, item):
         if self.first_item:
             self.first_item = False
         else:
-            self.file.write(',\n')
+            self.file.write(b',\n')
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(self.encoder.encode(itemdict))
+        self.file.write(to_bytes(self.encoder.encode(itemdict)))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -139,7 +141,7 @@ class XmlItemExporter(BaseItemExporter):
         if hasattr(serialized_value, 'items'):
             for subname, value in serialized_value.items():
                 self._export_xml_field(subname, value)
-        elif hasattr(serialized_value, '__iter__'):
+        elif is_listlike(serialized_value):
             for value in serialized_value:
                 self._export_xml_field('value', value)
         else:
@@ -153,10 +155,10 @@ class XmlItemExporter(BaseItemExporter):
     # and Python 3.x will require unicode, so ">= 2.7.4" should be fine.
     if sys.version_info[:3] >= (2, 7, 4):
         def _xg_characters(self, serialized_value):
-            if not isinstance(serialized_value, unicode):
+            if not isinstance(serialized_value, six.text_type):
                 serialized_value = serialized_value.decode(self.encoding)
             return self.xg.characters(serialized_value)
-    else:
+    else:  # pragma: no cover
         def _xg_characters(self, serialized_value):
             return self.xg.characters(serialized_value)
 
@@ -166,17 +168,22 @@ class CsvItemExporter(BaseItemExporter):
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.include_headers_line = include_headers_line
+        file = file if six.PY2 else io.TextIOWrapper(file, line_buffering=True)
         self.csv_writer = csv.writer(file, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
-    def _to_str_if_unicode(self, value):
+    def serialize_field(self, field, name, value):
+        serializer = field.get('serializer', self._join_if_needed)
+        return serializer(value)
+
+    def _join_if_needed(self, value):
         if isinstance(value, (list, tuple)):
             try:
-                value = self._join_multivalued.join(value)
+                return self._join_multivalued.join(value)
             except TypeError:  # list in value may not contain strings
                 pass
-        return super(CsvItemExporter, self)._to_str_if_unicode(value)
+        return value
 
     def export_item(self, item):
         if self._headers_not_written:
@@ -185,8 +192,15 @@ class CsvItemExporter(BaseItemExporter):
 
         fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
-        values = [x[1] for x in fields]
+        values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
+
+    def _build_row(self, values):
+        for s in values:
+            try:
+                yield to_native_str(s)
+            except TypeError:
+                yield s
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
@@ -197,7 +211,8 @@ class CsvItemExporter(BaseItemExporter):
                 else:
                     # use fields declared in Item
                     self.fields_to_export = list(item.fields.keys())
-            self.csv_writer.writerow(self.fields_to_export)
+            row = list(self._build_row(self.fields_to_export))
+            self.csv_writer.writerow(row)
 
 
 class PickleItemExporter(BaseItemExporter):
@@ -230,7 +245,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(pprint.pformat(itemdict) + '\n')
+        self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -239,6 +254,13 @@ class PythonItemExporter(BaseItemExporter):
     json, msgpack, binc, etc) can be used on top of it. Its main goal is to
     seamless support what BaseItemExporter does plus nested items.
     """
+    def _configure(self, options, dont_fail=False):
+        self.binary = options.pop('binary', True)
+        super(PythonItemExporter, self)._configure(options, dont_fail)
+        if self.binary:
+            warnings.warn(
+                "PythonItemExporter will drop support for binary export in the future",
+                ScrapyDeprecationWarning)
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._serialize_value)
@@ -249,13 +271,20 @@ class PythonItemExporter(BaseItemExporter):
             return self.export_item(value)
         if isinstance(value, dict):
             return dict(self._serialize_dict(value))
-        if hasattr(value, '__iter__'):
+        if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        return self._to_str_if_unicode(value)
+        encode_func = to_bytes if self.binary else to_unicode
+        if isinstance(value, (six.text_type, bytes)):
+            return encode_func(value, encoding=self.encoding)
+        return value
 
     def _serialize_dict(self, value):
         for key, val in six.iteritems(value):
+            key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 
     def export_item(self, item):
-        return dict(self._get_serialized_fields(item))
+        result = dict(self._get_serialized_fields(item))
+        if self.binary:
+            result = dict(self._serialize_dict(result))
+        return result

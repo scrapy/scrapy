@@ -1,10 +1,5 @@
-tests/test_exporters.py
 tests/test_linkextractors_deprecated.py
-tests/test_mail.py
-tests/test_pipeline_files.py
-tests/test_pipeline_images.py
 tests/test_proxy_connect.py
-tests/test_spidermiddleware_httperror.py
 
 scrapy/xlib/tx/iweb.py
 scrapy/xlib/tx/interfaces.py
@@ -14,12 +9,9 @@ scrapy/xlib/tx/_newclient.py
 scrapy/xlib/tx/__init__.py
 scrapy/core/downloader/handlers/s3.py
 scrapy/core/downloader/handlers/ftp.py
-scrapy/pipelines/images.py
-scrapy/pipelines/files.py
 scrapy/linkextractors/sgml.py
 scrapy/linkextractors/regex.py
 scrapy/linkextractors/htmlparser.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/extensions/statsmailer.py
 scrapy/extensions/memusage.py
-scrapy/mail.py

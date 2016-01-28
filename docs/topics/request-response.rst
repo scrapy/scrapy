@@ -445,10 +445,10 @@ Response objects
 
     .. attribute:: Response.body
 
-        A str containing the body of this Response. Keep in mind that Response.body
-        is always a str. If you want the unicode version use
-        :meth:`TextResponse.body_as_unicode` (only available in
-        :class:`TextResponse` and subclasses).
+        The body of this Response. Keep in mind that Response.body
+        is always a bytes object. If you want the unicode version use
+        :attr:`TextResponse.text` (only available in :class:`TextResponse`
+        and subclasses).
 
         This attribute is read-only. To change the body of a Response use
         :meth:`replace`.
@@ -542,6 +542,21 @@ TextResponse objects
     :class:`TextResponse` objects support the following attributes in addition
     to the standard :class:`Response` ones:
 
+    .. attribute:: TextResponse.text
+
+       Response body, as unicode.
+
+       The same as ``response.body.decode(response.encoding)``, but the
+       result is cached after the first call, so you can access
+       ``response.text`` multiple times without extra overhead.
+
+       .. note::
+
+            ``unicode(response.body)`` is not a correct way to convert response
+            body to unicode: you would be using the system default encoding
+            (typically `ascii`) instead of the response encoding.
+
+
     .. attribute:: TextResponse.encoding
 
        A string with the encoding of this response. The encoding is resolved by
@@ -568,20 +583,6 @@ TextResponse objects
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
 
-    .. method:: TextResponse.body_as_unicode()
-
-        Returns the body of the response as unicode. This is equivalent to::
-
-            response.body.decode(response.encoding)
-
-        But **not** equivalent to::
-
-            unicode(response.body)
-
-        Since, in the latter case, you would be using the system default encoding
-        (typically `ascii`) to convert the body to unicode, instead of the response
-        encoding.
-
     .. method:: TextResponse.xpath(query)
 
         A shortcut to ``TextResponse.selector.xpath(query)``::
@@ -593,6 +594,11 @@ TextResponse objects
         A shortcut to ``TextResponse.selector.css(query)``::
 
             response.css('p')
+
+    .. method:: TextResponse.body_as_unicode()
+
+        The same as :attr:`text`, but available as a method. This method is
+        kept for backwards compatibility; please prefer ``response.text``.
 
 
 HtmlResponse objects

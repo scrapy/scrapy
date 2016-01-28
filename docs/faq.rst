@@ -45,7 +45,7 @@ Did Scrapy "steal" X from Django?
 
 Probably, but we don't like that word. We think Django_ is a great open source
 project and an example to follow, so we've used it as an inspiration for
-Scrapy. 
+Scrapy.
 
 We believe that, if something is already done well, there's no need to reinvent
 it. This concept, besides being one of the foundations for open source and free
@@ -84,6 +84,8 @@ How can I simulate a user login in my spider?
 ---------------------------------------------
 
 See :ref:`topics-request-response-ref-request-userlogin`.
+
+.. _faq-bfo-dfo:
 
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------

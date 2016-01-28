@@ -64,8 +64,8 @@ def _urlencode(seq, enc):
 
 def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
-    text = response.body_as_unicode()
-    root = create_root_node(text, lxml.html.HTMLParser, base_url=get_base_url(response))
+    root = create_root_node(response.text, lxml.html.HTMLParser,
+                            base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
