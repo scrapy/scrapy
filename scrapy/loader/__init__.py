@@ -5,6 +5,7 @@ See documentation in docs/topics/loaders.rst
 """
 from collections import defaultdict
 import six
+import copy
 
 from scrapy.item import Item
 from scrapy.selector import Selector
@@ -34,7 +35,7 @@ class ItemLoader(object):
         self.context = context
         self.parent = parent
         self._local_item = context['item'] = item
-        self._local_values = defaultdict(list, item)
+        self._local_values = defaultdict(list, copy.deepcopy(item or {}))
 
     @property
     def _values(self):
@@ -122,10 +123,10 @@ class ItemLoader(object):
         proc = self.get_output_processor(field_name)
         proc = wrap_loader_context(proc, self.context)
         try:
-            return proc(self._values[field_name])
+            return proc(self.get_collected_values(field_name))
         except Exception as e:
             raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
-                (field_name, self._values[field_name], type(e).__name__, str(e)))
+                (field_name, self.get_collected_values(field_name), type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
