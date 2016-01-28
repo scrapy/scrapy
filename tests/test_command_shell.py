@@ -3,9 +3,9 @@ from os.path import join
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.commands.shell import guess_scheme
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+from scrapy.utils.url import guess_scheme
 
 from tests import tests_datadir
 

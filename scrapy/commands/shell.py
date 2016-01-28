@@ -3,40 +3,13 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
-import re
-from six.moves.urllib.parse import urlparse
 from threading import Thread
-from w3lib.url import any_to_uri
 
 from scrapy.commands import ScrapyCommand
 from scrapy.shell import Shell
 from scrapy.http import Request
-from scrapy.utils.url import add_http_if_no_scheme
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
-
-
-def guess_scheme(url):
-    """Given an URL as string,
-    returns a FileURI if it looks like a file path,
-    otherwise returns an HTTP URL
-    """
-    parts = urlparse(url)
-    if parts.scheme:
-        return url
-    # Note: this does not match Windows filepath
-    if re.match(r'''^                   # start with...
-                    (
-                        \.              # ...a single dot,
-                        (
-                            \. | [^/\.]+  # optionally followed by
-                        )?                # either a second dot or some characters
-                    )?      # optional match of ".", ".." or ".blabla"
-                    /       # at least one "/" for a file path,
-                    .       # and something after the "/"
-                    ''', parts.path, flags=re.VERBOSE):
-        return any_to_uri(url)
-    else:
-        return add_http_if_no_scheme(url)
+from scrapy.utils.url import guess_scheme
 
 
 class Command(ScrapyCommand):
