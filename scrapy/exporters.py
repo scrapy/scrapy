@@ -144,8 +144,10 @@ class XmlItemExporter(BaseItemExporter):
         elif is_listlike(serialized_value):
             for value in serialized_value:
                 self._export_xml_field('value', value)
-        else:
+        elif isinstance(serialized_value, six.text_type):
             self._xg_characters(serialized_value)
+        else:
+            self._xg_characters(str(serialized_value))
         self.xg.endElement(name)
 
     # Workaround for http://bugs.python.org/issue17606
