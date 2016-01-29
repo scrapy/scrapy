@@ -368,11 +368,25 @@ class BaseSettings(MutableMapping):
     def __len__(self):
         return len(self.attributes)
 
-    def __str__(self):
-        return str(self.attributes)
+    def _to_dict(self):
+        return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
+                for k, v in six.iteritems(self)}
 
-    def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.attributes)
+    def copy_to_dict(self):
+        """
+        Make a copy of current settings and convert to a dict.
+
+        This method returns a new dict populated with the same values
+        and their priorities as the current settings.
+
+        Modifications to the returned dict won't be reflected on the original
+        settings.
+
+        This method can be useful for example for printing settings
+        in Scrapy shell.
+        """
+        settings = self.copy()
+        return settings._to_dict()
 
     @property
     def overrides(self):
