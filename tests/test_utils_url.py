@@ -4,7 +4,8 @@ import unittest
 import six
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              canonicalize_url, add_http_if_no_scheme)
+                              canonicalize_url, add_http_if_no_scheme,
+                              guess_scheme)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -188,7 +189,7 @@ class CanonicalizeUrlTest(unittest.TestCase):
 
 
 class AddHttpIfNoScheme(unittest.TestCase):
-    
+
     def test_add_scheme(self):
         self.assertEqual(add_http_if_no_scheme('www.example.com'),
                                                'http://www.example.com')
@@ -216,7 +217,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
     def test_username_password(self):
         self.assertEqual(add_http_if_no_scheme('username:password@www.example.com'),
                                                'http://username:password@www.example.com')
-    
+
     def test_complete_url(self):
         self.assertEqual(add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
                                                'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
@@ -292,6 +293,64 @@ class AddHttpIfNoScheme(unittest.TestCase):
     def test_preserve_ftp(self):
         self.assertEqual(add_http_if_no_scheme('ftp://www.example.com'),
                                                'ftp://www.example.com')
+
+
+class GuessSchemeTest(unittest.TestCase):
+    pass
+
+def create_guess_scheme_t(args):
+    def do_expected(self):
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1]), \
+            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
+                args[0], url, args[1])
+    return do_expected
+
+def create_skipped_scheme_t(args):
+    def do_expected(self):
+        raise unittest.SkipTest(args[2])
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1])
+    return do_expected
+
+for k, args in enumerate ([
+            ('/index',                              'file://'),
+            ('/index.html',                         'file://'),
+            ('./index.html',                        'file://'),
+            ('../index.html',                       'file://'),
+            ('../../index.html',                    'file://'),
+            ('./data/index.html',                   'file://'),
+            ('.hidden/data/index.html',             'file://'),
+            ('/home/user/www/index.html',           'file://'),
+            ('//home/user/www/index.html',          'file://'),
+            ('file:///home/user/www/index.html',    'file://'),
+
+            ('index.html',                          'http://'),
+            ('example.com',                         'http://'),
+            ('www.example.com',                     'http://'),
+            ('www.example.com/index.html',          'http://'),
+            ('http://example.com',                  'http://'),
+            ('http://example.com/index.html',       'http://'),
+            ('localhost',                           'http://'),
+            ('localhost/index.html',                'http://'),
+
+            # some corner cases (default to http://)
+            ('/',                                   'http://'),
+            ('.../test',                            'http://'),
+
+        ], start=1):
+    t_method = create_guess_scheme_t(args)
+    t_method.__name__ = 'test_uri_%03d' % k
+    setattr (GuessSchemeTest, t_method.__name__, t_method)
+
+# TODO: the following tests do not pass with current implementation
+for k, args in enumerate ([
+            ('C:\absolute\path\to\a\file.html',     'file://',
+             'Windows filepath are not supported for scrapy shell'),
+        ], start=1):
+    t_method = create_skipped_scheme_t(args)
+    t_method.__name__ = 'test_uri_skipped_%03d' % k
+    setattr (GuessSchemeTest, t_method.__name__, t_method)
 
 
 if __name__ == "__main__":

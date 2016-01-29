@@ -1,8 +1,12 @@
+from os.path import join
+
 from twisted.trial import unittest
 from twisted.internet import defer
 
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+
+from tests import tests_datadir
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -51,3 +55,25 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
         errcode, out, _ = yield self.execute(['-c', code.format(url)])
         self.assertEqual(errcode, 0, out)
+
+    @defer.inlineCallbacks
+    def test_local_file(self):
+        filepath = join(tests_datadir, 'test_site/index.html')
+        _, out, _ = yield self.execute([filepath, '-c', 'item'])
+        assert b'{}' in out
+
+    @defer.inlineCallbacks
+    def test_local_nofile(self):
+        filepath = 'file:///tests/sample_data/test_site/nothinghere.html'
+        errcode, out, err = yield self.execute([filepath, '-c', 'item'],
+                                       check_code=False)
+        self.assertEqual(errcode, 1, out or err)
+        self.assertIn(b'No such file or directory', err)
+
+    @defer.inlineCallbacks
+    def test_dns_failures(self):
+        url = 'www.somedomainthatdoesntexi.st'
+        errcode, out, err = yield self.execute([url, '-c', 'item'],
+                                       check_code=False)
+        self.assertEqual(errcode, 1, out or err)
+        self.assertIn(b'DNS lookup failed', err)

@@ -6,6 +6,7 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
+import re
 from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
                                     urlparse, parse_qsl, urlencode,
                                     unquote)
@@ -114,10 +115,31 @@ def escape_ajax(url):
 
 def add_http_if_no_scheme(url):
     """Add http as the default scheme if it is missing from the url."""
-    if url.startswith('//'):
-        url = 'http:' + url
-        return url
-    parser = parse_url(url)
-    if not parser.scheme or not parser.netloc:
-        url = 'http://' + url
+    match = re.match(r"^\w+://", url, flags=re.I)
+    if not match:
+        parts = urlparse(url)
+        scheme = "http:" if parts.netloc else "http://"
+        url = scheme + url
+
     return url
+
+
+def guess_scheme(url):
+    """Add an URL scheme if missing: file:// for filepath-like input or http:// otherwise."""
+    parts = urlparse(url)
+    if parts.scheme:
+        return url
+    # Note: this does not match Windows filepath
+    if re.match(r'''^                   # start with...
+                    (
+                        \.              # ...a single dot,
+                        (
+                            \. | [^/\.]+  # optionally followed by
+                        )?                # either a second dot or some characters
+                    )?      # optional match of ".", ".." or ".blabla"
+                    /       # at least one "/" for a file path,
+                    .       # and something after the "/"
+                    ''', parts.path, flags=re.VERBOSE):
+        return any_to_uri(url)
+    else:
+        return add_http_if_no_scheme(url)
