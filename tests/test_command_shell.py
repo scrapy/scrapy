@@ -5,7 +5,6 @@ from twisted.internet import defer
 
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.url import guess_scheme
 
 from tests import tests_datadir
 
