@@ -302,6 +302,21 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertListEqual(copy.get('TEST_LIST_OF_LISTS')[0],
                              ['first_one', 'first_two'])
 
+    def test_copy_to_dict(self):
+        s = BaseSettings({'TEST_STRING': 'a string',
+                          'TEST_LIST': [1, 2],
+                          'TEST_BOOLEAN': False,
+                          'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
+                          'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
+                          'HASNOBASE': BaseSettings({3: 3000}, 'default')})
+        self.assertDictEqual(s.copy_to_dict(),
+                            {'HASNOBASE': {3: 3000},
+                             'TEST': {1: 10, 3: 30},
+                             'TEST_BASE': {1: 1, 2: 2},
+                             'TEST_BOOLEAN': False,
+                             'TEST_LIST': [1, 2],
+                             'TEST_STRING': 'a string'})
+
     def test_freeze(self):
         self.settings.freeze()
         with self.assertRaises(TypeError) as cm:
@@ -342,14 +357,6 @@ class BaseSettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('BAR'), 'foo')
             self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
             self.assertIn('BAR', self.settings.defaults)
-
-    def test_repr(self):
-        settings = BaseSettings()
-        self.assertEqual(repr(settings), "<BaseSettings {}>")
-        attr = SettingsAttribute('testval', 15)
-        settings['testkey'] = attr
-        self.assertEqual(repr(settings),
-                         "<BaseSettings {'testkey': %s}>" % repr(attr))
 
 
 class SettingsTest(unittest.TestCase):
