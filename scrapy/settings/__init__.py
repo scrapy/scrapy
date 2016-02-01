@@ -4,6 +4,7 @@ import copy
 import warnings
 from collections import MutableMapping
 from importlib import import_module
+from pprint import pformat
 
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -387,6 +388,12 @@ class BaseSettings(MutableMapping):
         """
         settings = self.copy()
         return settings._to_dict()
+
+    def _repr_pretty_(self, p, cycle):
+        if cycle:
+            p.text(repr(self))
+        else:
+            p.text(pformat(self.copy_to_dict()))
 
     @property
     def overrides(self):
