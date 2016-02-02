@@ -35,7 +35,7 @@ class ItemLoader(object):
         self.context = context
         self.parent = parent
         self._local_item = context['item'] = item
-        self._local_values = defaultdict(list, copy.deepcopy(item or {}))
+        self._local_values = defaultdict(list, copy.deepcopy(item) or {})
 
     @property
     def _values(self):
