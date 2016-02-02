@@ -376,6 +376,20 @@ class XmlItemExporterTest(BaseItemExporterTest):
             b'</items>'
         )
 
+    def test_nonstring_types_item(self):
+        item = self._get_nonstring_types_item()
+        self.assertExportResult(item,
+            b'<?xml version="1.0" encoding="utf-8"?>\n'
+            b'<items>'
+               b'<item>'
+                   b'<float>3.14</float>'
+                   b'<boolean>False</boolean>'
+                   b'<number>22</number>'
+                   b'<time>2015-01-01 01:01:01</time>'
+               b'</item>'
+            b'</items>'
+        )
+
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
