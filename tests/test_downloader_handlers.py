@@ -1,5 +1,6 @@
 import os
 import six
+import tempfile
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -644,14 +645,15 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        local_fname = "/tmp/file.txt"
+        f, local_fname = tempfile.mkstemp()
+        os.close(f)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': ['17']})
+            self.assertEqual(r.headers, {'Local Filename': [local_fname], 'Size': ['17']})
             self.assertTrue(os.path.exists(local_fname))
             with open(local_fname) as f:
                 self.assertEqual(f.read(), "I have the power!")
