@@ -32,10 +32,8 @@ some limitations:
 New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Scrapy now has a Code of Conduct:
-  https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
-  (:issue:`1681`)
-- Command line tool completion for zsh (:issue:`934`).
+- Scrapy now has a `Code of Conduct`_ (:issue:`1681`).
+- Command line tool now has completion for zsh (:issue:`934`).
 - ``scrapy shell`` got a few changes of its own:
 
   - it now checks a new ``SCRAPY_PYTHON_SHELL`` environment
@@ -53,9 +51,9 @@ New Features and Enhancements
 - Autothrottle code has been cleaned up and its docs have been improved;
   there's also a new ``AUTOTHROTTLE_TARGET_CONCURRENCY`` setting which
   allows to send more than 1 concurrent request on average (:issue:`1324`).
-- Memory usage extension has a new ``MEMUSAGE_CHECK_INTERVAL_SECONDS``
+- Memory usage extension got a new ``MEMUSAGE_CHECK_INTERVAL_SECONDS``
   setting to change default check interval (:issue:`1282`).
-- HTTP caching follows RFC2616 more closely (TODO: link to docs);
+- HTTP caching now follows RFC2616 more closely (TODO: link to docs);
   2 new settings can be used to control level of compliancy:
   ``HTTPCACHE_ALWAYS_STORE`` and ``HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS``
   (:issue:`1151`).
@@ -67,7 +65,7 @@ New Features and Enhancements
 - Form submission:
 
   - now works with ``<button>`` elements too (:issue:`1469`).
-  - an empty string is used for submit buttons without a ``value``
+  - an empty string is now used for submit buttons without a ``value``
 
 - Scrapy does not retry requests that got a ``HTTP 400 Bad Request``
   response anymore (:issue:`1289`).
@@ -81,67 +79,56 @@ New Features and Enhancements
 - dict-like settings now have per-key priorities
   (:issue:`1135`, :issue:`1149` and :issue:`1586`).
 - Anonymous S3 connections are now supported (:issue:`1358`).
-- ``/robots.txt`` compliance is enabled by default for new projects (:issue:`1724`).
+- ``/robots.txt`` compliance is now enabled by default for new projects (:issue:`1724`).
   **Warning: backwards incompatible**
-- ``CloseSpider`` and ``SpiderState`` extensions get disabled if no relevant
+- ``CloseSpider`` and ``SpiderState`` extensions now get disabled if no relevant
   setting is set (:issue:`1723`, :issue:`1725`).
 
+.. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
 API changes
 ~~~~~~~~~~~
 
-- Update form.py to improve existing capability PR #1137 (https://github.com/scrapy/scrapy/commit/786f62664b41f264bf4213a1ee3805774d82ed69)
-    Adds "formid" parameter for Form from_response()
-- `FormRequest.from_response` now allows to define through CSS selectors which
-  form from the response should be used. It previously supported only XPath
-  (:issue:`1382`).
-- Add ExecutionEngine.close() method #1423 (https://github.com/scrapy/scrapy/commit/caf2080b8095acd11de6018911025076ead23585)
-    Adds a new method as a single entry point for shutting down the engine
-    and integrates it into Crawler.crawl() for graceful error handling during the crawling process.
+- ``FormRequest.from_response`` now allows: 
+  
+  - to set which Form you want to get through a new ``formid`` parameter (:issue:`1137`).
 
-    TODO: explain what this does
-- public Crawler.create_crawler method #1528 (https://github.com/scrapy/scrapy/commit/57f87b95d4d705f8afdd8fb9f7551033a7d88ee2)
-    Note: this is a Core API change
-    Note: this is CrawlerRunner.create_crawler(), not Crawler.create_crawler
-    http://doc.scrapy.org/en/master/topics/api.html?#scrapy.crawler.CrawlerRunner.create_crawler
+  - to define through CSS selectors which form from the response should be used. 
+  It previously supported only XPath  (:issue:`1382`).
 
-        Return a Crawler object.
+- New methods:
 
-        If crawler_or_spidercls is a Crawler, it is returned as-is.
-        If crawler_or_spidercls is a Spider subclass, a new Crawler is constructed for it.
-        If crawler_or_spidercls is a string, this function finds a spider with this name in a Scrapy project (using spider loader), then creates a Crawler instance for it.
+  - ``ExecutionEngine.close`` (:issue:`1423`).
+  - ``CrawlerRunner.create_crawler`` (:issue:`1528`).
 
-- API CHANGE: response.text #1730 + micro-optimize response.text #1740
-    New `.text` attribute on TextResponses
-    Response body, as unicode.
+- ``.text`` is a new attribute on ``TextResponse``. It's a shortcut to the 
+  ``.body_as_unicode()`` method (:issue:`1730`).
 
 
 Deprecations and Removals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- drop deprecated "optional_features" set #1359 (https://github.com/scrapy/scrapy/commit/7d187735ffecb0f49cffce1a9058961146212f59)
-- Remove --lsprof command-line option. #1689 (https://github.com/scrapy/scrapy/commit/56b69d2ea85ccdebfa5ec7945f1ed1df54b4b87f)
-    WARNING: backward incompatible, but doesnt break user code
+- The ``optional_features`` set has been removed (:issue:`1359`).
+- The ``--lsprof`` command line option has been removed (:issue:`1689`).
+  **Warning: backward incompatible**, but doesn't break user code.
+- The following datatypes were deprecated, because they were not used anywhere
+  (:issue:`1720`):
 
-- deprecated unused and untested code in scrapy.utils.datatypes #1720
-    DEPRECATION: these will be removed in next releases
-        scrapy.utils.datatypes.MultiValueDictKeyError
-        scrapy.utils.datatypes.MultiValueDict
-        scrapy.utils.datatypes.SiteNode
+  + ``scrapy.utils.datatypes.MultiValueDictKeyError``
+  + ``scrapy.utils.datatypes.MultiValueDict``
+  + ``scrapy.utils.datatypes.SiteNode``
 
 
 Relocations
 ~~~~~~~~~~~
 
-- Migrating selectors to use parsel #1409 (https://github.com/scrapy/scrapy/commit/15c1300d35e4764ea343d98c133bc83f7c90c2d6)
- + Replace usage of deprecated class by its parsel\'s counterpart #1431 (https://github.com/scrapy/scrapy/commit/12bebb61725272cdd977ce914d18a4b18ec0cb77)
-    closes Scrapy.selector Enhancement Proposal (https://github.com/scrapy/scrapy/issues/906)
-- Relocate telnetconsole to extensions/ #1524 (https://github.com/scrapy/scrapy/commit/72eeead6db7a5fdbce49a59102bb6a7125d56bc1)
-    Fixes: Move scrapy.telnet to scrapy.extensions.telnet #1520
+- Selectors were ported to use parsel_ (:issue:`1409`).
+- ``telnetconsole`` was relocated to ``extensions/`` (:issue:`1524`).\
 
-    See discussion on disabling telnet by default: (still open) https://github.com/scrapy/scrapy/issues/1572
-    Note that telnet is not enabled on Python 3 (https://github.com/scrapy/scrapy/pull/1524#issuecomment-146985595)
+  + Note: telnet is not enabled on Python 3
+    (https://github.com/scrapy/scrapy/pull/1524#issuecomment-146985595)
 
+.. _parsel: https://github.com/scrapy/parsel
 
 Documentation
 ~~~~~~~~~~~~~
