@@ -3,6 +3,336 @@
 Release notes
 =============
 
+1.1.0 (unreleased)
+------------------
+
+Python 3 Support (basic)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have been hard at work to make Scrapy work on Python 3. Some features
+are still missing (and may never be ported to Python 3, see below),
+but you can now run spiders on Python 3.3, 3.4 and 3.5.
+
+Almost all of addons/middleware should work, but here are the current
+limitations we know of:
+
+- s3 downloads are not supported (see :issue:`1718`)
+- sending emails is not supported
+- FTP download handler is not supported (non-Python 3 ported Twisted dependency)
+- telnet is not supported (non-Python 3 ported Twisted dependency)
+- there are problems with non-ASCII URLs in Python 3
+- reported problems with HTTP cache created in Python 2.x which can't be used in 3.x (to be checked)
+- there is also a nasty issue with cryptography library:
+  recent versions don't work well on OS X  + Python 3.5 (see https://github.com/pyca/cryptography/issues/2690),
+  downgrading to an older version helps
+
+
+New Features and Enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Command line tool has completion for zsh (:issue:`934`)
+- ``scrapy shell`` works with local files again ; this was a regression
+  identified in 1.0+ releases (:issue:`1710`, :issue:`1550`)
+- ``scrapy shell`` now also checks a  new ``SCRAPY_PYTHON_SHELL`` environment
+  variable to launch the interactive shell of your choice ;
+  ``bpython`` is a newly supported option too (:issue:`1444`)
+- Autothrottle has gotten a code cleanup and better docs ;
+  there's also a new ``AUTOTHROTTLE_TARGET_CONCURRENCY`` setting which
+  allows to send more than 1 concurrent request on average (:issue:`1324`)
+- Memory usage extension has a new ``MEMUSAGE_CHECK_INTERVAL_SECONDS``
+  setting to change default check interval (:issue:`1282`)
+- HTTP caching follows RFC2616 more closely (TODO: link to docs);
+  2 new settings can be used to control level of compliancy:
+  ``HTTPCACHE_ALWAYS_STORE`` and ``HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS``
+  (:issue:`1151`)
+- Scheme Download handlers are now lazy-loaded on first request using
+  that scheme (``http(s)://``, ``ftp://``, ``file://``, ``s3://``)
+  (:issue:`1390`, :issue:`1421`)
+- RedirectMiddleware now skips status codes in ``handle_httpstatus_list``,
+  set either as spider  attribute or ``Request``'s ``meta`` key
+  (:issue:`1334`, :issue:`1364`, :issue:`1447`)
+
+
+- Form submit button plain #1469 (https://github.com/scrapy/scrapy/commit/b876755f1cee619d8c421357777d223037d5289c)
+    Fixes: Form submit button (https://github.com/scrapy/scrapy/issues/1354)
+- Implement FormRequest.from_response CSS support #1382 (https://github.com/scrapy/scrapy/commit/a6e5c848feb672c117f3380976077b6d0f42e3a6)
+ + Fix version number to appear new feature #1706
+
+- Incomplete submit button #1472 (https://github.com/scrapy/scrapy/commit/bc499cb552dad362494b86082e47d1f732095874)
+
+- dont retry 400 #1289 (https://github.com/scrapy/scrapy/milestones/Scrapy%201.1)
+    + DOC fix docs after GH-1289. #1530 (https://github.com/scrapy/scrapy/commit/451318ef7a4e8ee7837b83e73b158da98f579980)
+    WARNING: BACKWARDS INCOMPATIBLE!
+- DOC fix docs after GH-1289. #1530 (https://github.com/scrapy/scrapy/commit/451318ef7a4e8ee7837b83e73b158da98f579980)
+
+- Support for returning deferreds in middlewares #1473 (https://github.com/scrapy/scrapy/commit/dd473145f2e1ae2d3c9462c489f3289a96e447f4)
+    Adds support for returning deferreds in middlewares, and makes use of this to fix a limitation in RobotsTxtMiddleware.
+    Fixes #1471
+- add support for a nested loaders #1467 (https://github.com/scrapy/scrapy/commit/3c596dcf4606315e4eb88608e3ecde430fe18c29)
+    Closes: https://github.com/scrapy/scrapy/pull/818
+    Adds a nested_xpath()/nested_css() methods to ItemLoader. (TODO: add links to docs)
+
+- add_scheme_if_missing for `scrapy shell` command #1498 (https://github.com/scrapy/scrapy/commit/fe15f93e533be36e81e0385691fe5571c88b0b31)
+    Fixes: #1487
+    Warning: backward incompatible
+
+    + see: https://github.com/scrapy/scrapy/issues/1550, https://github.com/scrapy/scrapy/pull/1710
+- Per-key priorities for dict-like settings by promoting dicts to Settings instances #1149 (https://github.com/scrapy/scrapy/commit/dd9f777ba725d7a7dbb192302cc52a120005ad64)
+  + Backwards compatible per key priorities #1586 (https://github.com/scrapy/scrapy/commit/54216d7afe9d545031c57b5821f2c821faa2ccc3)
+
+    Fixes: Per-key priorities for dictionary-like settings #1135
+    Obsoletes: Settings.updatedict() method to update dictionary-like settings #1110
+- Support anonymous S3DownloadHandler (boto) connections #1358 (https://github.com/scrapy/scrapy/commit/5ec4319885e4be87b0248cb80b5213f68829129e)
+    + optional_features has been removed #1699
+
+- Enable robots.txt handling by default for new projects. #1724 (https://github.com/scrapy/scrapy/commit/0d368c5d6fd468aed301ed5967f8bfe9d5e86101)
+    WARNING: backwards incompatible
+
+- Disable CloseSpider extension if no CLOSPIDER_* setting set #1723 (https://github.com/scrapy/scrapy/commit/2246280bb6f71d7d52e24aca5b4ce955b3aa1363)
+- Disable SpiderState extension if no JOBDIR set #1725
+
+- Add Code of Conduct Version 1.3.0 from http://contributor-covenant.org/ #1681
+
+
+API changes
+~~~~~~~~~~~
+
+- Update form.py to improve existing capability PR #1137 (https://github.com/scrapy/scrapy/commit/786f62664b41f264bf4213a1ee3805774d82ed69)
+    Adds "formid" parameter for Form from_response()
+
+- Add ExecutionEngine.close() method #1423 (https://github.com/scrapy/scrapy/commit/caf2080b8095acd11de6018911025076ead23585)
+    Adds a new method as a single entry point for shutting down the engine
+    and integrates it into Crawler.crawl() for graceful error handling during the crawling process.
+
+    TODO: explain what this does
+- public Crawler.create_crawler method #1528 (https://github.com/scrapy/scrapy/commit/57f87b95d4d705f8afdd8fb9f7551033a7d88ee2)
+    Note: this is a Core API change
+    Note: this is CrawlerRunner.create_crawler(), not Crawler.create_crawler
+    http://doc.scrapy.org/en/master/topics/api.html?#scrapy.crawler.CrawlerRunner.create_crawler
+
+        Return a Crawler object.
+
+        If crawler_or_spidercls is a Crawler, it is returned as-is.
+        If crawler_or_spidercls is a Spider subclass, a new Crawler is constructed for it.
+        If crawler_or_spidercls is a string, this function finds a spider with this name in a Scrapy project (using spider loader), then creates a Crawler instance for it.
+
+- API CHANGE: response.text #1730 + micro-optimize response.text #1740
+    New `.text` attribute on TextResponses
+    Response body, as unicode.
+
+
+Deprecations and Removals
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- drop deprecated "optional_features" set #1359 (https://github.com/scrapy/scrapy/commit/7d187735ffecb0f49cffce1a9058961146212f59)
+- Remove --lsprof command-line option. #1689 (https://github.com/scrapy/scrapy/commit/56b69d2ea85ccdebfa5ec7945f1ed1df54b4b87f)
+    WARNING: backward incompatible, but doesnt break user code
+
+- deprecated unused and untested code in scrapy.utils.datatypes #1720
+    DEPRECATION: these will be removed in next releases
+        scrapy.utils.datatypes.MultiValueDictKeyError
+        scrapy.utils.datatypes.MultiValueDict
+        scrapy.utils.datatypes.SiteNode
+
+
+Relocations
+~~~~~~~~~~~
+
+- Migrating selectors to use parsel #1409 (https://github.com/scrapy/scrapy/commit/15c1300d35e4764ea343d98c133bc83f7c90c2d6)
+ + Replace usage of deprecated class by its parsel\'s counterpart #1431 (https://github.com/scrapy/scrapy/commit/12bebb61725272cdd977ce914d18a4b18ec0cb77)
+    closes Scrapy.selector Enhancement Proposal (https://github.com/scrapy/scrapy/issues/906)
+- Relocate telnetconsole to extensions/ #1524 (https://github.com/scrapy/scrapy/commit/72eeead6db7a5fdbce49a59102bb6a7125d56bc1)
+    Fixes: Move scrapy.telnet to scrapy.extensions.telnet #1520
+
+    See discussion on disabling telnet by default: (still open) https://github.com/scrapy/scrapy/issues/1572
+    Note that telnet is not enabled on Python 3 (https://github.com/scrapy/scrapy/pull/1524#issuecomment-146985595)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+- DOC SignalManager docstrings. See GH-713. #1291 (https://github.com/scrapy/scrapy/commit/5bd0395be4dc6d8315ad2726f1dbbd9c0b57b143)
+- Improvements for docs on how to access settings #1302 (https://github.com/scrapy/scrapy/commit/8b3ca4f250b4d831403c7fcfa72efe7ecdfa5247)
+    (closes: https://github.com/scrapy/scrapy/issues/1300)
+- Make Sphinx autodoc use local, not system-wide Scrapy PR #1335 (https://github.com/scrapy/scrapy/commit/b6eb3404a287508949ddb215e3f553a10fe43b8c)
+- DOCS: Update deprecated examples #1660 (https://github.com/scrapy/scrapy/commit/95e8ff8ba1dff3ec045dce931b6ea4314e887399)
+- DOCS: Update Stats Collection documentation for @master #1683 (https://github.com/scrapy/scrapy/commit/3f1f15bc4d3ee81612bce00fa0106ed16a7f72e5)
+- DOCS: DOC: Update MetaRefreshMiddlware's setting variables #1642 (https://github.com/scrapy/scrapy/commit/b1e44436bc4629773388d25ad9ab7b8ecf43d15e)
+
+    REDIRECT_MAX_METAREFRESH_DELAY has been deprecated and was renamed to METAREFRESH_MAXDELAY.
+    Merge duplicate documents about METAREFRESH_MAXDELAY appeared both in the settings page and the downloader-middlewares page.
+
+    Leftover from https://github.com/scrapy/scrapy/commit/defc4f89b542b756276f0920921dc00fe3ec4675
+- DOCS;TESTS: tests+doc for subdomains in offsite middleware #1721
+- DOCS: Clarify priority adjust settings docs #1727
+
+
+Bugfixes
+~~~~~~~~
+
+- Support empty password for http_proxy config #1313 (https://github.com/scrapy/scrapy/commit/07f4f12e8b5417fe3e9f70560f7b60bc488570e8)
+    Fixes #1274 HTTP_PROXY variable with username and empty password not supported
+- interpreting application/x-json as TextResponse #1333 (https://github.com/scrapy/scrapy/commit/2a7dc31f4cab7b13aacb632bdc78c50af754e76f)
+- Support link rel attribute with multiple values #1214 (https://github.com/scrapy/scrapy/commit/aa31811cfdc85eda07ddab25178d5003155523ec)
+    Fixes: nofollow doesnt work correcly when there multiple values in rel attribute #1201
+- BUG FIX: for Incorrectly picked URL in `scrapy.http.FormRequest.from_response` when there is a `<base>` tag #1562
+    PR #1563 (https://github.com/scrapy/scrapy/commit/9548691fdd47077a53f85daace091ef4af599cb9)
+- Startproject templates override #1575 (https://github.com/scrapy/scrapy/commit/3881eaff456d0d2704aa126f7c389080580d8f6c)
+    Closes: Override of TEMPLATES_DIR does not work for "startproject" command (https://github.com/scrapy/scrapy/issues/671)
+- BUG FIX: Various FormRequest tests+fixes #1597 (https://github.com/scrapy/scrapy/commit/dc6502639556efbd06d45319efa8320e84e88fde)
+    Fixes: FormRequest should consider input type values case-insensitive #1595
+    Fixes: FormRequest doesn't handle input elements without type attribute #1596
+- BUG FIX: for Incorrectly picked URL in `scrapy.linkextractors.regex.RegexLinkExtractor` when there is a `<base>` tag. #1564
+    PR #1565 (https://github.com/scrapy/scrapy/commit/17aba44f169fc3a86b6a1f46f30cf5fe29500db1)
+- BUG FIX: BF: robustify _monkeypatches check for twisted - str() name first (Closes #1634) #1644 (https://github.com/scrapy/scrapy/commit/57f99fc34ebc7cb8a2a84371b89552e6623c9e9d)
+    Fixes: https://github.com/scrapy/scrapy/issues/1634
+- Fix bug on XMLItemExporter with non-string fields in items #1747
+    Fixes: AttributeError when exporting non-string types through XMLFeedExporter #1738
+- change os.mknod() for open() #1657
+    Fixes: Test for startproject command fails in OS X #1635
+- BUG FIX: Fix PythonItemExporter and CSVExporter for non-string item types #1737
+
+
+Python 3 porting effort
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Python 3: PY3 port scrapy.utils.python PR #1379
+- Python 3: In-progress Python 3 port PR #1384
+    TODO: worth describing?
+- Python 3: fix form requests tests on py3 (https://github.com/scrapy/scrapy/commit/de6e013b9a8080cf759096e793272f6814e3617d)
+- Python 3: Port scrapy/responsetypes.py https://github.com/scrapy/scrapy/commit/d05cf6e0af8c26863cbb1edc7a8199165eaeeb5d
+- Python 3: remove scrapy.utils.testsite from PY3 ignores #1397
+- Python 3: PY3 port scrapy.utils.response #1396
+- Python 3: PY3 port http cookies handling #1398 (https://github.com/scrapy/scrapy/commit/95e6bd2f8da9c0ed79c3667ae0619d35541de346)
+
+- Python 3: PY3 port scrapy.utils.reqser #1408 (https://github.com/scrapy/scrapy/commit/311293ffdc63892bd5ab8494310529a6da0f5b62)
+
+- Python 3: nyov's PY3 changes #1415
+    Various files:
+        requirements-py3.txt
+        scrapy/cmdline.py
+        scrapy/core/downloader/handlers/s3.py
+        scrapy/core/downloader/middleware.py
+        scrapy/core/spidermw.py
+        scrapy/linkextractors/htmlparser.py
+        scrapy/pipelines/files.py
+        scrapy/pipelines/images.py
+        scrapy/utils/testproc.py
+        tests/py3-ignores.txt
+        tests/requirements-py3.txt
+        tests/test_cmdline/__init__.py
+        tests/test_command_version.py
+        tests/test_crawl.py
+        tests/test_loader.py
+        tests/test_pipeline_files.py
+        tests/test_pipeline_images.py
+        tests/test_selector_csstranslator.py
+        tests/test_selector_lxmldocument.py
+        tests/test_utils_iterators.py
+        tests/test_utils_reqser.py
+        tox.ini
+- Python 3: py3: port dictionary itervalues call (666ebfa1d97264bc4e6adb78fe4ce1a9ea15cc1f)
+- Python 3: PY3: port scrapy.utils.trackref #1420 (https://github.com/scrapy/scrapy/commit/fa3d84b0504e25f7478f7fac723a45)
+- Python 3: Small Python 3 fixes #1456 (https://github.com/scrapy/scrapy/commit/026a1caffb9f0bafbefba4f56af61a7347750f20)
+- Python 3: enable console tests in PY3 (8ecc4544b3747eb9be33153483b62c6441bd7c56)
+- Python 3: assorted Python 3 porting #1461 (https://github.com/scrapy/scrapy/commit/0018caf0b61e4f10857e61cddb347c3854bacc4b)
+    Port LxmlLinkExtractor and leave other link extractors Python 2.x - only.
+
+    refactor test_linkextractors
+    move tests for deprecated link extractors to another file and ignore it in Python 3
+    port LxmlLinkExtractor to Python 3
+    + scrapy.spiders and a couple more things
+
+- port some downloader middlewares to Python 3 #1470 (https://github.com/scrapy/scrapy/commit/3919ad64c5873d360aa1a412bee5270aad121760)
+    scrapy/downloadermiddlewares/httpauth.py
+    scrapy/downloadermiddlewares/useragent.py
+- Python 3: PY3 redirect downloader mware #1488 (https://github.com/scrapy/scrapy/commit/4d1c5c3d32591c37e37f879f0e77e50db7124603)
+- PY3 port bench, startproject, genspider, list and runspider commands #1535 (https://github.com/scrapy/scrapy/commit/411174cf38ebda00422529637b427a591c114eff)
+    Fixes: PY3 enable test_commands.ParseCommandTest #1536
+- Python 3:
+    - py3: fix webclient #1676 (https://github.com/scrapy/scrapy/commit/49fe631d8946f87e783c59e44a498f3d43083e2e)
+    - Py3: port http downloaders #1678 (https://github.com/scrapy/scrapy/commit/b4fb9d35342bc41a0149b74ecca38c056beaa220)
+    - Raise minimal twisted version for py3 #1694 (https://github.com/scrapy/scrapy/commit/d59d3f1e296795116704baa01780ff11870257f1)
+    - Cleanup http11 tunneling connection after #1678 #1701
+    - Py3: port downloader cache and compression middlewares #1680
+    - Add Python 3.5 tox env + Python 3.5 tests in Travis #1674 (https://github.com/scrapy/scrapy/commit/8fb9a6f8191dc0bf2dfb39ef01b1eb63e49bc23b)
+    - Py3: port test_engine #1691
+    - Py3: port commands fetch and shell #1693
+    - py3 fix HttpProxy and Retry Middlewares #1637
+    - PY3 fixed scrapy bench command #1708
+    - Py3: port test crawl #1692
+    - PY3 enable tests for scrapy parse command #1711
+    - py3: fix test_mail #1715
+    - py3: reviewed passing test_spidermiddleware_httperror.py #1717
+    - py3: test_pipeline_files and test_pipeline_images #1716
+    - PY3 exporters #1499
+    - PY3 fix downloader slots GC #1741
+- Python 3: PY3: port utils/iterators #1661 (https://github.com/scrapy/scrapy/commit/f01fd076420f0e58a1a165be31ec505eeb561ef4)
+
+
+Tests, CI and Deploys
+~~~~~~~~~~~~~~~~~~~~~
+
+- BF: fail if docs failed to build #1319
+- Run on new travis-ci infra (https://github.com/scrapy/scrapy/commit/805a491647fabfed58acb9d2)
+    no more travis workarounds (removed .travis-workarounds.sh)
+- Unset environment proxies for tests #1353 (https://github.com/scrapy/scrapy/commit/cbfb24dbeb82c791e82f1d9249685aa4d75fed3e)
+- Coverage and reports at codecov.io and coveralls.io #1433 (https://github.com/scrapy/scrapy/commit/9adb5c31c06bc22d1b5243a04633a)
+- drop coveralls support #1537 (https://github.com/scrapy/scrapy/commit/65f4ba349cb341736b67c0307074cef2cf0bd12e)
+- Add some missing tests for scrapy.settings #1570 (https://github.com/scrapy/scrapy/commit/9424ca0fdbdd492f3049fe08be8848f92e84fde3)
+- DOCS;TESTS: tests+doc for subdomains in offsite middleware #1721
+- TESTS: Include tests for non-string items to Exporters #1742
+
+
+Logging
+~~~~~~~
+
+- Ignore ScrapyDeprecationWarning warnings properly. #1294 (https://github.com/scrapy/scrapy/commit/64466526350820bdb424dc70968b4e015fd13641)
+- Do not fail representing non-http requests #1419 (https://github.com/scrapy/scrapy/commit/bdcc78b4ddf47b6161b962b9d9fc8851b11f0117)
+- Make list of enabled middlewares more readable #1263 (https://github.com/scrapy/scrapy/commit/a7787628ff53322e295be315e5595c555eb8e057)
+- added more verbosity for log and for exception when download is cancelled because of a size limit #1624 (https://github.com/scrapy/scrapy/commit/fdc3c9d561ad87e417447fcee9adcc8cd6dbc594)
+- LOGGING: show download warnsize once #1654 (https://github.com/scrapy/scrapy/commit/6827eab2c59e93d8ec46ef308bc751c6c00f32fd)
+- LOGGING: Fix logging of enabled middlewares #1722 + Use long classes names for enabled middlewares in startup logs #1726
+
+
+Code refactoring
+~~~~~~~~~~~~~~~~
+
+- Avoid creation of temporary list object in iflatten #1476 (https://github.com/scrapy/scrapy/commit/6ae8963256f52bcc26ea8b4edc938743b07b6b2c)
+- equal_attributes function optimization #1477 (https://github.com/scrapy/scrapy/commit/6490cb534e8e9a9068a8e298a8c6edb6be9725c5)
+- Optimization - avoid temporary list objects, unnecessary function call #1481 (https://github.com/scrapy/scrapy/commit/3e13740a5765152e1b8241ad4db91efac5c746d7)
+- Small downloader slots cleanup #1315 (https://github.com/scrapy/scrapy/commit/8a140b6ba1cf89e4a3bb74f8afb6e81c283e298b)
+    downloader.Slot becomes unaware of Scrapy settings;
+    it got __str__ and __repr__ methods useful in manhole;
+    unused import is dropped;
+    absolute_imports future import is added (I like adding it everywhere).
+- extract CrawlerRunner._crawl method which always expects Crawler #1290 (https://github.com/scrapy/scrapy/commit/5bcda9b7d13b9c3b486c2b247fd6d87a7b59df1a)
+    Provides an extension point where crawler instance is available;
+    makes it easier to write alternative CrawlerRunner.crawl implementations.
+    User can override CrawlerRunner._crawl method and connect signals there.
+
+
+Other changes
+~~~~~~~~~~~~~
+
+
+- Extend regex for tags that deploy to PyPI to support new release cycle (:commit:`26f50d3`)
+- rename str_to_unicode and unicode_to_str functions (ISSUE #778) (https://github.com/scrapy/scrapy/commit/61cd27e5c7b777a54)
+
+- fix utils.template.render_templatefile() bug +test #1212 (https://github.com/scrapy/scrapy/commit/71bd79e70fb10ed4899b15ca3ffa9aaa16567727)
+
+- style fixes for settings.py created by `scrapy startproject` #1496 (https://github.com/scrapy/scrapy/commit/5279da9916c00c7a6679cfc555f9a2b1863b4821)
+    Adds AUTOTHROTTLE_TARGET_CONCURRENCY to settings.py
+
+- (MINOR) Simplify if statement #1686 (https://github.com/scrapy/scrapy/commit/9ef25d7b68fe90c5e6b94bd3e81755089e743080)
+    Note: in conftest.py
+
+- (MINOR) fix indentation #1687 (https://github.com/scrapy/scrapy/commit/66f41aba3cbfa642b37354e8419e3d1437b88348)
+    Note: in scrapy/downloadermiddlewares/retry.py
+- (MINOR) fixed typo You -> you #1698 (https://github.com/scrapy/scrapy/commit/e8b26e2ab25ac7ec15c03d3c0b766c7aa8f48cce)
+    Fixes DOWNLOAD_WARNSIZE is too verbose #1303
+
+
 1.0.4 (2015-12-30)
 ------------------
 
@@ -590,7 +920,7 @@ Enhancements
 - Document `request_scheduled` signal (:issue:`746`)
 - Add a note about reporting security issues (:issue:`697`)
 - Add LevelDB http cache storage backend (:issue:`626`, :issue:`500`)
-- Sort spider list output of `scrapy list` command (:issue:`742`) 
+- Sort spider list output of `scrapy list` command (:issue:`742`)
 - Multiple documentation enhancemens and fixes
   (:issue:`575`, :issue:`587`, :issue:`590`, :issue:`596`, :issue:`610`,
   :issue:`617`, :issue:`618`, :issue:`627`, :issue:`613`, :issue:`643`,
