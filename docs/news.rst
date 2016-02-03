@@ -23,6 +23,9 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - HTTP caching now follows RFC2616 more closely, added settings
     :setting:`HTTPCACHE_ALWAYS_STORE` and
     :setting:`HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS` (:issue:`1151`).
+  - Selectors were extracted to the parsel_ library (:issue:`1409`). This means
+    you can use Scrapy Selectors without Scrapy and also upgrade the
+    selectors engine without needing to upgrade Scrapy.
 
 - These bug fixes may require your attention:
 
@@ -64,10 +67,6 @@ some limitations in Python 3:
   dependency)
 - Telnet is not supported (non-Python 3 ported Twisted dependency)
 - There are problems with non-ASCII URLs in Python 3
-- There is also a nasty issue with `cryptography` library: recent versions
-  don't work well on OS X + Python 3.5
-  (see https://github.com/pyca/cryptography/issues/2690). As a workaround, you
-  can downgrade the library to an older version.
 
 Additional New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,11 +105,7 @@ Additional New Features and Enhancements
   :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
   :issue:`1727`).
 - Other refactoring, optimizations and cleanup (:issue:`1476`, :issue:`1481`,
-  :issue:`1477` and :issue:`1315`).
-- Added ``to_bytes`` and ``to_unicode``, deprecated ``str_to_unicode`` and
-  ``unicode_to_str`` functions (:issue:`778`).
-- Extracted ``CrawlerRunner._crawl`` method which always expects ``Crawler``
-  instance (:issue:`1290`).
+  :issue:`1477`, :issue:`1315` and :issue:`1290`).
 
 .. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
@@ -118,6 +113,8 @@ Additional New Features and Enhancements
 Deprecations and Removals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- Added ``to_bytes`` and ``to_unicode``, deprecated ``str_to_unicode`` and
+  ``unicode_to_str`` functions (:issue:`778`).
 - The ``optional_features`` set has been removed (:issue:`1359`).
 - The ``--lsprof`` command line option has been removed (:issue:`1689`).
   **Warning: backward incompatible**, but doesn't break user code.
@@ -131,7 +128,6 @@ Deprecations and Removals
 Relocations
 ~~~~~~~~~~~
 
-- Selectors were ported to use parsel_ (:issue:`1409`).
 - ``telnetconsole`` was relocated to ``extensions/`` (:issue:`1524`).
 
   + Note: telnet is not enabled on Python 3
