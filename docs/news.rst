@@ -36,7 +36,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     use ``scrapy shell ./index.html`` to load a local file.
   - Robots.txt compliance is now enabled by default for newly-created projects
     (:issue:`1724`). Scrapy will also wait for robots.txt to be downloaded
-    before proceeding with the crawl. (:issue:`1735`). If you want to disable
+    before proceeding with the crawl (:issue:`1735`). If you want to disable
     this behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file
     after creating a new project.
   - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
@@ -60,13 +60,13 @@ features are still missing (and some may never be ported).
 Almost all builtin extensions/middlewares are expected to work. However, we are aware of
 some limitations in Python 3:
 
-- Doesn't work in Windows yet (non-Python 3 ported Twisted dependency)
+- Scrapy doesn't work yet in Windows with Python 3 (non-Python 3 ported Twisted dependency)
 - S3 downloads are not supported (see :issue:`1718`)
 - Sending emails is not supported (non-Python 3 ported Twisted dependency)
 - FTP download handler is not supported (non-Python 3 ported Twisted
   dependency)
 - Telnet is not supported (non-Python 3 ported Twisted dependency)
-- There are problems with non-ASCII URLs in Python 3
+- Scrapy has problems handling non-ASCII URLs in Python 3
 
 Additional New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
