@@ -32,8 +32,10 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     If you try ``scrapy shell index.html`` it will try to load the URL http://index.html,
     use ``scrapy shell ./index.html`` to load a local file.
   - Robots.txt compliance is now enabled by default for newly-created projects
-    (:issue:`1724`). If you need old behavior, update :setting:`ROBOTSTXT_OBEY`
-    in ``settings.py`` file when creating a new project.
+    (:issue:`1724`). Scrapy will also wait for robots.txt to be downloaded
+    before proceeding with the crawl. (:issue:`1735`). If you need the old
+    behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file when
+    creating a new project.
   - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
     If you use ``PythonItemExporter``, you may want to update your code to
     disable binary mode which is now deprecated.
@@ -52,7 +54,7 @@ you can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
 features are still missing (and some may never be ported).
 
 
-Almost all addons/middlewares are expected to work. However, we are aware of
+Almost all builtin extensions/middlewares are expected to work. However, we are aware of
 some limitations in Python 3:
 
 - Doesn't work in Windows yet (non-Python 3 ported Twisted dependency)
