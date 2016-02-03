@@ -68,7 +68,7 @@ class Command(ScrapyCommand):
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
-        print("New Scrapy project %r, using template directory %r, created in:" % \
+        print("New Scrapy project '%s', using template directory '%s', created in:" % \
               (project_name, self.templates_dir))
         print("    %s\n" % abspath(project_name))
         print("You can start your first spider with:")
