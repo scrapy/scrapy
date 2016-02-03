@@ -104,6 +104,7 @@ Additional New Features and Enhancements
   ``unicode_to_str`` functions (:issue:`778`).
 - Extracted ``CrawlerRunner._crawl`` method which always expects ``Crawler``
   instance (:issue:`1290`).
+
 .. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
 
