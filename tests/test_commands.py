@@ -2,10 +2,10 @@ import os
 import sys
 import subprocess
 import tempfile
-from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
+from threading import Timer
 import six
 
 from twisted.trial import unittest
@@ -13,7 +13,6 @@ from twisted.internet import defer
 
 import scrapy
 from scrapy.utils.python import to_native_str
-from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
@@ -44,16 +43,18 @@ class ProjectTest(unittest.TestCase):
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              **kwargs)
 
-        waited = 0
-        interval = 0.2
-        while p.poll() is None:
-            sleep(interval)
-            waited += interval
-            if waited > 15:
-                p.kill()
-                assert False, 'Command took too much time to complete'
+        def kill_proc():
+            p.kill()
+            assert False, 'Command took too much time to complete'
 
-        return p
+        timer = Timer(15, kill_proc)
+        try:
+            timer.start()
+            stdout, stderr = p.communicate()
+        finally:
+            timer.cancel()
+
+        return to_native_str(stdout), to_native_str(stderr)
 
 
 class StartprojectTest(ProjectTest):
@@ -88,8 +89,7 @@ class StartprojectTemplatesTest(ProjectTest):
         assert exists(join(self.tmpl_proj, 'root_template'))
 
         args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
-        p = self.proc('startproject', self.project_name, *args)
-        out = to_native_str(retry_on_eintr(p.stdout.read))
+        out, err = self.proc('startproject', self.project_name, *args)
         self.assertIn("New Scrapy project %r, using template directory" % self.project_name, out)
         self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
@@ -117,12 +117,10 @@ class GenspiderCommandTest(CommandTest):
     def test_template(self, tplname='crawl'):
         args = ['--template=%s' % tplname] if tplname else []
         spname = 'test_spider'
-        p = self.proc('genspider', spname, 'test.com', *args)
-        out = to_native_str(retry_on_eintr(p.stdout.read))
+        out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
-        p = self.proc('genspider', spname, 'test.com', *args)
-        out = to_native_str(retry_on_eintr(p.stdout.read))
+        out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Spider %r already exists in module" % spname, out)
 
     def test_template_basic(self):
@@ -169,8 +167,7 @@ class MySpider(scrapy.Spider):
         self.logger.debug("It Works!")
         return []
 """)
-        p = self.proc('runspider', fname)
-        log = to_native_str(p.stderr.read())
+        _, log = self.proc('runspider', fname)
         self.assertIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
         self.assertIn("INFO: Closing spider (finished)", log)
@@ -184,13 +181,11 @@ class MySpider(scrapy.Spider):
             f.write("""
 from scrapy.spiders import Spider
 """)
-        p = self.proc('runspider', fname)
-        log = to_native_str(p.stderr.read())
+        _, log = self.proc('runspider', fname)
         self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
-        p = self.proc('runspider', 'some_non_existent_file')
-        log = to_native_str(p.stderr.read())
+        _, log = self.proc('runspider', 'some_non_existent_file')
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
@@ -199,8 +194,7 @@ from scrapy.spiders import Spider
         fname = abspath(join(tmpdir, 'myspider.txt'))
         with open(fname, 'w') as f:
             f.write("")
-        p = self.proc('runspider', fname)
-        log = to_native_str(p.stderr.read())
+        _, log = self.proc('runspider', fname)
         self.assertIn("Unable to load", log)
 
 
@@ -271,8 +265,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
 class BenchCommandTest(CommandTest):
 
     def test_run(self):
-        p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
-                '-s', 'CLOSESPIDER_TIMEOUT=0.01')
-        log = to_native_str(p.stderr.read())
+        _, log = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
+                           '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
