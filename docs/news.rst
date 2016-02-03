@@ -3,6 +3,162 @@
 Release notes
 =============
 
+1.1.0
+-----
+
+This 1.1 release brings a lot of interesting features and bug fixes:
+
+- Scrapy 1.1 has beta Python 3 support (requires Twisted >= 15.5). See
+  :ref:`news_betapy3` for more details and some limitations.
+- Hot new features:
+
+  - Item loaders now support nested loaders (:issue:`1467`).
+  - ``FormRequest.from_response`` improvements (:issue:`1382`, :issue:`1137`).
+  - Added setting :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` and improved
+    AutoThrottle docs (:issue:`1324`).
+  - Added ``response.text`` to get body as unicode (:issue:`1730`).
+  - Anonymous S3 connections (:issue:`1358`).
+  - Deferreds in downloader middlewares (:issue:`1473`). This enables better
+    robots.txt handling (:issue:`1471`).
+  - HTTP caching now follows RFC2616 more closely, added settings
+    :setting:`HTTPCACHE_ALWAYS_STORE` and
+    :setting:`HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS` (:issue:`1151`).
+  - Selectors were extracted to the parsel_ library (:issue:`1409`). This means
+    you can use Scrapy Selectors without Scrapy and also upgrade the
+    selectors engine without needing to upgrade Scrapy.
+
+- These bug fixes may require your attention:
+
+  - Don't retry bad requests (HTTP 400) by default (:issue:`1289`).
+    If you need the old behavior, add ``400`` to :setting:`RETRY_HTTP_CODES`.
+  - Fix shell files argument handling (:issue:`1710`, :issue:`1550`).
+    If you try ``scrapy shell index.html`` it will try to load the URL http://index.html,
+    use ``scrapy shell ./index.html`` to load a local file.
+  - Robots.txt compliance is now enabled by default for newly-created projects
+    (:issue:`1724`). Scrapy will also wait for robots.txt to be downloaded
+    before proceeding with the crawl (:issue:`1735`). If you want to disable
+    this behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file
+    after creating a new project.
+  - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
+    If you use ``PythonItemExporter``, you may want to update your code to
+    disable binary mode which is now deprecated.
+  - Accept XML node names containing dots as valid (:issue:`1533`).
+
+Keep reading for more details on other improvements and bug fixes.
+
+.. _news_betapy3:
+
+Beta Python 3 Support
+~~~~~~~~~~~~~~~~~~~~~
+
+We have been `hard at work to make Scrapy run on Python 3
+<https://github.com/scrapy/scrapy/wiki/Python-3-Porting>`_. As a result, now
+you can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
+features are still missing (and some may never be ported).
+
+
+Almost all builtin extensions/middlewares are expected to work. However, we are aware of
+some limitations in Python 3:
+
+- Scrapy doesn't work yet in Windows with Python 3 (non-Python 3 ported Twisted dependency)
+- S3 downloads are not supported (see :issue:`1718`)
+- Sending emails is not supported (non-Python 3 ported Twisted dependency)
+- FTP download handler is not supported (non-Python 3 ported Twisted
+  dependency)
+- Telnet is not supported (non-Python 3 ported Twisted dependency)
+- Scrapy has problems handling non-ASCII URLs in Python 3
+
+Additional New Features and Enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Scrapy now has a `Code of Conduct`_ (:issue:`1681`).
+- Command line tool now has completion for zsh (:issue:`934`).
+- Improvements to ``scrapy shell``:
+
+  - Support for bpython and configure preferred Python shell via
+    ``SCRAPY_PYTHON_SHELL`` (:issue:`1100`, :issue:`1444`).
+  - Support URLs without scheme (:issue:`1498`)
+    **Warning: backwards incompatible!**
+  - Bring back support for relative file path (:issue:`1710`, :issue:`1550`).
+
+- Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check
+  interval (:issue:`1282`).
+- Download handlers are now lazy-loaded on first request using their
+  scheme (:issue:`1390`, :issue:`1421`).
+- ``RedirectMiddleware`` now skips the status codes from
+  ``handle_httpstatus_list`` on spider attribute
+  or in ``Request``'s ``meta`` key (:issue:`1334`, :issue:`1364`,
+  :issue:`1447`).
+- Form submission:
+
+  - now works with ``<button>`` elements too (:issue:`1469`).
+  - an empty string is now used for submit buttons without a value
+    (:issue:`1472`)
+
+- Dict-like settings now have per-key priorities
+  (:issue:`1135`, :issue:`1149` and :issue:`1586`).
+- ``CloseSpider`` and ``SpiderState`` extensions now get disabled if no relevant
+  setting is set (:issue:`1723`, :issue:`1725`).
+- Added method ``ExecutionEngine.close`` (:issue:`1423`).
+- Added method ``CrawlerRunner.create_crawler`` (:issue:`1528`).
+- Tons of documentation updates and related fixes (:issue:`1291`, :issue:`1302`,
+  :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
+  :issue:`1727`).
+- Other refactoring, optimizations and cleanup (:issue:`1476`, :issue:`1481`,
+  :issue:`1477`, :issue:`1315` and :issue:`1290`).
+
+.. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+
+
+Deprecations and Removals
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added ``to_bytes`` and ``to_unicode``, deprecated ``str_to_unicode`` and
+  ``unicode_to_str`` functions (:issue:`778`).
+- The ``optional_features`` set has been removed (:issue:`1359`).
+- The ``--lsprof`` command line option has been removed (:issue:`1689`).
+  **Warning: backward incompatible**, but doesn't break user code.
+- The following datatypes were deprecated (:issue:`1720`):
+
+  + ``scrapy.utils.datatypes.MultiValueDictKeyError``
+  + ``scrapy.utils.datatypes.MultiValueDict``
+  + ``scrapy.utils.datatypes.SiteNode``
+
+
+Relocations
+~~~~~~~~~~~
+
+- ``telnetconsole`` was relocated to ``extensions/`` (:issue:`1524`).
+
+  + Note: telnet is not enabled on Python 3
+    (https://github.com/scrapy/scrapy/pull/1524#issuecomment-146985595)
+
+.. _parsel: https://github.com/scrapy/parsel
+
+
+Bugfixes
+~~~~~~~~
+
+- Scrapy does not retry requests that got a ``HTTP 400 Bad Request``
+  response anymore (:issue:`1289`). **Warning: backwards incompatible!**
+- Support empty password for http_proxy config (:issue:`1274`).
+- Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
+- Support link rel attribute with multiple values (:issue:`1201`).
+- Fixed ``scrapy.http.FormRequest.from_response`` when there is a ``<base>``
+  tag (:issue:`1564`).
+- Fixed :setting:`TEMPLATES_DIR` handling (:issue:`1575`).
+- Various ``FormRequest`` fixes (:issue:`1595`, :issue:`1596`, :issue:`1597`).
+- Makes ``_monkeypatches`` more robust (:issue:`1634`).
+- Fixed bug on ``XMLItemExporter`` with non-string fields in
+  items (:issue:`1738`).
+- Fixed startproject command in OS X (:issue:`1635`).
+- Fixed PythonItemExporter and CSVExporter for non-string item
+  types (:issue:`1737`).
+- Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
+  :issue:`1624`, :issue:`1654`, :issue:`1722`, :issue:`1726` and :issue:`1303`).
+- Fixed bug in ``utils.template.render_templatefile()`` (:issue:`1212`).
+
+
 1.0.5 (2016-02-04)
 ------------------
 
@@ -10,6 +166,7 @@ Release notes
 - TST: Changed buildbot makefile to use 'pytest' (:commit:`1f3d90a`)
 - DOC: Fixed typos in tutorial and media-pipeline (:commit:`808a9ea` and :commit:`803bd87`)
 - DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
+
 
 1.0.4 (2015-12-30)
 ------------------

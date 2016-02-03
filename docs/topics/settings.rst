@@ -766,6 +766,8 @@ See :ref:`topics-extensions-ref-memusage`.
 MEMUSAGE_CHECK_INTERVAL_SECONDS
 -------------------------------
 
+.. versionadded:: 1.1
+
 Default: ``60.0``
 
 Scope: ``scrapy.extensions.memusage``

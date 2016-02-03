@@ -582,7 +582,7 @@ The class which implements the cache policy.
 HTTPCACHE_GZIP
 ^^^^^^^^^^^^^^
 
-.. versionadded:: 0.25
+.. versionadded:: 1.0
 
 Default: ``False``
 
@@ -594,7 +594,7 @@ This setting is specific to the Filesystem backend.
 HTTPCACHE_ALWAYS_STORE
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.25
+.. versionadded:: 1.1
 
 Default: ``False``
 
@@ -614,7 +614,7 @@ responses you feedto the cache middleware.
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.25
+.. versionadded:: 1.1
 
 Default: ``[]``
 
