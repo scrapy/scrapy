@@ -8,8 +8,8 @@ Release notes
 
 This 1.1 release brings a lot of interesting features and bug fixes:
 
-- Scrapy 1.1 has basic Python 3 support (requires Twisted >= 15.5). See
-  :ref:`news_basicpy3` for more details and some limitations.
+- Scrapy 1.1 has beta Python 3 support (requires Twisted >= 15.5). See
+  :ref:`news_betapy3` for more details and some limitations.
 - Hot new features:
 
   - Item loaders now support nested loaders (:issue:`1467`).
@@ -41,7 +41,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
 
 Keep reading for more details on other improvements and bug fixes.
 
-.. _news_basicpy3:
+.. _news_betapy3:
 
 Beta Python 3 Support
 ~~~~~~~~~~~~~~~~~~~~~
