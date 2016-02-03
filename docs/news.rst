@@ -291,18 +291,9 @@ Logging
 Code refactoring
 ~~~~~~~~~~~~~~~~
 
-- Avoid creation of temporary list object in iflatten #1476 (https://github.com/scrapy/scrapy/commit/6ae8963256f52bcc26ea8b4edc938743b07b6b2c)
-- equal_attributes function optimization #1477 (https://github.com/scrapy/scrapy/commit/6490cb534e8e9a9068a8e298a8c6edb6be9725c5)
-- Optimization - avoid temporary list objects, unnecessary function call #1481 (https://github.com/scrapy/scrapy/commit/3e13740a5765152e1b8241ad4db91efac5c746d7)
-- Small downloader slots cleanup #1315 (https://github.com/scrapy/scrapy/commit/8a140b6ba1cf89e4a3bb74f8afb6e81c283e298b)
-    downloader.Slot becomes unaware of Scrapy settings;
-    it got __str__ and __repr__ methods useful in manhole;
-    unused import is dropped;
-    absolute_imports future import is added (I like adding it everywhere).
-- extract CrawlerRunner._crawl method which always expects Crawler #1290 (https://github.com/scrapy/scrapy/commit/5bcda9b7d13b9c3b486c2b247fd6d87a7b59df1a)
-    Provides an extension point where crawler instance is available;
-    makes it easier to write alternative CrawlerRunner.crawl implementations.
-    User can override CrawlerRunner._crawl method and connect signals there.
+- Optimization on lists (:issue:`1476` and :issue:`1481`)
+- equal_attributes function optimization (:issue:`1477`)
+- Downloader slots cleanup (:issue:`1315`)
 
 
 Other changes
@@ -324,6 +315,11 @@ Other changes
     Note: in scrapy/downloadermiddlewares/retry.py
 - (MINOR) fixed typo You -> you #1698 (https://github.com/scrapy/scrapy/commit/e8b26e2ab25ac7ec15c03d3c0b766c7aa8f48cce)
     Fixes DOWNLOAD_WARNSIZE is too verbose #1303
+
+- extract CrawlerRunner._crawl method which always expects Crawler #1290 (https://github.com/scrapy/scrapy/commit/5bcda9b7d13b9c3b486c2b247fd6d87a7b59df1a)
+    Provides an extension point where crawler instance is available;
+    makes it easier to write alternative CrawlerRunner.crawl implementations.
+    User can override CrawlerRunner._crawl method and connect signals there.
 
 
 1.0.4 (2015-12-30)
