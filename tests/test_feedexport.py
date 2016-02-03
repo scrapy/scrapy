@@ -5,7 +5,8 @@ import json
 from io import BytesIO
 import tempfile
 import shutil
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urljoin, urlparse
+from six.moves.urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -129,9 +130,10 @@ class FeedExportTest(unittest.TestCase):
     def run_and_export(self, spider_cls, settings=None):
         """ Run spider with specified settings; return exported data. """
         tmpdir = tempfile.mkdtemp()
-        res_name = tmpdir + '/res'
+        res_path = os.path.join(tmpdir, 'res')
+        res_uri = urljoin('file:', pathname2url(res_path))
         defaults = {
-            'FEED_URI': 'file://' + res_name,
+            'FEED_URI': res_uri,
             'FEED_FORMAT': 'csv',
         }
         defaults.update(settings or {})
@@ -140,7 +142,7 @@ class FeedExportTest(unittest.TestCase):
                 runner = CrawlerRunner(Settings(defaults))
                 yield runner.crawl(spider_cls)
 
-            with open(res_name, 'rb') as f:
+            with open(res_path, 'rb') as f:
                 defer.returnValue(f.read())
 
         finally:
