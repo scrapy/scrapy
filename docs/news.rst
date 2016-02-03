@@ -12,7 +12,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   :ref:`news_basicpy3` for more details and some limitations.
 - Hot new features:
 
-  - ItemLoaders now support nested loaders (:issue:`1467`).
+  - Item loaders now support nested loaders (:issue:`1467`).
   - ``FormRequest.from_response`` improvements (:issue:`1382`, :issue:`1137`).
   - Added setting :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` and improved
     AutoThrottle docs (:issue:`1324`).
@@ -20,38 +20,47 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - Anonymous S3 connections (:issue:`1358`).
   - Deferreds in downloader middlewares (:issue:`1473`). This enables better
     robots.txt handling (:issue:`1471`).
-  - HTTP cache improvements (:issue:`1151`).
+  - HTTP caching now follows RFC2616 more closely, added settings
+    :setting:`HTTPCACHE_ALWAYS_STORE` and
+    :setting:`HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS` (:issue:`1151`).
 
 - These bug fixes may require your attention:
 
-  - Don't retry bad requests (HTTP 400) (:issue:`1289`).
+  - Don't retry bad requests (HTTP 400) by default (:issue:`1289`).
+    If you need the old behavior, add ``400`` to :setting:`RETRY_HTTP_CODES`.
   - Fix shell files argument handling (:issue:`1710`, :issue:`1550`).
-  - Fixes on robots.txt handling (:issue:`1783`).
-  - Exporters work on unicode (:issue:`1080`).
-  - Fix xmliter to accept nodenames with dots (:issue:`1533`).
+    If you try ``scrapy shell index.html`` it will try to load the URL http://index.html,
+    use ``scrapy shell ./index.html`` to load a local file.
+  - Robots.txt compliance is now enabled by default for newly-created projects
+    (:issue:`1724`).
+  - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
+    If you use ``PythonItemExporter``, you may want to update your code to
+    disable binary mode which is now deprecated.
+  - Accept XML node names containing dots as valid (:issue:`1533`).
 
 Keep reading for more details on other improvements and bug fixes.
 
 .. _news_basicpy3:
 
-Basic Python 3 Support
-~~~~~~~~~~~~~~~~~~~~~~
+Beta Python 3 Support
+~~~~~~~~~~~~~~~~~~~~~
 
-We have been hard at work to make Scrapy run on Python 3. As a result, now you
-can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
+We have been `hard at work to make Scrapy run on Python 3
+<https://github.com/scrapy/scrapy/wiki/Python-3-Porting>`_. As a result, now
+you can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
 features are still missing (and some may never be ported).
 
-Almost all addons/middlewares are expected to work. However, we are aware of
-some limitations:
 
+Almost all addons/middlewares are expected to work. However, we are aware of
+some limitations in Python 3:
+
+- Doesn't work in Windows yet (non-Python 3 ported Twisted dependency)
 - S3 downloads are not supported (see :issue:`1718`)
-- Sending emails is not supported
+- Sending emails is not supported (non-Python 3 ported Twisted dependency)
 - FTP download handler is not supported (non-Python 3 ported Twisted
   dependency)
 - Telnet is not supported (non-Python 3 ported Twisted dependency)
 - There are problems with non-ASCII URLs in Python 3
-- Reported problems with HTTP caches created by Scrapy in Python 2.x which
-  can't be reused in Scrapy in Python 3.x (to be checked)
 - There is also a nasty issue with `cryptography` library: recent versions
   don't work well on OS X + Python 3.5
   (see https://github.com/pyca/cryptography/issues/2690). As a workaround, you
@@ -72,9 +81,6 @@ Additional New Features and Enhancements
 
 - Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check
   interval (:issue:`1282`).
-- HTTP caching now follows RFC2616 more closely, added settings
-  :setting:`HTTPCACHE_ALWAYS_STORE` and
-  :setting:`HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS` (:issue:`1151`).
 - Download handlers are now lazy-loaded on first request using their
   scheme (:issue:`1390`, :issue:`1421`).
 - ``RedirectMiddleware`` now skips the status codes from
@@ -87,10 +93,8 @@ Additional New Features and Enhancements
   - an empty string is now used for submit buttons without a value
     (:issue:`1472`)
 
-- Item Loaders now support nested loaders (:issue:`1467`).
 - Dict-like settings now have per-key priorities
   (:issue:`1135`, :issue:`1149` and :issue:`1586`).
-- robots.txt compliance now enabled by default for new projects (:issue:`1724`).
 - ``CloseSpider`` and ``SpiderState`` extensions now get disabled if no relevant
   setting is set (:issue:`1723`, :issue:`1725`).
 - Added method ``ExecutionEngine.close`` (:issue:`1423`).
