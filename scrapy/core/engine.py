@@ -177,12 +177,23 @@ class ExecutionEngine(object):
         return d
 
     def spider_is_idle(self, spider):
-        scraper_idle = self.scraper.slot.is_idle()
-        pending = self.slot.scheduler.has_pending_requests()
-        downloading = bool(self.downloader.active)
-        pending_start_requests = self.slot.start_requests is not None
-        idle = scraper_idle and not (pending or downloading or pending_start_requests)
-        return idle
+        if not self.scraper.slot.is_idle():
+            # scraper is not idle
+            return False
+
+        if self.downloader.active:
+            # downloader has pending requests
+            return False
+
+        if self.slot.start_requests is not None:
+            # not all start requests are handled
+            return False
+
+        if self.slot.scheduler.has_pending_requests():
+            # scheduler has pending requests
+            return False
+
+        return True
 
     @property
     def open_spiders(self):
