@@ -127,6 +127,8 @@ The maximum download delay (in seconds) to be set in case of high latencies.
 AUTOTHROTTLE_TARGET_CONCURRENCY
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. versionadded:: 1.1
+
 Default: ``1.0``
 
 Average number of requests Scrapy should be sending in parallel to remote
