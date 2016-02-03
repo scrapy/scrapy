@@ -3,6 +3,7 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
+import shutil
 import six
 from six.moves.urllib.parse import urlparse
 
@@ -230,6 +231,7 @@ class WebClientTestCase(unittest.TestCase):
 
     def setUp(self):
         name = self.mktemp()
+        self.tmpdir_name = name
         os.mkdir(name)
         FilePath(name).child("file").setContent(b"0123456789")
         r = static.File(name)
@@ -247,6 +249,7 @@ class WebClientTestCase(unittest.TestCase):
         self.portno = self.port.getHost().port
 
     def tearDown(self):
+        shutil.rmtree(self.tmpdir_name)
         return self.port.stopListening()
 
     def getURL(self, path):
@@ -351,15 +354,15 @@ class WebClientTestCase(unittest.TestCase):
                 b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
                 b'<a href="/file">click here</a>\n    </body>\n</html>\n')
 
-    def test_Encoding(self):
+    def test_encoding(self):
         """ Test that non-standart body encoding matches
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
         return getPage(
             self.getURL('encoding'), body=body, response_transform=lambda r: r)\
-            .addCallback(self._check_Encoding, body)
+            .addCallback(self._check_encoding, body)
 
-    def _check_Encoding(self, response, original_body):
+    def _check_encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b'Content-Encoding'])
         self.assertEquals(content_encoding, EncodingResource.out_encoding)
         self.assertEquals(
