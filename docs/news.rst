@@ -32,16 +32,24 @@ some limitations:
 New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- Scrapy now has a Code of Conduct:
+  https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+  (:issue:`1681`)
 - Command line tool completion for zsh (:issue:`934`).
-- ``scrapy shell`` works with local files again; this was a regression
-  identified in 1.0+ releases (:issue:`1710`, :issue:`1550`).
-- ``scrapy shell`` now also checks a  new ``SCRAPY_PYTHON_SHELL`` environment
-  variable to launch the interactive shell of your choice;
-  ``bpython`` is a newly supported option too (:issue:`1444`).
-- Scrapy shell now have `http` as the default schema for URLs. Now, you can
-  start it by: `scrapy shell scrapy.org` (:issue:`1498`).
-  **Warning: backwards incompatible!**
-  + see: :issue:`1550`, :issue:`1710`.
+- ``scrapy shell`` got a few changes of its own:
+
+  - it now checks a new ``SCRAPY_PYTHON_SHELL`` environment
+    variable to launch the interactive shell of your choice
+    (one of ``ipython``, ``bpython`` or ``python`` that is);
+  - it will try ``bpython`` if ``ipython`` is not available
+    (:issue:`1444`).
+  - it uses ``http://`` as the default scheme for URLs (:issue:`1498`)
+    (try ``scrapy shell scrapy.org``)
+    **Warning: backwards incompatible!**
+  - unless argument looks like a relative file path, which works again;
+    this was a regression identified in 1.0+ releases
+    (:issue:`1710`, :issue:`1550`).
+
 - Autothrottle code has been cleaned up and its docs have been improved;
   there's also a new ``AUTOTHROTTLE_TARGET_CONCURRENCY`` setting which
   allows to send more than 1 concurrent request on average (:issue:`1324`).
@@ -51,40 +59,32 @@ New Features and Enhancements
   2 new settings can be used to control level of compliancy:
   ``HTTPCACHE_ALWAYS_STORE`` and ``HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS``
   (:issue:`1151`).
-- Scheme Download handlers are now lazy-loaded on first request using
-  that scheme (``http(s)://``, ``ftp://``, ``file://``, ``s3://``)
-  (:issue:`1390`, :issue:`1421`).
+- Download handlers are now lazy-loaded on first request using their
+  scheme (:issue:`1390`, :issue:`1421`).
 - RedirectMiddleware now skips the status codes from
-  ``handle_httpstatus_list``. You can set it either as spider attribute or
-  ``Request``'s ``meta`` key (:issue:`1334`, :issue:`1364`, :issue:`1447`).
-- Form submission now works with `<button>` elements too (:issue:`1469`).
-- Incomplete submit button support (:issue:`1472`).
-- `FormRequest.from_response` now allows to define through CSS selectors which
-  form from the response should be used. It previously supported only XPath
-  (:issue:`1382`).
-- Scrapy doesn't retry requests that got `400 Bad Request` reponse anymore
-  (:issue:`1289`). **Warning: backwards incompatible!**
-- Middlewares now can return deferreds (:issue:`1473`).
-    + As a consequence, `RobotsTxtMiddleware` now fully respects `robots.txt`
-      (:issue:`1471`).
-- Item Loaders now support nested loaders (:issue:`1467`).
-- Per-key priorities for dict-like settings by promoting dicts to Settings
-  instances (:issue:`1149`).
-  + Backwards compatible per key priorities (:issue:`1586`).
-  + Fixes: Per-key priorities for dictionary-like settings (:issue:`1135`).
-  + Obsoletes: `Settings.updatedict()` method to update dictionary-like
-    settings (:issue:`1110`).
-- Anonymous `S3DownloadHandler` (boto) connections are supported now
-  (:issue:`1358`).
-    + `optional_features` has been removed (:issue:`1699`).
-- Enable robots.txt handling by default for new projects (:issue:`1724`).
-    **Warning: backwards incompatible**
-- CloseSpider extension is disabled if no `CLOSESPIDER_*` setting is defined
-  (:issue:`1723`).
-- SpiderState extension is disabled if no `JOBDIR` is set (:issue:`1725`)
-- Scrapy now has a Code of Conduct:
-  https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
-  (:issue:`1681`)
+  ``handle_httpstatus_list``. You can set it either as a spider attribute
+  or in ``Request``'s ``meta`` key (:issue:`1334`, :issue:`1364`, :issue:`1447`).
+- Form submission:
+
+  - now works with ``<button>`` elements too (:issue:`1469`).
+  - an empty string is used for submit buttons without a ``value``
+
+- Scrapy does not retry requests that got a ``HTTP 400 Bad Request``
+  response anymore (:issue:`1289`).
+  **Warning: backwards incompatible!**
+- Middlewares now can return deferreds (:issue:`1473`);
+
+  - as a consequence, ``RobotsTxtMiddleware`` now fully respects `robots.txt`
+    (:issue:`1471`).
+
+- ItemLoaders now support nested loaders (:issue:`1467`).
+- dict-like settings now have per-key priorities
+  (:issue:`1135`, :issue:`1149` and :issue:`1586`).
+- Anonymous S3 connections are now supported (:issue:`1358`).
+- ``/robots.txt`` compliance is enabled by default for new projects (:issue:`1724`).
+  **Warning: backwards incompatible**
+- ``CloseSpider`` and ``SpiderState`` extensions get disabled if no relevant
+  setting is set (:issue:`1723`, :issue:`1725`).
 
 
 API changes
@@ -92,7 +92,9 @@ API changes
 
 - Update form.py to improve existing capability PR #1137 (https://github.com/scrapy/scrapy/commit/786f62664b41f264bf4213a1ee3805774d82ed69)
     Adds "formid" parameter for Form from_response()
-
+- `FormRequest.from_response` now allows to define through CSS selectors which
+  form from the response should be used. It previously supported only XPath
+  (:issue:`1382`).
 - Add ExecutionEngine.close() method #1423 (https://github.com/scrapy/scrapy/commit/caf2080b8095acd11de6018911025076ead23585)
     Adds a new method as a single entry point for shutting down the engine
     and integrates it into Crawler.crawl() for graceful error handling during the crawling process.
