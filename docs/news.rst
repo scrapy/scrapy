@@ -280,12 +280,12 @@ Tests, CI and Deploys
 Logging
 ~~~~~~~
 
-- Ignore ScrapyDeprecationWarning warnings properly. #1294 (https://github.com/scrapy/scrapy/commit/64466526350820bdb424dc70968b4e015fd13641)
-- Do not fail representing non-http requests #1419 (https://github.com/scrapy/scrapy/commit/bdcc78b4ddf47b6161b962b9d9fc8851b11f0117)
-- Make list of enabled middlewares more readable #1263 (https://github.com/scrapy/scrapy/commit/a7787628ff53322e295be315e5595c555eb8e057)
-- added more verbosity for log and for exception when download is cancelled because of a size limit #1624 (https://github.com/scrapy/scrapy/commit/fdc3c9d561ad87e417447fcee9adcc8cd6dbc594)
-- LOGGING: show download warnsize once #1654 (https://github.com/scrapy/scrapy/commit/6827eab2c59e93d8ec46ef308bc751c6c00f32fd)
-- LOGGING: Fix logging of enabled middlewares #1722 + Use long classes names for enabled middlewares in startup logs #1726
+- Ignore ScrapyDeprecationWarning warnings properly (:issue:`1294`)
+- Do not fail representing non-HTTP requests (:issue:`1419`)
+- Make list of enabled middlewares more readable (:issue:`1263`)
+- Be more verbose when download is cancelled because of size limit (:issue:`1624`)
+- Show warning on download size only once (:issue:`1654`)
+- Fix logging of enabled middlewares in startup logs (:issue:`1722` and :issue:`1726`)
 
 
 Code refactoring
