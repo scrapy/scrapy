@@ -3,6 +3,14 @@
 Release notes
 =============
 
+1.0.5 (2016-02-04)
+------------------
+
+- FIX: [Backport] Ignore bogus links in LinkExtractors (fixes :issue:`907`, :commit:`108195e`)
+- TST: Changed buildbot makefile to use 'pytest' (:commit:`1f3d90a`)
+- DOC: Fixed typos in tutorial and media-pipeline (:commit:`808a9ea` and :commit:`803bd87`)
+- DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
+
 1.0.4 (2015-12-30)
 ------------------
 
@@ -590,7 +598,7 @@ Enhancements
 - Document `request_scheduled` signal (:issue:`746`)
 - Add a note about reporting security issues (:issue:`697`)
 - Add LevelDB http cache storage backend (:issue:`626`, :issue:`500`)
-- Sort spider list output of `scrapy list` command (:issue:`742`) 
+- Sort spider list output of `scrapy list` command (:issue:`742`)
 - Multiple documentation enhancemens and fixes
   (:issue:`575`, :issue:`587`, :issue:`590`, :issue:`596`, :issue:`610`,
   :issue:`617`, :issue:`618`, :issue:`627`, :issue:`613`, :issue:`643`,
