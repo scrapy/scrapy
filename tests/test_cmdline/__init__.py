@@ -68,4 +68,4 @@ class CmdlineTest(unittest.TestCase):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
         six.assertCountEqual(self, settingsdict.keys(), EXTENSIONS.keys())
-        self.assertIn('value=200', settingsdict[EXT_PATH])
+        self.assertEquals(200, settingsdict[EXT_PATH])

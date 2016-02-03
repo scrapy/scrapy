@@ -123,6 +123,18 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
         return deferred
 
+    def test_robotstxt_immediate_error(self):
+        self.crawler.settings.set('ROBOTSTXT_OBEY', True)
+        err = error.DNSLookupError('Robotstxt address not found')
+        def immediate_failure(request, spider):
+            deferred = Deferred()
+            deferred.errback(failure.Failure(err))
+            return deferred
+        self.crawler.engine.download.side_effect = immediate_failure
+
+        middleware = RobotsTxtMiddleware(self.crawler)
+        return self.assertNotIgnored(Request('http://site.local'), middleware)
+
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         def ignore_request(request, spider):

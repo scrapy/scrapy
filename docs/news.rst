@@ -8,7 +8,7 @@ Release notes
 
 This 1.1 release brings a lot of interesting features and bug fixes:
 
-- Scrapy 1.1 has basic Python 3 support (requires Twisted >= 15.5). See 
+- Scrapy 1.1 has basic Python 3 support (requires Twisted >= 15.5). See
   :ref:`news_basicpy3` for more details and some limitations.
 - Hot new features:
 
@@ -18,7 +18,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     AutoThrottle docs (:issue:`1324`).
   - Added ``response.text`` to get body as unicode (:issue:`1730`).
   - Anonymous S3 connections (:issue:`1358`).
-  - Deferreds in downloader middlewares (:issue:`1473`). This enables better 
+  - Deferreds in downloader middlewares (:issue:`1473`). This enables better
     robots.txt handling (:issue:`1471`).
   - HTTP cache improvements (:issue:`1151`).
 
@@ -70,7 +70,7 @@ Additional New Features and Enhancements
     **Warning: backwards incompatible!**
   - Bring back support for relative file path (:issue:`1710`, :issue:`1550`).
 
-- Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check 
+- Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check
   interval (:issue:`1282`).
 - HTTP caching now follows RFC2616 more closely, added settings
   :setting:`HTTPCACHE_ALWAYS_STORE` and
@@ -93,7 +93,7 @@ Additional New Features and Enhancements
 - robots.txt compliance now enabled by default for new projects (:issue:`1724`).
 - ``CloseSpider`` and ``SpiderState`` extensions now get disabled if no relevant
   setting is set (:issue:`1723`, :issue:`1725`).
-- Added method ``ExecutionEngine.close`` (:issue:`1423`). 
+- Added method ``ExecutionEngine.close`` (:issue:`1423`).
 - Added method ``CrawlerRunner.create_crawler`` (:issue:`1528`).
 - Tons of documentation updates and related fixes (:issue:`1291`, :issue:`1302`,
   :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
@@ -145,7 +145,7 @@ Bugfixes
 - Fixed :setting:`TEMPLATES_DIR` handling (:issue:`1575`).
 - Various ``FormRequest`` fixes (:issue:`1595`, :issue:`1596`, :issue:`1597`).
 - Makes ``_monkeypatches`` more robust (:issue:`1634`).
-- Fixed bug on ``XMLItemExporter`` with non-string fields in 
+- Fixed bug on ``XMLItemExporter`` with non-string fields in
   items (:issue:`1738`).
 - Fixed startproject command in OS X (:issue:`1635`).
 - Fixed PythonItemExporter and CSVExporter for non-string item
@@ -153,6 +153,15 @@ Bugfixes
 - Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
   :issue:`1624`, :issue:`1654`, :issue:`1722`, :issue:`1726` and :issue:`1303`).
 - Fixed bug in ``utils.template.render_templatefile()`` (:issue:`1212`).
+
+
+1.0.5 (2016-02-04)
+------------------
+
+- FIX: [Backport] Ignore bogus links in LinkExtractors (fixes :issue:`907`, :commit:`108195e`)
+- TST: Changed buildbot makefile to use 'pytest' (:commit:`1f3d90a`)
+- DOC: Fixed typos in tutorial and media-pipeline (:commit:`808a9ea` and :commit:`803bd87`)
+- DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
 
 
 1.0.4 (2015-12-30)

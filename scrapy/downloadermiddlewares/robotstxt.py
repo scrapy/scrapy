@@ -101,4 +101,6 @@ class RobotsTxtMiddleware(object):
         rp_dfd.callback(rp)
 
     def _robots_error(self, failure, netloc):
-        self._parsers.pop(netloc).callback(None)
+        rp_dfd = self._parsers[netloc]
+        self._parsers[netloc] = None
+        rp_dfd.callback(None)

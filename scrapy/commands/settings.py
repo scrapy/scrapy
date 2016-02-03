@@ -1,5 +1,8 @@
 from __future__ import print_function
+import json
+
 from scrapy.commands import ScrapyCommand
+from scrapy.settings import BaseSettings
 
 class Command(ScrapyCommand):
 
@@ -28,7 +31,11 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         settings = self.crawler_process.settings
         if opts.get:
-            print(settings.get(opts.get))
+            s = settings.get(opts.get)
+            if isinstance(s, BaseSettings):
+                print(json.dumps(s.copy_to_dict()))
+            else:
+                print(s)
         elif opts.getbool:
             print(settings.getbool(opts.getbool))
         elif opts.getint:
