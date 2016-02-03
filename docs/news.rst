@@ -36,9 +36,9 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     use ``scrapy shell ./index.html`` to load a local file.
   - Robots.txt compliance is now enabled by default for newly-created projects
     (:issue:`1724`). Scrapy will also wait for robots.txt to be downloaded
-    before proceeding with the crawl. (:issue:`1735`). If you need the old
-    behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file when
-    creating a new project.
+    before proceeding with the crawl. (:issue:`1735`). If you want to disable
+    this behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file
+    after creating a new project.
   - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
     If you use ``PythonItemExporter``, you may want to update your code to
     disable binary mode which is now deprecated.
