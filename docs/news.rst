@@ -9,34 +9,31 @@ Release notes
 Python 3 Support (basic)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-We have been hard at work to make Scrapy work on Python 3. Some features
-are still missing (and may never be ported to Python 3, see below),
-but you can now run spiders on Python 3.3, 3.4 and 3.5.
+We have been hard at work to make Scrapy run on Python 3. As a result, now you can run spiders on Python 3.3, 3.4 and 3.5, although some features are still missing (some of them may never be ported to Python 3).
 
-Almost all of addons/middleware should work, but here are the current
-limitations we know of:
+Almost all addons/middlewares are expected to work. However, we are aware of some limitations:
 
 - s3 downloads are not supported (see :issue:`1718`)
 - sending emails is not supported
 - FTP download handler is not supported (non-Python 3 ported Twisted dependency)
 - telnet is not supported (non-Python 3 ported Twisted dependency)
 - there are problems with non-ASCII URLs in Python 3
-- reported problems with HTTP cache created in Python 2.x which can't be used in 3.x (to be checked)
-- there is also a nasty issue with cryptography library:
-  recent versions don't work well on OS X  + Python 3.5 (see https://github.com/pyca/cryptography/issues/2690),
-  downgrading to an older version helps
-
+- reported problems with HTTP caches created by Scrapy in Python 2.x which can't be reused in Scrapy in Python 3.x (to be checked)
+- there is also a nasty issue with `cryptography` library: recent versions don't work well on OS X + Python 3.5 (see https://github.com/pyca/cryptography/issues/2690). As a workaround, you can downgrade the library to an older version.
 
 New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Command line tool has completion for zsh (:issue:`934`)
-- ``scrapy shell`` works with local files again ; this was a regression
+- Command line tool completion for zsh (:issue:`934`)
+- ``scrapy shell`` works with local files again; this was a regression
   identified in 1.0+ releases (:issue:`1710`, :issue:`1550`)
 - ``scrapy shell`` now also checks a  new ``SCRAPY_PYTHON_SHELL`` environment
-  variable to launch the interactive shell of your choice ;
+  variable to launch the interactive shell of your choice;
   ``bpython`` is a newly supported option too (:issue:`1444`)
-- Autothrottle has gotten a code cleanup and better docs ;
+- Scrapy shell now have `http` as the default schema for URLs. Now, you can
+  start it by: `scrapy shell scrapy.org` #1498 (https://github.com/scrapy/scrapy/commit/fe15f93e533be36e81e0385691fe5571c88b0b31). Fixes: #1487 **Warning: backwards incompatible!**
+  + see: https://github.com/scrapy/scrapy/issues/1550, https://github.com/scrapy/scrapy/pull/1710
+- Autothrottle code has been cleaned up and its docs have been improved;
   there's also a new ``AUTOTHROTTLE_TARGET_CONCURRENCY`` setting which
   allows to send more than 1 concurrent request on average (:issue:`1324`)
 - Memory usage extension has a new ``MEMUSAGE_CHECK_INTERVAL_SECONDS``
@@ -48,50 +45,27 @@ New Features and Enhancements
 - Scheme Download handlers are now lazy-loaded on first request using
   that scheme (``http(s)://``, ``ftp://``, ``file://``, ``s3://``)
   (:issue:`1390`, :issue:`1421`)
-- RedirectMiddleware now skips status codes in ``handle_httpstatus_list``,
-  set either as spider  attribute or ``Request``'s ``meta`` key
+- RedirectMiddleware now skips the status codes from ``handle_httpstatus_list``. You can set it either as spider attribute or ``Request``'s ``meta`` key
   (:issue:`1334`, :issue:`1364`, :issue:`1447`)
-
-
-- Form submit button plain #1469 (https://github.com/scrapy/scrapy/commit/b876755f1cee619d8c421357777d223037d5289c)
-    Fixes: Form submit button (https://github.com/scrapy/scrapy/issues/1354)
-- Implement FormRequest.from_response CSS support #1382 (https://github.com/scrapy/scrapy/commit/a6e5c848feb672c117f3380976077b6d0f42e3a6)
- + Fix version number to appear new feature #1706
-
+- Form submission now works with `<button>` elements too (https://github.com/scrapy/scrapy/commit/b876755f1cee619d8c421357777d223037d5289c).
 - Incomplete submit button #1472 (https://github.com/scrapy/scrapy/commit/bc499cb552dad362494b86082e47d1f732095874)
-
-- dont retry 400 #1289 (https://github.com/scrapy/scrapy/milestones/Scrapy%201.1)
-    + DOC fix docs after GH-1289. #1530 (https://github.com/scrapy/scrapy/commit/451318ef7a4e8ee7837b83e73b158da98f579980)
-    WARNING: BACKWARDS INCOMPATIBLE!
-- DOC fix docs after GH-1289. #1530 (https://github.com/scrapy/scrapy/commit/451318ef7a4e8ee7837b83e73b158da98f579980)
-
-- Support for returning deferreds in middlewares #1473 (https://github.com/scrapy/scrapy/commit/dd473145f2e1ae2d3c9462c489f3289a96e447f4)
-    Adds support for returning deferreds in middlewares, and makes use of this to fix a limitation in RobotsTxtMiddleware.
-    Fixes #1471
-- add support for a nested loaders #1467 (https://github.com/scrapy/scrapy/commit/3c596dcf4606315e4eb88608e3ecde430fe18c29)
-    Closes: https://github.com/scrapy/scrapy/pull/818
-    Adds a nested_xpath()/nested_css() methods to ItemLoader. (TODO: add links to docs)
-
-- add_scheme_if_missing for `scrapy shell` command #1498 (https://github.com/scrapy/scrapy/commit/fe15f93e533be36e81e0385691fe5571c88b0b31)
-    Fixes: #1487
-    Warning: backward incompatible
-
-    + see: https://github.com/scrapy/scrapy/issues/1550, https://github.com/scrapy/scrapy/pull/1710
+- `FormRequest.from_response` now allows to define through CSS selectors which form from the response should be used. It previously supported only XPath. #1382 (https://github.com/scrapy/scrapy/commit/a6e5c848feb672c117f3380976077b6d0f42e3a6)
+- Scrapy doesn't retry requests that got `400 Bad Request` reponse anymore. #1289 (https://github.com/scrapy/scrapy/milestones/Scrapy%201.1) **Warning: backwards incompatible!**
+    + Fix docs for #1289 in #1530 (https://github.com/scrapy/scrapy/commit/451318ef7a4e8ee7837b83e73b158da98f579980)
+- Middlewares now can return deferreds. (https://github.com/scrapy/scrapy/commit/dd473145f2e1ae2d3c9462c489f3289a96e447f4)
+    + As a consequence, `RobotsTxtMiddleware` now fully respects `robots.txt`. (:issue:`#1471` #1473).
+- Item Loaders now support nested loaders #1467 (https://github.com/scrapy/scrapy/commit/3c596dcf4606315e4eb88608e3ecde430fe18c29)
 - Per-key priorities for dict-like settings by promoting dicts to Settings instances #1149 (https://github.com/scrapy/scrapy/commit/dd9f777ba725d7a7dbb192302cc52a120005ad64)
   + Backwards compatible per key priorities #1586 (https://github.com/scrapy/scrapy/commit/54216d7afe9d545031c57b5821f2c821faa2ccc3)
-
     Fixes: Per-key priorities for dictionary-like settings #1135
     Obsoletes: Settings.updatedict() method to update dictionary-like settings #1110
-- Support anonymous S3DownloadHandler (boto) connections #1358 (https://github.com/scrapy/scrapy/commit/5ec4319885e4be87b0248cb80b5213f68829129e)
-    + optional_features has been removed #1699
-
+- Anonymous S3DownloadHandler (boto) connections are supported now #1358 (https://github.com/scrapy/scrapy/commit/5ec4319885e4be87b0248cb80b5213f68829129e)
+    + `optional_features` has been removed #1699
 - Enable robots.txt handling by default for new projects. #1724 (https://github.com/scrapy/scrapy/commit/0d368c5d6fd468aed301ed5967f8bfe9d5e86101)
-    WARNING: backwards incompatible
-
-- Disable CloseSpider extension if no CLOSPIDER_* setting set #1723 (https://github.com/scrapy/scrapy/commit/2246280bb6f71d7d52e24aca5b4ce955b3aa1363)
-- Disable SpiderState extension if no JOBDIR set #1725
-
-- Add Code of Conduct Version 1.3.0 from http://contributor-covenant.org/ #1681
+    **Warning: backwards incompatible**
+- CloseSpider extension is disabled if no `CLOSEPIDER_*` setting is defined #1723 (https://github.com/scrapy/scrapy/commit/2246280bb6f71d7d52e24aca5b4ce955b3aa1363)
+- SpiderState extension is disabled if no `JOBDIR` is set #1725
+- Scrapy now has a Code of Conduct: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md #1681
 
 
 API changes
