@@ -4,7 +4,7 @@ import time
 
 from threading import Thread
 from libmproxy import controller, proxy
-from netlib import http_auth
+from netlib.http import authentication
 from testfixtures import LogCapture
 
 from twisted.internet import defer
@@ -18,14 +18,14 @@ from tests.mockserver import MockServer
 class HTTPSProxy(controller.Master, Thread):
 
     def __init__(self, port):
-        password_manager = http_auth.PassManSingleUser('scrapy', 'scrapy')
-        authenticator = http_auth.BasicProxyAuth(password_manager, "mitmproxy")
+        password_manager = authentication.PassManSingleUser('scrapy', 'scrapy')
+        authenticator = authentication.BasicProxyAuth(password_manager, "mitmproxy")
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-            'keys', 'mitmproxy-ca.pem')
+            'keys')
         server = proxy.ProxyServer(proxy.ProxyConfig(
             authenticator = authenticator,
-            cacert = cert_path),
-            port)
+            cadir = cert_path,
+            port = port))
         Thread.__init__(self)
         controller.Master.__init__(self, server)
 
