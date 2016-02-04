@@ -2,6 +2,8 @@ from six.moves.urllib.parse import unquote
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.python import to_unicode
 from .http import HTTPDownloadHandler
 
 
@@ -19,6 +21,9 @@ def get_s3_connection():
     class _v20_S3Connection(S3Connection):
         """A dummy S3Connection wrapper that doesn't do any synchronous download"""
         def _mexe(self, http_request, *args, **kwargs):
+            # Py3 fix: headers are already converted to ascii in
+            # S3DownloadHandler.download_request
+            http_request._headers_quoted = True
             http_request.authorize(connection=self)
             return http_request.headers
 
@@ -65,12 +70,30 @@ class S3DownloadHandler(object):
         bucket = p.hostname
         path = p.path + '?' + p.query if p.query else p.path
         url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
+        # boto headers are different from scrapy headers:
+        # they expect unicode keys and values in python 3 and do not handle
+        # multiple values.
+        headers_to_sign = CaselessDict()
+        for key, values in request.headers.items():
+            value = b','.join(values)
+            try:
+                value = to_unicode(value, encoding='ascii')
+                key = to_unicode(key, encoding='ascii')
+            except UnicodeDecodeError:
+                pass  # safe to skip as there are no non-ascii headers to sign
+            else:
+                headers_to_sign[key] = value
         signed_headers = self.conn.make_request(
                 method=request.method,
                 bucket=bucket,
                 key=unquote(p.path),
                 query_args=unquote(p.query),
-                headers=request.headers,
+                headers=headers_to_sign,
                 data=request.body)
-        httpreq = request.replace(url=url, headers=signed_headers)
+        headers = request.headers.copy()
+        # Copy values changed in signed_headers.
+        for k, v in signed_headers.items():
+            if v != headers_to_sign.get(k):
+                headers[k] = v
+        httpreq = request.replace(url=url, headers=headers)
         return self._download_http(httpreq, spider)

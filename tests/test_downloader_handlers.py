@@ -484,7 +484,7 @@ class S3TestCase(unittest.TestCase):
                 headers={'Date': 'Tue, 27 Mar 2007 19:36:42 +0000'})
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
@@ -495,7 +495,7 @@ class S3TestCase(unittest.TestCase):
             })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
@@ -506,7 +506,7 @@ class S3TestCase(unittest.TestCase):
                     })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
@@ -514,7 +514,7 @@ class S3TestCase(unittest.TestCase):
                 method='GET', headers={'Date': 'Tue, 27 Mar 2007 19:44:46 +0000'})
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
         # deletes an object from the 'johnsmith' bucket using the
@@ -526,7 +526,7 @@ class S3TestCase(unittest.TestCase):
                     })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
 
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
@@ -547,7 +547,7 @@ class S3TestCase(unittest.TestCase):
                     })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
     def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
@@ -561,7 +561,7 @@ class S3TestCase(unittest.TestCase):
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(
             httpreq.headers['Authorization'],
-            'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
+            b'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
 
 
 class FTPTestCase(unittest.TestCase):
