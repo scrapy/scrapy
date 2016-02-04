@@ -10,12 +10,17 @@ alias to object in that case).
 """
 
 from __future__ import print_function
+import platform
+import time
 import weakref
-from time import time
 from operator import itemgetter
 from collections import defaultdict
 import six
 
+if platform.system() == "Windows":
+    make_timestamp = time.clock
+else:
+    make_timestamp = time.time
 
 NoneType = type(None)
 live_refs = defaultdict(weakref.WeakKeyDictionary)
@@ -29,14 +34,14 @@ class object_ref(object):
 
     def __new__(cls, *args, **kwargs):
         obj = object.__new__(cls)
-        live_refs[cls][obj] = time()
+        live_refs[cls][obj] = make_timestamp()
         return obj
 
 
 def format_live_refs(ignore=NoneType):
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
-    now = time()
+    now = make_timestamp()
     for cls, wdict in sorted(six.iteritems(live_refs),
                              key=lambda x: x[0].__name__):
         if not wdict:
