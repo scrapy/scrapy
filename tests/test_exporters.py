@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import re
 import json
 import marshal
+import os
 import tempfile
 import unittest
 from io import BytesIO
@@ -193,8 +194,17 @@ class PickleItemExporterTest(BaseItemExporterTest):
 class MarshalItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
+        # On Windows, marshal.dump cannot write to tempfile.TemporaryFile
+        # (https://bugs.python.org/issue19630)
+        fd, self.tmpfilename = tempfile.mkstemp()
+        self.output = os.fdopen(fd, 'w+b')
         return MarshalItemExporter(self.output, **kwargs)
+
+    def tearDown(self):
+        try:
+            os.remove(self.tmpfilename)
+        except (AttributeError, OSError):
+            pass
 
     def _check_output(self):
         self.output.seek(0)
@@ -203,7 +213,8 @@ class MarshalItemExporterTest(BaseItemExporterTest):
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
         item.pop('time')  # datetime is not marshallable
-        fp = tempfile.TemporaryFile()
+        fd, self.tmpfilename = tempfile.mkstemp()
+        fp = os.fdopen(fd, 'w+b')
         ie = MarshalItemExporter(fp)
         ie.start_exporting()
         ie.export_item(item)
