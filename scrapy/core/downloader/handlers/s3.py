@@ -85,15 +85,10 @@ class S3DownloadHandler(object):
             request = request.replace(url=url)
         elif self._signer is not None:
             import botocore.awsrequest
-            from botocore.vendored.requests.structures import CaseInsensitiveDict
-            print(url, request.headers)
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
                 url='%s://s3.amazonaws.com/%s%s' % (scheme, bucket, path),
-                # TODO - move to a header method
-                headers=CaseInsensitiveDict(
-                    (to_unicode(key), to_unicode(b','.join(value)))
-                    for key, value in request.headers.items()),
+                headers=request.headers.to_native_string_dict(),
                 data=request.body)
             self._signer.add_auth(awsrequest)
             request = request.replace(

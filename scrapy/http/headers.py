@@ -1,6 +1,7 @@
 import six
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.python import to_unicode
 
 
 class Headers(CaselessDict):
@@ -77,6 +78,12 @@ class Headers(CaselessDict):
 
     def to_string(self):
         return headers_dict_to_raw(self)
+
+    def to_native_string_dict(self):
+        return CaselessDict(
+            (to_unicode(key, encoding=self.encoding),
+             to_unicode(b','.join(value), encoding=self.encoding))
+            for key, value in self.items())
 
     def __copy__(self):
         return self.__class__(self)
