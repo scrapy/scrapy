@@ -458,8 +458,10 @@ class S3AnonTestCase(BaseS3TestCase):
     def test_anon_request(self):
         req = Request('s3://aws-publicdatasets/')
         httpreq = self.download_request(req, self.spider)
-        self.assertEqual(hasattr(self.s3reqh.conn, 'anon'), True)
-        self.assertEqual(self.s3reqh.conn.anon, True)
+        self.assertEqual(hasattr(self.s3reqh, 'anon'), True)
+        self.assertEqual(self.s3reqh.anon, True)
+        self.assertEqual(
+            httpreq.url, 'http://aws-publicdatasets.s3.amazonaws.com/')
 
 
 class S3TestCase(unittest.TestCase):

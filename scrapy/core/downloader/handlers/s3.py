@@ -47,9 +47,10 @@ class S3DownloadHandler(object):
         # If no credentials could be found anywhere,
         # consider this an anonymous connection request by default;
         # unless 'anon' was set explicitly (True/False).
-        anon = kw.get('anon', None)
+        anon = kw.get('anon')
         if anon is None and not aws_access_key_id and not aws_secret_access_key:
             kw['anon'] = True
+        self.anon = kw.get('anon')
 
         self._signer = None
         try:
@@ -80,7 +81,9 @@ class S3DownloadHandler(object):
         bucket = p.hostname
         path = p.path + '?' + p.query if p.query else p.path
         url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
-        if self._signer is not None:
+        if self.anon:
+            request = request.replace(url=url)
+        elif self._signer is not None:
             import botocore.awsrequest
             from botocore.vendored.requests.structures import CaseInsensitiveDict
             print(url, request.headers)
