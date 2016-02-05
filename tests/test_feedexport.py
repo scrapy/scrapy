@@ -20,7 +20,7 @@ from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage
 )
-from scrapy.utils.test import assert_aws_environ
+from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 from scrapy.utils.python import to_native_str
 
 
@@ -92,18 +92,18 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         assert_aws_environ()
-        uri = os.environ.get('FEEDTEST_S3_URI')
+        uri = os.environ.get('S3_TEST_FILE_URI')
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
-        from boto import connect_s3
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
-        file.write("content")
+        expected_content = b"content: \xe2\x98\x83"
+        file.write(expected_content)
         yield storage.store(file)
         u = urlparse(uri)
-        key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
-        self.assertEqual(key.get_contents_as_string(), "content")
+        content = get_s3_content_and_delete(u.hostname, u.path[1:])
+        self.assertEqual(content, expected_content)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):
