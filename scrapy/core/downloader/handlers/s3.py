@@ -68,6 +68,9 @@ class S3DownloadHandler(object):
             except Exception as ex:
                 raise NotConfigured(str(ex))
         else:
+            kw.pop('anon', None)
+            if kw:
+                raise TypeError('Unexpected keyword arguments: %s' % kw)
             if not self.anon:
                 SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
                 self._signer = SignerCls(botocore.credentials.Credentials(

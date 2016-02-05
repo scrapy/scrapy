@@ -500,6 +500,10 @@ class S3TestCase(BaseS3TestCase):
                 mock_formatdate.return_value = date
                 yield
 
+    def test_extra_kw(self):
+        with self.assertRaises(TypeError):
+            S3DownloadHandler(Settings(), extra_kw=True)
+
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
         date ='Tue, 27 Mar 2007 19:36:42 +0000'
