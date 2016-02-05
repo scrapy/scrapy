@@ -68,10 +68,10 @@ class S3DownloadHandler(object):
             except Exception as ex:
                 raise NotConfigured(str(ex))
         else:
-            SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
-            # TODO - anon
-            self._signer = SignerCls(botocore.credentials.Credentials(
-                aws_access_key_id, aws_secret_access_key))
+            if not self.anon:
+                SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
+                self._signer = SignerCls(botocore.credentials.Credentials(
+                    aws_access_key_id, aws_secret_access_key))
 
         self._download_http = httpdownloadhandler(settings).download_request
 
