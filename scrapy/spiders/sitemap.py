@@ -16,6 +16,7 @@ class SitemapSpider(Spider):
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
     sitemap_alternate_links = False
+    robot_follow = ['']
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
@@ -24,7 +25,8 @@ class SitemapSpider(Spider):
             if isinstance(c, six.string_types):
                 c = getattr(self, c)
             self._cbs.append((regex(r), c))
-        self._follow = [regex(x) for x in self.sitemap_follow]
+        self._sm_follow = [regex(x) for x in self.sitemap_follow]
+        self._rb_follow = [regex(x) for x in self.robot_follow]
 
     def start_requests(self):
         for url in self.sitemap_urls:
@@ -33,7 +35,8 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
             for url in sitemap_urls_from_robots(response.body):
-                yield Request(url, callback=self._parse_sitemap)
+                if any(x.search(url) for x in self._rb_follow):
+                    yield Request(url, callback=self._parse_sitemap)
         else:
             body = self._get_sitemap_body(response)
             if body is None:
@@ -44,7 +47,7 @@ class SitemapSpider(Spider):
             s = Sitemap(body)
             if s.type == 'sitemapindex':
                 for loc in iterloc(s, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
+                    if any(x.search(loc) for x in self._sm_follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
                 for loc in iterloc(s):
