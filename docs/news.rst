@@ -125,6 +125,9 @@ Deprecations and Removals
   + ``scrapy.utils.datatypes.MultiValueDict``
   + ``scrapy.utils.datatypes.SiteNode``
 
+- The previously bundled ``scrapy.xlib.pydispatch`` library was deprecated and
+  replaced by `pydispatcher <https://pypi.python.org/pypi/PyDispatcher>`_.
+
 
 Relocations
 ~~~~~~~~~~~
