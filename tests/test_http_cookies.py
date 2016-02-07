@@ -14,12 +14,15 @@ class WrappedRequestTest(TestCase):
 
     def test_get_full_url(self):
         self.assertEqual(self.wrapped.get_full_url(), self.request.url)
+        self.assertEqual(self.wrapped.full_url, self.request.url)
 
     def test_get_host(self):
         self.assertEqual(self.wrapped.get_host(), urlparse(self.request.url).netloc)
+        self.assertEqual(self.wrapped.host, urlparse(self.request.url).netloc)
 
     def test_get_type(self):
         self.assertEqual(self.wrapped.get_type(), urlparse(self.request.url).scheme)
+        self.assertEqual(self.wrapped.type, urlparse(self.request.url).scheme)
 
     def test_is_unverifiable(self):
         self.assertFalse(self.wrapped.is_unverifiable())
@@ -32,6 +35,7 @@ class WrappedRequestTest(TestCase):
 
     def test_get_origin_req_host(self):
         self.assertEqual(self.wrapped.get_origin_req_host(), 'www.example.com')
+        self.assertEqual(self.wrapped.origin_req_host, 'www.example.com')
 
     def test_has_header(self):
         self.assertTrue(self.wrapped.has_header('content-type'))
