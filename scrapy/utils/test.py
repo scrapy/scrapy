@@ -4,7 +4,9 @@ This module contains some assorted functions used in tests
 
 import os
 
+import six
 from importlib import import_module
+from twisted.python.runtime import platform
 from twisted.trial.unittest import SkipTest
 
 
@@ -50,3 +52,6 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+def win_and_py3():
+    return platform.isWindows() and six.PY3

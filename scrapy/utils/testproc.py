@@ -4,12 +4,17 @@ import os
 
 from twisted.internet import reactor, defer, protocol
 
+from scrapy.utils.test import win_and_py3
+
 
 class ProcessTest(object):
 
     command = None
     prefix = [sys.executable, '-m', 'scrapy.cmdline']
     cwd = os.getcwd()  # trial chdirs to temp dir
+
+    if win_and_py3():
+        skip = "twisted.internet._dumbwin32proc not yet ported"
 
     def execute(self, args, check_code=True, settings=None):
         env = os.environ.copy()

@@ -21,7 +21,7 @@ from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage
 )
-from scrapy.utils.test import assert_aws_environ
+from scrapy.utils.test import assert_aws_environ, win_and_py3
 from scrapy.utils.python import to_native_str
 
 
@@ -120,6 +120,9 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
 
 class FeedExportTest(unittest.TestCase):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
 
     class MyItem(scrapy.Item):
         foo = scrapy.Field()

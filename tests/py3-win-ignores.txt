@@ -1,0 +1,18 @@
+# Twisted's web client cannot be used on Windows in Py3 because there is no
+# port for twisted.internet._win32stdio (as of 15.5.0)
+
+# Scrapy modules that import webclient
+scrapy/core/downloader/webclient.py
+scrapy/core/downloader/handlers/http.py
+scrapy/core/downloader/handlers/http11.py
+scrapy/downloadermiddlewares/httpcache.py
+scrapy/downloadermiddlewares/retry.py
+
+# Test modules that directly import webclient
+tests/test_downloader_handlers.py
+tests/test_downloadermiddleware_httpcache.py
+tests/test_downloadermiddleware_retry.py
+tests/test_webclient.py
+
+# Test modules that import Scrapy modules that import webclient
+tests/test_downloadermiddleware.py

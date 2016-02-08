@@ -20,7 +20,7 @@ from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, win_and_py3
 from pydispatch import dispatcher
 from tests import tests_datadir
 from scrapy.spiders import Spider
@@ -157,6 +157,9 @@ class CrawlerRun(object):
 
 
 class EngineTest(unittest.TestCase):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
 
     @defer.inlineCallbacks
     def test_crawler(self):

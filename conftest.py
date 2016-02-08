@@ -2,6 +2,7 @@ import glob
 import six
 import pytest
 from twisted import version as twisted_version
+from twisted.python.runtime import platform
 
 
 def _py_files(folder):
@@ -31,11 +32,16 @@ if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15,
     collect_ignore += _py_files("scrapy/xlib/tx")
 
 
-if six.PY3:
-    for line in open('tests/py3-ignores.txt'):
+def load_ignores(filename):
+    for line in open(filename):
         file_path = line.strip()
         if file_path and file_path[0] != '#':
             collect_ignore.append(file_path)
+
+if six.PY3:
+    load_ignores('tests/py3-ignores.txt')
+    if platform.isWindows():
+        load_ignores('tests/py3-win-ignores.txt')
 
 
 @pytest.fixture()

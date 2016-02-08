@@ -1,11 +1,14 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, win_and_py3
 from tests.spiders import FollowAllSpider, ItemSpider, ErrorSpider
 from tests.mockserver import MockServer
 
 
 class TestCloseSpider(TestCase):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
 
     def setUp(self):
         self.mockserver = MockServer()

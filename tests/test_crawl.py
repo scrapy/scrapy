@@ -9,6 +9,7 @@ from twisted.trial.unittest import TestCase
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.python import to_unicode
+from scrapy.utils.test import win_and_py3
 from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
@@ -16,6 +17,9 @@ from tests.mockserver import MockServer
 
 
 class CrawlTestCase(TestCase):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
 
     def setUp(self):
         self.mockserver = MockServer()

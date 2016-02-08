@@ -13,7 +13,7 @@ from twisted.internet import defer
 
 import scrapy
 from scrapy.utils.python import to_native_str
-from scrapy.utils.test import get_testenv
+from scrapy.utils.test import get_testenv, win_and_py3
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 
@@ -153,6 +153,9 @@ class MiscCommandsTest(CommandTest):
 class RunSpiderCommandTest(CommandTest):
 
     def test_runspider(self):
+        if win_and_py3():
+            raise unittest.SkipTest("twisted.internet._win32stdio not yet "
+                                    "ported")
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
         fname = abspath(join(tmpdir, 'myspider.py'))
@@ -263,6 +266,9 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
 
 
 class BenchCommandTest(CommandTest):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
 
     def test_run(self):
         _, log = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',

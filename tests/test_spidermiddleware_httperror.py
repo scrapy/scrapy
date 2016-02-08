@@ -4,7 +4,7 @@ from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.internet import defer
 
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, win_and_py3
 from tests.mockserver import MockServer
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
@@ -157,6 +157,10 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
 
 
 class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
+
+    if win_and_py3():
+        skip = "twisted.internet._win32stdio not yet ported"
+
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
