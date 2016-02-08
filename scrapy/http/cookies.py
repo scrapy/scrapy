@@ -137,13 +137,29 @@ class WrappedRequest(object):
         """
         return self.request.meta.get('is_unverifiable', False)
 
-    # python3 uses request.unverifiable
+    def get_origin_req_host(self):
+        return urlparse_cached(self.request).hostname
+
+    # python3 uses attributes instead of methods
+    @property
+    def full_url(self):
+        return self.get_full_url()
+
+    @property
+    def host(self):
+        return self.get_host()
+
+    @property
+    def type(self):
+        return self.get_type()
+
     @property
     def unverifiable(self):
         return self.is_unverifiable()
 
-    def get_origin_req_host(self):
-        return urlparse_cached(self.request).hostname
+    @property
+    def origin_req_host(self):
+        return self.get_origin_req_host()
 
     def has_header(self, name):
         return name in self.request.headers
