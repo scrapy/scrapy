@@ -2,6 +2,7 @@
 This module contains some assorted functions used in tests
 """
 
+from __future__ import absolute_import
 import os
 
 from importlib import import_module
@@ -24,6 +25,25 @@ def skip_if_no_boto():
         is_botocore()
     except NotConfigured as e:
         raise SkipTest(e.message)
+
+def get_s3_content_and_delete(bucket, path):
+    """ Get content from s3 key, and delete key afterwards.
+    """
+    if is_botocore():
+        import botocore.session
+        session = botocore.session.get_session()
+        client = session.create_client('s3')
+        key = client.get_object(Bucket=bucket, Key=path)
+        content = key['Body'].read()
+        client.delete_object(Bucket=bucket, Key=path)
+    else:
+        import boto
+        # assuming boto=2.2.2
+        bucket = boto.connect_s3().get_bucket(bucket, validate=False)
+        key = bucket.get_key(path)
+        content = key.get_contents_as_string()
+        bucket.delete_key(path)
+    return content
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it

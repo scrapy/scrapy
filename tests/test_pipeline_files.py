@@ -4,15 +4,18 @@ import hashlib
 import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
+from six.moves.urllib.parse import urlparse
+from six import BytesIO
 
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
+from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 
 from tests import mock
 
@@ -177,6 +180,28 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
             results = [(True, {'url': url})]
             pipeline.item_completed(results, item, None)
             self.assertEqual(item['stored_file'], [results[0][1]])
+
+
+class TestS3FilesStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        assert_aws_environ()
+        uri = os.environ.get('S3_TEST_FILE_URI')
+        if not uri:
+            raise unittest.SkipTest("No S3 URI available for testing")
+        data = b"TestS3FilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = ''
+        store = S3FilesStore(uri)
+        yield store.persist_file(path, buf, info=None, meta=meta)
+        s = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', s)
+        self.assertIn('checksum', s)
+        self.assertEqual(s['checksum'], b'3187896a9657a28163abb31667df64c8')
+        u = urlparse(uri)
+        content = get_s3_content_and_delete(u.hostname, u.path[1:])
+        self.assertEqual(content, data)
 
 
 class ItemWithFiles(Item):
