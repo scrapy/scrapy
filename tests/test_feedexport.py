@@ -99,11 +99,12 @@ class S3FeedStorageTest(unittest.TestCase):
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
-        file.write("content")
+        expected_content = b"content: \xe2\x98\x83"
+        file.write(expected_content)
         yield storage.store(file)
         u = urlparse(uri)
         content = self._get_content_and_delete(u.hostname, u.path[1:])
-        self.assertEqual(content, "content")
+        self.assertEqual(content, expected_content)
 
     def _get_content_and_delete(self, bucket, path):
         if is_botocore():
