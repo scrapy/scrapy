@@ -1,17 +1,13 @@
-import six
 from six.moves.urllib.parse import unquote
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
+from scrapy.utils.boto import is_botocore
 from .http import HTTPDownloadHandler
 
 
-def get_s3_connection():
-    try:
-        from boto.s3.connection import S3Connection
-    except ImportError:
-        return None
+def _get_boto_connection():
+    from boto.s3.connection import S3Connection
 
     class _v19_S3Connection(S3Connection):
         """A dummy S3Connection wrapper that doesn't do any synchronous download"""
@@ -53,21 +49,9 @@ class S3DownloadHandler(object):
         self.anon = kw.get('anon')
 
         self._signer = None
-        try:
+        if is_botocore():
             import botocore.auth
             import botocore.credentials
-        except ImportError:
-            if six.PY3:
-                raise NotConfigured("missing botocore library")
-            _S3Connection = get_s3_connection()
-            if _S3Connection is None:
-                raise NotConfigured("missing botocore or boto library")
-            try:
-                self.conn = _S3Connection(
-                    aws_access_key_id, aws_secret_access_key, **kw)
-            except Exception as ex:
-                raise NotConfigured(str(ex))
-        else:
             kw.pop('anon', None)
             if kw:
                 raise TypeError('Unexpected keyword arguments: %s' % kw)
@@ -75,6 +59,13 @@ class S3DownloadHandler(object):
                 SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
                 self._signer = SignerCls(botocore.credentials.Credentials(
                     aws_access_key_id, aws_secret_access_key))
+        else:
+            _S3Connection = _get_boto_connection()
+            try:
+                self.conn = _S3Connection(
+                    aws_access_key_id, aws_secret_access_key, **kw)
+            except Exception as ex:
+                raise NotConfigured(str(ex))
 
         self._download_http = httpdownloadhandler(settings).download_request
 

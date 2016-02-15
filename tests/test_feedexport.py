@@ -22,6 +22,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.utils.test import assert_aws_environ
 from scrapy.utils.python import to_native_str
+from scrapy.utils.boto import is_botocore
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -95,17 +96,30 @@ class S3FeedStorageTest(unittest.TestCase):
         uri = os.environ.get('FEEDTEST_S3_URI')
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
-        from boto import connect_s3
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         file.write("content")
         yield storage.store(file)
         u = urlparse(uri)
-        bucket = connect_s3().get_bucket(u.hostname, validate=False)
-        key = bucket.get_key(u.path)
-        self.assertEqual(key.get_contents_as_string(), "content")
-        bucket.delete_key(u.path)
+        content = self._get_content_and_delete(u.hostname, u.path[1:])
+        self.assertEqual(content, "content")
+
+    def _get_content_and_delete(self, bucket, path):
+        if is_botocore():
+            import botocore.session
+            session = botocore.session.get_session()
+            client = session.create_client('s3')
+            key = client.get_object(Bucket=bucket, Key=path)
+            content = key['Body'].read()
+            client.delete_object(Bucket=bucket, Key=path)
+        else:
+            from boto import connect_s3
+            bucket = connect_s3().get_bucket(bucket, validate=False)
+            key = bucket.get_key(path)
+            content = key.get_contents_as_string()
+            bucket.delete_key(path)
+        return content
 
 
 class StdoutFeedStorageTest(unittest.TestCase):

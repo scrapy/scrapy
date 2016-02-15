@@ -5,8 +5,10 @@ This module contains some assorted functions used in tests
 import os
 
 from importlib import import_module
-import six
 from twisted.trial.unittest import SkipTest
+
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.boto import is_botocore
 
 
 def assert_aws_environ():
@@ -19,15 +21,9 @@ def assert_aws_environ():
 
 def skip_if_no_boto():
     try:
-        import botocore
-    except ImportError:
-        if six.PY2:
-            try:
-                import boto
-            except ImportError:
-                raise SkipTest('missing botocore or boto library')
-        else:
-            raise SkipTest('missing botocore library')
+        is_botocore()
+    except NotConfigured as e:
+        raise SkipTest(e.message)
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it

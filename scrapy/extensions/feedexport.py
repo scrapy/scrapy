@@ -24,6 +24,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
+from scrapy.utils.boto import is_botocore
 
 logger = logging.getLogger(__name__)
 
@@ -90,24 +91,33 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
         from scrapy.conf import settings
-        try:
-            import boto
-        except ImportError:
-            raise NotConfigured
-        self.connect_s3 = boto.connect_s3
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or settings['AWS_ACCESS_KEY_ID']
         self.secret_key = u.password or settings['AWS_SECRET_ACCESS_KEY']
-        self.keyname = u.path
+        self.is_botocore = is_botocore()
+        self.keyname = u.path[1:]  # remove first "/"
+        if self.is_botocore:
+            import botocore.session
+            session = botocore.session.get_session()
+            self.s3_client = session.create_client(
+                's3', aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key)
+        else:
+            import boto
+            self.connect_s3 = boto.connect_s3
 
     def _store_in_thread(self, file):
         file.seek(0)
-        conn = self.connect_s3(self.access_key, self.secret_key)
-        bucket = conn.get_bucket(self.bucketname, validate=False)
-        key = bucket.new_key(self.keyname)
-        key.set_contents_from_file(file)
-        key.close()
+        if self.is_botocore:
+            self.s3_client.put_object(
+                Bucket=self.bucketname, Key=self.keyname, Body=file)
+        else:
+            conn = self.connect_s3(self.access_key, self.secret_key)
+            bucket = conn.get_bucket(self.bucketname, validate=False)
+            key = bucket.new_key(self.keyname)
+            key.set_contents_from_file(file)
+            key.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
