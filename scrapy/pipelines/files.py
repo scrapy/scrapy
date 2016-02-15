@@ -28,6 +28,7 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
+from scrapy.utils.boto import is_botocore
 
 logger = logging.getLogger(__name__)
 
@@ -86,20 +87,30 @@ class S3FilesStore(object):
     }
 
     def __init__(self, uri):
-        try:
+        self.is_botocore = is_botocore()
+        if self.is_botocore:
+            import botocore.session
+            session = botocore.session.get_session()
+            self.s3_client = session.create_client(
+                's3', aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY)
+        else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        except ImportError:
-            raise NotConfigured("missing boto library")
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
         def _onsuccess(boto_key):
-            checksum = boto_key.etag.strip('"')
-            last_modified = boto_key.last_modified
-            modified_tuple = parsedate_tz(last_modified)
-            modified_stamp = int(mktime_tz(modified_tuple))
+            if self.is_botocore:
+                checksum = boto_key['ETag'].strip('"')
+                last_modified = boto_key['LastModified']
+                modified_stamp = time.mktime(last_modified.timetuple())
+            else:
+                checksum = boto_key.etag.strip('"')
+                last_modified = boto_key.last_modified
+                modified_tuple = parsedate_tz(last_modified)
+                modified_stamp = int(mktime_tz(modified_tuple))
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)
@@ -111,24 +122,40 @@ class S3FilesStore(object):
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
-        b = self._get_boto_bucket()
         key_name = '%s%s' % (self.prefix, path)
-        return threads.deferToThread(b.get_key, key_name)
+        if self.is_botocore:
+            return threads.deferToThread(
+                self.s3_client.head_object,
+                Bucket=self.bucket,
+                Key=key_name)
+        else:
+            b = self._get_boto_bucket()
+            return threads.deferToThread(b.get_key, key_name)
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
-        b = self._get_boto_bucket()
         key_name = '%s%s' % (self.prefix, path)
-        k = b.new_key(key_name)
-        if meta:
-            for metakey, metavalue in six.iteritems(meta):
-                k.set_metadata(metakey, str(metavalue))
-        h = self.HEADERS.copy()
-        if headers:
-            h.update(headers)
         buf.seek(0)
-        return threads.deferToThread(k.set_contents_from_string, buf.getvalue(),
-                                     headers=h, policy=self.POLICY)
+        if self.is_botocore:
+            return threads.deferToThread(
+                self.s3_client.put_object,
+                Bucket=self.bucket,
+                Key=key_name,
+                Body=buf,
+                Metadata={k: str(v) for k, v in six.iteritems(meta)},
+                ACL=self.POLICY)
+        else:
+            b = self._get_boto_bucket()
+            k = b.new_key(key_name)
+            if meta:
+                for metakey, metavalue in six.iteritems(meta):
+                    k.set_metadata(metakey, str(metavalue))
+            h = self.HEADERS.copy()
+            if headers:
+                h.update(headers)
+            return threads.deferToThread(
+                k.set_contents_from_string, buf.getvalue(),
+                headers=h, policy=self.POLICY)
 
 
 class FilesPipeline(MediaPipeline):

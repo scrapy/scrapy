@@ -22,7 +22,6 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 from scrapy.utils.python import to_native_str
-from scrapy.utils.boto import is_botocore
 
 
 class FileFeedStorageTest(unittest.TestCase):
