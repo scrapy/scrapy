@@ -490,8 +490,12 @@ class S3TestCase(unittest.TestCase):
                 yield
 
     def test_extra_kw(self):
-        self.assertRaises(
-            TypeError, S3DownloadHandler, Settings(), extra_kw=True)
+        try:
+            S3DownloadHandler(Settings(), extra_kw=True)
+        except Exception as e:
+            self.assertIsInstance(e, (TypeError, NotConfigured))
+        else:
+            assert False
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
