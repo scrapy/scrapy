@@ -198,7 +198,7 @@ class TestS3FilesStore(unittest.TestCase):
         s = yield store.stat_file(path, info=None)
         self.assertIn('last_modified', s)
         self.assertIn('checksum', s)
-        self.assertEqual(s['checksum'], b'3187896a9657a28163abb31667df64c8')
+        self.assertEqual(s['checksum'], '3187896a9657a28163abb31667df64c8')
         u = urlparse(uri)
         content = get_s3_content_and_delete(u.hostname, u.path[1:])
         self.assertEqual(content, data)
