@@ -1,5 +1,6 @@
 """Boto/botocore helpers"""
 
+from __future__ import absolute_import
 import six
 
 from scrapy.exceptions import NotConfigured
