@@ -102,8 +102,10 @@ class S3FeedStorageTest(unittest.TestCase):
         file.write("content")
         yield storage.store(file)
         u = urlparse(uri)
-        key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
+        bucket = connect_s3().get_bucket(u.hostname, validate=False)
+        key = bucket.get_key(u.path)
         self.assertEqual(key.get_contents_as_string(), "content")
+        bucket.delete_key(u.path)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):
