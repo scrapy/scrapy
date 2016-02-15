@@ -97,6 +97,7 @@ Additional New Features and Enhancements
 
 - Dict-like settings now have per-key priorities
   (:issue:`1135`, :issue:`1149` and :issue:`1586`).
+- Sending non-ASCII emails (:issue:`1662`)
 - ``CloseSpider`` and ``SpiderState`` extensions now get disabled if no relevant
   setting is set (:issue:`1723`, :issue:`1725`).
 - Added method ``ExecutionEngine.close`` (:issue:`1423`).
@@ -105,7 +106,7 @@ Additional New Features and Enhancements
   :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
   :issue:`1727`).
 - Other refactoring, optimizations and cleanup (:issue:`1476`, :issue:`1481`,
-  :issue:`1477`, :issue:`1315` and :issue:`1290`).
+  :issue:`1477`, :issue:`1315`, :issue:`1290` and :issue:`1750`).
 
 .. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
@@ -123,6 +124,9 @@ Deprecations and Removals
   + ``scrapy.utils.datatypes.MultiValueDictKeyError``
   + ``scrapy.utils.datatypes.MultiValueDict``
   + ``scrapy.utils.datatypes.SiteNode``
+
+- The previously bundled ``scrapy.xlib.pydispatch`` library was deprecated and
+  replaced by `pydispatcher <https://pypi.python.org/pypi/PyDispatcher>`_.
 
 
 Relocations
