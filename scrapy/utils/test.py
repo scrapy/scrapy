@@ -5,6 +5,7 @@ This module contains some assorted functions used in tests
 import os
 
 from importlib import import_module
+import six
 from twisted.trial.unittest import SkipTest
 
 
@@ -12,13 +13,21 @@ def assert_aws_environ():
     """Asserts the current environment is suitable for running AWS testsi.
     Raises SkipTest with the reason if it's not.
     """
-    try:
-        import boto
-    except ImportError as e:
-        raise SkipTest(str(e))
-
+    skip_if_no_boto()
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
+
+def skip_if_no_boto():
+    try:
+        import botocore
+    except ImportError:
+        if six.PY2:
+            try:
+                import boto
+            except ImportError:
+                raise SkipTest('missing botocore or boto library')
+        else:
+            raise SkipTest('missing botocore library')
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it

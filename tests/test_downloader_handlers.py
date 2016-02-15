@@ -28,7 +28,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
@@ -437,22 +437,10 @@ class HttpDownloadHandlerMock(object):
         return request
 
 
-class BaseS3TestCase(unittest.TestCase):
-    try:
-        import botocore
-    except ImportError:
-        if six.PY2:
-            try:
-                import boto
-            except ImportError:
-                skip = 'missing botocore or boto library'
-        else:
-            skip = 'missing botocore library'
-
-
-class S3AnonTestCase(BaseS3TestCase):
+class S3AnonTestCase(unittest.TestCase):
 
     def setUp(self):
+        skip_if_no_boto()
         self.s3reqh = S3DownloadHandler(Settings(),
                 httpdownloadhandler=HttpDownloadHandlerMock,
                 #anon=True, # is implicit
@@ -469,7 +457,7 @@ class S3AnonTestCase(BaseS3TestCase):
             httpreq.url, 'http://aws-publicdatasets.s3.amazonaws.com/')
 
 
-class S3TestCase(BaseS3TestCase):
+class S3TestCase(unittest.TestCase):
     download_handler_cls = S3DownloadHandler
 
     # test use same example keys than amazon developer guide
@@ -480,6 +468,7 @@ class S3TestCase(BaseS3TestCase):
     AWS_SECRET_ACCESS_KEY = 'uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o'
 
     def setUp(self):
+        skip_if_no_boto()
         s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID,
                 self.AWS_SECRET_ACCESS_KEY,
                 httpdownloadhandler=HttpDownloadHandlerMock)
