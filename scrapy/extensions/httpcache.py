@@ -1,6 +1,9 @@
 from __future__ import print_function
 import os
 import gzip
+import zlib
+from io import BytesIO
+from scrapy.utils.gz import gunzip, is_gzipped
 from six.moves import cPickle as pickle
 from importlib import import_module
 from time import time
@@ -13,6 +16,7 @@ from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from collections import OrderedDict
 
 
 class DummyPolicy(object):
@@ -399,6 +403,170 @@ class LeveldbCacheStorage(object):
     def _request_key(self, request):
         return to_bytes(request_fingerprint(request))
 
+
+class DeltaLeveldbCacheStorage(object):
+
+    def __init__(self, settings):
+        import leveldb
+        import bsdiff4
+        self._leveldb = leveldb
+        self._bsdiff = bsdiff4
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
+        self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+        self.db = None
+        self.response_to_cache = ['status', 'url', 'headers', 'body']
+
+    def open_spider(self, spider):
+        dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)
+        self.db = self._leveldb.LevelDB(dbpath)
+
+    def close_spider(self, spider):
+        # Do compactation each time to save space and also recreate files to
+        # avoid them being removed in storages with timestamp-based autoremoval.
+        self.db.CompactRange()
+        del self.db
+
+    def retrieve_response(self, spider, request):
+        domain = self._parse_domain_from_url(spider, request)
+        sources = self._read_data(key_to_use=domain)
+        delta_response = None
+        serial_response = None
+        data = None
+        delta_response = self._read_data(request_to_use=request)
+        if sources and delta_response:
+            sources = pickle.loads(sources)
+            target_key = self._request_key(request)
+            if target_key in sources:
+                serial_response = delta_response
+            else:
+                for source in sources.keys():
+                    if target_key in sources[source]:
+                        serial_source = self._read_data(key_to_use=source)
+                        serial_response = self._decode_response(delta_response, serial_source)
+        if not serial_response:
+            return
+        data = self._deserialize(serial_response)
+        response = self._reconstruct_response(data)
+        response = self._recompress(response)
+        return response
+
+    def store_response(self, spider, request, response):
+        target_key = self._request_key(request)
+        response = self._decompress(response)
+        target_response = self._serialize(response)
+        original_length = None
+        domain = self._parse_domain_from_url(spider, request)
+        sources = self._read_data(key_to_use=domain, ignore_time=True)
+        if sources:
+            sources = pickle.loads(sources)
+            if target_key in sources:
+                source_response = self._read_data(key_to_use=target_key, ignore_time=True)
+                self._recompute_deltas(target_response, source_response, sources[target_key])
+            else:
+                source_key = self._select_source(target_response, sources)
+                source_response = self._read_data(key_to_use=source_key, ignore_time=True)
+                target_response = self._encode_response(target_response, source_response)
+                sources[source_key].add(target_key)
+        else:
+            sources = {target_key: set()}
+        batch = self._leveldb.WriteBatch()
+        batch.Put(target_key + b'_data', target_response)
+        batch.Put(target_key + b'_time', to_bytes(str(time())))
+        batch.Put(domain + b'_data', pickle.dumps(sources, protocol=2))
+        batch.Put(domain + b'_time', to_bytes(str(time())))
+        self.db.Write(batch)
+
+    def _parse_domain_from_url(self, spider, request):
+        return urlparse_cached(request).hostname or spider.name
+
+    def _select_source(self, target, sources):
+        return sources.keys()[0]
+
+    def _recompute_deltas(self, new_source, old_source, target_set):
+        for target_key in target_set:
+            old_response = self._read_data(key_to_use=target_key, ignore_time=True)
+            target_response = self._decode_response(old_response, old_source)
+            new_delta = self._encode_response(target_response, new_source)
+            batch = self._leveldb.WriteBatch()
+            batch.Put(target_key + b'_data', new_delta)
+            self.db.Write(batch)
+
+    def _reconstruct_response(self, data):
+        url = data['url']
+        status = data['status']
+        headers = Headers(data['headers'])
+        body = data['body']
+        respcls = responsetypes.from_args(headers=headers, url=url)
+        response = respcls(url=url, headers=headers, status=status, body=body)
+        return response
+
+    def _encode_response(self, target, source):
+        delta_contents = self._bsdiff.diff(source, target)
+        return delta_contents
+
+    def _decode_response(self, delta, source):
+        restored_contents = self._bsdiff.patch(source, delta)
+        return restored_contents
+
+    def _serialize(self, response):
+        dict_response = OrderedDict()
+        for k in self.response_to_cache:
+            dict_response[k] = getattr(response, k)
+        return pickle.dumps(dict_response, 2)
+
+    def _deserialize(self, serial_response):
+        return pickle.loads(serial_response)
+
+    def _recompress(self, response):
+        content_encoding = response.headers.getlist('Content-Encoding')
+        if content_encoding and not is_gzipped(response):
+            encoding = content_encoding[-1].lower()
+            if encoding == b'gzip' or encoding == b'x-gzip':
+                buffer = BytesIO()
+                with gzip.GzipFile(mode='wb', fileobj=buffer) as f:
+                    f.write(response.body)
+                    f.close()
+                encoded_body = buffer.getvalue()
+            if encoding == b'deflate':
+                encoded_body = zlib.compress(response.body)
+            response = response.replace(**{'body': encoded_body})
+        return response
+
+    def _decompress(self, response):
+        content_encoding = response.headers.getlist('Content-Encoding')
+        if content_encoding and not is_gzipped(response):
+            encoding = content_encoding[-1].lower()
+            if encoding == b'gzip' or encoding == b'x-gzip':
+                decoded_body = gunzip(response.body)
+            if encoding == b'deflate':
+                try:
+                    decoded_body = zlib.decompress(response.body)
+                except zlib.error:
+                    decoded_body = zlib.decompress(response.body, -15)
+            response = response.replace(**{'body': decoded_body})
+        return response
+
+    def _read_data(self, request_to_use=None, key_to_use=None, ignore_time=False):
+        if key_to_use:
+            key = key_to_use
+        else:
+            key = self._request_key(request_to_use)
+        if not ignore_time:
+            try:
+                ts = self.db.Get(key + b'_time')
+            except KeyError:
+                return  # not found or invalid entry
+            if 0 < self.expiration_secs < time() - float(ts):
+                return  # expired
+        try:
+            data = self.db.Get(key + b'_data')
+        except KeyError:
+            return  # invalid entry
+        else:
+            return data
+
+    def _request_key(self, request):
+        return to_bytes(request_fingerprint(request))
 
 
 def parse_cachecontrol(header):

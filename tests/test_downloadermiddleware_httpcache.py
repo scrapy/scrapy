@@ -159,6 +159,11 @@ class LeveldbStorageTest(DefaultStorageTest):
     pytest.importorskip('leveldb')
     storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
+class DeltaLeveldbStorageTest(DefaultStorageTest):
+
+    pytest.importorskip('leveldb')
+    pytest.importorskip('bsdiff4')
+    storage_class = 'scrapy.extensions.httpcache.DeltaLeveldbCacheStorage'
 
 class DummyPolicyTest(_BaseTest):
 
