@@ -16,8 +16,6 @@ from scrapy.utils.response import get_base_url
 # from lxml/src/lxml/html/__init__.py
 XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
 
-_collect_string_content = etree.XPath("string()")
-
 
 def _nons(tag):
     if isinstance(tag, six.string_types):
@@ -27,11 +25,14 @@ def _nons(tag):
 
 
 class LxmlParserLinkExtractor(object):
-    def __init__(self, tag="a", attr="href", process=None, unique=False):
+
+    def __init__(self, tag="a", attr="href", process=None, unique=False,
+                 text=""):
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_attr = process if callable(process) else lambda v: v
         self.unique = unique
+        self.text = etree.XPath('string(%s)' % text)
 
     def _iter_links(self, document):
         for el in document.iter(etree.Element):
@@ -59,7 +60,7 @@ class LxmlParserLinkExtractor(object):
             url = to_native_str(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
-            link = Link(url, _collect_string_content(el) or u'',
+            link = Link(url, self.text(el) or u'',
                         nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
         return self._deduplicate_if_needed(links)
@@ -85,12 +86,13 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href',), canonicalize=True,
-                 unique=True, process_value=None, deny_extensions=None, restrict_css=()):
+                 unique=True, process_value=None, deny_extensions=None, restrict_css=(),
+                 text=''):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
         lx = LxmlParserLinkExtractor(tag=tag_func, attr=attr_func,
-            unique=unique, process=process_value)
+            unique=unique, process=process_value, text=text)
 
         super(LxmlLinkExtractor, self).__init__(lx, allow=allow, deny=deny,
             allow_domains=allow_domains, deny_domains=deny_domains,
