@@ -204,6 +204,20 @@ class MySpider(scrapy.Spider):
         log = to_native_str(p.stderr.read())
         self.assertIn("Unable to load", log)
 
+    def test_start_requests_errors(self):
+        p = self.runspider("""
+import scrapy
+
+class BadSpider(scrapy.Spider):
+    name = "bad"
+    def start_requests(self):
+        raise Exception("oops!")
+        """, name="badspider.py")
+        log = to_native_str(p.stderr.read())
+        print(log)
+        self.assertIn("start_requests", log)
+        self.assertIn("badspider.py", log)
+
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
