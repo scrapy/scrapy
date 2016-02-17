@@ -6,7 +6,7 @@ from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
-import six
+from contextlib import contextmanager
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -154,12 +154,24 @@ class MiscCommandsTest(CommandTest):
 
 class RunSpiderCommandTest(CommandTest):
 
-    def test_runspider(self):
+    @contextmanager
+    def _create_file(self, content, name):
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, 'myspider.py'))
+        fname = abspath(join(tmpdir, name))
         with open(fname, 'w') as f:
-            f.write("""
+            f.write(content)
+        try:
+            yield fname
+        finally:
+            rmtree(tmpdir)
+
+    def runspider(self, code, name='myspider.py'):
+        with self._create_file(code, name) as fname:
+            return self.proc('runspider', fname)
+
+    def test_runspider(self):
+        spider = """
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -168,23 +180,17 @@ class MySpider(scrapy.Spider):
     def start_requests(self):
         self.logger.debug("It Works!")
         return []
-""")
-        p = self.proc('runspider', fname)
+"""
+        p = self.runspider(spider)
         log = to_native_str(p.stderr.read())
+
         self.assertIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
     def test_runspider_no_spider_found(self):
-        tmpdir = self.mktemp()
-        os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, 'myspider.py'))
-        with open(fname, 'w') as f:
-            f.write("""
-from scrapy.spiders import Spider
-""")
-        p = self.proc('runspider', fname)
+        p = self.runspider("from scrapy.spiders import Spider\n")
         log = to_native_str(p.stderr.read())
         self.assertIn("No spider found in file", log)
 
@@ -194,12 +200,7 @@ from scrapy.spiders import Spider
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
-        tmpdir = self.mktemp()
-        os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, 'myspider.txt'))
-        with open(fname, 'w') as f:
-            f.write("")
-        p = self.proc('runspider', fname)
+        p = self.runspider("", "myspider.txt")
         log = to_native_str(p.stderr.read())
         self.assertIn("Unable to load", log)
 
