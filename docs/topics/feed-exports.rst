@@ -208,6 +208,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_FIELDS`
+ * :setting:`FEED_BATCH_SIZE`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -333,3 +334,35 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
 .. _boto: http://code.google.com/p/boto/
+
+FEED_BATCH_SIZE
+---------------
+
+Default: ``None``. (a single file is created)
+
+Allows to control the number of item exported in one file.
+
+The storage URI should define parameters to create a new file that get replaced when the feed is
+being created. These parameters are:
+
+ * ``%(start)s`` - gets replaced by a timestamp when the spider is being started
+ * ``%(time)s`` - gets replaced by a timestamp when the batch feed is being created
+ * ``%(index)s`` - gets replaced by an index when the batch feed is being created
+
+Here's an example using the ```time``` to batch feed ::
+
+    Storage URI : /tmp/%(start)s/%(time)s.json
+
+    /tmp
+      |_ 2015-07-03T20-29-01 (start)
+         |_ 2015-07-03T20-29-04.json (time)
+         |_ 2015-07-03T20-52-06.json (time)
+
+Here's an example using the ```index``` to batch feed ::
+
+    Storage URI : /tmp/%(start)s/feed-%(index)s.json
+
+    /tmp
+      |_ 2015-07-03T20-29-01 (start)
+         |_ feed-00001.json (index)
+         |_ feed-00002.json (index)
