@@ -4,7 +4,7 @@ pytest-cov
 testfixtures
 jmespath
 leveldb
-boto
+botocore
 # optional for shell wrapper tests
 bpython
 ipython
