@@ -200,9 +200,9 @@ class MySpider(scrapy.Spider):
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
-        p = self.runspider("", "myspider.txt")
+        p = self.runspider('', 'myspider.txt')
         log = to_native_str(p.stderr.read())
-        self.assertIn("Unable to load", log)
+        self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
         p = self.runspider("""
