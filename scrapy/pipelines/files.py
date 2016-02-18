@@ -29,6 +29,7 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.datatypes import CaselessDict
 
 logger = logging.getLogger(__name__)
 
@@ -137,13 +138,17 @@ class S3FilesStore(object):
         key_name = '%s%s' % (self.prefix, path)
         buf.seek(0)
         if self.is_botocore:
+            extra = self._headers_to_botocore_kwargs(self.HEADERS)
+            if headers:
+                extra.update(self._headers_to_botocore_kwargs(headers))
             return threads.deferToThread(
                 self.s3_client.put_object,
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
                 Metadata={k: str(v) for k, v in six.iteritems(meta)},
-                ACL=self.POLICY)
+                ACL=self.POLICY,
+                **extra)
         else:
             b = self._get_boto_bucket()
             k = b.new_key(key_name)
@@ -156,6 +161,35 @@ class S3FilesStore(object):
             return threads.deferToThread(
                 k.set_contents_from_string, buf.getvalue(),
                 headers=h, policy=self.POLICY)
+
+    def _headers_to_botocore_kwargs(self, headers):
+        """ Convert headers to botocore keyword agruments.
+        """
+        # This is required while we need to support both boto and botocore.
+        mapping = CaselessDict({
+            'Content-Type': 'ContentType',
+            'Cache-Control': 'CacheControl',
+            'Content-Disposition': 'ContentDisposition',
+            'Content-Encoding': 'ContentEncoding',
+            'Content-Language': 'ContentLanguage',
+            'Content-Length': 'ContentLength',
+            'Content-MD5': 'ContentMD5',
+            'Expires': 'Expires',
+            'X-Amz-Grant-Full-Control': 'GrantFullControl',
+            'X-Amz-Grant-Read': 'GrantRead',
+            'X-Amz-Grant-Read-ACP': 'GrantReadACP',
+            'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
+            })
+        extra = {}
+        for key, value in six.iteritems(headers):
+            try:
+                kwarg = mapping[key]
+            except KeyError:
+                raise TypeError(
+                    'Header "%s" is not supported by botocore' % key)
+            else:
+                extra[kwarg] = value
+        return extra
 
 
 class FilesPipeline(MediaPipeline):

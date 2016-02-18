@@ -26,7 +26,7 @@ def skip_if_no_boto():
     except NotConfigured as e:
         raise SkipTest(e.message)
 
-def get_s3_content_and_delete(bucket, path):
+def get_s3_content_and_delete(bucket, path, with_key=False):
     """ Get content from s3 key, and delete key afterwards.
     """
     if is_botocore():
@@ -43,7 +43,7 @@ def get_s3_content_and_delete(bucket, path):
         key = bucket.get_key(path)
         content = key.get_contents_as_string()
         bucket.delete_key(path)
-    return content
+    return (content, key) if with_key else content
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it

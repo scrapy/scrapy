@@ -16,6 +16,7 @@ from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
+from scrapy.utils.boto import is_botocore
 
 from tests import mock
 
@@ -194,14 +195,27 @@ class TestS3FilesStore(unittest.TestCase):
         meta = {'foo': 'bar'}
         path = ''
         store = S3FilesStore(uri)
-        yield store.persist_file(path, buf, info=None, meta=meta)
+        yield store.persist_file(
+            path, buf, info=None, meta=meta,
+            headers={'Content-Type': 'image/png'})
         s = yield store.stat_file(path, info=None)
         self.assertIn('last_modified', s)
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], '3187896a9657a28163abb31667df64c8')
         u = urlparse(uri)
-        content = get_s3_content_and_delete(u.hostname, u.path[1:])
+        content, key = get_s3_content_and_delete(
+            u.hostname, u.path[1:], with_key=True)
         self.assertEqual(content, data)
+        if is_botocore():
+            self.assertEqual(key['Metadata'], {'foo': 'bar'})
+            self.assertEqual(
+                key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
+            self.assertEqual(key['ContentType'], 'image/png')
+        else:
+            self.assertEqual(key.metadata, {'foo': 'bar'})
+            self.assertEqual(
+                key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
+            self.assertEqual(key.content_type, 'image/png')
 
 
 class ItemWithFiles(Item):
