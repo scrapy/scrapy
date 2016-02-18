@@ -99,12 +99,12 @@ The storages backends supported out of the box are:
 
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
- * :ref:`topics-feed-storage-s3` (requires boto_)
+ * :ref:`topics-feed-storage-s3` (requires botocore_ or boto_)
  * :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the boto_
-library is installed.
+not available. For example, the S3 backend is only available if the botocore_
+or boto_ library is installed (Scrapy supports boto_ only on Python 2).
 
 
 .. _topics-feed-uri-params:
@@ -177,7 +177,7 @@ The feeds are stored on `Amazon S3`_.
    * ``s3://mybucket/path/to/export.csv``
    * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
- * Required external libraries: `boto`_
+ * Required external libraries: `botocore`_ or `boto`_
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -332,4 +332,5 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
-.. _boto: http://code.google.com/p/boto/
+.. _boto: https://github.com/boto/boto
+.. _botocore: https://github.com/boto/botocore

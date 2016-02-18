@@ -7,7 +7,6 @@ scrapy/xlib/tx/endpoints.py
 scrapy/xlib/tx/client.py
 scrapy/xlib/tx/_newclient.py
 scrapy/xlib/tx/__init__.py
-scrapy/core/downloader/handlers/s3.py
 scrapy/core/downloader/handlers/ftp.py
 scrapy/linkextractors/sgml.py
 scrapy/linkextractors/regex.py
