@@ -5,6 +5,8 @@ from scrapy import twisted_version
 
 if twisted_version >= (14, 0, 0):
 
+    from zope.interface.declarations import implementer
+
     from twisted.internet.ssl import optionsForClientTLS
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
@@ -65,11 +67,3 @@ class SSLv3ContextFactory(OpenSSLMethodContextFactory):
 
 class TLSv1ContextFactory(OpenSSLMethodContextFactory):
     openssl_method = SSL.TLSv1_METHOD
-
-
-class TLSv11ContextFactory(OpenSSLMethodContextFactory):
-    openssl_method = SSL.TLSv1_1_METHOD
-
-
-class TLSv12ContextFactory(OpenSSLMethodContextFactory):
-    openssl_method = SSL.TLSv1_2_METHOD
