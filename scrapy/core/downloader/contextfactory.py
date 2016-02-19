@@ -5,9 +5,11 @@ from scrapy import twisted_version
 
 if twisted_version >= (14, 0, 0):
 
-    from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.internet.ssl import optionsForClientTLS
+    from twisted.web.client import BrowserLikePolicyForHTTPS
+    from twisted.web.iweb import IPolicyForHTTPS
 
+    @implementer(IPolicyForHTTPS)
     class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         """
         Using Twisted recommended context factory for twisted.web.client.Agent
@@ -20,6 +22,7 @@ if twisted_version >= (14, 0, 0):
         """
 
 
+    @implementer(IPolicyForHTTPS)
     class OpenSSLMethodContextFactory(ScrapyClientContextFactory):
 
         openssl_method = SSL.SSLv23_METHOD
