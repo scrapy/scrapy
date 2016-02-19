@@ -19,7 +19,7 @@ def listen_tcp(portrange, host, factory):
 
 class CallLaterOnce(object):
     """Schedule a function to be called in the next reactor loop, but only if
-    it hasn't been already scheduled since the last time it run.
+    it hasn't been already scheduled since the last time it ran.
     """
 
     def __init__(self, func, *a, **kw):
