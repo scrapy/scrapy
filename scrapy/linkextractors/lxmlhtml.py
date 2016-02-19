@@ -32,7 +32,7 @@ class LxmlParserLinkExtractor(object):
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_attr = process if callable(process) else lambda v: v
         self.unique = unique
-        self.text = etree.XPath('string(%s)' % text)
+        self.text = text if callable(text) else etree.XPath('string(%s)' % text)
 
     def _iter_links(self, document):
         for el in document.iter(etree.Element):
