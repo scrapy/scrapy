@@ -431,3 +431,39 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 
+    def test_custom_textualizer(self):
+        """Test textualization of link with custom xpath or function"""
+        html = b"""
+        <a title="article title" href="article?id=100"><script>junk text</script>article title2</a>
+        """
+        response = HtmlResponse("http://example.org/", body=html, encoding='ascii')
+
+        self.assertEqual(self.extractor_cls().extract_links(response),
+                         [Link(url='http://example.org/article?id=100', text=u'junk textarticle title2')])
+        self.assertEqual(self.extractor_cls(text='@title').extract_links(response),
+                         [Link(url='http://example.org/article?id=100', text=u'article title')])
+        self.assertEqual(self.extractor_cls(text='text()').extract_links(response),
+                         [Link(url='http://example.org/article?id=100', text=u'article title2')])
+
+        alternatives = 'text()[not(../@alt|../@title)] | @alt[not(../@title)] | @title'
+        html = b"""
+        <a title="title" alt="alt title" href="article?id=20">text</a>
+        <a title="title" href="article?id=21">text</a>
+        <a alt="alt title" href="article?id=22">text</a>
+        <a title="title" alt="alt title" href="article?id=23"><img/></a>
+        <a alt="alt title" href="article?id=24"><img/></a>
+        <a title="title" href="article?id=25"><img/></a>
+        <a href="article?id=26">text</a>
+        <a href="article?id=27"><img/></a>
+        """
+        response = HtmlResponse("http://example.org/", body=html, encoding='ascii')
+        links = self.extractor_cls(text=alternatives).extract_links(response)
+        self.assertEqual(links,
+                         [Link(url='http://example.org/article?id=20', text=u'title'),
+                          Link(url='http://example.org/article?id=21', text=u'title'),
+                          Link(url='http://example.org/article?id=22', text=u'alt title'),
+                          Link(url='http://example.org/article?id=23', text=u'title'),
+                          Link(url='http://example.org/article?id=24', text=u'alt title'),
+                          Link(url='http://example.org/article?id=25', text=u'title'),
+                          Link(url='http://example.org/article?id=26', text=u'text'),
+                          Link(url='http://example.org/article?id=27', text=u'')])
