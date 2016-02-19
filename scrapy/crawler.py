@@ -87,7 +87,7 @@ class Crawler(object):
                 yield self.engine.close()
 
             if six.PY2:
-                raise six.reraise(*exc_info)
+                six.reraise(*exc_info)
             raise
 
     def _create_spider(self, *args, **kwargs):
