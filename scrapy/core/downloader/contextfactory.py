@@ -1,28 +1,72 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
-try:
-    # available since twisted 14.0
-    from twisted.internet._sslverify import ClientTLSOptions
-except ImportError:
-    ClientTLSOptions = None
+
+from scrapy import twisted_version
+
+if twisted_version >= (14, 0, 0):
+
+    from twisted.web.client import BrowserLikePolicyForHTTPS
+    from twisted.internet.ssl import optionsForClientTLS
+
+    class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
+        """
+        Using Twisted recommended context factory for twisted.web.client.Agent
+
+        Quoting:
+        "The default is to use a BrowserLikePolicyForHTTPS,
+        so unless you have special requirements you can leave this as-is."
+
+        See http://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html
+        """
 
 
-class ScrapyClientContextFactory(ClientContextFactory):
-    "A SSL context factory which is more permissive against SSL bugs."
-    # see https://github.com/scrapy/scrapy/issues/82
-    # and https://github.com/scrapy/scrapy/issues/26
-    # and https://github.com/scrapy/scrapy/issues/981
+    class OpenSSLMethodContextFactory(ScrapyClientContextFactory):
 
-    def __init__(self):
-        # see this issue on why we use TLSv1_METHOD by default
-        # https://github.com/scrapy/scrapy/issues/194
-        self.method = SSL.TLSv1_METHOD
+        openssl_method = SSL.SSLv23_METHOD
 
-    def getContext(self, hostname=None, port=None):
-        ctx = ClientContextFactory.getContext(self)
-        # Enable all workarounds to SSL bugs as documented by
-        # http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
-        ctx.set_options(SSL.OP_ALL)
-        if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
-            ClientTLSOptions(hostname, ctx)
-        return ctx
+        def creatorForNetloc(self, hostname, port):
+            return optionsForClientTLS(hostname.decode("ascii"),
+                                       trustRoot=self._trustRoot,
+                                       extraCertificateOptions={
+                                            'method': self.openssl_method
+                                       })
+
+
+else:
+
+    class OpenSSLMethodContextFactory(ClientContextFactory):
+        "A SSL context factory which is more permissive against SSL bugs."
+        # see https://github.com/scrapy/scrapy/issues/82
+        # and https://github.com/scrapy/scrapy/issues/26
+        # and https://github.com/scrapy/scrapy/issues/981
+        openssl_method = SSL.SSLv23_METHOD
+
+        def __init__(self):
+            self.method = self.openssl_method
+
+        def getContext(self, hostname=None, port=None):
+            ctx = ClientContextFactory.getContext(self)
+            # Enable all workarounds to SSL bugs as documented by
+            # http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
+            ctx.set_options(SSL.OP_ALL)
+            if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
+                ClientTLSOptions(hostname, ctx)
+            return ctx
+
+    ScrapyClientContextFactory = OpenSSLMethodContextFactory
+
+
+class SSLv3ContextFactory(OpenSSLMethodContextFactory):
+    openssl_method = SSL.SSLv3_METHOD
+
+
+class TLSv1ContextFactory(OpenSSLMethodContextFactory):
+    openssl_method = SSL.TLSv1_METHOD
+
+
+class TLSv11ContextFactory(OpenSSLMethodContextFactory):
+    openssl_method = SSL.TLSv1_1_METHOD
+
+
+class TLSv12ContextFactory(OpenSSLMethodContextFactory):
+    openssl_method = SSL.TLSv1_2_METHOD
