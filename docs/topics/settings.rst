@@ -926,6 +926,15 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
 
+.. setting:: S3_STORE_ACL
+
+S3_STORE_ACL
+------------
+
+Default: ``'private'``
+
+S3-specific access control policy (ACL) for uploaded files.
+
 .. setting:: SCHEDULER
 
 SCHEDULER
