@@ -1,5 +1,10 @@
 import os
 import six
+import contextlib
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -23,7 +28,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
@@ -433,14 +438,9 @@ class HttpDownloadHandlerMock(object):
 
 
 class S3AnonTestCase(unittest.TestCase):
-    try:
-        import boto
-    except ImportError:
-        skip = 'missing boto library'
-    if six.PY3:
-        skip = 'S3 not supported on Py3'
 
     def setUp(self):
+        skip_if_no_boto()
         self.s3reqh = S3DownloadHandler(Settings(),
                 httpdownloadhandler=HttpDownloadHandlerMock,
                 #anon=True, # is implicit
@@ -451,18 +451,14 @@ class S3AnonTestCase(unittest.TestCase):
     def test_anon_request(self):
         req = Request('s3://aws-publicdatasets/')
         httpreq = self.download_request(req, self.spider)
-        self.assertEqual(hasattr(self.s3reqh.conn, 'anon'), True)
-        self.assertEqual(self.s3reqh.conn.anon, True)
+        self.assertEqual(hasattr(self.s3reqh, 'anon'), True)
+        self.assertEqual(self.s3reqh.anon, True)
+        self.assertEqual(
+            httpreq.url, 'http://aws-publicdatasets.s3.amazonaws.com/')
 
 
 class S3TestCase(unittest.TestCase):
     download_handler_cls = S3DownloadHandler
-    try:
-        import boto
-    except ImportError:
-        skip = 'missing boto library'
-    if six.PY3:
-        skip = 'S3 not supported on Py3'
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
@@ -472,69 +468,108 @@ class S3TestCase(unittest.TestCase):
     AWS_SECRET_ACCESS_KEY = 'uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o'
 
     def setUp(self):
+        skip_if_no_boto()
         s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID,
                 self.AWS_SECRET_ACCESS_KEY,
                 httpdownloadhandler=HttpDownloadHandlerMock)
         self.download_request = s3reqh.download_request
         self.spider = Spider('foo')
 
+    @contextlib.contextmanager
+    def _mocked_date(self, date):
+        try:
+            import botocore.auth
+        except ImportError:
+            yield
+        else:
+            # We need to mock botocore.auth.formatdate, because otherwise
+            # botocore overrides Date header with current date and time
+            # and Authorization header is different each time
+            with mock.patch('botocore.auth.formatdate') as mock_formatdate:
+                mock_formatdate.return_value = date
+                yield
+
+    def test_extra_kw(self):
+        try:
+            S3DownloadHandler(Settings(), extra_kw=True)
+        except Exception as e:
+            self.assertIsInstance(e, (TypeError, NotConfigured))
+        else:
+            assert False
+
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
-        req = Request('s3://johnsmith/photos/puppy.jpg',
-                headers={'Date': 'Tue, 27 Mar 2007 19:36:42 +0000'})
-        httpreq = self.download_request(req, self.spider)
+        date ='Tue, 27 Mar 2007 19:36:42 +0000'
+        req = Request('s3://johnsmith/photos/puppy.jpg', headers={'Date': date})
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
+        date = 'Tue, 27 Mar 2007 21:15:45 +0000'
         req = Request('s3://johnsmith/photos/puppy.jpg', method='PUT', headers={
             'Content-Type': 'image/jpeg',
-            'Date': 'Tue, 27 Mar 2007 21:15:45 +0000',
+            'Date': date,
             'Content-Length': '94328',
             })
-        httpreq = self.download_request(req, self.spider)
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
+        date = 'Tue, 27 Mar 2007 19:42:41 +0000'
         req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy', \
                 method='GET', headers={
                     'User-Agent': 'Mozilla/5.0',
-                    'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
+                    'Date': date,
                     })
-        httpreq = self.download_request(req, self.spider)
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
-        req = Request('s3://johnsmith/?acl', \
-                method='GET', headers={'Date': 'Tue, 27 Mar 2007 19:44:46 +0000'})
-        httpreq = self.download_request(req, self.spider)
+        date = 'Tue, 27 Mar 2007 19:44:46 +0000'
+        req = Request('s3://johnsmith/?acl',
+            method='GET', headers={'Date': date})
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
+        try: import botocore
+        except ImportError: pass
+        else:
+            raise unittest.SkipTest(
+                'botocore does not support overriding date with x-amz-date')
         # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
+        date = 'Tue, 27 Mar 2007 21:20:27 +0000'
         req = Request('s3://johnsmith/photos/puppy.jpg', \
                 method='DELETE', headers={
-                    'Date': 'Tue, 27 Mar 2007 21:20:27 +0000',
+                    'Date': date,
                     'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
                     })
-        httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
+        # botocore does not override Date with x-amz-date
+        self.assertEqual(httpreq.headers['Authorization'],
+                b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
 
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
+        date = 'Tue, 27 Mar 2007 21:06:08 +0000'
         req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz', \
                 method='PUT', headers={
                     'User-Agent': 'curl/7.15.5',
                     'Host': 'static.johnsmith.net:8080',
-                    'Date': 'Tue, 27 Mar 2007 21:06:08 +0000',
+                    'Date': date,
                     'x-amz-acl': 'public-read',
                     'content-type': 'application/x-download',
                     'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
@@ -545,23 +580,25 @@ class S3TestCase(unittest.TestCase):
                     'Content-Encoding': 'gzip',
                     'Content-Length': '5913339',
                     })
-        httpreq = self.download_request(req, self.spider)
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+                b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
     def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
+        date = 'Tue, 27 Mar 2007 19:42:41 +0000'
         req = Request(
             ("s3://johnsmith/photos/my puppy.jpg"
              "?response-content-disposition=my puppy.jpg"),
             method='GET',
-            headers={
-                'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
-            })
-        httpreq = self.download_request(req, self.spider)
+            headers={'Date': date},
+            )
+        with self._mocked_date(date):
+            httpreq = self.download_request(req, self.spider)
         self.assertEqual(
             httpreq.headers['Authorization'],
-            'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
+            b'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
 
 
 class FTPTestCase(unittest.TestCase):
