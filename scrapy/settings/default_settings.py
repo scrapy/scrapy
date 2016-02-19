@@ -231,6 +231,8 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 
+S3_STORE_ACL = 'private'
+
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
 SPIDER_MIDDLEWARES = {}

@@ -82,7 +82,8 @@ class S3FilesStore(object):
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
 
-    POLICY = 'public-read'
+    POLICY = 'private'  # Overriden from settings.S3_STORE_ACL in
+                        # FilesPipeline.from_settings.
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -232,6 +233,7 @@ class FilesPipeline(MediaPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.POLICY = settings['S3_STORE_ACL']
 
         cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
         cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
