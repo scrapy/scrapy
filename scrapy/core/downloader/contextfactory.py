@@ -1,12 +1,11 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
 
-from scrapy import twisted_version
-
-if twisted_version >= (14, 0, 0):
+try:
 
     from zope.interface.declarations import implementer
 
+    # the following should be available from Twisted 14.0.0
     from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust
     from twisted.internet._sslverify import ClientTLSOptions
     from twisted.web.client import BrowserLikePolicyForHTTPS
@@ -69,8 +68,7 @@ if twisted_version >= (14, 0, 0):
                                             'method': self._ssl_method,
                                        })
 
-
-else:
+except ImportError:
 
     class ScrapyClientContextFactory(ClientContextFactory):
         "A SSL context factory which is more permissive against SSL bugs."
@@ -86,6 +84,4 @@ else:
             # Enable all workarounds to SSL bugs as documented by
             # http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
             ctx.set_options(SSL.OP_ALL)
-            if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
-                ClientTLSOptions(hostname, ctx)
             return ctx
