@@ -24,7 +24,7 @@ try:
         """
 
         def __init__(self, method=SSL.SSLv23_METHOD, *args, **kwargs):
-            super(BrowserLikePolicyForHTTPS, self).__init__(*args, **kwargs)
+            super(ScrapyClientContextFactory, self).__init__(*args, **kwargs)
             self._ssl_method = method
 
         def getCertificateOptions(self):
