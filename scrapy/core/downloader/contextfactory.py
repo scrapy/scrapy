@@ -7,47 +7,79 @@ if twisted_version >= (14, 0, 0):
 
     from zope.interface.declarations import implementer
 
-    from twisted.internet.ssl import optionsForClientTLS
+    from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust
+    from twisted.internet._sslverify import ClientTLSOptions
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
 
     @implementer(IPolicyForHTTPS)
     class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         """
-        Using Twisted recommended context factory for twisted.web.client.Agent
+        Non-peer-certificate verifying HTTPS context factory
 
-        Quoting:
-        "The default is to use a BrowserLikePolicyForHTTPS,
-        so unless you have special requirements you can leave this as-is."
+        Default OpenSSL method is TLS_METHOD (also called SSLv23_METHOD)
+        which allows TLS protocol negotiation
 
-        See http://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html
+        'A TLS/SSL connection established with [this method] may
+         understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols.'
         """
+
+        def __init__(self, method=SSL.SSLv23_METHOD, *args, **kwargs):
+            super(BrowserLikePolicyForHTTPS, self).__init__(*args, **kwargs)
+            self._ssl_method = method
+
+        def getCertificateOptions(self):
+            # setting verify=True will require you to provide CAs
+            # to verify against; in other words: it's not that simple
+            return CertificateOptions(verify=False, method=self._ssl_method)
+
+        # kept for old-style HTTP/1.0 downloader context twisted calls,
+        # e.g. connectSSL()
+        def getContext(self, hostname=None, port=None):
+            return self.getCertificateOptions().getContext()
+
+        def creatorForNetloc(self, hostname, port):
+            return ClientTLSOptions(hostname.decode("ascii"), self.getContext())
 
 
     @implementer(IPolicyForHTTPS)
-    class OpenSSLMethodContextFactory(ScrapyClientContextFactory):
+    class BrowserLikeContextFactory(ScrapyClientContextFactory):
+        """
+        Twisted-recommended context factory for web clients.
 
-        openssl_method = SSL.SSLv23_METHOD
+        Quoting http://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html:
+        "The default is to use a BrowserLikePolicyForHTTPS,
+        so unless you have special requirements you can leave this as-is."
 
+        creatorForNetloc() is the same as BrowserLikePolicyForHTTPS
+        except this context factory allows setting the TLS/SSL method to use.
+
+        Default OpenSSL method is TLS_METHOD (also called SSLv23_METHOD)
+        which allows TLS protocol negotiation.
+        """
         def creatorForNetloc(self, hostname, port):
+
+            # trustRoot set to platformTrust() will use the platform's root CAs.
+            #
+            # This means that a website like https://www.cacert.org will be rejected
+            # by default, since CAcert.org CA certificate is seldom shipped.
             return optionsForClientTLS(hostname.decode("ascii"),
-                                       trustRoot=self._trustRoot,
+                                       trustRoot=platformTrust(),
                                        extraCertificateOptions={
-                                            'method': self.openssl_method
+                                            'method': self._ssl_method,
                                        })
 
 
 else:
 
-    class OpenSSLMethodContextFactory(ClientContextFactory):
+    class ScrapyClientContextFactory(ClientContextFactory):
         "A SSL context factory which is more permissive against SSL bugs."
         # see https://github.com/scrapy/scrapy/issues/82
         # and https://github.com/scrapy/scrapy/issues/26
         # and https://github.com/scrapy/scrapy/issues/981
-        openssl_method = SSL.SSLv23_METHOD
 
-        def __init__(self):
-            self.method = self.openssl_method
+        def __init__(self, method=SSL.SSLv23_METHOD):
+            self.method = method
 
         def getContext(self, hostname=None, port=None):
             ctx = ClientContextFactory.getContext(self)
@@ -57,13 +89,3 @@ else:
             if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
                 ClientTLSOptions(hostname, ctx)
             return ctx
-
-    ScrapyClientContextFactory = OpenSSLMethodContextFactory
-
-
-class SSLv3ContextFactory(OpenSSLMethodContextFactory):
-    openssl_method = SSL.SSLv3_METHOD
-
-
-class TLSv1ContextFactory(OpenSSLMethodContextFactory):
-    openssl_method = SSL.TLSv1_METHOD

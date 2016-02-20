@@ -18,6 +18,7 @@ from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
+from scrapy.core.downloader.tls import openssl_methods, METHOD_TLS
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
@@ -31,8 +32,16 @@ class HTTP11DownloadHandler(object):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
+
+        self._sslMethod = openssl_methods[settings.get('DOWNLOADER_CLIENT_TLS_METHOD')]
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
-        self._contextFactory = self._contextFactoryClass()
+        # try method-aware context factory
+        try:
+            self._contextFactory = self._contextFactoryClass(method=self._sslMethod)
+        except TypeError:
+            # use defaults
+            self._contextFactory = self._contextFactoryClass()
+
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._disconnect_timeout = 1
