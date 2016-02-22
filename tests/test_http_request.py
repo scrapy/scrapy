@@ -86,7 +86,6 @@ class RequestTest(unittest.TestCase):
         r = self.request_class(url="http://www.scrapy.org/blank space")
         self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_url_encoding(self):
         r1 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")
         r2 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="latin1")
@@ -198,10 +197,9 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, b'')
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_default_encoding(self):
         # using default encoding (utf-8)
-        data = {'one': 'two', 'price': '\xc2\xa3 100'}
+        data = {b'one': b'two', b'price': b'\xc2\xa3 100'}
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
@@ -890,9 +888,9 @@ class XmlRpcRequestTest(RequestTest):
     def _test_request(self, **kwargs):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers[b'Content-Type'], b'text/xml')
-        self.assertEqual(r.body, to_bytes(xmlrpclib.dumps(**kwargs)))
-        self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))
+        self.assertEqual(r.body, to_bytes(xmlrpclib.dumps(**kwargs), r.encoding))
+        self.assertEqual(r.method, 'POST')
         self.assertTrue(r.dont_filter, True)
 
     def test_xmlrpc_dumps(self):
@@ -904,7 +902,6 @@ class XmlRpcRequestTest(RequestTest):
         self.assertRaises(TypeError, self._test_request)
         self.assertRaises(TypeError, self._test_request, params=(None,))
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_latin1(self):
         self._test_request(params=(u'pas\xa3',), encoding='latin')
 
