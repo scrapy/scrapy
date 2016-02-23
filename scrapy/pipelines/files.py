@@ -273,6 +273,14 @@ class FilesPipeline(MediaPipeline):
                     redirect_dfd = DeferredList(redirect_dlist, consumeErrors=1)
                     return redirect_dfd
 
+            logger.warning(
+                'File (code: %(status)s): Error downloading file from '
+                '%(request)s referred in <%(referer)s>',
+                {'status': response.status,
+                 'request': request, 'referer': referer},
+                extra={'spider': info.spider}
+            )
+
             raise FileException('download-error')
 
         if not response.body:
