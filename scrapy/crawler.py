@@ -3,6 +3,7 @@ import signal
 import logging
 import warnings
 
+import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
@@ -73,11 +74,21 @@ class Crawler(object):
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
-            exc = defer.fail()
+            # In Python 2 reraising an exception after yield discards
+            # the original traceback (see http://bugs.python.org/issue7563),
+            # so sys.exc_info() workaround is used.
+            # This workaround also works in Python 3, but it is not needed,
+            # and it is slower, so in Python 3 we use native `raise`.
+            if six.PY2:
+                exc_info = sys.exc_info()
+
             self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
-            yield exc
+
+            if six.PY2:
+                six.reraise(*exc_info)
+            raise
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
