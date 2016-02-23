@@ -105,6 +105,15 @@ class FileTestCase(unittest.TestCase):
         return self.assertFailure(d, IOError)
 
 
+class ContentLengthHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of the Content-Length
+    header from the request.
+    """
+    def render(self, request):
+        return request.requestHeaders.getRawHeaders(b"content-length")[0]
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
@@ -122,6 +131,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"contentlength", ContentLengthHeaderResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -207,6 +217,28 @@ class HttpTestCase(unittest.TestCase):
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b'example.com')
+        return d
+
+    def test_content_length_zero_bodyless_post_request_headers(self):
+        """Tests if "Content-Length: 0" is sent for bodyless POST requests.
+
+        This is not strictly required by HTTP RFCs but can cause trouble
+        for some web servers.
+        See:
+        https://github.com/scrapy/scrapy/issues/823
+        https://issues.apache.org/jira/browse/TS-2902
+        https://github.com/kennethreitz/requests/issues/405
+        https://bugs.python.org/issue14721
+        """
+        def _test(response):
+            self.assertEquals(response.body, b'0')
+
+        request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, b'0')
         return d
 
     def test_payload(self):
