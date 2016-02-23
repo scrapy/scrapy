@@ -241,13 +241,38 @@ class FilesPipeline(MediaPipeline):
         referer = referer_str(request)
 
         if response.status != 200:
-            logger.warning(
-                'File (code: %(status)s): Error downloading file from '
-                '%(request)s referred in <%(referer)s>',
-                {'status': response.status,
-                 'request': request, 'referer': referer},
-                extra={'spider': info.spider}
-            )
+
+            if response.status == 201:
+
+                try:
+                    loc = [response.headers['location']]
+                except:
+                    loc=""
+                if loc=="":
+                    logger.warning(
+                        'File (code: %(status)s): Status 201 received, no location '
+                        'parameter in headers for %(request)s referred in <%(referer)s>',
+                        {'status': response.status,
+                         'request': request, 'referer': referer},
+                        extra={'spider': info.spider}
+                    )
+                    raise FileException('No location field in 201 request headers')
+                else:
+                    logger.debug(
+                        'File (code: %(status)s): Status 201 received. Downloading '
+                        'resource marked by location parameter in the response headers for '
+                        '%(request)s referred in <%(referer)s>',
+                        {'status': response.status,
+                         'request': request, 'referer': referer},
+                        extra={'spider': info.spider}
+                    )
+                    reqs=[]
+                    for i in loc:
+                        reqs.append(Request(i))
+                    redirect_dlist = [self._process_request(r, info) for r in reqs]
+                    redirect_dfd = DeferredList(redirect_dlist, consumeErrors=1)
+                    return redirect_dfd
+
             raise FileException('download-error')
 
         if not response.body:
