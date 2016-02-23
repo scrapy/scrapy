@@ -197,13 +197,31 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, b'')
 
-    def test_default_encoding(self):
+    def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
         data = {b'one': b'two', b'price': b'\xc2\xa3 100'}
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
         self.assertQueryEqual(r2.body, b'price=%C2%A3+100&one=two')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
+    def test_default_encoding_textual_data(self):
+        # using default encoding (utf-8)
+        data = {'one': 'two', 'price': u'\u00a3 100'}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'price=%C2%A3+100&one=two')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
+    def test_default_encoding_mixed_data(self):
+        # using default encoding (utf-8)
+        data = {u'\u00b5one': b'two', b'price\xc2\xa3': u'\u00a3 100'}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'%C2%B5one=two&price%C2%A3=%C2%A3+100')
         self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
 
     def test_custom_encoding(self):
