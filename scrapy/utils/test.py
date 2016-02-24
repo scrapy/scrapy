@@ -24,7 +24,7 @@ def skip_if_no_boto():
     try:
         is_botocore()
     except NotConfigured as e:
-        raise SkipTest(e.message)
+        raise SkipTest(e)
 
 def get_s3_content_and_delete(bucket, path, with_key=False):
     """ Get content from s3 key, and delete key afterwards.
