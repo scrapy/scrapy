@@ -83,6 +83,8 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
+DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
+                                     # also allowing negotiation
 
 DOWNLOADER_MIDDLEWARES = {}
 
