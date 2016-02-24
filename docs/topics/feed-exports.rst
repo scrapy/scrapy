@@ -185,9 +185,6 @@ passed through the following settings:
  * :setting:`AWS_ACCESS_KEY_ID`
  * :setting:`AWS_SECRET_ACCESS_KEY`
 
-Default access policy for uploaded files is ``private``, it can be changed
-(for example, to ``public-read``) via :setting:`S3_STORE_ACL`.
-
 .. _topics-feed-storage-stdout:
 
 Standard output

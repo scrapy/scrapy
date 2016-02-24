@@ -607,6 +607,15 @@ For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
 
+.. setting:: FILES_STORE_S3_ACL
+
+FILES_STORE_S3_ACL
+------------------
+
+Default: ``'private'``
+
+S3-specific access control policy (ACL) for S3 files store.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -925,15 +934,6 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     While the default value is ``False`` for historical reasons,
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
-
-.. setting:: S3_STORE_ACL
-
-S3_STORE_ACL
-------------
-
-Default: ``'private'``
-
-S3-specific access control policy (ACL) for uploaded files.
 
 .. setting:: SCHEDULER
 
