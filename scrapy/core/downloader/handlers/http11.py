@@ -43,9 +43,10 @@ class HTTP11DownloadHandler(object):
             # use context factory defaults
             self._contextFactory = self._contextFactoryClass()
             msg = """
-    You are using a context factory class that does not accept the `method` argument
-    (type OpenSSL.SSL method, e.g. OpenSSL.SSL.SSLv23_METHOD).
-    Please upgrade your context factory class to handle or ignore it."""
+ '%s' does not accept `method` argument (type OpenSSL.SSL method,\
+ e.g. OpenSSL.SSL.SSLv23_METHOD).\
+ Please upgrade your context factory class to handle it or ignore it.""" % (
+                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
