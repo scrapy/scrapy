@@ -4,6 +4,7 @@ import re
 import logging
 from io import BytesIO
 from time import time
+import warnings
 from six.moves.urllib.parse import urldefrag
 
 from zope.interface import implementer
@@ -18,7 +19,7 @@ from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
-from scrapy.core.downloader.tls import openssl_methods, METHOD_TLS
+from scrapy.core.downloader.tls import openssl_methods
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
@@ -39,9 +40,12 @@ class HTTP11DownloadHandler(object):
         try:
             self._contextFactory = self._contextFactoryClass(method=self._sslMethod)
         except TypeError:
-            # use defaults
+            # use context factory defaults
             self._contextFactory = self._contextFactoryClass()
-
+            warnings.warn("""
+    You are using a context factory class that does not accept the `method` argument
+    (type OpenSSL.SSL method, e.g. OpenSSL.SSL.SSLv23_METHOD).
+    Please upgrade your context factory class to handle or ignore it.""")
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._disconnect_timeout = 1
