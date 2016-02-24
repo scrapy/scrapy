@@ -607,6 +607,15 @@ For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
 
+.. setting:: FILES_STORE_S3_ACL
+
+FILES_STORE_S3_ACL
+------------------
+
+Default: ``'private'``
+
+S3-specific access control policy (ACL) for S3 files store.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES

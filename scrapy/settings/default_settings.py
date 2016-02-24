@@ -156,6 +156,8 @@ FEED_EXPORTERS_BASE = {
     'pickle': 'scrapy.exporters.PickleItemExporter',
 }
 
+FILES_STORE_S3_ACL = 'private'
+
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
