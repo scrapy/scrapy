@@ -7,12 +7,12 @@ branches:
     - /^\d\.\d+$/
     - /^\d\.\d+\.\d+(rc\d+|dev\d+)?$/
 env:
- #- TOXENV=py27
+ - TOXENV=py27
  - TOXENV=precise
  - TOXENV=trusty
- #- TOXENV=py33
- #- TOXENV=py35
- #- TOXENV=docs
+ - TOXENV=py33
+ - TOXENV=py35
+ - TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
 script: tox
