@@ -156,6 +156,8 @@ FEED_EXPORTERS_BASE = {
     'pickle': 'scrapy.exporters.PickleItemExporter',
 }
 
+FILES_STORE_S3_ACL = 'private'
+
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
@@ -230,8 +232,6 @@ ROBOTSTXT_OBEY = False
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
-
-S3_STORE_ACL = 'private'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
