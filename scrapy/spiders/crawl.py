@@ -36,6 +36,9 @@ class CrawlSpider(Spider):
     rules = ()
 
     def __init__(self, *a, **kw):
+        self._follow_links = False
+        if hasattr(self, 'settings'):
+            self._follow_links = self.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
         super(CrawlSpider, self).__init__(*a, **kw)
         self._compile_rules()
 
@@ -90,14 +93,3 @@ class CrawlSpider(Spider):
             rule.callback = get_method(rule.callback)
             rule.process_links = get_method(rule.process_links)
             rule.process_request = get_method(rule.process_request)
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(CrawlSpider, cls).from_crawler(crawler, *args, **kwargs)
-        spider._follow_links = crawler.settings.getbool(
-            'CRAWLSPIDER_FOLLOW_LINKS', True)
-        return spider
-
-    def set_crawler(self, crawler):
-        super(CrawlSpider, self).set_crawler(crawler)
-        self._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
