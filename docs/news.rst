@@ -26,6 +26,9 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - Selectors were extracted to the parsel_ library (:issue:`1409`). This means
     you can use Scrapy Selectors without Scrapy and also upgrade the
     selectors engine without needing to upgrade Scrapy.
+  - HTTPS downloader now does TLS protocol negotiation by default,
+    instead of forcing TLS 1.0. You can also set the SSL/TLS method
+    using the new :setting:`DOWNLOADER_CLIENT_TLS_METHOD`.
 
 - These bug fixes may require your attention:
 
@@ -85,6 +88,10 @@ Additional New Features and Enhancements
   interval (:issue:`1282`).
 - Download handlers are now lazy-loaded on first request using their
   scheme (:issue:`1390`, :issue:`1421`).
+- HTTPS download handlers do not force TLS 1.0 anymore; instead,
+  OpenSSL's ``SSLv23_method()/TLS_method()`` is used allowing to try
+  negotiating with the remote hosts the highest TLS protocol version
+  it can (:issue:`1794`, :issue:`1629`).
 - ``RedirectMiddleware`` now skips the status codes from
   ``handle_httpstatus_list`` on spider attribute
   or in ``Request``'s ``meta`` key (:issue:`1334`, :issue:`1364`,
