@@ -366,6 +366,78 @@ Default: ``'scrapy.core.downloader.Downloader'``
 
 The downloader to use for crawling.
 
+.. setting:: DOWNLOADER_HTTPCLIENTFACTORY
+
+DOWNLOADER_HTTPCLIENTFACTORY
+----------------------------
+
+Default: ``'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'``
+
+Defines a Twisted ``protocol.ClientFactory``  class to use for HTTP/1.0
+connections (for ``HTTP10DownloadHandler``).
+
+.. note::
+
+    HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
+    unless you use Twisted<11.1, or if you really want to use HTTP/1.0
+    and override :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme
+    accordingly, i.e. to
+    ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+
+.. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
+
+DOWNLOADER_CLIENTCONTEXTFACTORY
+-------------------------------
+
+Default: ``'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'``
+
+Represents the classpath to the ContextFactory to use.
+
+Here, "ContextFactory" is a Twisted term for SSL/TLS contexts, defining
+the TLS/SSL protocol version to use, whether to do certificate verification,
+or even enable client-side authentication (and various other things).
+
+.. note::
+
+    Scrapy default context factory **does NOT perform remote server
+    certificate verification**. This is usually fine for web scraping.
+
+    If you do need remote server certificate verification enabled,
+    Scrapy also has another context factory class that you can set,
+    ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
+    which uses the platform's certificates to validate remote endpoints.
+    **This is only available if you use Twisted>=14.0.**
+
+If you do use a custom ContextFactory, make sure it accepts a ``method``
+parameter at init (this is the ``OpenSSL.SSL`` method mapping
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_METHOD
+
+DOWNLOADER_CLIENT_TLS_METHOD
+----------------------------
+
+Default: ``'TLS'``
+
+Use this setting to customize the TLS/SSL method used by the default
+HTTP/1.1 downloader.
+
+This setting must be one of these string values:
+
+- ``'TLS'``: maps to OpenSSL's ``TLS_method()`` (a.k.a ``SSLv23_method()``),
+  which allows protocol negotiation, starting from the highest supported
+  by the platform; **default, recommended**
+- ``'TLSv1.0'``: this value forces HTTPS connections to use TLS version 1.0 ;
+  set this if you want the behavior of Scrapy<1.1
+- ``'TLSv1.1'``: forces TLS version 1.1
+- ``'TLSv1.2'``: forces TLS version 1.2
+- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
+
+.. note::
+
+    We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
+    or above (Twisted>=14.0 if you can).
+
 .. setting:: DOWNLOADER_MIDDLEWARES
 
 DOWNLOADER_MIDDLEWARES
