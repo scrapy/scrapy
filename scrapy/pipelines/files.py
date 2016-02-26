@@ -28,6 +28,7 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
+from twisted.internet.defer import DeferredList
 
 logger = logging.getLogger(__name__)
 
@@ -244,10 +245,11 @@ class FilesPipeline(MediaPipeline):
 
             if response.status == 201:
 
-                try:
-                    loc = [response.headers['location']]
-                except:
+                if 'location' in response.headers:
+                    loc=response.headers['location']
+                else:
                     loc=""
+
                 if loc=="":
                     logger.warning(
                         'File (code: %(status)s): Status 201 received, no location '
@@ -266,10 +268,8 @@ class FilesPipeline(MediaPipeline):
                          'request': request, 'referer': referer},
                         extra={'spider': info.spider}
                     )
-                    reqs=[]
-                    for i in loc:
-                        reqs.append(Request(i))
-                    redirect_dlist = [self._process_request(r, info) for r in reqs]
+
+                    redirect_dlist = [self._process_request(Request(loc), info)]
                     redirect_dfd = DeferredList(redirect_dlist, consumeErrors=1)
                     return redirect_dfd
 

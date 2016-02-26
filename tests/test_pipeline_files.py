@@ -13,6 +13,8 @@ from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
+from scrapy.utils.misc import arg_to_iter
+from twisted.internet.defer import DeferredList
 
 from tests import mock
 
@@ -76,6 +78,31 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         result = yield self.pipeline.process_item(item, None)
         self.assertEqual(result['files'][0]['checksum'], 'abc')
+
+        for p in patchers:
+            p.stop()
+
+    @defer.inlineCallbacks
+    def test_201_request_no_location(self):
+
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, 'get_media_requests',
+                              return_value=[_prepare_request_object_201_no_location(item_url)])
+        ]
+
+        for p in patchers:
+            p.start()
+
+        info = self.pipeline.spiderinfo
+        requests = arg_to_iter(self.pipeline.get_media_requests(item, info))
+        dlist = [self.pipeline._process_request(r, info) for r in requests]
+        dfd = DeferredList(dlist, consumeErrors=False)
+        result = yield dfd
+        print result
+        failure = result[0][1]
+        self.assertEqual(failure.getErrorMessage(), "No location field in 201 request headers")
 
         for p in patchers:
             p.stop()
@@ -194,6 +221,12 @@ def _prepare_request_object(item_url):
     return Request(
         item_url,
         meta={'response': Response(item_url, status=200, body=b'data')})
+
+def _prepare_request_object_201_no_location(item_url):
+    return Request(
+        item_url,
+        meta={'response': Response(item_url, status=201, body=b'data')})
+
 
 
 if __name__ == "__main__":
