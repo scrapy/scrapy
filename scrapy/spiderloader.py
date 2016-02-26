@@ -17,13 +17,16 @@ class SpiderLoader(object):
     def __init__(self, settings):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self._spiders = {}
-        for name in self.spider_modules:
-            for module in walk_modules(name):
-                self._load_spiders(module)
-
+        self._load_all_spiders()
+            
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
             self._spiders[spcls.name] = spcls
+
+    def _load_all_spiders(self):
+        for name in self.spider_modules:
+            for module in walk_modules(name):
+                self._load_spiders(module)
 
     @classmethod
     def from_settings(cls, settings):
