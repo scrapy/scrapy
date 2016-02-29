@@ -46,6 +46,10 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     If you use ``PythonItemExporter``, you may want to update your code to
     disable binary mode which is now deprecated.
   - Accept XML node names containing dots as valid (:issue:`1533`).
+  - When uploading files or images to S3 (with ``FilesPipeline`` or
+    ``ImagesPipeline``), the default ACL policy is now "private" instead
+    of "public" **Warning: backwards incompatible!**.
+    You can use :setting:`FILES_STORE_S3_ACL` to change it.
 
 Keep reading for more details on other improvements and bug fixes.
 
@@ -64,7 +68,6 @@ Almost all builtin extensions/middlewares are expected to work. However, we are 
 some limitations in Python 3:
 
 - Scrapy doesn't work yet in Windows with Python 3 (non-Python 3 ported Twisted dependency)
-- S3 downloads are not supported (see :issue:`1718`)
 - Sending emails is not supported (non-Python 3 ported Twisted dependency)
 - FTP download handler is not supported (non-Python 3 ported Twisted
   dependency)
