@@ -107,15 +107,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = (
-            b'CONNECT ' +
-            to_bytes(self._tunneledHost, encoding='ascii') + b':' +
-            to_bytes(str(self._tunneledPort)) +
-            b' HTTP/1.1\r\n')
-        if self._proxyAuthHeader:
-            tunnelReq += \
-                b'Proxy-Authorization: ' + self._proxyAuthHeader + b'\r\n'
-        tunnelReq += b'\r\n'
+        tunnelReq = tunnel_request_data(self._tunneledHost, self._tunneledPort,
+                                        self._proxyAuthHeader)
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
@@ -147,6 +140,29 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
+
+
+def tunnel_request_data(host, port, proxy_auth_header=None):
+    r"""
+    Return binary content of a CONNECT request.
+
+    >>> from scrapy.utils.python import to_native_str as s
+    >>> s(tunnel_request_data("example.com", 8080))
+    'CONNECT example.com:8080 HTTP/1.1\r\n\r\n'
+    >>> s(tunnel_request_data("example.com", 8080, b"123"))
+    'CONNECT example.com:8080 HTTP/1.1\r\nProxy-Authorization: 123\r\n\r\n'
+    >>> s(tunnel_request_data(b"example.com", "8090"))
+    'CONNECT example.com:8090 HTTP/1.1\r\n\r\n'
+    """
+    tunnel_req = (
+        b'CONNECT ' +
+        to_bytes(host, encoding='ascii') + b':' +
+        to_bytes(str(port)) +
+        b' HTTP/1.1\r\n')
+    if proxy_auth_header:
+        tunnel_req += b'Proxy-Authorization: ' + proxy_auth_header + b'\r\n'
+    tunnel_req += b'\r\n'
+    return tunnel_req
 
 
 class TunnelingAgent(Agent):
