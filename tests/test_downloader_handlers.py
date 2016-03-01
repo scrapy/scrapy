@@ -182,17 +182,19 @@ class HttpTestCase(unittest.TestCase):
         return d
 
     @defer.inlineCallbacks
-    def test_timeout_download_from_spider(self):
-        if self.scheme == 'https':
-            raise unittest.SkipTest(
-                'test_timeout_download_from_spider skipped under https')
+    def test_timeout_download_from_spider_nodata_rcvd(self):
+        # client connects but no data is received
         spider = Spider('foo')
         meta = {'download_timeout': 0.2}
-        # client connects but no data is received
         request = Request(self.getURL('wait'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+
+    @defer.inlineCallbacks
+    def test_timeout_download_from_spider_server_hangs(self):
         # client connects, server send headers and some body bytes but hangs
+        spider = Spider('foo')
+        meta = {'download_timeout': 0.2}
         request = Request(self.getURL('hang-after-headers'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)

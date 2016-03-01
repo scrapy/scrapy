@@ -83,6 +83,11 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def timeout(self):
         self.transport.loseConnection()
+
+        # transport cleanup needed for HTTPS connections
+        if self.factory.url.startswith(b'https'):
+            self.transport.stopProducing()
+
         self.factory.noPage(\
                 defer.TimeoutError("Getting %s took longer than %s seconds." % \
                 (self.factory.url, self.factory.timeout)))
