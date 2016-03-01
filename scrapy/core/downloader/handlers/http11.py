@@ -209,6 +209,7 @@ class ScrapyAgent(object):
         self._pool = pool
         self._maxsize = maxsize
         self._warnsize = warnsize
+        self._txresponse = None
 
     def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
@@ -275,6 +276,11 @@ class ScrapyAgent(object):
         if self._timeout_cl.active():
             self._timeout_cl.cancel()
             return result
+        # needed for HTTPS requests, otherwise _ResponseReader doesn't
+        # receive connectionLost()
+        if self._txresponse:
+            self._txresponse._transport.stopProducing()
+
         raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
 
     def _cb_latency(self, result, request, start_time):
@@ -310,6 +316,10 @@ class ScrapyAgent(object):
 
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(_ResponseReader(d, txresponse, request, maxsize, warnsize))
+
+        # save response for timeouts
+        self._txresponse = txresponse
+
         return d
 
     def _cb_bodydone(self, result, request, url):
