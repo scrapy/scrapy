@@ -635,11 +635,11 @@ Setting :setting:`DUPEFILTER_DEBUG` to ``True`` will make it log all duplicate r
 EDITOR
 ------
 
-Default: `depends on the environment`
+Default: ``vi`` (on Unix systems) or the IDLE editor (on Windows)
 
-The editor to use for editing spiders with the :command:`edit` command. It
-defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
-to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
+The editor to use for editing spiders with the :command:`edit` command.
+Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
+command will prefer it over the default setting.
 
 .. setting:: EXTENSIONS
 
