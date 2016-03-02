@@ -74,7 +74,7 @@ Windows
   Be sure you download the architecture (win32 or amd64) that matches your system
 
 * *(Only required for Python<2.7.9)* Install `pip`_ from
-  https://pip.pypa.io/en/latest/installing.html
+  https://pip.pypa.io/en/latest/installing/
 
   Now open a Command prompt to check ``pip`` is installed correctly:: 
 
@@ -171,9 +171,9 @@ After any of these workarounds you should be able to install Scrapy::
   pip install Scrapy
 
 .. _Python: https://www.python.org/
-.. _pip: https://pip.pypa.io/en/latest/installing.html
-.. _easy_install: http://pypi.python.org/pypi/setuptools
-.. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
+.. _pip: https://pip.pypa.io/en/latest/installing/
+.. _easy_install: https://pypi.python.org/pypi/setuptools
+.. _Control Panel: https://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/
 .. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL
 .. _setuptools: https://pypi.python.org/pypi/setuptools

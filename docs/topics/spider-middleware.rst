@@ -211,7 +211,7 @@ HttpErrorMiddleware
 According to the `HTTP standard`_, successful responses are those whose
 status codes are in the 200-300 range.
 
-.. _HTTP standard: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+.. _HTTP standard: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
 If you still want to process response codes outside that range, you can
 specify which response codes the spider is able to handle using the
@@ -238,7 +238,7 @@ responses, unless you really know what you're doing.
 
 For more information see: `HTTP Status Code Definitions`_.
 
-.. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+.. _HTTP Status Code Definitions: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
 HttpErrorMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

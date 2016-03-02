@@ -22,7 +22,7 @@ Deferred signal handlers
 Some signals support returning `Twisted deferreds`_ from their handlers, see
 the :ref:`topics-signals-ref` below to know which ones.
 
-.. _Twisted deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
+.. _Twisted deferreds: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 .. _topics-signals-ref:
 
@@ -258,4 +258,4 @@ response_downloaded
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. _Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

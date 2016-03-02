@@ -271,4 +271,4 @@ class (which they all inherit from).
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
 
-.. _reactor: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
+.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

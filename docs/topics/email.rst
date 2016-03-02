@@ -15,7 +15,7 @@ simple API for sending attachments and it's very easy to configure, with a few
 :ref:`settings <topics-email-settings>`.
 
 .. _smtplib: https://docs.python.org/2/library/smtplib.html
-.. _Twisted non-blocking IO: http://twistedmatrix.com/documents/current/core/howto/defer-intro.html
+.. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 
 Quick example
 =============

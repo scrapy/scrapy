@@ -164,4 +164,4 @@ elements.
 or tags which Therefer   in page HTML
 sources may on Firebug inspects the live DOM
 
-.. _has been shut down by Google: http://searchenginewatch.com/sew/news/2096661/google-directory-shut
+.. _has been shut down by Google: https://searchenginewatch.com/sew/news/2096661/google-directory-shut

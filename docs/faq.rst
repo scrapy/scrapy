@@ -77,8 +77,8 @@ Scrapy crashes with: ImportError: No module named win32api
 
 You need to install `pywin32`_ because of `this Twisted bug`_.
 
-.. _pywin32: http://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
+.. _pywin32: https://sourceforge.net/projects/pywin32/
+.. _this Twisted bug: https://twistedmatrix.com/trac/ticket/3707
 
 How can I simulate a user login in my spider?
 ---------------------------------------------
@@ -123,7 +123,7 @@ Why does Scrapy download pages in English instead of my native language?
 Try changing the default `Accept-Language`_ request header by overriding the
 :setting:`DEFAULT_REQUEST_HEADERS` setting.
 
-.. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
+.. _Accept-Language: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
 
 Where can I find some example Scrapy projects?
 ----------------------------------------------
@@ -282,7 +282,7 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
-.. _user agents: http://en.wikipedia.org/wiki/User_agent
-.. _LIFO: http://en.wikipedia.org/wiki/LIFO
-.. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search
-.. _BFO order: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _user agents: https://en.wikipedia.org/wiki/User_agent
+.. _LIFO: https://en.wikipedia.org/wiki/LIFO
+.. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

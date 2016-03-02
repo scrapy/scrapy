@@ -330,7 +330,7 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
         'csv': None,
     }
 
-.. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-.. _Amazon S3: http://aws.amazon.com/s3/
+.. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+.. _Amazon S3: https://aws.amazon.com/s3/
 .. _boto: https://github.com/boto/boto
 .. _botocore: https://github.com/boto/botocore

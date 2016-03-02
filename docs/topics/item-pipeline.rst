@@ -160,8 +160,8 @@ method and how to clean up the resources properly.
             self.db[self.collection_name].insert(dict(item))
             return item
 
-.. _MongoDB: http://www.mongodb.org/
-.. _pymongo: http://api.mongodb.org/python/current/
+.. _MongoDB: https://www.mongodb.org/
+.. _pymongo: https://api.mongodb.org/python/current/
 
 Duplicates filter
 -----------------
