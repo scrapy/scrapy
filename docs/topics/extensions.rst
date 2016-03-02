@@ -21,7 +21,7 @@ avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
 `GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
 
-.. _Google Sitemaps: http://en.wikipedia.org/wiki/Sitemaps
+.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
 
 Loading & activating extensions
 ===============================
@@ -355,8 +355,8 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 
     kill -QUIT <pid>
 
-.. _SIGUSR2: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-.. _SIGQUIT: http://en.wikipedia.org/wiki/SIGQUIT
+.. _SIGUSR2: https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+.. _SIGQUIT: https://en.wikipedia.org/wiki/SIGQUIT
 
 Debugger extension
 ~~~~~~~~~~~~~~~~~~

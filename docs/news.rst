@@ -403,10 +403,11 @@ Outsourced packages
 |                                     | :ref:`topics-deploy`)               |
 +-------------------------------------+-------------------------------------+
 | scrapy.contrib.djangoitem           | `scrapy-djangoitem <https://github. |
-|                                     | com/scrapy/scrapy-djangoitem>`_     |
+|                                     | com/scrapy-plugins/scrapy-djangoite |
+|                                     | m>`_                                |
 +-------------------------------------+-------------------------------------+
 | scrapy.webservice                   | `scrapy-jsonrpc <https://github.com |
-|                                     | /scrapy/scrapy-jsonrpc>`_           |
+|                                     | /scrapy-plugins/scrapy-jsonrpc>`_   |
 +-------------------------------------+-------------------------------------+
 
 `scrapy.contrib_exp` and `scrapy.contrib` dissolutions
@@ -1186,7 +1187,7 @@ Scrapy changes:
 - nested items now fully supported in JSON and JSONLines exporters
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
 - decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that module
-- dropped support for Python 2.5. See http://blog.scrapinghub.com/2012/02/27/scrapy-0-15-dropping-support-for-python-2-5/
+- dropped support for Python 2.5. See https://blog.scrapinghub.com/2012/02/27/scrapy-0-15-dropping-support-for-python-2-5/
 - dropped support for Twisted 2.5
 - added :setting:`REFERER_ENABLED` setting, to control referer middleware
 - changed default user agent to: ``Scrapy/VERSION (+http://scrapy.org)``
@@ -1535,7 +1536,7 @@ First release of Scrapy.
 
 
 .. _AJAX crawleable urls: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started?csw=1
-.. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
+.. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _scrapely: https://github.com/scrapy/scrapely
 .. _marshal: https://docs.python.org/2/library/marshal.html

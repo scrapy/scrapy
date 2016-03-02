@@ -138,7 +138,7 @@ Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-http://scrapy.org page, and then proceed to scrape the http://reddit.com
+http://scrapy.org page, and then proceed to scrape the https://reddit.com
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.

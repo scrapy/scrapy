@@ -120,7 +120,7 @@ Scrapy Contrib
 ==============
 
 Scrapy contrib shares a similar rationale as Django contrib, which is explained
-in `this post <http://jacobian.org/writing/what-is-django-contrib/>`_. If you
+in `this post <https://jacobian.org/writing/what-is-django-contrib/>`_. If you
 are working on a new functionality, please follow that rationale to decide
 whether it should be a Scrapy contrib. If unsure, you can ask in
 `scrapy-users`_.
@@ -189,7 +189,7 @@ And their unit-tests are in::
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
+.. _Twisted unit-testing framework: https://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
