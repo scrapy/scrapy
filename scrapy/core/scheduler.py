@@ -3,7 +3,6 @@ import json
 import logging
 from os.path import join, exists
 
-from queuelib import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
@@ -13,9 +12,11 @@ logger = logging.getLogger(__name__)
 
 class Scheduler(object):
 
-    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False, stats=None):
+    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
+                 logunser=False, stats=None, pqclass=None):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
+        self.pqclass = pqclass
         self.dqclass = dqclass
         self.mqclass = mqclass
         self.logunser = logunser
@@ -26,17 +27,19 @@ class Scheduler(object):
         settings = crawler.settings
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = dupefilter_cls.from_settings(settings)
+        pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS')
-        return cls(dupefilter, job_dir(settings), dqclass, mqclass, logunser, crawler.stats)
+        return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
+                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
     def has_pending_requests(self):
         return len(self) > 0
 
     def open(self, spider):
         self.spider = spider
-        self.mqs = PriorityQueue(self._newmq)
+        self.mqs = self.pqclass(self._newmq)
         self.dqs = self._dq() if self.dqdir else None
         return self.df.open()
 
@@ -112,7 +115,7 @@ class Scheduler(object):
                 prios = json.load(f)
         else:
             prios = ()
-        q = PriorityQueue(self._newdq, startprios=prios)
+        q = self.pqclass(self._newdq, startprios=prios)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})
