@@ -54,6 +54,32 @@ class RetryTest(unittest.TestCase):
         r = self.mw.process_exception(req, DNSLookupError(), self.spider)
         assert r is None
 
+    def test_retry_empty(self):
+        # Test when response is empty
+        req = Request('http://www.scrapytest.org/empty', meta={'retry_empty': True})
+        rsp = Response('http://www.scrapytest.org/empty', body=b'')
+
+        # first retry
+        req = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req, Request)
+        self.assertEqual(req.meta['retry_times'], 1)
+
+        # second retry
+        req = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req, Request)
+        self.assertEqual(req.meta['retry_times'], 2)
+
+        # discard it
+        assert self.mw.process_response(req, rsp, self.spider) is rsp
+
+        # Test when response is non-empty
+        req = Request('http://www.scrapytest.org/not_empty', meta={'retry_empty': True})
+        rsp = Response('http://www.scrapytest.org/not_empty', body=b'something')
+
+        # first retry
+        r = self.mw.process_response(req, rsp, self.spider)
+        assert r is rsp
+
     def test_503(self):
         req = Request('http://www.scrapytest.org/503')
         rsp = Response('http://www.scrapytest.org/503', body=b'', status=503)

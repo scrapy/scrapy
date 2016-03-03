@@ -51,6 +51,9 @@ class RetryMiddleware(object):
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
+        if len(response.body) == 0 and request.meta.get('retry_empty', False):
+            reason = "Empty response"
+            return self._retry(request, reason, spider) or response
         return response
 
     def process_exception(self, request, exception, spider):
