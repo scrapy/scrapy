@@ -33,11 +33,13 @@ from io import BytesIO
 from six.moves.urllib.parse import urlparse, unquote
 
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
+from twisted.protocols.ftp import FTPClient, FTPFileListProtocol, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator
 
 from scrapy.http import Response
+from scrapy.http.response.ftplist import FTPListResponse
 from scrapy.responsetypes import responsetypes
+
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
@@ -55,6 +57,7 @@ class ReceivedDataProtocol(Protocol):
 
     def close(self):
         self.body.close() if self.filename else self.body.seek(0)
+
 
 _CODE_RE = re.compile("\d+")
 class FTPDownloadHandler(object):
@@ -77,14 +80,31 @@ class FTPDownloadHandler(object):
 
     def gotClient(self, client, request, filepath):
         self.client = client
-        protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
+        if filepath == "":
+            filepath = "/"
+        if filepath.endswith('/'):
+            protocol = FTPFileListProtocol()
+            return client.list(filepath, protocol)\
+                .addCallbacks(callback=self._build_list_response,
+                        callbackArgs=(request, protocol),
+                        errback=self._failed,
+                        errbackArgs=(request,))
+        else:
+            protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
+            return client.retrieveFile(filepath, protocol)\
+                .addCallbacks(callback=self._build_file_response,
                         callbackArgs=(request, protocol),
                         errback=self._failed,
                         errbackArgs=(request,))
 
-    def _build_response(self, result, request, protocol):
+    def _build_list_response(self, result, request, protocol):
+        self.result = result
+        body = ""
+        headers = {"size": "%d" % len(protocol.files)}
+        return FTPListResponse(url=request.url, status=200, body=body,
+                               headers=headers, files=protocol.files)
+
+    def _build_file_response(self, result, request, protocol):
         self.result = result
         respcls = responsetypes.from_args(url=request.url)
         protocol.close()
@@ -101,4 +121,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-
