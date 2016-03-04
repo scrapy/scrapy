@@ -40,8 +40,8 @@ For a complete reference of the selectors API see
 .. _lxml: http://lxml.de/
 .. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
-.. _XPath: http://www.w3.org/TR/xpath
-.. _CSS: http://www.w3.org/TR/selectors
+.. _XPath: https://www.w3.org/TR/xpath
+.. _CSS: https://www.w3.org/TR/selectors
 
 
 Using selectors
@@ -281,7 +281,7 @@ Another common case would be to extract all direct ``<p>`` children::
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
 
-.. _Location Paths: http://www.w3.org/TR/xpath#location-paths
+.. _Location Paths: https://www.w3.org/TR/xpath#location-paths
 
 Using EXSLT extensions
 ----------------------
@@ -439,7 +439,7 @@ you may want to take a look first at this `XPath tutorial`_.
 
 
 .. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`this post from ScrapingHub's blog`: http://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
 
 
 Using text nodes in a condition
@@ -481,7 +481,7 @@ But using the ``.`` to mean the node, works::
     >>> sel.xpath("//a[contains(., 'Next Page')]").extract()
     [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
+.. _`XPath string function`: https://www.w3.org/TR/xpath/#section-String-Functions
 
 Beware of the difference between //node[1] and (//node)[1]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

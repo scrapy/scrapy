@@ -300,7 +300,7 @@ HttpAuthMiddleware
 
             # .. rest of the spider code omitted ...
 
-.. _Basic access authentication: http://en.wikipedia.org/wiki/Basic_access_authentication
+.. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
 
 HttpCacheMiddleware
@@ -390,9 +390,9 @@ what is implemented:
 
 what is missing:
 
-* `Pragma: no-cache` support http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
-* `Vary` header support http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
-* Invalidation after updates or deletes http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
+* `Pragma: no-cache` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+* `Vary` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+* Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
 * ... probably others ..
 
 In order to use this policy, set:
@@ -464,7 +464,7 @@ In order to use this storage backend:
 * set :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.LeveldbCacheStorage``
 * install `LevelDB python bindings`_ like ``pip install leveldb``
 
-.. _LevelDB: http://code.google.com/p/leveldb/
+.. _LevelDB: https://github.com/google/leveldb
 .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
 
@@ -964,6 +964,6 @@ Default: ``"latin-1"``
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
-.. _DBM: http://en.wikipedia.org/wiki/Dbm
+.. _DBM: https://en.wikipedia.org/wiki/Dbm
 .. _anydbm: https://docs.python.org/2/library/anydbm.html
-.. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
+.. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding

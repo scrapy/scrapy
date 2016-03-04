@@ -143,7 +143,7 @@ Supported Storage
 File system is currently the only officially supported storage, but there is
 also (undocumented) support for storing files in `Amazon S3`_.
 
-.. _Amazon S3: http://aws.amazon.com/s3/
+.. _Amazon S3: https://aws.amazon.com/s3/
 
 File system storage
 -------------------
@@ -223,7 +223,7 @@ Where:
 
 * ``<image_id>`` is the `SHA1 hash`_ of the image url
 
-.. _SHA1 hash: http://en.wikipedia.org/wiki/SHA_hash_functions
+.. _SHA1 hash: https://en.wikipedia.org/wiki/SHA_hash_functions
 
 Example of image files stored using ``small`` and ``big`` thumbnail names::
 
@@ -390,5 +390,5 @@ above::
             item['image_paths'] = image_paths
             return item
 
-.. _Twisted Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
-.. _MD5 hash: http://en.wikipedia.org/wiki/MD5
+.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _MD5 hash: https://en.wikipedia.org/wiki/MD5

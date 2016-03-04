@@ -7,7 +7,7 @@ Scrapy Tutorial
 In this tutorial, we'll assume that Scrapy is already installed on your system.
 If that's not the case, see :ref:`intro-install`.
 
-We are going to use `Open directory project (dmoz) <http://www.dmoz.org/>`_ as
+We are going to use `Open directory project (dmoz) <https://www.dmoz.org/>`_ as
 our example domain to scrape.
 
 This tutorial will walk you through these tasks:
@@ -191,8 +191,8 @@ based on `XPath`_ or `CSS`_ expressions called :ref:`Scrapy Selectors
 <topics-selectors>`.  For more information about selectors and other extraction
 mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
 
-.. _XPath: http://www.w3.org/TR/xpath
-.. _CSS: http://www.w3.org/TR/selectors
+.. _XPath: https://www.w3.org/TR/xpath
+.. _CSS: https://www.w3.org/TR/selectors
 
 Here are some examples of XPath expressions and their meanings:
 
@@ -544,5 +544,5 @@ Then, we recommend you continue by playing with an example project (see
 :ref:`intro-examples`), and then continue with the section
 :ref:`section-basics`.
 
-.. _JSON: http://en.wikipedia.org/wiki/JSON
+.. _JSON: https://en.wikipedia.org/wiki/JSON
 .. _dirbot: https://github.com/scrapy/dirbot
