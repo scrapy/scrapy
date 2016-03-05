@@ -33,7 +33,7 @@ Scrapy is supported under Python 2.7 only.
 Python 2.6 support was dropped starting at Scrapy 0.20.
 
 Does Scrapy work with Python 3?
----------------------------------
+-------------------------------
 
 No, but there are plans to support Python 3.3+.
 At the moment, Scrapy works with Python 2.7.
@@ -56,8 +56,6 @@ focus on the real problems we need to solve.
 
 We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
 to steal from us!
-
-.. _Django: https://www.djangoproject.com/
 
 Does Scrapy work with HTTP proxies?
 -----------------------------------

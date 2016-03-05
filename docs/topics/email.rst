@@ -164,7 +164,7 @@ Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
 .. setting:: MAIL_TLS
 
 MAIL_TLS
----------
+--------
 
 Default: ``False``
 
@@ -173,7 +173,7 @@ Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connectio
 .. setting:: MAIL_SSL
 
 MAIL_SSL
----------
+--------
 
 Default: ``False``
 

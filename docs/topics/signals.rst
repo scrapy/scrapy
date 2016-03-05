@@ -203,7 +203,7 @@ request_scheduled
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_dropped
------------------
+---------------
 
 .. signal:: request_dropped
 .. function:: request_dropped(request, spider)

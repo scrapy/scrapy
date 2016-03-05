@@ -67,6 +67,7 @@ Request objects
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'})
+
         2. Using a list of dicts::
 
             request_with_cookies = Request(url="http://www.example.com",
