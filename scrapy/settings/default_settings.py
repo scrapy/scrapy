@@ -134,6 +134,7 @@ EXTENSIONS_BASE = {
     'scrapy.extensions.throttle.AutoThrottle': 0,
 }
 
+FEED_TEMPDIR = None
 FEED_URI = None
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'

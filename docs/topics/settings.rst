@@ -178,6 +178,15 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+.. setting:: FEED_TEMPDIR
+
+FEED_TEMPDIR
+------------
+
+The Feed Temp dir allows you to set a custom folder to save crawler
+temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
+:ref:`Amazon S3 <topics-feed-storage-s3>`.
+
 .. setting:: BOT_NAME
 
 BOT_NAME

@@ -8,7 +8,7 @@ import os
 import sys
 import logging
 import posixpath
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile
 from datetime import datetime
 import six
 from six.moves.urllib.parse import urlparse
@@ -47,7 +47,11 @@ class IFeedStorage(Interface):
 class BlockingFeedStorage(object):
 
     def open(self, spider):
-        return TemporaryFile(prefix='feed-')
+        path = spider.crawler.settings['FEED_TEMPDIR']
+        if path and not os.path.isdir(path):
+            raise OSError('Not a Directory: ' + str(path))
+
+        return NamedTemporaryFile(prefix='feed-', dir=path)
 
     def store(self, file):
         return threads.deferToThread(self._store_in_thread, file)
