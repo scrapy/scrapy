@@ -29,7 +29,7 @@ the same media to that queue. This avoids downloading the same media more than
 once when it's shared by several items.
 
 Using the Files Pipeline
-=========================
+========================
 
 The typical workflow, when using the :class:`FilesPipeline` goes like
 this:
@@ -104,7 +104,7 @@ behaviour, see :ref:`topics-media-pipeline-override`.
 .. _topics-media-pipeline-enabling:
 
 Enabling your Media Pipeline
-=============================
+============================
 
 .. setting:: IMAGES_STORE
 .. setting:: FILES_STORE
@@ -175,7 +175,7 @@ Additional features
 ===================
 
 File expiration
-----------------
+---------------
 
 .. setting:: IMAGES_EXPIRES
 .. setting:: FILES_EXPIRES
