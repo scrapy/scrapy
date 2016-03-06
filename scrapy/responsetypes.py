@@ -10,7 +10,7 @@ import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import isbinarytext, to_bytes, to_native_str
+from scrapy.utils.python import binary_is_text, to_bytes, to_native_str
 
 
 class ResponseTypes(object):
@@ -94,7 +94,7 @@ class ResponseTypes(object):
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
         chunk = to_bytes(chunk)
-        if isbinarytext(chunk):
+        if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():
             return self.from_mimetype('text/html')

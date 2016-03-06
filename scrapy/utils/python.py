@@ -174,17 +174,25 @@ def memoizemethod_noargs(method):
         return cache[self]
     return new_method
 
+
 _BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
-
+@deprecated("scrapy.utils.python.binary_is_text")
 def isbinarytext(text):
-    """Return True if the given text is considered binary, or False
-    otherwise, by looking for binary bytes at their chars
+    """ This function is deprecated.
+    Please use scrapy.utils.python.binary_is_text, which was created to be more
+    clear about the functions behavior: it is behaving inverted to this one. """
+    return not binary_is_text(text)
+
+
+def binary_is_text(data):
+    """ Returns `True` if the given ``data`` argument (a ``bytes`` object)
+    does not contain unprintable control characters.
     """
-    if not isinstance(text, bytes):
-        raise TypeError("text must be bytes, got '%s'" % type(text).__name__)
-    return any(c in _BINARYCHARS for c in text)
+    if not isinstance(data, bytes):
+        raise TypeError("data must be bytes, got '%s'" % type(data).__name__)
+    return all(c not in _BINARYCHARS for c in data)
 
 
 def get_func_args(func, stripself=False):
