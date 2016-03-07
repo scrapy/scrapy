@@ -51,7 +51,7 @@ class Request(object_ref):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
         url = to_native_str(url, self.encoding)
-        self._url = escape_ajax(safe_url_string(url))
+        self._url = escape_ajax(safe_url_string(url, self.encoding))
 
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
