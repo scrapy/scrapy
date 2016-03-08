@@ -1,5 +1,17 @@
+import sys
+
 from os.path import dirname, join
 from setuptools import setup, find_packages
+
+# --------------------------------------------------------------------------
+# Fix requirements
+# --------------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    requirements_file = "requirements.txt"
+else:
+    requirements_file = "requirements-py3.txt"
+with open(join(dirname(__file__), requirements_file), 'r') as f:
+    requirements = [x.replace("\n", "") for x in f.readlines()]
 
 
 with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
@@ -40,16 +52,5 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    install_requires=[
-        'Twisted>=10.0.0',
-        'w3lib>=1.8.0',
-        'queuelib',
-        'lxml',
-        'pyOpenSSL',
-        'cssselect>=0.9',
-        'six>=1.5.2',
-        'parsel>=0.9.3',
-        'PyDispatcher>=2.0.5',
-        'service_identity',
-    ],
+    install_requires=requirements,
 )
