@@ -47,14 +47,8 @@ def get_meta_refresh(response):
 
 def response_status_message(status):
     """Return status code plus status text descriptive message
-
-    >>> response_status_message(200)
-    '200 OK'
-
-    >>> response_status_message(404)
-    '404 Not Found'
     """
-    return '%s %s' % (status, to_native_str(http.RESPONSES.get(int(status))))
+    return '%s %s' % (status, to_native_str(http.RESPONSES.get(int(status), "Unknown Status")))
 
 
 def response_httprepr(response):
