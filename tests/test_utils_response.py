@@ -5,7 +5,7 @@ from six.moves.urllib.parse import urlparse
 from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (response_httprepr, open_in_browser,
-                                   get_meta_refresh, get_base_url)
+                                   get_meta_refresh, get_base_url, response_status_message)
 
 __doctests__ = ['scrapy.utils.response']
 
@@ -78,3 +78,8 @@ class ResponseUtilsTest(unittest.TestCase):
         resp2 = HtmlResponse("http://www.example.com", body=b"""
         <html><body>blahablsdfsal&amp;</body></html>""")
         self.assertEqual(get_base_url(resp2), "http://www.example.com")
+
+    def test_response_status_message(self):
+        self.assertEqual(response_status_message(200), '200 OK')
+        self.assertEqual(response_status_message(404), '404 Not Found')
+        self.assertEqual(response_status_message(573), "573 Unknown Status")
