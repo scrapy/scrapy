@@ -157,6 +157,8 @@ method and how to clean up the resources properly.
             self.client.close()
 
         def process_item(self, item, spider):
+            # if item is nested scrapy items, be sure convert sub-item to dict type, 
+            # or pymongo will throws InvalidDocument: Cannot encode object Exception.
             self.db[self.collection_name].insert(dict(item))
             return item
 
