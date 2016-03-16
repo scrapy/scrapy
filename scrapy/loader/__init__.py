@@ -3,6 +3,7 @@
 See documentation in docs/topics/loaders.rst
 
 """
+from collections import MutableMapping
 from collections import defaultdict
 import six
 import copy
@@ -18,6 +19,34 @@ from .common import wrap_loader_context
 from .processors import Identity
 
 
+class CompoundItem(MutableMapping):
+    def __init__(self, external_item=None):
+        self.external_item = copy.deepcopy(external_item) or {}
+        self.item = defaultdict(list)
+
+    def __getitem__(self, key):
+        if key in self.external_item and not key in self.item:
+            self.item[key] = self.external_item[key]
+            del self.external_item[key]
+
+        return self.item[key]
+
+    def __setitem__(self, key, value):
+        self.item[key] = value
+
+    def __delitem__(self, key):
+        if key in self.external_item:
+            del self.external_item[key]
+        if key in self.item:
+            del self.item[key]
+
+    def __iter__(self):
+        return iter(set(self.external_item.keys()) | set(self.item.keys()))
+
+    def __len__(self):
+        return len(list(self.__iter__()))
+
+
 class ItemLoader(object):
 
     default_item_class = Item
@@ -25,7 +54,7 @@ class ItemLoader(object):
     default_output_processor = Identity()
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
+    def __init__(self, item=None, selector=None, response=None, _values=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         self.selector = selector
@@ -33,37 +62,22 @@ class ItemLoader(object):
         if item is None:
             item = self.default_item_class()
         self.context = context
-        self.parent = parent
-        self._local_item = context['item'] = item
-        self._local_values = defaultdict(list, copy.deepcopy(item) or {})
+        self.item = context['item'] = item
+        if _values is None:
+            _values = CompoundItem(item)
+        self._values = _values
 
-    @property
-    def _values(self):
-        if self.parent is not None:
-            return self.parent._values
-        else:
-            return self._local_values
-
-    @property
-    def item(self):
-        if self.parent is not None:
-            return self.parent.item
-        else:
-            return self._local_item
-
-    def nested_xpath(self, xpath, **context):
+    def nested_xpath(self, xpath):
         selector = self.selector.xpath(xpath)
-        context.update(selector=selector)
         subloader = self.__class__(
-            item=self.item, parent=self, **context
+            item=self.item, selector=selector, _values=self._values
         )
         return subloader
 
-    def nested_css(self, css, **context):
+    def nested_css(self, css):
         selector = self.selector.css(css)
-        context.update(selector=selector)
         subloader = self.__class__(
-            item=self.item, parent=self, **context
+            item=self.item, selector=selector, _values=self._values
         )
         return subloader
 
