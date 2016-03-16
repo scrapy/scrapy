@@ -41,10 +41,10 @@ class CompoundItem(MutableMapping):
             del self.item[key]
 
     def __iter__(self):
-        return iter(set(self.external_item.keys()) | set(self.item.keys()))
+        return self.item.__iter__()
 
     def __len__(self):
-        return len(list(self.__iter__()))
+        return self.item.__len__()
 
 
 class ItemLoader(object):
