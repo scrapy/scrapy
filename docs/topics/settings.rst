@@ -836,7 +836,7 @@ A negative priority adjust means more priority.
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
+Default: ``True``
 
 Scope: ``scrapy.downloadermiddlewares.robotstxt``
 
