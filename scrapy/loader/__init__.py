@@ -19,32 +19,36 @@ from .common import wrap_loader_context
 from .processors import Identity
 
 
-class CompoundItem(MutableMapping):
-    def __init__(self, external_item=None):
-        self.external_item = copy.deepcopy(external_item) or {}
-        self.item = defaultdict(list)
+class CompoundItemValues(MutableMapping):
+    def __init__(self, original_item=None):
+        self.item = original_item
+        self.reset_values()
+
+    def reset_values(self):
+        self.current_values = copy.deepcopy(self.item) or {}
+        self.local_values = defaultdict(list)
 
     def __getitem__(self, key):
-        if key in self.external_item and not key in self.item:
-            self.item[key] = self.external_item[key]
-            del self.external_item[key]
+        if key in self.current_values and not key in self.local_values:
+            self.local_values[key] = self.current_values[key]
+            del self.current_values[key]
 
-        return self.item[key]
+        return self.local_values[key]
 
     def __setitem__(self, key, value):
-        self.item[key] = value
+        self.local_values[key] = value
 
     def __delitem__(self, key):
-        if key in self.external_item:
-            del self.external_item[key]
-        if key in self.item:
-            del self.item[key]
+        if key in self.current_values:
+            del self.current_values[key]
+        if key in self.local_values:
+            del self.local_values[key]
 
     def __iter__(self):
-        return self.item.__iter__()
+        return self.local_values.__iter__()
 
     def __len__(self):
-        return self.item.__len__()
+        return self.local_values.__len__()
 
 
 class ItemLoader(object):
@@ -54,31 +58,28 @@ class ItemLoader(object):
     default_output_processor = Identity()
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, _values=None, **context):
+    def __init__(self, item=None, selector=None, response=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
+        self.context = context
         if item is None:
             item = self.default_item_class()
-        self.context = context
-        self.item = context['item'] = item
-        if _values is None:
-            _values = CompoundItem(item)
-        self._values = _values
+        if isinstance(item, CompoundItemValues):
+            self._values = item
+        else:
+            self._values = CompoundItemValues(item)
+        self.item = context['item'] = self._values.item
 
     def nested_xpath(self, xpath):
         selector = self.selector.xpath(xpath)
-        subloader = self.__class__(
-            item=self.item, selector=selector, _values=self._values
-        )
+        subloader = self.__class__(item=self._values, selector=selector)
         return subloader
 
     def nested_css(self, css):
         selector = self.selector.css(css)
-        subloader = self.__class__(
-            item=self.item, selector=selector, _values=self._values
-        )
+        subloader = self.__class__(item=self._values, selector=selector)
         return subloader
 
     def add_value(self, field_name, value, *processors, **kw):
