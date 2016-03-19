@@ -37,7 +37,7 @@ class TopLevelFormatter(logging.Filter):
         self.loggers = loggers or []
 
     def filter(self, record):
-        f=raw_input("Do you want to know the full error [y/n]?")
+        f=input("Do you want to know the full error [y/n]?")
         if f=='n':
             if any(record.name.startswith(l + '.') for l in self.loggers):
                 record.name = record.name.split('.', 1)[0]
