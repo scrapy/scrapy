@@ -77,6 +77,8 @@ class UrlUtilsTest(unittest.TestCase):
 
 class CanonicalizeUrlTest(unittest.TestCase):
 
+    def test_rfc2396_scheme_should_begin_with_alpha(self):
+        self.assertRaises(ValueError, canonicalize_url," http://www.example.com")
     def test_canonicalize_url(self):
         # simplest case
         self.assertEqual(canonicalize_url("http://www.example.com/"),

@@ -54,7 +54,8 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 
     For examples see the tests in tests/test_utils_url.py
     """
-
+    if re.match('[a-zA-Z]', url[:1]) == None:
+        raise ValueError('Bad URI (is not a valid URI?)')
     scheme, netloc, path, params, query, fragment = parse_url(url)
     keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
