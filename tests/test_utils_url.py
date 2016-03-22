@@ -123,14 +123,12 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
                                           "http://www.example.com/do?a=1&q=a+space")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_normalize_percent_encoding_in_paths(self):
         self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
-                                          "http://www.example.com/a%A3do"),
+                                          "http://www.example.com/a%A3do")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_normalize_percent_encoding_in_query_arguments(self):
-        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3", encoding='latin1'),
                                           "http://www.example.com/do?k=b%A3")
 
     def test_non_ascii_percent_encoding_in_paths(self):
@@ -167,7 +165,6 @@ class CanonicalizeUrlTest(unittest.TestCase):
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html"),
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_safe_characters_unicode(self):
         # urllib.quote uses a mapping cache of encoded characters. when parsing
         # an already percent-encoded url, it will fail if that url was not
