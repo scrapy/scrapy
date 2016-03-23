@@ -309,6 +309,7 @@ class FormRequestTest(RequestTest):
             url="http://www.example.com/this/list.html")
         req = self.request_class.from_response(response,
                 formdata={'one': ['two', 'three'], 'six': 'seven'})
+
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
@@ -317,6 +318,68 @@ class FormRequestTest(RequestTest):
         self.assertEqual(set(fs[b'one']), {b'two', b'three'})
         self.assertEqual(fs[b'test2'], [b'xxx'])
         self.assertEqual(fs[b'six'], [b'seven'])
+
+    def test_from_response_post_nonascii_bytes_utf8(self):
+        response = _buildresponse(
+            b"""<form action="post.php" method="POST">
+            <input type="hidden" name="test \xc2\xa3" value="val1">
+            <input type="hidden" name="test \xc2\xa3" value="val2">
+            <input type="hidden" name="test2" value="xxx \xc2\xb5">
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'})
+
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req, to_unicode=True)
+        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
+        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
+        self.assertEqual(fs[u'test2'], [u'xxx µ'])
+        self.assertEqual(fs[u'six'], [u'seven'])
+
+    def test_from_response_post_nonascii_bytes_latin1(self):
+        response = _buildresponse(
+            b"""<form action="post.php" method="POST">
+            <input type="hidden" name="test \xa3" value="val1">
+            <input type="hidden" name="test \xa3" value="val2">
+            <input type="hidden" name="test2" value="xxx \xb5">
+            </form>""",
+            url="http://www.example.com/this/list.html",
+            encoding='latin1',
+            )
+        req = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'})
+
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req, to_unicode=True, encoding='latin1')
+        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
+        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
+        self.assertEqual(fs[u'test2'], [u'xxx µ'])
+        self.assertEqual(fs[u'six'], [u'seven'])
+
+    def test_from_response_post_nonascii_unicode(self):
+        response = _buildresponse(
+            u"""<form action="post.php" method="POST">
+            <input type="hidden" name="test £" value="val1">
+            <input type="hidden" name="test £" value="val2">
+            <input type="hidden" name="test2" value="xxx µ">
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'})
+
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req, to_unicode=True)
+        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
+        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
+        self.assertEqual(fs[u'test2'], [u'xxx µ'])
+        self.assertEqual(fs[u'six'], [u'seven'])
 
     def test_from_response_extra_headers(self):
         response = _buildresponse(

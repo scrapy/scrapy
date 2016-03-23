@@ -10,7 +10,7 @@ import lxml.html
 from parsel.selector import create_root_node
 import six
 from scrapy.http.request import Request
-from scrapy.utils.python import to_bytes, to_unicode, is_listlike
+from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
 
 
@@ -120,7 +120,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
                         namespaces={
                             "re": "http://exslt.org/regular-expressions"})
-    values = [(to_unicode(k), u'' if v is None else v)
+    values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata]
 
