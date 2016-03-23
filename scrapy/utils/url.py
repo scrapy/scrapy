@@ -42,26 +42,30 @@ def url_has_any_extension(url, extensions):
 
 
 def safe_url_string(url, encoding='utf8', path_encoding='utf8'):
-    """Convert the given url into a legal URL by escaping unsafe characters
+    """Convert the given URL into a legal URL by escaping unsafe characters
     according to RFC-3986.
-
-    If a unicode url is given, it is first converted to str using the given
-    encoding (which defaults to 'utf-8'). When passing a encoding, you should
-    use the encoding of the original page (the page from which the url was
-    extracted from).
-
-    Calling this function on an already "safe" url will return the url
+    If a bytes URL is given, it is first converted to `str` using the given
+    encoding (which defaults to 'utf-8'). 'utf-8' encoding is used for
+    URL path component (unless overriden by path_encoding), and given
+    encoding is used for query string or form data.
+    When passing a encoding, you should use the encoding of the
+    original page (the page from which the url was extracted from).
+    Calling this function on an already "safe" URL will return the URL
     unmodified.
-
-    Always returns a native str (bytes in Python 2, unicode in Python 3).
+    Always returns a native `str` (bytes in Python2, unicode in Python3).
     """
-    # Python3 chokes on bytes input with non-ASCII chars
-    # This is wrong! encoding only applies to query part, not the whole URL
-    #parts = urlsplit(to_unicode(url, encoding=encoding))
-    # let's consider the string as "correct": if bytes, they should be safe
-    parts = urlsplit(url)
+    # Python3's urlsplit() chokes on bytes input with non-ASCII chars,
+    # so let's decode (to Unicode) using page encoding.
+    #
+    # it is assumed that a raw bytes input comes from the page
+    # corresponding to the encoding
+    #
+    # Note: if this assumption is wrong, this will fail;
+    #       in the general case, users are required to use Unicode
+    #       or safe ASCII bytes input
+    parts = urlsplit(to_unicode(url, encoding=encoding))
 
-    # quote() in Python2 return type follows input type
+    # quote() in Python2 return type follows input type;
     # quote() in Python3 always returns Unicode (native str)
     return urlunsplit((
         to_native_str(parts.scheme),
