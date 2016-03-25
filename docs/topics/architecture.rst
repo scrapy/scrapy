@@ -122,8 +122,8 @@ this:
    through Spider Middleware (output direction), and then sends processed
    items to Item Pipelines and processed Requests to the Scheduler.
 
-8. The process repeats (from step 2) until there are no more requests from the
-   Scheduler, and the Engine closes the domain.
+8. The process repeats (from step 1) until there are no more requests from the
+   Scheduler.
 
 Event-driven networking
 =======================
