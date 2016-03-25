@@ -147,7 +147,7 @@ class S3FilesStore(object):
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in six.iteritems(meta)},
+                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
                 ACL=self.POLICY,
                 **extra)
         else:
