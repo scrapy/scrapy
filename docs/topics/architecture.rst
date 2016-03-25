@@ -48,8 +48,7 @@ Spiders
 
 Spiders are custom classes written by Scrapy users to parse responses and
 extract items (aka scraped items) from them or additional URLs (requests) to
-follow. Each spider is able to handle a specific domain (or group of domains).
-For more information see :ref:`topics-spiders`.
+follow. For more information see :ref:`topics-spiders`.
 
 Item Pipeline
 -------------
@@ -64,18 +63,35 @@ Downloader middlewares
 
 Downloader middlewares are specific hooks that sit between the Engine and the
 Downloader and process requests when they pass from the Engine to the
-Downloader, and responses that pass from Downloader to the Engine. They provide
-a convenient mechanism for extending Scrapy functionality by plugging custom
-code. For more information see :ref:`topics-downloader-middleware`.
+Downloader, and responses that pass from Downloader to the Engine.
+
+Use a Downloader middleware if you need to do one of the following:
+
+* process a request just before it is sent to the Downloader
+  (i.e. right before Scrapy sends the request to the website);
+* change received response before passing it to a spider;
+* send a new Request instead of passing received response to a spider;
+* pass response to a spider without fetching a web page;
+* silently drop some requests.
+
+For more information see :ref:`topics-downloader-middleware`.
 
 Spider middlewares
 ------------------
 
 Spider middlewares are specific hooks that sit between the Engine and the
 Spiders and are able to process spider input (responses) and output (items and
-requests). They provide a convenient mechanism for extending Scrapy
-functionality by plugging custom code. For more information see
-:ref:`topics-spider-middleware`.
+requests).
+
+Use a Spider middleware if you need to
+
+* post-process output of spider callbacks - change/add/remove requests or items;
+* post-process start_requests;
+* handle spider exceptions;
+* call errback instead of callback for some of the requests based on response
+  content.
+
+For more information see :ref:`topics-spider-middleware`.
 
 Data flow
 =========
@@ -83,32 +99,30 @@ Data flow
 The data flow in Scrapy is controlled by the execution engine, and goes like
 this:
 
-1. The Engine opens a domain, locates the Spider that handles that domain, and
-   asks the spider for the first URLs to crawl.
-
-2. The Engine gets the first URLs to crawl from the Spider and schedules them
+1. The Engine gets the first URLs to crawl from the Spider and schedules them
    in the Scheduler, as Requests.
 
-3. The Engine asks the Scheduler for the next URLs to crawl.
+2. The Engine asks the Scheduler for the next URLs to crawl.
 
-4. The Scheduler returns the next URLs to crawl to the Engine and the Engine
+3. The Scheduler returns the next URLs to crawl to the Engine and the Engine
    sends them to the Downloader, passing through the Downloader Middleware
    (request direction).
 
-5. Once the page finishes downloading the Downloader generates a Response (with
+4. Once the page finishes downloading the Downloader generates a Response (with
    that page) and sends it to the Engine, passing through the Downloader
    Middleware (response direction).
 
-6. The Engine receives the Response from the Downloader and sends it to the
+5. The Engine receives the Response from the Downloader and sends it to the
    Spider for processing, passing through the Spider Middleware (input direction).
 
-7. The Spider processes the Response and returns scraped items and new Requests
+6. The Spider processes the Response and returns scraped items and new Requests
    (to follow) to the Engine.
 
-8. The Engine sends scraped items (returned by the Spider) to the Item Pipeline
-   and Requests (returned by spider) to the Scheduler
+7. The Engine passes scraped items and new Requests returned by a spider
+   through Spider Middleware (output direction), and then sends processed
+   items to Item Pipelines and processed Requests to the Scheduler.
 
-9. The process repeats (from step 2) until there are no more requests from the
+8. The process repeats (from step 2) until there are no more requests from the
    Scheduler, and the Engine closes the domain.
 
 Event-driven networking
