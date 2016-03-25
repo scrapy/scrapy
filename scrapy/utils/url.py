@@ -44,14 +44,17 @@ def url_has_any_extension(url, extensions):
 def safe_url_string(url, encoding='utf8', path_encoding='utf8'):
     """Convert the given URL into a legal URL by escaping unsafe characters
     according to RFC-3986.
+
     If a bytes URL is given, it is first converted to `str` using the given
     encoding (which defaults to 'utf-8'). 'utf-8' encoding is used for
     URL path component (unless overriden by path_encoding), and given
     encoding is used for query string or form data.
     When passing a encoding, you should use the encoding of the
     original page (the page from which the url was extracted from).
+
     Calling this function on an already "safe" URL will return the URL
     unmodified.
+
     Always returns a native `str` (bytes in Python2, unicode in Python3).
     """
     # Python3's urlsplit() chokes on bytes input with non-ASCII chars,
@@ -69,7 +72,7 @@ def safe_url_string(url, encoding='utf8', path_encoding='utf8'):
     # quote() in Python3 always returns Unicode (native str)
     return urlunsplit((
         to_native_str(parts.scheme),
-        to_native_str(parts.netloc),
+        to_native_str(parts.netloc.encode('idna')),
 
         # default encoding for path component SHOULD be UTF-8
         quote(to_bytes(parts.path, path_encoding), _safe_chars),
