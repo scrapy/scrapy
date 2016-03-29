@@ -139,6 +139,12 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?country=Россия", encoding='cp1251'),
                                           "http://www.example.com/r%C3%A9sum%C3%A9?country=%D0%EE%F1%F1%E8%FF")
 
+    def test_canonicalize_url_unicode_query_string_wrong_encoding(self):
+        # trying to encode with wrong encoding
+        self.assertRaises(UnicodeEncodeError, canonicalize_url,
+                            u"http://www.example.com/résumé?currency=€",
+                            encoding='latin1')
+
     def test_normalize_percent_encoding_in_paths(self):
         self.assertEqual(canonicalize_url("http://www.example.com/r%c3%a9sum%c3%a9"),
                                           "http://www.example.com/r%C3%A9sum%C3%A9")
