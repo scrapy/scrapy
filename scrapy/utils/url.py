@@ -103,17 +103,44 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 
     For examples see the tests in tests/test_utils_url.py
     """
+    # making the URL safe first handles regular non-ASCII characters ;
+    # badly encoded percent-encoded sequences are handled below
+    # by re-parsing path and query-string (may be sub-optimal)
+    url = safe_url_string(url, encoding=encoding)
+
+    # parsing does not depend on encoding
     scheme, netloc, path, params, query, fragment = parse_url(url)
 
-    # 1. decode query-string using document encoding
-    ekwargs = {}
+    # 1. decode query-string as UTF-8 (or keep raw bytes)
     if not six.PY2:
-        # Python3's urllib.parse methods have "encoding" argument
-        # Python2's methods handle non-UTF-8 encoded input just fine
-        ekwargs['encoding'] = encoding
-    keyvals = parse_qsl(query, keep_blank_values, **ekwargs)
+        # Python3's urllib.parse.parse_qsl does not work as wanted
+        # for percent-escaped characters that do not match passed encoding,
+        # they get lost.
+        #
+        # e.g., 'q=b%a3' becomes [('q', 'b\ufffd')]
+        # (ie. with 'REPLACEMENT CHARACTER' (U+FFFD),
+        #      instead of \xa3 that you get with Python2's parse_qsl)
+        #
+        # what we want here is to keep raw bytes, and percent encode them
+        # so as to preserve whatever encoding what originally used
+        #
+        # see https://tools.ietf.org/html/rfc3987#section-6.4:
+        #
+        # For example, it is possible to have a URI reference of
+        # "http://www.example.org/r%E9sum%E9.xml#r%C3%A9sum%C3%A9", where the
+        # document name is encoded in iso-8859-1 based on server settings, but
+        # where the fragment identifier is encoded in UTF-8 according to
+        # [XPointer]. The IRI corresponding to the above URI would be (in XML
+        # notation)
+        # "http://www.example.org/r%E9sum%E9.xml#r&#xE9;sum&#xE9;".
+        # Similar considerations apply to query parts.  The functionality of
+        # IRIs (namely, to be able to include non-ASCII characters) can only be
+        # used if the query part is encoded in UTF-8.
+        keyvals = parse_qsl_to_bytes(query, keep_blank_values)
+    else:
+        keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
-    query = urlencode(keyvals, **ekwargs)
+    query = urlencode(keyvals)
 
     # 2. decode percent-encoded sequences in path as UTF-8 (or keep raw bytes)
     #    and percent-encode path again (this normalizes to upper-case %XX)
@@ -131,8 +158,8 @@ def _unquotepath(path):
         path = path.replace('%' + reserved, '%25' + reserved.upper())
 
     if six.PY3:
-        # regular unquote() does not work in Python 3 for non-UTF-8
-        # percent-escaped characters, they get lost.
+        # standard lib's unquote() does not work in Python 3
+        # for non-UTF-8 percent-escaped characters, they get lost.
         # e.g., '%a3' becomes 'REPLACEMENT CHARACTER' (U+FFFD)
         #
         # unquote_to_bytes() returns raw bytes instead
@@ -149,6 +176,59 @@ def parse_url(url, encoding=None):
     if isinstance(url, ParseResult):
         return url
     return urlparse(to_native_str(url, encoding))
+
+
+if six.PY3:
+    from urllib.parse import _coerce_args, unquote_to_bytes
+
+    def parse_qsl_to_bytes(qs, keep_blank_values=False, strict_parsing=False):
+        """Parse a query given as a string argument.
+
+        Data are returned as a list of name, value pairs as bytes.
+
+        Arguments:
+
+        qs: percent-encoded query string to be parsed
+
+        keep_blank_values: flag indicating whether blank values in
+            percent-encoded queries should be treated as blank strings.  A
+            true value indicates that blanks should be retained as blank
+            strings.  The default false value indicates that blank values
+            are to be ignored and treated as if they were  not included.
+
+        strict_parsing: flag indicating what to do with parsing errors. If
+            false (the default), errors are silently ignored. If true,
+            errors raise a ValueError exception.
+
+        """
+        # This code is the same as Python3's parse_qsl()
+        # (at https://hg.python.org/cpython/rev/c38ac7ab8d9a)
+        # except for the unquote(s, encoding, errors) calls replaced
+        # with unquote_to_bytes(s)
+        qs, _coerce_result = _coerce_args(qs)
+        pairs = [s2 for s1 in qs.split('&') for s2 in s1.split(';')]
+        r = []
+        for name_value in pairs:
+            if not name_value and not strict_parsing:
+                continue
+            nv = name_value.split('=', 1)
+            if len(nv) != 2:
+                if strict_parsing:
+                    raise ValueError("bad query field: %r" % (name_value,))
+                # Handle case of a control-name with no equal sign
+                if keep_blank_values:
+                    nv.append('')
+                else:
+                    continue
+            if len(nv[1]) or keep_blank_values:
+                name = nv[0].replace('+', ' ')
+                name = unquote_to_bytes(name)
+                name = _coerce_result(name)
+                value = nv[1].replace('+', ' ')
+                value = unquote_to_bytes(value)
+                value = _coerce_result(value)
+                r.append((name, value))
+        return r
 
 
 def escape_ajax(url):

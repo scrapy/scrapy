@@ -123,13 +123,45 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
                                           "http://www.example.com/do?a=1&q=a+space")
 
+    def test_canonicalize_url_unicode_path(self):
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9")
+
+    def test_canonicalize_url_unicode_query_string(self):
+        # default encoding for path and query is UTF-8
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?q=résumé"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+
+        # passed encoding will affect query string
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?q=résumé", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%E9sum%E9")
+
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?country=Россия", encoding='cp1251'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?country=%D0%EE%F1%F1%E8%FF")
+
     def test_normalize_percent_encoding_in_paths(self):
+        self.assertEqual(canonicalize_url("http://www.example.com/r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9")
+
+        # non-UTF8 encoded sequences: they should be kept untouched, only upper-cased
+        # 'latin1'-encoded sequence in path
         self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
                                           "http://www.example.com/a%A3do")
 
+        # 'latin1'-encoded path, UTF-8 encoded query string
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
+
+        # 'latin1'-encoded path and query string
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do?q=r%e9sum%e9"),
+                                          "http://www.example.com/a%A3do?q=r%E9sum%E9")
+
     def test_normalize_percent_encoding_in_query_arguments(self):
-        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3", encoding='latin1'),
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
                                           "http://www.example.com/do?k=b%A3")
+
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/do?k=r%C3%A9sum%C3%A9")
 
     def test_non_ascii_percent_encoding_in_paths(self):
         self.assertEqual(canonicalize_url("http://www.example.com/a do?a=1"),
