@@ -106,7 +106,8 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     # making the URL safe first handles regular non-ASCII characters ;
     # badly encoded percent-encoded sequences are handled below
     # by re-parsing path and query-string (may be sub-optimal)
-    url = safe_url_string(url, encoding=encoding)
+    if not isinstance(url, ParseResult):
+        url = safe_url_string(url, encoding=encoding)
 
     # parsing does not depend on encoding
     scheme, netloc, path, params, query, fragment = parse_url(url)
