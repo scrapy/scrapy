@@ -141,9 +141,12 @@ class CanonicalizeUrlTest(unittest.TestCase):
 
     def test_canonicalize_url_unicode_query_string_wrong_encoding(self):
         # trying to encode with wrong encoding
-        self.assertRaises(UnicodeEncodeError, canonicalize_url,
-                            u"http://www.example.com/résumé?currency=€",
-                            encoding='latin1')
+        # fallback to UTF-8
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?currency=€", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?currency=%E2%82%AC")
+
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?country=Россия", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?country=%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F")
 
     def test_normalize_percent_encoding_in_paths(self):
         self.assertEqual(canonicalize_url("http://www.example.com/r%c3%a9sum%c3%a9"),
@@ -180,7 +183,7 @@ class CanonicalizeUrlTest(unittest.TestCase):
                                           "http://www.example.com/a%20do%C2%A3.html?a=1")
 
     def test_non_ascii_percent_encoding_in_query_arguments(self):
-        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3"),
+        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=£500&a=5&z=3"),
                                           u"http://www.example.com/do?a=5&price=%C2%A3500&z=3")
         self.assertEqual(canonicalize_url(b"http://www.example.com/do?price=\xc2\xa3500&a=5&z=3"),
                                           "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
