@@ -738,9 +738,13 @@ simple/convenient XPaths. You can use the
 
 Let's show an example that illustrates this with Github blog atom feed.
 
+.. highlight:: sh
+
 First, we open the shell with the url we want to scrape::
 
     $ scrapy shell https://github.com/blog.atom
+
+.. highlight:: python
 
 Once in the shell we can try selecting all ``<link>`` objects and see that it
 doesn't work (because the Atom XML namespace is obfuscating those nodes)::

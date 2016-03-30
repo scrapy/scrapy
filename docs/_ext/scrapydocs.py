@@ -18,7 +18,7 @@ def is_setting_index(node):
     if node.tagname == 'index':
         # index entries for setting directives look like:
         # [(u'pair', u'SETTING_NAME; setting', u'std:setting-SETTING_NAME', '')]
-        entry_type, info, refid, _ = node['entries'][0]
+        entry_type, info, refid = node['entries'][0][:3]
         return entry_type == 'pair' and info.endswith('; setting')
     return False
 
@@ -30,7 +30,7 @@ def get_setting_target(node):
 
 def get_setting_name_and_refid(node):
     """Extract setting name from directive index node"""
-    entry_type, info, refid, _ = node['entries'][0]
+    entry_type, info, refid = node['entries'][0][:3]
     return info.replace('; setting', ''), refid
 
 
