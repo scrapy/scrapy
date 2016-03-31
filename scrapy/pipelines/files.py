@@ -147,7 +147,7 @@ class S3FilesStore(object):
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in six.iteritems(meta)},
+                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
                 ACL=self.POLICY,
                 **extra)
         else:
@@ -364,8 +364,9 @@ class FilesPipeline(MediaPipeline):
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
         buf = BytesIO(response.body)
-        self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
+        buf.seek(0)
+        self.store.persist_file(path, buf, info)
         return checksum
 
     def item_completed(self, results, item, info):
