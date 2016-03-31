@@ -2,10 +2,12 @@
 import unittest
 
 import six
+from six.moves.urllib.parse import urlparse
+
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
                               canonicalize_url, add_http_if_no_scheme,
-                              guess_scheme)
+                              guess_scheme, parse_url)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -219,11 +221,36 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.EXAMPLE.com/"),
                                           "http://www.example.com/")
 
+    def test_canonicalize_idns(self):
+        self.assertEqual(canonicalize_url(u'http://www.bücher.de?q=bücher'),
+                                           'http://www.xn--bcher-kva.de/?q=b%C3%BCcher')
+        # Japanese (+ reordering query parameters)
+        self.assertEqual(canonicalize_url(u'http://はじめよう.みんな/?query=サ&maxResults=5'),
+                                           'http://xn--p8j9a0d9c9a.xn--q9jyb4c/?maxResults=5&query=%E3%82%B5')
+
     def test_quoted_slash_and_question_sign(self):
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC+rocks%3f/?yeah=1"),
                          "http://foo.com/AC%2FDC+rocks%3F/?yeah=1")
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC/"),
                          "http://foo.com/AC%2FDC/")
+
+    def test_canonicalize_urlparsed(self):
+        # canonicalize_url() can be passed an already urlparse'd URL
+        self.assertEqual(canonicalize_url(urlparse(u"http://www.example.com/résumé?q=résumé")),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+        self.assertEqual(canonicalize_url(urlparse('http://www.example.com/caf%e9-con-leche.htm')),
+                                          'http://www.example.com/caf%E9-con-leche.htm')
+        self.assertEqual(canonicalize_url(urlparse("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9")),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
+
+    def test_canonicalize_parse_url(self):
+        # parse_url() wraps urlparse and is used in link extractors
+        self.assertEqual(canonicalize_url(parse_url(u"http://www.example.com/résumé?q=résumé")),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+        self.assertEqual(canonicalize_url(parse_url('http://www.example.com/caf%e9-con-leche.htm')),
+                                          'http://www.example.com/caf%E9-con-leche.htm')
+        self.assertEqual(canonicalize_url(parse_url("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9")),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
 
 
 class AddHttpIfNoScheme(unittest.TestCase):

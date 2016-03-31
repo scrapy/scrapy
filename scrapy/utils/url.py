@@ -84,6 +84,22 @@ def safe_url_string(url, encoding='utf8', path_encoding='utf8'):
     ))
 
 
+def _safe_ParseResult(parts, encoding='utf8', path_encoding='utf8'):
+    return (
+        to_native_str(parts.scheme),
+        to_native_str(parts.netloc.encode('idna')),
+
+        # default encoding for path component SHOULD be UTF-8
+        quote(to_bytes(parts.path, path_encoding), _safe_chars),
+        quote(to_bytes(parts.params, path_encoding), _safe_chars),
+
+        # encoding of query and fragment follows page encoding
+        # or form-charset (if known and passed)
+        quote(to_bytes(parts.query, encoding), _safe_chars),
+        quote(to_bytes(parts.fragment, encoding), _safe_chars)
+    )
+
+
 def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
                      encoding=None):
     """Canonicalize the given url by applying the following procedures:
@@ -103,25 +119,24 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 
     For examples see the tests in tests/test_utils_url.py
     """
-    # making the URL safe first handles regular non-ASCII characters ;
-    # badly encoded percent-encoded sequences are handled below
-    # by re-parsing path and query-string (may be sub-optimal)
-    if not isinstance(url, ParseResult):
-        try:
-            url = safe_url_string(url, encoding=encoding)
+    # If supplied `encoding` is not compatible with all characters in `url`,
+    # fallback to UTF-8 as safety net.
+    # UTF-8 can handle all Unicode characters,
+    # so we should be covered regarding URL normalization,
+    # if not for proper URL expected by remote website.
+    try:
+        scheme, netloc, path, params, query, fragment = _safe_ParseResult(
+            parse_url(url), encoding=encoding)
+    except UnicodeError as e:
+        scheme, netloc, path, params, query, fragment = _safe_ParseResult(
+            parse_url(url), encoding='utf8')
 
-        # if supplied `encoding` is not able to encode,
-        # fallback to UTF-8 as safety net
-        except UnicodeError as e:
-            url = safe_url_string(url, encoding='utf8')
-
-    # parsing does not depend on encoding
-    scheme, netloc, path, params, query, fragment = parse_url(url)
-
-    # 1. decode query-string as UTF-8 (or keep raw bytes)
+    # 1. decode query-string as UTF-8 (or keep raw bytes),
+    #    sort values,
+    #    and percent-encode them back
     if not six.PY2:
         # Python3's urllib.parse.parse_qsl does not work as wanted
-        # for percent-escaped characters that do not match passed encoding,
+        # for percent-encoded characters that do not match passed encoding,
         # they get lost.
         #
         # e.g., 'q=b%a3' becomes [('q', 'b\ufffd')]
@@ -129,9 +144,9 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
         #      instead of \xa3 that you get with Python2's parse_qsl)
         #
         # what we want here is to keep raw bytes, and percent encode them
-        # so as to preserve whatever encoding what originally used
+        # so as to preserve whatever encoding what originally used.
         #
-        # see https://tools.ietf.org/html/rfc3987#section-6.4:
+        # See https://tools.ietf.org/html/rfc3987#section-6.4:
         #
         # For example, it is possible to have a URI reference of
         # "http://www.example.org/r%E9sum%E9.xml#r%C3%A9sum%C3%A9", where the
@@ -182,7 +197,7 @@ def parse_url(url, encoding=None):
     """
     if isinstance(url, ParseResult):
         return url
-    return urlparse(to_native_str(url, encoding))
+    return urlparse(to_unicode(url, encoding))
 
 
 if six.PY3:
