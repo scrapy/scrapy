@@ -91,7 +91,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         patchers = [
             mock.patch.object(FSFilesStore, 'stat_file', return_value={
                 'checksum': 'abc',
-                'last_modified': time.time() - (FilesPipeline.EXPIRES * 60 * 60 * 24 * 2)}),
+                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
             mock.patch.object(FilesPipeline, 'get_media_requests',
                               return_value=[_prepare_request_object(item_url)]),
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True)
