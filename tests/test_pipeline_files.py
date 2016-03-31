@@ -183,6 +183,35 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
             self.assertEqual(item['stored_file'], [results[0][1]])
 
 
+class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
+
+    def setUp(self):
+        self.tempdir = mkdtemp()
+        self.pipeline = FilesPipeline(self.tempdir)
+        self.default_settings = Settings()
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
+    def test_expires(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_EXPIRES': 42}))
+        self.assertEqual(self.pipeline.expires, self.default_settings.getint('FILES_EXPIRES'))
+        self.assertEqual(another_pipeline.expires, 42)
+
+    def test_files_urls_field(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_URLS_FIELD': 'funny_field'}))
+        self.assertEqual(self.pipeline.files_urls_field, self.default_settings.get('FILES_URLS_FIELD'))
+        self.assertEqual(another_pipeline.files_urls_field, 'funny_field')
+
+    def test_files_result_field(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_RESULT_FIELD': 'funny_field'}))
+        self.assertEqual(self.pipeline.files_result_field, self.default_settings.get('FILES_RESULT_FIELD'))
+        self.assertEqual(another_pipeline.files_result_field, 'funny_field')
+
+
 class TestS3FilesStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
