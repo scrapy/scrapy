@@ -36,24 +36,19 @@ class ImagesPipeline(FilesPipeline):
     """
 
     MEDIA_NAME = 'image'
-    MIN_WIDTH = 0
-    MIN_HEIGHT = 0
-    THUMBS = {}
-    DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
-    DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     @classmethod
     def from_settings(cls, settings):
-        cls.MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
-        cls.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
-        cls.EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
-        cls.THUMBS = settings.get('IMAGES_THUMBS', {})
+        cls.MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH')
+        cls.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT')
+        cls.EXPIRES = settings.getint('IMAGES_EXPIRES')
+        cls.THUMBS = settings.get('IMAGES_THUMBS')
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
-        cls.IMAGES_URLS_FIELD = settings.get('IMAGES_URLS_FIELD', cls.DEFAULT_IMAGES_URLS_FIELD)
-        cls.IMAGES_RESULT_FIELD = settings.get('IMAGES_RESULT_FIELD', cls.DEFAULT_IMAGES_RESULT_FIELD)
+        cls.IMAGES_URLS_FIELD = settings.get('IMAGES_URLS_FIELD')
+        cls.IMAGES_RESULT_FIELD = settings.get('IMAGES_RESULT_FIELD')
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri)
 
