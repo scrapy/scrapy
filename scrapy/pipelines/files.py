@@ -213,14 +213,11 @@ class FilesPipeline(MediaPipeline):
     """
 
     MEDIA_NAME = "file"
-    EXPIRES = 90
     STORE_SCHEMES = {
         '': FSFilesStore,
         'file': FSFilesStore,
         's3': S3FilesStore,
     }
-    DEFAULT_FILES_URLS_FIELD = 'file_urls'
-    DEFAULT_FILES_RESULT_FIELD = 'files'
 
     def __init__(self, store_uri, download_func=None):
         if not store_uri:
@@ -235,9 +232,9 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
-        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
-        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
-        cls.EXPIRES = settings.getint('FILES_EXPIRES', 90)
+        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD')
+        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD')
+        cls.EXPIRES = settings.getint('FILES_EXPIRES')
         store_uri = settings['FILES_STORE']
         return cls(store_uri)
 
