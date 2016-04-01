@@ -18,9 +18,9 @@ from w3lib.url import path_to_file_uri
 import scrapy
 from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
-    S3FeedStorage, StdoutFeedStorage
-)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
+    S3FeedStorage, StdoutFeedStorage,
+    BlockingFeedStorage)
+from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
 from scrapy.utils.python import to_native_str
 
 
@@ -85,6 +85,41 @@ class FTPFeedStorageTest(unittest.TestCase):
         yield storage.store(BytesIO(b"new content"))
         with open(path, 'rb') as fp:
             self.assertEqual(fp.read(), b"new content")
+
+
+class BlockingFeedStorageTest(unittest.TestCase):
+
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
+    def test_default_temp_dir(self):
+        b = BlockingFeedStorage()
+
+        tmp = b.open(self.get_test_spider())
+        tmp_path = os.path.dirname(tmp.name)
+        self.assertEqual(tmp_path, tempfile.gettempdir())
+
+    def test_temp_file(self):
+        b = BlockingFeedStorage()
+
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
+        tmp = b.open(spider)
+        tmp_path = os.path.dirname(tmp.name)
+        self.assertEqual(tmp_path, tests_path)
+
+    def test_invalid_folder(self):
+        b = BlockingFeedStorage()
+
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        invalid_path = os.path.join(tests_path, 'invalid_path')
+        spider = self.get_test_spider({'FEED_TEMPDIR': invalid_path})
+
+        self.assertRaises(OSError, b.open, spider=spider)
 
 
 class S3FeedStorageTest(unittest.TestCase):
