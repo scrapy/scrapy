@@ -280,6 +280,40 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+SSL Errors on OS X
+------------------
+
+At the time of this writing (April 2016), the version of OpenSSL that
+ships on OS X El Capitan (10.11.4) is quite old. The system OpenSSL is
+version ``0.9.8zg`` whereas the latest version is ``1.0.2g``.
+
+The current version of Scrapy (1.0.5) also has issues that will
+be addressed in version 1.1, so we'll need to install the release
+candidate.
+
+Assuming you're using `Homebrew <http://brew.sh>`_, install OpenSSL::
+
+    brew update
+    brew install openssl # or brew upgrade openssl
+    # the following step might not be necessary
+    # omit unless ssl errors continue
+    brew link --force openssl
+
+Now install Scrapy (preferably into a
+`virtual <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_ environment
+`wrapper <http://virtualenvwrapper.readthedocs.org/en/latest/index.html>`_) via::
+
+    mkvirtualenv name_of_environment
+    env LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" pip install cryptography pyopenssl
+    pip install Scrapy==1.1.0rc3
+
+List of bugs that you may be hitting:
+
+- https://github.com/scrapy/scrapy/issues/981
+- https://github.com/scrapy/scrapy/issues/1429
+- https://github.com/scrapy/scrapy/issues/1435
+- https://github.com/scrapy/scrapy/issues/1764
+
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/LIFO
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
