@@ -10,8 +10,7 @@ import re
 import six
 from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
                                     urlparse, parse_qsl, urlencode,
-                                    unquote)
-from six.moves.urllib.parse import quote, urlsplit, urlunsplit
+                                    quote, unquote)
 if six.PY3:
     from urllib.parse import unquote_to_bytes
 
@@ -39,49 +38,6 @@ def url_is_from_spider(url, spider):
 
 def url_has_any_extension(url, extensions):
     return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
-
-
-def safe_url_string(url, encoding='utf8', path_encoding='utf8'):
-    """Convert the given URL into a legal URL by escaping unsafe characters
-    according to RFC-3986.
-
-    If a bytes URL is given, it is first converted to `str` using the given
-    encoding (which defaults to 'utf-8'). 'utf-8' encoding is used for
-    URL path component (unless overriden by path_encoding), and given
-    encoding is used for query string or form data.
-    When passing a encoding, you should use the encoding of the
-    original page (the page from which the url was extracted from).
-
-    Calling this function on an already "safe" URL will return the URL
-    unmodified.
-
-    Always returns a native `str` (bytes in Python2, unicode in Python3).
-    """
-    # Python3's urlsplit() chokes on bytes input with non-ASCII chars,
-    # so let's decode (to Unicode) using page encoding.
-    #
-    # it is assumed that a raw bytes input comes from the page
-    # corresponding to the encoding
-    #
-    # Note: if this assumption is wrong, this will fail;
-    #       in the general case, users are required to use Unicode
-    #       or safe ASCII bytes input
-    parts = urlsplit(to_unicode(url, encoding=encoding))
-
-    # quote() in Python2 return type follows input type;
-    # quote() in Python3 always returns Unicode (native str)
-    return urlunsplit((
-        to_native_str(parts.scheme),
-        to_native_str(parts.netloc.encode('idna')),
-
-        # default encoding for path component SHOULD be UTF-8
-        quote(to_bytes(parts.path, path_encoding), _safe_chars),
-
-        # encoding of query and fragment follows page encoding
-        # or form-charset (if known and passed)
-        quote(to_bytes(parts.query, encoding), _safe_chars),
-        quote(to_bytes(parts.fragment, encoding), _safe_chars),
-    ))
 
 
 def _safe_ParseResult(parts, encoding='utf8', path_encoding='utf8'):

@@ -5,11 +5,12 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import six
+from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.url import escape_ajax, safe_url_string
+from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
 
 
