@@ -80,8 +80,8 @@ class LinkExtractorTestCase(unittest.TestCase):
         ])
 
         self.assertEqual(lx.extract_links(response_latin1), [
-            Link(url='http://example.com/sample_%F1.html', text=''),
-            Link(url='http://example.com/sample_%E1.html', text='sample \xe1 text'.decode('latin1')),
+            Link(url='http://example.com/sample_%C3%B1.html', text=''),
+            Link(url='http://example.com/sample_%C3%A1.html', text='sample \xe1 text'.decode('latin1')),
         ])
 
     def test_matches(self):
