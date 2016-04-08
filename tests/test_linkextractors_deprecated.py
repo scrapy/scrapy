@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 from scrapy.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse
@@ -81,9 +82,14 @@ class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample_%E2%82%AC.html', text='sample \xe2\x82\xac text'.decode('utf-8')),
         ])
 
+        # document encoding does not affect URL path component, only query part
+        # >>> u'sample_ñ.html'.encode('utf8')
+        # 'sample_\xc3\xb1.html'
+        # >>> u"sample_á.html".encode('utf8')
+        # 'sample_\xc3\xa1.html'
         self.assertEqual(lx.extract_links(response_latin1), [
-            Link(url='http://example.com/sample_%F1.html', text=''),
-            Link(url='http://example.com/sample_%E1.html', text='sample \xe1 text'.decode('latin1')),
+            Link(url='http://example.com/sample_%C3%B1.html', text=''),
+            Link(url='http://example.com/sample_%C3%A1.html', text='sample \xe1 text'.decode('latin1')),
         ])
 
     def test_matches(self):
