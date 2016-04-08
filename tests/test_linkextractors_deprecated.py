@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
 import unittest
+
+import pytest
+
 from scrapy.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
@@ -81,9 +85,14 @@ class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample_%E2%82%AC.html', text='sample \xe2\x82\xac text'.decode('utf-8')),
         ])
 
+        # document encoding does not affect URL path component, only query part
+        # >>> u'sample_ñ.html'.encode('utf8')
+        # 'sample_\xc3\xb1.html'
+        # >>> u"sample_á.html".encode('utf8')
+        # 'sample_\xc3\xa1.html'
         self.assertEqual(lx.extract_links(response_latin1), [
-            Link(url='http://example.com/sample_%F1.html', text=''),
-            Link(url='http://example.com/sample_%E1.html', text='sample \xe1 text'.decode('latin1')),
+            Link(url='http://example.com/sample_%C3%B1.html', text=''),
+            Link(url='http://example.com/sample_%C3%A1.html', text='sample \xe1 text'.decode('latin1')),
         ])
 
     def test_matches(self):
@@ -158,6 +167,10 @@ class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/about.html', text=u'About us', nofollow=False),
             Link(url='http://google.com/something', text=u'Something', nofollow=True),
         ])
+
+    @pytest.mark.xfail
+    def test_restrict_xpaths_with_html_entities(self):
+        super(SgmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):

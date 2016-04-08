@@ -179,7 +179,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
             links = self.extractor_cls(restrict_xpaths='//p').extract_links(response)
             self.assertEqual(links,
-                             [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
+                             [Link(url='http://example.org/%E2%99%A5/you?c=%A4', text=u'text')])
 
         def test_restrict_xpaths_concat_in_handle_data(self):
             """html entities cause SGMLParser to call handle_data hook twice"""
@@ -263,6 +263,25 @@ class Base:
             lx = self.extractor_cls(process_value=process_value)
             self.assertEqual(lx.extract_links(response),
                              [Link(url='http://example.org/other/page.html', text='Link text')])
+
+        def test_process_value_base_url(self):
+            """Test process_value when there is a base URL"""
+            html = b"""<html><head><title>Page title<title><base href="http://otherdomain.com/base/somewhere/" />
+            <body><p>
+            <a href="javascript:goToPage('../other/page.html','photo','width=600,height=540,scrollbars'); return false">Link text</a>
+            <a href="/about.html">About us</a></p>
+            </body></html>
+            """
+            response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
+
+            def process_value(value):
+                m = re.search("javascript:goToPage\('(.*?)'", value)
+                if m:
+                    return m.group(1)
+
+            lx = self.extractor_cls(process_value=process_value)
+            self.assertEqual(lx.extract_links(response),
+                             [Link(url='http://otherdomain.com/base/other/page.html', text='Link text')])
 
         def test_base_url_with_restrict_xpaths(self):
             html = b"""<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
@@ -426,8 +445,3 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
         ])
-
-    @pytest.mark.xfail
-    def test_restrict_xpaths_with_html_entities(self):
-        super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
-
