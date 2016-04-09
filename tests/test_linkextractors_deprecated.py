@@ -84,12 +84,19 @@ class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
 
         # document encoding does not affect URL path component, only query part
         # >>> u'sample_ñ.html'.encode('utf8')
-        # 'sample_\xc3\xb1.html'
+        # b'sample_\xc3\xb1.html'
         # >>> u"sample_á.html".encode('utf8')
-        # 'sample_\xc3\xa1.html'
+        # b'sample_\xc3\xa1.html'
+        # >>> u"sample_ö.html".encode('utf8')
+        # b'sample_\xc3\xb6.html'
+        # >>> u"£32".encode('latin1')
+        # b'\xa332'
+        # >>> u"µ".encode('latin1')
+        # b'\xb5'
         self.assertEqual(lx.extract_links(response_latin1), [
             Link(url='http://example.com/sample_%C3%B1.html', text=''),
             Link(url='http://example.com/sample_%C3%A1.html', text='sample \xe1 text'.decode('latin1')),
+            Link(url='http://example.com/sample_%C3%B6.html?price=%A332&%B5=unit', text=''),
         ])
 
     def test_matches(self):
