@@ -22,6 +22,7 @@ except ImportError:
 from twisted.internet import defer, threads
 
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
@@ -213,19 +214,24 @@ class FilesPipeline(MediaPipeline):
     """
 
     MEDIA_NAME = "file"
-    EXPIRES = 90
     STORE_SCHEMES = {
         '': FSFilesStore,
         'file': FSFilesStore,
         's3': S3FilesStore,
     }
-    DEFAULT_FILES_URLS_FIELD = 'file_urls'
-    DEFAULT_FILES_RESULT_FIELD = 'files'
 
-    def __init__(self, store_uri, download_func=None):
+    def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
+        
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
+        
         self.store = self._get_store(store_uri)
+        self.expires = settings.getint('FILES_EXPIRES')
+        self.files_urls_field = settings.get('FILES_URLS_FIELD')
+        self.files_result_field = settings.get('FILES_RESULT_FIELD')
+
         super(FilesPipeline, self).__init__(download_func=download_func)
 
     @classmethod
@@ -235,11 +241,8 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
-        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
-        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
-        cls.EXPIRES = settings.getint('FILES_EXPIRES', 90)
         store_uri = settings['FILES_STORE']
-        return cls(store_uri)
+        return cls(store_uri, settings=settings)
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
@@ -260,7 +263,7 @@ class FilesPipeline(MediaPipeline):
 
             age_seconds = time.time() - last_modified
             age_days = age_seconds / 60 / 60 / 24
-            if age_days > self.EXPIRES:
+            if age_days > self.expires:
                 return  # returning None force download
 
             referer = referer_str(request)
@@ -359,7 +362,7 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
+        return [Request(x) for x in item.get(self.files_urls_field, [])]
 
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
@@ -370,8 +373,8 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.FILES_RESULT_FIELD in item.fields:
-            item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
+        if isinstance(item, dict) or self.files_result_field in item.fields:
+            item[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):

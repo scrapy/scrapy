@@ -17,6 +17,7 @@ from PIL import Image
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.http import Request
+from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
 #TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException, FilesPipeline
@@ -36,26 +37,28 @@ class ImagesPipeline(FilesPipeline):
     """
 
     MEDIA_NAME = 'image'
-    MIN_WIDTH = 0
-    MIN_HEIGHT = 0
-    THUMBS = {}
-    DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
-    DEFAULT_IMAGES_RESULT_FIELD = 'images'
+
+    def __init__(self, store_uri, download_func=None, settings=None):
+        super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
+        
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
+
+        self.expires = settings.getint('IMAGES_EXPIRES')
+        self.images_urls_field = settings.get('IMAGES_URLS_FIELD')
+        self.images_result_field = settings.get('IMAGES_RESULT_FIELD')
+        self.min_width = settings.getint('IMAGES_MIN_WIDTH')
+        self.min_height = settings.getint('IMAGES_MIN_HEIGHT')
+        self.thumbs = settings.get('IMAGES_THUMBS')
 
     @classmethod
     def from_settings(cls, settings):
-        cls.MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
-        cls.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
-        cls.EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
-        cls.THUMBS = settings.get('IMAGES_THUMBS', {})
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
-        cls.IMAGES_URLS_FIELD = settings.get('IMAGES_URLS_FIELD', cls.DEFAULT_IMAGES_URLS_FIELD)
-        cls.IMAGES_RESULT_FIELD = settings.get('IMAGES_RESULT_FIELD', cls.DEFAULT_IMAGES_RESULT_FIELD)
         store_uri = settings['IMAGES_STORE']
-        return cls(store_uri)
+        return cls(store_uri, settings=settings)
 
     def file_downloaded(self, response, request, info):
         return self.image_downloaded(response, request, info)
@@ -78,14 +81,14 @@ class ImagesPipeline(FilesPipeline):
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
-        if width < self.MIN_WIDTH or height < self.MIN_HEIGHT:
+        if width < self.min_width or height < self.min_height:
             raise ImageException("Image too small (%dx%d < %dx%d)" %
-                                 (width, height, self.MIN_WIDTH, self.MIN_HEIGHT))
+                                 (width, height, self.min_width, self.min_height))
 
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in six.iteritems(self.THUMBS):
+        for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
@@ -107,11 +110,11 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.IMAGES_URLS_FIELD, [])]
+        return [Request(x) for x in item.get(self.images_urls_field, [])]
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.IMAGES_RESULT_FIELD in item.fields:
-            item[self.IMAGES_RESULT_FIELD] = [x for ok, x in results if ok]
+        if isinstance(item, dict) or self.images_result_field in item.fields:
+            item[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):

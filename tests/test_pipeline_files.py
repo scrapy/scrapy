@@ -91,7 +91,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         patchers = [
             mock.patch.object(FSFilesStore, 'stat_file', return_value={
                 'checksum': 'abc',
-                'last_modified': time.time() - (FilesPipeline.EXPIRES * 60 * 60 * 24 * 2)}),
+                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
             mock.patch.object(FilesPipeline, 'get_media_requests',
                               return_value=[_prepare_request_object(item_url)]),
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True)
@@ -181,6 +181,35 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
             results = [(True, {'url': url})]
             pipeline.item_completed(results, item, None)
             self.assertEqual(item['stored_file'], [results[0][1]])
+
+
+class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
+
+    def setUp(self):
+        self.tempdir = mkdtemp()
+        self.pipeline = FilesPipeline(self.tempdir)
+        self.default_settings = Settings()
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
+    def test_expires(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_EXPIRES': 42}))
+        self.assertEqual(self.pipeline.expires, self.default_settings.getint('FILES_EXPIRES'))
+        self.assertEqual(another_pipeline.expires, 42)
+
+    def test_files_urls_field(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_URLS_FIELD': 'funny_field'}))
+        self.assertEqual(self.pipeline.files_urls_field, self.default_settings.get('FILES_URLS_FIELD'))
+        self.assertEqual(another_pipeline.files_urls_field, 'funny_field')
+
+    def test_files_result_field(self):
+        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
+                                                                'FILES_RESULT_FIELD': 'funny_field'}))
+        self.assertEqual(self.pipeline.files_result_field, self.default_settings.get('FILES_RESULT_FIELD'))
+        self.assertEqual(another_pipeline.files_result_field, 'funny_field')
 
 
 class TestS3FilesStore(unittest.TestCase):
