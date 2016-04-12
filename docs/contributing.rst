@@ -48,14 +48,17 @@ guidelines when reporting a new bug.
   if you're not sure if what you're seeing is a bug. You can also ask in the
   `#scrapy` IRC channel.
 
-* write complete, reproducible, specific bug reports. The smaller the test
+* write **complete, reproducible, specific bug reports**. The smaller the test
   case, the better. Remember that other developers won't have your project to
   reproduce the bug, so please include all relevant files required to reproduce
-  it.
+  it. See for example StackOverflow's guide on creating a
+  `Minimal, Complete, and Verifiable example`_ exhibiting the issue.
 
 * include the output of ``scrapy version -v`` so developers working on your bug
   know exactly which version and platform it occurred on, which is often very
   helpful for reproducing it, or knowing if it was already fixed.
+
+.. _Minimal, Complete, and Verifiable example: https://stackoverflow.com/help/mcve
 
 Writing patches
 ===============
