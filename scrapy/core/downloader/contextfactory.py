@@ -1,6 +1,7 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
 
+
 try:
 
     from zope.interface.declarations import implementer
@@ -10,6 +11,12 @@ try:
     from twisted.internet._sslverify import ClientTLSOptions
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
+
+
+    class ScrapyClientTLSOptions(ClientTLSOptions):
+        def _identityVerifyingInfoCallback(self, connection, where, ret):
+            pass
+
 
     @implementer(IPolicyForHTTPS)
     class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
@@ -49,7 +56,7 @@ try:
             return self.getCertificateOptions().getContext()
 
         def creatorForNetloc(self, hostname, port):
-            return ClientTLSOptions(hostname.decode("ascii"), self.getContext())
+            return ScrapyClientTLSOptions(hostname.decode("ascii"), self.getContext())
 
 
     @implementer(IPolicyForHTTPS)
