@@ -1,21 +1,19 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
 
-
 try:
 
     from zope.interface.declarations import implementer
 
     # the following should be available from Twisted 14.0.0
-    from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust
-    from twisted.internet._sslverify import ClientTLSOptions
+    from twisted.internet.ssl import (optionsForClientTLS,
+                                      CertificateOptions,
+                                      platformTrust)
+
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
 
-
-    class ScrapyClientTLSOptions(ClientTLSOptions):
-        def _identityVerifyingInfoCallback(self, connection, where, ret):
-            pass
+    from scrapy.core.downloader.tls import ScrapyClientTLSOptions
 
 
     @implementer(IPolicyForHTTPS)
