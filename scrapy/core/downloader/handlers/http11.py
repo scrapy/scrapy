@@ -122,7 +122,10 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """
         self._protocol.dataReceived = self._protocolDataReceived
         if  TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
-            self._protocol.transport.startTLS(self._contextFactory,
+            # this set proper Server Name Indication extension
+            sslOptions = self._contextFactory.creatorForNetloc(
+                self._tunneledHost, self._tunneledPort)
+            self._protocol.transport.startTLS(sslOptions,
                                               self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
