@@ -122,9 +122,14 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """
         self._protocol.dataReceived = self._protocolDataReceived
         if  TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
-            # this set proper Server Name Indication extension
-            sslOptions = self._contextFactory.creatorForNetloc(
-                self._tunneledHost, self._tunneledPort)
+            try:
+                # this sets proper Server Name Indication extension
+                # but is only available for Twisted>=14.0
+                sslOptions = self._contextFactory.creatorForNetloc(
+                    self._tunneledHost, self._tunneledPort)
+            except AttributeError:
+                # fall back to non-SNI SSL context factory
+                sslOptions = self._contextFactory
             self._protocol.transport.startTLS(sslOptions,
                                               self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
