@@ -204,10 +204,10 @@ class MockServer():
         time.sleep(0.2)
 
 
-def ssl_context_factory():
+def ssl_context_factory(keyfile='keys/cert.pem', certfile='keys/cert.pem'):
     return ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
-         os.path.join(os.path.dirname(__file__), 'keys/cert.pem'),
+         os.path.join(os.path.dirname(__file__), keyfile),
+         os.path.join(os.path.dirname(__file__), certfile),
          )
 
 

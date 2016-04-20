@@ -119,6 +119,10 @@ class HttpTestCase(unittest.TestCase):
     scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
+    # only used for HTTPS tests
+    keyfile = 'keys/cert.pem'
+    certfile = 'keys/cert.pem'
+
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
@@ -137,7 +141,8 @@ class HttpTestCase(unittest.TestCase):
         self.host = 'localhost'
         if self.scheme == 'https':
             self.port = reactor.listenSSL(
-                0, self.wrapper, ssl_context_factory(), interface=self.host)
+                0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile),
+                interface=self.host)
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
@@ -316,6 +321,18 @@ class Http11TestCase(HttpTestCase):
 
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
+
+
+class Https11WrongHostnameTestCase(Http11TestCase):
+    scheme = 'https'
+
+    # above tests use a server certificate for "localhost",
+    # client connection to "localhost" too.
+    # here we test that even if the server certificate is for another domain,
+    # "www.example.com" in this case,
+    # the tests still pass
+    keyfile = 'keys/example-com.key.pem'
+    certfile = 'keys/example-com.cert.pem'
 
 
 class Http11MockServerTestCase(unittest.TestCase):
