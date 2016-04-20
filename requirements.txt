@@ -2,7 +2,7 @@ Twisted>=10.0.0
 lxml
 pyOpenSSL
 cssselect>=0.9
-w3lib>=1.14.1
+w3lib>=1.14.2
 queuelib
 six>=1.5.2
 PyDispatcher>=2.0.5
