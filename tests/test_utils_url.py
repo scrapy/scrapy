@@ -2,10 +2,12 @@
 import unittest
 
 import six
+from six.moves.urllib.parse import urlparse
+
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
                               canonicalize_url, add_http_if_no_scheme,
-                              guess_scheme)
+                              guess_scheme, parse_url)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -123,15 +125,54 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
                                           "http://www.example.com/do?a=1&q=a+space")
 
-    @unittest.skipUnless(six.PY2, "TODO")
-    def test_normalize_percent_encoding_in_paths(self):
-        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
-                                          "http://www.example.com/a%A3do"),
+    def test_canonicalize_url_unicode_path(self):
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9")
 
-    @unittest.skipUnless(six.PY2, "TODO")
+    def test_canonicalize_url_unicode_query_string(self):
+        # default encoding for path and query is UTF-8
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?q=résumé"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+
+        # passed encoding will affect query string
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?q=résumé", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%E9sum%E9")
+
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?country=Россия", encoding='cp1251'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?country=%D0%EE%F1%F1%E8%FF")
+
+    def test_canonicalize_url_unicode_query_string_wrong_encoding(self):
+        # trying to encode with wrong encoding
+        # fallback to UTF-8
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?currency=€", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?currency=%E2%82%AC")
+
+        self.assertEqual(canonicalize_url(u"http://www.example.com/résumé?country=Россия", encoding='latin1'),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?country=%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F")
+
+    def test_normalize_percent_encoding_in_paths(self):
+        self.assertEqual(canonicalize_url("http://www.example.com/r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9")
+
+        # non-UTF8 encoded sequences: they should be kept untouched, only upper-cased
+        # 'latin1'-encoded sequence in path
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
+                                          "http://www.example.com/a%A3do")
+
+        # 'latin1'-encoded path, UTF-8 encoded query string
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
+
+        # 'latin1'-encoded path and query string
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do?q=r%e9sum%e9"),
+                                          "http://www.example.com/a%A3do?q=r%E9sum%E9")
+
     def test_normalize_percent_encoding_in_query_arguments(self):
         self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
                                           "http://www.example.com/do?k=b%A3")
+
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=r%c3%a9sum%c3%a9"),
+                                          "http://www.example.com/do?k=r%C3%A9sum%C3%A9")
 
     def test_non_ascii_percent_encoding_in_paths(self):
         self.assertEqual(canonicalize_url("http://www.example.com/a do?a=1"),
@@ -144,7 +185,7 @@ class CanonicalizeUrlTest(unittest.TestCase):
                                           "http://www.example.com/a%20do%C2%A3.html?a=1")
 
     def test_non_ascii_percent_encoding_in_query_arguments(self):
-        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3"),
+        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=£500&a=5&z=3"),
                                           u"http://www.example.com/do?a=5&price=%C2%A3500&z=3")
         self.assertEqual(canonicalize_url(b"http://www.example.com/do?price=\xc2\xa3500&a=5&z=3"),
                                           "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
@@ -167,7 +208,6 @@ class CanonicalizeUrlTest(unittest.TestCase):
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html"),
             "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html")
 
-    @unittest.skipUnless(six.PY2, "TODO")
     def test_safe_characters_unicode(self):
         # urllib.quote uses a mapping cache of encoded characters. when parsing
         # an already percent-encoded url, it will fail if that url was not
@@ -181,11 +221,36 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.EXAMPLE.com/"),
                                           "http://www.example.com/")
 
+    def test_canonicalize_idns(self):
+        self.assertEqual(canonicalize_url(u'http://www.bücher.de?q=bücher'),
+                                           'http://www.xn--bcher-kva.de/?q=b%C3%BCcher')
+        # Japanese (+ reordering query parameters)
+        self.assertEqual(canonicalize_url(u'http://はじめよう.みんな/?query=サ&maxResults=5'),
+                                           'http://xn--p8j9a0d9c9a.xn--q9jyb4c/?maxResults=5&query=%E3%82%B5')
+
     def test_quoted_slash_and_question_sign(self):
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC+rocks%3f/?yeah=1"),
                          "http://foo.com/AC%2FDC+rocks%3F/?yeah=1")
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC/"),
                          "http://foo.com/AC%2FDC/")
+
+    def test_canonicalize_urlparsed(self):
+        # canonicalize_url() can be passed an already urlparse'd URL
+        self.assertEqual(canonicalize_url(urlparse(u"http://www.example.com/résumé?q=résumé")),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+        self.assertEqual(canonicalize_url(urlparse('http://www.example.com/caf%e9-con-leche.htm')),
+                                          'http://www.example.com/caf%E9-con-leche.htm')
+        self.assertEqual(canonicalize_url(urlparse("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9")),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
+
+    def test_canonicalize_parse_url(self):
+        # parse_url() wraps urlparse and is used in link extractors
+        self.assertEqual(canonicalize_url(parse_url(u"http://www.example.com/résumé?q=résumé")),
+                                          "http://www.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+        self.assertEqual(canonicalize_url(parse_url('http://www.example.com/caf%e9-con-leche.htm')),
+                                          'http://www.example.com/caf%E9-con-leche.htm')
+        self.assertEqual(canonicalize_url(parse_url("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9")),
+                                          "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
 
 
 class AddHttpIfNoScheme(unittest.TestCase):
