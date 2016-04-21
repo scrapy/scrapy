@@ -56,4 +56,5 @@ class _BenchSpider(scrapy.Spider):
 
     def parse(self, response):
         for link in self.link_extractor.extract_links(response):
-            yield scrapy.Request(link.url, callback=self.parse)
+            yield scrapy.Request(link.url, encoding=link.encoding,
+                                 callback=self.parse)
