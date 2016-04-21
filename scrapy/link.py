@@ -13,9 +13,9 @@ from scrapy.utils.python import to_bytes
 class Link(object):
     """Link objects represent an extracted link by the LinkExtractor."""
 
-    __slots__ = ['url', 'text', 'fragment', 'nofollow']
+    __slots__ = ['url', 'text', 'fragment', 'nofollow', 'encoding']
 
-    def __init__(self, url, text='', fragment='', nofollow=False):
+    def __init__(self, url, text='', fragment='', nofollow=False, encoding='utf8'):
         if not isinstance(url, str):
             if six.PY2:
                 warnings.warn("Link urls must be str objects. "
@@ -28,6 +28,7 @@ class Link(object):
         self.text = text
         self.fragment = fragment
         self.nofollow = nofollow
+        self.encoding = encoding
 
     def __eq__(self, other):
         return self.url == other.url and self.text == other.text and \

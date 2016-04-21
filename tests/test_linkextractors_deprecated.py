@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
+
+import pytest
+
 from scrapy.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
@@ -171,6 +174,10 @@ class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/about.html', text=u'About us', nofollow=False),
             Link(url='http://google.com/something', text=u'Something', nofollow=True),
         ])
+
+    @pytest.mark.xfail
+    def test_restrict_xpaths_with_html_entities(self):
+        super(SgmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
