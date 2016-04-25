@@ -110,6 +110,39 @@ You can install Scrapy with ``pip`` after that::
     The same non-python dependencies can be used to install Scrapy in Debian
     Wheezy (7.0) and above.
 
+Fedora
+------
+
+*Tested on F23*
+
+* Verify that python 2.7 is default and that pip is installed::
+
+     python --version
+     >>>>     Python 2.7.11
+    
+     pip -V
+     >>>>     pip 8.1.1 from /usr/lib/python2.7/site-packages (python 2.7)
+
+  * If your output indicates Python 2.7 is installed, you may safely install via pip or dnf::
+
+     pip install scrapy
+
+OR 
+ 
+     dnf install python-scrapy
+
+
+.. Recommended:: Run the above command in a virtualenv
+
+
+* If you prefer to build the python dependencies locally instead of relying on system packages OR if python 2.7 is not default, you'll need to install their required non-python dependencies first::
+
+     python-devel, python-rpm-macros, libffi-devel, redhat-rpm-config, openssl-devel, libxml2-devel, libxml-devel, python-lxml, python-libxml2, python-cffi, glib2-devel, gnet2-devel, libxslt-devel
+
+* Continue with pip install scrapy, as above, preferably inside of a virtualenv.
+
+
+
 Archlinux
 ---------
 
