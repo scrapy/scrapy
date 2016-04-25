@@ -100,10 +100,10 @@ class JsonItemExporter(BaseItemExporter):
         self.first_item = True
 
     def start_exporting(self):
-        self.file.write(b"[")
+        self.file.write(b"[\n")
 
     def finish_exporting(self):
-        self.file.write(b"]")
+        self.file.write(b"\n]")
 
     def export_item(self, item):
         if self.first_item:
