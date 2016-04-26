@@ -11,7 +11,7 @@ import six
 from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
                                     urlparse, parse_qsl, urlencode,
                                     quote, unquote)
-if six.PY3:
+if not six.PY2:
     from urllib.parse import unquote_to_bytes
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
@@ -157,7 +157,7 @@ def parse_url(url, encoding=None):
     return urlparse(to_unicode(url, encoding))
 
 
-if six.PY3:
+if not six.PY2:
     from urllib.parse import _coerce_args, unquote_to_bytes
 
     def parse_qsl_to_bytes(qs, keep_blank_values=False, strict_parsing=False):
