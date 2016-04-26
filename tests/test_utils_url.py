@@ -252,6 +252,19 @@ class CanonicalizeUrlTest(unittest.TestCase):
         self.assertEqual(canonicalize_url(parse_url("http://www.example.com/a%a3do?q=r%c3%a9sum%c3%a9")),
                                           "http://www.example.com/a%A3do?q=r%C3%A9sum%C3%A9")
 
+    def test_canonicalize_url_idempotence(self):
+        for url, enc in [(u'http://www.bücher.de/résumé?q=résumé', 'utf8'),
+                         (u'http://www.example.com/résumé?q=résumé', 'latin1'),
+                         (u'http://www.example.com/résumé?country=Россия', 'cp1251'),
+                         (u'http://はじめよう.みんな/?query=サ&maxResults=5', 'iso2022jp')]:
+            canonicalized = canonicalize_url(url, encoding=enc)
+
+            # if we canonicalize again, we ge the same result
+            self.assertEqual(canonicalize_url(canonicalized, encoding=enc), canonicalized)
+
+            # without encoding, already canonicalized URL is canonicalized identically
+            self.assertEqual(canonicalize_url(canonicalized), canonicalized)
+
 
 class AddHttpIfNoScheme(unittest.TestCase):
 
