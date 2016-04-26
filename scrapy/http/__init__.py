@@ -9,6 +9,8 @@ from scrapy.http.headers import Headers
 
 from scrapy.http.request import Request
 from scrapy.http.request.form import FormRequest
+from scrapy.http.request.form import MultipartFormRequest
+from scrapy.http.request.form import MultipartFile
 from scrapy.http.request.rpc import XmlRpcRequest
 
 from scrapy.http.response import Response
