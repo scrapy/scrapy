@@ -83,17 +83,16 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     try:
         scheme, netloc, path, params, query, fragment = _safe_ParseResult(
             parse_url(url), encoding=encoding)
-    except UnicodeError as e:
-        if encoding != 'utf8':
-            scheme, netloc, path, params, query, fragment = _safe_ParseResult(
-                parse_url(url), encoding='utf8')
-        else:
-            raise
+    except UnicodeEncodeError as e:
+        scheme, netloc, path, params, query, fragment = _safe_ParseResult(
+            parse_url(url), encoding='utf8')
 
     # 1. decode query-string as UTF-8 (or keep raw bytes),
     #    sort values,
     #    and percent-encode them back
-    if not six.PY2:
+    if six.PY2:
+        keyvals = parse_qsl(query, keep_blank_values)
+    else:
         # Python3's urllib.parse.parse_qsl does not work as wanted
         # for percent-encoded characters that do not match passed encoding,
         # they get lost.
@@ -118,8 +117,6 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
         # IRIs (namely, to be able to include non-ASCII characters) can only be
         # used if the query part is encoded in UTF-8.
         keyvals = parse_qsl_to_bytes(query, keep_blank_values)
-    else:
-        keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urlencode(keyvals)
 
@@ -138,16 +135,17 @@ def _unquotepath(path):
     for reserved in ('2f', '2F', '3f', '3F'):
         path = path.replace('%' + reserved, '%25' + reserved.upper())
 
-    if six.PY3:
-        # standard lib's unquote() does not work in Python 3
-        # for non-UTF-8 percent-escaped characters, they get lost.
+    if six.PY2:
+        # in Python 2, '%a3' becomes '\xa3', which is what we want
+        return unquote(path)
+    else:
+        # in Python 3,
+        # standard lib's unquote() does not work for non-UTF-8
+        # percent-escaped characters, they get lost.
         # e.g., '%a3' becomes 'REPLACEMENT CHARACTER' (U+FFFD)
         #
         # unquote_to_bytes() returns raw bytes instead
         return unquote_to_bytes(path)
-    else:
-        # in Python 2, '%a3' becomes '\xa3', which is what we want
-        return unquote(path)
 
 
 def parse_url(url, encoding=None):
