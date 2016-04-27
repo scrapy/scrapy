@@ -5,7 +5,6 @@ import six
 from six.moves.urllib.parse import urlparse, urljoin
 
 import lxml.etree as etree
-from w3lib.url import safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
@@ -57,7 +56,6 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            url = safe_url_string(url, encoding=response_encoding)
             url = urljoin(base_url, url)
 
             link = Link(url, _collect_string_content(el) or u'',
