@@ -50,6 +50,11 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     ``ImagesPipeline``), the default ACL policy is now "private" instead
     of "public" **Warning: backwards incompatible!**.
     You can use :setting:`FILES_STORE_S3_ACL` to change it.
+  - We've reimplemented ``canonicalize_url()`` for more correct output,
+    especially for URLs with non-ASCII characters (:issue:`1947`).
+    This could change link extractors output compared to previous scrapy versions.
+    This may also invalidate some cache entries you could still have from pre-1.1 runs.
+    **Warning: backwards incompatible!**.
 
 Keep reading for more details on other improvements and bug fixes.
 
@@ -72,7 +77,6 @@ some limitations in Python 3:
 - FTP download handler is not supported (non-Python 3 ported Twisted
   dependency)
 - Telnet is not supported (non-Python 3 ported Twisted dependency)
-- Scrapy has problems handling non-ASCII URLs in Python 3
 
 Additional New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,11 +116,18 @@ Additional New Features and Enhancements
   setting is set (:issue:`1723`, :issue:`1725`).
 - Added method ``ExecutionEngine.close`` (:issue:`1423`).
 - Added method ``CrawlerRunner.create_crawler`` (:issue:`1528`).
+- Scheduler priority queue can now be customized via
+  :setting:`SCHEDULER_PRIORITY_QUEUE` (:issue:`1822`).
+- ``.pps`` links are now ignored by default in link extractors (:issue:`1835`).
+- temporary data folder for FTP and S3 feed storages can be customized
+  using a new :setting:`FEED_TEMPDIR` setting (:issue:`1847`).
+- ``FilesPipeline`` and ``ImagesPipeline`` settings are now instance attributes
+  instead of class attributes, enabling spider-specific behaviors (:issue:`1891`).
 - Tons of documentation updates and related fixes (:issue:`1291`, :issue:`1302`,
   :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
-  :issue:`1727`).
+  :issue:`1727`, :issue:`1879`).
 - Other refactoring, optimizations and cleanup (:issue:`1476`, :issue:`1481`,
-  :issue:`1477`, :issue:`1315`, :issue:`1290` and :issue:`1750`).
+  :issue:`1477`, :issue:`1315`, :issue:`1290`, :issue:`1750`, :issue:`1881`).
 
 .. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
@@ -126,6 +137,8 @@ Deprecations and Removals
 
 - Added ``to_bytes`` and ``to_unicode``, deprecated ``str_to_unicode`` and
   ``unicode_to_str`` functions (:issue:`778`).
+- ``binary_is_text`` is introduced, to replace use of ``isbinarytext``
+  (but with inverse return value) (:issue:`1851`)
 - The ``optional_features`` set has been removed (:issue:`1359`).
 - The ``--lsprof`` command line option has been removed (:issue:`1689`).
   **Warning: backward incompatible**, but doesn't break user code.
@@ -171,6 +184,12 @@ Bugfixes
 - Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
   :issue:`1624`, :issue:`1654`, :issue:`1722`, :issue:`1726` and :issue:`1303`).
 - Fixed bug in ``utils.template.render_templatefile()`` (:issue:`1212`).
+- Fixed bug with filestorage HTTP cache checking wrong modified time (:issue:`1875`).
+- ``RetryMiddleware`` is now robust to non-standard HTTP status codes
+  (:issue:`1857`).
+- sitemaps extraction from ``robots.txt`` is now case-insensitive (:issue:`1902`).
+- HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
+  to same remote host (:issue:`1912`).
 
 
 1.0.5 (2016-02-04)
