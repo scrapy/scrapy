@@ -123,6 +123,10 @@ Additional New Features and Enhancements
   using a new :setting:`FEED_TEMPDIR` setting (:issue:`1847`).
 - ``FilesPipeline`` and ``ImagesPipeline`` settings are now instance attributes
   instead of class attributes, enabling spider-specific behaviors (:issue:`1891`).
+- ``JsonItemExporter`` now formats opening and closing square brackets
+  on their own line (first and last lines of output file) (:issue:`1950`).
+- If available, ``botocore`` is used for ``S3FeedStorage``, ``S3DownloadHandler``
+  and ``S3FilesStore`` (:issue:`1761`, :issue:`1883`).
 - Tons of documentation updates and related fixes (:issue:`1291`, :issue:`1302`,
   :issue:`1335`, :issue:`1683`, :issue:`1660`, :issue:`1642`, :issue:`1721`,
   :issue:`1727`, :issue:`1879`).
