@@ -42,7 +42,7 @@ setup(
     ],
     install_requires=[
         'Twisted>=10.0.0',
-        'w3lib>=1.13.0',
+        'w3lib>=1.14.2',
         'queuelib',
         'lxml',
         'pyOpenSSL',
