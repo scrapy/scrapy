@@ -86,7 +86,7 @@ Well-written patches should:
 Submitting patches
 ==================
 
-The best way to submit a patch is to issue a `pull request`_ on Github,
+The best way to submit a patch is to issue a `pull request`_ on GitHub,
 optionally creating a new issue first.
 
 Remember to explain what was fixed or the new functionality (what it is, why
@@ -96,7 +96,7 @@ developers to understand and accept your patch.
 You can also discuss the new functionality (or bug fix) before creating the
 patch, but it's always good to have a patch ready to illustrate your arguments
 and show that you have put some additional thought into the subject. A good
-starting point is to send a pull request on Github. It can be simple enough to
+starting point is to send a pull request on GitHub. It can be simple enough to
 illustrate your idea, and leave documentation/tests for later, after the idea
 has been validated and proven useful. Alternatively, you can send an email to
 `scrapy-users`_ to discuss your idea first.
