@@ -21,6 +21,7 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
+from scrapy.core.downloader.handlers.http11 import TunnelError
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class RetryMiddleware(object):
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError)
+                           IOError, TunnelError)
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
