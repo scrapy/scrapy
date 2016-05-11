@@ -3,8 +3,8 @@
 Release notes
 =============
 
-1.1.0
------
+1.1.0 (2016-05-11)
+------------------
 
 This 1.1 release brings a lot of interesting features and bug fixes:
 
@@ -69,14 +69,13 @@ you can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
 features are still missing (and some may never be ported).
 
 
-Almost all builtin extensions/middlewares are expected to work. However, we are aware of
-some limitations in Python 3:
+Almost all builtin extensions/middlewares are expected to work.
+However, we are aware of some limitations in Python 3:
 
-- Scrapy doesn't work yet in Windows with Python 3 (non-Python 3 ported Twisted dependency)
-- Sending emails is not supported (non-Python 3 ported Twisted dependency)
-- FTP download handler is not supported (non-Python 3 ported Twisted
-  dependency)
-- Telnet is not supported (non-Python 3 ported Twisted dependency)
+- Scrapy has not been tested on Windows with Python 3
+- Sending emails is not supported
+- FTP download handler is not supported
+- Telnet console is not supported
 
 Additional New Features and Enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
