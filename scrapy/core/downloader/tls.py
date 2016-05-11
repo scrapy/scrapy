@@ -44,7 +44,9 @@ try:
                 try:
                     verifyHostname(connection, self._hostnameASCII)
                 except VerificationError as e:
-                    logger.warning(e)
+                    logger.warning(
+                        'Remote certificate is not valid for hostname "{}"; {}'.format(
+                            self._hostnameASCII, e))
 
 except ImportError:
     # ImportError should not matter for older Twisted versions
