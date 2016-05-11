@@ -188,12 +188,18 @@ Bugfixes
 - Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
   :issue:`1624`, :issue:`1654`, :issue:`1722`, :issue:`1726` and :issue:`1303`).
 - Fixed bug in ``utils.template.render_templatefile()`` (:issue:`1212`).
-- Fixed bug with filestorage HTTP cache checking wrong modified time (:issue:`1875`).
-- ``RetryMiddleware`` is now robust to non-standard HTTP status codes
-  (:issue:`1857`).
 - sitemaps extraction from ``robots.txt`` is now case-insensitive (:issue:`1902`).
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
+
+
+1.0.6 (2016-05-04)
+------------------
+
+- FIX: RetryMiddleware is now robust to non-standard HTTP status codes (:issue:`1857`)
+- FIX: Filestorage HTTP cache was checking wrong modified time (:issue:`1875`)
+- DOC: Support for Sphinx 1.4+ (:issue:`1893`)
+- DOC: Consistency in selectors examples (:issue:`1869`)
 
 
 1.0.5 (2016-02-04)
