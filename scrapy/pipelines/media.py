@@ -9,6 +9,7 @@ from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils import deprecate
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,8 @@ logger = logging.getLogger(__name__)
 class MediaPipeline(object):
 
     LOG_FAILED_RESULTS = True
+
+    _DEPRECATED_ATTRS = {}
 
     class SpiderInfo(object):
         def __init__(self, spider):
@@ -26,6 +29,15 @@ class MediaPipeline(object):
 
     def __init__(self, download_func=None):
         self.download_func = download_func
+
+    def __getattr__(self, name):
+        if name in self._DEPRECATED_ATTRS:
+            new_name = self._DEPRECATED_ATTRS[name]
+            deprecate.attribute(self, name, new_name, version='1.2')
+            return getattr(self, new_name)
+
+        msg = '{.__name__!r} object has no attribute {!r}'
+        raise AttributeError(msg.format(self.__class__, name))
 
     @classmethod
     def from_crawler(cls, crawler):

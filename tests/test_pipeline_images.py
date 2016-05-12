@@ -94,7 +94,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
 
-    def test_derived_pipelines_can_still_use_uppercase_names(self):
+    def test_deprecate_uppercase_attribute_names(self):
         # given:
         class CustomImagesPipeline(ImagesPipeline):
             def item_completed(self, *a, **kw):
@@ -105,15 +105,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         pipeline = CustomImagesPipeline(self.tempdir, download_func=_mocked_download_func)
 
         # then:
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEquals(pipeline.images_result_field, pipeline.IMAGES_RESULT_FIELD)
-            self.assertEquals(
-                'CustomImagesPipeline.IMAGES_RESULT_FIELD attribute is deprecated'
-                ' and will be no longer supported in Scrapy 1.2, use'
-                ' CustomImagesPipeline.images_result_field attribute instead', str(w[-1].message))
-
-        # and:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             self.assertEquals(pipeline.expires, pipeline.IMAGES_EXPIRES)

@@ -21,7 +21,6 @@ from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
 #TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException, FilesPipeline
-from scrapy.utils import deprecate
 
 
 class NoimagesDrop(DropItem):
@@ -38,6 +37,15 @@ class ImagesPipeline(FilesPipeline):
     """
 
     MEDIA_NAME = 'image'
+
+    _DEPRECATED_ATTRS = {
+        'IMAGES_EXPIRES': 'expires',
+        'IMAGES_URLS_FIELD': 'images_urls_field',
+        'IMAGES_RESULT_FIELD': 'images_result_field',
+        'IMAGES_MIN_WIDTH': 'min_width',
+        'IMAGES_MIN_HEIGHT': 'min_height',
+        'IMAGES_THUMBS': 'thumbs',
+    }
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
@@ -60,22 +68,6 @@ class ImagesPipeline(FilesPipeline):
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
-
-    def __getattr__(self, name):
-        lower_name = name.lower()
-
-        if name != lower_name and hasattr(self, lower_name):
-            deprecate.attribute(self, name, lower_name, version='1.2')
-            return getattr(self, lower_name)
-
-        if name.startswith('IMAGES_'):
-            alt_name = name[len('IMAGES_'):].lower()
-            if hasattr(self, alt_name):
-                deprecate.attribute(self, name, alt_name, version='1.2')
-                return getattr(self, alt_name)
-
-        msg = '{.__name__!r} object has no attribute {!r}'
-        raise AttributeError(msg.format(self.__class__, name))
 
     def file_downloaded(self, response, request, info):
         return self.image_downloaded(response, request, info)
