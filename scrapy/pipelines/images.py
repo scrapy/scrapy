@@ -37,26 +37,31 @@ class ImagesPipeline(FilesPipeline):
     """
 
     MEDIA_NAME = 'image'
+    MIN_WIDTH = 0
+    MIN_HEIGHT = 0
+    EXPIRES = 0
+    THUMBS = {}
+    IMAGES_URLS_FIELD = 'image_urls'
+    IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        self.expires = settings.getint('IMAGES_EXPIRES')
-        self.images_urls_field = settings.get('IMAGES_URLS_FIELD')
-        self.images_result_field = settings.get('IMAGES_RESULT_FIELD')
-        self.min_width = settings.getint('IMAGES_MIN_WIDTH')
-        self.min_height = settings.getint('IMAGES_MIN_HEIGHT')
-        self.thumbs = settings.get('IMAGES_THUMBS')
+        self.expires = settings.getint('IMAGES_EXPIRES', self.EXPIRES)
+        self.images_urls_field = settings.get('IMAGES_URLS_FIELD', self.IMAGES_URLS_FIELD)
+        self.images_result_field = settings.get('IMAGES_RESULT_FIELD', self.IMAGES_RESULT_FIELD)
+        self.min_width = settings.getint('IMAGES_MIN_WIDTH', self.MIN_WIDTH)
+        self.min_height = settings.getint('IMAGES_MIN_HEIGHT', self.MIN_HEIGHT)
+        self.thumbs = settings.get('IMAGES_THUMBS', self.THUMBS)
 
     @classmethod
     def from_settings(cls, settings):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
-
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 

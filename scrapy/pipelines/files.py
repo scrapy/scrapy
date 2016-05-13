@@ -214,11 +214,14 @@ class FilesPipeline(MediaPipeline):
     """
 
     MEDIA_NAME = "file"
+    EXPIRES = 90
     STORE_SCHEMES = {
         '': FSFilesStore,
         'file': FSFilesStore,
         's3': S3FilesStore,
     }
+    DEFAULT_FILES_URLS_FIELD = 'file_urls'
+    DEFAULT_FILES_RESULT_FIELD = 'files'
 
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
@@ -228,9 +231,9 @@ class FilesPipeline(MediaPipeline):
             settings = Settings(settings)
         
         self.store = self._get_store(store_uri)
-        self.expires = settings.getint('FILES_EXPIRES')
-        self.files_urls_field = settings.get('FILES_URLS_FIELD')
-        self.files_result_field = settings.get('FILES_RESULT_FIELD')
+        self.expires = settings.getint('FILES_EXPIRES', self.EXPIRES)
+        self.files_urls_field = settings.get('FILES_URLS_FIELD', self.DEFAULT_FILES_URLS_FIELD)
+        self.files_result_field = settings.get('FILES_RESULT_FIELD', self.DEFAULT_FILES_RESULT_FIELD)
 
         super(FilesPipeline, self).__init__(download_func=download_func)
 
