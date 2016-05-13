@@ -224,19 +224,22 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
     def test_images_urls_field(self):
         another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
                                                                 'IMAGES_URLS_FIELD': 'funny_field'}))
-        self.assertEqual(self.pipeline.images_urls_field, self.default_settings.get('IMAGES_URLS_FIELD'))
+        default = self.pipeline.IMAGES_URLS_FIELD
+        self.assertEqual(self.pipeline.images_urls_field, self.default_settings.get('IMAGES_URLS_FIELD', default))
         self.assertEqual(another_pipeline.images_urls_field, 'funny_field')
 
     def test_images_result_field(self):
         another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
                                                                 'IMAGES_RESULT_FIELD': 'funny_field'}))
-        self.assertEqual(self.pipeline.images_result_field, self.default_settings.get('IMAGES_RESULT_FIELD'))
+        default = self.pipeline.IMAGES_RESULT_FIELD
+        self.assertEqual(self.pipeline.images_result_field, self.default_settings.get('IMAGES_RESULT_FIELD', default))
         self.assertEqual(another_pipeline.images_result_field, 'funny_field')
 
     def test_min_width(self):
         another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
                                                                 'IMAGES_MIN_WIDTH': 42}))
-        self.assertEqual(self.pipeline.min_width, self.default_settings.getint('IMAGES_MIN_WIDTH'))
+        default = self.pipeline.MIN_WIDTH
+        self.assertEqual(self.pipeline.min_width, self.default_settings.getint('IMAGES_MIN_WIDTH', default))
         self.assertEqual(another_pipeline.min_width, 42)
 
     def test_min_height(self):
@@ -249,7 +252,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         custom_thumbs = {'small': (50, 50), 'big': (270, 270)}
         another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
                                                                 'IMAGES_THUMBS': custom_thumbs}))
-        self.assertEqual(self.pipeline.thumbs, self.default_settings.get('IMAGES_THUMBS'))
+        default = self.pipeline.THUMBS
+        self.assertEqual(self.pipeline.thumbs, self.default_settings.get('IMAGES_THUMBS', default))
         self.assertEqual(another_pipeline.thumbs, custom_thumbs)
 
 
