@@ -99,6 +99,11 @@ def setup(app):
         rolename      = "reqmeta",
         indextemplate = "pair: %s; reqmeta",
     )
+    app.add_crossref_type(
+        directivename="message",
+        rolename="message",
+        indextemplate="pair: %s; message",
+    )
     app.add_role('source', source_role)
     app.add_role('commit', commit_role)
     app.add_role('issue', issue_role)
