@@ -256,6 +256,29 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         self.assertEqual(self.pipeline.thumbs, self.default_settings.get('IMAGES_THUMBS', default))
         self.assertEqual(another_pipeline.thumbs, custom_thumbs)
 
+    def test_class_attrs_preserved(self):
+
+        class UserDefinedImagePipeline(ImagesPipeline):
+            MIN_WIDTH = 1000
+
+        # If image settings are not defined values are taken from class attributes.
+        pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        self.assertEqual(pipeline.min_width, 1000)
+
+    def test_class_attrs_not_preserved_if_settings_defined(self):
+
+        class UserDefinedImagePipeline(ImagesPipeline):
+            MIN_WIDTH = 1000
+
+        settings = {
+            "IMAGES_STORE": self.tempdir,
+            "IMAGES_MIN_WIDTH": 90
+        }
+
+        # If image settings are defined they override class attributes.
+        pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
+        self.assertEqual(pipeline.min_width, 90)
+
 
 def _create_image(format, *a, **kw):
     buf = TemporaryFile()
