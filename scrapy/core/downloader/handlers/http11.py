@@ -343,7 +343,7 @@ class ScrapyAgent(object):
         txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
 
 
