@@ -44,8 +44,6 @@ class Command(ScrapyCommand):
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
             print('Error: Project names must begin with a letter and contain'\
                     ' only\nletters, numbers and underscores')
-        elif exists(project_name):
-            print('Error: Directory %r already exists' % project_name)
         elif _module_exists(project_name):
             print('Error: Module %r already exists' % project_name)
         else:
