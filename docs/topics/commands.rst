@@ -103,13 +103,14 @@ Creating projects
 The first thing you typically do with the ``scrapy`` tool is create your Scrapy
 project::
 
-    scrapy startproject myproject
+    scrapy startproject myproject [project_dir]
 
-That will create a Scrapy project under the ``myproject`` directory.
+That will create a Scrapy project under the ``project_dir`` directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
 Next, you go inside the new project directory::
 
-    cd myproject
+    cd project_dir
 
 And you're ready to use the ``scrapy`` command to manage and control your
 project from there.
@@ -181,11 +182,12 @@ Project-only commands:
 startproject
 ------------
 
-* Syntax: ``scrapy startproject <project_name>``
+* Syntax: ``scrapy startproject <project_name> [project_dir]``
 * Requires project: *no*
 
-Creates a new Scrapy project named ``project_name``, under the ``project_name``
+Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
 Usage example::
 
