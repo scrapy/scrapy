@@ -98,9 +98,9 @@ class Command(ScrapyCommand):
                 ProjectName=string_camelcase(project_name))
         print("New Scrapy project %r, using template directory %r, created in:" % \
               (project_name, self.templates_dir))
-        print("    %s\n" % abspath(project_name))
+        print("    %s\n" % abspath(project_dir))
         print("You can start your first spider with:")
-        print("    cd %s" % project_name)
+        print("    cd %s" % project_dir)
         print("    scrapy genspider example example.com")
 
     @property

@@ -85,6 +85,8 @@ class StartprojectTest(ProjectTest):
         assert exists(join(join(abspath(project_dir), self.project_name), 'settings.py'))
         assert exists(join(join(abspath(project_dir), self.project_name), 'spiders', '__init__.py'))
 
+        self.assertEqual(0, self.call('startproject', self.project_name, project_dir + '2'))
+
         self.assertEqual(1, self.call('startproject', self.project_name, project_dir))
         self.assertEqual(1, self.call('startproject', self.project_name + '2', project_dir))
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
