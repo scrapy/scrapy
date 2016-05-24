@@ -1,9 +1,10 @@
 from __future__ import print_function
 import re
+import os
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
-from shutil import copytree, ignore_patterns, move
+from shutil import ignore_patterns, move, copy2, copystat
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -27,7 +28,7 @@ class Command(ScrapyCommand):
     default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
-        return "<project_name>"
+        return "<project_name> [project_dir]"
 
     def short_desc(self):
         return "Create new project"
@@ -51,20 +52,71 @@ class Command(ScrapyCommand):
             return True
         return False
 
+    def _copytree(self, src, dst, symlinks=False, ignore=None):
+        names = os.listdir(src)
+        if ignore is not None:
+            ignored_names = ignore(src, names)
+        else:
+            ignored_names = set()
+
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+
+        errors = []
+        for name in names:
+            if name in ignored_names:
+                continue
+            srcname = os.path.join(src, name)
+            dstname = os.path.join(dst, name)
+            try:
+                if symlinks and os.path.islink(srcname):
+                    linkto = os.readlink(srcname)
+                    os.symlink(linkto, dstname)
+                elif os.path.isdir(srcname):
+                    self._copytree(srcname, dstname, symlinks, ignore)
+                else:
+                    # Will raise a SpecialFileError for unsupported file types
+                    copy2(srcname, dstname)
+            # catch the Error from the recursive copytree so that we can
+            # continue with other files
+            except EnvironmentError, err:
+                errors.extend(err.args[0])
+            except EnvironmentError, why:
+                errors.append((srcname, dstname, str(why)))
+        try:
+            copystat(src, dst)
+        except OSError, why:
+            if WindowsError is not None and isinstance(why, WindowsError):
+                # Copying file access times may fail on Windows
+                pass
+            else:
+                errors.append((src, dst, str(why)))
+        if errors:
+            raise EnvironmentError(errors)
+
     def run(self, args, opts):
-        if len(args) != 1:
+        if len(args) not in (1, 2):
             raise UsageError()
+
         project_name = args[0]
+        project_dir = args[0]
+
+        if len(args) == 2:
+            project_dir = args[1]
+            if exists(join(project_dir, 'scrapy.cfg')):
+                self.exitcode = 1
+                print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
+                return
 
         if not self._is_valid_name(project_name):
             self.exitcode = 1
             return
 
-        copytree(self.templates_dir, project_name, ignore=IGNORE)
-        move(join(project_name, 'module'), join(project_name, project_name))
+        self._copytree(self.templates_dir, abspath(project_dir), ignore=IGNORE)
+        move(join(project_dir, 'module'), join(project_dir, project_name))
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
-            tplfile = join(project_name,
+            tplfile = join(project_dir,
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
