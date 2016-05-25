@@ -153,4 +153,4 @@ class HttpCompressionTest(TestCase):
         response = response.replace(body = None)
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
-        self.assertEquals(response.body, '')
+        self.assertEquals(response.body, b'')
