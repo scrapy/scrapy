@@ -25,5 +25,6 @@ class ItemPipelineManager(MiddlewareManager):
         def buildPipelineHandler(func):
             def pipelineHandler(output):
                 return func(output, spider)
+            return pipelineHandler
         pipelines_list = [buildPipelineHandler(method) for method in self.methods['process_item']]
         return process_chain(pipelines_list, item)
