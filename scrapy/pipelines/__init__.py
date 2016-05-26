@@ -25,6 +25,7 @@ class ItemPipelineManager(MiddlewareManager):
     def process_item(self, item, spider):
         def buildPipelineHandler(func):
             def pipelineHandler(output):
+                print pipelines_list.index(pipelineHandler)
                 if isinstance(output, (BaseItem, dict)):
                     return func(output, spider)
                 elif isinstance(output, collections.Iterable):
