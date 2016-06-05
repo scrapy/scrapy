@@ -470,7 +470,7 @@ Here is a modification to our spider that does just that::
                 item['desc'] = sel.xpath('text()').extract()
                 yield item
 
-Now the `parse()` method only extract the interesting links from the page,
+Now the `parse()` method only extracts the interesting links from the page,
 builds a full absolute URL using the `response.urljoin` method (since the links can
 be relative) and yields new requests to be sent later, registering as callback
 the method `parse_dir_contents()` that will ultimately scrape the data we want.
