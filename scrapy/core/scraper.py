@@ -11,7 +11,7 @@ from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errba
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
+from scrapy.exceptions import CloseSpider, DropItem, SplitItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
@@ -228,6 +228,8 @@ class Scraper(object):
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
+            elif isinstance(ex, SplitItem):
+                logger.debug('Item Split: {0}'.format(item))
             else:
                 logger.error('Error processing %(item)s', {'item': item},
                              exc_info=failure_to_exc_info(output),
