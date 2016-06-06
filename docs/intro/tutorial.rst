@@ -458,16 +458,16 @@ Here is a modification to our spider that does just that::
         ]
 
         def parse(self, response):
-            for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
+            for href in response.css("#subcategories-div > section > div > .cat-item > a::attr('href')"):
                 url = response.urljoin(href.extract())
                 yield scrapy.Request(url, callback=self.parse_dir_contents)
 
         def parse_dir_contents(self, response):
-            for sel in response.xpath('//ul/li'):
+            for sel in response.xpath('.//div[@class="title-and-desc"]'):
                 item = DmozItem()
-                item['title'] = sel.xpath('a/text()').extract()
+                item['title'] = sel.xpath('a/div/text()').extract()
                 item['link'] = sel.xpath('a/@href').extract()
-                item['desc'] = sel.xpath('text()').extract()
+                item['desc'] = sel.xpath('div/text()').extract()
                 yield item
 
 Now the `parse()` method only extract the interesting links from the page,
