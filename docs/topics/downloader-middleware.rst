@@ -200,7 +200,7 @@ There is support for keeping multiple cookie sessions per spider by using the
 For example::
 
     for i, url in enumerate(urls):
-        yield scrapy.Request("http://www.example.com", meta={'cookiejar': i},
+        yield scrapy.Request(url, meta={'cookiejar': i},
             callback=self.parse_page)
 
 Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
