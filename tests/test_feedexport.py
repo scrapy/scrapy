@@ -6,7 +6,7 @@ from io import BytesIO
 import tempfile
 import shutil
 from six.moves.urllib.parse import urlparse
-import boto
+import boto3
 
 from moto import mock_s3
 from zope.interface.verify import verifyObject
@@ -142,15 +142,15 @@ class S3FeedStorageTest(unittest.TestCase):
         tests_path = os.path.dirname(os.path.abspath(__file__))
         spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
         with mock_s3():
-            conn = boto.connect_s3()
-            conn.create_bucket(bucket)
+            conn = boto3.resource('s3')
+            bucket = conn.Bucket(bucket)
+            bucket.create()
             file = storage.open(spider)
             expected_content = b"content: \xe2\x98\x83"
             file.write(expected_content)
             yield storage.store(file)
-            bucket = conn.get_bucket(bucket, validate=False)
-            key = bucket.get_key(key)
-            content = key.get_contents_as_string()
+            # key has to be cleared from slashes for moto
+            content = bucket.Object(key[1:]).get()['Body'].read()
             self.assertEqual(content, expected_content)
 
 
