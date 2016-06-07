@@ -6,7 +6,9 @@ from io import BytesIO
 import tempfile
 import shutil
 from six.moves.urllib.parse import urlparse
+import boto
 
+from moto import mock_s3
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -20,7 +22,7 @@ from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage,
     BlockingFeedStorage)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
+from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_native_str
 
 
@@ -132,22 +134,24 @@ class S3FeedStorageTest(unittest.TestCase):
         return spider
 
     @defer.inlineCallbacks
-    def test_store(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
+    def test_store_with_mock(self):
+        uri = 's3://testbucket/testfile.txt'
+        _, bucket, key, _, _, _ = urlparse(uri)
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
         tests_path = os.path.dirname(os.path.abspath(__file__))
         spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
-        file = storage.open(spider)
-        expected_content = b"content: \xe2\x98\x83"
-        file.write(expected_content)
-        yield storage.store(file)
-        u = urlparse(uri)
-        content = get_s3_content_and_delete(u.hostname, u.path[1:])
-        self.assertEqual(content, expected_content)
+        with mock_s3():
+            conn = boto.connect_s3()
+            conn.create_bucket(bucket)
+            file = storage.open(spider)
+            expected_content = b"content: \xe2\x98\x83"
+            file.write(expected_content)
+            yield storage.store(file)
+            bucket = conn.get_bucket(bucket, validate=False)
+            key = bucket.get_key(key)
+            content = key.get_contents_as_string()
+            self.assertEqual(content, expected_content)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):
