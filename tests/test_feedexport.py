@@ -124,6 +124,13 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
     @defer.inlineCallbacks
     def test_store(self):
         assert_aws_environ()
@@ -132,7 +139,9 @@ class S3FeedStorageTest(unittest.TestCase):
             raise unittest.SkipTest("No S3 URI available for testing")
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
-        file = storage.open(scrapy.Spider("default"))
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
+        file = storage.open(spider)
         expected_content = b"content: \xe2\x98\x83"
         file.write(expected_content)
         yield storage.store(file)
