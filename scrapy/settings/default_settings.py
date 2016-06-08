@@ -139,6 +139,7 @@ FEED_URI = None
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
+FEED_EXPORT_ENCODING = None
 FEED_EXPORT_FIELDS = None
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
