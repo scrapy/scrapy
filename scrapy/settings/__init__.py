@@ -466,6 +466,11 @@ class Settings(BaseSettings):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)
 
+    def __getitem__(self, opt_name):
+        if opt_name not in self:
+            return None
+        return self.attributes[opt_name].value
+
 
 class CrawlerSettings(Settings):
 
