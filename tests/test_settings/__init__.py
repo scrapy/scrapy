@@ -250,7 +250,6 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getlist('TEST_LISTx', ['default']), ['default'])
         self.assertEqual(settings['TEST_STR'], 'value')
         self.assertEqual(settings.get('TEST_STR'), 'value')
-        self.assertEqual(settings['TEST_STRx'], None)
         self.assertEqual(settings.get('TEST_STRx'), None)
         self.assertEqual(settings.get('TEST_STRx', 'default'), 'default')
         self.assertEqual(settings.getdict('TEST_DICT1'), {'key1': 'val1', 'ke2': 3})

@@ -91,8 +91,6 @@ class BaseSettings(MutableMapping):
         self.update(values, priority)
 
     def __getitem__(self, opt_name):
-        if opt_name not in self:
-            return None
         return self.attributes[opt_name].value
 
     def __contains__(self, name):
@@ -108,7 +106,7 @@ class BaseSettings(MutableMapping):
         :param default: the value to return if no setting is found
         :type default: any
         """
-        return self[name] if self[name] is not None else default
+        return self[name] if name in self else default
 
     def getbool(self, name, default=False):
         """
@@ -200,8 +198,8 @@ class BaseSettings(MutableMapping):
         :type name: string
         """
         compbs = BaseSettings()
-        compbs.update(self[name + '_BASE'])
-        compbs.update(self[name])
+        compbs.update(self.get(name + '_BASE'))
+        compbs.update(self.get(name))
         return compbs
 
     def getpriority(self, name):
