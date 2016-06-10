@@ -265,7 +265,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
         self.assertEqual(pipeline.min_width, 1000)
 
-    def test_class_attrs_not_preserved_if_settings_defined(self):
+    def test_class_attrs_preserved_if_only_global_settings_defined(self):
 
         class UserDefinedImagePipeline(ImagesPipeline):
             MIN_WIDTH = 1000
@@ -277,7 +277,21 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         # If image settings are defined they override class attributes.
         pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
-        self.assertEqual(pipeline.min_width, 90)
+        self.assertEqual(pipeline.min_width, 1000)
+
+    def test_settings_multiple_pipelilines(self):
+        # If user has multiple pipelines he can define setting keys preceded with
+        # pipeline class name.
+        class UserDefinedPipeline(ImagesPipeline):
+            pass
+
+        settings = {
+            "IMAGES_MIN_WIDTH": 10,
+            "USERDEFINEDPIPELINE_IMAGES_MIN_WIDTH": 1999,
+            "IMAGES_STORE": self.tempdir
+        }
+        user_pipeline = UserDefinedPipeline.from_settings(Settings(settings))
+        self.assertEqual(user_pipeline.min_width, 1999)
 
 
 def _create_image(format, *a, **kw):
