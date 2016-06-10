@@ -3,6 +3,8 @@
 Frequently Asked Questions
 ==========================
 
+.. _faq-scrapy-bs-cmp:
+
 How does Scrapy compare to BeautifulSoup or lxml?
 -------------------------------------------------
 
@@ -23,6 +25,36 @@ comparing `jinja2`_ to `Django`_.
 .. _lxml: http://lxml.de/
 .. _jinja2: http://jinja.pocoo.org/
 .. _Django: https://www.djangoproject.com/
+
+How can I use Scrapy with BeautifulSoup?
+----------------------------------------
+
+As mentioned :ref:`above <faq-scrapy-bs-cmp>`, BeautifulSoup can be used
+for parsing HTML responses in Scrapy callbacks.
+You just have to feed the response's body into a ``BeautifulSoup`` object
+and extract whatever data you need from it.
+
+Here's an example spider using ``lxml`` parser with BeautifulSoup API::
+
+
+    from bs4 import BeautifulSoup
+    import scrapy
+
+
+    class ExampleSpider(scrapy.Spider):
+        name = "example"
+        allowed_domains = ["example.com"]
+        start_urls = (
+            'http://www.example.com/',
+        )
+
+        def parse(self, response):
+            soup = BeautifulSoup(response.text, 'lxml')
+            yield {
+                "url": response.url,
+                "title": soup.h1.string
+            }
+
 
 .. _faq-python-versions:
 
