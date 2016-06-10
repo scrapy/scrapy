@@ -191,9 +191,9 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
-.. note:: If you have multiple image pipelines and you want to have different settings in different pipelines
-   you can either set class attributes in pipeline object or add custom settings keys and load them at pipeline
-   initialization.
+.. note:: If you have multiple image pipelines inheriting from ImagePipeline and you want to have different settings in different pipelines
+   you can set setting keys preceded with uppercase name of your pipeline class. E.g. if your pipeline is called
+   MyPipeline and you want to have custom IMAGES_URLS_FIELD you define setting MYPIPELINE_IMAGES_URLS_FIELD.
 
 
 Additional features
