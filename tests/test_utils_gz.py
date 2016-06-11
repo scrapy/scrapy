@@ -1,7 +1,8 @@
 import unittest
 from os.path import join
 
-from scrapy.utils.gz import gunzip
+from scrapy.utils.gz import gunzip, is_gzipped
+from scrapy.http import Response, Headers
 from tests import tests_datadir
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
@@ -27,3 +28,16 @@ class GunzipTest(unittest.TestCase):
         with open(join(SAMPLEDIR, 'truncated-crc-error-short.gz'), 'rb') as f:
             text = gunzip(f.read())
             assert text.endswith(b'</html>')
+
+    def test_is_gzipped(self):
+        hdrs = Headers({"Content-Type": "application/x-gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+        r2 = Response("http://www.example.com")
+        self.assertTrue(not is_gzipped(r2))
+        hdrs = Headers({"Content-Type": "application/javascript"})
+        r3 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(not is_gzipped(r3))
+        hdrs = Headers({"Content-Type": "application/x-gzip;charset=utf-8"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
