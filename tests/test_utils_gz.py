@@ -29,15 +29,24 @@ class GunzipTest(unittest.TestCase):
             text = gunzip(f.read())
             assert text.endswith(b'</html>')
 
-    def test_is_gzipped(self):
+    def test_is_gzipped_right(self):
         hdrs = Headers({"Content-Type": "application/x-gzip"})
         r1 = Response("http://www.example.com", headers=hdrs)
         self.assertTrue(is_gzipped(r1))
-        r2 = Response("http://www.example.com")
-        self.assertTrue(not is_gzipped(r2))
+        hdrs = Headers({"Content-Type": "application/gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+    def test_is_gzipped_empty(self):
+        r1 = Response("http://www.example.com")
+        self.assertTrue(not is_gzipped(r1))
+
+    def test_is_gzipped_wrong(self):
         hdrs = Headers({"Content-Type": "application/javascript"})
-        r3 = Response("http://www.example.com", headers=hdrs)
-        self.assertTrue(not is_gzipped(r3))
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(not is_gzipped(r1))
+
+    def test_is_gzipped_with_charset(self):
         hdrs = Headers({"Content-Type": "application/x-gzip;charset=utf-8"})
         r1 = Response("http://www.example.com", headers=hdrs)
         self.assertTrue(is_gzipped(r1))
