@@ -54,4 +54,4 @@ def gunzip(data):
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')
-    return ctype in (b'application/x-gzip', b'application/gzip')
+    return b'application/x-gzip' in ctype or b'application/gzip' in ctype
