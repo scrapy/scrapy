@@ -470,12 +470,12 @@ Here is a modification to our spider that does just that::
                 item['desc'] = sel.xpath('text()').extract()
                 yield item
 
-Now the `parse()` method only extract the interesting links from the page,
+Now the `parse()` method only extracts the interesting links from the page,
 builds a full absolute URL using the `response.urljoin` method (since the links can
 be relative) and yields new requests to be sent later, registering as callback
 the method `parse_dir_contents()` that will ultimately scrape the data we want.
 
-What you see here is the Scrapy's mechanism of following links: when you yield
+What you see here is Scrapy's mechanism of following links: when you yield
 a Request in a callback method, Scrapy will schedule that request to be sent
 and register a callback method to be executed when that request finishes.
 
@@ -483,7 +483,7 @@ Using this, you can build complex crawlers that follow links according to rules
 you define, and extract different kinds of data depending on the page it's
 visiting.
 
-A common pattern is a callback method that extract some items, looks for a link
+A common pattern is a callback method that extracts some items, looks for a link
 to follow to the next page and then yields a `Request` with the same callback
 for it::
 
