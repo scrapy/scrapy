@@ -325,34 +325,67 @@ information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 After inspecting the page source, you'll find that the web site's information
 is inside ``<div>`` elements. In fact, the title and description of the site's list
 are included in ``<div>`` elements that contain the ``class`` attribute
-``"title-and-desc"``.
+``"title-and-desc"``.::
+
+    <div id="sites-section" class="section-wrapper">
+        <div id="site-list-content" class="results browse-content">
+        
+            <div class="site-item ">
+                <div class="site-icon "><i class="siteIcon fa fa-file-text-o"></i></div>
+                <div class="site-flag" style="display: none;">
+                   <a href="/public/flag?t=computers&amp;cat=Computers%2FProgramming%2FLanguages%2FPython%2FBooks&amp;url=http%3A%2F%2Fwww.pearsonhighered.com%2Feducator%2Facademic%2Fproduct%2F0%2C%2C0130260363%2C00%252Ben-USS_01DBC.html" title="Report an issue with this listing"><i class="fa fa-flag"></i></a>
+                </div>
+    
+                <div class="title-and-desc">
+                   <a target="_blank" href="http://www.pearsonhighered.com/educator/academic/product/0,,0130260363,00%2Ben-USS_01DBC.html">
+                     <div class="site-title" style="text-decoration: none;">Core Python Programming </div>
+                   </a>
+                   <div class="site-descr ">
+			    
+                        By Wesley J. Chun; Prentice Hall PTR, 2001, ISBN 0130260363. For experienced developers to improve extant skills; professional level examples. Starts by introducing syntax, objects, error handling, functions, classes, built-ins. [Prentice Hall]
+                        <span class="content-type media-date"></span>
+                   </div>
+                </div>
+            </div>
 
 So we can select each ``<div>`` element belonging to the site's list with this
 code::
 
-    response.xpath('//div[@class="title-and-desc"]')
+	response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]')
+
+You can also use CSS selectors as the expression is much simpler::
+
+	response.css('#site-list-content > div.site-item')
 
 And from them, the site's descriptions::
 
-    response.xpath('//div[@class="title-and-desc"]/div/text()').extract()
+	response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/div[@class="site-descr "]/text()').extract()
+
+Again, using CSS selectors is much simpler::
+
+	response.css('#site-list-content > div.site-item > div.title-and-desc > div.site-descr::text').extract()
 
 The site's titles::
 
-    response.xpath('//div[@class="title-and-desc"]/a/div/text()').extract()
+    response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/a/div[@class="site-title"]/text()').extract()
+
+And, using CSS selectors::
+
+	response.css('#site-list-content > div.site-item > div.title-and-desc > a > div.site-title::text').extract()
 
 And the site's links::
 
-    response.xpath('//div[@class="title-and-desc"]/a/@href').extract()
+    response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/a/@href').extract()
+    response.css('#site-list-content > div.site-item > div.title-and-desc > a::attr("href")').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//div[@class="title-and-desc"]'):
-        title = sel.xpath('a/div/text()').extract()
+	for sel in response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]'):
+        title = sel.xpath('a/div[@class="site-title"]/text()').extract()
         link = sel.xpath('a/@href').extract()
-        desc = sel.xpath('div/text()').extract()
-        print title, link, desc
+        desc = sel.xpath('div[@class="site-descr "]/text()').extract()
 
 .. note::
 
@@ -420,7 +453,7 @@ Spider would be like this::
                 item['desc'] = sel.xpath('div/text()').extract()
                 yield item
 
-.. note:: You can find a fully-functional variant of this spider in the dirbot_
+.. note:: You can find a fully-functional variant of this spider in the dirbot_/\
    project available at https://github.com/scrapy/dirbot
 
 Now crawling dmoz.org yields ``DmozItem`` objects::
