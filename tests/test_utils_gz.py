@@ -37,14 +37,28 @@ class GunzipTest(unittest.TestCase):
         r1 = Response("http://www.example.com", headers=hdrs)
         self.assertTrue(is_gzipped(r1))
 
+    def test_is_gzipped_not_quite(self):
+        hdrs = Headers({"Content-Type": "application/gzippppp"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertFalse(is_gzipped(r1))
+
+    def test_is_gzipped_case_insensitive(self):
+        hdrs = Headers({"Content-Type": "Application/X-Gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+        hdrs = Headers({"Content-Type": "application/X-GZIP ; charset=utf-8"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
     def test_is_gzipped_empty(self):
         r1 = Response("http://www.example.com")
-        self.assertTrue(not is_gzipped(r1))
+        self.assertFalse(is_gzipped(r1))
 
     def test_is_gzipped_wrong(self):
         hdrs = Headers({"Content-Type": "application/javascript"})
         r1 = Response("http://www.example.com", headers=hdrs)
-        self.assertTrue(not is_gzipped(r1))
+        self.assertFalse(is_gzipped(r1))
 
     def test_is_gzipped_with_charset(self):
         hdrs = Headers({"Content-Type": "application/x-gzip;charset=utf-8"})
