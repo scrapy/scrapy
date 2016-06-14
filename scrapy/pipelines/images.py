@@ -37,6 +37,9 @@ class ImagesPipeline(FilesPipeline):
     """
 
     MEDIA_NAME = 'image'
+
+    # Uppercase attributes kept for backward compatibility with code that subclasses
+    # ImagesPipeline. They may be overriden by settings.
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
     EXPIRES = 0

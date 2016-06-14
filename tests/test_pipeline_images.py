@@ -207,6 +207,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
+
     def setUp(self):
         self.tempdir = mkdtemp()
         self.pipeline = ImagesPipeline(self.tempdir)
@@ -215,46 +216,27 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
     def tearDown(self):
         rmtree(self.tempdir)
 
-    def test_expires(self):
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_EXPIRES': 42}))
-        self.assertEqual(self.pipeline.expires, self.default_settings.getint('IMAGES_EXPIRES'))
-        self.assertEqual(another_pipeline.expires, 42)
-
-    def test_images_urls_field(self):
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_URLS_FIELD': 'funny_field'}))
-        default = self.pipeline.IMAGES_URLS_FIELD
-        self.assertEqual(self.pipeline.images_urls_field, self.default_settings.get('IMAGES_URLS_FIELD', default))
-        self.assertEqual(another_pipeline.images_urls_field, 'funny_field')
-
-    def test_images_result_field(self):
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_RESULT_FIELD': 'funny_field'}))
-        default = self.pipeline.IMAGES_RESULT_FIELD
-        self.assertEqual(self.pipeline.images_result_field, self.default_settings.get('IMAGES_RESULT_FIELD', default))
-        self.assertEqual(another_pipeline.images_result_field, 'funny_field')
-
-    def test_min_width(self):
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_MIN_WIDTH': 42}))
-        default = self.pipeline.MIN_WIDTH
-        self.assertEqual(self.pipeline.min_width, self.default_settings.getint('IMAGES_MIN_WIDTH', default))
-        self.assertEqual(another_pipeline.min_width, 42)
-
-    def test_min_height(self):
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_MIN_HEIGHT': 42}))
-        self.assertEqual(self.pipeline.min_height, self.default_settings.getint('IMAGES_MIN_HEIGHT'))
-        self.assertEqual(another_pipeline.min_height, 42)
-
-    def test_thumbs(self):
-        custom_thumbs = {'small': (50, 50), 'big': (270, 270)}
-        another_pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': self.tempdir,
-                                                                'IMAGES_THUMBS': custom_thumbs}))
-        default = self.pipeline.THUMBS
-        self.assertEqual(self.pipeline.thumbs, self.default_settings.get('IMAGES_THUMBS', default))
-        self.assertEqual(another_pipeline.thumbs, custom_thumbs)
+    def test_different_settings_for_different_instances(self):
+        custom_settings = [
+            # Order is: key name in settings.py, value, name of pipeline attribute.
+            ("IMAGES_EXPIRES", 42, "EXPIRES"),
+            ("IMAGES_STORE", self.tempdir, "IMAGES_STORE"),
+            ("IMAGES_RESULT_FIELD", "funny_field", "IMAGES_RESULT_FIELD"),
+            ("IMAGES_URLS_FIELD", "other_field", "IMAGES_URLS_FIELD"),
+            ("IMAGES_MIN_WIDTH", 99, "MIN_WIDTH"),
+            ("IMAGES_MIN_HEIGHT", 112, "MIN_HEIGHT"),
+            ("IMAGES_THUMBS", {'small': (50, 50), 'big': (270, 270)}, "THUMBS")
+        ]
+        default_settings = Settings()
+        default_sts_pipe = ImagesPipeline(self.tempdir, settings=default_settings)
+        user_sts_pipe = ImagesPipeline.from_settings(Settings({k: v for k, v, _ in custom_settings}))
+        for key, custom_value, attr_name in custom_settings:
+            if attr_name == "IMAGES_STORE":
+                # this is not set as pipeline attribute
+                continue
+            expected_default_value = getattr(default_sts_pipe, attr_name)
+            self.assertEqual(getattr(default_sts_pipe, attr_name), expected_default_value, key)
+            self.assertEqual(getattr(user_sts_pipe, attr_name.lower()), custom_value, key)
 
     def test_class_attrs_preserved(self):
 
@@ -275,7 +257,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             "IMAGES_MIN_WIDTH": 90
         }
 
-        # If image settings are defined they override class attributes.
+        # Class attributes for subclass of ImagePipeline override default setting keys.
         pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
         self.assertEqual(pipeline.min_width, 1000)
 
@@ -284,6 +266,19 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         # pipeline class name.
         class UserDefinedPipeline(ImagesPipeline):
             pass
+
+        settings = {
+            "IMAGES_MIN_WIDTH": 10,
+            "USERDEFINEDPIPELINE_IMAGES_MIN_WIDTH": 1999,
+            "IMAGES_STORE": self.tempdir
+        }
+        user_pipeline = UserDefinedPipeline.from_settings(Settings(settings))
+        self.assertEqual(user_pipeline.min_width, 1999)
+
+    def test_settings_multiple_pipelilines_and_class_attrs(self):
+        # Setting keys for user defined pipeline override class attributes.
+        class UserDefinedPipeline(ImagesPipeline):
+            MIN_WIDTH = 200
 
         settings = {
             "IMAGES_MIN_WIDTH": 10,
