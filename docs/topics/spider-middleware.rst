@@ -112,11 +112,12 @@ following methods:
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when a spider or :meth:`process_spider_input`
-        method (from other spider middleware) raises an exception.
+        This method is called when when a spider or :meth:`process_spider_input`/
+        :meth:`process_spider_output` method (from other spider middleware)
+        raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response`, dict or
+        iterable of :class:`~scrapy.http.Request`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -125,7 +126,8 @@ following methods:
         exception reaches the engine (where it's logged and discarded).
 
         If it returns an iterable the :meth:`process_spider_output` pipeline
-        kicks in, and no other :meth:`process_spider_exception` will be called.
+        kicks in, starting with the last non-executed method, and no other
+        :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
           raised

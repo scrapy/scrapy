@@ -11,6 +11,11 @@ class NotConfigured(Exception):
     """Indicates a missing configuration situation"""
     pass
 
+class InvalidOutput(TypeError):
+    """Indicates an invalid value has been returned
+    by a middleware's processing method"""
+    pass
+
 # HTTP and crawling
 
 class IgnoreRequest(Exception):

@@ -62,6 +62,17 @@ remain disabled. Those components include:
 
 The exception must be raised in the component's ``__init__`` method.
 
+InvalidOutput
+-------------
+
+.. exception:: InvalidOutput
+
+This exception can be raised by a downloader or spider middleware to
+indicate that some method returned a value not suported by the processing
+chain.
+See :ref:`topics-spider-middleware` and :ref:`topics-downloader-middleware`
+for a list of supported output values.
+
 NotSupported
 ------------
 
