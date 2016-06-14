@@ -55,4 +55,4 @@ _is_gzipped_re = re.compile(br'^application/(x-)?gzip\b', re.I)
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')
-    return not _is_gzipped_re.search(ctype) is None
+    return _is_gzipped_re.search(ctype) is not None
