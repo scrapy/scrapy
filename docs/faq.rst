@@ -35,8 +35,7 @@ for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
-Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser
-(so you get the same parsing speed as with scrapy/parsel selectors)::
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
 
 
     from bs4 import BeautifulSoup
