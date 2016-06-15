@@ -319,6 +319,20 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             value = getattr(pipeline, pipe_attr.lower())
             self.assertEqual(value, getattr(pipeline, pipe_attr))
 
+    def test_no_custom_settings_for_subclasses(self):
+        """
+        If there are no settings for subclass and no subclass attributes, pipeline should use
+        attributes of base class.
+        """
+        class UserDefinedImagePipeline(ImagesPipeline):
+            pass
+
+        user_pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            # Values from settings for custom pipeline should be set on pipeline instance.
+            custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
+            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
+
     def test_custom_settings_for_subclasses(self):
         """
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
