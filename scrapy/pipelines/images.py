@@ -53,27 +53,25 @@ class ImagesPipeline(FilesPipeline):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        def key_for_pipe(key):
-            """
-            Allow setting settings for user defined ImagePipelines that inherit from base.
-
-            User can define setting key:
-
-            MYPIPELINENAME_IMAGE_SETTING_NAME = <some value>
-
-            and it will override default settings and class attributes.
-            """
-            class_name = self.__class__.__name__
-            if class_name == "ImagesPipeline":
-                return key
-            return "{}_{}".format(class_name.upper(), key)
-
-        self.expires = settings.getint(key_for_pipe('IMAGES_EXPIRES'), self.EXPIRES)
-        self.images_urls_field = settings.get(key_for_pipe('IMAGES_URLS_FIELD'), self.IMAGES_URLS_FIELD)
-        self.images_result_field = settings.get(key_for_pipe('IMAGES_RESULT_FIELD'), self.IMAGES_RESULT_FIELD)
-        self.min_width = settings.getint(key_for_pipe('IMAGES_MIN_WIDTH'), self.MIN_WIDTH)
-        self.min_height = settings.getint(key_for_pipe('IMAGES_MIN_HEIGHT'), self.MIN_HEIGHT)
-        self.thumbs = settings.get(key_for_pipe('IMAGES_THUMBS'), self.THUMBS)
+        cls_name = "ImagesPipeline"
+        self.expires = settings.getint(
+            self._key_for_pipe('IMAGES_EXPIRES', cls_name), self.EXPIRES
+        )
+        self.images_urls_field = settings.get(
+            self._key_for_pipe('IMAGES_URLS_FIELD', cls_name), self.IMAGES_URLS_FIELD
+        )
+        self.images_result_field = settings.get(
+            self._key_for_pipe('IMAGES_RESULT_FIELD', cls_name), self.IMAGES_RESULT_FIELD
+        )
+        self.min_width = settings.getint(
+            self._key_for_pipe('IMAGES_MIN_WIDTH', cls_name), self.MIN_WIDTH
+        )
+        self.min_height = settings.getint(
+            self._key_for_pipe('IMAGES_MIN_HEIGHT', cls_name), self.MIN_HEIGHT
+        )
+        self.thumbs = settings.get(
+            self._key_for_pipe('IMAGES_THUMBS', cls_name), self.THUMBS
+        )
 
     @classmethod
     def from_settings(cls, settings):

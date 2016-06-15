@@ -27,6 +27,22 @@ class MediaPipeline(object):
     def __init__(self, download_func=None):
         self.download_func = download_func
 
+
+    def _key_for_pipe(self, key, base_class_name):
+        """
+        Allow setting settings for user defined MediaPipelines that inherit from base.
+
+        User can define setting key:
+
+        MYPIPELINENAME_IMAGE_SETTING_NAME = <some value>
+
+        and it will override default settings and class attributes.
+        """
+        class_name = self.__class__.__name__
+        if class_name == base_class_name:
+            return key
+        return "{}_{}".format(class_name.upper(), key)
+
     @classmethod
     def from_crawler(cls, crawler):
         try:

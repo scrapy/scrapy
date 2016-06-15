@@ -229,11 +229,18 @@ class FilesPipeline(MediaPipeline):
         
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        
+
+        cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
-        self.expires = settings.getint('FILES_EXPIRES', self.EXPIRES)
-        self.files_urls_field = settings.get('FILES_URLS_FIELD', self.DEFAULT_FILES_URLS_FIELD)
-        self.files_result_field = settings.get('FILES_RESULT_FIELD', self.DEFAULT_FILES_RESULT_FIELD)
+        self.expires = settings.getint(
+            self._key_for_pipe('FILES_EXPIRES', cls_name), self.EXPIRES
+        )
+        self.files_urls_field = settings.get(
+            self._key_for_pipe('FILES_URLS_FIELD', cls_name), self.DEFAULT_FILES_URLS_FIELD
+        )
+        self.files_result_field = settings.get(
+            self._key_for_pipe('FILES_RESULT_FIELD', cls_name), self.DEFAULT_FILES_RESULT_FIELD
+        )
 
         super(FilesPipeline, self).__init__(download_func=download_func)
 
