@@ -1,4 +1,5 @@
 import os
+import random
 import time
 import hashlib
 import warnings
@@ -184,32 +185,49 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
+    default_cls_settings = {
+        "EXPIRES": 90,
+        "DEFAULT_FILES_URLS_FIELD": "file_urls",
+        "DEFAULT_FILES_RESULT_FIELD": "files"
+    }
+    file_cls_attr_settings_map = {
+        ("EXPIRES", "FILES_EXPIRES"),
+        ("DEFAULT_FILES_URLS_FIELD", "FILES_URLS_FIELD"),
+        ("DEFAULT_FILES_RESULT_FIELD", "FILES_RESULT_FIELD")
+    }
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline(self.tempdir)
-        self.default_settings = Settings()
 
     def tearDown(self):
         rmtree(self.tempdir)
 
-    def test_expires(self):
-        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
-                                                                'FILES_EXPIRES': 42}))
-        self.assertEqual(self.pipeline.expires, self.default_settings.getint('FILES_EXPIRES'))
-        self.assertEqual(another_pipeline.expires, 42)
+    def _generate_fake_settings(self, prefix=None):
 
-    def test_files_urls_field(self):
-        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
-                                                                'FILES_URLS_FIELD': 'funny_field'}))
-        self.assertEqual(self.pipeline.files_urls_field, self.default_settings.get('FILES_URLS_FIELD'))
-        self.assertEqual(another_pipeline.files_urls_field, 'funny_field')
+        def random_string():
+            return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
-    def test_files_result_field(self):
-        another_pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir,
-                                                                'FILES_RESULT_FIELD': 'funny_field'}))
-        self.assertEqual(self.pipeline.files_result_field, self.default_settings.get('FILES_RESULT_FIELD'))
-        self.assertEqual(another_pipeline.files_result_field, 'funny_field')
+        settings = {
+            "FILES_EXPIRES": random.randint(1, 1000),
+            "FILES_URLS_FIELD": random_string(),
+            "FILES_RESULT_FIELD": random_string(),
+            "FILES_STORE": self.tempdir
+        }
+        if not prefix:
+            return settings
+
+        return {prefix.upper() + "_" + k: v for k, v in settings.items()}
+
+    def test_different_settings_for_different_instances(self):
+        custom_settings = self._generate_fake_settings()
+        another_pipeline = FilesPipeline.from_settings(Settings(custom_settings))
+        one_pipeline = FilesPipeline(self.tempdir)
+        for pipe_attr, settings_attr in self.file_cls_attr_settings_map:
+            default_value = self.default_cls_settings[pipe_attr]
+            self.assertEqual(getattr(one_pipeline, pipe_attr), default_value)
+            custom_value = custom_settings[settings_attr]
+            pipe_attr_lower = pipe_attr.lower().replace("default_", "")
+            self.assertEqual(getattr(another_pipeline, pipe_attr_lower), custom_value)
 
 
 class TestS3FilesStore(unittest.TestCase):
