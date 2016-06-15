@@ -1,5 +1,6 @@
 import os
 import hashlib
+import random
 import warnings
 from tempfile import mkdtemp, TemporaryFile
 from shutil import rmtree
@@ -206,87 +207,146 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
+    img_cls_attribute_names = [
+        # Pipeline attribute names with corresponding setting names.
+        ("EXPIRES", "IMAGES_EXPIRES"),
+        ("MIN_WIDTH", "IMAGES_MIN_WIDTH"),
+        ("MIN_HEIGHT", "IMAGES_MIN_HEIGHT"),
+        ("IMAGES_URLS_FIELD", "IMAGES_URLS_FIELD"),
+        ("IMAGES_RESULT_FIELD", "IMAGES_RESULT_FIELD"),
+        ("THUMBS", "IMAGES_THUMBS")
+    ]
+
+    # This should match what is defined in ImagesPipeline.
+    default_pipeline_settings = dict(
+        MIN_WIDTH=0,
+        MIN_HEIGHT=0,
+        EXPIRES=0,
+        THUMBS={},
+        IMAGES_URLS_FIELD='image_urls',
+        IMAGES_RESULT_FIELD='images'
+    )
 
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir)
-        self.default_settings = Settings()
 
     def tearDown(self):
         rmtree(self.tempdir)
 
+    def _generate_fake_settings(self, prefix=None):
+        """
+        :param prefix: string for setting keys
+        :return: dictionary of image pipeline settings
+        """
+
+        def random_string():
+            return "".join([chr(random.randint(97, 123)) for _ in range(10)])
+
+        settings = {
+            "IMAGES_EXPIRES": random.randint(1, 1000),
+            "IMAGES_STORE": self.tempdir,
+            "IMAGES_RESULT_FIELD": random_string(),
+            "IMAGES_URLS_FIELD": random_string(),
+            "IMAGES_MIN_WIDTH": random.randint(1, 1000),
+            "IMAGES_MIN_HEIGHT": random.randint(1, 1000),
+            "IMAGES_THUMBS": {
+                'small': (random.randint(1, 1000), random.randint(1, 1000)),
+                'big': (random.randint(1, 1000), random.randint(1, 1000))
+            }
+        }
+        if not prefix:
+            return settings
+
+        return {prefix.upper() + "_" + k if k != "IMAGES_STORE" else k: v for k, v in settings.items()}
+
+    def _generate_fake_pipeline_subclass(self):
+        """
+        :return: ImagePipeline class will all uppercase attributes set.
+        """
+        class UserDefinedImagePipeline(ImagesPipeline):
+            # Values should be in different range than fake_settings.
+            MIN_WIDTH = random.randint(1000, 2000)
+            MIN_HEIGHT = random.randint(1000, 2000)
+            THUMBS = {
+                'small': (random.randint(1000, 2000), random.randint(1000, 2000)),
+                'big': (random.randint(1000, 2000), random.randint(1000, 2000))
+            }
+            EXPIRES = random.randint(1000, 2000)
+            IMAGES_URLS_FIELD = "field_one"
+            IMAGES_RESULT_FIELD = "field_two"
+
+        return UserDefinedImagePipeline
+
     def test_different_settings_for_different_instances(self):
-        custom_settings = [
-            # Order is: key name in settings.py, value, name of pipeline attribute.
-            ("IMAGES_EXPIRES", 42, "EXPIRES"),
-            ("IMAGES_STORE", self.tempdir, "IMAGES_STORE"),
-            ("IMAGES_RESULT_FIELD", "funny_field", "IMAGES_RESULT_FIELD"),
-            ("IMAGES_URLS_FIELD", "other_field", "IMAGES_URLS_FIELD"),
-            ("IMAGES_MIN_WIDTH", 99, "MIN_WIDTH"),
-            ("IMAGES_MIN_HEIGHT", 112, "MIN_HEIGHT"),
-            ("IMAGES_THUMBS", {'small': (50, 50), 'big': (270, 270)}, "THUMBS")
-        ]
+        """
+        If there are two instances of ImagesPipeline class with different settings, they should
+        have different settings.
+        """
+        custom_settings = self._generate_fake_settings()
         default_settings = Settings()
         default_sts_pipe = ImagesPipeline(self.tempdir, settings=default_settings)
-        user_sts_pipe = ImagesPipeline.from_settings(Settings({k: v for k, v, _ in custom_settings}))
-        for key, custom_value, attr_name in custom_settings:
-            if attr_name == "IMAGES_STORE":
-                # this is not set as pipeline attribute
-                continue
-            expected_default_value = getattr(default_sts_pipe, attr_name)
-            self.assertEqual(getattr(default_sts_pipe, attr_name), expected_default_value, key)
-            self.assertEqual(getattr(user_sts_pipe, attr_name.lower()), custom_value, key)
+        user_sts_pipe = ImagesPipeline.from_settings(Settings(custom_settings))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            expected_default_value = self.default_pipeline_settings.get(pipe_attr)
+            custom_value = custom_settings.get(settings_attr)
+            self.assertNotEqual(expected_default_value, custom_value)
+            self.assertEqual(getattr(default_sts_pipe, pipe_attr.lower()), expected_default_value)
+            self.assertEqual(getattr(user_sts_pipe, pipe_attr.lower()), custom_value)
 
-    def test_class_attrs_preserved(self):
+    def test_subclass_attrs_preserved_default_settings(self):
+        """
+        If image settings are not defined at all subclass of ImagePipeline takes values
+        from class attributes.
+        """
+        pipeline_cls = self._generate_fake_pipeline_subclass()
+        pipeline = pipeline_cls.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            # Instance attribute (lowercase) must be equal to class attribute (uppercase).
+            attr_value = getattr(pipeline, pipe_attr.lower())
+            self.assertEqual(attr_value, getattr(pipeline, pipe_attr))
 
+    def test_subclass_attrs_preserved_custom_settings(self):
+        """
+        If image settings are defined but they are not defined for subclass class attributes
+        should be preserved.
+        """
+        pipeline_cls = self._generate_fake_pipeline_subclass()
+        settings = self._generate_fake_settings()
+        pipeline = pipeline_cls.from_settings(Settings(settings))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            # Instance attribute (lowercase) must be equal to class attribute (uppercase).
+            value = getattr(pipeline, pipe_attr.lower())
+            self.assertEqual(value, getattr(pipeline, pipe_attr))
+
+    def test_custom_settings_for_subclasses(self):
+        """
+        If there are custom settings for subclass and NO class attributes, pipeline should use custom
+        settings.
+        """
         class UserDefinedImagePipeline(ImagesPipeline):
-            MIN_WIDTH = 1000
-
-        # If image settings are not defined values are taken from class attributes.
-        pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
-        self.assertEqual(pipeline.min_width, 1000)
-
-    def test_class_attrs_preserved_if_only_global_settings_defined(self):
-
-        class UserDefinedImagePipeline(ImagesPipeline):
-            MIN_WIDTH = 1000
-
-        settings = {
-            "IMAGES_STORE": self.tempdir,
-            "IMAGES_MIN_WIDTH": 90
-        }
-
-        # Class attributes for subclass of ImagePipeline override default setting keys.
-        pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
-        self.assertEqual(pipeline.min_width, 1000)
-
-    def test_settings_multiple_pipelilines(self):
-        # If user has multiple pipelines he can define setting keys preceded with
-        # pipeline class name.
-        class UserDefinedPipeline(ImagesPipeline):
             pass
 
-        settings = {
-            "IMAGES_MIN_WIDTH": 10,
-            "USERDEFINEDPIPELINE_IMAGES_MIN_WIDTH": 1999,
-            "IMAGES_STORE": self.tempdir
-        }
-        user_pipeline = UserDefinedPipeline.from_settings(Settings(settings))
-        self.assertEqual(user_pipeline.min_width, 1999)
+        prefix = UserDefinedImagePipeline.__name__.upper()
+        settings = self._generate_fake_settings(prefix=prefix)
+        user_pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            # Values from settings for custom pipeline should be set on pipeline instance.
+            custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
 
-    def test_settings_multiple_pipelilines_and_class_attrs(self):
-        # Setting keys for user defined pipeline override class attributes.
-        class UserDefinedPipeline(ImagesPipeline):
-            MIN_WIDTH = 200
-
-        settings = {
-            "IMAGES_MIN_WIDTH": 10,
-            "USERDEFINEDPIPELINE_IMAGES_MIN_WIDTH": 1999,
-            "IMAGES_STORE": self.tempdir
-        }
-        user_pipeline = UserDefinedPipeline.from_settings(Settings(settings))
-        self.assertEqual(user_pipeline.min_width, 1999)
+    def test_custom_settings_and_class_attrs_for_subclasses(self):
+        """
+        If there are custom settings for subclass AND class attributes
+        setting keys are preferred and override attributes.
+        """
+        pipeline_cls = self._generate_fake_pipeline_subclass()
+        prefix = pipeline_cls.__name__.upper()
+        settings = self._generate_fake_settings(prefix=prefix)
+        user_pipeline = pipeline_cls.from_settings(Settings(settings))
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
 
 
 def _create_image(format, *a, **kw):
