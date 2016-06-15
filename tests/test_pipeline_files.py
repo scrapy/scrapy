@@ -218,7 +218,20 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         return {prefix.upper() + "_" + k: v for k, v in settings.items()}
 
+    def _generate_fake_pipeline(self):
+
+        class UserDefinedFilePipeline(FilesPipeline):
+            FILES_EXPIRES = random.randint(1001, 2000)
+            DEFAULT_FILES_URLS_FIELD = "alfa"
+            DEFAULT_FILES_RESULT_FIELD = "beta"
+
+        return UserDefinedFilePipeline
+
     def test_different_settings_for_different_instances(self):
+        """
+        If there are different instances with different settings they should keep
+        different settings.
+        """
         custom_settings = self._generate_fake_settings()
         another_pipeline = FilesPipeline.from_settings(Settings(custom_settings))
         one_pipeline = FilesPipeline(self.tempdir)
@@ -228,6 +241,16 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             custom_value = custom_settings[settings_attr]
             pipe_attr_lower = pipe_attr.lower().replace("default_", "")
             self.assertEqual(getattr(another_pipeline, pipe_attr_lower), custom_value)
+
+    def test_subclass_attributes_preserved_if_no_settings(self):
+        """
+        If subclasses override class attributes and there are no special settings those values should be kept.
+        """
+        pipe_cls = self._generate_fake_pipeline()
+        pipe = pipe_cls.from_settings(Settings({"FILES_STORE": self.tempdir}))
+        for pipe_attr, settings_attr in self.file_cls_attr_settings_map:
+            attr_lower = pipe_attr.lower().replace("default_", "")
+            self.assertEqual(getattr(pipe, attr_lower), getattr(pipe, pipe_attr))
 
 
 class TestS3FilesStore(unittest.TestCase):
