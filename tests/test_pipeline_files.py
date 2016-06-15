@@ -191,9 +191,9 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         "DEFAULT_FILES_RESULT_FIELD": "files"
     }
     file_cls_attr_settings_map = {
-        ("EXPIRES", "FILES_EXPIRES"),
-        ("DEFAULT_FILES_URLS_FIELD", "FILES_URLS_FIELD"),
-        ("DEFAULT_FILES_RESULT_FIELD", "FILES_RESULT_FIELD")
+        ("EXPIRES", "FILES_EXPIRES", "expires"),
+        ("DEFAULT_FILES_URLS_FIELD", "FILES_URLS_FIELD", "files_urls_field"),
+        ("DEFAULT_FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field")
     }
 
     def setUp(self):
@@ -216,7 +216,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         if not prefix:
             return settings
 
-        return {prefix.upper() + "_" + k: v for k, v in settings.items()}
+        return {prefix.upper() + "_" + k if k != "FILES_STORE" else k: v for k, v in settings.items()}
 
     def _generate_fake_pipeline(self):
 
@@ -235,12 +235,11 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         custom_settings = self._generate_fake_settings()
         another_pipeline = FilesPipeline.from_settings(Settings(custom_settings))
         one_pipeline = FilesPipeline(self.tempdir)
-        for pipe_attr, settings_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             default_value = self.default_cls_settings[pipe_attr]
             self.assertEqual(getattr(one_pipeline, pipe_attr), default_value)
             custom_value = custom_settings[settings_attr]
-            pipe_attr_lower = pipe_attr.lower().replace("default_", "")
-            self.assertEqual(getattr(another_pipeline, pipe_attr_lower), custom_value)
+            self.assertEqual(getattr(another_pipeline, pipe_ins_attr), custom_value)
 
     def test_subclass_attributes_preserved_if_no_settings(self):
         """
@@ -248,9 +247,63 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_settings(Settings({"FILES_STORE": self.tempdir}))
-        for pipe_attr, settings_attr in self.file_cls_attr_settings_map:
-            attr_lower = pipe_attr.lower().replace("default_", "")
-            self.assertEqual(getattr(pipe, attr_lower), getattr(pipe, pipe_attr))
+        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+            self.assertEqual(getattr(pipe, pipe_ins_attr), getattr(pipe, pipe_attr))
+
+    def test_subclass_attrs_preserved_custom_settings(self):
+        """
+        If file settings are defined but they are not defined for subclass class attributes
+        should be preserved.
+        """
+        pipeline_cls = self._generate_fake_pipeline()
+        settings = self._generate_fake_settings()
+        pipeline = pipeline_cls.from_settings(Settings(settings))
+        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+            value = getattr(pipeline, pipe_ins_attr)
+            self.assertEqual(value, getattr(pipeline, pipe_attr))
+
+    def test_no_custom_settings_for_subclasses(self):
+        """
+        If there are no settings for subclass and no subclass attributes, pipeline should use
+        attributes of base class.
+        """
+        class UserDefinedFilesPipeline(FilesPipeline):
+            pass
+
+        user_pipeline = UserDefinedFilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
+        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+            # Values from settings for custom pipeline should be set on pipeline instance.
+            custom_value = self.default_cls_settings.get(pipe_attr.upper())
+            self.assertEqual(getattr(user_pipeline, pipe_ins_attr), custom_value)
+
+    def test_custom_settings_for_subclasses(self):
+        """
+        If there are custom settings for subclass and NO class attributes, pipeline should use custom
+        settings.
+        """
+        class UserDefinedFilesPipeline(FilesPipeline):
+            pass
+
+        prefix = UserDefinedFilesPipeline.__name__.upper()
+        settings = self._generate_fake_settings(prefix=prefix)
+        user_pipeline = UserDefinedFilesPipeline.from_settings(Settings(settings))
+        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+            # Values from settings for custom pipeline should be set on pipeline instance.
+            custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
+
+    def test_custom_settings_and_class_attrs_for_subclasses(self):
+        """
+        If there are custom settings for subclass AND class attributes
+        setting keys are preferred and override attributes.
+        """
+        pipeline_cls = self._generate_fake_pipeline()
+        prefix = pipeline_cls.__name__.upper()
+        settings = self._generate_fake_settings(prefix=prefix)
+        user_pipeline = pipeline_cls.from_settings(Settings(settings))
+        for pipe_cls_attr, settings_attr, pipe_inst_attr  in self.file_cls_attr_settings_map:
+            custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
 
 
 class TestS3FilesStore(unittest.TestCase):
