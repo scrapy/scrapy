@@ -11,7 +11,7 @@ Installing Scrapy
 
 The installation steps assume that you have the following things installed:
 
-* `Python`_ 2.7
+* `Python`_ 2.7 or above 3.3
 
 * `pip`_ and `setuptools`_ Python packages. Nowadays `pip`_ requires and
   installs `setuptools`_ if not installed. Python 2.7.9 and later include
@@ -84,6 +84,10 @@ Windows
   install Scrapy::
 
       pip install Scrapy
+
+.. note::
+     Python 3 is not supported on Windows. Installation of Scrapy on Windows
+     with Python 3 will fail.
 
 Ubuntu 9.10 or above
 --------------------
