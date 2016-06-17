@@ -36,3 +36,15 @@ deploy:
     tags: true
     repo: scrapy/scrapy
     condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|dev[0-9]+)?$"
+  after_deploy:
+    packaging/build.sh
+
+deploy:
+  provider: bintray
+  file_glob: true
+  file: ${HOME}/packaging/*deb
+  user: luar
+  key: "apikey"
+  passphrase: "test"
+  dry-run: true
+
