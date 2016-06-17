@@ -7,7 +7,7 @@ with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
 
 
 setup(
-    name='Scrapy',
+    name='cyberplant-Scrapy',
     version=version,
     url='http://scrapy.org',
     description='A high-level Web Crawling and Web Scraping framework',
