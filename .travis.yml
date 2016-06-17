@@ -47,4 +47,3 @@ deploy:
   key: "apikey"
   passphrase: "test"
   dry-run: true
-
