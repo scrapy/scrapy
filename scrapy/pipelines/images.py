@@ -40,7 +40,7 @@ class ImagesPipeline(FilesPipeline):
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
@@ -56,6 +56,9 @@ class ImagesPipeline(FilesPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        azureStore = cls.STORE_SCHEMES['azure']
+        azureStore.AZURE_ACCOUNT_NAME = settings['AZURE_ACCOUNT_NAME']
+        azureStore.AZURE_SECRET_ACCESS_KEY = settings['AZURE_SECRET_ACCESS_KEY']
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
