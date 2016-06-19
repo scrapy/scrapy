@@ -194,6 +194,82 @@ class S3FilesStore(object):
         return extra
 
 
+class AzureFilesStore(object):
+
+    AZURE_ACCOUNT_NAME = None
+    AZURE_SECRET_ACCESS_KEY = None
+
+    HEADERS = {
+        'Cache-Control': 'max-age=172800',
+    }
+
+    def __init__(self, uri):
+        from azure.storage.blob import BlockBlobService, ContentSettings
+        self.BlockBlobService = BlockBlobService
+        self.ContentSettings = ContentSettings
+        assert uri.startswith('azure://')
+        self.container, self.prefix = uri[8:].split('/', 1)
+
+    def stat_file(self, path, info):
+        def _onsuccess(blob_properties):
+            if blob_properties:
+                checksum = blob_properties.properties.etag.strip('"')
+                last_modified = blob_properties.properties.last_modified  # Aware dt
+                modified_tuple = parsedate_tz(last_modified.strftime("%d %b %Y %H:%M:%S %z"))
+                modified_stamp = int(mktime_tz(modified_tuple))
+                return {'checksum': checksum, 'last_modified': modified_stamp}
+            return None
+
+        return self._get_azure_blob(path).addCallback(_onsuccess)
+
+    def _get_azure_service(self):
+        return self.BlockBlobService(account_name=self.AZURE_ACCOUNT_NAME,
+                                     account_key=self.AZURE_SECRET_ACCESS_KEY)
+
+    def _get_azure_blob(self, path):
+        blob_name = '%s%s' % (self.prefix, path)
+        s = self._get_azure_service()
+        if s.exists(self.container, blob_name=blob_name):
+            # Get properties
+            return threads.deferToThread(s.get_blob_properties, self.container, blob_name=blob_name)
+        return threads.deferToThread(lambda _: _, None)
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        """Upload file to Azure blob storage"""
+        blob_name = '%s%s' % (self.prefix, path)
+        extra = self._headers_to_azure_content_kwargs(self.HEADERS)
+        if headers:
+            extra.update(self._headers_to_azure_content_kwargs(headers))
+        buf.seek(0)
+        s = self._get_azure_service()
+        return threads.deferToThread(s.create_blob_from_bytes, self.container, blob_name, buf.getvalue(),
+                                     metadata={k: str(v) for k, v in six.iteritems(meta or {})},
+                                     content_settings=self.ContentSettings(**extra))
+
+    def _headers_to_azure_content_kwargs(self, headers):
+        """ Convert headers to Azure content settings keyword agruments.
+        """
+        # This is required while we need to support both boto and botocore.
+        mapping = CaselessDict({
+            'Content-Type': 'content_type',
+            'Cache-Control': 'cache_control',
+            'Content-Disposition': 'content_disposition',
+            'Content-Encoding': 'content_encoding',
+            'Content-Language': 'content_language',
+            'Content-MD5': 'content_md5',
+            })
+        extra = {}
+        for key, value in six.iteritems(headers):
+            try:
+                kwarg = mapping[key]
+            except KeyError:
+                raise TypeError(
+                    'Header "%s" is not supported by Azure' % key)
+            else:
+                extra[kwarg] = value
+        return extra
+
+
 class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
@@ -218,15 +294,16 @@ class FilesPipeline(MediaPipeline):
         '': FSFilesStore,
         'file': FSFilesStore,
         's3': S3FilesStore,
+        'azure': AzureFilesStore,
     }
 
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        
+
         self.store = self._get_store(store_uri)
         self.expires = settings.getint('FILES_EXPIRES')
         self.files_urls_field = settings.get('FILES_URLS_FIELD')
@@ -240,6 +317,9 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
+        azureStore = cls.STORE_SCHEMES['azure']
+        azureStore.AZURE_ACCOUNT_NAME = settings['AZURE_ACCOUNT_NAME']
+        azureStore.AZURE_SECRET_ACCESS_KEY = settings['AZURE_SECRET_ACCESS_KEY']
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
