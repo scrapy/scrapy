@@ -304,6 +304,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
+            self.assertNotEqual(attr_value, self.default_pipeline_settings[pipe_attr])
             self.assertEqual(attr_value, getattr(pipeline, pipe_attr))
 
     def test_subclass_attrs_preserved_custom_settings(self):
@@ -317,6 +318,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             value = getattr(pipeline, pipe_attr.lower())
+            self.assertNotEqual(value, self.default_pipeline_settings[pipe_attr])
             self.assertEqual(value, getattr(pipeline, pipe_attr))
 
     def test_no_custom_settings_for_subclasses(self):
@@ -347,6 +349,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
             self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
 
     def test_custom_settings_and_class_attrs_for_subclasses(self):
@@ -360,7 +363,17 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         user_pipeline = pipeline_cls.from_settings(Settings(settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
             self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
+
+    def test_cls_attrs_with_DEFAULT_prefix(self):
+        class UserDefinedImagePipeline(ImagesPipeline):
+            DEFAULT_IMAGES_URLS_FIELD = "something"
+            DEFAULT_IMAGES_RESULT_FIELD = "something_else"
+
+        pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        self.assertEqual(pipeline.images_result_field, "something_else")
+        self.assertEqual(pipeline.images_urls_field, "something")
 
 
 def _create_image(format, *a, **kw):

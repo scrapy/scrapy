@@ -235,11 +235,15 @@ class FilesPipeline(MediaPipeline):
         self.expires = settings.getint(
             self._key_for_pipe('FILES_EXPIRES', cls_name), self.EXPIRES
         )
+        if not hasattr(self, "FILES_URLS_FIELD"):
+            self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
+        if not hasattr(self, "FILES_RESULT_FIELD"):
+            self.FILES_RESULT_FIELD = self.DEFAULT_FILES_RESULT_FIELD
         self.files_urls_field = settings.get(
-            self._key_for_pipe('FILES_URLS_FIELD', cls_name), self.DEFAULT_FILES_URLS_FIELD
+            self._key_for_pipe('FILES_URLS_FIELD', cls_name), self.FILES_URLS_FIELD
         )
         self.files_result_field = settings.get(
-            self._key_for_pipe('FILES_RESULT_FIELD', cls_name), self.DEFAULT_FILES_RESULT_FIELD
+            self._key_for_pipe('FILES_RESULT_FIELD', cls_name), self.FILES_RESULT_FIELD
         )
 
         super(FilesPipeline, self).__init__(download_func=download_func)
