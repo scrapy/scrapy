@@ -44,8 +44,8 @@ class ImagesPipeline(FilesPipeline):
     MIN_HEIGHT = 0
     EXPIRES = 0
     THUMBS = {}
-    IMAGES_URLS_FIELD = 'image_urls'
-    IMAGES_RESULT_FIELD = 'images'
+    DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
+    DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
@@ -57,11 +57,18 @@ class ImagesPipeline(FilesPipeline):
         self.expires = settings.getint(
             self._key_for_pipe('IMAGES_EXPIRES', cls_name), self.EXPIRES
         )
+        if not hasattr(self, "IMAGES_RESULT_FIELD"):
+            self.IMAGES_RESULT_FIELD = self.DEFAULT_IMAGES_RESULT_FIELD
+        if not hasattr(self, "IMAGES_URLS_FIELD"):
+            self.IMAGES_URLS_FIELD = self.DEFAULT_IMAGES_URLS_FIELD
+
+        default_images_urls_field = getattr(self, "IMAGES_URLS_FIELD", "DEFAULT_IMAGES_URLS_FIELD")
         self.images_urls_field = settings.get(
-            self._key_for_pipe('IMAGES_URLS_FIELD', cls_name), self.IMAGES_URLS_FIELD
+            self._key_for_pipe('IMAGES_URLS_FIELD', cls_name), default_images_urls_field
         )
+        default_images_result_field = getattr(self, "IMAGES_RESULT_FIELD", "DEFAULT_IMAGES_RESULT_FIELD")
         self.images_result_field = settings.get(
-            self._key_for_pipe('IMAGES_RESULT_FIELD', cls_name), self.IMAGES_RESULT_FIELD
+            self._key_for_pipe('IMAGES_RESULT_FIELD', cls_name), default_images_result_field
         )
         self.min_width = settings.getint(
             self._key_for_pipe('IMAGES_MIN_WIDTH', cls_name), self.MIN_WIDTH

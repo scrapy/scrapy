@@ -187,13 +187,13 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
     default_cls_settings = {
         "EXPIRES": 90,
-        "DEFAULT_FILES_URLS_FIELD": "file_urls",
-        "DEFAULT_FILES_RESULT_FIELD": "files"
+        "FILES_URLS_FIELD": "file_urls",
+        "FILES_RESULT_FIELD": "files"
     }
     file_cls_attr_settings_map = {
         ("EXPIRES", "FILES_EXPIRES", "expires"),
-        ("DEFAULT_FILES_URLS_FIELD", "FILES_URLS_FIELD", "files_urls_field"),
-        ("DEFAULT_FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field")
+        ("FILES_URLS_FIELD", "FILES_URLS_FIELD", "files_urls_field"),
+        ("FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field")
     }
 
     def setUp(self):
@@ -221,9 +221,9 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
     def _generate_fake_pipeline(self):
 
         class UserDefinedFilePipeline(FilesPipeline):
-            FILES_EXPIRES = random.randint(1001, 2000)
-            DEFAULT_FILES_URLS_FIELD = "alfa"
-            DEFAULT_FILES_RESULT_FIELD = "beta"
+            EXPIRES = 1001
+            FILES_URLS_FIELD = "alfa"
+            FILES_RESULT_FIELD = "beta"
 
         return UserDefinedFilePipeline
 
@@ -239,6 +239,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             default_value = self.default_cls_settings[pipe_attr]
             self.assertEqual(getattr(one_pipeline, pipe_attr), default_value)
             custom_value = custom_settings[settings_attr]
+            self.assertNotEqual(default_value, custom_value)
             self.assertEqual(getattr(another_pipeline, pipe_ins_attr), custom_value)
 
     def test_subclass_attributes_preserved_if_no_settings(self):
@@ -248,6 +249,8 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_settings(Settings({"FILES_STORE": self.tempdir}))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+            custom_value = getattr(pipe, pipe_ins_attr)
+            self.assertNotEqual(custom_value, self.default_cls_settings[pipe_attr])
             self.assertEqual(getattr(pipe, pipe_ins_attr), getattr(pipe, pipe_attr))
 
     def test_subclass_attrs_preserved_custom_settings(self):
@@ -260,6 +263,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = pipeline_cls.from_settings(Settings(settings))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             value = getattr(pipeline, pipe_ins_attr)
+            self.assertNotEqual(value, self.default_cls_settings[pipe_attr])
             self.assertEqual(value, getattr(pipeline, pipe_attr))
 
     def test_no_custom_settings_for_subclasses(self):
@@ -290,6 +294,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertNotEqual(custom_value, self.default_cls_settings[pipe_attr])
             self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
 
     def test_custom_settings_and_class_attrs_for_subclasses(self):
@@ -303,7 +308,17 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         user_pipeline = pipeline_cls.from_settings(Settings(settings))
         for pipe_cls_attr, settings_attr, pipe_inst_attr  in self.file_cls_attr_settings_map:
             custom_value = settings.get(prefix + "_" + settings_attr)
+            self.assertNotEqual(custom_value, self.default_cls_settings[pipe_cls_attr])
             self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
+
+    def test_cls_attrs_with_DEFAULT_prefix(self):
+        class UserDefinedFilesPipeline(FilesPipeline):
+            DEFAULT_FILES_RESULT_FIELD = "this"
+            DEFAULT_FILES_URLS_FIELD = "that"
+
+        pipeline = UserDefinedFilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
+        self.assertEqual(pipeline.files_result_field, "this")
+        self.assertEqual(pipeline.files_urls_field, "that")
 
 
 class TestS3FilesStore(unittest.TestCase):
