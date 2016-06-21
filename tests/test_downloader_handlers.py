@@ -401,7 +401,13 @@ class UriResource(resource.Resource):
         return self
 
     def render(self, request):
-        return request.uri
+        # Note: this is an ugly hack for CONNECT request timeout test.
+        #       Returning some data here fail SSL/TLS handshake
+        # ToDo: implement proper HTTPS proxy tests, not faking them.
+        if request.method != b'CONNECT':
+            return request.uri
+        else:
+            return b''
 
 
 class HttpProxyTestCase(unittest.TestCase):
