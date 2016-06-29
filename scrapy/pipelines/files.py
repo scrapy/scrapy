@@ -95,7 +95,7 @@ class S3FilesStore(object):
             import botocore.session
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+                's3', use_ssl=False, aws_access_key_id=self.AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY)
         else:
             from boto.s3.connection import S3Connection
