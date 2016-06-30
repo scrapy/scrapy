@@ -42,7 +42,7 @@ class LoggingContribTest(unittest.TestCase):
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
         self.assertEqual(logline,
-        "Crawled (200) <GET http://www.example.com> ['test','flag'] (referer: http://example.com) ")
+        "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
 
     def test_dropped(self):
         item = {}
