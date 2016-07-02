@@ -52,6 +52,7 @@ Constructing selectors
 
 .. highlight:: python
 
+TODO: Need to fix this example as it does not work out of the box.  It results with ImportError: cannot import name Spider   Also everywhere on the web it sais to change Spider import to BaseSpider
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
 constructed by passing a `Response` object as first argument, the response's
 body is what they're going to be "selecting"::
