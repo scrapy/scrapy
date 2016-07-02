@@ -218,9 +218,6 @@ node, or the entire document.
 Selectors have four basic methods (click on the method to see the complete API
 documentation).
 
-* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
-  them representing the nodes selected by the xpath expression given as
-  argument.
 
 * :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
   them representing the nodes selected by the CSS expression given as argument. 
