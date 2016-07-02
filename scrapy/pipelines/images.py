@@ -38,6 +38,15 @@ class ImagesPipeline(FilesPipeline):
 
     MEDIA_NAME = 'image'
 
+    _DEPRECATED_ATTRS = {
+        'IMAGES_EXPIRES': 'expires',
+        'IMAGES_URLS_FIELD': 'images_urls_field',
+        'IMAGES_RESULT_FIELD': 'images_result_field',
+        'IMAGES_MIN_WIDTH': 'min_width',
+        'IMAGES_MIN_HEIGHT': 'min_height',
+        'IMAGES_THUMBS': 'thumbs',
+    }
+
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
         

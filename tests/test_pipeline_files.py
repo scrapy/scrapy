@@ -105,6 +105,18 @@ class FilesPipelineTestCase(unittest.TestCase):
         for p in patchers:
             p.stop()
 
+    def test_deprecate_uppercase_attribute_names(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.assertEquals(self.pipeline.expires, self.pipeline.FILES_EXPIRES)
+            self.assertEquals(
+                'FilesPipeline.FILES_EXPIRES attribute is deprecated and will'
+                ' be no longer supported in Scrapy 1.2, use FilesPipeline.expires'
+                ' attribute instead', str(w[-1].message))
+
+        with self.assertRaises(AttributeError):
+            self.pipeline.files_EXPIRES
+
 
 class DeprecatedFilesPipeline(FilesPipeline):
     def file_key(self, url):

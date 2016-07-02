@@ -220,6 +220,12 @@ class FilesPipeline(MediaPipeline):
         's3': S3FilesStore,
     }
 
+    _DEPRECATED_ATTRS = {
+        'FILES_EXPIRES': 'expires',
+        'FILES_URLS_FIELD': 'files_urls_field',
+        'FILES_RESULT_FIELD': 'files_result_field',
+    }
+
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured

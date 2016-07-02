@@ -1,4 +1,3 @@
-import os
 import hashlib
 import warnings
 from tempfile import mkdtemp, TemporaryFile
@@ -94,6 +93,25 @@ class ImagesPipelineTestCase(unittest.TestCase):
         converted, _ = self.pipeline.convert_image(im)
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
+
+    def test_deprecate_uppercase_attribute_names(self):
+        # given:
+        class CustomImagesPipeline(ImagesPipeline):
+            def item_completed(self, *a, **kw):
+                print('Using result field: %s', self.IMAGES_RESULT_FIELD)
+                return super(CustomImagesPipeline, self).item_completed(*a, **kw)
+
+        # when:
+        pipeline = CustomImagesPipeline(self.tempdir, download_func=_mocked_download_func)
+
+        # then:
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.assertEquals(pipeline.expires, pipeline.IMAGES_EXPIRES)
+            self.assertEquals(
+                'CustomImagesPipeline.IMAGES_EXPIRES attribute is deprecated and will'
+                ' be no longer supported in Scrapy 1.2, use CustomImagesPipeline.expires'
+                ' attribute instead', str(w[-1].message))
 
 
 class DeprecatedImagesPipeline(ImagesPipeline):
