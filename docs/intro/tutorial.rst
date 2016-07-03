@@ -308,7 +308,7 @@ use some Firefox extensions like Firebug. For more information see
 :ref:`topics-firebug` and :ref:`topics-firefox`.
 
 After inspecting the page source, you'll find that the web sites information
-is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
+is inside a ``<ul>`` element, in fact the *second* ``<li>`` element.
 
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
