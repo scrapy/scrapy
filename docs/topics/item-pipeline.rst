@@ -85,7 +85,7 @@ Write items to a JSON file
 --------------------------
 
 The following pipeline stores all scraped items (from all spiders) into a a
-single ``items.jl`` file, containing one item per line serialized in JSON
+single ``items.json`` file, containing one item per line serialized in JSON
 format::
 
    import json
