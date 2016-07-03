@@ -97,7 +97,7 @@ single Python class that defines one or more of the following methods:
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request` or
+        :type result: an iterable of :class:`~scrapy.http.Response` or
           :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
