@@ -3,8 +3,6 @@ import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
-from $project_name.items import ${ProjectName}Item
-
 
 class $classname(CrawlSpider):
     name = '$name'
@@ -16,7 +14,7 @@ class $classname(CrawlSpider):
     )
 
     def parse_item(self, response):
-        i = ${ProjectName}Item()
+        i = {}
         #i['domain_id'] = response.xpath('//input[@id="sid"]/@value').extract()
         #i['name'] = response.xpath('//div[@id="name"]').extract()
         #i['description'] = response.xpath('//div[@id="description"]').extract()
