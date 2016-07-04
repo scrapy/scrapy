@@ -118,7 +118,7 @@ class S3FilesStore(object):
 
         return self._get_boto_key(path).addCallback(_onsuccess)
 
-    def _get_boto_bucket(self):
+    def _get_boto_bucket(self, secure=False):
         # adden ability to change secure because of this python bug is fixed on 2.6 and 3.x Python versions:
         # http://bugs.python.org/issue5103
         c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=secure)
