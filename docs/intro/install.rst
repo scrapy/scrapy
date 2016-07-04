@@ -86,8 +86,8 @@ Windows
       pip install Scrapy
 
 .. note::
-     Python 3 is not supported on Windows. Installation of Scrapy on Windows
-     with Python 3 will fail.
+     Python 3 is not supported on Windows. This is because Scrapy core requirement Twisted does not support
+     Python 3 on Windows.
 
 Ubuntu 9.10 or above
 --------------------
