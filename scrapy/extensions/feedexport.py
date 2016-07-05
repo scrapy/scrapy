@@ -5,6 +5,7 @@ See documentation in docs/topics/feed-exports.rst
 """
 
 import os
+import re
 import sys
 import logging
 import posixpath
@@ -81,10 +82,30 @@ class FileFeedStorage(object):
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
 
+    def validate_path(self):
+        '''Choose the next available file path, digit-suffixed if needed.'''
+        if not os.path.isfile(self.path):
+            return
+
+        abspath = os.path.abspath(self.path)
+        dirname, basename = os.path.split(abspath)
+
+        digit_suffixed = re.compile(r'^%s\.(\d)+$' % re.escape(basename))
+        files = [f for f in os.listdir(dirname) if digit_suffixed.match(f)]
+        if files:
+            def inc_suffix(matchobj):
+                return "%s.%d" % (basename, int(matchobj.group(1)) + 1)
+
+            files.sort(reverse=True)
+            self.path = digit_suffixed.sub(inc_suffix, files[0])
+        else:
+            self.path += '.1'
+
     def open(self, spider):
         dirname = os.path.dirname(self.path)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
+        self.validate_path()
         return open(self.path, 'ab')
 
     def store(self, file):
