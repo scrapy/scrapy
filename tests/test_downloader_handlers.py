@@ -335,6 +335,14 @@ class Https11WrongHostnameTestCase(Http11TestCase):
     certfile = 'keys/example-com.cert.pem'
 
 
+class Https11InvalidDNSId(Https11TestCase):
+    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
+
+    def setUp(self):
+        super(Https11InvalidDNSId, self).setUp()
+        self.host = '127.0.0.1'
+
+
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
     if twisted_version < (11, 1, 0):
