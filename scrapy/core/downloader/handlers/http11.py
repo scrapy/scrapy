@@ -157,7 +157,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         return self._tunnelReadyDeferred
 
 
-def tunnel_request_data(host, port, proxy_auth_header=None, host_header=True):
+def tunnel_request_data(host, port, proxy_auth_header=None):
     r"""
     Return binary content of a CONNECT request.
 
@@ -171,8 +171,7 @@ def tunnel_request_data(host, port, proxy_auth_header=None, host_header=True):
     """
     host_value = to_bytes(host, encoding='ascii') + b':' + to_bytes(str(port))
     tunnel_req = b'CONNECT ' + host_value + b' HTTP/1.1\r\n'
-    if host_header:
-        tunnel_req += b'Host: ' + host_value + b'\r\n'
+    tunnel_req += b'Host: ' + host_value + b'\r\n'
     if proxy_auth_header:
         tunnel_req += b'Proxy-Authorization: ' + proxy_auth_header + b'\r\n'
     tunnel_req += b'\r\n'
