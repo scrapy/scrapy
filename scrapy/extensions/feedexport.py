@@ -87,19 +87,22 @@ class FileFeedStorage(object):
         if not os.path.isfile(self.path):
             return
 
-        abspath = os.path.abspath(self.path)
-        dirname, basename = os.path.split(abspath)
+        dirname, basename = os.path.split(os.path.abspath(self.path))
 
-        digit_suffixed = re.compile(r'^%s\.(\d)+$' % re.escape(basename))
+        # we're looking for files with paths starting like self.path
+        # but with a ".{number}" at the end
+        digit_suffixed = re.compile(r'^%s\.(\d+)$' % re.escape(basename))
         files = [f for f in os.listdir(dirname) if digit_suffixed.match(f)]
         if files:
             def inc_suffix(matchobj):
                 return "%s.%d" % (basename, int(matchobj.group(1)) + 1)
 
-            files.sort(reverse=True)
-            self.path = digit_suffixed.sub(inc_suffix, files[0])
+            files.sort(key=lambda s: int(s.split('.')[-1]))
+            basename = digit_suffixed.sub(inc_suffix, files[-1])
         else:
-            self.path += '.1'
+            basename += '.1'
+
+        self.path = os.path.join(dirname, basename)
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
