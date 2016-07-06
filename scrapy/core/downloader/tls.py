@@ -48,6 +48,11 @@ try:
                         'Remote certificate is not valid for hostname "{}"; {}'.format(
                             self._hostnameASCII, e))
 
+                except ValueError as e:
+                    logger.warning(
+                        'SSL/TLS verification failed for hostname "{}"; {}'.format(
+                            self._hostnameASCII, e))
+
 except ImportError:
     # ImportError should not matter for older Twisted versions
     # as the above is not used in the fallback ScrapyClientContextFactory
