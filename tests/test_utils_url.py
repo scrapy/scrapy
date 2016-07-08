@@ -265,6 +265,20 @@ class CanonicalizeUrlTest(unittest.TestCase):
             # without encoding, already canonicalized URL is canonicalized identically
             self.assertEqual(canonicalize_url(canonicalized), canonicalized)
 
+    def test_canonicalize_url_idna_exceptions(self):
+        # missing DNS label
+        self.assertEqual(
+            canonicalize_url(u"http://.example.com/résumé?q=résumé"),
+            "http://.example.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9")
+
+        # DNS label too long
+        self.assertEqual(
+            canonicalize_url(
+                u"http://www.{label}.com/résumé?q=résumé".format(
+                    label=u"example"*11)),
+            "http://www.{label}.com/r%C3%A9sum%C3%A9?q=r%C3%A9sum%C3%A9".format(
+                    label=u"example"*11))
+
 
 class AddHttpIfNoScheme(unittest.TestCase):
 
