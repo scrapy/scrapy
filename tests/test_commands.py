@@ -146,6 +146,13 @@ class GenspiderCommandTest(CommandTest):
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
 
+class GenspiderStandaloneCommandTest(ProjectTest):
+
+    def test_generate_standalone_spider(self):
+        self.call('genspider', 'example', 'example.com')
+        assert exists(join(self.temp_path, 'example.py'))
+
+
 class MiscCommandsTest(CommandTest):
 
     def test_list(self):
