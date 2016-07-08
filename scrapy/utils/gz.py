@@ -7,7 +7,7 @@ except ImportError:
 from gzip import GzipFile
 
 import six
-
+import re
 
 # - Python>=3.5 GzipFile's read() has issues returning leftover
 #   uncompressed data when input is corrupted
@@ -50,8 +50,9 @@ def gunzip(data):
                 raise
     return output
 
+_is_gzipped_re = re.compile(br'^application/(x-)?gzip\b', re.I)
 
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')
-    return ctype in (b'application/x-gzip', b'application/gzip')
+    return _is_gzipped_re.search(ctype) is not None
