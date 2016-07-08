@@ -144,3 +144,13 @@ class HttpCompressionTest(TestCase):
         self.assertIs(newresponse, response)
         self.assertEqual(response.headers['Content-Encoding'], b'gzip')
         self.assertEqual(response.headers['Content-Type'], b'application/gzip')
+
+    def test_process_response_head_request_no_decode_required(self):
+        response = self._getresponse('gzip')
+        response.headers['Content-Type'] = 'application/gzip'
+        request = response.request
+        request.method = 'HEAD'
+        response = response.replace(body = None)
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertIs(newresponse, response)
+        self.assertEquals(response.body, b'')
