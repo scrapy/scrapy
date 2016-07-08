@@ -72,7 +72,7 @@ features are still missing (and some may never be ported).
 Almost all builtin extensions/middlewares are expected to work.
 However, we are aware of some limitations in Python 3:
 
-- Scrapy has not been tested on Windows with Python 3
+- Scrapy does not work on Windows with Python 3
 - Sending emails is not supported
 - FTP download handler is not supported
 - Telnet console is not supported

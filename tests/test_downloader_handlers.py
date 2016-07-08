@@ -27,6 +27,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
 from scrapy.spiders import Spider
 from scrapy.http import Request
+from scrapy.http.response.text import TextResponse
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
@@ -114,6 +115,16 @@ class ContentLengthHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
 
+class EmptyContentTypeHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of request body
+    without content-type header in response.
+    """
+    def render(self, request):
+        request.setHeader("content-type", "")
+        return request.content.read()
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
@@ -136,6 +147,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
+        r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -243,11 +255,6 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
-        d = self.download_request(request, Spider('foo'))
-        d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b'0')
-        return d
-
     def test_payload(self):
         body = b'1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
@@ -282,6 +289,20 @@ class Http11TestCase(HttpTestCase):
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
+        return d
+
+    def test_response_class_choosing_request(self):
+        """Tests choosing of correct response type
+         in case of Content-Type is empty but body contains text.
+        """
+        body = b'Some plain text\ndata with tabs\t and null bytes\0'
+
+        def _test_type(response):
+            self.assertEquals(type(response), TextResponse)
+
+        request = Request(self.getURL('nocontenttype'), body=body)
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(_test_type)
         return d
 
     @defer.inlineCallbacks
@@ -401,7 +422,13 @@ class UriResource(resource.Resource):
         return self
 
     def render(self, request):
-        return request.uri
+        # Note: this is an ugly hack for CONNECT request timeout test.
+        #       Returning some data here fail SSL/TLS handshake
+        # ToDo: implement proper HTTPS proxy tests, not faking them.
+        if request.method != b'CONNECT':
+            return request.uri
+        else:
+            return b''
 
 
 class HttpProxyTestCase(unittest.TestCase):

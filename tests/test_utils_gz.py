@@ -1,7 +1,8 @@
 import unittest
 from os.path import join
 
-from scrapy.utils.gz import gunzip
+from scrapy.utils.gz import gunzip, is_gzipped
+from scrapy.http import Response, Headers
 from tests import tests_datadir
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
@@ -27,3 +28,41 @@ class GunzipTest(unittest.TestCase):
         with open(join(SAMPLEDIR, 'truncated-crc-error-short.gz'), 'rb') as f:
             text = gunzip(f.read())
             assert text.endswith(b'</html>')
+
+    def test_is_x_gzipped_right(self):
+        hdrs = Headers({"Content-Type": "application/x-gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+    def test_is_gzipped_right(self):
+        hdrs = Headers({"Content-Type": "application/gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+    def test_is_gzipped_not_quite(self):
+        hdrs = Headers({"Content-Type": "application/gzippppp"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertFalse(is_gzipped(r1))
+
+    def test_is_gzipped_case_insensitive(self):
+        hdrs = Headers({"Content-Type": "Application/X-Gzip"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+        hdrs = Headers({"Content-Type": "application/X-GZIP ; charset=utf-8"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))
+
+    def test_is_gzipped_empty(self):
+        r1 = Response("http://www.example.com")
+        self.assertFalse(is_gzipped(r1))
+
+    def test_is_gzipped_wrong(self):
+        hdrs = Headers({"Content-Type": "application/javascript"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertFalse(is_gzipped(r1))
+
+    def test_is_gzipped_with_charset(self):
+        hdrs = Headers({"Content-Type": "application/x-gzip;charset=utf-8"})
+        r1 = Response("http://www.example.com", headers=hdrs)
+        self.assertTrue(is_gzipped(r1))

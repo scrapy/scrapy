@@ -41,9 +41,16 @@ def url_has_any_extension(url, extensions):
 
 
 def _safe_ParseResult(parts, encoding='utf8', path_encoding='utf8'):
+    # IDNA encoding can fail for too long labels (>63 characters)
+    # or missing labels (e.g. http://.example.com)
+    try:
+        netloc = parts.netloc.encode('idna')
+    except UnicodeError:
+        netloc = parts.netloc
+
     return (
         to_native_str(parts.scheme),
-        to_native_str(parts.netloc.encode('idna')),
+        to_native_str(netloc),
 
         # default encoding for path component SHOULD be UTF-8
         quote(to_bytes(parts.path, path_encoding), _safe_chars),

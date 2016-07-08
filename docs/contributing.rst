@@ -100,6 +100,11 @@ starting point is to send a pull request on GitHub. It can be simple enough to
 illustrate your idea, and leave documentation/tests for later, after the idea
 has been validated and proven useful. Alternatively, you can send an email to
 `scrapy-users`_ to discuss your idea first.
+When writing GitHub pull requests, try to keep titles short but descriptive.
+E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
+prefer "Fix hanging when exception occurs in start_requests (#411)"
+instead of "Fix for #411".
+Complete titles make it easy to skim through the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
 removal, etc) in separate commits than functional changes. This will make pull
