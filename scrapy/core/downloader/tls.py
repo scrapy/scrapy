@@ -50,7 +50,7 @@ try:
 
                 except ValueError as e:
                     logger.warning(
-                        'SSL/TLS verification failed for hostname "{}"; {}'.format(
+                        'Ignoring remote certificate verification failure for hostname "{}"; {}'.format(
                             self._hostnameASCII, e))
 
 except ImportError:
