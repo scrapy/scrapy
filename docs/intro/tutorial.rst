@@ -330,7 +330,7 @@ code::
 
     response.xpath('.//div[@class="title-and-desc"]')
 
-Notice the period which <a href="http://www.w3schools.com/xsl/xpath_syntax.asp">selects the current node</a> in the ``for`` loop further ahead.
+Notice the period which [selects the current node](http://www.w3schools.com/xsl/xpath_syntax.asp) in the ``for`` loop further ahead.
 
 And from them, the site's descriptions::
 
@@ -460,7 +460,7 @@ Here is a modification to our spider that does just that::
         ]
 
         def parse(self, response):
-            for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
+           for href in response.css("#subcategories-div > section > div > .cat-item > a::attr('href')"):
                 url = response.urljoin(href.extract())
                 yield scrapy.Request(url, callback=self.parse_dir_contents)
 
