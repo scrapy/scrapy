@@ -3,7 +3,7 @@ Files Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
-
+import functools
 import hashlib
 import os
 import os.path
@@ -232,18 +232,20 @@ class FilesPipeline(MediaPipeline):
 
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
+        resolve = functools.partial(self._key_for_pipe,
+                                    base_class_name=cls_name)
         self.expires = settings.getint(
-            self._key_for_pipe('FILES_EXPIRES', cls_name), self.EXPIRES
+            resolve('FILES_EXPIRES'), self.EXPIRES
         )
         if not hasattr(self, "FILES_URLS_FIELD"):
             self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
         if not hasattr(self, "FILES_RESULT_FIELD"):
             self.FILES_RESULT_FIELD = self.DEFAULT_FILES_RESULT_FIELD
         self.files_urls_field = settings.get(
-            self._key_for_pipe('FILES_URLS_FIELD', cls_name), self.FILES_URLS_FIELD
+            resolve('FILES_URLS_FIELD'), self.FILES_URLS_FIELD
         )
         self.files_result_field = settings.get(
-            self._key_for_pipe('FILES_RESULT_FIELD', cls_name), self.FILES_RESULT_FIELD
+            resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
 
         super(FilesPipeline, self).__init__(download_func=download_func)

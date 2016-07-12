@@ -28,18 +28,17 @@ class MediaPipeline(object):
         self.download_func = download_func
 
 
-    def _key_for_pipe(self, key, base_class_name):
+    def _key_for_pipe(self, key, base_class_name=None):
         """
-        Allow setting settings for user defined MediaPipelines that inherit from base.
-
-        User can define setting key:
-
-        MYPIPELINENAME_IMAGE_SETTING_NAME = <some value>
-
-        and it will override default settings and class attributes.
+        >>> result = MediaPipeline()._key_for_pipe("IMAGES")
+        >>> assert result == "IMAGES"
+        >>> class MyPipe(MediaPipeline):
+        ...     pass
+        >>> other_key = MyPipe()._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+        >>> assert other_key == "MYPIPE_IMAGES"
         """
         class_name = self.__class__.__name__
-        if class_name == base_class_name:
+        if class_name == base_class_name or not base_class_name:
             return key
         return "{}_{}".format(class_name.upper(), key)
 
