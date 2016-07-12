@@ -332,17 +332,19 @@ code::
 
 Notice the period which [selects the current node](http://www.w3schools.com/xsl/xpath_syntax.asp) in the ``for`` loop further ahead.
 
-And from them, the site's descriptions::
-
-    response.xpath('div/text()').extract()
-
-The site's titles::
+And from them, the site's titles::
 
     response.xpath('a/div/text()').extract()
 
-And the site's links::
+The site's links::
 
     response.xpath('a/@href').extract()
+
+And the site's descriptions::
+
+    response.xpath('div/text()').extract()
+
+
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
