@@ -3,7 +3,7 @@ Images Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
-
+import functools
 import hashlib
 import six
 
@@ -62,22 +62,24 @@ class ImagesPipeline(FilesPipeline):
         if not hasattr(self, "IMAGES_URLS_FIELD"):
             self.IMAGES_URLS_FIELD = self.DEFAULT_IMAGES_URLS_FIELD
 
-        default_images_urls_field = getattr(self, "IMAGES_URLS_FIELD", "DEFAULT_IMAGES_URLS_FIELD")
+        resolve = functools.partial(self._key_for_pipe, base_class_name=cls_name)
+
         self.images_urls_field = settings.get(
-            self._key_for_pipe('IMAGES_URLS_FIELD', cls_name), default_images_urls_field
+            resolve('IMAGES_URLS_FIELD'),
+            self.IMAGES_URLS_FIELD
         )
-        default_images_result_field = getattr(self, "IMAGES_RESULT_FIELD", "DEFAULT_IMAGES_RESULT_FIELD")
         self.images_result_field = settings.get(
-            self._key_for_pipe('IMAGES_RESULT_FIELD', cls_name), default_images_result_field
+            resolve('IMAGES_RESULT_FIELD'),
+            self.IMAGES_RESULT_FIELD
         )
         self.min_width = settings.getint(
-            self._key_for_pipe('IMAGES_MIN_WIDTH', cls_name), self.MIN_WIDTH
+            resolve('IMAGES_MIN_WIDTH'), self.MIN_WIDTH
         )
         self.min_height = settings.getint(
-            self._key_for_pipe('IMAGES_MIN_HEIGHT', cls_name), self.MIN_HEIGHT
+            resolve('IMAGES_MIN_HEIGHT'), self.MIN_HEIGHT
         )
         self.thumbs = settings.get(
-            self._key_for_pipe('IMAGES_THUMBS', cls_name), self.THUMBS
+            resolve('IMAGES_THUMBS'), self.THUMBS
         )
 
     @classmethod

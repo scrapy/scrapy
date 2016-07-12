@@ -191,10 +191,11 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
-If you have multiple image pipelines inheriting from ImagePipeline and you want to have different settings in different pipelines
-you can set setting keys preceded with uppercase name of your pipeline class. E.g. if your pipeline is called
-MyPipeline and you want to have custom IMAGES_URLS_FIELD you define setting MYPIPELINE_IMAGES_URLS_FIELD and your custom
-settings will be used.
+If you have multiple image pipelines inheriting from ImagePipeline and you want
+to have different settings in different pipelines you can set setting keys
+preceded with uppercase name of your pipeline class. E.g. if your pipeline is
+called MyPipeline and you want to have custom IMAGES_URLS_FIELD you define
+setting MYPIPELINE_IMAGES_URLS_FIELD and your custom settings will be used.
 
 
 Additional features
@@ -219,9 +220,9 @@ specifies the delay in number of days::
 
 The default value for both settings is 90 days.
 
-If you have pipeline that subclasses FilesPipeline and you'd like to have different setting
-for it you can set setting keys preceded by uppercase class name. E.g. given pipeline class
-called MyPipeline you can set setting key:
+If you have pipeline that subclasses FilesPipeline and you'd like to have
+different setting for it you can set setting keys preceded by uppercase
+class name. E.g. given pipeline class called MyPipeline you can set setting key:
 
     MYPIPELINE_FILES_EXPIRES = 180
 
