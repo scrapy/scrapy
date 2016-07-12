@@ -17,7 +17,7 @@ the typical way of running Scrapy via ``scrapy crawl``.
 
 What follows is a working example of how to do that, using the `testspiders`_
 project as example. Remember that Scrapy is built on top of the Twisted
-asynchronous networking library, so you need run it inside the Twisted reactor.
+asynchronous networking library, so you need to run it inside the Twisted reactor.
 
 ::
 
