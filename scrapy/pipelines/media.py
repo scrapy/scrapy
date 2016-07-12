@@ -30,12 +30,12 @@ class MediaPipeline(object):
 
     def _key_for_pipe(self, key, base_class_name=None):
         """
-        >>> result = MediaPipeline()._key_for_pipe("IMAGES")
-        >>> assert result == "IMAGES"
+        >>> MediaPipeline()._key_for_pipe("IMAGES")
+        'IMAGES'
         >>> class MyPipe(MediaPipeline):
         ...     pass
-        >>> other_key = MyPipe()._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
-        >>> assert other_key == "MYPIPE_IMAGES"
+        >>> MyPipe()._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+        'MYPIPE_IMAGES'
         """
         class_name = self.__class__.__name__
         if class_name == base_class_name or not base_class_name:
