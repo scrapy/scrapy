@@ -48,21 +48,22 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
-        super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
+        super(ImagesPipeline, self).__init__(store_uri, settings=settings,
+                                             download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        cls_name = "ImagesPipeline"
+        resolve = functools.partial(self._key_for_pipe,
+                                    base_class_name="ImagesPipeline")
         self.expires = settings.getint(
-            self._key_for_pipe('IMAGES_EXPIRES', cls_name), self.EXPIRES
+            resolve("IMAGES_EXPIRES"), self.EXPIRES
         )
+
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
             self.IMAGES_RESULT_FIELD = self.DEFAULT_IMAGES_RESULT_FIELD
         if not hasattr(self, "IMAGES_URLS_FIELD"):
             self.IMAGES_URLS_FIELD = self.DEFAULT_IMAGES_URLS_FIELD
-
-        resolve = functools.partial(self._key_for_pipe, base_class_name=cls_name)
 
         self.images_urls_field = settings.get(
             resolve('IMAGES_URLS_FIELD'),
