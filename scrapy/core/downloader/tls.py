@@ -34,9 +34,15 @@ try:
                                              VerificationError)
 
     class ScrapyClientTLSOptions(ClientTLSOptions):
-        # same as Twisted's ClientTLSOptions,
-        # except that VerificationError is caught
-        # and doesn't close the connection
+        """
+        SSL Client connection creator ignoring certificate verification errors
+        (for genuinely invalid certificates or bugs in verification code).
+
+        Same as Twisted's private _sslverify.ClientTLSOptions,
+        except that VerificationError and ValueError exceptions are caught,
+        so that the connection is not closed, only logging warnings.
+        """
+
         def _identityVerifyingInfoCallback(self, connection, where, ret):
             if where & SSL_CB_HANDSHAKE_START:
                 _maybeSetHostNameIndication(connection, self._hostnameBytes)
@@ -50,8 +56,9 @@ try:
 
                 except ValueError as e:
                     logger.warning(
-                        'Ignoring remote certificate verification failure for hostname "{}"; {}'.format(
-                            self._hostnameASCII, e))
+                        'Ignoring error while verifying certificate '
+                        'from host "{}" (exception: {})'.format(
+                            self._hostnameASCII, repr(e)))
 
 except ImportError:
     # ImportError should not matter for older Twisted versions
