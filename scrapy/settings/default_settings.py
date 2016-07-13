@@ -160,9 +160,6 @@ FEED_EXPORTERS_BASE = {
 }
 
 FILES_STORE_S3_ACL = 'private'
-FILES_EXPIRES = 90
-FILES_URLS_FIELD = 'file_urls'
-FILES_RESULT_FIELD = 'files'
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
@@ -178,13 +175,6 @@ HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
-
-IMAGES_MIN_WIDTH = 0
-IMAGES_MIN_HEIGHT = 0
-IMAGES_EXPIRES = 90
-IMAGES_THUMBS = {}
-IMAGES_URLS_FIELD = 'image_urls'
-IMAGES_RESULT_FIELD = 'images'
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
