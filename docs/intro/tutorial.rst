@@ -338,7 +338,7 @@ And from them, the site's descriptions::
 
     response.xpath('//div[@class="title-and-desc"]/div/text()').extract()
 
-Or to strip out the extra tabs, linebreaks, and whitespace around the text in the descriptions::
+Alternatively, to strip out the extra tabs, linebreaks, and whitespace around the text in the descriptions::
 
     response.xpath('//div[@class="title-and-desc"]/div/text()').re('(\w.*\w)')
 
