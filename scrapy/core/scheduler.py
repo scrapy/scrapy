@@ -86,7 +86,7 @@ class Scheduler(object):
             self.dqs.push(reqd, -request.priority)
         except ValueError as e: # non serializable request
             if self.logunser:
-                logger.error("Unable to serialize request: %(request)s - reason: %(reason)s",
+                logger.warning("Unable to serialize request: %(request)s - reason: %(reason)s",
                              {'request': request, 'reason': e},
                              exc_info=True, extra={'spider': self.spider})
             return
