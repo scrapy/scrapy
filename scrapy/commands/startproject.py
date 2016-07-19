@@ -51,6 +51,14 @@ class Command(ScrapyCommand):
         return False
 
     def _copytree(self, src, dst):
+        """
+        Since the original function always creates the directory, to resolve
+        the issue a new function had to be created. It's a simple copy and
+        was reduced for this case.
+
+        More info at:
+        https://github.com/scrapy/scrapy/pull/2005
+        """
         ignore = IGNORE
         names = os.listdir(src)
         ignored_names = ignore(src, names)
