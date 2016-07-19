@@ -79,10 +79,11 @@ class Command(ScrapyCommand):
 
         if len(args) == 2:
             project_dir = args[1]
-            if exists(join(project_dir, 'scrapy.cfg')):
-                self.exitcode = 1
-                print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
-                return
+
+        if exists(join(project_dir, 'scrapy.cfg')):
+            self.exitcode = 1
+            print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
+            return
 
         if not self._is_valid_name(project_name):
             self.exitcode = 1
