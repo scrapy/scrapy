@@ -689,15 +689,6 @@ temporary files before uploading with :ref:`FTP feed storage <topics-feed-storag
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
 
-.. setting:: FILES_STORE_S3_ACL
-
-FILES_STORE_S3_ACL
-------------------
-
-Default: ``'private'``
-
-S3-specific access control policy (ACL) for S3 files store.
-
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
