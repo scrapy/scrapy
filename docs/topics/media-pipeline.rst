@@ -162,7 +162,14 @@ For example, this is a valid :setting:`IMAGES_STORE` value::
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_S3_ACL` and
 :setting:`IMAGES_STORE_S3_ACL` settings. By default, the ACL is set to
-``private``.
+``private``. To make the files publicly available use the ``public-read``
+policy::
+
+    IMAGES_STORE_S3_ACL = 'public-read'
+
+For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
+
+.. _canned ACLs: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 Usage example
 =============
