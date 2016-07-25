@@ -84,15 +84,16 @@ class Scheduler(object):
         try:
             reqd = request_to_dict(request, self.spider)
             self.dqs.push(reqd, -request.priority)
-        except ValueError as e: # non serializable request
+        except ValueError as e:  # non serializable request
             if self.logunser:
-                msg = ("Unable to serialize request: %(request)s - reason: %(reason)s"
-                       " - no more unserializable requests will be logged"
-                       " (stats being collected)")
+                msg = ("Unable to serialize request: %(request)s - reason:"
+                       " %(reason)s - no more unserializable requests will be"
+                       " logged (stats being collected)")
                 logger.error(msg, {'request': request, 'reason': e},
                              exc_info=True, extra={'spider': self.spider})
                 self.logunser = False
-            self.stats.inc_value('scheduler/unserializable', spider=self.spider)
+            self.stats.inc_value('scheduler/unserializable',
+                                 spider=self.spider)
             return
         else:
             return True
