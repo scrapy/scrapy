@@ -118,7 +118,8 @@ def _get_handler(settings):
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
-    handler.addFilter(TopLevelFormatter(['scrapy']))
+    if not settings.getbool('DISABLE_TOPLEVELFORMATTER'):
+        handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
 
 
