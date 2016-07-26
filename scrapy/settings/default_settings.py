@@ -177,6 +177,8 @@ HTTPCACHE_GZIP = False
 
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
+IMAGES_STORE_S3_ACL = 'private'
+
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
 ITEM_PIPELINES = {}
