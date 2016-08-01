@@ -117,7 +117,7 @@ Supported Storage
 =================
 
 File system is currently the only officially supported storage, but there is
-also (undocumented) support for storing files in `Amazon S3`_.
+also support for storing files in `Amazon S3`_.
 
 .. _Amazon S3: https://aws.amazon.com/s3/
 
@@ -146,6 +146,30 @@ Where:
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
 
+Amazon S3 storage
+-----------------
+
+.. setting:: FILES_STORE_S3_ACL
+.. setting:: IMAGES_STORE_S3_ACL
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent an Amazon S3
+bucket. Scrapy will automatically upload the files to the bucket.
+
+For example, this is a valid :setting:`IMAGES_STORE` value::
+
+    IMAGES_STORE = 's3://bucket/images'
+
+You can modify the Access Control List (ACL) policy used for the stored files,
+which is defined by the :setting:`FILES_STORE_S3_ACL` and
+:setting:`IMAGES_STORE_S3_ACL` settings. By default, the ACL is set to
+``private``. To make the files publicly available use the ``public-read``
+policy::
+
+    IMAGES_STORE_S3_ACL = 'public-read'
+
+For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
+
+.. _canned ACLs: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 Usage example
 =============
