@@ -16,9 +16,9 @@ components and an outline of the data flow that takes place inside the system
 below with links for more detailed information about them. The data flow is
 also described below.
 
-.. image:: _images/scrapy_architecture.png
+.. image:: _images/scrapy_architecture_02.png
    :width: 700
-   :height: 494
+   :height: 470
    :alt: Scrapy architecture
 
 Components
@@ -143,4 +143,3 @@ links:
 .. _Introduction to Deferreds in Twisted: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 .. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/
-
