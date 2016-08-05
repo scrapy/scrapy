@@ -89,15 +89,14 @@ Windows
      Python 3 is not supported on Windows. This is because Scrapy core requirement Twisted does not support
      Python 3 on Windows.
 
-Ubuntu 9.10 or above
---------------------
+Ubuntu 12.04 or above
+---------------------
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with latest Scrapy.
+typically too old and slow to catch up with latest Scrapy. You will need
+to install the following system packages::
 
-Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
-solve all dependencies for you and are continuously updated with the latest bug
-fixes.
+    sudo apt-get install python-pip python-twisted python-openssl python-lxml
 
 If you prefer to build the python dependencies locally instead of relying on
 system packages you'll need to install their required non-python dependencies
