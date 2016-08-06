@@ -42,7 +42,7 @@ class ImagesPipeline(FilesPipeline):
     # ImagesPipeline. They may be overridden by settings.
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
-    EXPIRES = 0
+    EXPIRES = 90
     THUMBS = {}
     DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
