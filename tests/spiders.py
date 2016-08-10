@@ -106,6 +106,14 @@ class ErrorSpider(FollowAllSpider):
             self.raise_exception()
 
 
+class ExceptionStartRequestsSpider(FollowAllSpider):
+
+    name = 'exception_startreq'
+
+    def start_request(self):
+        raise ValueError()
+        
+
 class BrokenStartRequestsSpider(FollowAllSpider):
 
     fail_before_yield = False

@@ -174,6 +174,12 @@ class GenspiderStandaloneCommandTest(ProjectTest):
         assert exists(join(self.temp_path, 'example.py'))
 
 
+class CrawlCommandTest(CommandTest):
+
+    def test_exit_code(self):
+        self.assertNotEqual(0, self.call('crawl', 'exception_startreq'))
+        
+
 class MiscCommandsTest(CommandTest):
 
     def test_list(self):
