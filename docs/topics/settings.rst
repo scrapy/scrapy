@@ -689,15 +689,6 @@ temporary files before uploading with :ref:`FTP feed storage <topics-feed-storag
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
 
-.. setting:: FILES_STORE_S3_ACL
-
-FILES_STORE_S3_ACL
-------------------
-
-Default: ``'private'``
-
-S3-specific access control policy (ACL) for S3 files store.
-
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -1025,6 +1016,24 @@ SCHEDULER
 Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
+
+.. setting:: SCHEDULER_DEBUG
+
+SCHEDULER_DEBUG
+---------------
+
+Default: ``False``
+
+Setting to ``True`` will log debug information about the requests scheduler.
+This currently logs (only once) if the requests cannot be serialized to disk.
+Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+
+Example entry in logs::
+
+    1956-01-31 00:00:00+0800 [scrapy] ERROR: Unable to serialize request:
+    <GET http://example.com> - reason: cannot serialize <Request at 0x9a7c7ec>
+    (type Request)> - no more unserializable requests will be logged
+    (see 'scheduler/unserializable' stats counter)
 
 .. setting:: SPIDER_CONTRACTS
 

@@ -221,7 +221,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
     default_pipeline_settings = dict(
         MIN_WIDTH=0,
         MIN_HEIGHT=0,
-        EXPIRES=0,
+        EXPIRES=90,
         THUMBS={},
         IMAGES_URLS_FIELD='image_urls',
         IMAGES_RESULT_FIELD='images'
