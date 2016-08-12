@@ -57,7 +57,15 @@ class ItemLoader(object):
             item=self.item, parent=self, **context
         )
         return subloader
-
+        
+    def nested_selector(self, sel,**context ):
+	    selector=sel
+        context.update(selector=selector)
+        subloader = self.__class__(
+            item=self.item, parent=self, **context
+        )
+        return subloader
+        
     def nested_css(self, css, **context):
         selector = self.selector.css(css)
         context.update(selector=selector)
