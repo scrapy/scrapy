@@ -1,6 +1,12 @@
 import base64
 import re
-from six.moves.urllib.parse import unquote
+
+import six
+
+if six.PY2:
+    from urllib import unquote
+else:
+    from urllib.parse import unquote_to_bytes as unquote
 
 from scrapy.http import TextResponse
 from scrapy.responsetypes import responsetypes
@@ -24,12 +30,19 @@ _quoted_string = r'(?:[{}]|(?:\\[{}]))*'.format(
     re.escape(''.join(_char))
 )
 
+# Encode the regular expression strings to make them into bytes, as Python 3
+# bytes have no format() method, but bytes must be passed to re.compile() in
+# order to make a pattern object that can be used to match on bytes.
+
 # RFC 2397 mediatype.
-_mediatype_pattern = re.compile(r'{token}/{token}'.format(token=_token))
+_mediatype_pattern = re.compile(
+    r'{token}/{token}'.format(token=_token).encode()
+)
 
 _mediatype_parameter_pattern = re.compile(
     r';({token})=(?:({token})|"({quoted})")'.format(token=_token,
-                                                    quoted=_quoted_string)
+                                                    quoted=_quoted_string
+                                                    ).encode()
 )
 
 
@@ -59,7 +72,7 @@ class DataURIDownloadHandler(object):
 
         m = _mediatype_pattern.match(url)
         if m:
-            media_type = m.group()
+            media_type = m.group().decode()
             url = url[m.end():]
         else:
             media_type_params['charset'] = "US-ASCII"
@@ -69,15 +82,15 @@ class DataURIDownloadHandler(object):
             if m:
                 attribute, value, value_quoted = m.groups()
                 if value_quoted:
-                    value = re.sub(r'\\(.)', '\1', value_quoted)
-                media_type_params[attribute] = value
+                    value = re.sub(br'\\(.)', r'\1', value_quoted)
+                media_type_params[attribute.decode()] = value.decode()
                 url = url[m.end():]
             else:
                 break
 
-        is_base64, data = url.split(',', 1)
+        is_base64, data = url.split(b',', 1)
         if is_base64:
-            if is_base64 != ";base64":
+            if is_base64 != b";base64":
                 raise ValueError("invalid data URI")
             data = base64.b64decode(data)
 
