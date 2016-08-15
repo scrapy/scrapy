@@ -359,30 +359,51 @@ You can also use CSS selectors as the expression is much simpler::
 
 And from them, the site's descriptions::
 
-	response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/div[@class="site-descr "]/text()').extract()
+    response.xpath('''//div[@id="site-list-content"]
+                            /div[@class="site-item "]
+                                /div[@class="title-and-desc"]
+                                    /div[@class="site-descr "]
+                                        /text()''').extract()
 
 Again, using CSS selectors is much simpler::
 
-	response.css('#site-list-content > div.site-item > div.title-and-desc > div.site-descr::text').extract()
+    response.css('''#site-list-content
+                        > div.site-item
+                            > div.title-and-desc
+                                > div.site-descr::text''').extract()
 
 The site's titles::
 
-    response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/a/div[@class="site-title"]/text()').extract()
+    response.xpath('''//div[@id="site-list-content"]
+                            /div[@class="site-item "]
+                                /div[@class="title-and-desc"]
+                                    /a/div[@class="site-title"]
+                                          /text()''').extract()
 
 And, using CSS selectors::
 
-	response.css('#site-list-content > div.site-item > div.title-and-desc > a > div.site-title::text').extract()
+    response.css('''#site-list-content 
+                        > div.site-item
+                            > div.title-and-desc
+                                > a
+                                  > div.site-title::text''').extract()
 
 And the site's links::
 
-    response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]/a/@href').extract()
-    response.css('#site-list-content > div.site-item > div.title-and-desc > a::attr("href")').extract()
+    response.xpath('''//div[@id="site-list-content"]
+                            /div[@class="site-item "]
+                                /div[@class="title-and-desc"]
+                                    /a/@href''').extract()
+    response.css('''#site-list-content
+                        > div.site-item
+                            > div.title-and-desc
+                                > a::attr("href")''').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-	for sel in response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]'):
+    for sel in response.xpath('//div[@id="site-list-content"]/div[@class="site-item "]/div[@class="title-and-desc"]'):
         title = sel.xpath('a/div[@class="site-title"]/text()').extract()
         link = sel.xpath('a/@href').extract()
         desc = sel.xpath('div[@class="site-descr "]/text()').extract()
@@ -393,6 +414,10 @@ that property here, so::
     :ref:`topics-selectors-nesting-selectors` and
     :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
     documentation
+
+Now that we know how to concatenate ``.xpath`` calls, we can shorten our ``for`` loop statement using a equivalent
+``.xpath()`` call that takes advantage of the css class name ``"title-and-desc"`` of the site's links:
+``response.xpath('//div[@class="title-and-desc"]')``.
 
 Let's add this code to our spider::
 
