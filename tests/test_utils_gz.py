@@ -1,6 +1,8 @@
 import unittest
 from os.path import join
 
+from w3lib.encoding import html_to_unicode
+
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy.http import Response, Headers
 from tests import tests_datadir
@@ -66,3 +68,11 @@ class GunzipTest(unittest.TestCase):
         hdrs = Headers({"Content-Type": "application/x-gzip;charset=utf-8"})
         r1 = Response("http://www.example.com", headers=hdrs)
         self.assertTrue(is_gzipped(r1))
+
+    def test_gunzip_illegal_eof(self):
+        with open(join(SAMPLEDIR, 'unexpected-eof.gz'), 'rb') as f:
+            text = html_to_unicode('charset=cp1252', gunzip(f.read()))[1]
+            with open(join(SAMPLEDIR, 'unexpected-eof-output.txt'), 'rb') as o:
+                expected_text = o.read().decode("utf-8")
+                self.assertEqual(len(text), len(expected_text))
+                self.assertEqual(text, expected_text)

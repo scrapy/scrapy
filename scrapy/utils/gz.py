@@ -43,7 +43,7 @@ def gunzip(data):
             # contains the whole page content
             if output or getattr(f, 'extrabuf', None):
                 try:
-                    output += f.extrabuf
+                    output += f.extrabuf[-f.extrasize:]
                 finally:
                     break
             else:
