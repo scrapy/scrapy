@@ -3,6 +3,20 @@
 Release notes
 =============
 
+1.1.2 (2016-08-18)
+------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Introduce a missing :setting:`IMAGES_STORE_S3_ACL` setting to override
+  the default ACL policy in ``ImagesPipeline`` when uploading images to S3
+  (note that default ACL policy is "private" -- instead of "public-read" --
+  since Scrapy 1.1.0)
+- :setting:`IMAGES_EXPIRES` default value set back to 90
+  (the regression was introduced in 1.1.1)
+
+
 1.1.1 (2016-07-13)
 ------------------
 
