@@ -504,8 +504,7 @@ supported.  Example::
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
 setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
-amount of time between requests, but uses a random interval between 0.5 and 1.5
-* :setting:`DOWNLOAD_DELAY`.
+amount of time between requests, but uses a random interval between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`.
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
@@ -925,8 +924,7 @@ RANDOMIZE_DOWNLOAD_DELAY
 
 Default: ``True``
 
-If enabled, Scrapy will wait a random amount of time (between 0.5 and 1.5
-* :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
+If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
 website.
 
 This randomization decreases the chance of the crawler being detected (and
