@@ -37,8 +37,7 @@ class Command(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError(
-                "Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
             if opts.output == '-':
                 self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
@@ -48,22 +47,19 @@ class Command(ScrapyCommand):
                 self.settings.getwithbase('FEED_EXPORTERS'))
             valid_output_formats = feed_exporters.keys()
             if not opts.output_format:
-                opts.output_format = os.path.splitext(
-                    opts.output)[1].replace(".", "")
+                opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
             if opts.output_format not in valid_output_formats:
                 raise UsageError("Unrecognized output format '%s', set one"
                                  " using the '-t' switch or as a file extension"
                                  " from the supported list %s" % (opts.output_format,
                                                                   tuple(valid_output_formats)))
-            self.settings.set(
-                'FEED_FORMAT', opts.output_format, priority='cmdline')
+            self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
 
     def run(self, args, opts):
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:
-            raise UsageError(
-                "running 'scrapy crawl' with more than one spider is no longer supported")
+            raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
         spname = args[0]
 
         d = self.crawler_process.crawl(spname, **opts.spargs)
