@@ -332,11 +332,11 @@ By default media pipelines ignore redirects. To allow redirecting(all 300 codes)
 
     MEDIA_ALLOW_REDIRECTS = True
 
-To only allow specific codes through set:
+To only allow handling only specific codes set (default: any code):
 
-    MEDIA_HTTpSTATUS_LIST = <LIST>
+    MEDIA_HTTPSTATUS_LIST = <LIST>
     # example:
-    MEDIA_HTTPSTATUS_LIST = [303, 404]
+    MEDIA_HTTPSTATUS_LIST = [303, 404]  # will not go through pipelines
 
 Extending the Media Pipelines
 =============================
