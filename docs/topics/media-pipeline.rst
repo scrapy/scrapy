@@ -322,6 +322,22 @@ By default, there are no size constraints, so all images are processed.
 
 .. _topics-media-pipeline-override:
 
+Allowing redirection and handling various http statuses
+-------------------------------------------------------
+
+.. setting:: MEDIA_ALLOW_REDIRECTS
+.. setting:: MEDIA_HTTPSTATUS_LIST
+
+By default media pipelines ignore redirects. To allow redirecting(all 300 codes) set:
+
+    MEDIA_ALLOW_REDIRECTS = True
+
+To only allow specific codes through set:
+
+    MEDIA_HTTpSTATUS_LIST = <LIST>
+    # example:
+    MEDIA_HTTPSTATUS_LIST = [303, 404]
+
 Extending the Media Pipelines
 =============================
 
