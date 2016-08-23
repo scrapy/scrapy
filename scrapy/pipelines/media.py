@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import functools
 import logging
 from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 class MediaPipeline(object):
 
     LOG_FAILED_RESULTS = True
+    ALLOW_REDIRECTS = False
 
     class SpiderInfo(object):
         def __init__(self, spider):
@@ -24,9 +26,16 @@ class MediaPipeline(object):
             self.downloaded = {}
             self.waiting = defaultdict(list)
 
-    def __init__(self, download_func=None):
+    def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
-
+        resolve = functools.partial(self._key_for_pipe,
+                                    base_class_name="MediaPipeline")
+        self.allow_redirects = settings.getbool(
+            resolve('MEDIA_ALLOW_REDIRECTS'), self.ALLOW_REDIRECTS
+        )
+        self.allow_httpstatus_list = settings.getlist(
+            resolve('MEDIA_HTTPSTATUS_LIST'), []
+        )
 
     def _key_for_pipe(self, key, base_class_name=None,
                       settings=None):
@@ -93,6 +102,25 @@ class MediaPipeline(object):
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
+    def _modify_media_request(self, request):
+        httpstatus_list = []
+        if self.allow_httpstatus_list:
+            httpstatus_list = self.allow_httpstatus_list
+        elif self.allow_redirects:
+            if not httpstatus_list:
+                httpstatus_list = list(range(0, 300)) + list(range(400, 1000))
+            else:
+                for i in range(300, 400):
+                    try:
+                        httpstatus_list.remove(i)
+                    except ValueError:
+                        pass
+        if httpstatus_list:
+            request.meta['handle_httpstatus_list'] = httpstatus_list
+        else:
+            request.meta['handle_httpstatus_all'] = True
+        return request
+
     def _check_media_to_download(self, result, request, info):
         if result is not None:
             return result
@@ -103,7 +131,7 @@ class MediaPipeline(object):
                 callback=self.media_downloaded, callbackArgs=(request, info),
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
-            request.meta['handle_httpstatus_all'] = True
+            request = self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info),
