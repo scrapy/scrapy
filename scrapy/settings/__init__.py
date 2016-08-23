@@ -243,7 +243,7 @@ class BaseSettings(MutableMapping):
     def __setitem__(self, name, value):
         self.set(name, value)
 
-    def set(self, name, value, priority='project'):
+    def set(self, name, value, priority='project', update=False):
         """
         Store a key/value attribute with a given priority.
 
@@ -260,9 +260,30 @@ class BaseSettings(MutableMapping):
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
         :type priority: string or int
+
+        :param update: merge/update dictionary values instead of replacing them
+        :type name: boolean
         """
         self._assert_mutability()
         priority = get_settings_priority(priority)
+
+        # A key/name of 'update' signifies a magic dictionary value which
+        # contains Settings module key/values that should be merged into
+        # existing values, instead of replaced.
+        if name is 'update' or name is 'UPDATE':
+            self.update(value, priority, update=True)
+            return
+
+        if update:
+            if name not in self:
+                return
+            if isinstance(self[name], BaseSettings):
+                self[name].update(value, priority)
+            else:
+                # Ignore priority
+                self[name].update(value)
+            return
+
         if name not in self:
             if isinstance(value, SettingsAttribute):
                 self.attributes[name] = value
@@ -271,10 +292,10 @@ class BaseSettings(MutableMapping):
         else:
             self.attributes[name].set(value, priority)
 
-    def setdict(self, values, priority='project'):
-        self.update(values, priority)
+    def setdict(self, values, priority='project', update=False):
+        self.update(values, priority, update)
 
-    def setmodule(self, module, priority='project'):
+    def setmodule(self, module, priority='project', update=False):
         """
         Store settings from a module with a given priority.
 
@@ -288,15 +309,18 @@ class BaseSettings(MutableMapping):
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
         :type priority: string or int
+
+        :param update: merge/update dictionary values instead of replacing them
+        :type name: boolean
         """
         self._assert_mutability()
         if isinstance(module, six.string_types):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
-                self.set(key, getattr(module, key), priority)
+                self.set(key, getattr(module, key), priority, update)
 
-    def update(self, values, priority='project'):
+    def update(self, values, priority='project', update=False):
         """
         Store key/value pairs with a given priority.
 
@@ -317,6 +341,9 @@ class BaseSettings(MutableMapping):
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
         :type priority: string or int
+
+        :param update: merge/update dictionary values instead of replacing them
+        :type name: boolean
         """
         self._assert_mutability()
         if isinstance(values, six.string_types):
@@ -324,10 +351,10 @@ class BaseSettings(MutableMapping):
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in six.iteritems(values):
-                    self.set(name, value, values.getpriority(name))
+                    self.set(name, value, values.getpriority(name), update=update)
             else:
                 for name, value in six.iteritems(values):
-                    self.set(name, value, priority)
+                    self.set(name, value, priority, update=update)
 
     def delete(self, name, priority='project'):
         self._assert_mutability()
