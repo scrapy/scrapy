@@ -6,6 +6,7 @@ from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.settings import Settings
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
@@ -28,6 +29,8 @@ class MediaPipeline(object):
 
     def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name="MediaPipeline")
         self.allow_redirects = settings.getbool(
