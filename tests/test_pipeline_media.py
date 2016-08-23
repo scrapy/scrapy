@@ -6,6 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
+from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
@@ -25,7 +26,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.spider = Spider('media.com')
-        self.pipe = self.pipeline_class(download_func=_mocked_download_func)
+        self.pipe = self.pipeline_class(download_func=_mocked_download_func,
+                                        settings=Settings())
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
 
@@ -81,6 +83,21 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         item = dict(name='name')
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
+
+    def test_modify_media_request(self):
+        request = Request('http://url')
+        assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_all': True}
+
+        request = Request('http://url')
+        self.pipe.allow_httpstatus_list = list(range(100))
+        assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_list': list(range(100))}
+        self.pipe.allow_httpstatus_list = None
+
+        request = Request('http://url')
+        self.pipe.allow_redirects = True
+        correct = {'handle_httpstatus_list': list(range(300)) + list(range(400,1000))}
+        assert self.pipe._modify_media_request(request).meta == correct
+        self.pipe.allow_redirects = False
 
 
 class MockedMediaPipeline(MediaPipeline):
