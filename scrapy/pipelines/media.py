@@ -6,6 +6,7 @@ from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.settings import Settings
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
@@ -36,7 +37,7 @@ class MediaPipeline(object):
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), self.ALLOW_REDIRECTS
         )
-        self.allow_httpstatus_list = settings.getlist(
+        self.handle_httpstatus_list = settings.getlist(
             resolve('MEDIA_HTTPSTATUS_LIST'), []
         )
 
@@ -107,17 +108,15 @@ class MediaPipeline(object):
 
     def _modify_media_request(self, request):
         httpstatus_list = []
-        if self.allow_httpstatus_list:
-            httpstatus_list = self.allow_httpstatus_list
-        elif self.allow_redirects:
+        if self.handle_httpstatus_list:
+            httpstatus_list = self.handle_httpstatus_list
+        if self.allow_redirects:
             if not httpstatus_list:
-                httpstatus_list = list(range(0, 300)) + list(range(400, 1000))
+                httpstatus_list = [i for i in range(1000)
+                                   if i not in RedirectMiddleware.allowed_status]
             else:
-                for i in range(300, 400):
-                    try:
-                        httpstatus_list.remove(i)
-                    except ValueError:
-                        pass
+                httpstatus_list = [i for i in httpstatus_list
+                                   if i not in RedirectMiddleware.allowed_status]
         if httpstatus_list:
             request.meta['handle_httpstatus_list'] = httpstatus_list
         else:

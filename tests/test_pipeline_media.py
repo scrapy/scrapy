@@ -89,9 +89,9 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_all': True}
 
         request = Request('http://url')
-        self.pipe.allow_httpstatus_list = list(range(100))
+        self.pipe.handle_httpstatus_list = list(range(100))
         assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_list': list(range(100))}
-        self.pipe.allow_httpstatus_list = None
+        self.pipe.handle_httpstatus_list = None
 
         request = Request('http://url')
         self.pipe.allow_redirects = True
