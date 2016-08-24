@@ -5,6 +5,7 @@ from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
+from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -95,7 +96,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         request = Request('http://url')
         self.pipe.allow_redirects = True
-        correct = {'handle_httpstatus_list': list(range(300)) + list(range(400,1000))}
+        correct = {'handle_httpstatus_list': [i for i in range(1000)
+                                              if i not in RedirectMiddleware.allowed_status]}
         assert self.pipe._modify_media_request(request).meta == correct
         self.pipe.allow_redirects = False
 
