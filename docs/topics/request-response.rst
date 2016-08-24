@@ -475,7 +475,7 @@ Response objects
     :type status: integer
 
     :param headers: the headers of this response. The dict values can be strings
-    (for single valued headers) or lists (for multi-valued headers).
+       (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
     :param body: the response body. It must be str, not unicode, unless you're
