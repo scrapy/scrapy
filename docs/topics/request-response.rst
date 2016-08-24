@@ -463,7 +463,7 @@ method for this job. Here's an example spider which uses it::
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers, body, flags])
+.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -471,12 +471,12 @@ Response objects
     :param url: the URL of this response
     :type url: string
 
-    :param headers: the headers of this response. The dict values can be strings
-       (for single valued headers) or lists (for multi-valued headers).
-    :type headers: dict
-
     :param status: the HTTP status of the response. Defaults to ``200``.
     :type status: integer
+
+    :param headers: the headers of this response. The dict values can be strings
+    (for single valued headers) or lists (for multi-valued headers).
+    :type headers: dict
 
     :param body: the response body. It must be str, not unicode, unless you're
        using a encoding-aware :ref:`Response subclass
@@ -484,14 +484,14 @@ Response objects
        :class:`TextResponse`.
     :type body: str
 
-    :param meta: the initial values for the :attr:`Response.meta` attribute. If
-       given, the dict will be shallow copied.
-    :type meta: dict
-
     :param flags: is a list containing the initial values for the
        :attr:`Response.flags` attribute. If given, the list will be shallow
        copied.
     :type flags: list
+
+    :param request: the initial value of the :attr:`Response.request` attribute.
+        This represents the :class:`Request` that generated this response.
+    :type request: :class:`Request` object
 
     .. attribute:: Response.url
 
