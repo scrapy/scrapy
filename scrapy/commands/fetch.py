@@ -1,5 +1,6 @@
 from __future__ import print_function
-import sys, six
+import sys
+import six
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
