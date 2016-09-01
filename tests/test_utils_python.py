@@ -3,6 +3,7 @@ import functools
 import operator
 import unittest
 from itertools import count
+import platform
 import six
 
 from scrapy.utils.python import (
@@ -212,10 +213,16 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(object), [])
 
-        # TODO: how do we fix this to return the actual argument names?
-        self.assertEqual(get_func_args(six.text_type.split), [])
-        self.assertEqual(get_func_args(" ".join), [])
-        self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+        if platform.python_implementation() == 'CPython':
+            # TODO: how do we fix this to return the actual argument names?
+            self.assertEqual(get_func_args(six.text_type.split), [])
+            self.assertEqual(get_func_args(" ".join), [])
+            self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+        else:
+            self.assertEqual(get_func_args(six.text_type.split), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join), ['list'])
+            self.assertEqual(get_func_args(operator.itemgetter(2)), ['obj'])
+
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
