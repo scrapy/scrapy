@@ -3,6 +3,49 @@
 Release notes
 =============
 
+1.2.0 (YYYY-MM-DD)
+------------------
+
+New Features
+~~~~~~~~~~~~
+
+- New :setting:`FEED_EXPORT_ENCODING` setting to customize the encoding
+  used when writing items to a file. This is useful for those wanting
+  something else than UTF-8 for XML or CSV output (:issue:`2034`).
+- ``startproject`` command now supports an optional destination directory
+  to override the default one based on the project name (:issue:`2005`).
+- New :setting:`SCHEDULER_DEBUG` setting to log requests serialization
+  failures (:issue:`1610`).
+- JSON encoder now supports serialization of ``set`` instances (:issue:`2058`).
+
+Bug fixes
+~~~~~~~~~
+
+- DefaultRequestHeaders middleware now runs before UserAgent middleware
+  (:issue:`2088`). **Warning: this is technically backwards incompatible**,
+  though we consider this a bug fix.
+- ``Selector`` does not allow passing both ``response`` and ``text`` anymore
+  (:issue:`2153`).
+- Fixed logging of wrong callback name with ``scrapy parse`` (:issue:`2169`).
+- Fix for an odd gzip decompression bug (:issue:`1606`).
+
+Refactoring
+~~~~~~~~~~~
+
+- ``canonicalize_url`` has been moved to `w3lib.url`_ (:issue:`2168`).
+
+.. _w3lib.url: http://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.url.canonicalize_url
+
+Documentation
+~~~~~~~~~~~~~
+
+- Grammar fixes: :issue:`2128`, :issue:`1566`.
+- Download stats badge removed from README (:issue:`2160`).
+- New scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`)
+- Updated ``Response`` parameters documentation (:issue:`2197`).
+- Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2197`).
+
+
 1.1.2 (2016-08-18)
 ------------------
 
