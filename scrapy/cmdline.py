@@ -4,7 +4,6 @@ import optparse
 import cProfile
 import inspect
 import pkg_resources
-import gc
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -12,6 +11,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
+from scrapy.utils.python import garbage_collect
 from scrapy.settings.deprecated import check_deprecated_settings
 
 def _iter_command_classes(module_name):
@@ -171,4 +171,4 @@ if __name__ == '__main__':
     finally:
         # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect()
         # on exit: http://doc.pypy.org/en/latest/cpython_differences.html?highlight=gc.collect#differences-related-to-garbage-collection-strategies
-        gc.collect()
+        garbage_collect()
