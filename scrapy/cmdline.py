@@ -4,6 +4,7 @@ import optparse
 import cProfile
 import inspect
 import pkg_resources
+import gc
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -165,4 +166,9 @@ def _run_command_profiled(cmd, args, opts):
         p.dump_stats(opts.profile)
 
 if __name__ == '__main__':
-    execute()
+    try:
+        execute()
+    finally:
+        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect()
+        # on exit: http://doc.pypy.org/en/latest/cpython_differences.html?highlight=gc.collect#differences-related-to-garbage-collection-strategies
+        gc.collect()
