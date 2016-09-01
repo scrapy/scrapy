@@ -1,3 +1,4 @@
+import gc
 import functools
 import operator
 import unittest
@@ -144,6 +145,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertNotEqual(v, wk[_Weakme()])
         self.assertEqual(v, wk[k])
         del k
+        for _ in range(100):
+            if wk._weakdict:
+                gc.collect()
         self.assertFalse(len(wk._weakdict))
 
     @unittest.skipUnless(six.PY2, "deprecated function")
