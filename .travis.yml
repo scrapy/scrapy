@@ -9,6 +9,7 @@ branches:
 env:
  - TOXENV=py27
  - TOXENV=precise
+ - TOXENV=jessie
  - TOXENV=py33
  - TOXENV=py35
  - TOXENV=docs
