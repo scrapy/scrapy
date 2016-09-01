@@ -1,7 +1,7 @@
 import re
 import logging
 from unittest import TestCase
-from testfixtures import LogCapture
+#from testfixtures import LogCapture
 
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
@@ -62,9 +62,9 @@ class CookiesMiddlewareTest(TestCase):
     def test_setting_enabled_cookies_debug(self):
         crawler = get_crawler(settings_dict={'COOKIES_DEBUG': True})
         mw = CookiesMiddleware.from_crawler(crawler)
-        with LogCapture('scrapy.downloadermiddlewares.cookies',
-                        propagate=False,
-                        level=logging.DEBUG) as l:
+      #  with LogCapture('scrapy.downloadermiddlewares.cookies',
+       #                 propagate=False,
+        #                level=logging.DEBUG) as l:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
                            headers={'Set-Cookie': 'C1=value1; path=/'})
@@ -86,9 +86,9 @@ class CookiesMiddlewareTest(TestCase):
     def test_setting_disabled_cookies_debug(self):
         crawler = get_crawler(settings_dict={'COOKIES_DEBUG': False})
         mw = CookiesMiddleware.from_crawler(crawler)
-        with LogCapture('scrapy.downloadermiddlewares.cookies',
-                        propagate=False,
-                        level=logging.DEBUG) as l:
+    #    with LogCapture('scrapy.downloadermiddlewares.cookies',
+     #                   propagate=False,
+      #                  level=logging.DEBUG) as l:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
                            headers={'Set-Cookie': 'C1=value1; path=/'})
