@@ -39,5 +39,5 @@ def sitemap_urls_from_robots(robots_text):
     robots.txt file
     """
     for line in robots_text.splitlines():
-        if line.lstrip().startswith('Sitemap:'):
+        if line.lstrip().lower().startswith('sitemap:'):
             yield line.split(':', 1)[1].strip()

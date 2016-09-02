@@ -178,15 +178,6 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
-.. setting:: FEED_TEMPDIR
-
-FEED_TEMPDIR
-------------
-
-The Feed Temp dir allows you to set a custom folder to save crawler
-temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
-:ref:`Amazon S3 <topics-feed-storage-s3>`.
-
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -468,9 +459,9 @@ Default::
         'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
         'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
         'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
-        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
-        'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
-        'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+        'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
+        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 500,
+        'scrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
         'scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware': 560,
         'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
         'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
@@ -513,8 +504,7 @@ supported.  Example::
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
 setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
-amount of time between requests, but uses a random interval between 0.5 and 1.5
-* :setting:`DOWNLOAD_DELAY`.
+amount of time between requests, but uses a random interval between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`.
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
@@ -688,14 +678,15 @@ For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
 
-.. setting:: FILES_STORE_S3_ACL
+.. setting:: FEED_TEMPDIR
 
-FILES_STORE_S3_ACL
-------------------
+FEED_TEMPDIR
+------------
 
-Default: ``'private'``
+The Feed Temp dir allows you to set a custom folder to save crawler
+temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
+:ref:`Amazon S3 <topics-feed-storage-s3>`.
 
-S3-specific access control policy (ACL) for S3 files store.
 
 .. setting:: ITEM_PIPELINES
 
@@ -933,8 +924,7 @@ RANDOMIZE_DOWNLOAD_DELAY
 
 Default: ``True``
 
-If enabled, Scrapy will wait a random amount of time (between 0.5 and 1.5
-* :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
+If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
 website.
 
 This randomization decreases the chance of the crawler being detected (and
@@ -1024,6 +1014,24 @@ SCHEDULER
 Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
+
+.. setting:: SCHEDULER_DEBUG
+
+SCHEDULER_DEBUG
+---------------
+
+Default: ``False``
+
+Setting to ``True`` will log debug information about the requests scheduler.
+This currently logs (only once) if the requests cannot be serialized to disk.
+Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+
+Example entry in logs::
+
+    1956-01-31 00:00:00+0800 [scrapy] ERROR: Unable to serialize request:
+    <GET http://example.com> - reason: cannot serialize <Request at 0x9a7c7ec>
+    (type Request)> - no more unserializable requests will be logged
+    (see 'scheduler/unserializable' stats counter)
 
 .. setting:: SPIDER_CONTRACTS
 

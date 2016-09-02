@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from scrapy.spiders import CSVFeedSpider
 
-from $project_name.items import ${ProjectName}Item
-
 
 class $classname(CSVFeedSpider):
     name = '$name'
@@ -16,7 +14,7 @@ class $classname(CSVFeedSpider):
     #    return response
 
     def parse_row(self, response, row):
-        i = ${ProjectName}Item()
+        i = {}
         #i['url'] = row['url']
         #i['name'] = row['name']
         #i['description'] = row['description']

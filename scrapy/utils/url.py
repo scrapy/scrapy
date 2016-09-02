@@ -7,15 +7,13 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
-                                    urlparse, parse_qsl, urlencode,
-                                    unquote)
+from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse)
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
 from w3lib.url import *
-from w3lib.url import _safe_chars
-from scrapy.utils.python import to_native_str
+from w3lib.url import _safe_chars, _unquotepath
+from scrapy.utils.python import to_unicode
 
 
 def url_is_from_any_domain(url, domains):
@@ -37,51 +35,13 @@ def url_has_any_extension(url, extensions):
     return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
 
 
-def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
-                     encoding=None):
-    """Canonicalize the given url by applying the following procedures:
-
-    - sort query arguments, first by key, then by value
-    - percent encode paths and query arguments. non-ASCII characters are
-      percent-encoded using UTF-8 (RFC-3986)
-    - normalize all spaces (in query arguments) '+' (plus symbol)
-    - normalize percent encodings case (%2f -> %2F)
-    - remove query arguments with blank values (unless keep_blank_values is True)
-    - remove fragments (unless keep_fragments is True)
-
-    The url passed can be a str or unicode, while the url returned is always a
-    str.
-
-    For examples see the tests in tests/test_utils_url.py
-    """
-
-    scheme, netloc, path, params, query, fragment = parse_url(url)
-    keyvals = parse_qsl(query, keep_blank_values)
-    keyvals.sort()
-    query = urlencode(keyvals)
-
-    # XXX: copied from w3lib.url.safe_url_string to add encoding argument
-    # path = to_native_str(path, encoding)
-    # path = moves.urllib.parse.quote(path, _safe_chars, encoding='latin1') or '/'
-
-    path = safe_url_string(_unquotepath(path)) or '/'
-    fragment = '' if not keep_fragments else fragment
-    return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
-
-
-def _unquotepath(path):
-    for reserved in ('2f', '2F', '3f', '3F'):
-        path = path.replace('%' + reserved, '%25' + reserved.upper())
-    return unquote(path)
-
-
 def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """
     if isinstance(url, ParseResult):
         return url
-    return urlparse(to_native_str(url, encoding))
+    return urlparse(to_unicode(url, encoding))
 
 
 def escape_ajax(url):

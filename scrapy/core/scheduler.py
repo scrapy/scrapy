@@ -30,7 +30,7 @@ class Scheduler(object):
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
-        logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS')
+        logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS', settings.getbool('SCHEDULER_DEBUG'))
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
@@ -84,11 +84,16 @@ class Scheduler(object):
         try:
             reqd = request_to_dict(request, self.spider)
             self.dqs.push(reqd, -request.priority)
-        except ValueError as e: # non serializable request
+        except ValueError as e:  # non serializable request
             if self.logunser:
-                logger.error("Unable to serialize request: %(request)s - reason: %(reason)s",
-                             {'request': request, 'reason': e},
+                msg = ("Unable to serialize request: %(request)s - reason:"
+                       " %(reason)s - no more unserializable requests will be"
+                       " logged (stats being collected)")
+                logger.error(msg, {'request': request, 'reason': e},
                              exc_info=True, extra={'spider': self.spider})
+                self.logunser = False
+            self.stats.inc_value('scheduler/unserializable',
+                                 spider=self.spider)
             return
         else:
             return True

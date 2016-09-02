@@ -36,9 +36,9 @@ voted questions on StackOverflow and scrapes some data from each page::
 
         def parse_question(self, response):
             yield {
-                'title': response.css('h1 a::text').extract()[0],
-                'votes': response.css('.question .vote-count-post::text').extract()[0],
-                'body': response.css('.question .post-text').extract()[0],
+                'title': response.css('h1 a::text').extract_first(),
+                'votes': response.css('.question .vote-count-post::text').extract_first(),
+                'body': response.css('.question .post-text').extract_first(),
                 'tags': response.css('.question .post-tag::text').extract(),
                 'link': response.url,
             }

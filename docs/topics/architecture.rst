@@ -16,9 +16,9 @@ components and an outline of the data flow that takes place inside the system
 below with links for more detailed information about them. The data flow is
 also described below.
 
-.. image:: _images/scrapy_architecture.png
+.. image:: _images/scrapy_architecture_02.png
    :width: 700
-   :height: 494
+   :height: 470
    :alt: Scrapy architecture
 
 Components
@@ -99,30 +99,31 @@ Data flow
 The data flow in Scrapy is controlled by the execution engine, and goes like
 this:
 
-1. The Engine gets the first URLs to crawl from the Spider and schedules them
-   in the Scheduler, as Requests.
+1. The Engine gets the first URLs to crawl from the Spider.
 
-2. The Engine asks the Scheduler for the next URLs to crawl.
+2. The Engine schedules the URLs in the Scheduler as Requests and asks for the
+   next URLs to crawl.
 
-3. The Scheduler returns the next URLs to crawl to the Engine and the Engine
-   sends them to the Downloader, passing through the Downloader Middleware
-   (request direction).
+3. The Scheduler returns the next URLs to crawl to the Engine.
 
-4. Once the page finishes downloading the Downloader generates a Response (with
+4. The Engine sends the URLs to the Downloader, passing through the
+   Downloader Middleware (request direction).
+
+5. Once the page finishes downloading the Downloader generates a Response (with
    that page) and sends it to the Engine, passing through the Downloader
    Middleware (response direction).
 
-5. The Engine receives the Response from the Downloader and sends it to the
+6. The Engine receives the Response from the Downloader and sends it to the
    Spider for processing, passing through the Spider Middleware (input direction).
 
-6. The Spider processes the Response and returns scraped items and new Requests
-   (to follow) to the Engine.
+7. The Spider processes the Response and returns scraped items and new Requests
+   (to follow) to the Engine, passing through the Spider Middleware
+   (output direction).
 
-7. The Engine passes scraped items and new Requests returned by a spider
-   through Spider Middleware (output direction), and then sends processed
-   items to Item Pipelines and processed Requests to the Scheduler.
+8. The Engine sends processed items to Item Pipelines and processed Requests to
+   the Scheduler.
 
-8. The process repeats (from step 1) until there are no more requests from the
+9. The process repeats (from step 1) until there are no more requests from the
    Scheduler.
 
 Event-driven networking
@@ -143,4 +144,3 @@ links:
 .. _Introduction to Deferreds in Twisted: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 .. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/
-

@@ -25,7 +25,7 @@ def sanitize_module_name(module_name):
 
 class Command(ScrapyCommand):
 
-    requires_project = True
+    requires_project = False
     default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
@@ -94,14 +94,19 @@ class Command(ScrapyCommand):
             'classname': '%sSpider' % ''.join(s.capitalize() \
                 for s in module.split('_'))
         }
-        spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-        spiders_dir = abspath(dirname(spiders_module.__file__))
+        if self.settings.get('NEWSPIDER_MODULE'):
+            spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
+            spiders_dir = abspath(dirname(spiders_module.__file__))
+        else:
+            spiders_module = None
+            spiders_dir = "."
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print("Created spider %r using template %r in module:" % (name, \
-            template_name))
-        print("  %s.%s" % (spiders_module.__name__, module))
+        print("Created spider %r using template %r " % (name, \
+            template_name), end=('' if spiders_module else '\n'))
+        if spiders_module:
+            print("in module:\n  %s.%s" % (spiders_module.__name__, module))
 
     def _find_template(self, template):
         template_file = join(self.templates_dir, '%s.tmpl' % template)

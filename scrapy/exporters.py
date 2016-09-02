@@ -33,9 +33,9 @@ class BaseItemExporter(object):
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses constructors)
         """
+        self.encoding = options.pop('encoding', None)
         self.fields_to_export = options.pop('fields_to_export', None)
         self.export_empty_fields = options.pop('export_empty_fields', False)
-        self.encoding = options.pop('encoding', 'utf-8')
         if not dont_fail and options:
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
@@ -84,11 +84,13 @@ class JsonLinesItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.file = file
+        kwargs.setdefault('ensure_ascii', not self.encoding)
         self.encoder = ScrapyJSONEncoder(**kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(to_bytes(self.encoder.encode(itemdict) + '\n'))
+        data = self.encoder.encode(itemdict) + '\n'
+        self.file.write(to_bytes(data, self.encoding))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -96,14 +98,15 @@ class JsonItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.file = file
+        kwargs.setdefault('ensure_ascii', not self.encoding)
         self.encoder = ScrapyJSONEncoder(**kwargs)
         self.first_item = True
 
     def start_exporting(self):
-        self.file.write(b"[")
+        self.file.write(b"[\n")
 
     def finish_exporting(self):
-        self.file.write(b"]")
+        self.file.write(b"\n]")
 
     def export_item(self, item):
         if self.first_item:
@@ -111,7 +114,8 @@ class JsonItemExporter(BaseItemExporter):
         else:
             self.file.write(b',\n')
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(to_bytes(self.encoder.encode(itemdict)))
+        data = self.encoder.encode(itemdict)
+        self.file.write(to_bytes(data, self.encoding))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -120,6 +124,8 @@ class XmlItemExporter(BaseItemExporter):
         self.item_element = kwargs.pop('item_element', 'item')
         self.root_element = kwargs.pop('root_element', 'items')
         self._configure(kwargs)
+        if not self.encoding:
+            self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
 
     def start_exporting(self):
@@ -169,9 +175,16 @@ class CsvItemExporter(BaseItemExporter):
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
+        if not self.encoding:
+            self.encoding = 'utf-8'
         self.include_headers_line = include_headers_line
-        file = file if six.PY2 else io.TextIOWrapper(file, line_buffering=True)
-        self.csv_writer = csv.writer(file, **kwargs)
+        self.stream = io.TextIOWrapper(
+            file,
+            line_buffering=False,
+            write_through=True,
+            encoding=self.encoding
+        ) if six.PY3 else file
+        self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
@@ -200,7 +213,7 @@ class CsvItemExporter(BaseItemExporter):
     def _build_row(self, values):
         for s in values:
             try:
-                yield to_native_str(s)
+                yield to_native_str(s, self.encoding)
             except TypeError:
                 yield s
 
@@ -263,6 +276,8 @@ class PythonItemExporter(BaseItemExporter):
             warnings.warn(
                 "PythonItemExporter will drop support for binary export in the future",
                 ScrapyDeprecationWarning)
+        if not self.encoding:
+            self.encoding = 'utf-8'
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._serialize_value)

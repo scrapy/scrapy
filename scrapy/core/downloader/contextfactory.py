@@ -6,10 +6,15 @@ try:
     from zope.interface.declarations import implementer
 
     # the following should be available from Twisted 14.0.0
-    from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust
-    from twisted.internet._sslverify import ClientTLSOptions
+    from twisted.internet.ssl import (optionsForClientTLS,
+                                      CertificateOptions,
+                                      platformTrust)
+
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
+
+    from scrapy.core.downloader.tls import ScrapyClientTLSOptions
+
 
     @implementer(IPolicyForHTTPS)
     class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
@@ -49,7 +54,7 @@ try:
             return self.getCertificateOptions().getContext()
 
         def creatorForNetloc(self, hostname, port):
-            return ClientTLSOptions(hostname.decode("ascii"), self.getContext())
+            return ScrapyClientTLSOptions(hostname.decode("ascii"), self.getContext())
 
 
     @implementer(IPolicyForHTTPS)

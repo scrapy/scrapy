@@ -736,7 +736,7 @@ namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
 :meth:`Selector.remove_namespaces` method for that.
 
-Let's show an example that illustrates this with Github blog atom feed.
+Let's show an example that illustrates this with GitHub blog atom feed.
 
 .. highlight:: sh
 

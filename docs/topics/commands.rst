@@ -103,13 +103,14 @@ Creating projects
 The first thing you typically do with the ``scrapy`` tool is create your Scrapy
 project::
 
-    scrapy startproject myproject
+    scrapy startproject myproject [project_dir]
 
-That will create a Scrapy project under the ``myproject`` directory.
+That will create a Scrapy project under the ``project_dir`` directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
 Next, you go inside the new project directory::
 
-    cd myproject
+    cd project_dir
 
 And you're ready to use the ``scrapy`` command to manage and control your
 project from there.
@@ -159,6 +160,7 @@ settings).
 Global commands:
 
 * :command:`startproject`
+* :command:`genspider`
 * :command:`settings`
 * :command:`runspider`
 * :command:`shell`
@@ -173,7 +175,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`genspider`
 * :command:`bench`
 
 .. command:: startproject
@@ -181,11 +182,12 @@ Project-only commands:
 startproject
 ------------
 
-* Syntax: ``scrapy startproject <project_name>``
+* Syntax: ``scrapy startproject <project_name> [project_dir]``
 * Requires project: *no*
 
-Creates a new Scrapy project named ``project_name``, under the ``project_name``
+Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
 Usage example::
 
@@ -197,14 +199,9 @@ genspider
 ---------
 
 * Syntax: ``scrapy genspider [-t template] <name> <domain>``
-* Requires project: *yes*
+* Requires project: *no*
 
-Create a new spider in the current project.
-
-This is just a convenience shortcut command for creating spiders based on
-pre-defined templates, but certainly not the only way to create spiders. You
-can just create the spider source code files yourself, instead of using this
-command.
+Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -215,22 +212,16 @@ Usage example::
       csvfeed
       xmlfeed
 
-    $ scrapy genspider -d basic
-    import scrapy
+    $ scrapy genspider example example.com
+    Created spider 'example' using template 'basic'
 
-    class $classname(scrapy.Spider):
-        name = "$name"
-        allowed_domains = ["$domain"]
-        start_urls = (
-            'http://www.$domain/',
-            )
+    $ scrapy genspider -t crawl scrapyorg scrapy.org
+    Created spider 'scrapyorg' using template 'crawl'
 
-        def parse(self, response):
-            pass
-
-    $ scrapy genspider -t basic example example.com
-    Created spider 'example' using template 'basic' in module:
-      mybot.spiders.example
+This is just a convenience shortcut command for creating spiders based on
+pre-defined templates, but certainly not the only way to create spiders. You
+can just create the spider source code files yourself, instead of using this
+command.
 
 .. command:: crawl
 

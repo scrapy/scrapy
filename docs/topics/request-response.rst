@@ -117,6 +117,8 @@ Request objects
        raised while processing the request. This includes pages that failed
        with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
        as first parameter.
+       For more information,
+       see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
 
     .. attribute:: Request.url
@@ -211,6 +213,69 @@ different fields from different pages::
         item = response.meta['item']
         item['other_url'] = response.url
         return item
+
+
+.. _topics-request-response-ref-errbacks:
+
+Using errbacks to catch exceptions in request processing
+--------------------------------------------------------
+
+The errback of a request is a function that will be called when an exception
+is raise while processing it.
+
+It receives a `Twisted Failure`_ instance as first parameter and can be
+used to track connection establishment timeouts, DNS errors etc.
+
+Here's an example spider logging all errors and catching some specific
+errors if needed::
+
+    import scrapy
+
+    from scrapy.spidermiddlewares.httperror import HttpError
+    from twisted.internet.error import DNSLookupError
+    from twisted.internet.error import TimeoutError, TCPTimedOutError
+
+    class ErrbackSpider(scrapy.Spider):
+        name = "errback_example"
+        start_urls = [
+            "http://www.httpbin.org/",              # HTTP 200 expected
+            "http://www.httpbin.org/status/404",    # Not found error
+            "http://www.httpbin.org/status/500",    # server issue
+            "http://www.httpbin.org:12345/",        # non-responding host, timeout expected
+            "http://www.httphttpbinbin.org/",       # DNS error expected
+        ]
+
+        def start_requests(self):
+            for u in self.start_urls:
+                yield scrapy.Request(u, callback=self.parse_httpbin,
+                                        errback=self.errback_httpbin,
+                                        dont_filter=True)
+
+        def parse_httpbin(self, response):
+            self.logger.info('Got successful response from {}'.format(response.url))
+            # do something useful here...
+
+        def errback_httpbin(self, failure):
+            # log all failures
+            self.logger.error(repr(failure))
+
+            # in case you want to do something special for some errors,
+            # you may need the failure's type:
+
+            if failure.check(HttpError):
+                # these exceptions come from HttpError spider middleware
+                # you can get the non-200 response
+                response = failure.value.response
+                self.logger.error('HttpError on %s', response.url)
+
+            elif failure.check(DNSLookupError):
+                # this is the original request
+                request = failure.request
+                self.logger.error('DNSLookupError on %s', request.url)
+
+            elif failure.check(TimeoutError, TCPTimedOutError):
+                request = failure.request
+                self.logger.error('TimeoutError on %s', request.url)
 
 .. _topics-request-meta:
 
@@ -398,7 +463,7 @@ method for this job. Here's an example spider which uses it::
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers, body, flags])
+.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -406,12 +471,12 @@ Response objects
     :param url: the URL of this response
     :type url: string
 
+    :param status: the HTTP status of the response. Defaults to ``200``.
+    :type status: integer
+
     :param headers: the headers of this response. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
-
-    :param status: the HTTP status of the response. Defaults to ``200``.
-    :type status: integer
 
     :param body: the response body. It must be str, not unicode, unless you're
        using a encoding-aware :ref:`Response subclass
@@ -419,14 +484,14 @@ Response objects
        :class:`TextResponse`.
     :type body: str
 
-    :param meta: the initial values for the :attr:`Response.meta` attribute. If
-       given, the dict will be shallow copied.
-    :type meta: dict
-
     :param flags: is a list containing the initial values for the
        :attr:`Response.flags` attribute. If given, the list will be shallow
        copied.
     :type flags: list
+
+    :param request: the initial value of the :attr:`Response.request` attribute.
+        This represents the :class:`Request` that generated this response.
+    :type request: :class:`Request` object
 
     .. attribute:: Response.url
 

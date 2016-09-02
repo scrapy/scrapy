@@ -20,6 +20,9 @@ class HttpCompressionMiddleware(object):
         request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
 
     def process_response(self, request, response, spider):
+
+        if request.method == 'HEAD':
+            return response
         if isinstance(response, Response):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding and not is_gzipped(response):
