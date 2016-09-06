@@ -26,7 +26,7 @@ class LogStats(object):
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.pagesprev = 0
         self.itemsprev = 0
 
@@ -46,6 +46,6 @@ class LogStats(object):
                     'items': items, 'itemrate': irate}
         logger.info(msg, log_args, extra={'spider': spider})
 
-    def spider_closed(self, spider, reason):
+    def spider_closed(self, spider, reason, **kw):
         if self.task.running:
             self.task.stop()

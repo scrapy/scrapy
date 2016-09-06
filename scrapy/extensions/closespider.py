@@ -43,27 +43,27 @@ class CloseSpider(object):
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def error_count(self, failure, response, spider):
+    def error_count(self, failure, response, spider, **kw):
         self.counter['errorcount'] += 1
         if self.counter['errorcount'] == self.close_on['errorcount']:
             self.crawler.engine.close_spider(spider, 'closespider_errorcount')
 
-    def page_count(self, response, request, spider):
+    def page_count(self, response, request, spider, **kw):
         self.counter['pagecount'] += 1
         if self.counter['pagecount'] == self.close_on['pagecount']:
             self.crawler.engine.close_spider(spider, 'closespider_pagecount')
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.task = reactor.callLater(self.close_on['timeout'], \
             self.crawler.engine.close_spider, spider, \
             reason='closespider_timeout')
 
-    def item_scraped(self, item, spider):
+    def item_scraped(self, item, spider, **kw):
         self.counter['itemcount'] += 1
         if self.counter['itemcount'] == self.close_on['itemcount']:
             self.crawler.engine.close_spider(spider, 'closespider_itemcount')
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, **kw):
         task = getattr(self, 'task', False)
         if task and task.active():
             task.cancel()
