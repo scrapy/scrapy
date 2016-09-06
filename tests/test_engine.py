@@ -21,7 +21,6 @@ from twisted.trial import unittest
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.test import get_crawler
-from pydispatch import dispatcher
 from tests import tests_datadir
 from scrapy.spiders import Spider
 from scrapy.item import Item, Field
@@ -107,8 +106,8 @@ class CrawlerRun(object):
                       self.geturl("/redirect")]  # a duplicate
 
         for name, signal in vars(signals).items():
-            if not name.startswith('_'):
-                dispatcher.connect(self.record_signal, signal)
+            if not name.startswith('_') and name != 'Signal':
+                signal.connect(self.record_signal)
 
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
@@ -119,13 +118,13 @@ class CrawlerRun(object):
         self.spider = self.crawler.spider
 
         self.deferred = defer.Deferred()
-        dispatcher.connect(self.stop, signals.engine_stopped)
+        signals.engine_stopped.connect(self.stop)
         return self.deferred
 
-    def stop(self):
+    def stop(self, **kw):
         self.port.stopListening()
         for name, signal in vars(signals).items():
-            if not name.startswith('_'):
+            if not name.startswith('_') and name is not 'Signal':
                 disconnect_all(signal)
         self.deferred.callback(None)
 
@@ -136,16 +135,16 @@ class CrawlerRun(object):
         u = urlparse(url)
         return u.path
 
-    def item_scraped(self, item, spider, response):
+    def item_scraped(self, item, spider, response, **kw):
         self.itemresp.append((item, response))
 
-    def request_scheduled(self, request, spider):
+    def request_scheduled(self, request, spider, **kw):
         self.reqplug.append((request, spider))
 
-    def request_dropped(self, request, spider):
+    def request_dropped(self, request, spider, **kw):
         self.reqdropped.append((request, spider))
 
-    def response_downloaded(self, response, spider):
+    def response_downloaded(self, response, spider, **kw):
         self.respplug.append((response, spider))
 
     def record_signal(self, *args, **kwargs):
