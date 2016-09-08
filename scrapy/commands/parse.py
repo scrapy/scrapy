@@ -8,8 +8,7 @@ from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
-from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.spider import spidercls_for_request
+from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
