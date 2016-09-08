@@ -6,10 +6,6 @@ Scrapy
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: PyPI Version
 
-.. image:: https://img.shields.io/pypi/dm/Scrapy.svg
-   :target: https://pypi.python.org/pypi/Scrapy
-   :alt: PyPI Monthly downloads
-
 .. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
    :target: http://travis-ci.org/scrapy/scrapy
    :alt: Build Status

@@ -73,6 +73,9 @@ Scrapy is supported under Python 2.7 and Python 3.3+.
 Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
 
+.. note::
+    Python 3 is not yet supported on Windows.
+
 Did Scrapy "steal" X from Django?
 ---------------------------------
 

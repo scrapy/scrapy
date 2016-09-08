@@ -175,7 +175,7 @@ class Command(ScrapyCommand):
                     cb = cb_method
                 else:
                     logger.error('Cannot find callback %(callback)r in spider: %(spider)s',
-                                 {'callback': callback, 'spider': spider.name})
+                                 {'callback': cb, 'spider': spider.name})
                     return
 
             # parse items and requests

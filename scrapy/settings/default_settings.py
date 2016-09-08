@@ -93,9 +93,9 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
     'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
     'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
-    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
-    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
-    'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 500,
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
     'scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware': 560,
     'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
@@ -139,6 +139,7 @@ FEED_URI = None
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
+FEED_EXPORT_ENCODING = None
 FEED_EXPORT_FIELDS = None
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
@@ -160,9 +161,6 @@ FEED_EXPORTERS_BASE = {
 }
 
 FILES_STORE_S3_ACL = 'private'
-FILES_EXPIRES = 90
-FILES_URLS_FIELD = 'file_urls'
-FILES_RESULT_FIELD = 'files'
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
@@ -179,12 +177,7 @@ HTTPCACHE_GZIP = False
 
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
-IMAGES_MIN_WIDTH = 0
-IMAGES_MIN_HEIGHT = 0
-IMAGES_EXPIRES = 90
-IMAGES_THUMBS = {}
-IMAGES_URLS_FIELD = 'image_urls'
-IMAGES_RESULT_FIELD = 'images'
+IMAGES_STORE_S3_ACL = 'private'
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
@@ -200,7 +193,7 @@ LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
 
-LOG_UNSERIALIZABLE_REQUESTS = False
+SCHEDULER_DEBUG = False
 
 LOGSTATS_INTERVAL = 60.0
 

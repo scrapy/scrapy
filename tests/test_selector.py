@@ -123,6 +123,10 @@ class SelectorTestCase(unittest.TestCase):
             sel.xpath('//p').extract_unquoted()
             self.assertSubstring('Use .extract() instead', str(w[-1].message))
 
+    def test_selector_bad_args(self):
+        with self.assertRaisesRegexp(ValueError, 'received both response and text'):
+            Selector(TextResponse(url='http://example.com', body=b''), text=u'')
+
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 

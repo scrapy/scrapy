@@ -151,7 +151,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 
-First couple of settings define a destination for log messages. If
+The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
 redirected to a file named :setting:`LOG_FILE` with encoding
 :setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log

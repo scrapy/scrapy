@@ -145,6 +145,26 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.headers['Content-Encoding'], b'gzip')
         self.assertEqual(response.headers['Content-Type'], b'application/gzip')
 
+    def test_process_response_gzip_app_octetstream_contenttype(self):
+        response = self._getresponse('gzip')
+        response.headers['Content-Type'] = 'application/octet-stream'
+        request = response.request
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertIs(newresponse, response)
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        self.assertEqual(response.headers['Content-Type'], b'application/octet-stream')
+
+    def test_process_response_gzip_binary_octetstream_contenttype(self):
+        response = self._getresponse('x-gzip')
+        response.headers['Content-Type'] = 'binary/octet-stream'
+        request = response.request
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertIs(newresponse, response)
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        self.assertEqual(response.headers['Content-Type'], b'binary/octet-stream')
+
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse('gzip')
         response.headers['Content-Type'] = 'application/gzip'

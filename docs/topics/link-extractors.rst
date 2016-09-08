@@ -103,7 +103,7 @@ LxmlLinkExtractor
     :type attrs: list
 
     :param canonicalize: canonicalize each extracted url (using
-        scrapy.utils.url.canonicalize_url). Defaults to ``True``.
+        w3lib.url.canonicalize_url). Defaults to ``True``.
     :type canonicalize: boolean
 
     :param unique: whether duplicate filtering should be applied to extracted

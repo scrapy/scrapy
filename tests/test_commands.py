@@ -73,6 +73,27 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
         self.assertEqual(1, self.call('startproject', 'sys'))
 
+    def test_startproject_with_project_dir(self):
+        project_dir = mkdtemp()
+        self.assertEqual(0, self.call('startproject', self.project_name, project_dir))
+
+        assert exists(join(abspath(project_dir), 'scrapy.cfg'))
+        assert exists(join(abspath(project_dir), 'testproject'))
+        assert exists(join(join(abspath(project_dir), self.project_name), '__init__.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'items.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'pipelines.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'settings.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'spiders', '__init__.py'))
+
+        self.assertEqual(0, self.call('startproject', self.project_name, project_dir + '2'))
+
+        self.assertEqual(1, self.call('startproject', self.project_name, project_dir))
+        self.assertEqual(1, self.call('startproject', self.project_name + '2', project_dir))
+        self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
+        self.assertEqual(1, self.call('startproject', 'sys'))
+        self.assertEqual(2, self.call('startproject'))
+        self.assertEqual(2, self.call('startproject', self.project_name, project_dir, 'another_params'))
+
 
 class StartprojectTemplatesTest(ProjectTest):
 
@@ -144,6 +165,13 @@ class GenspiderCommandTest(CommandTest):
     def test_same_name_as_project(self):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
+
+
+class GenspiderStandaloneCommandTest(ProjectTest):
+
+    def test_generate_standalone_spider(self):
+        self.call('genspider', 'example', 'example.com')
+        assert exists(join(self.temp_path, 'example.py'))
 
 
 class MiscCommandsTest(CommandTest):

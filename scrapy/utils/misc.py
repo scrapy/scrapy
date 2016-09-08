@@ -1,4 +1,4 @@
-"""Helper functions which doesn't fit anywhere else"""
+"""Helper functions which don't fit anywhere else"""
 import re
 import hashlib
 from importlib import import_module
