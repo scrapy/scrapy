@@ -9,10 +9,7 @@ import posixpath
 import re
 from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse)
 
-# scrapy.utils.url was moved to w3lib.url and import * ensures this
-# move doesn't break old code
-from w3lib.url import *
-from w3lib.url import _safe_chars, _unquotepath
+from w3lib.url import any_to_uri, add_or_replace_parameter
 from scrapy.utils.python import to_unicode
 
 
@@ -103,3 +100,9 @@ def guess_scheme(url):
         return any_to_uri(url)
     else:
         return add_http_if_no_scheme(url)
+
+
+# scrapy.utils.url was moved to w3lib.url and import * ensures this
+# move doesn't break old code
+from w3lib.url import *
+from w3lib.url import _safe_chars, _unquotepath
