@@ -111,7 +111,7 @@ class StreamLoggerTest(unittest.TestCase):
 
 
 class ConfigureLoggingTest(unittest.TestCase):
-    
+  
     def setUp(self):
         configure_logging()
         configure_logging()
