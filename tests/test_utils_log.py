@@ -111,11 +111,11 @@ class StreamLoggerTest(unittest.TestCase):
 
 
 class ConfigureLoggingTest(unittest.TestCase):
-
+    
     def setUp(self):
-        self.initial_handlers = len(logging.root.handlers)
         configure_logging()
         configure_logging()
 
     def test_duplicate_log(self):
-        self.assertEqual(len(logging.root.handlers), self.initial_handlers + 1)
+        handler_cls = [type(h) for h in logging.root.handlers]
+        self.assertEqual(handler_cls.count(logging.StreamHandler), 1)
