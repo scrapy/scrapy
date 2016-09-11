@@ -60,7 +60,7 @@ remain disabled. Those components include:
  * Downloader middlewares
  * Spider middlewares
 
-The exception must be raised in the component constructor.
+The exception must be raised in the component's ``__init__`` method.
 
 NotSupported
 ------------
