@@ -322,34 +322,42 @@ there could become a very tedious task. To make it easier, you can
 use Firefox Developer Tools or some Firefox extensions like Firebug. For more
 information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 
-After inspecting the page source, you'll find that the web site's information
-is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
+After inspecting the page source, you'll find that the web site information
+is inside a ``<div>`` element, with the id ``site-list-content``.  All of the
+information we are interested in is a couple levels deeper in a div with
+class ``title-and-desc``.
 
-So we can select each ``<li>`` element belonging to the site's list with this
-code::
+We can select each ``<div>`` element containing individual site information
+with this code::
 
-    response.xpath('//ul/li')
+    response.xpath('//div[@class="title-and-desc"]')
+
+While this reflects the description above, starting
 
 And from them, the site's descriptions::
 
-    response.xpath('//ul/li/text()').extract()
+    response.xpath('//div[@class="title-and-desc"]/div/text()').extract()
+
+Alternatively, to strip out the extra tabs, linebreaks, and whitespace around the text in the descriptions::
+
+    response.xpath('//div[@class="title-and-desc"]/div/text()').re('(\w.*\w)')
 
 The site's titles::
 
-    response.xpath('//ul/li/a/text()').extract()
+    response.xpath('//div[@class="title-and-desc"]/a/div/text()').extract()
 
 And the site's links::
 
-    response.xpath('//ul/li/a/@href').extract()
+    response.xpath('//div[@class="title-and-desc"]/a/@href').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//ul/li'):
-        title = sel.xpath('a/text()').extract()
+    for sel in response.xpath('//div[@class="title-and-desc"]'):
+        title = sel.xpath('a/div/text()').extract()
         link = sel.xpath('a/@href').extract()
-        desc = sel.xpath('text()').extract()
+        desc = sel.xpath('div/text()').re('(\w.*\w)')
         print title, link, desc
 
 .. note::
@@ -372,10 +380,10 @@ Let's add this code to our spider::
         ]
      
         def parse(self, response):
-            for sel in response.xpath('//ul/li'):
-                title = sel.xpath('a/text()').extract()
+            for sel in response.xpath('//div[@class="title-and-desc"]'):
+                title = sel.xpath('a/div/text()').extract()
                 link = sel.xpath('a/@href').extract()
-                desc = sel.xpath('text()').extract()
+                desc = sel.xpath('div/text()').re('(\w.*\w)')
                 print title, link, desc
 
 Now try crawling dmoz.org again and you'll see sites being printed
@@ -411,11 +419,11 @@ Spider would be like this::
         ]
 
         def parse(self, response):
-            for sel in response.xpath('//ul/li'):
+            for sel in response.xpath('//div[@class="title-and-desc"]'):
                 item = DmozItem()
-                item['title'] = sel.xpath('a/text()').extract()
+                item['title'] = sel.xpath('a/div/text()').extract()
                 item['link'] = sel.xpath('a/@href').extract()
-                item['desc'] = sel.xpath('text()').extract()
+                item['desc'] = sel.xpath('div/text()').re('(\w.*\w)')
                 yield item
 
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
@@ -458,7 +466,7 @@ Here is a modification to our spider that does just that::
         ]
 
         def parse(self, response):
-            for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
+            for href in response.css("div#subcategories-div > section > div > div > a::attr('href')"):
                 url = response.urljoin(href.extract())
                 yield scrapy.Request(url, callback=self.parse_dir_contents)
 
