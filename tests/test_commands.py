@@ -257,6 +257,9 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
         with open(fname, 'w') as f:
             f.write("""
 import scrapy
+from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import CrawlSpider, Rule
+
 
 class MySpider(scrapy.Spider):
     name = '{0}'
@@ -264,6 +267,33 @@ class MySpider(scrapy.Spider):
     def parse(self, response):
         if getattr(self, 'test_arg', None):
             self.logger.debug('It Works!')
+        return [scrapy.Item(), dict(foo='bar')]
+
+
+class MyGoodCrawlSpider(CrawlSpider):
+    name = 'goodcrawl{0}'
+
+    rules = (
+        Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
+        Rule(LinkExtractor(allow=r'/text'), follow=True),
+    )
+
+    def parse_item(self, response):
+        return [scrapy.Item(), dict(foo='bar')]
+
+    def parse(self, response):
+        return [scrapy.Item(), dict(nomatch='default')]
+
+
+class MyBadCrawlSpider(CrawlSpider):
+    '''Spider which doesn't define a parse_item callback while using it in a rule.'''
+    name = 'badcrawl{0}'
+
+    rules = (
+        Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
+    )
+
+    def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
 """.format(self.spider_name))
 
@@ -309,6 +339,58 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         )
         self.assertIn("""[{}, {'foo': 'bar'}]""", to_native_str(out))
 
+    @defer.inlineCallbacks
+    def test_parse_items_no_callback_passed(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', self.spider_name, self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", to_native_str(out))
+
+    @defer.inlineCallbacks
+    def test_wrong_callback_passed(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', self.spider_name, '-c', 'dummy', self.url('/html')]
+        )
+        self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
+
+    @defer.inlineCallbacks
+    def test_crawlspider_matching_rule_callback_set(self):
+        """If a rule matches the URL, use it's defined callback."""
+        status, out, stderr = yield self.execute(
+            ['--spider', 'goodcrawl'+self.spider_name, '-r', self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", to_native_str(out))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_matching_rule_default_callback(self):
+        """If a rule match but it has no callback set, use the 'parse' callback."""
+        status, out, stderr = yield self.execute(
+            ['--spider', 'goodcrawl'+self.spider_name, '-r', self.url('/text')]
+        )
+        self.assertIn("""[{}, {'nomatch': 'default'}]""", to_native_str(out))
+
+    @defer.inlineCallbacks
+    def test_spider_with_no_rules_attribute(self):
+        """Using -r with a spider with no rule should not produce items."""
+        status, out, stderr = yield self.execute(
+            ['--spider', self.spider_name, '-r', self.url('/html')]
+        )
+        self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
+
+    @defer.inlineCallbacks
+    def test_crawlspider_missing_callback(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/html')]
+        )
+        self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
+
+    @defer.inlineCallbacks
+    def test_crawlspider_no_matching_rule(self):
+        """The requested URL has no matching rule, so no items should be scraped"""
+        status, out, stderr = yield self.execute(
+            ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/enc-gb18030')]
+        )
+        self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
 
 
 class BenchCommandTest(CommandTest):
