@@ -145,6 +145,9 @@ class StreamLogger(object):
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
 
+    def flush(self):
+        pass
+
 
 class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
