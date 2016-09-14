@@ -27,6 +27,11 @@ class Spider(object_ref):
             self.name = name
         elif not getattr(self, 'name', None):
             raise ValueError("%s must have a name" % type(self).__name__)
+
+        crawler = kwargs.pop('crawler', None)
+        if crawler:
+            self._set_crawler(crawler)
+
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
@@ -47,8 +52,7 @@ class Spider(object_ref):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = cls(*args, **kwargs)
-        spider._set_crawler(crawler)
+        spider = cls(*args, crawler=crawler, **kwargs)
         return spider
 
     def set_crawler(self, crawler):

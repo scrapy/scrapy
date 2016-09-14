@@ -68,8 +68,8 @@ class Crawler(object):
         self.crawling = True
 
         try:
-            self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
+            self.spider = self._create_spider(*args, **kwargs)
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)

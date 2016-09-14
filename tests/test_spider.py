@@ -73,9 +73,11 @@ class SpiderTest(unittest.TestCase):
     def test_from_crawler_init_call(self):
         with mock.patch.object(self.spider_class, '__init__',
                                return_value=None) as mock_init:
-            self.spider_class.from_crawler(get_crawler(), 'example.com',
+            crawler = get_crawler()
+            self.spider_class.from_crawler(crawler, 'example.com',
                                            foo='bar')
-            mock_init.assert_called_once_with('example.com', foo='bar')
+            mock_init.assert_called_once_with('example.com', crawler=crawler,
+                                              foo='bar')
 
     def test_closed_signal_call(self):
         class TestSpider(self.spider_class):
