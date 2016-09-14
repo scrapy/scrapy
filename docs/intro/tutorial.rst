@@ -323,7 +323,7 @@ use Firefox Developer Tools or some Firefox extensions like Firebug. For more
 information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 
 After inspecting the page source, you'll find that every quote in the website
-is inside a separate ``<div class="quote">`` element, such as:
+is inside a separate ``<div class="quote">`` element, such as::
 
     <div class="quote">
         <span class="text">“We accept the love we think we deserve.”</span>
