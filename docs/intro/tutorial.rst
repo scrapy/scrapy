@@ -342,7 +342,7 @@ list with this code::
 
     response.xpath('//div[@class="quote"]')
 
-From each quote block, we can select text with::
+From the quote elements, we can select the texts with::
 
     response.xpath('//div[@class="quote"]/span[@class="text"]/text()').extract()
 
@@ -380,9 +380,12 @@ Let's add this code to our spider::
 
         def parse(self, response):
             for quote in response.xpath('//div[@class="quote"]'):
-                text = quote.xpath('span[@class="text"]/text()').extract()
-                author = quote.xpath('span/small/text()').extract()
-                print('{}: {}'.format(author, text))
+                text = quote.xpath('span[@class="text"]/text()').extract_first()
+                author = quote.xpath('span/small/text()').extract_first()
+                print(u'{}: {}'.format(author, text))
+
+Note how we've changed to use the method ``.extract_first()``, which extracts
+the first element from a selector list returned by ``.xpath()``.
 
 Now try crawling quotes.toscrape.com again and you'll see sites being printed
 in your output. Run::
@@ -419,21 +422,19 @@ Spider would be like this::
         def parse(self, response):
             for quote in response.xpath('//div[@class="quote"]'):
                 item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract()
-                item['author'] = quote.xpath('span/small/text()').extract()
+                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
+                item['author'] = quote.xpath('span/small/text()').extract_first()
                 yield item
 
 
 Now crawling quotes.toscrape.com yields ``QuoteItem`` objects::
 
     2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': ['Oscar Wilde'],
-     'text': ['“We are all in the gutter, but some of us are looking at the '
-              'stars.”']}
+    {'author': 'Oscar Wilde',
+     'text': '“We are all in the gutter, but some of us are looking at the stars.”'}
     2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': ['Mark Twain'],
-     'text': ['“The man who does not read has no advantage over the man who cannot '
-              'read.”']}
+    {'author': 'Mark Twain',
+     'text': '“The man who does not read has no advantage over the man who cannot read.”'}
 
 
 Following links
@@ -461,8 +462,8 @@ Here is a modification to our spider that does just that::
         def parse(self, response):
             for quote in response.xpath('//div[@class="quote"]'):
                 item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract()
-                item['author'] = quote.xpath('span/small/text()').extract()
+                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
+                item['author'] = quote.xpath('span/small/text()').extract_first()
                 yield item
             next_page = response.xpath('//li[@class="next"]/a/@href').extract_first()
             if next_page:
