@@ -13,10 +13,9 @@ our example domain to scrape.
 This tutorial will walk you through these tasks:
 
 1. Creating a new Scrapy project
-2. Defining the Items you will extract
-3. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract
+2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract
    :ref:`Items <topics-items>`
-4. Exporting the scraped data using command line
+3. Exporting the scraped data using command line
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
@@ -55,34 +54,6 @@ This will create a ``tutorial`` directory with the following contents::
                 __init__.py
 
 
-Defining our Item
-=================
-
-`Items` are containers that will be loaded with the scraped data; they work
-like simple Python dicts. While you can use plain Python dicts with Scrapy,
-`Items` provide additional protection against populating undeclared fields,
-preventing typos. They can also be used with :ref:`Item Loaders
-<topics-loaders>`, a mechanism with helpers to conveniently populate `Items`.
-
-They are declared by creating a :class:`scrapy.Item <scrapy.item.Item>` class and defining
-its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, much like in an ORM
-(don't worry if you're not familiar with ORMs, you will see that this is an
-easy task).
-
-We begin by modeling the item that we will use to hold the site's data obtained
-from quotes.toscrape.com. As we want to capture the text and author from each of
-the quotes listed there, we define fields for each of these three attributes. To do that, we edit
-``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
-
-    import scrapy
-
-    class QuoteItem(scrapy.Item):
-        text = scrapy.Field()
-        author = scrapy.Field()
-
-This may seem complicated at first, but defining an item class allows you to use other handy
-components and helpers within Scrapy.
-
 Our first Spider
 ================
 
@@ -93,20 +64,23 @@ They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of pages to extract :ref:`items <topics-items>`.
 
 To create a Spider, you must subclass :class:`scrapy.Spider
-<scrapy.spiders.Spider>` and define some attributes:
+<scrapy.spiders.Spider>` and define some attributes and methods:
 
 * :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :attr:`~scrapy.spiders.Spider.start_urls`: a list of URLs where the
-  Spider will begin to crawl from. The first pages downloaded will be those
-  listed here. The subsequent URLs will be generated successively from data
-  contained in the start URLs.
+* :meth:`~scrapy.spiders.Spider.start_requests`: must return a list
+  of requests where the Spider will begin to crawl from.
+  Subsequent requests will be generated successively from these initial requests.
+
+  As alternative to defining this method, you can define a class
+  attribute :attr:`~scrapy.spiders.Spider.start_urls`, which the default
+  implementation of this method will use to create the proper requests.
 
 * :meth:`~scrapy.spiders.Spider.parse`: a method of the spider, which will
   be called with the downloaded :class:`~scrapy.http.Response` object of each
-  start URL. The response is passed to the method as the first and only
+  initial request. The response is passed to the method as the first and only
   argument.
 
   This method is responsible for parsing the response data and extracting
@@ -124,13 +98,16 @@ This is the code for our first Spider; save it in a file named
 
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
-        start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
-        ]
+
+        def start_requests(self):
+            base_url = 'http://quotes.toscrape.com'
+            for path in ['/page/1/', '/page/2/']:
+                yield scrapy.Request(url=base_url + path,
+                                     callback=self.parse)
 
         def parse(self, response):
-            filename = 'quotes-' + response.url.split("/")[-2] + '.html'
+            page = response.url.split("/")[-2]
+            filename = 'quotes-%s.html' % page
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
@@ -171,13 +148,13 @@ URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy creates :class:`scrapy.Request <scrapy.http.Request>` objects
-for each URL in the ``start_urls`` attribute of the Spider, and assigns
-them the ``parse`` method of the spider as their callback function.
+Scrapy will schedule the :class:`scrapy.Request <scrapy.http.Request>` objects
+returned by the ``start_requests`` method of the Spider, and when receiving
+a response for each one it will instantiate :class:`scrapy.http.Response`
+objects and call the ``parse`` callback method passing the response as argument.
 
-These Requests are scheduled, then executed, and :class:`scrapy.http.Response`
-objects are returned and then fed back to the spider, through the
-:meth:`~scrapy.spiders.Spider.parse` method.
+.. TODO: add here an explanation about how this structure is so command that
+   we can do a short version of the spider w/ start_urls and default callback
 
 Extracting Items
 ----------------
@@ -355,9 +332,13 @@ concatenate further ``.xpath()`` calls to dig deeper into a node. We are going t
 that property here, so::
 
     for quote in response.xpath('//div[@class="quote"]'):
-        text = quote.xpath('span[@class="text"]/text()').extract()
-        author = quote.xpath('span/small/text()').extract()
-        print('{}: {}'.format(author, text))
+        text = quote.xpath('span[@class="text"]/text()').extract_first()
+        author = quote.xpath('span/small/text()').extract_first()
+        print({'text': text, 'author': author})
+
+In the above snippet we've decided to use the method ``.extract_first()``
+instead of ``.extract()``, to extract the content from the first element from a
+selector list returned by ``.xpath()``.
 
 .. note::
 
@@ -366,7 +347,11 @@ that property here, so::
     :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
     documentation
 
-Let's add this code to our spider::
+Knowing to use selectors, extracting data from a page is just a matter of
+yield the Python dictionaries from the callback method instead of printing
+them.
+
+Let's add the necessary code to our spider::
 
     import scrapy
 
@@ -380,54 +365,16 @@ Let's add this code to our spider::
 
         def parse(self, response):
             for quote in response.xpath('//div[@class="quote"]'):
-                text = quote.xpath('span[@class="text"]/text()').extract_first()
-                author = quote.xpath('span/small/text()').extract_first()
-                print(u'{}: {}'.format(author, text))
+                yield {
+                    'text': quote.xpath('span[@class="text"]/text()').extract_first(),
+                    'author': quote.xpath('span/small/text()').extract_first(),
+                }
 
-Note how we've changed to use the method ``.extract_first()``, which extracts
-the first element from a selector list returned by ``.xpath()``.
-
-Now try crawling quotes.toscrape.com again and you'll see sites being printed
-in your output. Run::
+Run::
 
     scrapy crawl quotes
 
-Using our item
---------------
-
-:class:`~scrapy.item.Item` objects are custom Python dicts; you can access the
-values of their fields (attributes of the class we defined earlier) using the
-standard dict syntax like::
-    
-    >>> from tutorial.items import QuoteItem
-    >>> item = QuoteItem()
-    >>> item['text'] = 'Some random quote'
-    >>> item['title']
-    'Some random quote'
-
-So, in order to return the data we've scraped so far, the final code for our
-Spider would be like this::
-
-    import scrapy
-    from tutorial.items import QuoteItem
-
-
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-        start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
-        ]
-
-        def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
-                item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
-                item['author'] = quote.xpath('span/small/text()').extract_first()
-                yield item
-
-
-Now crawling quotes.toscrape.com yields ``QuoteItem`` objects::
+Now crawling quotes.toscrape.com will show dictionary objects::
 
     2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
     {'author': 'Oscar Wilde',
