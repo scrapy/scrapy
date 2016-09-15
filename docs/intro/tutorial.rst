@@ -7,7 +7,7 @@ Scrapy Tutorial
 In this tutorial, we'll assume that Scrapy is already installed on your system.
 If that's not the case, see :ref:`intro-install`.
 
-We are going to use `Open directory project (dmoz) <https://www.dmoz.org/>`_ as
+We are going to use `quotes.toscrape.com <http://quotes.toscrape.com/>`_ as
 our example domain to scrape.
 
 This tutorial will walk you through these tasks:
@@ -16,8 +16,7 @@ This tutorial will walk you through these tasks:
 2. Defining the Items you will extract
 3. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract
    :ref:`Items <topics-items>`
-4. Writing an :ref:`Item Pipeline <topics-item-pipeline>` to store the
-   extracted Items
+4. Exporting the scraped data using command line
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
@@ -54,7 +53,6 @@ This will create a ``tutorial`` directory with the following contents::
 
             spiders/          # a directory where you'll later put your spiders
                 __init__.py
-                ...
 
 
 Defining our Item
@@ -72,16 +70,15 @@ its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, much like i
 easy task).
 
 We begin by modeling the item that we will use to hold the site's data obtained
-from dmoz.org. As we want to capture the name, url and description of the
-sites, we define fields for each of these three attributes. To do that, we edit
+from quotes.toscrape.com. As we want to capture the text and author from each of
+the quotes listed there, we define fields for each of these three attributes. To do that, we edit
 ``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
 
     import scrapy
 
-    class DmozItem(scrapy.Item):
-        title = scrapy.Field()
-        link = scrapy.Field()
-        desc = scrapy.Field()
+    class QuoteItem(scrapy.Item):
+        text = scrapy.Field()
+        author = scrapy.Field()
 
 This may seem complicated at first, but defining an item class allows you to use other handy
 components and helpers within Scrapy.
@@ -99,10 +96,11 @@ To create a Spider, you must subclass :class:`scrapy.Spider
 <scrapy.spiders.Spider>` and define some attributes:
 
 * :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
-  unique, that is, you can't set the same name for different Spiders.
+  unique within a project, that is, you can't set the same name for different
+  Spiders.
 
 * :attr:`~scrapy.spiders.Spider.start_urls`: a list of URLs where the
-  Spider will begin to crawl from.  The first pages downloaded will be those
+  Spider will begin to crawl from. The first pages downloaded will be those
   listed here. The subsequent URLs will be generated successively from data
   contained in the start URLs.
 
@@ -119,20 +117,20 @@ To create a Spider, you must subclass :class:`scrapy.Spider
   objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
 
 This is the code for our first Spider; save it in a file named
-``dmoz_spider.py`` under the ``tutorial/spiders`` directory::
+``quotes_spider.py`` under the ``tutorial/spiders`` directory::
 
     import scrapy
 
-    class DmozSpider(scrapy.Spider):
-        name = "dmoz"
-        allowed_domains = ["dmoz.org"]
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
         start_urls = [
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
         ]
 
         def parse(self, response):
-            filename = response.url.split("/")[-2] + '.html'
+            filename = 'quotes-' + response.url.split("/")[-2] + '.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
@@ -141,24 +139,25 @@ Crawling
 
 To put our spider to work, go to the project's top level directory and run::
 
-   scrapy crawl dmoz
+   scrapy crawl quotes
 
-This command runs the spider with name ``dmoz`` that we've just added, that
-will send some requests for the ``dmoz.org`` domain. You will get an output
+This command runs the spider with name ``quotes`` that we've just added, that
+will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Scrapy started (bot: tutorial)
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Optional features available: ...
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Overridden settings: {}
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled extensions: ...
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled downloader middlewares: ...
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled spider middlewares: ...
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled item pipelines: ...
-    2014-01-23 18:13:07-0400 [scrapy] INFO: Spider opened
-    2014-01-23 18:13:08-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: None)
-    2014-01-23 18:13:09-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
-    2014-01-23 18:13:09-0400 [scrapy] INFO: Closing spider (finished)
 
+    2016-09-01 16:51:27 [scrapy] INFO: Scrapy started (bot: tutorial)
+    2016-09-01 16:51:27 [scrapy] INFO: Overridden settings: {...}
+    2016-09-01 16:51:27 [scrapy] INFO: Enabled extensions: ...
+    2016-09-01 16:51:27 [scrapy] INFO: Enabled downloader middlewares: ...
+    2016-09-01 16:51:27 [scrapy] INFO: Enabled spider middlewares: ...
+    2016-09-01 16:51:27 [scrapy] INFO: Enabled item pipelines: ...
+    2016-09-01 16:51:27 [scrapy] INFO: Spider opened
+    2016-09-01 16:51:27 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
+    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-09-01 16:51:29 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
+    2016-09-01 16:51:29 [scrapy] INFO: Closing spider (finished)
 
 .. note::
     At the end you can see a log line for each URL defined in ``start_urls``.
@@ -166,7 +165,7 @@ similar to this::
     shown at the end of the log line, where it says ``(referer: None)``.
 
 Now, check the files in the current directory. You should notice two new files
-have been created: *Books.html* and *Resources.html*, with the content for the respective
+have been created: *quotes-1.html* and *quotes-2.html*, with the content for the respective
 URLs, as our ``parse`` method instructs.
 
 What just happened under the hood?
@@ -197,15 +196,16 @@ mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
 Here are some examples of XPath expressions and their meanings:
 
 * ``/html/head/title``: selects the ``<title>`` element, inside the ``<head>``
-  element of an HTML document
+  element of an HTML document. Equivalent CSS selector: ``html > head > title``.
 
 * ``/html/head/title/text()``: selects the text inside the aforementioned
-  ``<title>`` element.
+  ``<title>`` element. Equivalent CSS selector: ``html > head > title ::text``.
 
-* ``//td``: selects all the ``<td>`` elements
+* ``//td``: selects all the ``<td>`` elements from the whole document.
+  Equivalent CSS selector: ``td``.
 
 * ``//div[@class="mine"]``: selects all ``div`` elements which contain an
-  attribute ``class="mine"``
+  attribute ``class="mine"``. Equivalent CSS selector: ``div.mine``.
 
 These are just a couple of simple examples of what you can do with XPath, but
 XPath expressions are indeed much more powerful. To learn more about XPath, we
@@ -220,7 +220,7 @@ to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
   Because of this, we encourage you to learn about XPath even if you
   already know how to construct CSS selectors.
 
-For working with CSS and XPath expressions, Scrapy provides
+For working with CSS and XPath expressions, Scrapy provides the
 :class:`~scrapy.selector.Selector` class and convenient shortcuts to avoid
 instantiating selectors yourself every time you need to select something from a
 response.
@@ -255,7 +255,7 @@ installed on your system.
 
 To start a shell, you must go to the project's top level directory and run::
 
-    scrapy shell "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/"
+    scrapy shell "http://quotes.toscrape.com"
 
 .. note::
 
@@ -267,20 +267,20 @@ This is what the shell looks like::
 
     [ ... Scrapy log here ... ]
 
-    2014-01-23 17:11:42-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
+    2016-09-01 18:14:39 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com> (referer: None)
     [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x3636b50>
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x109001c90>
     [s]   item       {}
-    [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   settings   <scrapy.settings.Settings object at 0x3fadc50>
-    [s]   spider     <Spider 'default' at 0x3cebf50>
+    [s]   request    <GET http://quotes.toscrape.com>
+    [s]   response   <200 http://quotes.toscrape.com>
+    [s]   settings   <scrapy.settings.Settings object at 0x109001610>
+    [s]   spider     <DefaultSpider 'default' at 0x1092808d0>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
-
-    In [1]:
+    
+    >>>
 
 After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
@@ -297,19 +297,19 @@ or ``response.css()`` which map directly to ``response.selector.xpath()`` and
 So let's try it::
 
     In [1]: response.xpath('//title')
-    Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
- 
+    Out[1]: [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>] 
+    
     In [2]: response.xpath('//title').extract()
-    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
- 
+    Out[2]: [u'<title>Quotes to Scrape</title>']
+    
     In [3]: response.xpath('//title/text()')
-    Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
- 
+    Out[3]: [<Selector xpath='//title/text()' data=u'Quotes to Scrape'>]
+
     In [4]: response.xpath('//title/text()').extract()
-    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
- 
-    In [5]: response.xpath('//title/text()').re('(\w+):')
-    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
+    Out[4]: [u'Quotes to Scrape']
+    
+    In [11]: response.xpath('//title/text()').re('(\w+)')
+    Out[11]: [u'Quotes', u'to', u'Scrape']
 
 Extracting the data
 ^^^^^^^^^^^^^^^^^^^
@@ -322,35 +322,42 @@ there could become a very tedious task. To make it easier, you can
 use Firefox Developer Tools or some Firefox extensions like Firebug. For more
 information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 
-After inspecting the page source, you'll find that the web site's information
-is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
+After inspecting the page source, you'll find that every quote in the website
+is inside a separate ``<div class="quote">`` element, such as::
 
-So we can select each ``<li>`` element belonging to the site's list with this
-code::
+    <div class="quote">
+        <span class="text">“We accept the love we think we deserve.”</span>
+        <span>by <small class="author">Stephen Chbosky</small></span>
+        <div class="tags">
+            Tags:
+            <meta class="keywords"> 
+            <a class="tag" href="/tag/inspirational/page/1/">inspirational</a>
+            <a class="tag" href="/tag/love/page/1/">love</a>
+        </div>
+    </div>
 
-    response.xpath('//ul/li')
 
-And from them, the site's descriptions::
+So we can select each ``<div class="quote">`` element belonging to the site's 
+list with this code::
 
-    response.xpath('//ul/li/text()').extract()
+    response.xpath('//div[@class="quote"]')
 
-The site's titles::
+From the quote elements, we can select the texts with::
 
-    response.xpath('//ul/li/a/text()').extract()
+    response.xpath('//div[@class="quote"]/span[@class="text"]/text()').extract()
 
-And the site's links::
+The authors::
 
-    response.xpath('//ul/li/a/@href').extract()
+    response.xpath('//div[@class="quote"]/span/small/text()').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//ul/li'):
-        title = sel.xpath('a/text()').extract()
-        link = sel.xpath('a/@href').extract()
-        desc = sel.xpath('text()').extract()
-        print title, link, desc
+    for quote in response.xpath('//div[@class="quote"]'):
+        text = quote.xpath('span[@class="text"]/text()').extract()
+        author = quote.xpath('span/small/text()').extract()
+        print('{}: {}'.format(author, text))
 
 .. note::
 
@@ -362,26 +369,28 @@ that property here, so::
 Let's add this code to our spider::
 
     import scrapy
-     
-    class DmozSpider(scrapy.Spider):
-        name = "dmoz"
-        allowed_domains = ["dmoz.org"]
-        start_urls = [
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
-        ]
-     
-        def parse(self, response):
-            for sel in response.xpath('//ul/li'):
-                title = sel.xpath('a/text()').extract()
-                link = sel.xpath('a/@href').extract()
-                desc = sel.xpath('text()').extract()
-                print title, link, desc
 
-Now try crawling dmoz.org again and you'll see sites being printed
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
+        ]
+
+        def parse(self, response):
+            for quote in response.xpath('//div[@class="quote"]'):
+                text = quote.xpath('span[@class="text"]/text()').extract_first()
+                author = quote.xpath('span/small/text()').extract_first()
+                print(u'{}: {}'.format(author, text))
+
+Note how we've changed to use the method ``.extract_first()``, which extracts
+the first element from a selector list returned by ``.xpath()``.
+
+Now try crawling quotes.toscrape.com again and you'll see sites being printed
 in your output. Run::
 
-    scrapy crawl dmoz
+    scrapy crawl quotes
 
 Using our item
 --------------
@@ -389,91 +398,81 @@ Using our item
 :class:`~scrapy.item.Item` objects are custom Python dicts; you can access the
 values of their fields (attributes of the class we defined earlier) using the
 standard dict syntax like::
-
-    >>> item = DmozItem()
-    >>> item['title'] = 'Example title'
+    
+    >>> from tutorial.items import QuoteItem
+    >>> item = QuoteItem()
+    >>> item['text'] = 'Some random quote'
     >>> item['title']
-    'Example title'
+    'Some random quote'
 
 So, in order to return the data we've scraped so far, the final code for our
 Spider would be like this::
 
     import scrapy
+    from tutorial.items import QuoteItem
 
-    from tutorial.items import DmozItem
 
-    class DmozSpider(scrapy.Spider):
-        name = "dmoz"
-        allowed_domains = ["dmoz.org"]
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
         start_urls = [
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
         ]
 
         def parse(self, response):
-            for sel in response.xpath('//ul/li'):
-                item = DmozItem()
-                item['title'] = sel.xpath('a/text()').extract()
-                item['link'] = sel.xpath('a/@href').extract()
-                item['desc'] = sel.xpath('text()').extract()
+            for quote in response.xpath('//div[@class="quote"]'):
+                item = QuoteItem()
+                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
+                item['author'] = quote.xpath('span/small/text()').extract_first()
                 yield item
 
-.. note:: You can find a fully-functional variant of this spider in the dirbot_
-   project available at https://github.com/scrapy/dirbot
 
-Now crawling dmoz.org yields ``DmozItem`` objects::
+Now crawling quotes.toscrape.com yields ``QuoteItem`` objects::
 
-   [scrapy] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-        {'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.\n],
-         'link': [u'http://gnosis.cx/TPiP/'],
-         'title': [u'Text Processing in Python']}
-   [scrapy] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-        {'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'],
-         'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'],
-         'title': [u'XML Processing with Python']}
+    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
+    {'author': 'Oscar Wilde',
+     'text': '“We are all in the gutter, but some of us are looking at the stars.”'}
+    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
+    {'author': 'Mark Twain',
+     'text': '“The man who does not read has no advantage over the man who cannot read.”'}
 
 
 Following links
 ===============
 
-Let's say, instead of just scraping the stuff in *Books* and *Resources* pages,
-you want everything that is under the `Python directory
-<http://www.dmoz.org/Computers/Programming/Languages/Python/>`_.
+Let's say, instead of just scraping the stuff from the first two pages
+from quotes.toscrape.com, you want quotes from all the pages in the website.
 
-Now that you know how to extract data from a page, why not extract the links
-for the pages you are interested, follow them and then extract the data you
+Now that you know how to extract data from a page, why not extract the
+pagination links in each page, follow them and then extract the data you
 want for all of them?
 
 Here is a modification to our spider that does just that::
 
     import scrapy
+    from tutorial.items import QuoteItem
 
-    from tutorial.items import DmozItem
 
-    class DmozSpider(scrapy.Spider):
-        name = "dmoz"
-        allowed_domains = ["dmoz.org"]
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
         start_urls = [
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/",
+            'http://quotes.toscrape.com/page/1/',
         ]
 
         def parse(self, response):
-            for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
-                url = response.urljoin(href.extract())
-                yield scrapy.Request(url, callback=self.parse_dir_contents)
-
-        def parse_dir_contents(self, response):
-            for sel in response.xpath('//ul/li'):
-                item = DmozItem()
-                item['title'] = sel.xpath('a/text()').extract()
-                item['link'] = sel.xpath('a/@href').extract()
-                item['desc'] = sel.xpath('text()').extract()
+            for quote in response.xpath('//div[@class="quote"]'):
+                item = QuoteItem()
+                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
+                item['author'] = quote.xpath('span/small/text()').extract_first()
                 yield item
+            next_page = response.xpath('//li[@class="next"]/a/@href').extract_first()
+            if next_page:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse)
 
-Now the `parse()` method only extracts the interesting links from the page,
+Now after extracting an item the `parse()` method looks for the link to the next page, 
 builds a full absolute URL using the `response.urljoin` method (since the links can
-be relative) and yields new requests to be sent later, registering as callback
-the method `parse_dir_contents()` that will ultimately scrape the data we want.
+be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages.
 
 What you see here is Scrapy's mechanism of following links: when you yield
 a Request in a callback method, Scrapy will schedule that request to be sent
@@ -483,25 +482,8 @@ Using this, you can build complex crawlers that follow links according to rules
 you define, and extract different kinds of data depending on the page it's
 visiting.
 
-A common pattern is a callback method that extracts some items, looks for a link
-to follow to the next page and then yields a `Request` with the same callback
-for it::
-
-    def parse_articles_follow_next_page(self, response):
-        for article in response.xpath("//article"):
-            item = ArticleItem()
-
-            ... extract article data here
-
-            yield item
-
-        next_page = response.css("ul.navigation > li.next-page > a::attr('href')")
-        if next_page:
-            url = response.urljoin(next_page[0].extract())
-            yield scrapy.Request(url, self.parse_articles_follow_next_page)
-
-This creates a sort of loop, following all the links to the next page until it
-doesn't find one -- handy for crawling blogs, forums and other sites with
+In our example, it creates a sort of loop, following all the links to the next page
+until it doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
 Another common pattern is to build an item with data from more than one page,
@@ -521,7 +503,7 @@ Storing the scraped data
 The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl dmoz -o items.json
+    scrapy crawl quotes -o items.json
 
 That will generate an ``items.json`` file containing all scraped items,
 serialized in `JSON`_.
