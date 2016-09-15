@@ -115,6 +115,9 @@ class Shell(object):
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
+        import scrapy
+
+        self.vars['scrapy'] = scrapy
         self.vars['crawler'] = self.crawler
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
