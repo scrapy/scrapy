@@ -78,9 +78,9 @@ Spider definition inside it and ran it through its crawler engine.
 The crawl started by making requests to the URLs defined in the ``start_urls``
 attribute (in this case, only the URL for quotes in *humor* category)
 and called the default callback method ``parse``, passing the response object as
-an argument. In the ``parse`` callback we loop through the quote elements
+an argument. In the ``parse`` callback, we loop through the quote elements
 using a CSS Selector, yield a Python dict with the extracted quote text and author,
-look for a link to the next page and schedules another request using the same
+look for a link to the next page and schedule another request using the same
 ``parse`` method as callback.
 
 Here you notice one of the main advantages about Scrapy: requests are
