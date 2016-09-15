@@ -139,6 +139,7 @@ class Shell(object):
     def get_help(self):
         b = []
         b.append("Available Scrapy objects:")
+        b.append("  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)")
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
                 b.append("  %-10s %s" % (k, v))
