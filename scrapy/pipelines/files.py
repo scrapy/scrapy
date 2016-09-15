@@ -82,7 +82,6 @@ class S3FilesStore(object):
 
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
-    AWS_SECURE_CONNECTION=False
     
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
@@ -120,7 +119,7 @@ class S3FilesStore(object):
         return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=self.AWS_SECURE_CONNECTION)
+        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=Settings.AWS_SECURE_CONNECTION)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
