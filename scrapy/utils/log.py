@@ -101,12 +101,25 @@ def configure_logging(settings=None, install_root_handler=True):
         logging.root.addHandler(handler)
 
 
+def _import_hander(name):
+    """Return class from dotted name"""
+    import importlib
+    module_name, class_name = name.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
+
+
 def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
     if filename:
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        handler = settings.get('LOG_HANDLER')
+        if handler:
+            Handler = _import_hander(handler)
+        else:
+            Handler = logging.FileHandler
+        handler = Handler(filename, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
