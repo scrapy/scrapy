@@ -100,10 +100,12 @@ This is the code for our first Spider; save it in a file named
         name = "quotes"
 
         def start_requests(self):
-            base_url = 'http://quotes.toscrape.com'
-            for path in ['/page/1/', '/page/2/']:
-                yield scrapy.Request(url=base_url + path,
-                                     callback=self.parse)
+            urls = [
+                'http://quotes.toscrape.com/page/1/',
+                'http://quotes.toscrape.com/page/2/',
+            ]
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
 
         def parse(self, response):
             page = response.url.split("/")[-2]
@@ -397,7 +399,6 @@ want for all of them?
 Here is a modification to our spider that does just that::
 
     import scrapy
-    from tutorial.items import QuoteItem
 
 
     class QuotesSpider(scrapy.Spider):
@@ -408,12 +409,13 @@ Here is a modification to our spider that does just that::
 
         def parse(self, response):
             for quote in response.xpath('//div[@class="quote"]'):
-                item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
-                item['author'] = quote.xpath('span/small/text()').extract_first()
-                yield item
+                yield {
+                    'text': quote.xpath('span[@class="text"]/text()').extract_first(),
+                    'author': quote.xpath('span/small/text()').extract_first(),
+                }
+
             next_page = response.xpath('//li[@class="next"]/a/@href').extract_first()
-            if next_page:
+            if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
 
