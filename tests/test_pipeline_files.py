@@ -255,16 +255,17 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
     def test_subclass_attrs_preserved_custom_settings(self):
         """
-        If file settings are defined but they are not defined for subclass class attributes
-        should be preserved.
+        If file settings are defined but they are not defined for subclass
+        settings should be preserved.
         """
         pipeline_cls = self._generate_fake_pipeline()
         settings = self._generate_fake_settings()
         pipeline = pipeline_cls.from_settings(Settings(settings))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             value = getattr(pipeline, pipe_ins_attr)
+            setting_value = settings.get(settings_attr)
             self.assertNotEqual(value, self.default_cls_settings[pipe_attr])
-            self.assertEqual(value, getattr(pipeline, pipe_attr))
+            self.assertEqual(value, setting_value)
 
     def test_no_custom_settings_for_subclasses(self):
         """
@@ -319,6 +320,24 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedFilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
         self.assertEqual(pipeline.files_result_field, "this")
         self.assertEqual(pipeline.files_urls_field, "that")
+
+
+    def test_user_defined_subclass_default_key_names(self):
+        """Test situation when user defines subclass of FilesPipeline,
+        but uses attribute names for default pipeline (without prefixing
+        them with pipeline class name).
+        """
+        settings = self._generate_fake_settings()
+
+        class UserPipe(FilesPipeline):
+            pass
+
+        pipeline_cls = UserPipe.from_settings(Settings(settings))
+
+        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+            expected_value = settings.get(settings_attr)
+            self.assertEqual(getattr(pipeline_cls, pipe_inst_attr),
+                             expected_value)
 
 
 class TestS3FilesStore(unittest.TestCase):
