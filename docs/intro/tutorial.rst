@@ -57,9 +57,10 @@ Our first Spider
 ================
 
 Spiders are classes that you define and that Scrapy uses to scrape information
-from a website (or group of websites). They define the initial requests to make,
-how to follow links in the pages, and how to parse the downloaded page content
-to extract data.
+from a website (or group of websites). They must subclass
+:class:`scrapy.Spider` and define the initial requests to make, how to follow
+links in the pages, and how to parse the downloaded page content to extract
+data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
