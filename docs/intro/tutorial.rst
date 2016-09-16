@@ -408,13 +408,13 @@ Following links
 ===============
 
 Let's say, instead of just scraping the stuff from the first two pages
-from quotes.toscrape.com, you want quotes from all the pages in the website.
+from http://quotes.toscrape.com, you want quotes from all the pages in the website.
 
-Now that you know how to extract data from a page, why not extract the
-pagination links in each page, follow them and then extract the data you
-want for all of them?
+Now that you know how to extract data from pages, let's see how to follow links
+from them.
 
-Here is a modification to our spider that does just that::
+Here is a modification of our spider that recursively follows the link to the next
+page, extracting data from it::
 
     import scrapy
 
@@ -426,18 +426,19 @@ Here is a modification to our spider that does just that::
         ]
 
         def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
+            for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.xpath('span[@class="text"]/text()').extract_first(),
-                    'author': quote.xpath('span/small/text()').extract_first(),
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small::text').extract_first(),
                 }
 
-            next_page = response.xpath('//li[@class="next"]/a/@href').extract_first()
+            next_page = response.css('li.next a::attr("href")').extract_first()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
 
-Now after extracting an item the `parse()` method looks for the link to the next page, 
+
+Now, after extracting the data, the `parse()` method looks for the link to the next page,
 builds a full absolute URL using the `response.urljoin` method (since the links can
 be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages.
 
@@ -457,12 +458,63 @@ Another common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks
 <topics-request-response-ref-request-callback-arguments>`.
 
+Another example: scraping authors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Here is another spider that illustrates callbacks and following links,
+this time for scraping author information::
+
+
+    import scrapy
+
+
+    class AuthorSpider(scrapy.Spider):
+        name = 'author'
+
+        start_urls = ['http://quotes.toscrape.com/']
+
+        def parse(self, response):
+            # follow links to author pages
+            for href in response.css('.author a::attr("href")').extract():
+                yield scrapy.Request(response.urljoin(href),
+                                     callback=self.parse_author)
+
+            # follow pagination links
+            next_page = response.css('li.next a::attr("href")').extract_first()
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse)
+
+        def parse_author(self, response):
+            def extract_with_css(query):
+                return response.css(query).extract_first().strip()
+
+            yield {
+                'name': extract_with_css('h3.author-title::text'),
+                'birthdate': extract_with_css('.author-born-date::text'),
+                'bio': extract_with_css('.author-description::text'),
+            }
+
+This spider will start from the main page, it will follow all the links to the
+authors pages calling the ``parse_author`` callback for each of them, and also
+the paginations links too with the ``parse`` callback as we saw before.
+
+The ``parse_author`` callback defines a helper function to extract and cleanup the
+data from a CSS query and yields the Python dict with the author data.
+
+Another interesting this spider demonstrates is that, even if there are many
+quotes from the same author, we don't need to worry about visiting the same
+page multiple times because Scrapy by default filters out duplicated requests
+to URLs already visited, avoiding the problem of hitting servers too much
+because of a programming mistake. This can be configured by the setting
+:setting:`DUPEFILTER_CLASS`.
 
 .. note::
-    As an example spider that leverages this mechanism, check out the
-    :class:`~scrapy.spiders.CrawlSpider` class for a generic spider
-    that implements a small rules engine that you can use to write your
+    As another example spider that leverages the mechanism of following links,
+    check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
+    spider that implements a small rules engine that you can use to write your
     crawlers on top of it.
+
 
 Storing the scraped data
 ========================
