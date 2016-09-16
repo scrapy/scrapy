@@ -177,8 +177,8 @@ Scrapy to do so. This happens because :meth:`~scrapy.spiders.Spider.parse`
 is Scrapy's default callback method.
 
 
-Extracting Items
-----------------
+Extracting data
+---------------
 
 Introduction to Selectors
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,25 +191,31 @@ mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
 .. _XPath: https://www.w3.org/TR/xpath
 .. _CSS: https://www.w3.org/TR/selectors
 
-Here are some examples of XPath expressions and their meanings:
+Here are some examples of XPath expressions, their meanings and CSS
+equivalents:
 
 * ``/html/head/title``: selects the ``<title>`` element, inside the ``<head>``
-  element of an HTML document. Equivalent CSS selector: ``html > head > title``.
+  element of an HTML document. Using CSS, the equivalent would be: ``html >
+  head > title``.
 
 * ``/html/head/title/text()``: selects the text inside the aforementioned
-  ``<title>`` element. Equivalent CSS selector: ``html > head > title ::text``.
+  ``<title>`` element. In Scrapy, you can do the same with CSS using ``html >
+  head > title::text``. The ``::text`` bit isn't really CSS, but is supported
+  by Scrapy for extracting purposes.
 
 * ``//td``: selects all the ``<td>`` elements from the whole document.
-  Equivalent CSS selector: ``td``.
+  The equivalent CSS selector: ``td``.
 
-* ``//div[@class="mine"]``: selects all ``div`` elements which contain an
-  attribute ``class="mine"``. Equivalent CSS selector: ``div.mine``.
+* ``//div[@id="mine"]``: selects all ``div`` elements which contain an
+  attribute ``id="mine"``. The equivalent CSS selector would be: ``div#mine``.
 
-These are just a couple of simple examples of what you can do with XPath, but
-XPath expressions are indeed much more powerful. To learn more about XPath, we
-recommend `this tutorial to learn XPath through examples
-<http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
-to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
+These are just a couple of simple examples of what you can do with XPath and
+CSS. XPath expressions are very powerful, they're the foundation of Scrapy
+selectors. In fact, CSS selectors are converted to XPath expressions
+under-the-hood. To learn more about XPath, we recommend `this tutorial to learn
+XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this
+tutorial to learn "how to think in XPath"
+<http://plasmasturm.org/log/xpath101/>`_.
 
 .. note:: **CSS vs XPath:** you can go a long way extracting data from web pages
   using only CSS selectors. However, XPath offers more power because besides
