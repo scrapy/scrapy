@@ -7,8 +7,8 @@ Scrapy Tutorial
 In this tutorial, we'll assume that Scrapy is already installed on your system.
 If that's not the case, see :ref:`intro-install`.
 
-We are going to use `quotes.toscrape.com <http://quotes.toscrape.com/>`_ as
-our example domain to scrape.
+We are going to scrape `quotes.toscrape.com <http://quotes.toscrape.com/>`_, a website
+that lists quotes from famous authors.
 
 This tutorial will walk you through these tasks:
 
@@ -57,41 +57,13 @@ This will create a ``tutorial`` directory with the following contents::
 Our first Spider
 ================
 
-Spiders are classes that you define and Scrapy uses to scrape information from a
-domain (or group of domains).
+Spiders are classes that you define and that Scrapy uses to scrape information
+from a website (or group of websites). They define an initial list of URLs to
+download, how to follow links, and how to parse the the downloaded page contents
+to extract :ref:`items <topics-items>`.
 
-They define an initial list of URLs to download, how to follow links, and how
-to parse the contents of pages to extract :ref:`items <topics-items>`.
-
-To create a Spider, you must subclass :class:`scrapy.Spider
-<scrapy.spiders.Spider>` and define some attributes and methods:
-
-* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
-  unique within a project, that is, you can't set the same name for different
-  Spiders.
-
-* :meth:`~scrapy.spiders.Spider.start_requests`: must return a list
-  of requests where the Spider will begin to crawl from.
-  Subsequent requests will be generated successively from these initial requests.
-
-  As alternative to defining this method, you can define a class
-  attribute :attr:`~scrapy.spiders.Spider.start_urls`, which the default
-  implementation of this method will use to create the proper requests.
-
-* :meth:`~scrapy.spiders.Spider.parse`: a method of the spider, which will
-  be called with the downloaded :class:`~scrapy.http.Response` object of each
-  initial request. The response is passed to the method as the first and only
-  argument.
-
-  This method is responsible for parsing the response data and extracting
-  scraped data (as scraped items) and more URLs to follow.
-
-  The :meth:`~scrapy.spiders.Spider.parse` method is in charge of processing
-  the response and returning scraped data (as :class:`~scrapy.item.Item`
-  objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
-
-This is the code for our first Spider; save it in a file named
-``quotes_spider.py`` under the ``tutorial/spiders`` directory::
+This is the code for our first Spider. Save it in a file named
+``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
 
     import scrapy
 
@@ -113,8 +85,29 @@ This is the code for our first Spider; save it in a file named
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-Crawling
---------
+
+As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
+and defines some attributes and methods:
+
+* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
+  unique within a project, that is, you can't set the same name for different
+  Spiders.
+
+* :meth:`~scrapy.spiders.Spider.start_requests`: must return a list
+  of requests where the Spider will begin to crawl from.
+  Subsequent requests will be generated successively from these initial requests.
+
+* :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
+  the response downloaded for each of the requests made. The response parameter
+  is an instance of :class:`~scrapy.http.Response` that holds the page content and
+  has further helpful methods to handle it.
+
+  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
+  the scraped data as items (:class:`~scrapy.item.Item`) and also finding new URLs to
+  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+
+How to run your spider
+----------------------
 
 To put our spider to work, go to the project's top level directory and run::
 
@@ -138,25 +131,51 @@ similar to this::
     2016-09-01 16:51:29 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
     2016-09-01 16:51:29 [scrapy] INFO: Closing spider (finished)
 
-.. note::
-    At the end you can see a log line for each URL defined in ``start_urls``.
-    Because these URLs are the starting ones, they have no referrers, which is
-    shown at the end of the log line, where it says ``(referer: None)``.
+Now, check the files in the current directory. You should notice that two new
+files have been created: *quotes-1.html* and *quotes-2.html*, with the content
+for the respective URLs, as our ``parse`` method instructs.
 
-Now, check the files in the current directory. You should notice two new files
-have been created: *quotes-1.html* and *quotes-2.html*, with the content for the respective
-URLs, as our ``parse`` method instructs.
+.. note:: If you are wondering why we haven't parsed the HTML yet, hold
+  on, we will cover that soon.
+
 
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
+returned by the ``start_requests`` method of the Spider. Upon receiving
+a response for each one, it instantiates :class:`scrapy.http.Response`
+objects and calls the ``parse`` callback method passing the response as
+argument.
 
-Scrapy will schedule the :class:`scrapy.Request <scrapy.http.Request>` objects
-returned by the ``start_requests`` method of the Spider, and when receiving
-a response for each one it will instantiate :class:`scrapy.http.Response`
-objects and call the ``parse`` callback method passing the response as argument.
 
-.. TODO: add here an explanation about how this structure is so command that
-   we can do a short version of the spider w/ start_urls and default callback
+Simplifying your spider
+-----------------------
+Instead of defining the :meth:`~scrapy.spiders.Spider.start_requests` method
+generating :class:`scrapy.Request <scrapy.http.Request>`
+objects from URLs, you can just put those URLs in the 
+:attr:`~scrapy.spiders.Spider.start_urls` attribute::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+          'http://quotes.toscrape.com/page/1/',
+          'http://quotes.toscrape.com/page/2/',
+        ]
+
+        def parse(self, response):
+            page = response.url.split("/")[-2]
+            filename = 'quotes-%s.html' % page
+            with open(filename, 'wb') as f:
+                f.write(response.body)
+
+The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle
+each of the requests for those URLs, even though we haven't explicitely told
+Scrapy to do so. This happens because :meth:`~scrapy.spiders.Spider.parse`
+is Scrapy's default callback method.
+
 
 Extracting Items
 ----------------
