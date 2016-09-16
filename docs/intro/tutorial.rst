@@ -13,8 +13,7 @@ that lists quotes from famous authors.
 This tutorial will walk you through these tasks:
 
 1. Creating a new Scrapy project
-2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract
-   :ref:`Items <topics-items>`
+2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
 3. Exporting the scraped data using command line
 
 Scrapy is written in Python_. If you're new to the language you might want to
@@ -58,9 +57,9 @@ Our first Spider
 ================
 
 Spiders are classes that you define and that Scrapy uses to scrape information
-from a website (or group of websites). They define an initial list of URLs to
-download, how to follow links, and how to parse the the downloaded page contents
-to extract :ref:`items <topics-items>`.
+from a website (or group of websites). They define the initial requests to make,
+how to follow links in the pages, and how to parse the downloaded page content
+to extract data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
@@ -103,7 +102,7 @@ and defines some attributes and methods:
   has further helpful methods to handle it.
 
   The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
-  the scraped data as items (:class:`~scrapy.item.Item`) and also finding new URLs to
+  the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.http.Request`) from them.
 
 How to run your spider
