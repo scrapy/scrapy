@@ -170,6 +170,7 @@ class FeedExporter(object):
         if not self._exporter_supported(self.format):
             raise NotConfigured
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
+        self._exporting = False
         self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
@@ -188,14 +189,18 @@ class FeedExporter(object):
         file = storage.open(spider)
         exporter = self._get_exporter(file, fields_to_export=self.export_fields,
             encoding=self.export_encoding)
-        exporter.start_exporting()
+        if self.store_empty:
+            exporter.start_exporting()
+            self._exporting = True
         self.slot = SpiderSlot(file, exporter, storage, uri)
 
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
             return
-        slot.exporter.finish_exporting()
+        if self._exporting:
+            slot.exporter.finish_exporting()
+            self._exporting = False
         logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
         log_args = {'format': self.format,
                     'itemcount': slot.itemcount,
@@ -210,6 +215,9 @@ class FeedExporter(object):
 
     def item_scraped(self, item, spider):
         slot = self.slot
+        if not self._exporting:
+            slot.exporter.start_exporting()
+            self._exporting = True
         slot.exporter.export_item(item)
         slot.itemcount += 1
         return item
