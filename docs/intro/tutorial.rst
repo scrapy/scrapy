@@ -439,9 +439,11 @@ page, extracting data from it::
                 yield scrapy.Request(next_page, callback=self.parse)
 
 
-Now, after extracting the data, the `parse()` method looks for the link to the next page,
-builds a full absolute URL using the `response.urljoin` method (since the links can
-be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages.
+Now, after extracting the data, the ``parse()`` method looks for the link to
+the next page, builds a full absolute URL using the ``response.urljoin`` method
+(since the links can be relative) and yields a new request to the next page,
+registering itself as callback to handle the data extraction for the next page
+and to keep the crawling going through all the pages.
 
 What you see here is Scrapy's mechanism of following links: when you yield
 a Request in a callback method, Scrapy will schedule that request to be sent
@@ -498,16 +500,16 @@ this time for scraping author information::
 
 This spider will start from the main page, it will follow all the links to the
 authors pages calling the ``parse_author`` callback for each of them, and also
-the paginations links too with the ``parse`` callback as we saw before.
+the pagination links too with the ``parse`` callback as we saw before.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
 
-Another interesting this spider demonstrates is that, even if there are many
-quotes from the same author, we don't need to worry about visiting the same
-page multiple times because Scrapy by default filters out duplicated requests
-to URLs already visited, avoiding the problem of hitting servers too much
-because of a programming mistake. This can be configured by the setting
+Another interesting thing this spider demonstrates is that, even if there are
+many quotes from the same author, we don't need to worry about visiting the
+same author page multiple times. By default, Scrapy filters out duplicated
+requests to URLs already visited, avoiding the problem of hitting servers too
+much because of a programming mistake. This can be configured by the setting
 :setting:`DUPEFILTER_CLASS`.
 
 .. note::
