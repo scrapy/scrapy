@@ -524,6 +524,46 @@ much because of a programming mistake. This can be configured by the setting
     spider that implements a small rules engine that you can use to write your
     crawlers on top of it.
 
+Customizing behavior via spider arguments
+=========================================
+You can provide command line arguments to your spiders by using the ``-a``
+option when running them::
+
+    scrapy crawl quotes -o items.json -a tag=humor
+
+In this example, the value provided for the ``tag`` argument will be available
+via a spider attribute. Using this, you could make your spider get only quotes
+tagged with a specific tag, building the URL based on the argument::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+
+        def start_requests(self):
+            url = 'http://quotes.toscrape.com/'
+            tag = getattr(self, 'tag', None)
+            if tag is not None:
+                url = url + 'tag/' + tag
+            yield scrapy.Request(url)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small a::text').extract_first(),
+                }
+
+            next_page = response.css('li.next a::attr("href")').extract_first()
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse)
+
+
+If you pass the ``tag=humor`` argument to this spider, you'll notice that it
+will only visit URLs from the ``humor`` tag, such as
+``http://quotes.toscrape.com/tag/humor``.
 
 Storing the scraped data
 ========================
