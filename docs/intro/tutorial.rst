@@ -402,7 +402,7 @@ standard dict syntax like::
     >>> from tutorial.items import QuoteItem
     >>> item = QuoteItem()
     >>> item['text'] = 'Some random quote'
-    >>> item['title']
+    >>> item['text']
     'Some random quote'
 
 So, in order to return the data we've scraped so far, the final code for our
