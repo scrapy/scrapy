@@ -146,7 +146,8 @@ class StreamLogger(object):
             self.logger.log(self.log_level, line.rstrip())
 
     def flush(self):
-        pass
+        for h in self.logger.handlers:
+            h.flush()
 
 
 class LogCounterHandler(logging.Handler):
