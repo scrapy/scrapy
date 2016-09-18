@@ -18,7 +18,7 @@ class DownloadTimeoutMiddleware(object):
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self._timeout = getattr(spider, 'download_timeout', self._timeout)
 
     def process_request(self, request, spider):

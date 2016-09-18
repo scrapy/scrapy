@@ -39,7 +39,7 @@ class Crawler(object):
         logging.root.addHandler(handler)
         # lambda is assigned to Crawler attribute because this way it is not
         # garbage collected after leaving __init__ scope
-        self.__remove_handler = lambda: logging.root.removeHandler(handler)
+        self.__remove_handler = lambda **kw: logging.root.removeHandler(handler)
         self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
         lf_cls = load_object(self.settings['LOG_FORMATTER'])

@@ -19,7 +19,7 @@ class HttpAuthMiddleware(object):
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         usr = getattr(spider, 'http_user', '')
         pwd = getattr(spider, 'http_pass', '')
         if usr or pwd:
