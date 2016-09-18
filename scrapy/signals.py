@@ -4,19 +4,20 @@ Scrapy signals
 These signals are documented in docs/topics/signals.rst. Please don't add new
 signals here without documenting them there.
 """
+from scrapy.dispatch import Signal
 
-engine_started = object()
-engine_stopped = object()
-spider_opened = object()
-spider_idle = object()
-spider_closed = object()
-spider_error = object()
-request_scheduled = object()
-request_dropped = object()
-response_received = object()
-response_downloaded = object()
-item_scraped = object()
-item_dropped = object()
+engine_started = Signal()
+engine_stopped = Signal()
+spider_opened = Signal()
+spider_idle = Signal()
+spider_closed = Signal()
+spider_error = Signal()
+request_scheduled = Signal()
+request_dropped = Signal()
+response_received = Signal()
+response_downloaded = Signal()
+item_scraped = Signal()
+item_dropped = Signal()
 
 # for backwards compatibility
 stats_spider_opened = spider_opened

@@ -15,7 +15,7 @@ class UserAgentMiddleware(object):
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.user_agent = getattr(spider, 'user_agent', self.user_agent)
 
     def process_request(self, request, spider):

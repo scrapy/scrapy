@@ -182,7 +182,7 @@ class FeedExporter(object):
         crawler.signals.connect(o.item_scraped, signals.item_scraped)
         return o
 
-    def open_spider(self, spider):
+    def open_spider(self, spider, **kw):
         uri = self.urifmt % self._get_uri_params(spider)
         storage = self._get_storage(uri)
         file = storage.open(spider)
@@ -191,7 +191,7 @@ class FeedExporter(object):
         exporter.start_exporting()
         self.slot = SpiderSlot(file, exporter, storage, uri)
 
-    def close_spider(self, spider):
+    def close_spider(self, spider, **kw):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
             return
@@ -208,7 +208,7 @@ class FeedExporter(object):
                                             extra={'spider': spider}))
         return d
 
-    def item_scraped(self, item, spider):
+    def item_scraped(self, item, spider, **kw):
         slot = self.slot
         slot.exporter.export_item(item)
         slot.itemcount += 1
