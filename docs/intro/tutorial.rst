@@ -180,235 +180,120 @@ is Scrapy's default callback method.
 Extracting data
 ---------------
 
-Introduction to Selectors
-^^^^^^^^^^^^^^^^^^^^^^^^^
+The best way to learn how to extract data with Scrapy is trying selectors
+using the shell :ref:`Scrapy shell <topics-shell>`. Run::
 
-There are several ways to extract data from web pages. Scrapy uses a mechanism
-based on `XPath`_ or `CSS`_ expressions called :ref:`Scrapy Selectors
-<topics-selectors>`.  For more information about selectors and other extraction
-mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
+    scrapy crawl http://quotes.toscrape.com/page/1/
 
-.. _XPath: https://www.w3.org/TR/xpath
-.. _CSS: https://www.w3.org/TR/selectors
-
-Here are some examples of XPath expressions, their meanings and CSS
-equivalents:
-
-* ``/html/head/title``: selects the ``<title>`` element, inside the ``<head>``
-  element of an HTML document. Using CSS, the equivalent would be: ``html >
-  head > title``.
-
-* ``/html/head/title/text()``: selects the text inside the aforementioned
-  ``<title>`` element. In Scrapy, you can do the same with CSS using ``html >
-  head > title::text``. The ``::text`` bit isn't really CSS, but is supported
-  by Scrapy for extracting purposes.
-
-* ``//td``: selects all the ``<td>`` elements from the whole document.
-  The equivalent CSS selector: ``td``.
-
-* ``//div[@id="mine"]``: selects all ``div`` elements which contain an
-  attribute ``id="mine"``. The equivalent CSS selector would be: ``div#mine``.
-
-These are just a couple of simple examples of what you can do with XPath and
-CSS. XPath expressions are very powerful, they're the foundation of Scrapy
-selectors. In fact, CSS selectors are converted to XPath expressions
-under-the-hood. To learn more about XPath, we recommend `this tutorial to learn
-XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this
-tutorial to learn "how to think in XPath"
-<http://plasmasturm.org/log/xpath101/>`_.
-
-.. note:: **CSS vs XPath:** you can go a long way extracting data from web pages
-  using only CSS selectors. However, XPath offers more power because besides
-  navigating the structure, it can also look at the content: you're
-  able to select things like: *the link that contains the text 'Next Page'*.
-  Because of this, we encourage you to learn about XPath even if you
-  already know how to construct CSS selectors.
-
-For working with CSS and XPath expressions, Scrapy provides the
-:class:`~scrapy.selector.Selector` class and convenient shortcuts to avoid
-instantiating selectors yourself every time you need to select something from a
-response.
-
-You can see selectors as objects that represent nodes in the document
-structure. So, the first instantiated selectors are associated with the root
-node, or the entire document.
-
-Selectors have four basic methods (click on the method to see the complete API
-documentation):
-
-* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
-  which represents the nodes selected by the xpath expression given as
-  argument.
-
-* :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
-  which represents the nodes selected by the CSS expression given as argument.
-
-* :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
-  selected data.
-
-* :meth:`~scrapy.selector.Selector.re`: returns a list of unicode strings
-  extracted by applying the regular expression given as argument.
-
-
-Trying Selectors in the Shell
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To illustrate the use of Selectors we're going to use the built-in :ref:`Scrapy
-shell <topics-shell>`, which also requires `IPython <http://ipython.org/>`_ (an extended Python console)
-installed on your system.
-
-To start a shell, you must go to the project's top level directory and run::
-
-    scrapy shell "http://quotes.toscrape.com"
-
-.. note::
-
-   Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (ie. ``&`` character)
-   will not work.
-
-This is what the shell looks like::
+You will see something like::
 
     [ ... Scrapy log here ... ]
-
-    2016-09-01 18:14:39 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com> (referer: None)
+    2016-09-19 12:09:27 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x109001c90>
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
     [s]   item       {}
-    [s]   request    <GET http://quotes.toscrape.com>
-    [s]   response   <200 http://quotes.toscrape.com>
-    [s]   settings   <scrapy.settings.Settings object at 0x109001610>
-    [s]   spider     <DefaultSpider 'default' at 0x1092808d0>
+    [s]   request    <GET http://quotes.toscrape.com/page/1/>
+    [s]   response   <200 http://quotes.toscrape.com/page/1/>
+    [s]   settings   <scrapy.settings.Settings object at 0x7fa91d888c10>
+    [s]   spider     <DefaultSpider 'default' at 0x7fa91c8af990>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
-    
-    >>>
+    >>> 
 
-After the shell loads, you will have the response fetched in a local
-``response`` variable, so if you type ``response.body`` you will see the body
-of the response, or you can type ``response.headers`` to see its headers.
+Using the shell, you can try selecting elements using `CSS`_ with the response
+object::
 
-More importantly ``response`` has a ``selector`` attribute which is an instance of
-:class:`~scrapy.selector.Selector` class, instantiated with this particular ``response``.
-You can run queries on ``response`` by calling ``response.selector.xpath()`` or
-``response.selector.css()``. There are also some convenience shortcuts like ``response.xpath()``
-or ``response.css()`` which map directly to ``response.selector.xpath()`` and
-``response.selector.css()``.
+    >>> response.css('title')
+    [<Selector xpath=u'descendant-or-self::title' data=u'<title>Quotes to Scrape</title>'>]
 
+The result of running ``response.css('title')`` is a list-like object called
+:class:`~scrapy.selector.SelectorList`, which represents a list of
+:class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements
+and allow you to run further queries to fine-grain the selection or extract the
+data.
 
-So let's try it::
+To extract the text from the title above, you can do::
 
-    In [1]: response.xpath('//title')
-    Out[1]: [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>] 
-    
-    In [2]: response.xpath('//title').extract()
-    Out[2]: [u'<title>Quotes to Scrape</title>']
-    
-    In [3]: response.xpath('//title/text()')
-    Out[3]: [<Selector xpath='//title/text()' data=u'Quotes to Scrape'>]
+    >>> response.css('title::text').extract()
+    [u'Quotes to Scrape']
 
-    In [4]: response.xpath('//title/text()').extract()
-    Out[4]: [u'Quotes to Scrape']
-    
-    In [11]: response.xpath('//title/text()').re('(\w+)')
-    Out[11]: [u'Quotes', u'to', u'Scrape']
+There are two things to note here: one is that we've added ``::text`` to the
+CSS query, to mean that we want to select the text from inside the title element.
 
-Extracting the data
-^^^^^^^^^^^^^^^^^^^
+The other is that the result of calling ``.extract()`` is a list, because we're
+dealing with an instance :class:`~scrapy.selector.SelectorList`.  When you know
+you just want the first result, as in this case, you can do::
 
-Now, let's try to extract some real information from those pages.
+    >>> response.css('title::text').extract_first()
+    u'Quotes to Scrape'
 
-You could type ``response.body`` in the console, and inspect the source code to
-figure out the XPaths you need to use. However, inspecting the raw HTML code
-there could become a very tedious task. To make it easier, you can
-use Firefox Developer Tools or some Firefox extensions like Firebug. For more
+As an alternative, you could've written::
+
+    >>> response.css('title::text')[0].extract()
+    u'Quotes to Scrape'
+
+However, using ``.extract_first()`` avoids an ``IndexError`` and returns
+``None`` when it doesn't find any element matching the selection.
+
+There's a lesson here: for most scraping code, you want it to be resilient to
+errors due to things not being found on a page, so that even if some parts fail
+to be scraped, you can at least get **some** data.
+
+Besides the :meth:`~scrapy.selector.Selector.extract` and
+:meth:`~scrapy.selector.SelectorList.extract_first` methods, you can also use
+the :meth:`~scrapy.selector.Selector.re` method to extract using a regular
+expression::
+
+    >>> response.css('title::text').re('Quotes.*')
+    [u'Quotes to Scrape']
+    >>> response.css('title::text').re('Q\w+')
+    [u'Quotes']
+    >>> response.css('title::text').re('(\w+) to (\w+)')
+    [u'Quotes', u'Scrape']
+
+In order to find the proper CSS selectors to use, you might find useful opening
+the response page from the shell in your web browser using ``view(response)``.
+You can use your browser developer tools or extensions like Firebug. For more
 information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 
-After inspecting the page source, you'll find that every quote in the website
-is inside a separate ``<div class="quote">`` element, such as::
 
-    <div class="quote">
-        <span class="text">“We accept the love we think we deserve.”</span>
-        <span>by <small class="author">Stephen Chbosky</small></span>
-        <div class="tags">
-            Tags:
-            <meta class="keywords"> 
-            <a class="tag" href="/tag/inspirational/page/1/">inspirational</a>
-            <a class="tag" href="/tag/love/page/1/">love</a>
-        </div>
-    </div>
+XPath: a brief intro
+^^^^^^^^^^^^^^^^^^^^
 
+Besides CSS, Scrapy selectors also support using `XPath`_ expressions::
 
-So we can select each ``<div class="quote">`` element belonging to the site's 
-list with this code::
+    >>> response.xpath('//title')
+    [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>]
+    >>> response.xpath('//title/text()').extract_first()
+    u'Quotes to Scrape'
 
-    response.xpath('//div[@class="quote"]')
+XPath expressions are very powerful, and are the foundation of Scrapy
+Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You
+can see that if you read closely the text representation of the selector
+objects in the shell.
 
-From the quote elements, we can select the texts with::
+While perhaps not as popular as CSS selectors, XPath expressions offer more
+power because besides navigating the structure, it can also look at the
+content. Using XPath, you're able to select things like: **select the link
+that contains the text "Next Page"**. This makes XPath very fitting to the task
+of scraping, and we encourage you to learn XPath even if you already know how to
+construct CSS selectors, it will make scraping much easier.
 
-    response.xpath('//div[@class="quote"]/span[@class="text"]/text()').extract()
-
-The authors::
-
-    response.xpath('//div[@class="quote"]/span/small/text()').extract()
-
-As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
-concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
-that property here, so::
-
-    for quote in response.xpath('//div[@class="quote"]'):
-        text = quote.xpath('span[@class="text"]/text()').extract_first()
-        author = quote.xpath('span/small/text()').extract_first()
-        print({'text': text, 'author': author})
-
-In the above snippet we've decided to use the method ``.extract_first()``
-instead of ``.extract()``, to extract the content from the first element from a
-selector list returned by ``.xpath()``.
-
-.. note::
-
-    For a more detailed description of using nested selectors, see
-    :ref:`topics-selectors-nesting-selectors` and
-    :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
-    documentation
-
-Knowing to use selectors, extracting data from a page is just a matter of
-yield the Python dictionaries from the callback method instead of printing
-them.
-
-Let's add the necessary code to our spider::
-
-    import scrapy
+We won't cover much of XPath here. To learn more about XPath, we recommend `this tutorial to learn
+XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this
+tutorial to learn "how to think in XPath"
+<http://plasmasturm.org/log/xpath101/>`_.
 
 
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-        start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
-        ]
+Extraction wrap-up
+^^^^^^^^^^^^^^^^^^
 
-        def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
-                yield {
-                    'text': quote.xpath('span[@class="text"]/text()').extract_first(),
-                    'author': quote.xpath('span/small/text()').extract_first(),
-                }
+Now that you know a bit about selection and extraction, let's complete our
+spider by writing the code to extract the quotes from the webpage.
 
-Run::
-
-    scrapy crawl quotes
-
-Now crawling quotes.toscrape.com will show dictionary objects::
-
-    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': 'Oscar Wilde',
-     'text': '“We are all in the gutter, but some of us are looking at the stars.”'}
-    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': 'Mark Twain',
-     'text': '“The man who does not read has no advantage over the man who cannot read.”'}
+TODO: show how to extract quotes and integrate spider code here.
 
 
 Following links
