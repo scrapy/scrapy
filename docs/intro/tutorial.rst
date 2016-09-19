@@ -106,8 +106,8 @@ and defines some attributes and methods:
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.http.Request`) from them.
 
-How to run your spider
-----------------------
+How to run our spider
+---------------------
 
 To put our spider to work, go to the project's top level directory and run::
 
@@ -148,12 +148,14 @@ objects and calls the ``parse`` callback method passing the response as
 argument.
 
 
-Simplifying your spider
------------------------
-Instead of defining the :meth:`~scrapy.spiders.Spider.start_requests` method
-generating :class:`scrapy.Request <scrapy.http.Request>`
-objects from URLs, you can just put those URLs in the 
-:attr:`~scrapy.spiders.Spider.start_urls` attribute::
+A shortcut to the start_requests method
+---------------------------------------
+Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
+that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
+you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
+with a list of URLs. This list will then be used by the default implementation
+of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
+for your spider::
 
     import scrapy
 
@@ -174,7 +176,8 @@ objects from URLs, you can just put those URLs in the
 The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle
 each of the requests for those URLs, even though we haven't explicitely told
 Scrapy to do so. This happens because :meth:`~scrapy.spiders.Spider.parse`
-is Scrapy's default callback method.
+is Scrapy's default callback method that is called for any request that have
+been generated with no callback explicitely assigned to handle it.
 
 
 Extracting data
@@ -293,7 +296,104 @@ Extraction wrap-up
 Now that you know a bit about selection and extraction, let's complete our
 spider by writing the code to extract the quotes from the webpage.
 
-TODO: show how to extract quotes and integrate spider code here.
+Each quote in http://quotes.toscrape.com is represented by HTML code that looks
+like this::
+
+    <div class="quote">
+        <span class="text">“The world as we have created it is a process of our
+        thinking. It cannot be changed without changing our thinking.”</span>
+        <span>
+            by <small class="author">Albert Einstein</small>
+            <a href="/author/Albert-Einstein">(about)</a>
+        </span>
+        <div class="tags">
+            Tags:
+            <a class="tag" href="/tag/change/page/1/">change</a>
+            <a class="tag" href="/tag/deep-thoughts/page/1/">deep-thoughts</a>
+            <a class="tag" href="/tag/thinking/page/1/">thinking</a>
+            <a class="tag" href="/tag/world/page/1/">world</a>
+        </div>
+    </div>
+
+Let's open up scrapy shell and play a bit to find out how to extract the data
+we want::
+
+    $ scrapy shell http://quotes.toscrape.com
+
+We get a list of selectors to the quotes using::
+
+    >>> response.css("div.quote")
+
+Each of the selectors returned by the query above allows us to run further
+queries over the quotes itselves. Let's assign the first selector to a
+variable, so that we can run our CSS selectors directly on a particular quote::
+
+    >>> quote = response.css("div.quote")[0]
+
+Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+using the ``quote`` object we just created::
+
+    >>> title = quote.css("span.text ::text").extract_first()
+    >>> title
+    '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
+    >>> author = quote.css("small.author ::text").extract_first()
+    >>> author
+    'Albert Einstein'
+
+Given that the tags is a list of strings, we can use the ``.extract()`` method
+to get all of them::
+
+    >>> tags = quote.css("div.tags a.tag ::text").extract()
+    >>> tags
+    ['change', 'deep-thoughts', 'thinking', 'world']
+
+Now, we can iterate over all the quotes in the page and use the CSS selectors
+we defined to extract data::
+
+    >>> for quote in response.css("div.quote"):
+    ...     text = quote.css("span.text ::text").extract_first()
+    ...     author = quote.css("small.author ::text").extract_first()
+    ...     tags = quote.css("div.tags a.tag ::text").extract()
+    ...     print("{} - {} - {}".format(text, author, tags))
+
+
+Extracting data in our spider
+------------------------------
+
+Until now, the spider we built doesn't extract any data in particular. I just
+saves the whole HTML page to a local file. Now, let's integrate the extraction
+logic above in our spider.
+
+A Scrapy spider typically generates many dictionaries containing the data
+extracted from the page. To do that, we use the ``yield`` Python keyword, as
+you can see below::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
+        ]
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small::text').extract_first(),
+                    'tags': quote.css("div.tags a.tag ::text").extract(),
+                }
+
+If you run this spider, it will output the extracted data with the log::
+
+    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
+    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    {'tags': ['edison', 'failure', 'inspirational', 'paraphrased'], 'author': 'Thomas A. Edison', 'text': "“I have not failed. I've just found 10,000 ways that won't work.”"}
+
+:ref:`Later in the tutorial <storing-data>`, we will see how to save this data to a file.
 
 
 Following links
@@ -449,6 +549,8 @@ tagged with a specific tag, building the URL based on the argument::
 If you pass the ``tag=humor`` argument to this spider, you'll notice that it
 will only visit URLs from the ``humor`` tag, such as
 ``http://quotes.toscrape.com/tag/humor``.
+
+.. _storing-data:
 
 Storing the scraped data
 ========================
