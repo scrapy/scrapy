@@ -17,6 +17,9 @@ New Features
 - New :setting:`SCHEDULER_DEBUG` setting to log requests serialization
   failures (:issue:`1610`).
 - JSON encoder now supports serialization of ``set`` instances (:issue:`2058`).
+- Interpret ``application/json-amazonui-streaming`` as ``TextResponse`` (:issue:`1503`).
+- ``scrapy`` is imported by default when using shell tools (:command:`shell`,
+  :ref:`inspect_response <topics-shell-inspect-response>`) (:issue:`2248`).
 
 Bug fixes
 ~~~~~~~~~
@@ -28,6 +31,10 @@ Bug fixes
   (:issue:`2153`).
 - Fixed logging of wrong callback name with ``scrapy parse`` (:issue:`2169`).
 - Fix for an odd gzip decompression bug (:issue:`1606`).
+- Fix for selected callbacks when using ``CrawlSpider`` with :command:`scrapy parse <parse>`
+  (:issue:`2225`).
+- Fix for invalid JSON and XML files when spider yields no items (:issue:`872`).
+- Implement ``flush()`` fpr ``StreamLogger`` avoiding a warning in logs (:issue:`2125`).
 
 Refactoring
 ~~~~~~~~~~~
@@ -39,11 +46,14 @@ Refactoring
 Documentation
 ~~~~~~~~~~~~~
 
+- :ref:`Overview <intro-overview>` and :ref:`tutorial <intro-tutorial>`
+  rewritten to use http://toscrape.com websites (:issue:`2236`, :issue:`2249`).
 - Grammar fixes: :issue:`2128`, :issue:`1566`.
 - Download stats badge removed from README (:issue:`2160`).
-- New scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`)
+- New scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
 - Updated ``Response`` parameters documentation (:issue:`2197`).
-- Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2197`).
+- Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
+- Add StackOverflow as a support channel (:issue:`2257`).
 
 
 1.1.2 (2016-08-18)
