@@ -55,7 +55,8 @@ class ImagesPipeline(FilesPipeline):
             settings = Settings(settings)
 
         resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name="ImagesPipeline")
+                                    base_class_name="ImagesPipeline",
+                                    settings=settings)
         self.expires = settings.getint(
             resolve("IMAGES_EXPIRES"), self.EXPIRES
         )

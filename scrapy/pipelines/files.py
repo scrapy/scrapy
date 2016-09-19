@@ -233,7 +233,8 @@ class FilesPipeline(MediaPipeline):
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name=cls_name)
+                                    base_class_name=cls_name,
+                                    settings=settings)
         self.expires = settings.getint(
             resolve('FILES_EXPIRES'), self.EXPIRES
         )
