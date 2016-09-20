@@ -309,17 +309,19 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
     def test_subclass_attrs_preserved_custom_settings(self):
         """
-        If image settings are defined but they are not defined for subclass class attributes
-        should be preserved.
+        If image settings are defined but they are not defined for subclass default
+        values taken from settings should be preserved.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         settings = self._generate_fake_settings()
         pipeline = pipeline_cls.from_settings(Settings(settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
-            # Instance attribute (lowercase) must be equal to class attribute (uppercase).
+            # Instance attribute (lowercase) must be equal to
+            # value defined in settings.
             value = getattr(pipeline, pipe_attr.lower())
             self.assertNotEqual(value, self.default_pipeline_settings[pipe_attr])
-            self.assertEqual(value, getattr(pipeline, pipe_attr))
+            setings_value = settings.get(settings_attr)
+            self.assertEqual(value, setings_value)
 
     def test_no_custom_settings_for_subclasses(self):
         """
@@ -370,11 +372,26 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedImagePipeline(ImagesPipeline):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
-
         pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
         self.assertEqual(pipeline.images_result_field, "something_else")
         self.assertEqual(pipeline.images_urls_field, "something")
 
+    def test_user_defined_subclass_default_key_names(self):
+        """Test situation when user defines subclass of ImagePipeline,
+        but uses attribute names for default pipeline (without prefixing
+        them with pipeline class name).
+        """
+        settings = self._generate_fake_settings()
+
+        class UserPipe(ImagesPipeline):
+            pass
+
+        pipeline_cls = UserPipe.from_settings(Settings(settings))
+
+        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+            expected_value = settings.get(settings_attr)
+            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
+                             expected_value)
 
 def _create_image(format, *a, **kw):
     buf = TemporaryFile()

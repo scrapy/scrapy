@@ -89,8 +89,8 @@ class Scheduler(object):
                 msg = ("Unable to serialize request: %(request)s - reason:"
                        " %(reason)s - no more unserializable requests will be"
                        " logged (stats being collected)")
-                logger.error(msg, {'request': request, 'reason': e},
-                             exc_info=True, extra={'spider': self.spider})
+                logger.warning(msg, {'request': request, 'reason': e},
+                               exc_info=True, extra={'spider': self.spider})
                 self.logunser = False
             self.stats.inc_value('scheduler/unserializable',
                                  spider=self.spider)
