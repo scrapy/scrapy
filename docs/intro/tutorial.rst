@@ -15,7 +15,7 @@ This tutorial will walk you through these tasks:
 1. Creating a new Scrapy project
 2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
 3. Exporting the scraped data using the command line
-4. Change spider to recursively follow links
+4. Changing spider to recursively follow links
 5. Using spider arguments
 
 Scrapy is written in Python_. If you're new to the language you might want to
@@ -60,9 +60,9 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or group of websites). They must subclass
-:class:`scrapy.Spider` and define the initial requests to make, how to follow
-links in the pages, and how to parse the downloaded page content to extract
-data.
+:class:`scrapy.Spider` and define the initial requests to make, optionally how
+to follow links in the pages, and how to parse the downloaded page content to
+extract data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
@@ -86,6 +86,7 @@ This is the code for our first Spider. Save it in a file named
             filename = 'quotes-%s.html' % page
             with open(filename, 'wb') as f:
                 f.write(response.body)
+            self.log('Saved file %s' % filename)
 
 
 As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
@@ -120,19 +121,17 @@ This command runs the spider with name ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
-
-    2016-09-01 16:51:27 [scrapy] INFO: Scrapy started (bot: tutorial)
-    2016-09-01 16:51:27 [scrapy] INFO: Overridden settings: {...}
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled extensions: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled downloader middlewares: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled spider middlewares: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled item pipelines: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Spider opened
-    2016-09-01 16:51:27 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
-    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
-    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
-    2016-09-01 16:51:29 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
-    2016-09-01 16:51:29 [scrapy] INFO: Closing spider (finished)
+    ... (omitted for brevity)
+    2016-09-20 14:48:00 [scrapy] INFO: Spider opened
+    2016-09-20 14:48:00 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2016-09-20 14:48:00 [scrapy] DEBUG: Telnet console listening on 127.0.0.1:6023
+    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
+    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-1.html
+    2016-09-20 14:48:01 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
+    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-2.html
+    2016-09-20 14:48:01 [scrapy] INFO: Closing spider (finished)
+    ...
 
 Now, check the files in the current directory. You should notice that two new
 files have been created: *quotes-1.html* and *quotes-2.html*, with the content
@@ -178,9 +177,9 @@ for your spider::
                 f.write(response.body)
 
 The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
-of the requests for those URLs, even though we haven't explicitely told Scrapy
+of the requests for those URLs, even though we haven't explicitly told Scrapy
 to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
-default callback method, which is called for requests without an explicitely
+default callback method, which is called for requests without an explicitly
 assigned callback.
 
 
@@ -190,7 +189,7 @@ Extracting data
 The best way to learn how to extract data with Scrapy is trying selectors
 using the shell :ref:`Scrapy shell <topics-shell>`. Run::
 
-    scrapy crawl http://quotes.toscrape.com/page/1/
+    scrapy shell http://quotes.toscrape.com/page/1/
 
 You will see something like::
 
@@ -304,7 +303,7 @@ Extracting quotes and authors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that you know a bit about selection and extraction, let's complete our
-spider by writing the code to extract the quotes from the webpage.
+spider by writing the code to extract the quotes from the web page.
 
 Each quote in http://quotes.toscrape.com is represented by HTML elements that look
 like this:
@@ -345,17 +344,17 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text ::text").extract_first()
+    >>> title = quote.css("span.text::text").extract_first()
     >>> title
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
-    >>> author = quote.css("small.author ::text").extract_first()
+    >>> author = quote.css("small.author::text").extract_first()
     >>> author
     'Albert Einstein'
 
 Given that the tags are a list of strings, we can use the ``.extract()`` method
 to get all of them::
 
-    >>> tags = quote.css("div.tags a.tag ::text").extract()
+    >>> tags = quote.css("div.tags a.tag::text").extract()
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
@@ -363,10 +362,14 @@ Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary::
 
     >>> for quote in response.css("div.quote"):
-    ...     text = quote.css("span.text ::text").extract_first()
-    ...     author = quote.css("small.author ::text").extract_first()
-    ...     tags = quote.css("div.tags a.tag ::text").extract()
+    ...     text = quote.css("span.text::text").extract_first()
+    ...     author = quote.css("small.author::text").extract_first()
+    ...     tags = quote.css("div.tags a.tag::text").extract()
     ...     print(dict(text=text, author=author, tags=tags))
+    {'text': u'\u201cThe world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.\u201d', 'tags': [u'change', u'deep-thoughts', u'thinking', u'world'], 'author': u'Albert Einstein'}
+    {'text': u'\u201cIt is our choices, Harry, that show what we truly are, far more than our abilities.\u201d', 'tags': [u'abilities', u'choices'], 'author': u'J.K. Rowling'}
+        ... a few more of these, omitted for brevity
+    >>>
 
 
 Extracting data in our spider
@@ -395,7 +398,7 @@ in the callback, as you can see below::
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
                     'author': quote.css('span small::text').extract_first(),
-                    'tags': quote.css("div.tags a.tag ::text").extract(),
+                    'tags': quote.css("div.tags a.tag::text").extract(),
                 }
 
 If you run this spider, it will output the extracted data with the log::
@@ -430,9 +433,9 @@ like `JQ`_ to help doing that at the command-line.
 
 In small projects (like the one in this tutorial), that should be enough.
 However, if you want to perform more complex things with the scraped items, you
-can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
-placeholder file for Item Pipelines has been set up for you when the project is
-created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
+can write an :ref:`Item Pipeline <topics-item-pipeline>`. A placeholder file
+for Item Pipelines has been set up for you when the project is created, in
+``tutorial/pipelines.py``. Though you don't need to implement any item
 pipelines if you just want to store the scraped items.
 
 .. _JSON Lines: http://jsonlines.org
@@ -448,7 +451,31 @@ from http://quotes.toscrape.com, you want quotes from all the pages in the websi
 Now that you know how to extract data from pages, let's see how to follow links
 from them.
 
-Here is a modification of our spider that recursively follows the link to the next
+First thing is to extract the link to the page we want to follow.  Examining
+our page, we can see there is a link to the next page with the following
+markup:
+
+.. code-block:: html
+
+    <ul class="pager">
+        <li class="next">
+            <a href="/page/2/">Next <span aria-hidden="true">&rarr;</span></a>
+        </li>
+    </ul>
+
+We can try extracting it in the shell::
+
+    >>> response.css('li.next a').extract_first()
+    u'<a href="/page/2/">Next <span aria-hidden="true">\u2192</span></a>'
+
+This gets the anchor element, but we want the attribute ``href``. For that,
+Scrapy supports a CSS extension that let's you select the attribute contents,
+like this::
+
+    >>> response.css('li.next a::attr("href")').extract_first()
+    u'/page/2/'
+
+Let's see now our spider modified to recursively follows the link to the next
 page, extracting data from it::
 
     import scrapy
@@ -465,6 +492,7 @@ page, extracting data from it::
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
                     'author': quote.css('span small::text').extract_first(),
+                    'tags': quote.css("div.tags a.tag::text").extract(),
                 }
 
             next_page = response.css('li.next a::attr("href")').extract_first()
@@ -534,7 +562,7 @@ this time for scraping author information::
 
 This spider will start from the main page, it will follow all the links to the
 authors pages calling the ``parse_author`` callback for each of them, and also
-the pagination links too with the ``parse`` callback as we saw before.
+the pagination links with the ``parse`` callback as we saw before.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
