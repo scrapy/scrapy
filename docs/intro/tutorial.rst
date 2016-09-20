@@ -265,7 +265,7 @@ information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 XPath: a brief intro
 ^^^^^^^^^^^^^^^^^^^^
 
-Besides CSS, Scrapy selectors also support using `XPath`_ expressions::
+Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
 
     >>> response.xpath('//title')
     [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>]
@@ -289,6 +289,8 @@ XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this
 tutorial to learn "how to think in XPath"
 <http://plasmasturm.org/log/xpath101/>`_.
 
+.. _XPath: https://www.w3.org/TR/xpath
+.. _CSS: https://www.w3.org/TR/selectors
 
 Extraction wrap-up
 ^^^^^^^^^^^^^^^^^^
@@ -453,7 +455,7 @@ using a :ref:`trick to pass additional data to the callbacks
 <topics-request-response-ref-request-callback-arguments>`.
 
 Another example: scraping authors
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 Here is another spider that illustrates callbacks and following links,
 this time for scraping author information::
@@ -509,8 +511,9 @@ much because of a programming mistake. This can be configured by the setting
     spider that implements a small rules engine that you can use to write your
     crawlers on top of it.
 
-Customizing behavior via spider arguments
-=========================================
+Adding a spider argument
+========================
+
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
