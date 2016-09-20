@@ -475,7 +475,7 @@ like this::
     >>> response.css('li.next a::attr("href")').extract_first()
     u'/page/2/'
 
-Let's see now our spider modified to recursively follows the link to the next
+Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::
 
     import scrapy
