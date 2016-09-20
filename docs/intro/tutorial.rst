@@ -14,7 +14,9 @@ This tutorial will walk you through these tasks:
 
 1. Creating a new Scrapy project
 2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
-3. Exporting the scraped data using command line
+3. Exporting the scraped data using the command line
+4. Change spider to recursively follow links
+5. Using spider arguments
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
@@ -43,7 +45,7 @@ This will create a ``tutorial`` directory with the following contents::
         tutorial/             # project's Python module, you'll import your code from here
             __init__.py
 
-            items.py          # project items file
+            items.py          # project items definition file
 
             pipelines.py      # project pipelines file
 
@@ -109,7 +111,8 @@ and defines some attributes and methods:
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory and run::
+To put our spider to work, go to the project's top level directory (``cd
+tutorial``) and run::
 
    scrapy crawl quotes
 
@@ -141,6 +144,7 @@ for the respective URLs, as our ``parse`` method instructs.
 
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving
 a response for each one, it instantiates :class:`scrapy.http.Response`
@@ -173,11 +177,11 @@ for your spider::
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle
-each of the requests for those URLs, even though we haven't explicitely told
-Scrapy to do so. This happens because :meth:`~scrapy.spiders.Spider.parse`
-is Scrapy's default callback method that is called for any request that have
-been generated with no callback explicitely assigned to handle it.
+The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
+of the requests for those URLs, even though we haven't explicitely told Scrapy
+to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
+default callback method, which is called for requests without an explicitely
+assigned callback.
 
 
 Extracting data
@@ -224,10 +228,14 @@ To extract the text from the title above, you can do::
 
 There are two things to note here: one is that we've added ``::text`` to the
 CSS query, to mean that we want to select the text from inside the title element.
+If we don't specify ``::text``, we'd get the HTML tags::
 
-The other is that the result of calling ``.extract()`` is a list, because we're
-dealing with an instance :class:`~scrapy.selector.SelectorList`.  When you know
-you just want the first result, as in this case, you can do::
+    >>> response.css('title').extract()
+    [u'<title>Quotes to Scrape</title>']
+
+The other thing is that the result of calling ``.extract()`` is a list, because
+we're dealing with an instance of :class:`~scrapy.selector.SelectorList`.  When
+you know you just want the first result, as in this case, you can do::
 
     >>> response.css('title::text').extract_first()
     u'Quotes to Scrape'
@@ -284,22 +292,24 @@ that contains the text "Next Page"**. This makes XPath very fitting to the task
 of scraping, and we encourage you to learn XPath even if you already know how to
 construct CSS selectors, it will make scraping much easier.
 
-We won't cover much of XPath here. To learn more about XPath, we recommend `this tutorial to learn
-XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this
-tutorial to learn "how to think in XPath"
-<http://plasmasturm.org/log/xpath101/>`_.
+We won't cover much of XPath here. To learn more about XPath, we recommend
+`this tutorial to learn XPath through examples
+<http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
+to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
 .. _XPath: https://www.w3.org/TR/xpath
 .. _CSS: https://www.w3.org/TR/selectors
 
-Extraction wrap-up
-^^^^^^^^^^^^^^^^^^
+Extracting quotes and authors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that you know a bit about selection and extraction, let's complete our
 spider by writing the code to extract the quotes from the webpage.
 
-Each quote in http://quotes.toscrape.com is represented by HTML code that looks
-like this::
+Each quote in http://quotes.toscrape.com is represented by HTML elements that look
+like this:
+
+.. code-block:: html
 
     <div class="quote">
         <span class="text">“The world as we have created it is a process of our
@@ -322,12 +332,12 @@ we want::
 
     $ scrapy shell http://quotes.toscrape.com
 
-We get a list of selectors to the quotes using::
+We get a list of selectors for the quote HTML elements with::
 
     >>> response.css("div.quote")
 
 Each of the selectors returned by the query above allows us to run further
-queries over the quotes itselves. Let's assign the first selector to a
+queries over their sub-elements. Let's assign the first selector to a
 variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
@@ -342,33 +352,33 @@ using the ``quote`` object we just created::
     >>> author
     'Albert Einstein'
 
-Given that the tags is a list of strings, we can use the ``.extract()`` method
+Given that the tags are a list of strings, we can use the ``.extract()`` method
 to get all of them::
 
     >>> tags = quote.css("div.tags a.tag ::text").extract()
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
-Now, we can iterate over all the quotes in the page and use the CSS selectors
-we defined to extract data::
+Having figured out how to extract each bit, we can now iterate over all the
+quotes elements and put them together into a Python dictionary::
 
     >>> for quote in response.css("div.quote"):
     ...     text = quote.css("span.text ::text").extract_first()
     ...     author = quote.css("small.author ::text").extract_first()
     ...     tags = quote.css("div.tags a.tag ::text").extract()
-    ...     print("{} - {} - {}".format(text, author, tags))
+    ...     print(dict(text=text, author=author, tags=tags))
 
 
 Extracting data in our spider
 ------------------------------
 
-Until now, the spider we built doesn't extract any data in particular. I just
-saves the whole HTML page to a local file. Now, let's integrate the extraction
-logic above in our spider.
+Let's get back to our spider. Until now, it doesn't extract any data in
+particular, just saves the whole HTML page to a local file. Let's integrate the
+extraction logic above into our spider.
 
 A Scrapy spider typically generates many dictionaries containing the data
-extracted from the page. To do that, we use the ``yield`` Python keyword, as
-you can see below::
+extracted from the page. To do that, we use the ``yield`` Python keyword
+in the callback, as you can see below::
 
     import scrapy
 
@@ -395,7 +405,38 @@ If you run this spider, it will output the extracted data with the log::
     2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
     {'tags': ['edison', 'failure', 'inspirational', 'paraphrased'], 'author': 'Thomas A. Edison', 'text': "“I have not failed. I've just found 10,000 ways that won't work.”"}
 
-:ref:`Later in the tutorial <storing-data>`, we will see how to save this data to a file.
+
+.. _storing-data:
+
+Storing the scraped data
+========================
+
+The simplest way to store the scraped data is by using :ref:`Feed exports
+<topics-feed-exports>`, with the following command::
+
+    scrapy crawl quotes -o items.json
+
+That will generate an ``items.json`` file containing all scraped items,
+serialized in `JSON`_.
+
+You could've also used other formats, like `JSON Lines`_::
+
+    scrapy crawl quotes -o items.jl
+
+The `JSON Lines`_ format is useful because it's stream-like, you can easily
+append new records to it. As each record is a separate line, you can also
+process big files without having to fit everything in memory, there are tools
+like `JQ`_ to help doing that at the command-line.
+
+In small projects (like the one in this tutorial), that should be enough.
+However, if you want to perform more complex things with the scraped items, you
+can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
+placeholder file for Item Pipelines has been set up for you when the project is
+created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
+pipelines if you just want to store the scraped items.
+
+.. _JSON Lines: http://jsonlines.org
+.. _JQ: https://stedolan.github.io/jq
 
 
 Following links
@@ -511,17 +552,20 @@ much because of a programming mistake. This can be configured by the setting
     spider that implements a small rules engine that you can use to write your
     crawlers on top of it.
 
-Adding a spider argument
-========================
+Using spider arguments
+======================
 
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
     scrapy crawl quotes -o items.json -a tag=humor
 
+These arguments are passed to the Spider's ``__init__`` method and become
+spider attributes by default.  
+
 In this example, the value provided for the ``tag`` argument will be available
-via a spider attribute. Using this, you could make your spider get only quotes
-tagged with a specific tag, building the URL based on the argument::
+via ``self.tag``. You can use this to make your spider fetch only quotes
+with a specific tag, building the URL based on the argument::
 
     import scrapy
 
@@ -553,25 +597,7 @@ If you pass the ``tag=humor`` argument to this spider, you'll notice that it
 will only visit URLs from the ``humor`` tag, such as
 ``http://quotes.toscrape.com/tag/humor``.
 
-.. _storing-data:
-
-Storing the scraped data
-========================
-
-The simplest way to store the scraped data is by using :ref:`Feed exports
-<topics-feed-exports>`, with the following command::
-
-    scrapy crawl quotes -o items.json
-
-That will generate an ``items.json`` file containing all scraped items,
-serialized in `JSON`_.
-
-In small projects (like the one in this tutorial), that should be enough.
-However, if you want to perform more complex things with the scraped items, you
-can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
-placeholder file for Item Pipelines has been set up for you when the project is
-created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
-pipelines if you just want to store the scraped items.
+You can :ref:`learn more about handling spider arguments here <spiderargs>`.
 
 Next steps
 ==========
@@ -580,9 +606,10 @@ This tutorial covered only the basics of Scrapy, but there's a lot of other
 features not mentioned here. Check the :ref:`topics-whatelse` section in
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
 
-Then, we recommend you continue by playing with an example project (see
-:ref:`intro-examples`), and then continue with the section
-:ref:`section-basics`.
+You can continue from the section :ref:`section-basics` to know more about the
+command-line tool, spiders and other things the tutorial haven't covered like
+modeling the scraped data. If you prefer to play with an example project, check
+the :ref:`intro-examples` section.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
 .. _dirbot: https://github.com/scrapy/dirbot
