@@ -59,7 +59,7 @@ Our first Spider
 ================
 
 Spiders are classes that you define and that Scrapy uses to scrape information
-from a website (or group of websites). They must subclass
+from a website (or a group of websites). They must subclass
 :class:`scrapy.Spider` and define the initial requests to make, optionally how
 to follow links in the pages, and how to parse the downloaded page content to
 extract data.
@@ -96,7 +96,7 @@ and defines some attributes and methods:
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.spiders.Spider.start_requests`: must return a list
+* :meth:`~scrapy.spiders.Spider.start_requests`: must generate or return a list
   of requests where the Spider will begin to crawl from.
   Subsequent requests will be generated successively from these initial requests.
 
@@ -112,8 +112,7 @@ and defines some attributes and methods:
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory (``cd
-tutorial``) and run::
+To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl quotes
 
@@ -145,10 +144,10 @@ What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
-returned by the ``start_requests`` method of the Spider. Upon receiving
-a response for each one, it instantiates :class:`scrapy.http.Response`
-objects and calls the ``parse`` callback method passing the response as
-argument.
+returned by the ``start_requests`` method of the Spider. Upon receiving a
+response for each one, it instantiates :class:`scrapy.http.Response` objects
+and calls the callback method associated with the request (in this case, the
+``parse`` method) passing the response as argument.
 
 
 A shortcut to the start_requests method
@@ -166,8 +165,8 @@ for your spider::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-          'http://quotes.toscrape.com/page/1/',
-          'http://quotes.toscrape.com/page/2/',
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
         ]
 
         def parse(self, response):
@@ -189,13 +188,20 @@ Extracting data
 The best way to learn how to extract data with Scrapy is trying selectors
 using the shell :ref:`Scrapy shell <topics-shell>`. Run::
 
-    scrapy shell http://quotes.toscrape.com/page/1/
+    scrapy shell 'http://quotes.toscrape.com/page/1/'
+
+.. note::
+
+   Remember to always enclose urls in quotes when running Scrapy shell from
+   command-line, otherwise urls containing arguments (ie. ``&`` character)
+   will not work.
 
 You will see something like::
 
     [ ... Scrapy log here ... ]
     2016-09-19 12:09:27 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
+    [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
     [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
     [s]   item       {}
     [s]   request    <GET http://quotes.toscrape.com/page/1/>
@@ -212,7 +218,7 @@ Using the shell, you can try selecting elements using `CSS`_ with the response
 object::
 
     >>> response.css('title')
-    [<Selector xpath=u'descendant-or-self::title' data=u'<title>Quotes to Scrape</title>'>]
+    [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
@@ -223,26 +229,27 @@ data.
 To extract the text from the title above, you can do::
 
     >>> response.css('title::text').extract()
-    [u'Quotes to Scrape']
+    ['Quotes to Scrape']
 
 There are two things to note here: one is that we've added ``::text`` to the
-CSS query, to mean that we want to select the text from inside the title element.
-If we don't specify ``::text``, we'd get the HTML tags::
+CSS query, to mean we want to select only the text elements directly inside
+``<title>`` element.  If we don't specify ``::text``, we'd get the full title
+element, including its tags::
 
     >>> response.css('title').extract()
-    [u'<title>Quotes to Scrape</title>']
+    ['<title>Quotes to Scrape</title>']
 
 The other thing is that the result of calling ``.extract()`` is a list, because
 we're dealing with an instance of :class:`~scrapy.selector.SelectorList`.  When
 you know you just want the first result, as in this case, you can do::
 
     >>> response.css('title::text').extract_first()
-    u'Quotes to Scrape'
+    'Quotes to Scrape'
 
 As an alternative, you could've written::
 
     >>> response.css('title::text')[0].extract()
-    u'Quotes to Scrape'
+    'Quotes to Scrape'
 
 However, using ``.extract_first()`` avoids an ``IndexError`` and returns
 ``None`` when it doesn't find any element matching the selection.
@@ -253,20 +260,26 @@ to be scraped, you can at least get **some** data.
 
 Besides the :meth:`~scrapy.selector.Selector.extract` and
 :meth:`~scrapy.selector.SelectorList.extract_first` methods, you can also use
-the :meth:`~scrapy.selector.Selector.re` method to extract using a regular
-expression::
+the :meth:`~scrapy.selector.Selector.re` method to extract using `regular
+expressions`::
 
-    >>> response.css('title::text').re('Quotes.*')
-    [u'Quotes to Scrape']
-    >>> response.css('title::text').re('Q\w+')
-    [u'Quotes']
-    >>> response.css('title::text').re('(\w+) to (\w+)')
-    [u'Quotes', u'Scrape']
+    >>> response.css('title::text').re(r'Quotes.*')
+    ['Quotes to Scrape']
+    >>> response.css('title::text').re(r'Q\w+')
+    ['Quotes']
+    >>> response.css('title::text').re(r'(\w+) to (\w+)')
+    ['Quotes', 'Scrape']
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools or extensions like Firebug. For more
+You can use your browser developer tools or extensions like Firebug.  For more
 information see :ref:`topics-firebug` and :ref:`topics-firefox`.
+
+`Selector Gadget`_ is also a nice tool to quickly find CSS selector for
+visually selected elements.
+
+.. _regular expressions: https://docs.python.org/3/library/re.html
+.. _Selector Gadget: http://selectorgadget.com/
 
 
 XPath: a brief intro
@@ -275,9 +288,9 @@ XPath: a brief intro
 Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
 
     >>> response.xpath('//title')
-    [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>]
+    [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
     >>> response.xpath('//title/text()').extract_first()
-    u'Quotes to Scrape'
+    'Quotes to Scrape'
 
 XPath expressions are very powerful, and are the foundation of Scrapy
 Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You
@@ -291,8 +304,9 @@ that contains the text "Next Page"**. This makes XPath very fitting to the task
 of scraping, and we encourage you to learn XPath even if you already know how to
 construct CSS selectors, it will make scraping much easier.
 
-We won't cover much of XPath here. To learn more about XPath, we recommend
-`this tutorial to learn XPath through examples
+We won't cover much of XPath here, but you can read more about `using XPath
+with Scrapy Selectors here <topics-selectors>`_. To learn more about XPath, we
+recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
@@ -366,8 +380,8 @@ quotes elements and put them together into a Python dictionary::
     ...     author = quote.css("small.author::text").extract_first()
     ...     tags = quote.css("div.tags a.tag::text").extract()
     ...     print(dict(text=text, author=author, tags=tags))
-    {'text': u'\u201cThe world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.\u201d', 'tags': [u'change', u'deep-thoughts', u'thinking', u'world'], 'author': u'Albert Einstein'}
-    {'text': u'\u201cIt is our choices, Harry, that show what we truly are, far more than our abilities.\u201d', 'tags': [u'abilities', u'choices'], 'author': u'J.K. Rowling'}
+    {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
+    {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
         ... a few more of these, omitted for brevity
     >>>
 
@@ -417,19 +431,24 @@ Storing the scraped data
 The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl quotes -o items.json
+    scrapy crawl quotes -o quotes.json
 
-That will generate an ``items.json`` file containing all scraped items,
+That will generate an ``quotes.json`` file containing all scraped items,
 serialized in `JSON`_.
 
-You could've also used other formats, like `JSON Lines`_::
+For historic reasons, Scrapy appends to a given file instead of overwriting
+its contents. If you run this command twice without removing the file
+before the second time, you'll end up with a broken JSON file.
 
-    scrapy crawl quotes -o items.jl
+You can also used other formats, like `JSON Lines`_::
+
+    scrapy crawl quotes -o quotes.jl
 
 The `JSON Lines`_ format is useful because it's stream-like, you can easily
-append new records to it. As each record is a separate line, you can also
-process big files without having to fit everything in memory, there are tools
-like `JQ`_ to help doing that at the command-line.
+append new records to it. It doesn't have the same problem of JSON when you run
+twice. Also, as each record is a separate line, you can process big files
+without having to fit everything in memory, there are tools like `JQ`_ to help
+doing that at the command-line.
 
 In small projects (like the one in this tutorial), that should be enough.
 However, if you want to perform more complex things with the scraped items, you
@@ -466,14 +485,14 @@ markup:
 We can try extracting it in the shell::
 
     >>> response.css('li.next a').extract_first()
-    u'<a href="/page/2/">Next <span aria-hidden="true">\u2192</span></a>'
+    '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
 Scrapy supports a CSS extension that let's you select the attribute contents,
 like this::
 
-    >>> response.css('li.next a::attr("href")').extract_first()
-    u'/page/2/'
+    >>> response.css('li.next a::attr(href)').extract_first()
+    '/page/2/'
 
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::
@@ -495,7 +514,7 @@ page, extracting data from it::
                     'tags': quote.css("div.tags a.tag::text").extract(),
                 }
 
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
@@ -540,12 +559,12 @@ this time for scraping author information::
 
         def parse(self, response):
             # follow links to author pages
-            for href in response.css('.author a::attr("href")').extract():
+            for href in response.css('.author a::attr(href)').extract():
                 yield scrapy.Request(response.urljoin(href),
                                      callback=self.parse_author)
 
             # follow pagination links
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
@@ -586,7 +605,7 @@ Using spider arguments
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
-    scrapy crawl quotes -o items.json -a tag=humor
+    scrapy crawl quotes -o quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
 spider attributes by default.  
@@ -606,7 +625,7 @@ with a specific tag, building the URL based on the argument::
             tag = getattr(self, 'tag', None)
             if tag is not None:
                 url = url + 'tag/' + tag
-            yield scrapy.Request(url)
+            yield scrapy.Request(url, self.parse)
 
         def parse(self, response):
             for quote in response.css('div.quote'):
@@ -615,10 +634,10 @@ with a specific tag, building the URL based on the argument::
                     'author': quote.css('span small a::text').extract_first(),
                 }
 
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
-                yield scrapy.Request(next_page, callback=self.parse)
+                yield scrapy.Request(next_page, self.parse)
 
 
 If you pass the ``tag=humor`` argument to this spider, you'll notice that it
