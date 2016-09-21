@@ -20,14 +20,17 @@ This tutorial will walk you through these tasks:
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
-Scrapy.  If you're already familiar with other languages, and want to learn
-Python quickly, we recommend `Learn Python The Hard Way`_.  If you're new to programming
-and want to start with Python, take a look at `this list of Python resources
-for non-programmers`_.
+Scrapy. If you're already familiar with other languages, and want to learn
+Python quickly, we recommend reading through `Dive Into Python 3`_.
+Alternatively, you can follow the `Python Tutorial`_. If you're new to
+programming and want to start with Python, take a look at `this list of Python
+resources for non-programmers`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
-.. _Learn Python The Hard Way: http://learnpythonthehardway.org/book/
+.. _Dive Into Python 3: http://www.diveintopython3.net
+.. _Python Tutorial: https://docs.python.org/3/tutorial
+
 
 Creating a project
 ==================
