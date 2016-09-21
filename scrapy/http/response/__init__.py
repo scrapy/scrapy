@@ -9,6 +9,8 @@ from six.moves.urllib.parse import urljoin
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
+from scrapy.exceptions import NotSupported
+
 
 class Response(object_ref):
 
@@ -80,3 +82,22 @@ class Response(object_ref):
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
         return urljoin(self.url, url)
+
+    @property
+    def text(self):
+        """For subclasses of TextResponse, this will return the body
+        as text (unicode object in Python 2 and str in Python 3)
+        """
+        raise AttributeError("Response content isn't text")
+
+    def css(self, *a, **kw):
+        """Shortcut method implemented only by responses whose content
+        is text (subclasses of TextResponse).
+        """
+        raise NotSupported("Response content isn't text")
+
+    def xpath(self, *a, **kw):
+        """Shortcut method implemented only by responses whose content
+        is text (subclasses of TextResponse).
+        """
+        raise NotSupported("Response content isn't text")
