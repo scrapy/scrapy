@@ -104,9 +104,10 @@ and defines some attributes and methods:
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.spiders.Spider.start_requests`: must generate or return a list
-  of requests where the Spider will begin to crawl from.
-  Subsequent requests will be generated successively from these initial requests.
+* :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
+  Requests (you can return a list of requests or write a generator function)
+  which the Spider will begin to crawl from. Subsequent requests will be
+  generated successively from these initial requests.
 
 * :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
