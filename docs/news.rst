@@ -3,6 +3,22 @@
 Release notes
 =============
 
+1.1.3 (YYYY-MM-DD)
+------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Class attributes for subclasses of ``ImagesPipeline`` and ``FilesPipeline``
+  work at they did before 1.1.1 (:issue:`2243`, fixes :issue:`2198`)
+
+Documentation
+~~~~~~~~~~~~~
+
+- :ref:`Overview <intro-overview>` and :ref:`tutorial <intro-tutorial>`
+  rewritten to use http://toscrape.com websites (:issue:`2236`, :issue:`2249`).
+
+
 1.1.2 (2016-08-18)
 ------------------
 
