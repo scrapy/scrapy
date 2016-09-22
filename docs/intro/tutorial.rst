@@ -111,8 +111,8 @@ and defines some attributes and methods:
 
 * :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
-  is an instance of :class:`~scrapy.http.Response` that holds the page content and
-  has further helpful methods to handle it.
+  is an instance of :class:`~scrapy.http.TextResponse` that holds
+  the page content and has further helpful methods to handle it.
 
   The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
@@ -154,7 +154,7 @@ What just happened under the hood?
 
 Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
-response for each one, it instantiates :class:`scrapy.http.Response` objects
+response for each one, it instantiates :class:`~scrapy.http.Response` objects
 and calls the callback method associated with the request (in this case, the
 ``parse`` method) passing the response as argument.
 
@@ -281,11 +281,11 @@ expressions`::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools or extensions like Firebug.  For more
-information see :ref:`topics-firebug` and :ref:`topics-firefox`.
+You can use your browser developer tools or extensions like Firebug (see
+sections about :ref:`topics-firebug` and :ref:`topics-firefox`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
-visually selected elements.
+visually selected elements, which works in many browsers.
 
 .. _regular expressions: https://docs.python.org/3/library/re.html
 .. _Selector Gadget: http://selectorgadget.com/
@@ -308,13 +308,13 @@ objects in the shell.
 
 While perhaps not as popular as CSS selectors, XPath expressions offer more
 power because besides navigating the structure, it can also look at the
-content. Using XPath, you're able to select things like: **select the link
-that contains the text "Next Page"**. This makes XPath very fitting to the task
+content. Using XPath, you're able to select things like: *select the link
+that contains the text "Next Page"*. This makes XPath very fitting to the task
 of scraping, and we encourage you to learn XPath even if you already know how to
 construct CSS selectors, it will make scraping much easier.
 
-We won't cover much of XPath here, but you can read more about `using XPath
-with Scrapy Selectors here <topics-selectors>`_. To learn more about XPath, we
+We won't cover much of XPath here, but you can read more about :ref:`using XPath
+with Scrapy Selectors here <topics-selectors>`. To learn more about XPath, we
 recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
@@ -352,7 +352,7 @@ like this:
 Let's open up scrapy shell and play a bit to find out how to extract the data
 we want::
 
-    $ scrapy shell http://quotes.toscrape.com
+    $ scrapy shell 'http://quotes.toscrape.com'
 
 We get a list of selectors for the quote HTML elements with::
 
@@ -394,7 +394,6 @@ quotes elements and put them together into a Python dictionary::
         ... a few more of these, omitted for brevity
     >>>
 
-
 Extracting data in our spider
 ------------------------------
 
@@ -421,7 +420,7 @@ in the callback, as you can see below::
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
                     'author': quote.css('span small::text').extract_first(),
-                    'tags': quote.css("div.tags a.tag::text").extract(),
+                    'tags': quote.css('div.tags a.tag::text').extract(),
                 }
 
 If you run this spider, it will output the extracted data with the log::
@@ -520,7 +519,7 @@ page, extracting data from it::
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
                     'author': quote.css('span small::text').extract_first(),
-                    'tags': quote.css("div.tags a.tag::text").extract(),
+                    'tags': quote.css('div.tags a.tag::text').extract(),
                 }
 
             next_page = response.css('li.next a::attr(href)').extract_first()
@@ -530,10 +529,11 @@ page, extracting data from it::
 
 
 Now, after extracting the data, the ``parse()`` method looks for the link to
-the next page, builds a full absolute URL using the ``response.urljoin`` method
-(since the links can be relative) and yields a new request to the next page,
-registering itself as callback to handle the data extraction for the next page
-and to keep the crawling going through all the pages.
+the next page, builds a full absolute URL using the
+:meth:`~scrapy.http.Response.urljoin` method (since the links can be
+relative) and yields a new request to the next page, registering itself as
+callback to handle the data extraction for the next page and to keep the
+crawling going through all the pages.
 
 What you see here is Scrapy's mechanism of following links: when you yield
 a Request in a callback method, Scrapy will schedule that request to be sent
@@ -547,12 +547,8 @@ In our example, it creates a sort of loop, following all the links to the next p
 until it doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
-Another common pattern is to build an item with data from more than one page,
-using a :ref:`trick to pass additional data to the callbacks
-<topics-request-response-ref-request-callback-arguments>`.
-
-Another example: scraping authors
----------------------------------
+More examples and patterns
+--------------------------
 
 Here is another spider that illustrates callbacks and following links,
 this time for scraping author information::
@@ -602,11 +598,18 @@ requests to URLs already visited, avoiding the problem of hitting servers too
 much because of a programming mistake. This can be configured by the setting
 :setting:`DUPEFILTER_CLASS`.
 
-.. note::
-    As another example spider that leverages the mechanism of following links,
-    check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
-    spider that implements a small rules engine that you can use to write your
-    crawlers on top of it.
+Hopefully by now you have a good understanding of how to use the mechanism
+of following links and callbacks with Scrapy.
+
+As yet another example spider that leverages the mechanism of following links,
+check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
+spider that implements a small rules engine that you can use to write your
+crawlers on top of it.
+
+Also, a common pattern is to build an item with data from more than one page,
+using a :ref:`trick to pass additional data to the callbacks
+<topics-request-response-ref-request-callback-arguments>`.
+
 
 Using spider arguments
 ======================
@@ -663,7 +666,7 @@ features not mentioned here. Check the :ref:`topics-whatelse` section in
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
 
 You can continue from the section :ref:`section-basics` to know more about the
-command-line tool, spiders and other things the tutorial haven't covered like
+command-line tool, spiders, selectors and other things the tutorial hasn't covered like
 modeling the scraped data. If you prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
