@@ -210,7 +210,6 @@ You will see something like::
     [ ... Scrapy log here ... ]
     2016-09-19 12:09:27 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
-    [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
     [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
     [s]   item       {}
     [s]   request    <GET http://quotes.toscrape.com/page/1/>
