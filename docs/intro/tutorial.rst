@@ -7,27 +7,35 @@ Scrapy Tutorial
 In this tutorial, we'll assume that Scrapy is already installed on your system.
 If that's not the case, see :ref:`intro-install`.
 
-We are going to use `quotes.toscrape.com <http://quotes.toscrape.com/>`_ as
-our example domain to scrape.
+We are going to scrape `quotes.toscrape.com <http://quotes.toscrape.com/>`_, a website
+that lists quotes from famous authors.
 
 This tutorial will walk you through these tasks:
 
 1. Creating a new Scrapy project
-2. Defining the Items you will extract
-3. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract
-   :ref:`Items <topics-items>`
-4. Exporting the scraped data using command line
+2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
+3. Exporting the scraped data using the command line
+4. Changing spider to recursively follow links
+5. Using spider arguments
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
-Scrapy.  If you're already familiar with other languages, and want to learn
-Python quickly, we recommend `Learn Python The Hard Way`_.  If you're new to programming
-and want to start with Python, take a look at `this list of Python resources
-for non-programmers`_.
+Scrapy.
+
+If you're already familiar with other languages, and want to learn Python
+quickly, we recommend reading through `Dive Into Python 3`_.  Alternatively,
+you can follow the `Python Tutorial`_.
+
+If you're new to programming and want to start with Python, you may find useful
+the online book `Learn Python The Hard Way`_. You can also take a look at `this
+list of Python resources for non-programmers`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
+.. _Dive Into Python 3: http://www.diveintopython3.net
+.. _Python Tutorial: https://docs.python.org/3/tutorial
 .. _Learn Python The Hard Way: http://learnpythonthehardway.org/book/
+
 
 Creating a project
 ==================
@@ -45,7 +53,7 @@ This will create a ``tutorial`` directory with the following contents::
         tutorial/             # project's Python module, you'll import your code from here
             __init__.py
 
-            items.py          # project items file
+            items.py          # project items definition file
 
             pipelines.py      # project pipelines file
 
@@ -55,87 +63,63 @@ This will create a ``tutorial`` directory with the following contents::
                 __init__.py
 
 
-Defining our Item
-=================
-
-`Items` are containers that will be loaded with the scraped data; they work
-like simple Python dicts. While you can use plain Python dicts with Scrapy,
-`Items` provide additional protection against populating undeclared fields,
-preventing typos. They can also be used with :ref:`Item Loaders
-<topics-loaders>`, a mechanism with helpers to conveniently populate `Items`.
-
-They are declared by creating a :class:`scrapy.Item <scrapy.item.Item>` class and defining
-its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, much like in an ORM
-(don't worry if you're not familiar with ORMs, you will see that this is an
-easy task).
-
-We begin by modeling the item that we will use to hold the site's data obtained
-from quotes.toscrape.com. As we want to capture the text and author from each of
-the quotes listed there, we define fields for each of these three attributes. To do that, we edit
-``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
-
-    import scrapy
-
-    class QuoteItem(scrapy.Item):
-        text = scrapy.Field()
-        author = scrapy.Field()
-
-This may seem complicated at first, but defining an item class allows you to use other handy
-components and helpers within Scrapy.
-
 Our first Spider
 ================
 
-Spiders are classes that you define and Scrapy uses to scrape information from a
-domain (or group of domains).
+Spiders are classes that you define and that Scrapy uses to scrape information
+from a website (or a group of websites). They must subclass
+:class:`scrapy.Spider` and define the initial requests to make, optionally how
+to follow links in the pages, and how to parse the downloaded page content to
+extract data.
 
-They define an initial list of URLs to download, how to follow links, and how
-to parse the contents of pages to extract :ref:`items <topics-items>`.
-
-To create a Spider, you must subclass :class:`scrapy.Spider
-<scrapy.spiders.Spider>` and define some attributes:
-
-* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
-  unique within a project, that is, you can't set the same name for different
-  Spiders.
-
-* :attr:`~scrapy.spiders.Spider.start_urls`: a list of URLs where the
-  Spider will begin to crawl from. The first pages downloaded will be those
-  listed here. The subsequent URLs will be generated successively from data
-  contained in the start URLs.
-
-* :meth:`~scrapy.spiders.Spider.parse`: a method of the spider, which will
-  be called with the downloaded :class:`~scrapy.http.Response` object of each
-  start URL. The response is passed to the method as the first and only
-  argument.
-
-  This method is responsible for parsing the response data and extracting
-  scraped data (as scraped items) and more URLs to follow.
-
-  The :meth:`~scrapy.spiders.Spider.parse` method is in charge of processing
-  the response and returning scraped data (as :class:`~scrapy.item.Item`
-  objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
-
-This is the code for our first Spider; save it in a file named
-``quotes_spider.py`` under the ``tutorial/spiders`` directory::
+This is the code for our first Spider. Save it in a file named
+``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
 
     import scrapy
 
 
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
-        start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
-        ]
+
+        def start_requests(self):
+            urls = [
+                'http://quotes.toscrape.com/page/1/',
+                'http://quotes.toscrape.com/page/2/',
+            ]
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
 
         def parse(self, response):
-            filename = 'quotes-' + response.url.split("/")[-2] + '.html'
+            page = response.url.split("/")[-2]
+            filename = 'quotes-%s.html' % page
             with open(filename, 'wb') as f:
                 f.write(response.body)
+            self.log('Saved file %s' % filename)
 
-Crawling
---------
+
+As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
+and defines some attributes and methods:
+
+* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
+  unique within a project, that is, you can't set the same name for different
+  Spiders.
+
+* :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
+  Requests (you can return a list of requests or write a generator function)
+  which the Spider will begin to crawl from. Subsequent requests will be
+  generated successively from these initial requests.
+
+* :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
+  the response downloaded for each of the requests made. The response parameter
+  is an instance of :class:`~scrapy.http.TextResponse` that holds
+  the page content and has further helpful methods to handle it.
+
+  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
+  the scraped data as dicts and also finding new URLs to
+  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+
+How to run our spider
+---------------------
 
 To put our spider to work, go to the project's top level directory and run::
 
@@ -145,117 +129,75 @@ This command runs the spider with name ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
+    ... (omitted for brevity)
+    2016-09-20 14:48:00 [scrapy] INFO: Spider opened
+    2016-09-20 14:48:00 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2016-09-20 14:48:00 [scrapy] DEBUG: Telnet console listening on 127.0.0.1:6023
+    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
+    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-1.html
+    2016-09-20 14:48:01 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
+    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-2.html
+    2016-09-20 14:48:01 [scrapy] INFO: Closing spider (finished)
+    ...
 
-    2016-09-01 16:51:27 [scrapy] INFO: Scrapy started (bot: tutorial)
-    2016-09-01 16:51:27 [scrapy] INFO: Overridden settings: {...}
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled extensions: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled downloader middlewares: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled spider middlewares: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Enabled item pipelines: ...
-    2016-09-01 16:51:27 [scrapy] INFO: Spider opened
-    2016-09-01 16:51:27 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
-    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
-    2016-09-01 16:51:28 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
-    2016-09-01 16:51:29 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
-    2016-09-01 16:51:29 [scrapy] INFO: Closing spider (finished)
+Now, check the files in the current directory. You should notice that two new
+files have been created: *quotes-1.html* and *quotes-2.html*, with the content
+for the respective URLs, as our ``parse`` method instructs.
 
-.. note::
-    At the end you can see a log line for each URL defined in ``start_urls``.
-    Because these URLs are the starting ones, they have no referrers, which is
-    shown at the end of the log line, where it says ``(referer: None)``.
+.. note:: If you are wondering why we haven't parsed the HTML yet, hold
+  on, we will cover that soon.
 
-Now, check the files in the current directory. You should notice two new files
-have been created: *quotes-1.html* and *quotes-2.html*, with the content for the respective
-URLs, as our ``parse`` method instructs.
 
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy creates :class:`scrapy.Request <scrapy.http.Request>` objects
-for each URL in the ``start_urls`` attribute of the Spider, and assigns
-them the ``parse`` method of the spider as their callback function.
-
-These Requests are scheduled, then executed, and :class:`scrapy.http.Response`
-objects are returned and then fed back to the spider, through the
-:meth:`~scrapy.spiders.Spider.parse` method.
-
-Extracting Items
-----------------
-
-Introduction to Selectors
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-There are several ways to extract data from web pages. Scrapy uses a mechanism
-based on `XPath`_ or `CSS`_ expressions called :ref:`Scrapy Selectors
-<topics-selectors>`.  For more information about selectors and other extraction
-mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
-
-.. _XPath: https://www.w3.org/TR/xpath
-.. _CSS: https://www.w3.org/TR/selectors
-
-Here are some examples of XPath expressions and their meanings:
-
-* ``/html/head/title``: selects the ``<title>`` element, inside the ``<head>``
-  element of an HTML document. Equivalent CSS selector: ``html > head > title``.
-
-* ``/html/head/title/text()``: selects the text inside the aforementioned
-  ``<title>`` element. Equivalent CSS selector: ``html > head > title ::text``.
-
-* ``//td``: selects all the ``<td>`` elements from the whole document.
-  Equivalent CSS selector: ``td``.
-
-* ``//div[@class="mine"]``: selects all ``div`` elements which contain an
-  attribute ``class="mine"``. Equivalent CSS selector: ``div.mine``.
-
-These are just a couple of simple examples of what you can do with XPath, but
-XPath expressions are indeed much more powerful. To learn more about XPath, we
-recommend `this tutorial to learn XPath through examples
-<http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
-to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
-
-.. note:: **CSS vs XPath:** you can go a long way extracting data from web pages
-  using only CSS selectors. However, XPath offers more power because besides
-  navigating the structure, it can also look at the content: you're
-  able to select things like: *the link that contains the text 'Next Page'*.
-  Because of this, we encourage you to learn about XPath even if you
-  already know how to construct CSS selectors.
-
-For working with CSS and XPath expressions, Scrapy provides the
-:class:`~scrapy.selector.Selector` class and convenient shortcuts to avoid
-instantiating selectors yourself every time you need to select something from a
-response.
-
-You can see selectors as objects that represent nodes in the document
-structure. So, the first instantiated selectors are associated with the root
-node, or the entire document.
-
-Selectors have four basic methods (click on the method to see the complete API
-documentation):
-
-* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
-  which represents the nodes selected by the xpath expression given as
-  argument.
-
-* :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
-  which represents the nodes selected by the CSS expression given as argument.
-
-* :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
-  selected data.
-
-* :meth:`~scrapy.selector.Selector.re`: returns a list of unicode strings
-  extracted by applying the regular expression given as argument.
+Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
+returned by the ``start_requests`` method of the Spider. Upon receiving a
+response for each one, it instantiates :class:`~scrapy.http.Response` objects
+and calls the callback method associated with the request (in this case, the
+``parse`` method) passing the response as argument.
 
 
-Trying Selectors in the Shell
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A shortcut to the start_requests method
+---------------------------------------
+Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
+that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
+you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
+with a list of URLs. This list will then be used by the default implementation
+of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
+for your spider::
 
-To illustrate the use of Selectors we're going to use the built-in :ref:`Scrapy
-shell <topics-shell>`, which also requires `IPython <http://ipython.org/>`_ (an extended Python console)
-installed on your system.
+    import scrapy
 
-To start a shell, you must go to the project's top level directory and run::
 
-    scrapy shell "http://quotes.toscrape.com"
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+            'http://quotes.toscrape.com/page/1/',
+            'http://quotes.toscrape.com/page/2/',
+        ]
+
+        def parse(self, response):
+            page = response.url.split("/")[-2]
+            filename = 'quotes-%s.html' % page
+            with open(filename, 'wb') as f:
+                f.write(response.body)
+
+The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
+of the requests for those URLs, even though we haven't explicitly told Scrapy
+to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
+default callback method, which is called for requests without an explicitly
+assigned callback.
+
+
+Extracting data
+---------------
+
+The best way to learn how to extract data with Scrapy is trying selectors
+using the shell :ref:`Scrapy shell <topics-shell>`. Run::
+
+    scrapy shell 'http://quotes.toscrape.com/page/1/'
 
 .. note::
 
@@ -263,110 +205,205 @@ To start a shell, you must go to the project's top level directory and run::
    command-line, otherwise urls containing arguments (ie. ``&`` character)
    will not work.
 
-This is what the shell looks like::
+You will see something like::
 
     [ ... Scrapy log here ... ]
-
-    2016-09-01 18:14:39 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com> (referer: None)
+    2016-09-19 12:09:27 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x109001c90>
+    [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
     [s]   item       {}
-    [s]   request    <GET http://quotes.toscrape.com>
-    [s]   response   <200 http://quotes.toscrape.com>
-    [s]   settings   <scrapy.settings.Settings object at 0x109001610>
-    [s]   spider     <DefaultSpider 'default' at 0x1092808d0>
+    [s]   request    <GET http://quotes.toscrape.com/page/1/>
+    [s]   response   <200 http://quotes.toscrape.com/page/1/>
+    [s]   settings   <scrapy.settings.Settings object at 0x7fa91d888c10>
+    [s]   spider     <DefaultSpider 'default' at 0x7fa91c8af990>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
-    
-    >>>
+    >>> 
 
-After the shell loads, you will have the response fetched in a local
-``response`` variable, so if you type ``response.body`` you will see the body
-of the response, or you can type ``response.headers`` to see its headers.
+Using the shell, you can try selecting elements using `CSS`_ with the response
+object::
 
-More importantly ``response`` has a ``selector`` attribute which is an instance of
-:class:`~scrapy.selector.Selector` class, instantiated with this particular ``response``.
-You can run queries on ``response`` by calling ``response.selector.xpath()`` or
-``response.selector.css()``. There are also some convenience shortcuts like ``response.xpath()``
-or ``response.css()`` which map directly to ``response.selector.xpath()`` and
-``response.selector.css()``.
+    >>> response.css('title')
+    [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
+
+The result of running ``response.css('title')`` is a list-like object called
+:class:`~scrapy.selector.SelectorList`, which represents a list of
+:class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements
+and allow you to run further queries to fine-grain the selection or extract the
+data.
+
+To extract the text from the title above, you can do::
+
+    >>> response.css('title::text').extract()
+    ['Quotes to Scrape']
+
+There are two things to note here: one is that we've added ``::text`` to the
+CSS query, to mean we want to select only the text elements directly inside
+``<title>`` element.  If we don't specify ``::text``, we'd get the full title
+element, including its tags::
+
+    >>> response.css('title').extract()
+    ['<title>Quotes to Scrape</title>']
+
+The other thing is that the result of calling ``.extract()`` is a list, because
+we're dealing with an instance of :class:`~scrapy.selector.SelectorList`.  When
+you know you just want the first result, as in this case, you can do::
+
+    >>> response.css('title::text').extract_first()
+    'Quotes to Scrape'
+
+As an alternative, you could've written::
+
+    >>> response.css('title::text')[0].extract()
+    'Quotes to Scrape'
+
+However, using ``.extract_first()`` avoids an ``IndexError`` and returns
+``None`` when it doesn't find any element matching the selection.
+
+There's a lesson here: for most scraping code, you want it to be resilient to
+errors due to things not being found on a page, so that even if some parts fail
+to be scraped, you can at least get **some** data.
+
+Besides the :meth:`~scrapy.selector.Selector.extract` and
+:meth:`~scrapy.selector.SelectorList.extract_first` methods, you can also use
+the :meth:`~scrapy.selector.Selector.re` method to extract using `regular
+expressions`::
+
+    >>> response.css('title::text').re(r'Quotes.*')
+    ['Quotes to Scrape']
+    >>> response.css('title::text').re(r'Q\w+')
+    ['Quotes']
+    >>> response.css('title::text').re(r'(\w+) to (\w+)')
+    ['Quotes', 'Scrape']
+
+In order to find the proper CSS selectors to use, you might find useful opening
+the response page from the shell in your web browser using ``view(response)``.
+You can use your browser developer tools or extensions like Firebug (see
+sections about :ref:`topics-firebug` and :ref:`topics-firefox`).
+
+`Selector Gadget`_ is also a nice tool to quickly find CSS selector for
+visually selected elements, which works in many browsers.
+
+.. _regular expressions: https://docs.python.org/3/library/re.html
+.. _Selector Gadget: http://selectorgadget.com/
 
 
-So let's try it::
+XPath: a brief intro
+^^^^^^^^^^^^^^^^^^^^
 
-    In [1]: response.xpath('//title')
-    Out[1]: [<Selector xpath='//title' data=u'<title>Quotes to Scrape</title>'>] 
-    
-    In [2]: response.xpath('//title').extract()
-    Out[2]: [u'<title>Quotes to Scrape</title>']
-    
-    In [3]: response.xpath('//title/text()')
-    Out[3]: [<Selector xpath='//title/text()' data=u'Quotes to Scrape'>]
+Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
 
-    In [4]: response.xpath('//title/text()').extract()
-    Out[4]: [u'Quotes to Scrape']
-    
-    In [11]: response.xpath('//title/text()').re('(\w+)')
-    Out[11]: [u'Quotes', u'to', u'Scrape']
+    >>> response.xpath('//title')
+    [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
+    >>> response.xpath('//title/text()').extract_first()
+    'Quotes to Scrape'
 
-Extracting the data
-^^^^^^^^^^^^^^^^^^^
+XPath expressions are very powerful, and are the foundation of Scrapy
+Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You
+can see that if you read closely the text representation of the selector
+objects in the shell.
 
-Now, let's try to extract some real information from those pages.
+While perhaps not as popular as CSS selectors, XPath expressions offer more
+power because besides navigating the structure, it can also look at the
+content. Using XPath, you're able to select things like: *select the link
+that contains the text "Next Page"*. This makes XPath very fitting to the task
+of scraping, and we encourage you to learn XPath even if you already know how to
+construct CSS selectors, it will make scraping much easier.
 
-You could type ``response.body`` in the console, and inspect the source code to
-figure out the XPaths you need to use. However, inspecting the raw HTML code
-there could become a very tedious task. To make it easier, you can
-use Firefox Developer Tools or some Firefox extensions like Firebug. For more
-information see :ref:`topics-firebug` and :ref:`topics-firefox`.
+We won't cover much of XPath here, but you can read more about :ref:`using XPath
+with Scrapy Selectors here <topics-selectors>`. To learn more about XPath, we
+recommend `this tutorial to learn XPath through examples
+<http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
+to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-After inspecting the page source, you'll find that every quote in the website
-is inside a separate ``<div class="quote">`` element, such as::
+.. _XPath: https://www.w3.org/TR/xpath
+.. _CSS: https://www.w3.org/TR/selectors
+
+Extracting quotes and authors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Now that you know a bit about selection and extraction, let's complete our
+spider by writing the code to extract the quotes from the web page.
+
+Each quote in http://quotes.toscrape.com is represented by HTML elements that look
+like this:
+
+.. code-block:: html
 
     <div class="quote">
-        <span class="text">“We accept the love we think we deserve.”</span>
-        <span>by <small class="author">Stephen Chbosky</small></span>
+        <span class="text">“The world as we have created it is a process of our
+        thinking. It cannot be changed without changing our thinking.”</span>
+        <span>
+            by <small class="author">Albert Einstein</small>
+            <a href="/author/Albert-Einstein">(about)</a>
+        </span>
         <div class="tags">
             Tags:
-            <meta class="keywords"> 
-            <a class="tag" href="/tag/inspirational/page/1/">inspirational</a>
-            <a class="tag" href="/tag/love/page/1/">love</a>
+            <a class="tag" href="/tag/change/page/1/">change</a>
+            <a class="tag" href="/tag/deep-thoughts/page/1/">deep-thoughts</a>
+            <a class="tag" href="/tag/thinking/page/1/">thinking</a>
+            <a class="tag" href="/tag/world/page/1/">world</a>
         </div>
     </div>
 
+Let's open up scrapy shell and play a bit to find out how to extract the data
+we want::
 
-So we can select each ``<div class="quote">`` element belonging to the site's 
-list with this code::
+    $ scrapy shell 'http://quotes.toscrape.com'
 
-    response.xpath('//div[@class="quote"]')
+We get a list of selectors for the quote HTML elements with::
 
-From the quote elements, we can select the texts with::
+    >>> response.css("div.quote")
 
-    response.xpath('//div[@class="quote"]/span[@class="text"]/text()').extract()
+Each of the selectors returned by the query above allows us to run further
+queries over their sub-elements. Let's assign the first selector to a
+variable, so that we can run our CSS selectors directly on a particular quote::
 
-The authors::
+    >>> quote = response.css("div.quote")[0]
 
-    response.xpath('//div[@class="quote"]/span/small/text()').extract()
+Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+using the ``quote`` object we just created::
 
-As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
-concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
-that property here, so::
+    >>> title = quote.css("span.text::text").extract_first()
+    >>> title
+    '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
+    >>> author = quote.css("small.author::text").extract_first()
+    >>> author
+    'Albert Einstein'
 
-    for quote in response.xpath('//div[@class="quote"]'):
-        text = quote.xpath('span[@class="text"]/text()').extract()
-        author = quote.xpath('span/small/text()').extract()
-        print('{}: {}'.format(author, text))
+Given that the tags are a list of strings, we can use the ``.extract()`` method
+to get all of them::
 
-.. note::
+    >>> tags = quote.css("div.tags a.tag::text").extract()
+    >>> tags
+    ['change', 'deep-thoughts', 'thinking', 'world']
 
-    For a more detailed description of using nested selectors, see
-    :ref:`topics-selectors-nesting-selectors` and
-    :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
-    documentation
+Having figured out how to extract each bit, we can now iterate over all the
+quotes elements and put them together into a Python dictionary::
 
-Let's add this code to our spider::
+    >>> for quote in response.css("div.quote"):
+    ...     text = quote.css("span.text::text").extract_first()
+    ...     author = quote.css("small.author::text").extract_first()
+    ...     tags = quote.css("div.tags a.tag::text").extract()
+    ...     print(dict(text=text, author=author, tags=tags))
+    {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
+    {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
+        ... a few more of these, omitted for brevity
+    >>>
+
+Extracting data in our spider
+------------------------------
+
+Let's get back to our spider. Until now, it doesn't extract any data in
+particular, just saves the whole HTML page to a local file. Let's integrate the
+extraction logic above into our spider.
+
+A Scrapy spider typically generates many dictionaries containing the data
+extracted from the page. To do that, we use the ``yield`` Python keyword
+in the callback, as you can see below::
 
     import scrapy
 
@@ -379,78 +416,96 @@ Let's add this code to our spider::
         ]
 
         def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
-                text = quote.xpath('span[@class="text"]/text()').extract_first()
-                author = quote.xpath('span/small/text()').extract_first()
-                print(u'{}: {}'.format(author, text))
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small::text').extract_first(),
+                    'tags': quote.css('div.tags a.tag::text').extract(),
+                }
 
-Note how we've changed to use the method ``.extract_first()``, which extracts
-the first element from a selector list returned by ``.xpath()``.
+If you run this spider, it will output the extracted data with the log::
 
-Now try crawling quotes.toscrape.com again and you'll see sites being printed
-in your output. Run::
-
-    scrapy crawl quotes
-
-Using our item
---------------
-
-:class:`~scrapy.item.Item` objects are custom Python dicts; you can access the
-values of their fields (attributes of the class we defined earlier) using the
-standard dict syntax like::
-    
-    >>> from tutorial.items import QuoteItem
-    >>> item = QuoteItem()
-    >>> item['text'] = 'Some random quote'
-    >>> item['text']
-    'Some random quote'
-
-So, in order to return the data we've scraped so far, the final code for our
-Spider would be like this::
-
-    import scrapy
-    from tutorial.items import QuoteItem
+    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
+    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    {'tags': ['edison', 'failure', 'inspirational', 'paraphrased'], 'author': 'Thomas A. Edison', 'text': "“I have not failed. I've just found 10,000 ways that won't work.”"}
 
 
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-        start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
-        ]
+.. _storing-data:
 
-        def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
-                item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
-                item['author'] = quote.xpath('span/small/text()').extract_first()
-                yield item
+Storing the scraped data
+========================
 
+The simplest way to store the scraped data is by using :ref:`Feed exports
+<topics-feed-exports>`, with the following command::
 
-Now crawling quotes.toscrape.com yields ``QuoteItem`` objects::
+    scrapy crawl quotes -o quotes.json
 
-    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': 'Oscar Wilde',
-     'text': '“We are all in the gutter, but some of us are looking at the stars.”'}
-    2016-09-02 16:35:20 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/2/>
-    {'author': 'Mark Twain',
-     'text': '“The man who does not read has no advantage over the man who cannot read.”'}
+That will generate an ``quotes.json`` file containing all scraped items,
+serialized in `JSON`_.
+
+For historic reasons, Scrapy appends to a given file instead of overwriting
+its contents. If you run this command twice without removing the file
+before the second time, you'll end up with a broken JSON file.
+
+You can also used other formats, like `JSON Lines`_::
+
+    scrapy crawl quotes -o quotes.jl
+
+The `JSON Lines`_ format is useful because it's stream-like, you can easily
+append new records to it. It doesn't have the same problem of JSON when you run
+twice. Also, as each record is a separate line, you can process big files
+without having to fit everything in memory, there are tools like `JQ`_ to help
+doing that at the command-line.
+
+In small projects (like the one in this tutorial), that should be enough.
+However, if you want to perform more complex things with the scraped items, you
+can write an :ref:`Item Pipeline <topics-item-pipeline>`. A placeholder file
+for Item Pipelines has been set up for you when the project is created, in
+``tutorial/pipelines.py``. Though you don't need to implement any item
+pipelines if you just want to store the scraped items.
+
+.. _JSON Lines: http://jsonlines.org
+.. _JQ: https://stedolan.github.io/jq
 
 
 Following links
 ===============
 
 Let's say, instead of just scraping the stuff from the first two pages
-from quotes.toscrape.com, you want quotes from all the pages in the website.
+from http://quotes.toscrape.com, you want quotes from all the pages in the website.
 
-Now that you know how to extract data from a page, why not extract the
-pagination links in each page, follow them and then extract the data you
-want for all of them?
+Now that you know how to extract data from pages, let's see how to follow links
+from them.
 
-Here is a modification to our spider that does just that::
+First thing is to extract the link to the page we want to follow.  Examining
+our page, we can see there is a link to the next page with the following
+markup:
+
+.. code-block:: html
+
+    <ul class="pager">
+        <li class="next">
+            <a href="/page/2/">Next <span aria-hidden="true">&rarr;</span></a>
+        </li>
+    </ul>
+
+We can try extracting it in the shell::
+
+    >>> response.css('li.next a').extract_first()
+    '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
+
+This gets the anchor element, but we want the attribute ``href``. For that,
+Scrapy supports a CSS extension that let's you select the attribute contents,
+like this::
+
+    >>> response.css('li.next a::attr(href)').extract_first()
+    '/page/2/'
+
+Let's see now our spider modified to recursively follow the link to the next
+page, extracting data from it::
 
     import scrapy
-    from tutorial.items import QuoteItem
 
 
     class QuotesSpider(scrapy.Spider):
@@ -460,19 +515,25 @@ Here is a modification to our spider that does just that::
         ]
 
         def parse(self, response):
-            for quote in response.xpath('//div[@class="quote"]'):
-                item = QuoteItem()
-                item['text'] = quote.xpath('span[@class="text"]/text()').extract_first()
-                item['author'] = quote.xpath('span/small/text()').extract_first()
-                yield item
-            next_page = response.xpath('//li[@class="next"]/a/@href').extract_first()
-            if next_page:
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small::text').extract_first(),
+                    'tags': quote.css('div.tags a.tag::text').extract(),
+                }
+
+            next_page = response.css('li.next a::attr(href)').extract_first()
+            if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
 
-Now after extracting an item the `parse()` method looks for the link to the next page, 
-builds a full absolute URL using the `response.urljoin` method (since the links can
-be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages.
+
+Now, after extracting the data, the ``parse()`` method looks for the link to
+the next page, builds a full absolute URL using the
+:meth:`~scrapy.http.Response.urljoin` method (since the links can be
+relative) and yields a new request to the next page, registering itself as
+callback to handle the data extraction for the next page and to keep the
+crawling going through all the pages.
 
 What you see here is Scrapy's mechanism of following links: when you yield
 a Request in a callback method, Scrapy will schedule that request to be sent
@@ -486,34 +547,116 @@ In our example, it creates a sort of loop, following all the links to the next p
 until it doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
-Another common pattern is to build an item with data from more than one page,
+More examples and patterns
+--------------------------
+
+Here is another spider that illustrates callbacks and following links,
+this time for scraping author information::
+
+
+    import scrapy
+
+
+    class AuthorSpider(scrapy.Spider):
+        name = 'author'
+
+        start_urls = ['http://quotes.toscrape.com/']
+
+        def parse(self, response):
+            # follow links to author pages
+            for href in response.css('.author a::attr(href)').extract():
+                yield scrapy.Request(response.urljoin(href),
+                                     callback=self.parse_author)
+
+            # follow pagination links
+            next_page = response.css('li.next a::attr(href)').extract_first()
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse)
+
+        def parse_author(self, response):
+            def extract_with_css(query):
+                return response.css(query).extract_first().strip()
+
+            yield {
+                'name': extract_with_css('h3.author-title::text'),
+                'birthdate': extract_with_css('.author-born-date::text'),
+                'bio': extract_with_css('.author-description::text'),
+            }
+
+This spider will start from the main page, it will follow all the links to the
+authors pages calling the ``parse_author`` callback for each of them, and also
+the pagination links with the ``parse`` callback as we saw before.
+
+The ``parse_author`` callback defines a helper function to extract and cleanup the
+data from a CSS query and yields the Python dict with the author data.
+
+Another interesting thing this spider demonstrates is that, even if there are
+many quotes from the same author, we don't need to worry about visiting the
+same author page multiple times. By default, Scrapy filters out duplicated
+requests to URLs already visited, avoiding the problem of hitting servers too
+much because of a programming mistake. This can be configured by the setting
+:setting:`DUPEFILTER_CLASS`.
+
+Hopefully by now you have a good understanding of how to use the mechanism
+of following links and callbacks with Scrapy.
+
+As yet another example spider that leverages the mechanism of following links,
+check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
+spider that implements a small rules engine that you can use to write your
+crawlers on top of it.
+
+Also, a common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks
 <topics-request-response-ref-request-callback-arguments>`.
 
 
-.. note::
-    As an example spider that leverages this mechanism, check out the
-    :class:`~scrapy.spiders.CrawlSpider` class for a generic spider
-    that implements a small rules engine that you can use to write your
-    crawlers on top of it.
+Using spider arguments
+======================
 
-Storing the scraped data
-========================
+You can provide command line arguments to your spiders by using the ``-a``
+option when running them::
 
-The simplest way to store the scraped data is by using :ref:`Feed exports
-<topics-feed-exports>`, with the following command::
+    scrapy crawl quotes -o quotes-humor.json -a tag=humor
 
-    scrapy crawl quotes -o items.json
+These arguments are passed to the Spider's ``__init__`` method and become
+spider attributes by default.  
 
-That will generate an ``items.json`` file containing all scraped items,
-serialized in `JSON`_.
+In this example, the value provided for the ``tag`` argument will be available
+via ``self.tag``. You can use this to make your spider fetch only quotes
+with a specific tag, building the URL based on the argument::
 
-In small projects (like the one in this tutorial), that should be enough.
-However, if you want to perform more complex things with the scraped items, you
-can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
-placeholder file for Item Pipelines has been set up for you when the project is
-created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
-pipelines if you just want to store the scraped items.
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+
+        def start_requests(self):
+            url = 'http://quotes.toscrape.com/'
+            tag = getattr(self, 'tag', None)
+            if tag is not None:
+                url = url + 'tag/' + tag
+            yield scrapy.Request(url, self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small a::text').extract_first(),
+                }
+
+            next_page = response.css('li.next a::attr(href)').extract_first()
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, self.parse)
+
+
+If you pass the ``tag=humor`` argument to this spider, you'll notice that it
+will only visit URLs from the ``humor`` tag, such as
+``http://quotes.toscrape.com/tag/humor``.
+
+You can :ref:`learn more about handling spider arguments here <spiderargs>`.
 
 Next steps
 ==========
@@ -522,9 +665,10 @@ This tutorial covered only the basics of Scrapy, but there's a lot of other
 features not mentioned here. Check the :ref:`topics-whatelse` section in
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
 
-Then, we recommend you continue by playing with an example project (see
-:ref:`intro-examples`), and then continue with the section
-:ref:`section-basics`.
+You can continue from the section :ref:`section-basics` to know more about the
+command-line tool, spiders, selectors and other things the tutorial hasn't covered like
+modeling the scraped data. If you prefer to play with an example project, check
+the :ref:`intro-examples` section.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
 .. _dirbot: https://github.com/scrapy/dirbot
