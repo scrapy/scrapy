@@ -115,6 +115,9 @@ class Shell(object):
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
+        import scrapy
+
+        self.vars['scrapy'] = scrapy
         self.vars['crawler'] = self.crawler
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
@@ -136,6 +139,7 @@ class Shell(object):
     def get_help(self):
         b = []
         b.append("Available Scrapy objects:")
+        b.append("  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)")
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
                 b.append("  %-10s %s" % (k, v))

@@ -57,6 +57,13 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks
+    def test_scrapy_import(self):
+        url = self.url('/text')
+        code = "fetch(scrapy.Request('{0}'))"
+        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        self.assertEqual(errcode, 0, out)
+
+    @defer.inlineCallbacks
     def test_local_file(self):
         filepath = join(tests_datadir, 'test_site/index.html')
         _, out, _ = yield self.execute([filepath, '-c', 'item'])

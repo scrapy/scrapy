@@ -13,7 +13,9 @@ def _embed_ipython_shell(namespace={}, banner=''):
     @wraps(_embed_ipython_shell)
     def wrapper(namespace=namespace, banner=''):
         config = load_default_config()
-        shell = InteractiveShellEmbed(
+        # Always use .instace() to ensure _instance propagation to all parents
+        # this is needed for <TAB> completion works well for new imports
+        shell = InteractiveShellEmbed.instance(
             banner1=banner, user_ns=namespace, config=config)
         shell()
     return wrapper

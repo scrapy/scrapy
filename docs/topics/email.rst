@@ -35,6 +35,12 @@ And here is how to use it to send an e-mail (without attachments)::
 
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
+.. note::
+    As shown in the example above, ``to`` and ``cc`` need to be lists
+    of email addresses, not single addresses, and even for one recipient,
+    i.e. ``to="someone@example.com"`` will not work.
+
+
 MailSender class reference
 ==========================
 

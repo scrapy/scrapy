@@ -27,9 +27,10 @@ Each item pipeline component is a Python class that must implement the following
 
 .. method:: process_item(self, item, spider)
 
-   This method is called for every item pipeline component and must either return
-   a dict with data, :class:`~scrapy.item.Item` (or any descendant class) object 
-   or raise a :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
+   This method is called for every item pipeline component. :meth:`process_item`
+   must either: return a dict with data, return an :class:`~scrapy.item.Item`
+   (or any descendant class) object, return a `Twisted Deferred`_ or raise
+   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
    :param item: the item scraped
@@ -65,6 +66,8 @@ Additionally, they may also implement the following methods:
    :param crawler: crawler that uses this pipeline
    :type crawler: :class:`~scrapy.crawler.Crawler` object
 
+
+.. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Item pipeline example
 =====================
@@ -162,6 +165,52 @@ method and how to clean up the resources properly.
 
 .. _MongoDB: https://www.mongodb.org/
 .. _pymongo: https://api.mongodb.org/python/current/
+
+
+Take screenshot of item
+-----------------------
+
+This example demonstrates how to return Deferred_ from :meth:`process_item` method.
+It uses Splash_ to render screenshot of item url. Pipeline
+makes request to locally running instance of Splash_. After request is downloaded
+and Deferred callback fires, it saves item to a file and adds filename to an item.
+
+::
+
+    import scrapy
+
+
+    class ScreenshotPipeline(object):
+        """Pipeline that uses Splash to render screenshot of
+        every Scrapy item."""
+
+        SPLASH_URL = "http://localhost:8050/render.png?url={}"
+
+        def process_item(self, item, spider):
+            item_url = item["url"]
+            screenshot_url = self.SPLASH_URL.format(item_url)
+            request = scrapy.Request(screenshot_url)
+            dfd = spider.crawler.engine.download(request, spider)
+            dfd.addBoth(self.return_item, item)
+            return dfd
+
+        def return_item(self, response, item):
+            if response.status != 200:
+                # Error happened, return item.
+                return item
+
+            # Save screenshot to file.
+            filename = "item_file_name.png"
+            with open(filename, "wb") as f:
+                f.write(response.body)
+
+            # Store filename in item.
+            item["screenshot_filename"] = filename
+            return item
+
+
+.. _Splash: http://splash.readthedocs.io/en/stable/
+.. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
 -----------------

@@ -46,14 +46,29 @@ Refactoring
 Documentation
 ~~~~~~~~~~~~~
 
-- :ref:`Overview <intro-overview>` and :ref:`tutorial <intro-tutorial>`
-  rewritten to use http://toscrape.com websites (:issue:`2236`, :issue:`2249`).
 - Grammar fixes: :issue:`2128`, :issue:`1566`.
 - Download stats badge removed from README (:issue:`2160`).
 - New scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
 - Updated ``Response`` parameters documentation (:issue:`2197`).
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
+
+
+1.1.3 (2016-09-22)
+------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Class attributes for subclasses of ``ImagesPipeline`` and ``FilesPipeline``
+  work as they did before 1.1.1 (:issue:`2243`, fixes :issue:`2198`)
+
+Documentation
+~~~~~~~~~~~~~
+
+- :ref:`Overview <intro-overview>` and :ref:`tutorial <intro-tutorial>`
+  rewritten to use http://toscrape.com websites
+  (:issue:`2236`, :issue:`2249`, :issue:`2252`).
 
 
 1.1.2 (2016-08-18)

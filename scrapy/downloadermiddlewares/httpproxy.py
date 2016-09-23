@@ -43,7 +43,7 @@ class HttpProxyMiddleware(object):
         return creds, proxy_url
 
     def process_request(self, request, spider):
-        # ignore if proxy is already seted
+        # ignore if proxy is already set
         if 'proxy' in request.meta:
             return
 
