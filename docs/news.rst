@@ -10,8 +10,10 @@ New Features
 ~~~~~~~~~~~~
 
 - New :setting:`FEED_EXPORT_ENCODING` setting to customize the encoding
-  used when writing items to a file. This is useful for those wanting
-  something else than UTF-8 for XML or CSV output (:issue:`2034`).
+  used when writing items to a file.
+  This can be used to turn off ``\uXXXX`` escapes in JSON output.
+  This is also useful for those wanting something else than UTF-8
+  for XML or CSV output (:issue:`2034`).
 - ``startproject`` command now supports an optional destination directory
   to override the default one based on the project name (:issue:`2005`).
 - New :setting:`SCHEDULER_DEBUG` setting to log requests serialization
