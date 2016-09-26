@@ -9,7 +9,7 @@ Release notes
 Requirements
 ~~~~~~~~~~~~
 
-Scrapy's new requirements baseline is Debian 7 Jessie. It was previously
+Scrapy's new requirements baseline is Debian 8 "Jessie". It was previously
 Ubuntu 12.04 Precise.
 What this means in practice is that we run continuous integration tests
 with these (main) packages versions at a minimum:
