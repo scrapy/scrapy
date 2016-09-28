@@ -29,20 +29,20 @@ Data flow
 The data flow in Scrapy is controlled by the execution engine, and goes like
 this:
 
-1. The :ref:`Engine <component-engine>` gets the first URLs to crawl from the
+1. The :ref:`Engine <component-engine>` gets the first Requests to crawl from the
    :ref:`Spider <component-spiders>`.
 
-2. The :ref:`Engine <component-engine>` schedules the URLs in the
-   :ref:`Scheduler <component-scheduler>` as Requests and asks for the
-   next URLs to crawl.
+2. The :ref:`Engine <component-engine>` schedules the Requests in the
+   :ref:`Scheduler <component-scheduler>` and asks for the
+   next Requests to crawl.
 
-3. The :ref:`Scheduler <component-scheduler>` returns the next URLs to crawl
+3. The :ref:`Scheduler <component-scheduler>` returns the next Requests
    to the :ref:`Engine <component-engine>`.
 
-4. The :ref:`Engine <component-engine>` sends the URLs to the
+4. The :ref:`Engine <component-engine>` sends the Requests to the
    :ref:`Downloader <component-downloader>`, passing through the
    :ref:`Downloader Middleware <component-downloader-middleware>`
-   (request direction).
+   (requests direction).
 
 5. Once the page finishes downloading the
    :ref:`Downloader <component-downloader>` generates a Response (with
@@ -62,10 +62,11 @@ this:
    :ref:`Spider Middleware <component-spider-middleware>` (output direction).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>` and processed Requests to
-   the :ref:`Scheduler <component-scheduler>`.
+   :ref:`Item Pipelines <component-pipelines>`, then sends processed Requests to
+   the :ref:`Scheduler <component-scheduler>` and asks for the next
+   Requests to crawl.
 
-9. The process repeats (from step 1) until there are no more requests from the
+9. The process repeats (from step 2) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
 Components
@@ -102,7 +103,7 @@ Spiders
 -------
 
 Spiders are custom classes written by Scrapy users to parse responses and
-extract items (aka scraped items) from them or additional URLs (requests) to
+extract items (aka scraped items) from them or additional requests to
 follow. For more information see :ref:`topics-spiders`.
 
 .. _component-pipelines:
