@@ -146,7 +146,7 @@ Windows
      Python 3 on Windows.
 
 Ubuntu 12.04 or above
---------------------
+---------------------
 
 Scrapy is currently tested with recent-enough versions of lxml,
 twisted and pyOpenSSL, and is compatible with with recent Ubuntu distributions.
