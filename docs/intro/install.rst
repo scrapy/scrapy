@@ -149,7 +149,7 @@ Ubuntu 12.04 or above
 ---------------------
 
 Scrapy is currently tested with recent-enough versions of lxml,
-twisted and pyOpenSSL, and is compatible with with recent Ubuntu distributions.
+twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions.
 But it should support older versions of Ubuntu too, like Ubuntu 12.04,
 albeit with potential issues with TLS connections.
 
