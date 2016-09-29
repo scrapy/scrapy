@@ -62,11 +62,10 @@ this:
    :ref:`Spider Middleware <component-spider-middleware>` (output direction).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>`, then sends processed Requests to
-   the :ref:`Scheduler <component-scheduler>` and asks for the next
-   Requests to crawl.
+   :ref:`Item Pipelines <component-pipelines>` and processed Requests to
+   the :ref:`Scheduler <component-scheduler>`.
 
-9. The process repeats (from step 2) until there are no more requests from the
+9. The process repeats (from step 1) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
 Components
