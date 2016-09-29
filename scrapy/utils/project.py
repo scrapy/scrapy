@@ -43,8 +43,9 @@ def project_data_dir(project='default'):
 
 
 def data_path(path, createdir=False):
-    """If inside the project and path is relative, return the given path
-    as relative to the project data dir, otherwise return it unmodified
+    """
+    Return the given path joined with the .scrapy data directory.
+    If given an absolute path, return it unmodified.
     """
     if not isabs(path):
         if inside_project():
