@@ -6,19 +6,6 @@ Release notes
 1.2.0 (YYYY-MM-DD)
 ------------------
 
-Requirements
-~~~~~~~~~~~~
-
-Scrapy's new requirements baseline is Debian 8 "Jessie". It was previously
-Ubuntu 12.04 Precise.
-What this means in practice is that we run continuous integration tests
-with these (main) packages versions at a minimum:
-Twisted 14.0, pyOpenSSL 0.14, lxml 3.4.
-
-Scrapy may very well work with older versions of these packages
-(the code base still has switches for older Twisted versions for example)
-but it is not guaranteed (because it's not tested anymore).
-
 New Features
 ~~~~~~~~~~~~
 
@@ -57,6 +44,19 @@ Refactoring
 - ``canonicalize_url`` has been moved to `w3lib.url`_ (:issue:`2168`).
 
 .. _w3lib.url: http://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.url.canonicalize_url
+
+Tests & Requirements
+~~~~~~~~~~~~~~~~~~~~
+
+Scrapy's new requirements baseline is Debian 8 "Jessie". It was previously
+Ubuntu 12.04 Precise.
+What this means in practice is that we run continuous integration tests
+with these (main) packages versions at a minimum:
+Twisted 14.0, pyOpenSSL 0.14, lxml 3.4.
+
+Scrapy may very well work with older versions of these packages
+(the code base still has switches for older Twisted versions for example)
+but it is not guaranteed (because it's not tested anymore).
 
 Documentation
 ~~~~~~~~~~~~~
