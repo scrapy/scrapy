@@ -29,7 +29,7 @@ Data flow
 The data flow in Scrapy is controlled by the execution engine, and goes like
 this:
 
-1. The :ref:`Engine <component-engine>` gets the first Requests to crawl from the
+1. The :ref:`Engine <component-engine>` gets the initial Requests to crawl from the
    :ref:`Spider <component-spiders>`.
 
 2. The :ref:`Engine <component-engine>` schedules the Requests in the
@@ -62,8 +62,9 @@ this:
    :ref:`Spider Middleware <component-spider-middleware>` (output direction).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>` and processed Requests to
-   the :ref:`Scheduler <component-scheduler>`.
+   :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to
+   the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
+   to crawl.
 
 9. The process repeats (from step 1) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
