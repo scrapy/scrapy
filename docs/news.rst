@@ -29,6 +29,9 @@ Bug fixes
 - DefaultRequestHeaders middleware now runs before UserAgent middleware
   (:issue:`2088`). **Warning: this is technically backwards incompatible**,
   though we consider this a bug fix.
+- HTTP cache extension and plugins that use the ``.scrapy`` data directory now
+  work outside projects (:issue:`1581`).  **Warning: this is technically
+  backwards incompatible**, though we consider this a bug fix.
 - ``Selector`` does not allow passing both ``response`` and ``text`` anymore
   (:issue:`2153`).
 - Fixed logging of wrong callback name with ``scrapy parse`` (:issue:`2169`).
