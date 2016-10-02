@@ -280,7 +280,7 @@ Whether to export empty feeds (ie. feeds with no items).
 FEED_STORAGES
 -------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing additional feed storage backends supported by your project.
 The keys are URI schemes and the values are paths to storage classes.
@@ -314,7 +314,7 @@ can disable any of these backends by assigning ``None`` to their URI scheme in
 FEED_EXPORTERS
 --------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing additional exporters supported by your project. The keys are
 serialization formats and the values are paths to :ref:`Item exporter
