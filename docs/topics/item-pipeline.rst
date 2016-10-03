@@ -106,8 +106,11 @@ format::
 
    class JsonWriterPipeline(object):
 
-       def __init__(self):
+       def open_spider(self, spider):
            self.file = open('items.jl', 'wb')
+
+       def close_spider(self, spider):
+           self.file.close()
 
        def process_item(self, item, spider):
            line = json.dumps(dict(item)) + "\n"
