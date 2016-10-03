@@ -3,8 +3,8 @@
 Release notes
 =============
 
-1.2.0 (YYYY-MM-DD)
-------------------
+Scrapy 1.2.0 (YYYY-MM-DD)
+-------------------------
 
 New Features
 ~~~~~~~~~~~~
@@ -72,8 +72,8 @@ Documentation
 - Add StackOverflow as a support channel (:issue:`2257`).
 
 
-1.1.3 (2016-09-22)
-------------------
+Scrapy 1.1.3 (2016-09-22)
+-------------------------
 
 Bug fixes
 ~~~~~~~~~
@@ -89,8 +89,8 @@ Documentation
   (:issue:`2236`, :issue:`2249`, :issue:`2252`).
 
 
-1.1.2 (2016-08-18)
-------------------
+Scrapy 1.1.2 (2016-08-18)
+-------------------------
 
 Bug fixes
 ~~~~~~~~~
@@ -103,8 +103,8 @@ Bug fixes
   (the regression was introduced in 1.1.1)
 
 
-1.1.1 (2016-07-13)
-------------------
+Scrapy 1.1.1 (2016-07-13)
+-------------------------
 
 Bug fixes
 ~~~~~~~~~
@@ -155,8 +155,8 @@ Tests
 - Upgrade py.test requirement on Travis CI and Pin pytest-cov to 2.2.1 (:issue:`2095`)
 
 
-1.1.0 (2016-05-11)
-------------------
+Scrapy 1.1.0 (2016-05-11)
+-------------------------
 
 This 1.1 release brings a lot of interesting features and bug fixes:
 
@@ -344,8 +344,8 @@ Bugfixes
   to same remote host (:issue:`1912`).
 
 
-1.0.6 (2016-05-04)
-------------------
+Scrapy 1.0.6 (2016-05-04)
+-------------------------
 
 - FIX: RetryMiddleware is now robust to non-standard HTTP status codes (:issue:`1857`)
 - FIX: Filestorage HTTP cache was checking wrong modified time (:issue:`1875`)
@@ -353,8 +353,8 @@ Bugfixes
 - DOC: Consistency in selectors examples (:issue:`1869`)
 
 
-1.0.5 (2016-02-04)
-------------------
+Scrapy 1.0.5 (2016-02-04)
+-------------------------
 
 - FIX: [Backport] Ignore bogus links in LinkExtractors (fixes :issue:`907`, :commit:`108195e`)
 - TST: Changed buildbot makefile to use 'pytest' (:commit:`1f3d90a`)
@@ -362,8 +362,8 @@ Bugfixes
 - DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
 
 
-1.0.4 (2015-12-30)
-------------------
+Scrapy 1.0.4 (2015-12-30)
+-------------------------
 
 - Ignoring xlib/tx folder, depending on Twisted version. (:commit:`7dfa979`)
 - Run on new travis-ci infra (:commit:`6e42f0b`)
@@ -414,14 +414,14 @@ Bugfixes
 - Small grammatical change (:commit:`8752294`)
 - Add openssl version to version command (:commit:`13c45ac`)
 
-1.0.3 (2015-08-11)
-------------------
+Scrapy 1.0.3 (2015-08-11)
+-------------------------
 
 - add service_identity to scrapy install_requires (:commit:`cbc2501`)
 - Workaround for travis#296 (:commit:`66af9cd`)
 
-1.0.2 (2015-08-06)
-------------------
+Scrapy 1.0.2 (2015-08-06)
+-------------------------
 
 - Twisted 15.3.0 does not raises PicklingError serializing lambda functions (:commit:`b04dd7d`)
 - Minor method name fix (:commit:`6f85c7f`)
@@ -430,8 +430,8 @@ Bugfixes
 - Fixed typos (:commit:`a9ae7b0`)
 - Fix doc reference. (:commit:`7c8a4fe`)
 
-1.0.1 (2015-07-01)
-------------------
+Scrapy 1.0.1 (2015-07-01)
+-------------------------
 
 - Unquote request path before passing to FTPClient, it already escape paths (:commit:`cc00ad2`)
 - include tests/ to source distribution in MANIFEST.in (:commit:`eca227e`)
@@ -440,8 +440,8 @@ Bugfixes
 - DOC remove version suffix from ubuntu package (:commit:`5303c66`)
 - DOC Update release date for 1.0 (:commit:`c89fa29`)
 
-1.0.0 (2015-06-19)
-------------------
+Scrapy 1.0.0 (2015-06-19)
+-------------------------
 
 You will find a lot of new features and bugfixes in this major release.  Make
 sure to check our updated :ref:`overview <intro-overview>` to get a glance of
@@ -806,8 +806,8 @@ Code refactoring
   (:issue:`805`)
 - rename "sflo" local variables to less cryptic "log_observer" (:issue:`775`)
 
-0.24.6 (2015-04-20)
--------------------
+Scrapy 0.24.6 (2015-04-20)
+--------------------------
 
 - encode invalid xpath with unicode_escape under PY2 (:commit:`07cb3e5`)
 - fix IPython shell scope issue and load IPython user config (:commit:`2c8e573`)
@@ -816,8 +816,8 @@ Code refactoring
 - Converted sel.xpath() calls to response.xpath() in Extracting the data (:commit:`c2c6d15`)
 
 
-0.24.5 (2015-02-25)
--------------------
+Scrapy 0.24.5 (2015-02-25)
+--------------------------
 
 - Support new _getEndpoint Agent signatures on Twisted 15.0.0 (:commit:`540b9bc`)
 - DOC a couple more references are fixed (:commit:`b4c454b`)
@@ -842,14 +842,14 @@ Code refactoring
 - Update request-response.rst (:commit:`3f3263d`)
 - SgmlLinkExtractor - fix for parsing <area> tag with Unicode present (:commit:`49b40f0`)
 
-0.24.4 (2014-08-09)
--------------------
+Scrapy 0.24.4 (2014-08-09)
+--------------------------
 
 - pem file is used by mockserver and required by scrapy bench (:commit:`5eddc68`)
 - scrapy bench needs scrapy.tests* (:commit:`d6cb999`)
 
-0.24.3 (2014-08-09)
--------------------
+Scrapy 0.24.3 (2014-08-09)
+--------------------------
 
 - no need to waste travis-ci time on py3 for 0.24 (:commit:`8e080c1`)
 - Update installation docs (:commit:`1d0c096`)
@@ -881,23 +881,23 @@ Code refactoring
 - better testcase for settings.overrides.setdefault (:commit:`e22daaf`)
 - Using CRLF as line marker according to http 1.1 definition (:commit:`5ec430b`)
 
-0.24.2 (2014-07-08)
--------------------
+Scrapy 0.24.2 (2014-07-08)
+--------------------------
 
 - Use a mutable mapping to proxy deprecated settings.overrides and settings.defaults attribute (:commit:`e5e8133`)
 - there is not support for python3 yet (:commit:`3cd6146`)
 - Update python compatible version set to debian packages (:commit:`fa5d76b`)
 - DOC fix formatting in release notes (:commit:`c6a9e20`)
 
-0.24.1 (2014-06-27)
--------------------
+Scrapy 0.24.1 (2014-06-27)
+--------------------------
 
 - Fix deprecated CrawlerSettings and increase backwards compatibility with
   .defaults attribute (:commit:`8e3f20a`)
 
 
-0.24.0 (2014-06-26)
--------------------
+Scrapy 0.24.0 (2014-06-26)
+--------------------------
 
 Enhancements
 ~~~~~~~~~~~~
@@ -976,15 +976,15 @@ Bugfixes
 - Testsuite doesn't require PIL anymore (:issue:`585`)
 
 
-0.22.2 (released 2014-02-14)
-----------------------------
+Scrapy 0.22.2 (released 2014-02-14)
+-----------------------------------
 
 - fix a reference to unexistent engine.slots. closes #593 (:commit:`13c099a`)
 - downloaderMW doc typo (spiderMW doc copy remnant) (:commit:`8ae11bf`)
 - Correct typos (:commit:`1346037`)
 
-0.22.1 (released 2014-02-08)
-----------------------------
+Scrapy 0.22.1 (released 2014-02-08)
+-----------------------------------
 
 - localhost666 can resolve under certain circumstances (:commit:`2ec2279`)
 - test inspect.stack failure (:commit:`cc3eda3`)
@@ -1012,8 +1012,8 @@ Bugfixes
 - fix 0.22.0 release date (:commit:`af0219a`)
 - fix typos in news.rst and remove (not released yet) header (:commit:`b7f58f4`)
 
-0.22.0 (released 2014-01-17)
-----------------------------
+Scrapy 0.22.0 (released 2014-01-17)
+-----------------------------------
 
 Enhancements
 ~~~~~~~~~~~~
@@ -1056,20 +1056,20 @@ Fixes
 - Fix tests runner under pip 1.5 (:issue:`513`)
 - Fix logging error when spider name is unicode (:issue:`479`)
 
-0.20.2 (released 2013-12-09)
-----------------------------
+Scrapy 0.20.2 (released 2013-12-09)
+-----------------------------------
 
 - Update CrawlSpider Template with Selector changes (:commit:`6d1457d`)
 - fix method name in tutorial. closes GH-480 (:commit:`b4fc359`
 
-0.20.1 (released 2013-11-28)
-----------------------------
+Scrapy 0.20.1 (released 2013-11-28)
+-----------------------------------
 
 - include_package_data is required to build wheels from published sources (:commit:`5ba1ad5`)
 - process_parallel was leaking the failures on its internal deferreds.  closes #458 (:commit:`419a780`)
 
-0.20.0 (released 2013-11-08)
-----------------------------
+Scrapy 0.20.0 (released 2013-11-08)
+-----------------------------------
 
 Enhancements
 ~~~~~~~~~~~~
@@ -1156,15 +1156,15 @@ List of contributors sorted by number of commits::
       1 cacovsky <amarquesferraz@...>
       1 Berend Iwema <berend@...>
 
-0.18.4 (released 2013-10-10)
-----------------------------
+Scrapy 0.18.4 (released 2013-10-10)
+-----------------------------------
 
 - IPython refuses to update the namespace. fix #396 (:commit:`3d32c4f`)
 - Fix AlreadyCalledError replacing a request in shell command. closes #407 (:commit:`b1d8919`)
 - Fix start_requests laziness and early hangs (:commit:`89faf52`)
 
-0.18.3 (released 2013-10-03)
-----------------------------
+Scrapy 0.18.3 (released 2013-10-03)
+-----------------------------------
 
 - fix regression on lazy evaluation of start requests (:commit:`12693a5`)
 - forms: do not submit reset inputs (:commit:`e429f63`)
@@ -1172,14 +1172,14 @@ List of contributors sorted by number of commits::
 - backport master fixes to json exporter (:commit:`cfc2d46`)
 - Fix permission and set umask before generating sdist tarball (:commit:`06149e0`)
 
-0.18.2 (released 2013-09-03)
-----------------------------
+Scrapy 0.18.2 (released 2013-09-03)
+-----------------------------------
 
 - Backport `scrapy check` command fixes and backward compatible multi
   crawler process(:issue:`339`)
 
-0.18.1 (released 2013-08-27)
-----------------------------
+Scrapy 0.18.1 (released 2013-08-27)
+-----------------------------------
 
 - remove extra import added by cherry picked changes (:commit:`d20304e`)
 - fix crawling tests under twisted pre 11.0.0 (:commit:`1994f38`)
@@ -1197,8 +1197,8 @@ List of contributors sorted by number of commits::
 - minor updates to 0.18 release notes (:commit:`c45e5f1`)
 - fix contributters list format (:commit:`0b60031`)
 
-0.18.0 (released 2013-08-09)
-----------------------------
+Scrapy 0.18.0 (released 2013-08-09)
+-----------------------------------
 
 - Lot of improvements to testsuite run using Tox, including a way to test on pypi
 - Handle GET parameters for AJAX crawleable urls (:commit:`3fe2a32`)
@@ -1289,8 +1289,8 @@ contributors sorted by number of commits::
       1 Berend Iwema <berend@...>
 
 
-0.16.5 (released 2013-05-30)
-----------------------------
+Scrapy 0.16.5 (released 2013-05-30)
+-----------------------------------
 
 - obey request method when scrapy deploy is redirected to a new endpoint (:commit:`8c4fcee`)
 - fix inaccurate downloader middleware documentation. refs #280 (:commit:`40667cb`)
@@ -1298,8 +1298,8 @@ contributors sorted by number of commits::
 - Find form nodes in invalid html5 documents (:commit:`e3d6945`)
 - Fix typo labeling attrs type bool instead of list (:commit:`a274276`)
 
-0.16.4 (released 2013-01-23)
-----------------------------
+Scrapy 0.16.4 (released 2013-01-23)
+-----------------------------------
 
 - fixes spelling errors in documentation (:commit:`6d2b3aa`)
 - add doc about disabling an extension. refs #132 (:commit:`c90de33`)
@@ -1310,8 +1310,8 @@ contributors sorted by number of commits::
 - fix bug in scrapy parse command when spider is not specified explicitly. closes #209 (:commit:`c72e682`)
 - Update docs/topics/commands.rst (:commit:`28eac7a`)
 
-0.16.3 (released 2012-12-07)
-----------------------------
+Scrapy 0.16.3 (released 2012-12-07)
+-----------------------------------
 
 - Remove concurrency limitation when using download delays and still ensure inter-request delays are enforced (:commit:`487b9b5`)
 - add error details when image pipeline fails (:commit:`8232569`)
@@ -1323,8 +1323,8 @@ contributors sorted by number of commits::
 - Fixed docs typo in SpiderOpenCloseLogging example (:commit:`7184094`)
 
 
-0.16.2 (released 2012-11-09)
-----------------------------
+Scrapy 0.16.2 (released 2012-11-09)
+-----------------------------------
 
 - scrapy contracts: python2.6 compat (:commit:`a4a9199`)
 - scrapy contracts verbose option (:commit:`ec41673`)
@@ -1334,8 +1334,8 @@ contributors sorted by number of commits::
 - Fix SpiderState bug in Windows platforms (:commit:`58998f4`)
 
 
-0.16.1 (released 2012-10-26)
-----------------------------
+Scrapy 0.16.1 (released 2012-10-26)
+-----------------------------------
 
 - fixed LogStats extension, which got broken after a wrong merge before the 0.16 release (:commit:`8c780fd`)
 - better backwards compatibility for scrapy.conf.settings (:commit:`3403089`)
@@ -1345,8 +1345,8 @@ contributors sorted by number of commits::
 - set release date for 0.16.0 in news (:commit:`e292246`)
 
 
-0.16.0 (released 2012-10-18)
-----------------------------
+Scrapy 0.16.0 (released 2012-10-18)
+-----------------------------------
 
 Scrapy changes:
 
@@ -1387,8 +1387,8 @@ Scrapy changes:
 - number received responses are now tracked through Scrapy stats (stat name: ``response_received_count``)
 - removed ``scrapy.log.started`` attribute
 
-0.14.4
-------
+Scrapy 0.14.4
+-------------
 
 - added precise to supported ubuntu distros (:commit:`b7e46df`)
 - fixed bug in json-rpc webservice reported in https://groups.google.com/forum/#!topic/scrapy-users/qgVBmFybNAQ/discussion. also removed no longer supported 'run' command from extras/scrapy-ws.py (:commit:`340fbdb`)
@@ -1396,8 +1396,8 @@ Scrapy changes:
 - replace "import Image" by more standard "from PIL import Image". closes #88 (:commit:`4d17048`)
 - return trial status as bin/runtests.sh exit value. #118 (:commit:`b7b2e7f`)
 
-0.14.3
-------
+Scrapy 0.14.3
+-------------
 
 - forgot to include pydispatch license. #118 (:commit:`fd85f9c`)
 - include egg files used by testsuite in source distribution. #118 (:commit:`c897793`)
@@ -1409,8 +1409,8 @@ Scrapy changes:
 - fixed minor defect in link extractors documentation (:commit:`ba14f38`)
 - removed some obsolete remaining code related to sqlite support in scrapy (:commit:`0665175`)
 
-0.14.2
-------
+Scrapy 0.14.2
+-------------
 
 - move buffer pointing to start of file before computing checksum. refs #92 (:commit:`6a5bef2`)
 - Compute image checksum before persisting images. closes #92 (:commit:`9817df1`)
@@ -1424,8 +1424,8 @@ Scrapy changes:
 - scrapyd: fixed documentation link (:commit:`2b4e4c3`)
 - extras/makedeb.py: no longer obtaining version from git (:commit:`caffe0e`)
 
-0.14.1
-------
+Scrapy 0.14.1
+-------------
 
 - extras/makedeb.py: no longer obtaining version from git (:commit:`caffe0e`)
 - bumped version to 0.14.1 (:commit:`6cb9e1c`)
@@ -1439,8 +1439,8 @@ Scrapy changes:
 - Avoid _disconnectedDeferred AttributeError exception in Twisted>=11.1.0 (:commit:`98f3f87`)
 - allow spider to set autothrottle max concurrency (:commit:`175a4b5`)
 
-0.14
-----
+Scrapy 0.14
+-----------
 
 New features and settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1507,8 +1507,8 @@ Code rearranged and removed
 - Renamed attributes of core components: downloader.sites -> downloader.slots, scraper.sites -> scraper.slots (:rev:`2717`, :rev:`2718`)
 - Renamed setting ``CLOSESPIDER_ITEMPASSED`` to :setting:`CLOSESPIDER_ITEMCOUNT` (:rev:`2655`). Backwards compatibility kept.
 
-0.12
-----
+Scrapy 0.12
+-----------
 
 The numbers like #NNN reference tickets in the old issue tracker (Trac) which is no longer available.
 
@@ -1550,8 +1550,8 @@ Deprecated/obsoleted functionality
 - Deprecated ``queue`` command in favor of using Scrapyd ``schedule.json`` API. See also: Scrapyd changes
 - Removed the !LxmlItemLoader (experimental contrib which never graduated to main contrib)
 
-0.10
-----
+Scrapy 0.10
+-----------
 
 The numbers like #NNN reference tickets in the old issue tracker (Trac) which is no longer available.
 
@@ -1623,8 +1623,8 @@ Changes to settings
 - Removed ``COMMANDS_SETTINGS_MODULE`` setting (#201)
 - Renamed ``REQUEST_HANDLERS`` to ``DOWNLOAD_HANDLERS`` and make download handlers classes (instead of functions)
 
-0.9
----
+Scrapy 0.9
+----------
 
 The numbers like #NNN reference tickets in the old issue tracker (Trac) which is no longer available.
 
@@ -1663,8 +1663,8 @@ Changes to default settings
 
 - Changed default ``SCHEDULER_ORDER`` to ``DFO`` (:rev:`1939`)
 
-0.8
----
+Scrapy 0.8
+----------
 
 The numbers like #NNN reference tickets in the old issue tracker (Trac) which is no longer available.
 
@@ -1709,8 +1709,8 @@ Backwards-incompatible changes
 - Renamed extension: ``DelayedCloseDomain`` to ``SpiderCloseDelay`` (:rev:`1861` | #121)
 - Removed obsolete ``scrapy.utils.markup.remove_escape_chars`` function - use ``scrapy.utils.markup.replace_escape_chars`` instead (:rev:`1865`)
 
-0.7
----
+Scrapy 0.7
+----------
 
 First release of Scrapy.
 
