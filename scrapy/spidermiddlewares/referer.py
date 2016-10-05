@@ -193,7 +193,9 @@ class OriginPolicy(ReferrerPolicy):
     name = POLICY_ORIGIN
 
     def referrer(self, response, request):
-        return self.strip_url(response.url, origin_only=True)
+        stripped = self.strip_url_parsed(response, origin_only=True)
+        if stripped is not None:
+            return urlunparse(stripped)
 
 
 class OriginWhenCrossOriginPolicy(ReferrerPolicy):
