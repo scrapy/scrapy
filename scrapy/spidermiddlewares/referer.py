@@ -2,7 +2,7 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
-from six.moves.urllib.parse import urlparse, urlunparse, ParseResult
+from six.moves.urllib.parse import ParseResult, urlunparse
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
@@ -28,7 +28,7 @@ class ReferrerPolicy(object):
     def referrer(self, response, request):
         raise NotImplementedError()
 
-    def strip_url_parsed(self, req_or_resp, origin_only=False):
+    def strip_url(self, req_or_resp, origin_only=False):
         """
         https://www.w3.org/TR/referrer-policy/#strip-url
 
@@ -68,53 +68,9 @@ class ReferrerPolicy(object):
                            '' if origin_only else parsed.query,
                            '')
 
-    def strip_url(self, url, origin_only=False):
-        """
-        https://www.w3.org/TR/referrer-policy/#strip-url
-
-        If url is null, return no referrer.
-        If url's scheme is a local scheme, then return no referrer.
-        Set url's username to the empty string.
-        Set url's password to null.
-        Set url's fragment to null.
-        If the origin-only flag is true, then:
-            Set url's path to null.
-            Set url's query to null.
-        Return url.
-        """
-        if url is None or not url:
-            return None
-        parsed = urlparse(url, allow_fragments=True)
-
-        if parsed.scheme in self.NOREFERRER_SCHEMES:
-            return None
-
-        netloc = parsed.netloc
-        # strip username and password if present
-        if parsed.username or parsed.password:
-            netloc = netloc.replace('{p.username}:{p.password}@'.format(p=parsed), '')
-
-        # strip standard protocol numbers
-        # Note: strictly speaking, standard port numbers should only be
-        # stripped when comparing origins
-        if parsed.port:
-            if (parsed.scheme, parsed.port) in (('http', 80), ('https', 443)):
-                netloc = netloc.replace(':{p.port}'.format(p=parsed), '')
-
-        return urlunparse((
-            parsed.scheme,
-            netloc,
-            '/' if origin_only else parsed.path,
-            '' if origin_only else parsed.params,
-            '' if origin_only else parsed.query,
-            ''))
-
-    def origin(self, url):
-        return self.strip_url(url, origin_only=True)
-
-    def origin_parsed(self, req_or_resp):
+    def origin(self, req_or_resp):
         """Return (scheme, host, path) tuple for a request or response URL."""
-        return tuple(self.strip_url_parsed(req_or_resp, origin_only=True)[:3])
+        return tuple(self.strip_url(req_or_resp, origin_only=True)[:3])
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -157,7 +113,7 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
         if urlparse_cached(response).scheme in ('https', 'ftps') and \
             urlparse_cached(request).scheme in ('http',):
                 return None
-        stripped = self.strip_url_parsed(response)
+        stripped = self.strip_url(response)
         if stripped is not None:
             return urlunparse(stripped)
 
@@ -175,8 +131,8 @@ class SameOriginPolicy(ReferrerPolicy):
     name = POLICY_SAME_ORIGIN
 
     def referrer(self, response, request):
-        if self.origin_parsed(response) == self.origin_parsed(request):
-            stripped = self.strip_url_parsed(response)
+        if self.origin(response) == self.origin(request):
+            stripped = self.strip_url(response)
             if stripped is not None:
                 return urlunparse(stripped)
 
@@ -193,7 +149,7 @@ class OriginPolicy(ReferrerPolicy):
     name = POLICY_ORIGIN
 
     def referrer(self, response, request):
-        origin = self.strip_url_parsed(response, origin_only=True)
+        origin = self.strip_url(response, origin_only=True)
         if origin is not None:
             return urlunparse(origin)
 
@@ -212,9 +168,9 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     name = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
 
     def referrer(self, response, request):
-        origin = self.origin_parsed(response)
-        if origin == self.origin_parsed(request):
-            stripped = self.strip_url_parsed(response)
+        origin = self.origin(response)
+        if origin == self.origin(request):
+            stripped = self.strip_url(response)
             if stripped is not None:
                 return urlunparse(stripped)
         else:
@@ -237,8 +193,9 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     name = POLICY_UNSAFE_URL
 
     def referrer(self, response, request):
-        referrer_source = response.url
-        return self.strip_url(referrer_source)
+        stripped = self.strip_url(response)
+        if stripped is not None:
+            return urlunparse(stripped)
 
 
 class LegacyPolicy(ReferrerPolicy):
