@@ -11,6 +11,15 @@ from scrapy.utils.python import to_native_str
 
 LOCAL_SCHEMES = ('about', 'blob', 'data', 'filesystem',)
 
+POLICY_NO_REFERRER = "no-referrer"
+POLICY_NO_REFERRER_WHEN_DOWNGRADE = "no-referrer-when-downgrade"
+POLICY_SAME_ORIGIN = "same-origin"
+POLICY_ORIGIN = "origin"
+POLICY_ORIGIN_WHEN_CROSS_ORIGIN = "origin-when-cross-origin"
+POLICY_UNSAFE_URL = "unsafe-url"
+POLICY_SCRAPY_DEFAULT = "scrapy-default"
+
+
 class ReferrerPolicy(object):
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES
@@ -38,16 +47,28 @@ class ReferrerPolicy(object):
 
         if parsed.scheme in self.NOREFERRER_SCHEMES:
             return None
+
+        netloc = parsed.netloc
+        # strip username and password if present
         if parsed.username or parsed.password:
-            netloc = parsed.netloc.replace('{p.username}:{p.password}@'.format(p=parsed), '')
-        else:
-            netloc = parsed.netloc
+            netloc = netloc.replace('{p.username}:{p.password}@'.format(p=parsed), '')
+
+        # strip standard protocol numbers
+        # Note: strictly speaking, standard port numbers should only be
+        # stripped when comparing origins
+        if parsed.port:
+            if (parsed.scheme, parsed.port) in (('http', 80), ('https', 443)):
+                netloc = netloc.replace(':{p.port}'.format(p=parsed), '')
+
         return urlunsplit((
             parsed.scheme,
             netloc,
-            '' if origin_only else parsed.path,
+            '/' if origin_only else parsed.path,
             '' if origin_only else parsed.query,
             ''))
+
+    def origin(self, url):
+        return self.strip_url(url, origin_only=True)
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -58,7 +79,7 @@ class NoReferrerPolicy(ReferrerPolicy):
     is to be sent along with requests made from a particular request client to any origin.
     The header will be omitted entirely.
     """
-    name = "no-referrer"
+    name = POLICY_NO_REFERRER
 
     def referrer(self, response, request):
         return None
@@ -79,7 +100,7 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
 
     This is a user agent's default behavior, if no policy is otherwise specified.
     """
-    name = "no-referrer-when-downgrade"
+    name = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
     def referrer(self, response, request):
         target_url = request.url
@@ -108,12 +129,12 @@ class SameOriginPolicy(ReferrerPolicy):
     Cross-origin requests, on the other hand, will contain no referrer information.
     A Referer HTTP header will not be sent.
     """
-    name = "same-origin"
+    name = POLICY_SAME_ORIGIN
 
     def referrer(self, response, request):
         target_url = request.url
         referrer_source = response.url
-        if urlsplit(referrer_source).netloc == urlsplit(target_url).netloc:
+        if self.origin(referrer_source) == self.origin(target_url):
             return self.strip_url(referrer_source)
         else:
             return None
@@ -128,10 +149,10 @@ class OriginPolicy(ReferrerPolicy):
     when making both same-origin requests and cross-origin requests
     from a particular request client.
     """
-    name = "origin"
+    name = POLICY_ORIGIN
 
     def referrer(self, response, request):
-        return self.strip_url(referrer_source, origin_only=True)
+        return self.strip_url(response.url, origin_only=True)
 
 
 class OriginWhenCrossOriginPolicy(ReferrerPolicy):
@@ -145,17 +166,17 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     is sent as referrer information when making cross-origin requests
     from a particular request client.
     """
-    name = "origin-when-cross-origin"
+    name = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
 
     def referrer(self, response, request):
         target_url = request.url
         referrer_source = response.url
+        source_origin = self.origin(referrer_source)
+        if source_origin == self.origin(target_url):
+            return self.strip_url(referrer_source, origin_only=False)
+        else:
+            return source_origin
 
-        # same origin --> send full referrer
-        # different origin --> send only "origin" as referrer
-        if urlsplit(referrer_source).netloc != urlsplit(target_url).netloc:
-            origin_only = True
-        return self.strip_url(referrer_source, origin_only=origin_only)
 
 
 class UnsafeUrlPolicy(ReferrerPolicy):
@@ -171,7 +192,7 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     to insecure origins.
     Carefully consider the impact of setting such a policy for potentially sensitive documents.
     """
-    name = "unsafe-url"
+    name = POLICY_UNSAFE_URL
 
     def referrer(self, response, request):
         referrer_source = response.url
@@ -186,15 +207,17 @@ class LegacyPolicy(ReferrerPolicy):
 class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES + ('file', 's3')
+    name = POLICY_SCRAPY_DEFAULT
 
 
-_policies = {p.name: p for p in (
+_policy_classes = {p.name: p for p in (
     NoReferrerPolicy,
     NoReferrerWhenDowngradePolicy,
     SameOriginPolicy,
     OriginPolicy,
     OriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
+    DefaultReferrerPolicy,
 )}
 
 class RefererMiddleware(object):
@@ -211,10 +234,11 @@ class RefererMiddleware(object):
     def policy(self, response, request):
         policy_name = request.meta.get('referrer_policy')
         if policy_name is None:
-            policy_name = to_native_str(response.headers.get('Referrer-Policy', '').decode('latin1'))
+            policy_name = to_native_str(
+                response.headers.get('Referrer-Policy', '').decode('latin1'))
 
-        policy_class = _policies.get(policy_name.lower(), self.default_policy)
-        return policy_class()
+        cls = _policy_classes.get(policy_name.lower(), self.default_policy)
+        return cls()
 
     def process_spider_output(self, response, result, spider):
         def _set_referer(r):
