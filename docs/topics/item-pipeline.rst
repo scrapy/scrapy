@@ -129,14 +129,7 @@ MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
 The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.
-
-.. note::
-
-    Previous example (JsonWriterPipeline) doesn't clean up resources properly.
-    Fixing it is left as an exercise for the reader.
-
-::
+method and how to clean up the resources properly.::
 
     import pymongo
 
