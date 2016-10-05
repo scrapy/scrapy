@@ -28,6 +28,16 @@ class ReferrerPolicy(object):
     def referrer(self, response, request):
         raise NotImplementedError()
 
+    def stripped_referrer(self, req_or_resp):
+        stripped = self.strip_url(req_or_resp)
+        if stripped is not None:
+            return urlunparse(stripped)
+
+    def origin_referrer(self, req_or_resp):
+        stripped = self.strip_url(req_or_resp, origin_only=True)
+        if stripped is not None:
+            return urlunparse(stripped)
+
     def strip_url(self, req_or_resp, origin_only=False):
         """
         https://www.w3.org/TR/referrer-policy/#strip-url
@@ -113,9 +123,7 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
         if urlparse_cached(response).scheme in ('https', 'ftps') and \
             urlparse_cached(request).scheme in ('http',):
                 return None
-        stripped = self.strip_url(response)
-        if stripped is not None:
-            return urlunparse(stripped)
+        return self.stripped_referrer(response)
 
 
 class SameOriginPolicy(ReferrerPolicy):
@@ -132,9 +140,7 @@ class SameOriginPolicy(ReferrerPolicy):
 
     def referrer(self, response, request):
         if self.origin(response) == self.origin(request):
-            stripped = self.strip_url(response)
-            if stripped is not None:
-                return urlunparse(stripped)
+            return self.stripped_referrer(response)
 
 
 class OriginPolicy(ReferrerPolicy):
@@ -149,9 +155,7 @@ class OriginPolicy(ReferrerPolicy):
     name = POLICY_ORIGIN
 
     def referrer(self, response, request):
-        origin = self.strip_url(response, origin_only=True)
-        if origin is not None:
-            return urlunparse(origin)
+        return self.origin_referrer(response)
 
 
 class OriginWhenCrossOriginPolicy(ReferrerPolicy):
@@ -170,9 +174,7 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     def referrer(self, response, request):
         origin = self.origin(response)
         if origin == self.origin(request):
-            stripped = self.strip_url(response)
-            if stripped is not None:
-                return urlunparse(stripped)
+            return self.stripped_referrer(response)
         else:
             return urlunparse(origin + ('', '', ''))
 
@@ -193,9 +195,7 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     name = POLICY_UNSAFE_URL
 
     def referrer(self, response, request):
-        stripped = self.strip_url(response)
-        if stripped is not None:
-            return urlunparse(stripped)
+        return self.stripped_referrer(response)
 
 
 class LegacyPolicy(ReferrerPolicy):
