@@ -993,7 +993,7 @@ Adjust retry request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
+Default: ``True``
 
 Scope: ``scrapy.downloadermiddlewares.robotstxt``
 
