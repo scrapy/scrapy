@@ -50,7 +50,7 @@ def request_fingerprint(request, include_headers=None, include_fragments=False):
     if include_headers not in cache:
         fp = hashlib.sha1()
         fp.update(to_bytes(request.method))
-        fp.update(to_bytes(canonicalize_url(request.url), keep_fragments=include_fragments))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=include_fragments)))
         fp.update(request.body or b'')
         if include_headers:
             for hdr in include_headers:
