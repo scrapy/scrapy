@@ -564,7 +564,7 @@ this time for scraping author information::
 
         def parse(self, response):
             # follow links to author pages
-            for href in response.css('.author a::attr(href)').extract():
+            for href in response.css('span a::attr(href)').extract():
                 yield scrapy.Request(response.urljoin(href),
                                      callback=self.parse_author)
 
