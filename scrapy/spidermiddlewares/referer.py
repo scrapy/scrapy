@@ -229,7 +229,7 @@ class RefererMiddleware(object):
                 self.default_policy = load_object(policy)
             except ValueError:
                 try:
-                    self.default_policy = _policy_classes[policy]
+                    self.default_policy = _policy_classes[policy.lower()]
                 except:
                     raise NotConfigured("Unknown referrer policy name %r" % policy)
         else:

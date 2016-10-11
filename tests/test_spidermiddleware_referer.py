@@ -310,6 +310,20 @@ class TestRefererMiddlewareSettingsPolicyByName(TestCase):
             mw = RefererMiddleware(settings)
             self.assertEquals(mw.default_policy, p)
 
+    def test_valid_name_casevariants(self):
+        for s, p in [
+                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+                (POLICY_NO_REFERRER, NoReferrerPolicy),
+                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+                (POLICY_SAME_ORIGIN, SameOriginPolicy),
+                (POLICY_ORIGIN, OriginPolicy),
+                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+            ]:
+            settings = Settings({'REFERER_POLICY': s.upper()})
+            mw = RefererMiddleware(settings)
+            self.assertEquals(mw.default_policy, p)
+
     def test_invalid_name(self):
         settings = Settings({'REFERER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(NotConfigured):
