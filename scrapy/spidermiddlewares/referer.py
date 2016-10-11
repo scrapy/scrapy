@@ -8,6 +8,7 @@ from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.python import to_native_str
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import load_object
 
 
 LOCAL_SCHEMES = ('about', 'blob', 'data', 'filesystem',)
@@ -221,16 +222,27 @@ _policy_classes = {p.name: p for p in (
 
 class RefererMiddleware(object):
 
-    def __init__(self, policy_class=DefaultReferrerPolicy):
-        self.default_policy = policy_class
+    def __init__(self, settings={}):
+        policy = settings.get('REFERER_POLICY')
+        if policy is not None:
+            try:
+                self.default_policy = load_object(policy)
+            except ValueError:
+                try:
+                    self.default_policy = _policy_classes[policy]
+                except:
+                    raise NotConfigured("Unknown referrer policy name %r" % policy)
+        else:
+            self.default_policy = DefaultReferrerPolicy
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('REFERER_ENABLED'):
             raise NotConfigured
-        return cls()
+        return cls(crawler.settings)
 
     def policy(self, response, request):
+        # policy set in request's meta dict takes precedence over default policy
         policy_name = request.meta.get('referrer_policy')
         if policy_name is None:
             policy_name = to_native_str(
