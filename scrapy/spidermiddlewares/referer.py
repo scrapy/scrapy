@@ -222,18 +222,18 @@ _policy_classes = {p.name: p for p in (
 
 class RefererMiddleware(object):
 
-    def __init__(self, settings={}):
-        policy = settings.get('REFERER_POLICY')
-        if policy is not None:
-            try:
-                self.default_policy = load_object(policy)
-            except ValueError:
+    def __init__(self, settings=None):
+        self.default_policy = DefaultReferrerPolicy
+        if settings is not None:
+            policy = settings.get('REFERER_POLICY')
+            if policy is not None:
                 try:
-                    self.default_policy = _policy_classes[policy.lower()]
-                except:
-                    raise NotConfigured("Unknown referrer policy name %r" % policy)
-        else:
-            self.default_policy = DefaultReferrerPolicy
+                    self.default_policy = load_object(policy)
+                except ValueError:
+                    try:
+                        self.default_policy = _policy_classes[policy.lower()]
+                    except:
+                        raise NotConfigured("Unknown referrer policy name %r" % policy)
 
     @classmethod
     def from_crawler(cls, crawler):
