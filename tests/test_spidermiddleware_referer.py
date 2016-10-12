@@ -354,3 +354,16 @@ class TestRefererMiddlewareSettingsPolicyByName(TestCase):
         settings = Settings({'REFERER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(NotConfigured):
             mw = RefererMiddleware(settings)
+
+
+class TestRefererMiddlewarePolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
+    resp_headers = {'Referrer-Policy': POLICY_UNSAFE_URL.upper()}
+
+class TestRefererMiddlewarePolicyHeaderPredecence002(MixinNoReferrer, TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
+    resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER.swapcase()}
+
+class TestRefererMiddlewarePolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+    resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
