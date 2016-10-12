@@ -5,9 +5,7 @@ import scrapy
 class $classname(scrapy.Spider):
     name = "$name"
     allowed_domains = ["$domain"]
-    start_urls = (
-        'http://www.$domain/',
-    )
+    start_urls = ['http://$domain/']
 
     def parse(self, response):
         pass

@@ -7,7 +7,7 @@ from scrapy.spiders import CrawlSpider, Rule
 class $classname(CrawlSpider):
     name = '$name'
     allowed_domains = ['$domain']
-    start_urls = ['http://www.$domain/']
+    start_urls = ['http://$domain/']
 
     rules = (
         Rule(LinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
