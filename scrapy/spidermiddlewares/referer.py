@@ -227,9 +227,12 @@ class RefererMiddleware(object):
         if settings is not None:
             policy = settings.get('REFERER_POLICY')
             if policy is not None:
+                # expect a string for the path to the policy class
                 try:
                     self.default_policy = load_object(policy)
                 except ValueError:
+                    # otherwise try to interpret the string as standard
+                    # https://www.w3.org/TR/referrer-policy/#referrer-policies
                     try:
                         self.default_policy = _policy_classes[policy.lower()]
                     except:
@@ -239,6 +242,7 @@ class RefererMiddleware(object):
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('REFERER_ENABLED'):
             raise NotConfigured
+
         return cls(crawler.settings)
 
     def policy(self, response, request):

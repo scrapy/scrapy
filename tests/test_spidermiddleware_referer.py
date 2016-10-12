@@ -11,7 +11,7 @@ from scrapy.spidermiddlewares.referer import RefererMiddleware, \
     DefaultReferrerPolicy, \
     NoReferrerPolicy, NoReferrerWhenDowngradePolicy, \
     OriginWhenCrossOriginPolicy, OriginPolicy, \
-    SameOriginPolicy, UnsafeUrlPolicy
+    SameOriginPolicy, UnsafeUrlPolicy, ReferrerPolicy
 
 
 class TestRefererMiddleware(TestCase):
@@ -249,6 +249,33 @@ class TestRefererMiddlewareSettingsUnsafeUrl(MixinUnsafeUrl, TestRefererMiddlewa
     settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'}
 
 
+class CustomPythonOrgPolicy(ReferrerPolicy):
+    """
+    A dummy policy that returns referrer as http(s)://python.org
+    depending on the scheme of the target URL.
+    """
+    def referrer(self, response, request):
+        from scrapy.utils.httpobj import urlparse_cached
+
+        scheme = urlparse_cached(request).scheme
+        if scheme == 'https':
+            return b'https://python.org/'
+        elif scheme == 'http':
+            return b'http://python.org/'
+
+
+class TestRefererMiddlewareSettingsCustomPolicy(TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'tests.test_spidermiddleware_referer.CustomPythonOrgPolicy'}
+    scenarii = [
+        ('https://example.com/',    'https://scrapy.org/',  b'https://python.org/'),
+        ('http://example.com/',     'http://scrapy.org/',   b'http://python.org/'),
+        ('http://example.com/',     'https://scrapy.org/',  b'https://python.org/'),
+        ('https://example.com/',    'http://scrapy.org/',   b'http://python.org/'),
+        ('file:///home/path/to/somefile.html',  'https://scrapy.org/', b'https://python.org/'),
+        ('file:///home/path/to/somefile.html',  'http://scrapy.org/',  b'http://python.org/'),
+
+    ]
+
 # --- Tests using Request meta dict to set policy
 class TestRefererMiddlewareDefaultMeta(MixinDefault, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_SCRAPY_DEFAULT}
@@ -276,7 +303,6 @@ class TestRefererMiddlewareOriginWhenCrossOrigin(MixinOriginWhenCrossOrigin, Tes
 
 class TestRefererMiddlewareUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
-
 
 
 class TestRefererMiddlewareMetaPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
