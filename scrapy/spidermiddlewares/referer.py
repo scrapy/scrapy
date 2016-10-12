@@ -4,8 +4,9 @@ originated it.
 """
 from six.moves.urllib.parse import ParseResult, urlunparse
 
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
+from scrapy import signals
 from scrapy.utils.python import to_native_str
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
@@ -242,8 +243,9 @@ class RefererMiddleware(object):
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('REFERER_ENABLED'):
             raise NotConfigured
-
-        return cls(crawler.settings)
+        mw = cls(crawler.settings)
+        crawler.signals.connect(mw.request_scheduled, signal=signals.request_scheduled)
+        return mw
 
     def policy(self, response, request):
         # policy set in request's meta dict takes precedence over default policy
@@ -264,3 +266,18 @@ class RefererMiddleware(object):
             return r
         return (_set_referer(r) for r in result or ())
 
+    def request_scheduled(self, request, spider):
+        # check redirected request to patch "Referer" header if necessary
+        redirected_urls = request.meta.get('redirect_urls', [])
+        if redirected_urls:
+            request_referrer = request.headers.get('Referer')
+            # we don't patch the referrer value if there is none
+            if request_referrer is not None:
+                faked_response = Response(redirected_urls[0])
+                policy_referrer = self.policy(faked_response,
+                    request).referrer(faked_response, request)
+                if policy_referrer != request_referrer:
+                    if policy_referrer is None:
+                        request.headers.pop('Referer')
+                    else:
+                        request.headers['Referer'] = policy_referrer
