@@ -95,7 +95,7 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item` 
+        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
         objects.
 
         :param response: the response which generated this output from the
@@ -327,6 +327,42 @@ REFERER_ENABLED
 Default: ``True``
 
 Whether to enable referer middleware.
+
+.. setting:: REFERER_POLICY
+
+REFERER_POLICY
+^^^^^^^^^^^^^^
+
+.. versionadded:: 1.3
+
+Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
+
+`Referrer Policy`_ to apply when populating Request "Referer" header.
+
+This setting accepts:
+
+- a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy`` subclass,
+  either a custom one or one of the built-in ones
+  (see ``scrapy.spidermiddlewares.referer``),
+- or one of the standard W3C-defined string values, i.e. ``"no-referrer"``,
+  ``"no-referrer-when-downgrade"``, ``"same-origin"``, ``"origin"``,
+  ``"origin-when-cross-origin"`` or ``"unsafe-url"``.
+  (It can also be the non-standard value ``"scrapy-default"`` to use
+  Scrapy's default referrer policy.)
+
+Scrapy's default referrer policy is a variant of `"no-referrer-when-downgrade"`_,
+with the addition that "Referrer" is not sent if the parent request was
+using ``file://`` or ``s3://`` scheme.
+
+.. warning::
+    By default, Scrapy's default referrer policy, just like `"no-referrer-when-downgrade"`_,
+    will send a non-empty "Referer" header from any ``https://`` to any ``https://`` URL,
+    even if the domain is different.
+    ``same-origin`` may be a better choice if you want to remove referrer
+    information for cross-domain requests.
+
+.. _Referrer Policy: https://www.w3.org/TR/referrer-policy
+.. _"no-referrer-when-downgrade": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
 
 UrlLengthMiddleware
 -------------------
