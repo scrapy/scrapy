@@ -1,6 +1,8 @@
 import logging
 from six.moves.urllib.parse import urljoin
 
+from w3lib.url import safe_url_string
+
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.utils.python import to_native_str
@@ -65,8 +67,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
-        # HTTP header is ascii or latin1, redirected url will be percent-encoded utf-8
-        location = to_native_str(response.headers['location'].decode('latin1'))
+        location = safe_url_string(response.headers['location'])
 
         redirected_url = urljoin(request.url, location)
 
