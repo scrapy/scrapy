@@ -55,7 +55,7 @@ Write a Spider to extract the data
 ==================================
 
 The next thing is to write a Spider which defines the start URL
-(http://www.mininova.org/today), the rules for following links and the rules
+(http://www.mininova.org/today), the rules for following (as in crawling) links and the rules
 for extracting the data from pages.
 
 If we take a look at that page content we'll see that all torrent URLs are like
