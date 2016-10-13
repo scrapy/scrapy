@@ -25,7 +25,7 @@ class MemoryDebugger(object):
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_closed(self, spider, reason):
+    def spider_closed(self, spider, reason, **kw):
         gc.collect()
         self.stats.set_value('memdebug/gc_garbage_count', len(gc.garbage), spider=spider)
         for cls, wdict in six.iteritems(live_refs):

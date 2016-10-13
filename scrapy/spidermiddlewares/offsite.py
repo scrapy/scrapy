@@ -55,6 +55,6 @@ class OffsiteMiddleware(object):
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.host_regex = self.get_host_regex(spider)
         self.domains_seen = set()

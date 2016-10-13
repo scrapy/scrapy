@@ -52,7 +52,7 @@ class MemoryUsage(object):
             size *= 1024
         return size
 
-    def engine_started(self):
+    def engine_started(self, **kw):
         self.crawler.stats.set_value('memusage/startup', self.get_virtual_size())
         self.tasks = []
         tsk = task.LoopingCall(self.update)
@@ -67,7 +67,7 @@ class MemoryUsage(object):
             self.tasks.append(tsk)
             tsk.start(self.check_interval, now=True)
 
-    def engine_stopped(self):
+    def engine_stopped(self, **kw):
         for tsk in self.tasks:
             if tsk.running:
                 tsk.stop()

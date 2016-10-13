@@ -84,7 +84,7 @@ class Spider(object_ref):
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider, reason):
+    def close(spider, reason, **kw):
         closed = getattr(spider, 'closed', None)
         if callable(closed):
             return closed(reason)

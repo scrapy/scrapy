@@ -20,20 +20,20 @@ class CoreStats(object):
         crawler.signals.connect(o.response_received, signal=signals.response_received)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
 
-    def spider_closed(self, spider, reason):
+    def spider_closed(self, spider, reason, **kw):
         self.stats.set_value('finish_time', datetime.datetime.utcnow(), spider=spider)
         self.stats.set_value('finish_reason', reason, spider=spider)
 
-    def item_scraped(self, item, spider):
+    def item_scraped(self, item, spider, **kw):
         self.stats.inc_value('item_scraped_count', spider=spider)
 
-    def response_received(self, spider):
+    def response_received(self, spider, **kw):
         self.stats.inc_value('response_received_count', spider=spider)
 
-    def item_dropped(self, item, spider, exception):
+    def item_dropped(self, item, spider, exception, **kw):
         reason = exception.__class__.__name__
         self.stats.inc_value('item_dropped_count', spider=spider)
         self.stats.inc_value('item_dropped_reasons_count/%s' % reason, spider=spider)

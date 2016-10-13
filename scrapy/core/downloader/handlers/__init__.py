@@ -65,7 +65,7 @@ class DownloadHandlers(object):
         return handler.download_request(request, spider)
 
     @defer.inlineCallbacks
-    def _close(self, *_a, **_kw):
+    def _close(self, **_kw):
         for dh in self._handlers.values():
             if hasattr(dh, 'close'):
                 yield dh.close()

@@ -22,7 +22,7 @@ class AutoThrottle(object):
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def _spider_opened(self, spider):
+    def _spider_opened(self, spider, **kw):
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
         spider.download_delay = self._start_delay(spider)
@@ -37,7 +37,7 @@ class AutoThrottle(object):
     def _start_delay(self, spider):
         return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
 
-    def _response_downloaded(self, response, request, spider):
+    def _response_downloaded(self, response, request, spider, **kw):
         key, slot = self._get_slot(request, spider)
         latency = request.meta.get('download_latency')
         if latency is None or slot is None:
