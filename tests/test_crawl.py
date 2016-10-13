@@ -167,6 +167,20 @@ with multiples lines
         self.assertEqual(str(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
+    def test_missing_status_code_explanation(self):
+        from urllib import urlencode
+        query = urlencode({'raw': '''\
+HTTP/1.1 200
+Content-Length: 3
+Connection: close
+
+foo'''})
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
+        log = get_testlog()
+        self.assertEqual(log.count("Got response 200"), 1, log)
+
+    @defer.inlineCallbacks
     def test_retry_conn_lost(self):
         # connection lost after receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
