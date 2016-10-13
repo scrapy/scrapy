@@ -5,7 +5,6 @@ from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
-from scrapy.utils.python import to_native_str
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 logger = logging.getLogger(__name__)
