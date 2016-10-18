@@ -27,7 +27,11 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
-the last is the one closer to the downloader.
+the last is the one closer to the downloader. In other words,
+the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method of each middleware will be invoked in increasing
+middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response` method
+of each middleware will be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
