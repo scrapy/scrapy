@@ -159,6 +159,24 @@ following methods:
         :param spider: the spider to whom the start requests belong
         :type spider: :class:`~scrapy.spiders.Spider` object
 
+Accessing settings and other crawler attributes
+-----------------------------------------------
+
+In order to access settings and other crawler attributes you have to use 
+``from_crawler`` factory method::
+
+  class CustomMiddleware(object):
+
+  def __init__(self, middleware_arg):
+      self.middleware_arg = middleware_arg
+      self.log('Middleware parameter: {}'.format(middleware_arg))
+
+  @classmethod
+  def from_crawler(cls, crawler):
+      settings = crawler.settings
+      middleware_arg = settings.get('MIDDLEWARE_ARG')
+    return cls(middleware_arg)
+
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
