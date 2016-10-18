@@ -1,0 +1,129 @@
+===============================
+Parsel
+===============================
+
+.. image:: https://img.shields.io/travis/scrapy/parsel.svg
+   :target: https://travis-ci.org/scrapy/parsel
+
+.. image:: https://img.shields.io/pypi/v/parsel.svg
+   :target: https://pypi.python.org/pypi/parsel
+
+.. image:: https://img.shields.io/codecov/c/github/scrapy/parsel/master.svg
+   :target: http://codecov.io/github/scrapy/parsel?branch=master
+   :alt: Coverage report
+
+
+Parsel is a library to extract data from HTML and XML using XPath and CSS selectors
+
+* Free software: BSD license
+* Documentation: https://parsel.readthedocs.org.
+
+Features
+--------
+
+* Extract text using CSS or XPath selectors
+* Regular expression helper methods
+
+Example::
+
+    >>> from parsel import Selector
+    >>> sel = Selector(text=u"""<html>
+            <body>
+                <h1>Hello, Parsel!</h1>
+                <ul>
+                    <li><a href="http://example.com">Link 1</a></li>
+                    <li><a href="http://scrapy.org">Link 2</a></li>
+                </ul
+            </body>
+            </html>""")
+    >>>
+    >>> sel.css('h1::text').extract_first()
+    u'Hello, Parsel!'
+    >>>
+    >>> sel.css('h1::text').re('\w+')
+    [u'Hello', u'Parsel']
+    >>>
+    >>> for e in sel.css('ul > li'):
+            print(e.xpath('.//a/@href').extract_first())
+    http://example.com
+    http://scrapy.org
+
+
+
+
+History
+-------
+
+1.0.3 (2016-07-29)
+~~~~~~~~~~~~~~~~~~
+
+* Add BSD-3-Clause license file
+* Re-enable PyPy tests
+* Integrate py.test runs with setuptools (needed for Debian packaging)
+* Changelog is now called ``NEWS``
+
+1.0.2 (2016-04-26)
+~~~~~~~~~~~~~~~~~~
+
+* Fix bug in exception handling causing original traceback to be lost
+* Added docstrings and other doc fixes
+
+1.0.1 (2015-08-24)
+~~~~~~~~~~~~~~~~~~
+
+* Updated PyPI classifiers
+* Added docstrings for csstranslator module and other doc fixes
+
+
+1.0.0 (2015-08-22)
+~~~~~~~~~~~~~~~~~~
+
+* Documentation fixes
+
+
+0.9.6 (2015-08-14)
+~~~~~~~~~~~~~~~~~~
+
+* Updated documentation
+* Extended test coverage
+
+
+0.9.5 (2015-08-11)
+~~~~~~~~~~~~~~~~~~
+
+* Support for extending SelectorList
+
+
+0.9.4 (2015-08-10)
+~~~~~~~~~~~~~~~~~~
+
+* Try workaround for travis-ci/dpl#253
+
+
+0.9.3 (2015-08-07)
+~~~~~~~~~~~~~~~~~~
+
+* Add base_url argument
+
+
+0.9.2 (2015-08-07)
+~~~~~~~~~~~~~~~~~~
+
+* Rename module unified -> selector and promoted root attribute
+* Add create_root_node function
+
+
+0.9.1 (2015-08-04)
+~~~~~~~~~~~~~~~~~~
+
+* Setup Sphinx build and docs structure
+* Build universal wheels
+* Rename some leftovers from package extraction
+
+
+0.9.0 (2015-07-30)
+~~~~~~~~~~~~~~~~~~
+
+* First release on PyPI.
+
+

@@ -1,0 +1,683 @@
+%%% Copyright   Ulf A. Lindgren
+%%%
+%%% Note        Premission is granted to modify this file under
+%%%             the condition that it is saved using another
+%%%             file and package name.
+%%%
+%%% Revision    1.1 (1997)
+%%%
+%%%             Jan. 8th Modified package name base date option
+%%%             Jan. 22th Modified FmN and FmTi for error in book.cls
+%%%                  \MakeUppercase{#}->{\MakeUppercase#}
+%%%             Apr. 6th Modified Lenny option to prevent undesired 
+%%%                  skip of line.
+%%%             Nov. 8th Fixed \@chapapp for AMS
+%%%
+%%% Revision    1.2 (1998)
+%%%
+%%%             Feb. 11th Fixed appendix problem related to Bjarne
+%%%             Aug. 11th Fixed problem related to 11pt and 12pt 
+%%%                  suggested by Tomas Lundberg. THANKS!
+%%%
+%%% Revision    1.3 (2004)
+%%%             Sep. 20th problem with frontmatter, mainmatter and
+%%%                  backmatter, pointed out by Lapo Mori
+%%%
+%%% Revision    1.31 (2004)
+%%%             Sep. 21th problem with the Rejne definition streched text
+%%%                  caused ugly gaps in the vrule aligned with the title
+%%%                  text. Kindly pointed out to me by Hendri Adriaens
+%%%
+%%% Revision    1.32 (2005)
+%%%             Jun. 23th compatibility problem with the KOMA class 'scrbook.cls'
+%%%                  a remedy is a redefinition of '\@schapter' in
+%%%                  line with that used in KOMA. The problem was pointed
+%%%                  out to me by Mikkel Holm Olsen
+%%%
+%%% Revision    1.33 (2005)
+%%%             Aug. 9th misspelled ``TWELV'' corrected, the error was pointed
+%%%                  out to me by George Pearson
+%%%
+%%% Revision    1.34 (2007)
+%%%             Added an alternative to Lenny provided by Peter
+%%%             Osborne (2005-11-28)
+%%%             Corrected front, main and back matter, based on input
+%%%             from Bas van Gils (2006-04-24)
+%%%             Jul. 30th Added Bjornstrup option provided by Jean-Marc
+%%%             Francois (2007-01-05).
+%%%             Reverted to \MakeUppercase{#} see rev 1.1, solved
+%%%             problem with MakeUppercase and MakeLowercase pointed
+%%%             out by Marco Feuerstein  (2007-06-06) 
+
+
+%%% Last modified   Jul. 2007
+
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesPackage{fncychap}
+             [2007/07/30 v1.34
+                 LaTeX package (Revised chapters)]
+
+%%%% For conditional inclusion of color
+\newif\ifusecolor
+\usecolorfalse
+
+
+
+%%%% DEFINITION OF Chapapp variables
+\newcommand{\CNV}{\huge\bfseries}
+\newcommand{\ChNameVar}[1]{\renewcommand{\CNV}{#1}}
+
+
+%%%% DEFINITION OF TheChapter variables
+\newcommand{\CNoV}{\huge\bfseries}
+\newcommand{\ChNumVar}[1]{\renewcommand{\CNoV}{#1}}
+
+\newif\ifUCN
+\UCNfalse
+\newif\ifLCN
+\LCNfalse
+\def\ChNameLowerCase{\LCNtrue\UCNfalse}
+\def\ChNameUpperCase{\UCNtrue\LCNfalse}
+\def\ChNameAsIs{\UCNfalse\LCNfalse}
+
+%%%%% Fix for AMSBook 971008
+
+\@ifundefined{@chapapp}{\let\@chapapp\chaptername}{}
+
+
+%%%%% Fix for Bjarne and appendix 980211
+
+\newif\ifinapp
+\inappfalse
+\renewcommand\appendix{\par
+  \setcounter{chapter}{0}%
+  \setcounter{section}{0}%
+  \inapptrue%
+  \renewcommand\@chapapp{\appendixname}%
+  \renewcommand\thechapter{\@Alph\c@chapter}}
+
+%%%%% Fix for frontmatter, mainmatter, and backmatter 040920
+
+\@ifundefined{@mainmatter}{\newif\if@mainmatter \@mainmattertrue}{}
+
+%%%%%
+
+
+
+\newcommand{\FmN}[1]{%
+\ifUCN
+   {\MakeUppercase{#1}}\LCNfalse
+\else
+   \ifLCN
+      {\MakeLowercase{#1}}\UCNfalse
+   \else #1
+   \fi
+\fi}
+
+
+%%%% DEFINITION OF Title variables
+\newcommand{\CTV}{\Huge\bfseries}
+\newcommand{\ChTitleVar}[1]{\renewcommand{\CTV}{#1}}
+
+%%%% DEFINITION OF the basic rule width
+\newlength{\RW}
+\setlength{\RW}{1pt}
+\newcommand{\ChRuleWidth}[1]{\setlength{\RW}{#1}}
+
+\newif\ifUCT
+\UCTfalse
+\newif\ifLCT
+\LCTfalse
+\def\ChTitleLowerCase{\LCTtrue\UCTfalse}
+\def\ChTitleUpperCase{\UCTtrue\LCTfalse}
+\def\ChTitleAsIs{\UCTfalse\LCTfalse}
+\newcommand{\FmTi}[1]{%
+\ifUCT
+   {\MakeUppercase{#1}}\LCTfalse
+\else
+   \ifLCT
+      {\MakeLowercase{#1}}\UCTfalse
+   \else {#1}
+   \fi
+\fi}
+
+
+
+\newlength{\mylen}
+\newlength{\myhi}
+\newlength{\px}
+\newlength{\py}
+\newlength{\pyy}
+\newlength{\pxx}
+
+
+\def\mghrulefill#1{\leavevmode\leaders\hrule\@height #1\hfill\kern\z@}
+
+\newcommand{\DOCH}{%
+  \CNV\FmN{\@chapapp}\space \CNoV\thechapter
+  \par\nobreak
+  \vskip 20\p@
+  }
+\newcommand{\DOTI}[1]{%
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@
+    }
+\newcommand{\DOTIS}[1]{%
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@
+    }
+
+%%%%%% SONNY DEF
+
+\DeclareOption{Sonny}{%
+  \ChNameVar{\Large\sf}
+  \ChNumVar{\Huge}
+  \ChTitleVar{\Large\sf}
+  \ChRuleWidth{0.5pt}
+  \ChNameUpperCase
+  \renewcommand{\DOCH}{%
+    \raggedleft
+    \CNV\FmN{\@chapapp}\space \CNoV\thechapter
+    \par\nobreak
+    \vskip 40\p@}
+  \renewcommand{\DOTI}[1]{%
+    \CTV\raggedleft\mghrulefill{\RW}\par\nobreak
+    \vskip 5\p@
+    \CTV\FmTi{#1}\par\nobreak
+    \mghrulefill{\RW}\par\nobreak
+    \vskip 40\p@}
+  \renewcommand{\DOTIS}[1]{%
+    \CTV\raggedleft\mghrulefill{\RW}\par\nobreak
+    \vskip 5\p@
+    \CTV\FmTi{#1}\par\nobreak
+    \mghrulefill{\RW}\par\nobreak
+    \vskip 40\p@}
+}
+
+%%%%%% LENNY DEF
+
+\DeclareOption{Lenny}{%
+
+  \ChNameVar{\fontsize{14}{16}\usefont{OT1}{phv}{m}{n}\selectfont}
+  \ChNumVar{\fontsize{60}{62}\usefont{OT1}{ptm}{m}{n}\selectfont}
+  \ChTitleVar{\Huge\bfseries\rm}
+  \ChRuleWidth{1pt}
+  \renewcommand{\DOCH}{%
+    \settowidth{\px}{\CNV\FmN{\@chapapp}}
+    \addtolength{\px}{2pt}
+    \settoheight{\py}{\CNV\FmN{\@chapapp}}
+    \addtolength{\py}{1pt}
+
+    \settowidth{\mylen}{\CNV\FmN{\@chapapp}\space\CNoV\thechapter}
+    \addtolength{\mylen}{1pt}
+    \settowidth{\pxx}{\CNoV\thechapter}
+    \addtolength{\pxx}{-1pt}
+
+    \settoheight{\pyy}{\CNoV\thechapter}
+    \addtolength{\pyy}{-2pt}
+    \setlength{\myhi}{\pyy}
+    \addtolength{\myhi}{-1\py}
+    \par
+    \parbox[b]{\textwidth}{%
+    \rule[\py]{\RW}{\myhi}%
+    \hskip -\RW%
+    \rule[\pyy]{\px}{\RW}%
+    \hskip -\px%
+    \raggedright%
+    \CNV\FmN{\@chapapp}\space\CNoV\thechapter%
+    \hskip1pt%
+    \mghrulefill{\RW}%
+    \rule{\RW}{\pyy}\par\nobreak%
+    \vskip -\baselineskip%
+    \vskip -\pyy%
+    \hskip \mylen%
+    \mghrulefill{\RW}\par\nobreak%
+    \vskip \pyy}%
+    \vskip 20\p@}
+ 
+
+  \renewcommand{\DOTI}[1]{%
+    \raggedright
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@}
+
+  \renewcommand{\DOTIS}[1]{%
+    \raggedright
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@}
+ }
+
+%%%%%% Peter Osbornes' version of LENNY DEF
+
+\DeclareOption{PetersLenny}{%
+
+% five new lengths 
+\newlength{\bl}                           %  bottom left   : orig \space
+\setlength{\bl}{6pt}
+\newcommand{\BL}[1]{\setlength{\bl}{#1}}
+\newlength{\br}                           %  bottom right  : orig 1pt
+\setlength{\br}{1pt}
+\newcommand{\BR}[1]{\setlength{\br}{#1}}
+\newlength{\tl}                           %  top left      : orig 2pt
+\setlength{\tl}{2pt}
+\newcommand{\TL}[1]{\setlength{\tl}{#1}}
+\newlength{\trr}                           %  top right      :orig 1pt 
+\setlength{\trr}{1pt}
+\newcommand{\TR}[1]{\setlength{\trr}{#1}}
+\newlength{\blrule}                           %  top right      :orig 1pt 
+\setlength{\trr}{0pt}
+\newcommand{\BLrule}[1]{\setlength{\blrule}{#1}}
+
+
+  \ChNameVar{\fontsize{14}{16}\usefont{OT1}{phv}{m}{n}\selectfont}
+  \ChNumVar{\fontsize{60}{62}\usefont{OT1}{ptm}{m}{n}\selectfont}
+  \ChTitleVar{\Huge\bfseries\rm}
+  \ChRuleWidth{1pt}
+\renewcommand{\DOCH}{%
+
+
+%%%%%%%                                   tweaks for 1--9 and A--Z
+\ifcase\c@chapter\relax%
+\or\BL{-3pt}\TL{-4pt}\BR{0pt}\TR{-6pt}%1
+\or\BL{0pt}\TL{-4pt}\BR{2pt}\TR{-4pt}%2
+\or\BL{0pt}\TL{-4pt}\BR{2pt}\TR{-4pt}%3
+\or\BL{0pt}\TL{5pt}\BR{2pt}\TR{-4pt}%4
+\or\BL{0pt}\TL{3pt}\BR{2pt}\TR{-4pt}%5
+\or\BL{-1pt}\TL{0pt}\BR{2pt}\TR{-2pt}%6
+\or\BL{0pt}\TL{-3pt}\BR{2pt}\TR{-2pt}%7
+\or\BL{0pt}\TL{-3pt}\BR{2pt}\TR{-2pt}%8
+\or\BL{0pt}\TL{-3pt}\BR{-4pt}\TR{-2pt}%9
+\or\BL{-3pt}\TL{-3pt}\BR{2pt}\TR{-7pt}%10
+\or\BL{-6pt}\TL{-6pt}\BR{0pt}\TR{-9pt}%11
+\or\BL{-6pt}\TL{-6pt}\BR{2pt}\TR{-7pt}%12
+\or\BL{-5pt}\TL{-5pt}\BR{0pt}\TR{-9pt}%13
+\or\BL{-6pt}\TL{-6pt}\BR{0pt}\TR{-9pt}%14
+\or\BL{-3pt}\TL{-3pt}\BR{3pt}\TR{-6pt}%15
+\or\BL{-3pt}\TL{-3pt}\BR{3pt}\TR{-6pt}%16
+\or\BL{-5pt}\TL{-3pt}\BR{-8pt}\TR{-6pt}%17
+\or\BL{-5pt}\TL{-5pt}\BR{0pt}\TR{-9pt}%18
+\or\BL{-3pt}\TL{-3pt}\BR{-6pt}\TR{-9pt}%19
+\or\BL{0pt}\TL{0pt}\BR{0pt}\TR{-5pt}%20
+\fi
+
+\ifinapp\ifcase\c@chapter\relax%
+\or\BL{0pt}\TL{14pt}\BR{5pt}\TR{-19pt}%A
+\or\BL{0pt}\TL{-5pt}\BR{-3pt}\TR{-8pt}%B
+\or\BL{-3pt}\TL{-2pt}\BR{1pt}\TR{-6pt}\BLrule{0pt}%C
+\or\BL{0pt}\TL{-5pt}\BR{-3pt}\TR{-8pt}\BLrule{0pt}%D
+\or\BL{0pt}\TL{-5pt}\BR{2pt}\TR{-3pt}%E
+\or\BL{0pt}\TL{-5pt}\BR{-10pt}\TR{-1pt}%F
+\or\BL{-3pt}\TL{0pt}\BR{0pt}\TR{-7pt}%G
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}%H
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}%I
+\or\BL{2pt}\TL{0pt}\BR{-3pt}\TR{1pt}%J
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}%K
+\or\BL{0pt}\TL{-5pt}\BR{2pt}\TR{-19pt}%L
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}%M
+\or\BL{0pt}\TL{-5pt}\BR{-2pt}\TR{-1pt}%N
+\or\BL{-3pt}\TL{-2pt}\BR{-3pt}\TR{-11pt}%O
+\or\BL{0pt}\TL{-5pt}\BR{-9pt}\TR{-3pt}%P
+\or\BL{-3pt}\TL{-2pt}\BR{-3pt}\TR{-11pt}%Q
+\or\BL{0pt}\TL{-5pt}\BR{4pt}\TR{-8pt}%R
+\or\BL{-2pt}\TL{-2pt}\BR{-2pt}\TR{-7pt}%S
+\or\BL{-3pt}\TL{0pt}\BR{-5pt}\TR{4pt}\BLrule{8pt}%T
+\or\BL{-7pt}\TL{-11pt}\BR{-5pt}\TR{-7pt}\BLrule{0pt}%U
+\or\BL{-14pt}\TL{-5pt}\BR{-14pt}\TR{-1pt}\BLrule{14pt}%V
+\or\BL{-10pt}\TL{-9pt}\BR{-13pt}\TR{-3pt}\BLrule{7pt}%W
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}\BLrule{0pt}%X
+\or\BL{-6pt}\TL{-4pt}\BR{-7pt}\TR{1pt}\BLrule{7pt}%Y
+\or\BL{0pt}\TL{-5pt}\BR{3pt}\TR{-1pt}\BLrule{0pt}%Z
+\fi\fi
+%%%%%%%
+    \settowidth{\px}{\CNV\FmN{\@chapapp}}
+    \addtolength{\px}{\tl}        %MOD change 2pt to \tl
+    \settoheight{\py}{\CNV\FmN{\@chapapp}}
+    \addtolength{\py}{1pt}
+
+    \settowidth{\mylen}{\CNV\FmN{\@chapapp}\space\CNoV\thechapter}
+    \addtolength{\mylen}{\trr}% MOD change 1pt to \tr
+    \settowidth{\pxx}{\CNoV\thechapter}
+    \addtolength{\pxx}{-1pt}
+
+    \settoheight{\pyy}{\CNoV\thechapter}
+    \addtolength{\pyy}{-2pt}
+    \setlength{\myhi}{\pyy}
+    \addtolength{\myhi}{-1\py}
+    \par
+    \parbox[b]{\textwidth}{%
+    \rule[\py]{\RW}{\myhi}%
+    \hskip -\RW%
+    \rule[\pyy]{\px}{\RW}% 
+    \hskip -\px%
+    \raggedright%
+    \CNV\FmN{\@chapapp}\rule{\blrule}{\RW}\hskip\bl\CNoV\thechapter%MOD 
+%    \CNV\FmN{\@chapapp}\space\CNoV\thechapter                     %ORIGINAL
+    \hskip\br%                           %MOD 1pt to \br
+    \mghrulefill{\RW}% 
+    \rule{\RW}{\pyy}\par\nobreak% 
+    \vskip -\baselineskip%
+    \vskip -\pyy%
+    \hskip \mylen%
+    \mghrulefill{\RW}\par\nobreak%
+    \vskip \pyy}%
+    \vskip 20\p@}
+ 
+
+  \renewcommand{\DOTI}[1]{%
+    \raggedright
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@}
+
+  \renewcommand{\DOTIS}[1]{%
+    \raggedright
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@}
+ }
+
+
+%
+
+
+%%%%%% BJORNSTRUP DEF
+
+\DeclareOption{Bjornstrup}{%
+  \usecolortrue
+  % pzc (Zapf Chancelery) is nice.  ppl (Palatino) is cool too.
+  \ChNumVar{\fontsize{76}{80}\usefont{OT1}{pzc}{m}{n}\selectfont}
+  \ChTitleVar{\raggedleft\Large\sffamily\bfseries}
+
+  \setlength{\myhi}{10pt}         % Space between grey box border and text
+  \setlength{\mylen}{\textwidth}
+  \addtolength{\mylen}{-2\myhi}
+  \renewcommand{\DOCH}{%
+    \settowidth{\py}{\CNoV\thechapter}
+    \addtolength{\py}{-10pt}      % Amount of space by which the
+%                                  % number is shifted right
+    \fboxsep=0pt%
+    \colorbox[gray]{.85}{\rule{0pt}{40pt}\parbox[b]{\textwidth}{\hfill}}%
+    \kern-\py\raise20pt%
+    \hbox{\color[gray]{.5}\CNoV\thechapter}\\%
+  }
+  
+  \renewcommand{\DOTI}[1]{%
+    \nointerlineskip\raggedright%
+    \fboxsep=\myhi%
+    \vskip-1ex%
+    \colorbox[gray]{.85}{\parbox[t]{\mylen}{\CTV\FmTi{#1}}}\par\nobreak%
+    \vskip 40\p@%
+  }
+
+  \renewcommand{\DOTIS}[1]{%
+    \fboxsep=0pt
+    \colorbox[gray]{.85}{\rule{0pt}{40pt}\parbox[b]{\textwidth}{\hfill}}\\%
+    \nointerlineskip\raggedright%
+    \fboxsep=\myhi%
+    \colorbox[gray]{.85}{\parbox[t]{\mylen}{\CTV\FmTi{#1}}}\par\nobreak%
+    \vskip 40\p@%
+  }
+}
+
+
+%%%%%%% GLENN DEF
+
+
+\DeclareOption{Glenn}{%
+  \ChNameVar{\bfseries\Large\sf}
+  \ChNumVar{\Huge}
+  \ChTitleVar{\bfseries\Large\rm}
+  \ChRuleWidth{1pt}
+  \ChNameUpperCase
+  \ChTitleUpperCase
+  \renewcommand{\DOCH}{%
+    \settoheight{\myhi}{\CTV\FmTi{Test}}
+    \setlength{\py}{\baselineskip}
+    \addtolength{\py}{\RW}
+    \addtolength{\py}{\myhi}
+    \setlength{\pyy}{\py}
+    \addtolength{\pyy}{-1\RW}
+     
+    \raggedright
+    \CNV\FmN{\@chapapp}\space\CNoV\thechapter
+    \hskip 3pt\mghrulefill{\RW}\rule[-1\pyy]{2\RW}{\py}\par\nobreak}
+
+  \renewcommand{\DOTI}[1]{%
+    \addtolength{\pyy}{-4pt}
+    \settoheight{\myhi}{\CTV\FmTi{#1}}
+    \addtolength{\myhi}{\py}
+    \addtolength{\myhi}{-1\RW}
+    \vskip -1\pyy
+    \rule{2\RW}{\myhi}\mghrulefill{\RW}\hskip 2pt
+    \raggedleft\CTV\FmTi{#1}\par\nobreak
+    \vskip 80\p@}
+
+\newlength{\backskip}
+  \renewcommand{\DOTIS}[1]{%
+%    \setlength{\py}{10pt}
+%    \setlength{\pyy}{\py}
+%    \addtolength{\pyy}{\RW}
+%    \setlength{\myhi}{\baselineskip}
+%    \addtolength{\myhi}{\pyy}
+%    \mghrulefill{\RW}\rule[-1\py]{2\RW}{\pyy}\par\nobreak
+%    \addtolength{}{}
+%\vskip -1\baselineskip
+%    \rule{2\RW}{\myhi}\mghrulefill{\RW}\hskip 2pt
+%    \raggedleft\CTV\FmTi{#1}\par\nobreak
+%    \vskip 60\p@}
+%% Fix suggested by Tomas Lundberg
+    \setlength{\py}{25pt}  % eller vad man vill
+    \setlength{\pyy}{\py}
+    \setlength{\backskip}{\py}
+    \addtolength{\backskip}{2pt}
+    \addtolength{\pyy}{\RW}
+    \setlength{\myhi}{\baselineskip}
+    \addtolength{\myhi}{\pyy}
+    \mghrulefill{\RW}\rule[-1\py]{2\RW}{\pyy}\par\nobreak
+    \vskip -1\backskip
+    \rule{2\RW}{\myhi}\mghrulefill{\RW}\hskip 3pt %
+    \raggedleft\CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@}
+ }
+
+%%%%%%% CONNY DEF
+
+\DeclareOption{Conny}{%
+  \ChNameUpperCase
+  \ChTitleUpperCase  
+  \ChNameVar{\centering\Huge\rm\bfseries}
+  \ChNumVar{\Huge}
+  \ChTitleVar{\centering\Huge\rm}
+  \ChRuleWidth{2pt}
+
+  \renewcommand{\DOCH}{%
+    \mghrulefill{3\RW}\par\nobreak
+    \vskip -0.5\baselineskip
+    \mghrulefill{\RW}\par\nobreak
+    \CNV\FmN{\@chapapp}\space \CNoV\thechapter
+    \par\nobreak
+    \vskip -0.5\baselineskip
+   }
+  \renewcommand{\DOTI}[1]{%
+    \mghrulefill{\RW}\par\nobreak
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 60\p@
+    }
+  \renewcommand{\DOTIS}[1]{%
+    \mghrulefill{\RW}\par\nobreak
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 60\p@
+    }
+  }
+
+%%%%%%% REJNE DEF
+
+\DeclareOption{Rejne}{%
+
+  \ChNameUpperCase
+  \ChTitleUpperCase  
+  \ChNameVar{\centering\Large\rm}
+  \ChNumVar{\Huge}
+  \ChTitleVar{\centering\Huge\rm}
+  \ChRuleWidth{1pt}
+  \renewcommand{\DOCH}{%
+    \settoheight{\py}{\CNoV\thechapter}
+    \parskip=0pt plus 1pt % Set parskip to default, just in case v1.31
+    \addtolength{\py}{-1pt}
+    \CNV\FmN{\@chapapp}\par\nobreak
+    \vskip 20\p@
+    \setlength{\myhi}{2\baselineskip}
+    \setlength{\px}{\myhi}
+    \addtolength{\px}{-1\RW}
+    \rule[-1\px]{\RW}{\myhi}\mghrulefill{\RW}\hskip
+    10pt\raisebox{-0.5\py}{\CNoV\thechapter}\hskip 10pt\mghrulefill{\RW}\rule[-1\px]{\RW}{\myhi}\par\nobreak
+     \vskip -3\p@% Added -2pt vskip to correct for streched text v1.31
+    }
+  \renewcommand{\DOTI}[1]{%
+    \setlength{\mylen}{\textwidth}
+    \parskip=0pt plus 1pt % Set parskip to default, just in case v1.31
+    \addtolength{\mylen}{-2\RW}
+    {\vrule width\RW}\parbox{\mylen}{\CTV\FmTi{#1}}{\vrule width\RW}\par\nobreak%
+    \vskip -3pt\rule{\RW}{2\baselineskip}\mghrulefill{\RW}\rule{\RW}{2\baselineskip}%
+    \vskip 60\p@% Added -2pt in vskip to correct for streched text v1.31
+    }
+  \renewcommand{\DOTIS}[1]{%
+    \setlength{\py}{\fboxrule}
+    \setlength{\fboxrule}{\RW}
+    \setlength{\mylen}{\textwidth}
+    \addtolength{\mylen}{-2\RW}
+    \fbox{\parbox{\mylen}{\vskip 2\baselineskip\CTV\FmTi{#1}\par\nobreak\vskip \baselineskip}} 
+    \setlength{\fboxrule}{\py}
+    \vskip 60\p@
+    }
+  }
+
+
+%%%%%%% BJARNE DEF
+
+\DeclareOption{Bjarne}{%
+  \ChNameUpperCase
+  \ChTitleUpperCase  
+  \ChNameVar{\raggedleft\normalsize\rm}
+  \ChNumVar{\raggedleft \bfseries\Large}
+  \ChTitleVar{\raggedleft \Large\rm}
+  \ChRuleWidth{1pt}
+
+
+%% Note thechapter -> c@chapter fix appendix bug
+%% Fixed misspelled 12
+
+  \newcounter{AlphaCnt}
+  \newcounter{AlphaDecCnt}
+  \newcommand{\AlphaNo}{%
+    \ifcase\number\theAlphaCnt
+      \ifnum\c@chapter=0
+        ZERO\else{}\fi
+    \or ONE\or TWO\or THREE\or FOUR\or FIVE
+    \or SIX\or SEVEN\or EIGHT\or NINE\or TEN
+    \or ELEVEN\or TWELVE\or THIRTEEN\or FOURTEEN\or FIFTEEN
+    \or SIXTEEN\or SEVENTEEN\or EIGHTEEN\or NINETEEN\fi
+}
+
+  \newcommand{\AlphaDecNo}{%
+    \setcounter{AlphaDecCnt}{0}
+    \@whilenum\number\theAlphaCnt>0\do
+      {\addtocounter{AlphaCnt}{-10}
+       \addtocounter{AlphaDecCnt}{1}}
+     \ifnum\number\theAlphaCnt=0
+     \else
+       \addtocounter{AlphaDecCnt}{-1}
+       \addtocounter{AlphaCnt}{10}
+     \fi
+     
+     
+    \ifcase\number\theAlphaDecCnt\or TEN\or TWENTY\or THIRTY\or
+    FORTY\or FIFTY\or SIXTY\or SEVENTY\or EIGHTY\or NINETY\fi
+    }
+  \newcommand{\TheAlphaChapter}{%
+    
+    \ifinapp 
+      \thechapter
+    \else
+      \setcounter{AlphaCnt}{\c@chapter}
+      \ifnum\c@chapter<20
+        \AlphaNo
+      \else
+        \AlphaDecNo\AlphaNo
+      \fi
+    \fi
+    }  
+  \renewcommand{\DOCH}{%
+    \mghrulefill{\RW}\par\nobreak
+    \CNV\FmN{\@chapapp}\par\nobreak 
+    \CNoV\TheAlphaChapter\par\nobreak
+    \vskip -1\baselineskip\vskip 5pt\mghrulefill{\RW}\par\nobreak
+    \vskip 20\p@
+    }
+  \renewcommand{\DOTI}[1]{%
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@
+    }
+  \renewcommand{\DOTIS}[1]{%
+    \CTV\FmTi{#1}\par\nobreak
+    \vskip 40\p@
+    }
+}
+
+\DeclareOption*{%
+  \PackageWarning{fancychapter}{unknown style option}
+  }
+
+\ProcessOptions* \relax
+
+\ifusecolor
+  \RequirePackage{color} 
+\fi
+\def\@makechapterhead#1{%
+  \vspace*{50\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter%%%%% Fix for frontmatter, mainmatter, and backmatter 040920
+        \DOCH
+      \fi
+    \fi
+    \interlinepenalty\@M
+    \if@mainmatter%%%%% Fix for frontmatter, mainmatter, and backmatter 060424
+      \DOTI{#1}%
+    \else%
+      \DOTIS{#1}%
+    \fi
+  }}
+
+
+%%% Begin: To avoid problem with scrbook.cls (fncychap version 1.32)
+
+%%OUT:
+%\def\@schapter#1{\if@twocolumn
+%                   \@topnewpage[\@makeschapterhead{#1}]%
+%                 \else
+%                   \@makeschapterhead{#1}%
+%                   \@afterheading
+%                 \fi}
+
+%%IN:
+\def\@schapter#1{%
+\if@twocolumn%
+  \@makeschapterhead{#1}%
+\else%
+  \@makeschapterhead{#1}%
+  \@afterheading%
+\fi}
+
+%%% End: To avoid problem with scrbook.cls (fncychap version 1.32)
+
+\def\@makeschapterhead#1{%
+  \vspace*{50\p@}%
+  {\parindent \z@ \raggedright
+    \normalfont
+    \interlinepenalty\@M
+    \DOTIS{#1}
+    \vskip 40\p@
+  }}
+
+\endinput
+
+

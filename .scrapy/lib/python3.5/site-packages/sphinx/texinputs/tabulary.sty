@@ -1,0 +1,452 @@
+%%
+%% This is file `tabulary.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tabulary.dtx  (with options: `package')
+%% DRAFT VERSION
+%%
+%% File `tabulary.dtx'.
+%% Copyright (C) 1995 1996 2003 2008 David Carlisle
+%% This file may be distributed under the terms of the LPPL.
+%% See 00readme.txt for details.
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tabulary}
+          [2008/12/01 v0.9 tabulary package (DPC)]
+\RequirePackage{array}
+\catcode`\Z=14
+\DeclareOption{debugshow}{\catcode`\Z=9\relax}
+\ProcessOptions
+\def\arraybackslash{\let\\=\@arraycr}
+\def\@finalstrut#1{%
+  \unskip\ifhmode\nobreak\fi\vrule\@width\z@\@height\z@\@depth\dp#1}
+\newcount\TY@count
+\def\tabulary{%
+  \let\TY@final\tabular
+  \let\endTY@final\endtabular
+  \TY@tabular}
+\def\TY@tabular#1{%
+  \edef\TY@{\@currenvir}%
+  {\ifnum0=`}\fi
+  \@ovxx\TY@linewidth
+  \@ovyy\TY@tablewidth
+  \count@\z@
+  \@tempswatrue
+  \@whilesw\if@tempswa\fi{%
+  \advance\count@\@ne
+  \expandafter\ifx\csname TY@F\the\count@\endcsname\relax
+    \@tempswafalse
+  \else
+    \expandafter\let\csname TY@SF\the\count@\expandafter\endcsname
+                     \csname TY@F\the\count@\endcsname
+    \global\expandafter\let\csname TY@F\the\count@\endcsname\relax
+    \expandafter\let\csname TY@S\the\count@\expandafter\endcsname
+                     \csname TY@\the\count@\endcsname
+  \fi}%
+    \global\TY@count\@ne
+    \TY@width\xdef{0pt}%
+    \global\TY@tablewidth\z@
+    \global\TY@linewidth#1\relax
+Z\message{^^J^^JTable^^J%
+Z        Target Width: \the\TY@linewidth^^J%
+Z        \string\tabcolsep: \the\tabcolsep\space
+Z        \string\arrayrulewidth: \the\arrayrulewidth\space
+Z        \string\doublerulesep: \the\doublerulesep^^J%
+Z        \string\tymin: \the\tymin\space
+Z        \string\tymax: \the\tymax^^J}%
+    \let\@classz\TY@classz
+    \let\verb\TX@verb
+    \toks@{}\TY@get@body}
+\let\TY@@mkpream\@mkpream
+\def\TY@mkpream{%
+    \def\@addamp{%
+      \if@firstamp \@firstampfalse \else
+      \global\advance\TY@count\@ne
+      \edef\@preamble{\@preamble &}\fi
+      \TY@width\xdef{0pt}}%
+    \def\@acol{%
+      \TY@subwidth\col@sep
+      \@addtopreamble{\hskip\col@sep}}%
+    \let\@arrayrule\TY@arrayrule
+    \let\@classvi\TY@classvi
+    \def\@classv{\save@decl
+      \expandafter\NC@ecs\@nextchar\extracolsep{}\extracolsep\@@@
+      \sbox\z@{\d@llarbegin\@nextchar\d@llarend}%
+      \TY@subwidth{\wd\z@}%
+      \@addtopreamble{\d@llarbegin\the@toks\the\count@\relax\d@llarend}%
+      \prepnext@tok}%
+  \global\let\@mkpream\TY@@mkpream
+  \TY@@mkpream}
+\def\TY@arrayrule{%
+  \TY@subwidth\arrayrulewidth
+  \@addtopreamble \vline}
+\def\TY@classvi{\ifcase \@lastchclass
+  \@acol \or
+  \TY@subwidth\doublerulesep
+  \@addtopreamble{\hskip \doublerulesep}\or
+  \@acol \or
+  \@classvii
+  \fi}
+\def\TY@tab{%
+  \setbox\z@\hbox\bgroup
+  \let\[$\let\]$%
+  \let\equation$\let\endequation$%
+    \col@sep\tabcolsep
+    \let\d@llarbegin\begingroup\let\d@llarend\endgroup
+    \let\@mkpream\TY@mkpream
+      \def\multicolumn##1##2##3{\multispan##1\relax}%
+    \CT@start\TY@tabarray}
+\def\TY@tabarray{\@ifnextchar[{\TY@array}{\@array[t]}}
+\def\TY@array[#1]{\@array[t]}
+\def\TY@width#1{%
+  \expandafter#1\csname TY@\the\TY@count\endcsname}
+\def\TY@subwidth#1{%
+  \TY@width\dimen@
+  \advance\dimen@-#1\relax
+  \TY@width\xdef{\the\dimen@}%
+  \global\advance\TY@linewidth-#1\relax}
+\def\endtabulary{%
+  \gdef\@halignto{}%
+  \let\TY@footnote\footnote%
+  \def\footnote{}% prevent footnotes from doing anything
+  \expandafter\TY@tab\the\toks@
+  \crcr\omit
+  {\xdef\TY@save@row{}%
+     \loop
+    \advance\TY@count\m@ne
+    \ifnum\TY@count>\z@
+    \xdef\TY@save@row{\TY@save@row&\omit}%
+    \repeat}\TY@save@row
+  \endarray\global\setbox1=\lastbox\setbox0=\vbox{\unvbox1
+    \unskip\global\setbox1=\lastbox}\egroup
+  \dimen@\TY@linewidth
+  \divide\dimen@\TY@count
+  \ifdim\dimen@<\tymin
+    \TY@warn{tymin too large (\the\tymin), resetting to \the\dimen@}%
+    \tymin\dimen@
+  \fi
+  \setbox\tw@=\hbox{\unhbox\@ne
+    \loop
+\@tempdima=\lastskip
+\ifdim\@tempdima>\z@
+Z   \message{ecs=\the\@tempdima^^J}%
+   \global\advance\TY@linewidth-\@tempdima
+\fi
+    \unskip
+    \setbox\tw@=\lastbox
+    \ifhbox\tw@
+Z     \message{Col \the\TY@count: Initial=\the\wd\tw@\space}%
+      \ifdim\wd\tw@>\tymax
+        \wd\tw@\tymax
+Z       \message{> max\space}%
+Z     \else
+Z       \message{ \@spaces\space}%
+      \fi
+  \TY@width\dimen@
+Z \message{\the\dimen@\space}%
+  \advance\dimen@\wd\tw@
+Z \message{Final=\the\dimen@\space}%
+   \TY@width\xdef{\the\dimen@}%
+      \ifdim\dimen@<\tymin
+Z        \message{< tymin}%
+         \global\advance\TY@linewidth-\dimen@
+         \expandafter\xdef\csname TY@F\the\TY@count\endcsname
+                                                        {\the\dimen@}%
+       \else
+      \expandafter\ifx\csname TY@F\the\TY@count\endcsname\z@
+Z        \message{***}%
+         \global\advance\TY@linewidth-\dimen@
+         \expandafter\xdef\csname TY@F\the\TY@count\endcsname
+                                                        {\the\dimen@}%
+        \else
+Z        \message{> tymin}%
+         \global\advance\TY@tablewidth\dimen@
+         \global\expandafter\let\csname TY@F\the\TY@count\endcsname
+                                                               \maxdimen
+       \fi\fi
+       \advance\TY@count\m@ne
+    \repeat}%
+    \TY@checkmin
+    \TY@checkmin
+    \TY@checkmin
+    \TY@checkmin
+    \TY@count\z@
+    \let\TY@box\TY@box@v
+    \let\footnote\TY@footnote % restore footnotes
+  {\expandafter\TY@final\the\toks@\endTY@final}%
+  \count@\z@
+  \@tempswatrue
+  \@whilesw\if@tempswa\fi{%
+  \advance\count@\@ne
+  \expandafter\ifx\csname TY@SF\the\count@\endcsname\relax
+    \@tempswafalse
+  \else
+    \global\expandafter\let\csname TY@F\the\count@\expandafter\endcsname
+                   \csname TY@SF\the\count@\endcsname
+    \global\expandafter\let\csname TY@\the\count@\expandafter\endcsname
+                   \csname TY@S\the\count@\endcsname
+  \fi}%
+  \TY@linewidth\@ovxx
+  \TY@tablewidth\@ovyy
+    \ifnum0=`{\fi}}
+\def\TY@checkmin{%
+  \let\TY@checkmin\relax
+\ifdim\TY@tablewidth>\z@
+  \Gscale@div\TY@ratio\TY@linewidth\TY@tablewidth
+ \ifdim\TY@tablewidth <\TY@linewidth
+   \def\TY@ratio{1}%
+ \fi
+\else
+  \TY@warn{No suitable columns!}%
+  \def\TY@ratio{1}%
+\fi
+\count@\z@
+Z \message{^^JLine Width: \the\TY@linewidth,
+Z             Natural Width: \the\TY@tablewidth,
+Z             Ratio: \TY@ratio^^J}%
+\@tempdima\z@
+\loop
+\ifnum\count@<\TY@count
+\advance\count@\@ne
+  \ifdim\csname TY@F\the\count@\endcsname>\tymin
+    \dimen@\csname TY@\the\count@\endcsname
+    \dimen@\TY@ratio\dimen@
+    \ifdim\dimen@<\tymin
+Z     \message{Column \the\count@\space ->}%
+      \global\expandafter\let\csname TY@F\the\count@\endcsname\tymin
+      \global\advance\TY@linewidth-\tymin
+      \global\advance\TY@tablewidth-\csname TY@\the\count@\endcsname
+      \let\TY@checkmin\TY@@checkmin
+    \else
+      \expandafter\xdef\csname TY@F\the\count@\endcsname{\the\dimen@}%
+      \advance\@tempdima\csname TY@F\the\count@\endcsname
+    \fi
+  \fi
+Z \dimen@\csname TY@F\the\count@\endcsname\message{\the\dimen@, }%
+\repeat
+Z \message{^^JTotal:\the\@tempdima^^J}%
+}
+\let\TY@@checkmin\TY@checkmin
+\newdimen\TY@linewidth
+\def\tyformat{\everypar{{\nobreak\hskip\z@skip}}}
+\newdimen\tymin
+\tymin=10pt
+\newdimen\tymax
+\tymax=2\textwidth
+\def\@testpach{\@chclass
+ \ifnum \@lastchclass=6 \@ne \@chnum \@ne \else
+  \ifnum \@lastchclass=7 5 \else
+   \ifnum \@lastchclass=8 \tw@ \else
+    \ifnum \@lastchclass=9 \thr@@
+   \else \z@
+   \ifnum \@lastchclass = 10 \else
+   \edef\@nextchar{\expandafter\string\@nextchar}%
+   \@chnum
+   \if \@nextchar c\z@ \else
+    \if \@nextchar l\@ne \else
+     \if \@nextchar r\tw@ \else
+   \if \@nextchar C7 \else
+    \if \@nextchar L8 \else
+     \if \@nextchar R9 \else
+     \if \@nextchar J10 \else
+   \z@ \@chclass
+   \if\@nextchar |\@ne \else
+    \if \@nextchar !6 \else
+     \if \@nextchar @7 \else
+      \if \@nextchar <8 \else
+       \if \@nextchar >9 \else
+  10
+  \@chnum
+  \if \@nextchar m\thr@@\else
+   \if \@nextchar p4 \else
+    \if \@nextchar b5 \else
+   \z@ \@chclass \z@ \@preamerr \z@ \fi \fi \fi \fi\fi \fi \fi\fi \fi
+     \fi  \fi  \fi  \fi  \fi  \fi \fi \fi \fi \fi \fi}
+\def\TY@classz{%
+  \@classx
+  \@tempcnta\count@
+  \ifx\TY@box\TY@box@v
+    \global\advance\TY@count\@ne
+  \fi
+  \let\centering c%
+  \let\raggedright\noindent
+  \let\raggedleft\indent
+  \let\arraybackslash\relax
+  \prepnext@tok
+  \ifnum\@chnum<4
+    \global\expandafter\let\csname TY@F\the\TY@count\endcsname\z@
+  \fi
+  \ifnum\@chnum=6
+    \global\expandafter\let\csname TY@F\the\TY@count\endcsname\z@
+  \fi
+  \@addtopreamble{%
+    \ifcase\@chnum
+      \hfil \d@llarbegin\insert@column\d@llarend \hfil \or
+      \kern\z@
+       \d@llarbegin \insert@column \d@llarend \hfil \or
+      \hfil\kern\z@ \d@llarbegin \insert@column \d@llarend \or
+      $\vcenter\@startpbox{\@nextchar}\insert@column \@endpbox $\or
+      \vtop \@startpbox{\@nextchar}\insert@column \@endpbox \or
+      \vbox \@startpbox{\@nextchar}\insert@column \@endpbox \or
+      \d@llarbegin \insert@column \d@llarend \or% dubious "s" case
+      \TY@box\centering\or
+      \TY@box\raggedright\or
+      \TY@box\raggedleft\or
+      \TY@box\relax
+    \fi}\prepnext@tok}
+\def\TY@box#1{%
+  \ifx\centering#1%
+      \hfil \d@llarbegin\insert@column\d@llarend \hfil \else
+  \ifx\raggedright#1%
+        \kern\z@%<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      \d@llarbegin \insert@column \d@llarend \hfil \else
+  \ifx\raggedleft#1%
+      \hfil\kern\z@ \d@llarbegin \insert@column \d@llarend \else
+  \ifx\relax#1%
+       \d@llarbegin \insert@column \d@llarend
+  \fi  \fi  \fi  \fi}
+\def\TY@box@v#1{%
+      \vtop \@startpbox{\csname TY@F\the\TY@count\endcsname}%
+              #1\arraybackslash\tyformat
+                              \insert@column\@endpbox}
+\newdimen\TY@tablewidth
+\def\Gscale@div#1#2#3{%
+  \setlength\dimen@{#3}%
+  \ifdim\dimen@=\z@
+    \PackageError{graphics}{Division by 0}\@eha
+    \dimen@#2%
+  \fi
+  \edef\@tempd{\the\dimen@}%
+  \setlength\dimen@{#2}%
+  \count@65536\relax
+  \ifdim\dimen@<\z@
+    \dimen@-\dimen@
+    \count@-\count@
+  \fi
+  \loop
+    \ifdim\dimen@<8192\p@
+      \dimen@\tw@\dimen@
+      \divide\count@\tw@
+  \repeat
+  \dimen@ii=\@tempd\relax
+  \divide\dimen@ii\count@
+  \divide\dimen@\dimen@ii
+  \edef#1{\strip@pt\dimen@}}
+\long\def\TY@get@body#1\end
+  {\toks@\expandafter{\the\toks@#1}\TY@find@end}
+\def\TY@find@end#1{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\TY@\def\@tempa{\end{#1}}\expandafter\@tempa
+  \else\toks@\expandafter
+    {\the\toks@\end{#1}}\expandafter\TY@get@body\fi}
+\def\TY@warn{%
+  \PackageWarning{tabulary}}
+\catcode`\Z=11
+\AtBeginDocument{
+\@ifpackageloaded{colortbl}{%
+\expandafter\def\expandafter\@mkpream\expandafter#\expandafter1%
+  \expandafter{%
+    \expandafter\let\expandafter\CT@setup\expandafter\relax
+    \expandafter\let\expandafter\CT@color\expandafter\relax
+    \expandafter\let\expandafter\CT@do@color\expandafter\relax
+    \expandafter\let\expandafter\color\expandafter\relax
+    \expandafter\let\expandafter\CT@column@color\expandafter\relax
+    \expandafter\let\expandafter\CT@row@color\expandafter\relax
+    \@mkpream{#1}}
+\let\TY@@mkpream\@mkpream
+\def\TY@classz{%
+  \@classx
+  \@tempcnta\count@
+  \ifx\TY@box\TY@box@v
+    \global\advance\TY@count\@ne
+  \fi
+  \let\centering c%
+  \let\raggedright\noindent
+  \let\raggedleft\indent
+  \let\arraybackslash\relax
+  \prepnext@tok
+\expandafter\CT@extract\the\toks\@tempcnta\columncolor!\@nil
+  \ifnum\@chnum<4
+    \global\expandafter\let\csname TY@F\the\TY@count\endcsname\z@
+  \fi
+  \ifnum\@chnum=6
+    \global\expandafter\let\csname TY@F\the\TY@count\endcsname\z@
+  \fi
+  \@addtopreamble{%
+    \setbox\z@\hbox\bgroup\bgroup
+    \ifcase\@chnum
+      \hskip\stretch{.5}\kern\z@
+      \d@llarbegin\insert@column\d@llarend\hskip\stretch{.5}\or
+      \kern\z@%<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       \d@llarbegin \insert@column \d@llarend \hfill \or
+      \hfill\kern\z@ \d@llarbegin \insert@column \d@llarend \or
+      $\vcenter\@startpbox{\@nextchar}\insert@column \@endpbox $\or
+      \vtop \@startpbox{\@nextchar}\insert@column \@endpbox \or
+      \vbox \@startpbox{\@nextchar}\insert@column \@endpbox \or
+      \d@llarbegin \insert@column \d@llarend \or% dubious s case
+      \TY@box\centering\or
+      \TY@box\raggedright\or
+      \TY@box\raggedleft\or
+      \TY@box\relax
+    \fi
+ \egroup\egroup
+\begingroup
+  \CT@setup
+  \CT@column@color
+  \CT@row@color
+  \CT@do@color
+\endgroup
+        \@tempdima\ht\z@
+        \advance\@tempdima\minrowclearance
+        \vrule\@height\@tempdima\@width\z@
+\unhbox\z@
+}\prepnext@tok}%
+    \def\TY@arrayrule{%
+      \TY@subwidth\arrayrulewidth
+      \@addtopreamble{{\CT@arc@\vline}}}%
+    \def\TY@classvi{\ifcase \@lastchclass
+      \@acol \or
+      \TY@subwidth\doublerulesep
+      \ifx\CT@drsc@\relax
+        \@addtopreamble{\hskip\doublerulesep}%
+      \else
+        \@addtopreamble{{\CT@drsc@\vrule\@width\doublerulesep}}%
+      \fi\or
+      \@acol \or
+      \@classvii
+      \fi}%
+}{%
+\let\CT@start\relax
+}
+}
+{\uccode`\*=`\ %
+\uppercase{\gdef\TX@verb{%
+  \leavevmode\null\TX@vwarn
+  {\ifnum0=`}\fi\ttfamily\let\\\ignorespaces
+  \@ifstar{\let~*\TX@vb}{\TX@vb}}}}
+\def\TX@vb#1{\def\@tempa##1#1{\toks@{##1}\edef\@tempa{\the\toks@}%
+    \expandafter\TX@v\meaning\@tempa\\ \\\ifnum0=`{\fi}}\@tempa!}
+\def\TX@v#1!{\afterassignment\TX@vfirst\let\@tempa= }
+\begingroup
+\catcode`\*=\catcode`\#
+\catcode`\#=12
+\gdef\TX@vfirst{%
+  \if\@tempa#%
+    \def\@tempb{\TX@v@#}%
+  \else
+    \let\@tempb\TX@v@
+    \if\@tempa\space~\else\@tempa\fi
+  \fi
+  \@tempb}
+\gdef\TX@v@*1 *2{%
+  \TX@v@hash*1##\relax\if*2\\\else~\expandafter\TX@v@\fi*2}
+\gdef\TX@v@hash*1##*2{*1\ifx*2\relax\else#\expandafter\TX@v@hash\fi*2}
+\endgroup
+\def\TX@vwarn{%
+  \@warning{\noexpand\verb may be unreliable inside tabularx/y}%
+  \global\let\TX@vwarn\@empty}
+\endinput
+%%
+%% End of file `tabulary.sty'.

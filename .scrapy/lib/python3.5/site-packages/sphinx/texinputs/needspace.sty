@@ -1,0 +1,35 @@
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{needspace}[2010/09/12 v1.3d reserve vertical space]
+
+\newcommand{\needspace}[1]{%
+  \begingroup
+    \setlength{\dimen@}{#1}%
+    \vskip\z@\@plus\dimen@
+    \penalty -100\vskip\z@\@plus -\dimen@
+    \vskip\dimen@
+    \penalty 9999%
+    \vskip -\dimen@
+    \vskip\z@skip % hide the previous |\vskip| from |\addvspace|
+  \endgroup
+}
+
+\newcommand{\Needspace}{\@ifstar{\@sneedsp@}{\@needsp@}}
+
+\newcommand{\@sneedsp@}[1]{\par \penalty-100\begingroup
+  \setlength{\dimen@}{#1}%
+  \dimen@ii\pagegoal \advance\dimen@ii-\pagetotal
+  \ifdim \dimen@>\dimen@ii
+    \break
+  \fi\endgroup}
+
+\newcommand{\@needsp@}[1]{\par \penalty-100\begingroup
+  \setlength{\dimen@}{#1}%
+  \dimen@ii\pagegoal \advance\dimen@ii-\pagetotal
+  \ifdim \dimen@>\dimen@ii
+    \ifdim \dimen@ii>\z@
+      \vfil
+    \fi
+    \break
+  \fi\endgroup}
+

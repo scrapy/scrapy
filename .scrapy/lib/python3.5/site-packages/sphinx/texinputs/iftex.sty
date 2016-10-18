@@ -1,0 +1,97 @@
+%%
+%% This is file `iftex.sty',
+
+%% 
+%%   __________________________________
+%%   Copyright © 2010–2013 Persian TeX Group
+%% 
+%%   License information appended.
+%% 
+%% 
+\csname iftexloaded\endcsname
+\let\iftexloaded\endinput
+\expandafter\ifx\csname ProvidesPackage\endcsname\relax\else
+  \ProvidesPackage{iftex}
+    [2013/04/04 v0.2 Provides if(tex) conditional for PDFTeX, XeTeX, and LuaTeX]
+\fi
+\def\RequirePDFTeX{%
+  \ifPDFTeX\else
+    \begingroup
+      \errorcontextlines=-1\relax
+      \newlinechar=10\relax
+      \errmessage{^^J
+      ********************************************^^J
+      * PDFTeX is required to compile this document.^^J
+      * Sorry!^^J
+      ********************************************}%
+    \endgroup
+  \fi}
+\def\RequireXeTeX{%
+  \ifXeTeX\else
+    \begingroup
+      \errorcontextlines=-1\relax
+      \newlinechar=10\relax
+      \errmessage{^^J
+      ********************************************^^J
+      * XeTeX is required to compile this document.^^J
+      * Sorry!^^J
+      ********************************************}%
+    \endgroup
+  \fi}
+\def\RequireLuaTeX{%
+  \ifLuaTeX\else
+    \begingroup
+      \errorcontextlines=-1\relax
+      \newlinechar=10\relax
+      \errmessage{^^J
+      ********************************************^^J
+      * LuaTeX is required to compile this document.^^J
+      * Sorry!^^J
+      ********************************************}%
+    \endgroup
+  \fi}
+\expandafter\ifx\csname ifPDFTeX\endcsname\relax\else
+  \expandafter\endinput
+\fi
+\expandafter\ifx\csname ifXeTeX\endcsname\relax\else
+  \expandafter\endinput
+\fi
+\expandafter\ifx\csname ifLuaTeX\endcsname\relax\else
+  \expandafter\endinput
+\fi
+\newif\ifPDFTeX
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname pdfmatch\endcsname\relax
+  \PDFTeXfalse
+\else
+  \PDFTeXtrue
+\fi
+\newif\ifXeTeX
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname XeTeXinterchartoks\endcsname\relax
+  \XeTeXfalse
+\else
+  \XeTeXtrue
+\fi
+\newif\ifLuaTeX
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname directlua\endcsname\relax
+  \LuaTeXfalse
+\else
+  \LuaTeXtrue
+\fi
+%% 
+%% Copyright © 2010–2013      by Persian TeX Group     <persian-tex@tug.org>
+%% 
+%% Distributable under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status)
+%% by Persian TeX Group.
+%% 
+%% 
+%% 
+%% 
+%%
+%% End of file `iftex.sty'.

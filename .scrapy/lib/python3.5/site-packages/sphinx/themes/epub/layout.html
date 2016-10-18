@@ -1,0 +1,28 @@
+{#
+    epub/layout.html
+    ~~~~~~~~~~~~~~~~
+
+    Sphinx layout template for the epub theme.
+
+    :copyright: Copyright 2007-2016 by the Sphinx team, see AUTHORS.
+    :license: BSD, see LICENSE for details.
+#}
+{%- extends "basic/layout.html" %}
+
+{%- block doctype -%}
+{{ doctype }}
+{%- endblock -%}
+{# add only basic navigation links #}
+{% block sidebar1 %}{% endblock %}
+{% block sidebar2 %}{% endblock %}
+{% block relbar2 %}{% endblock %}
+{% block linktags %}{% endblock %}
+
+{# redefine relbar1 and footer to only call super if options are true #}
+{%- block relbar1 %}
+{% if theme_relbar1|tobool %}{{ super() }}{% endif %}
+{%- endblock %}
+{%- block footer %}
+{% if theme_footer|tobool %}{{ super() }}{% endif %}
+{%- endblock %}
+

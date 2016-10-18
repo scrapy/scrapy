@@ -1,0 +1,737 @@
+%%
+%% This is file `newfloat.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% newfloat.dtx  (with options: `package')
+%% 
+%% Copyright (C) 1994-2016 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% 
+%% http://sourceforge.net/projects/latex-caption/
+%% 
+%% --------------------------------------------------------------------------
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2003/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status "maintained".
+%% 
+%% This Current Maintainer of this work is Axel Sommerfeldt.
+%% 
+%% This work consists of the files
+%%   CHANGELOG, README, SUMMARY, caption.ins,
+%%   caption.dtx, caption2.dtx, caption3.dtx,
+%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
+%%   newfloat.dtx, and totalcount.dtx
+%% the derived files
+%%   caption.sty, caption2.sty, caption3.sty,
+%%   bicaption.sty, ltcaption.sty, subcaption.sty,
+%%   newfloat.sty, and totalcount.sty
+%% and the user manuals
+%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1994/12/01]
+\def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
+  \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
+\caption@tempa $Id: newfloat.dtx 109 2015-09-17 09:29:07Z sommerfeldt $
+\ProvidesPackage{newfloat}[\caption@tempa v1.1-\caption@tempb Defining new floating environments (AR)]
+\newcommand*\newfloat@Info[1]{%
+  \PackageInfo{newfloat}{#1}}
+\newcommand*\newfloat@InfoNoLine[1]{%
+  \newfloat@Info{#1\@gobble}}
+\newcommand*\newfloat@Error[1]{%
+  \PackageError{newfloat}{#1}\newfloat@eh}
+\newcommand*\newfloat@eh{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `newfloat' package.\MessageBreak\@ehc}
+\RequirePackage{keyval}[1997/11/10]
+\newcommand*\newfloat@def[2]{%
+  \newfloat@ifundefined{#1}{%
+    \@namedef{#1}{#2}}}
+\newcommand*\newfloat@let[2]{%
+  \newfloat@ifundefined{#1}{%
+    \expandafter\let\csname #1\endcsname#2}}
+\newcommand*\newfloat@ifundefined[2]{%
+  \@ifundefined{#1}{#2}{%
+    \newfloat@Info{%
+      \expandafter\string\csname#1\endcsname\space is already defined}}}
+\newcommand*\DeclareFloatingEnvironment{%
+  \@testopt\@DeclareFloatingEnvironment{}}
+\@onlypreamble\DeclareFloatingEnvironment
+\def\@DeclareFloatingEnvironment[#1]#2{%
+  \newfloat@Info{New float `#2' with options `#1'}%
+  \newfloat@ifundefined{c@#2}{\newcounter{#2}}%
+  \ifdefined\c@float@type % from float package
+    \expandafter\edef\csname ftype@#2\endcsname{\the\value{float@type}}%
+    \addtocounter{float@type}{\value{float@type}}%
+  \else\ifdefined\c@newflo@tctr % from memoir document class
+    \expandafter\edef\csname ftype@#2\endcsname{\the\c@newflo@tctr}%
+    \advance\c@newflo@tctr \c@newflo@tctr
+  \else
+    \ifdefined\newfloat@ftype \else
+      \newcount\newfloat@ftype
+      \newfloat@ftype=8\relax
+    \fi
+    \expandafter\xdef\csname ftype@#2\endcsname{\the\newfloat@ftype}%
+    \advance\newfloat@ftype\newfloat@ftype
+  \fi\fi
+  \newfloat@Info{float type `#2'=\@nameuse{ftype@#2}}%
+  \newfloat@def{fnum@#2}%
+   {\@nameuse{#2name}\nobreakspace\@nameuse{the#2}\@nameuse{autodot}}%
+  \newfloat@capitalize\newfloat@Type{#2}%
+  \newfloat@let{#2name}{\newfloat@Type}%
+  \newfloat@def{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
+  \newfloat@ifundefined{flegtoc#2}{\@namedef{flegtoc#2}##1{}}%
+  \ifcsname @tufte@float\endcsname
+    \newenvironment{#2}[1][htbp]%
+      {\begin{@tufte@float}[##1]{#2}{}}%
+      {\end{@tufte@float}}%
+    \newenvironment{#2*}[1][htbp]%
+      {\begin{@tufte@float}[##1]{#2}{star}}%
+      {\end{@tufte@float}}%
+  \else
+    \newenvironment{#2}{\@float{#2}}{\end@float}%
+    \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+  \fi
+  \newfloat@def{listof#2}{\newfloat@listof{#2}}%
+  \newfloat@def{listof#2s}{\@nameuse{listof#2}}%
+  \newfloat@def{listof#2es}{\@nameuse{listof#2s}}%
+  \newfloat@def{newfloat@listof#2@hook}{}%
+  \ifdefined\l@figure
+    \newfloat@let{l@#2}{\l@figure}%
+  \else
+    \newfloat@def{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}%
+  \fi
+  \edef\newfloat@tempa{List of \newfloat@Type s}%
+  \newfloat@let{list#2name}{\newfloat@tempa}%
+  \expandafter\let\csname fst@#2\endcsname\@undefined
+  \newfloat@ifundefined{fps@#2}{\newfloat@setplacement{#2}{tbp}}%
+  \newfloat@ifundefined{ext@#2}{\newfloat@setfileext{#2}{lo#2}}%
+  \newfloat@setoptions*{#2}{#1}%
+  \@expandtwoargs\newfloat@announce{#2}{\@nameuse{ext@#2}}%
+  \@ifnextchar[\newfloat@DFE@setname\relax}
+\@onlypreamble\@DeclareFloatingEnvironment
+\def\newfloat@DFE@setname[#1]{%
+  \KV@@newfloat@name{#1}%
+  \@ifnextchar[\newfloat@DFE@setlistname\relax}
+\@onlypreamble\newfloat@DFE@setname
+\def\newfloat@DFE@setlistname[#1]{%
+  \KV@@newfloat@listname{#1}}
+\@onlypreamble\newfloat@DFE@setlistname
+\newcommand*\newfloat@capitalize[2]{%
+  \edef\newfloat@tempa{\gdef\noexpand#1{\@car#2\@nil}}%
+  \uppercase\expandafter{\newfloat@tempa}%
+  \edef\newfloat@tempa{%
+    \noexpand\g@addto@macro\noexpand#1{\@cdr#2\@nil}}%
+  \newfloat@tempa}
+\newcommand*\newfloat@listof[1]{%
+  \@expandtwoargs\newfloat@list@of{#1}{\@nameuse{ext@#1}}}
+\newcommand*\newfloat@list@of[2]{%
+  \begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+    \def\ext@figure{#2}%
+    \let\newfloat@starttoc\@starttoc
+    \def\@starttoc##1{\newfloat@starttoc{#2}}%
+    \let\newfloat@listoftoc\listoftoc
+    \def\listoftoc##1{\newfloat@listoftoc{#2}}%
+    \@nameuse{newfloat@listof#1@hook}%
+    \listoffigures
+  \endgroup}
+\newcommand*\newfloat@setoptions{%
+  \@ifstar
+    {\newfloat@@setoptions\@firstofone}%
+    {\newfloat@@setoptions\@gobble}}
+\newcommand*\newfloat@@setoptions[3]{%
+  \let\newfloat@within@value\@undefined
+  \let\newfloat@chapterlistsgaps@value\@undefined
+  #1{\KV@@newfloat@within\newfloat@within@default}% set default value for new floats
+  \def\newfloat@type{#2}%
+  \setkeys{@newfloat}{#3}%
+  \ifx\newfloat@within@value\@undefined \else
+    \newfloat@setoption{within}\newfloat@within@value
+  \fi
+  \ifx\newfloat@chapterlistsgaps@value\@undefined \else
+    \newfloat@setoption{chapterlistsgaps}\newfloat@chapterlistsgaps@value
+  \fi}
+\newcommand*\newfloat@within@default{%
+  \ifcsname c@chapter\endcsname chapter\else none\fi}
+\@onlypreamble\newfloat@within@default
+\newcommand*\newfloat@setoption[1]{%
+  \edef\caption@tempa{\noexpand\@nameuse{newfloat@set#1}{\newfloat@type}}%
+  \caption@tempa}
+\newcommand*\newfloat@setfileext[2]{%
+  \@namedef{ext@#1}{#2}}
+\define@key{@newfloat}{fileext}{%
+  \newfloat@setoption{fileext}{#1}}
+\newcommand*\newfloat@setlistname[2]{%
+  \@namedef{list#1name}{#2}}
+\define@key{@newfloat}{listname}{%
+  \newfloat@setoption{listname}{#1}}
+\newcommand*\newfloat@setname[2]{%
+  \newfloat@@setname{#1}{#2}%
+  \begingroup
+    \ifcsname languagename\endcsname
+      \ifcsname captions\languagename\endcsname
+        \expandafter\g@addto@macro\csname captions\languagename\endcsname
+          {\newfloat@@setname{#1}{#2}}%
+      \fi
+    \fi
+  \endgroup}
+%%\AtBeginDocument{\let\newfloat@setname\newfloat@@setname}
+\newcommand*\newfloat@@setname[2]{%
+  \@namedef{#1name}{#2}}
+\define@key{@newfloat}{name}{%
+  \newfloat@setoption{name}{#1}}
+\newcommand*\newfloat@setplacement[2]{%
+  \@namedef{fps@#1}{#2}}
+\define@key{@newfloat}{placement}{%
+  \newfloat@setoption{placement}{#1}}
+\newcommand*\newfloat@setwithin[2]{%
+  \ifcsname c@chapter\endcsname
+    \@removefromreset{#1}{chapter}%
+  \fi
+  \@removefromreset{#1}{section}%
+  \edef\@tempa{#2}%
+  \ifx\@tempa\@empty
+    \def\@tempa{none}%
+  \fi
+  \def\@tempb{none}%
+  \ifx\@tempa\@tempb
+    \ifcsname c@chapter\endcsname
+      \@chapterlistsgap@off{#1}%
+    \fi
+    \newfloat@@setwithin{#1}{}{}%
+  \else
+    \def\@tempb{chapter}%
+    \ifx\@tempa\@tempb
+      \@addtoreset{#1}{chapter}%
+      \@chapterlistsgap@on{#1}%
+      \newfloat@@setwithin{#1}{\ifnum\c@chapter>\z@ \thechapter.\fi}{\theHchapter.}%
+    \else
+      \def\@tempb{section}%
+      \ifx\@tempa\@tempb
+        \@addtoreset{#1}{section}%
+        \ifcsname c@chapter\endcsname
+          \@addtoreset{#1}{chapter}%
+          \@chapterlistsgap@on{#1}%
+          \newfloat@@setwithin{#1}{\thesection.}{\theHsection.}%
+        \else
+          \newfloat@@setwithin{#1}{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}%
+        \fi
+      \else
+        \newfloat@Error{Invalid value `#2' for option `within'}%
+      \fi
+    \fi
+  \fi}
+\newcommand*\newfloat@@setwithin[3]{%
+  \global\@namedef{the#1}{#2\arabic{#1}}%
+  \global\@namedef{theH#1}{#3\arabic{#1}}}
+\define@key{@newfloat}{within}{%
+  \def\newfloat@within@value{#1}}
+\newcommand*\newfloat@setwithout[1]{%
+  \newfloat@setwithin{#1}{none}}
+\define@key{@newfloat}{without}[]{%
+  \def\newfloat@within@value{none}}
+\newcommand*\newfloat@setchapterlistsgaps[2]{%
+  \edef\@tempa{#2}%
+  \def\@tempb{off}%
+  \ifx\@tempa\@tempb
+    \@chapterlistsgap@off{#1}%
+  \else
+    \def\@tempb{on}%
+    \ifx\@tempa\@tempb
+      \@chapterlistsgap@on{#1}%
+    \else
+      \newfloat@Error{Invalid value `#2' for option `chapterlistsgaps'}%
+    \fi
+  \fi}
+\define@key{@newfloat}{chapterlistsgaps}{%
+  \def\newfloat@chapterlistsgaps@value{#1}}
+\providecommand*\@removefromreset[2]{{%
+  \expandafter\let\csname c@#1\endcsname\@removefromreset
+  \def\@elt##1{%
+    \expandafter\ifx\csname c@##1\endcsname\@removefromreset
+    \else
+      \noexpand\@elt{##1}%
+    \fi}%
+  \expandafter\xdef\csname cl@#2\endcsname{%
+    \csname cl@#2\endcsname}}}
+\newcommand*\newfloat@announce[2]{%
+  \@cons\newfloat@list{{#1}}%
+  \@cons\newfloat@@list{{#1}}%
+  \newfloat@ifundefined{newfloat@ext@#2}{%
+    \@namedef{newfloat@ext@#2}{#1}%
+    \ifcsname c@lofdepth\endcsname
+      \newfloat@ifundefined{c@#2depth}{%
+        \newcounter{#2depth}%
+        \setcounter{#2depth}{1}}%
+    \fi
+    \ifcsname addtotoclist\endcsname
+      \addtotoclist[float]{#2}%
+      \newfloat@def{listof#2name}{\@nameuse{list#1name}}%
+    \fi
+  }%
+  \ifcsname contentsuse\endcsname
+    \contentsuse{#1}{#2}%
+  \fi
+  \newfloat@hook{#1}}
+\@onlypreamble\newfloat@announce
+\newcommand*\newfloat@@list{}
+\newcommand*\SetupFloatingEnvironment[1]{%
+  \newfloat@addtolist{#1}%
+  \newfloat@setoptions{#1}}
+\newcommand\ForEachFloatingEnvironment{%
+  \@ifstar
+    {\@ForEachFloatingEnvironment\@gobble}%
+    {\@ForEachFloatingEnvironment\@iden}}
+\newcommand\@ForEachFloatingEnvironment[2]{%
+  \def\@elt##1{#2}%
+  \newfloat@list
+  \let\@elt\relax
+  #1{\newfloat@addtohook{#2}}}
+\providecommand\newfloat@addtohook[1]{%
+  \toks@=\expandafter{\newfloat@hook{##1}#1}%
+  \edef\@tempa{\def\noexpand\newfloat@hook####1{\the\toks@}}%
+  \@tempa}
+\providecommand*\newfloat@hook[1]{}
+\newcommand\PrepareListOf[1]{%
+  \expandafter\g@addto@macro\csname newfloat@listof#1@hook\endcsname}
+\@onlypreamble\PrepareListOf
+\newcommand*\newfloat@list{}
+\newcommand*\newfloat@addtolist[1]{%
+  \newfloat@ifinlist{#1}{}{%
+    \ifcsname ext@#1\endcsname
+      \@cons\newfloat@list{{#1}}%
+      \@namedef{newfloat@ext@\@nameuse{ext@#1}}{#1}%
+      \newfloat@let{@ifchapterlistsgap@#1}{\@iden}%
+    \else
+      \newfloat@Error{`#1' does not seem to be a floating environment}%
+    \fi}}
+\newcommand*\newfloat@ifinlist[1]{%
+  \let\next\@secondoftwo
+  \begingroup
+    \expandafter\let\csname c@#1\endcsname\newfloat@ifinlist
+    \def\@elt##1{%
+      \expandafter\ifx\csname c@##1\endcsname\newfloat@ifinlist
+        \global\let\next\@firstoftwo
+      \fi}%
+    \newfloat@list
+  \endgroup
+  \next}
+\ifcsname ext@figure\endcsname
+  \newfloat@addtolist{figure}
+\fi
+\ifcsname ext@table\endcsname
+  \newfloat@addtolist{table}
+\fi
+\ifcsname @chapter\endcsname
+  \providecommand*\@chapterlistsgap{10\p@}%
+  \providecommand*\@addchapterlistsgap[2]{%
+    \@nameuse{@ifchapterlistsgap@#1}{% if switched on
+      \@@addchapterlistsgap{#1}{#2}}}
+  \providecommand*\@@addchapterlistsgap[2]{%
+    \@ifundefined{@addchapterlistsgap@#2}{% only once per extension
+      \@namedef{@addchapterlistsgap@#2}{#1}%
+      \@@@addchapterlistsgap{#2}}{}}
+  \providecommand*\@@@addchapterlistsgap[1]{%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{#1}{\protect\addvspace{\@chapterlistsgap}}%
+    \fi}
+  \providecommand*\@addchapterlistsgaps{%
+    \begingroup
+      \def\@elt##1{%
+        \@expandtwoargs\@addchapterlistsgap{##1}{\@nameuse{ext@##1}}}%
+      \newfloat@list
+    \endgroup}
+  \providecommand*\@chapterlistsgap@off[1]{%
+    \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@gobble
+    \ifcsname unsettoc\endcsname
+      \@expandtwoargs\unsettoc{\@nameuse{ext@#1}}{chapteratlist}%
+    \fi}
+  \providecommand*\@chapterlistsgap@on[1]{%
+    \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@iden
+    \ifcsname setuptoc\endcsname
+      \@expandtwoargs\setuptoc{\@nameuse{ext@#1}}{chapteratlist}%
+    \fi}
+\fi
+\define@key{newfloat}{chapterlistsgap}{%
+  \renewcommand*\@chapterlistsgap{#1}}
+\define@key{newfloat}{within}{%
+  \def\newfloat@within@default{#1}% set new default value
+  \def\@elt##1{\newfloat@setwithin{##1}{#1}}%
+  \newfloat@list
+  \let\@elt\relax}
+\define@key{newfloat}{without}[]{%
+  \KV@newfloat@within{none}}
+\def\@elt#1{%
+  \define@key{newfloat}{#1name}{%
+    \newfloat@setname{#1}{##1}}%
+  \define@key{newfloat}{list#1name}{%
+    \newfloat@setname{list#1}{##1}}%
+  \define@key{newfloat}{#1within}{%
+    \newfloat@setwithin{#1}{##1}}%
+  \define@key{newfloat}{#1without}[]{%
+    \newfloat@setwithout{#1}}%
+}%
+\newfloat@list
+\let\@elt\relax
+\define@key{newfloat}{planb}[true]{%
+  \def\@tempa{#1}%
+  \def\@tempb{false}%
+  \ifx\@tempa\@tempb
+    \let\newfloat@ifplanb\@gobble
+  \else
+    \def\@tempb{true}%
+    \ifx\@tempa\@tempb
+      \let\newfloat@ifplanb\@iden
+    \else
+      \newfloat@Error{Invalid value `#1' for option `planb'}%
+    \fi
+  \fi}
+\define@key{newfloat}{planb-fileext}{%
+  \newfloat@Info{Setting Plan B file extension to `#1'}
+  \xdef\newfloat@addtocontents@ext{#1}}
+
+\let\@tempc\relax
+\@expandtwoargs\setkeys{newfloat}{planb,\@ptionlist{\@currname.\@currext}}%
+\AtEndOfPackage{\let\@unprocessedoptions\relax}
+\newcommand*\newfloatsetup{\setkeys{newfloat}}
+\newcommand\newfloat@replace@chapter[2]{%
+  \begingroup
+    \let\if@twocolumn\iffalse
+    \let\if@mainmatter\iffalse
+    \let\if@thema\iffalse
+    \def\@tempa[##1]##2{#1}%
+    \ifx\@tempa\@chapter
+      \gdef\@chapter[##1]##2{#2}%
+      \global\let\newfloat@replace@chapter\@gobbletwo
+    \else\ifx\@tempa\Hy@org@chapter
+      \gdef\Hy@org@chapter[##1]##2{#2}%
+      \global\let\newfloat@replace@chapter\@gobbletwo
+    \fi\fi
+  \endgroup}
+\ifcsname @chapter\endcsname \else
+  \let\newfloat@replace@chapter\@gobbletwo
+\fi
+\newfloat@replace@chapter{%
+  \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \typeout{\@chapapp\space\thechapter.}%
+    \addcontentsline{toc}{chapter}%
+      {\protect\numberline{\thechapter}#1}%
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi
+}{%
+  \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \typeout{\@chapapp\space\thechapter.}%
+    \addcontentsline{toc}{chapter}%
+      {\protect\numberline{\thechapter}#1}%
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+\newfloat@replace@chapter{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi
+}{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+\newfloat@replace@chapter{%
+  \refstepcounter{chapter}%
+  \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+  \else \let\@secnumber\thechapter \fi
+  \typeout{\chaptername\space\@secnumber}%
+  \def\@toclevel{0}%
+  \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{#2}%
+  \else \@tocwriteb\tocchapter{chapter}{#2}\fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \@makechapterhead{#2}\@afterheading
+}{%
+  \refstepcounter{chapter}%
+  \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+  \else \let\@secnumber\thechapter \fi
+  \typeout{\chaptername\space\@secnumber}%
+  \def\@toclevel{0}%
+  \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{#2}%
+  \else \@tocwriteb\tocchapter{chapter}{#2}\fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \@makechapterhead{#2}\@afterheading}
+\@ifpackageloaded{tocbasic}{%
+  \let\newfloat@replace@chapter\@gobbletwo}{}
+\ifcsname insertchapterspace\endcsname
+  \renewcommand*\insertchapterspace{\@addchapterlistsgaps}
+  \let\newfloat@replace@chapter\@gobbletwo
+\fi
+\newfloat@replace@chapter{%
+  \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \typeout{\@chapapp\space\thechapter.}%
+    \addcontentsline{toc}{chapter}%
+      {\protect\numberline{\thechapter}\toc@font0 #1}%
+  \else
+    \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi
+}{%
+  \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \typeout{\@chapapp\space\thechapter.}%
+    \addcontentsline{toc}{chapter}%
+      {\protect\numberline{\thechapter}\toc@font0 #1}%
+  \else
+    \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+  % boek(3).cls [2004/06/07 v2.1a NTG LaTeX document class]
+\newfloat@replace@chapter{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 #1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi
+}{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 #1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{\toc@font0 #1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+\newfloat@replace@chapter{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\chaptername\space\thechapter.}
+      \if@thema
+        \ifx\@shortauthor\@empty
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}#1}%
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}%
+          \@shortauthor\hfill\mbox{}\vskip\normallineskip #1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{%
+        \protect\numberline{\thechapter.}#1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{#1}
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}
+  \fi
+  \chaptermark{#1}
+  \addtocontents{lof}{\protect\addvspace{10pt}}
+  \addtocontents{lot}{\protect\addvspace{10pt}}
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]
+  \else
+    \@makechapterhead{#2}
+    \@afterheading
+  \fi
+}{%
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\chaptername\space\thechapter.}%
+      \if@thema
+        \ifx\@shortauthor\@empty
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}#1}%
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}%
+          \@shortauthor\hfill\mbox{}\vskip\normallineskip #1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{%
+        \protect\numberline{\thechapter.}#1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+\ifx\newfloat@replace@chapter\@gobbletwo \else
+  \newfloat@InfoNoLine{%
+   Unsupported document class, or \noexpand\@chapter\MessageBreak
+   was already redefined by another package}
+  \newfloat@InfoNoLine{\string\@chapter\space=\space\meaning\@chapter}
+  \newfloat@InfoNoLine{\string\Hy@org@chapter\space=\space\meaning\Hy@org@chapter}
+  \newfloat@ifplanb{%
+    \newfloat@InfoNoLine{Trying Plan B..}%
+    \let\newfloat@addtocontents@ORI\addtocontents
+    \long\def\addtocontents#1#2{%
+      \newfloat@addtocontents{#1}{#2}#2\addvspace\newfloat@nil}%
+    \long\def\newfloat@addtocontents#1#2#3\addvspace#4\newfloat@nil{%
+      \def\newfloat@tempa{#4}%
+      \ifx\newfloat@tempa\@empty
+        \newfloat@addtocontents@ORI{#1}{#2}%
+      \else
+        \ifx\newfloat@addtocontents@ext\@undefined
+          \newfloat@Info{Setting Plan B file extension to `#1'...}%
+          \xdef\newfloat@addtocontents@ext{#1}%
+        \fi
+        \edef\newfloat@tempa{#1}%
+        \ifx\newfloat@tempa\newfloat@addtocontents@ext
+          \begingroup
+            \let\addtocontents\newfloat@addtocontents@ORI
+            \@addchapterlistsgaps
+          \endgroup
+        \fi
+      \fi}}
+\fi
+\newcommand\newfloat@ForEachNew[2][newfloat@@list]{%
+  \AtBeginDocument{%
+    \ifcsname#1\endcsname
+      \def\@elt##1{#2}%
+      \newfloat@@list
+      \let\@elt\relax
+    \fi}}%
+\@onlypreamble\newfloat@ForEachNew
+%%    \begin{macrocode}
+\newfloat@ForEachNew[float@exts]{%
+  \@nameuse{@ifchapterlistsgap@#1}{% if switched on
+    \let\float@do=\relax
+    \edef\@tempa{%
+      \noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#1}}}}%
+    \@tempa}}
+\newfloat@ForEachNew[FP@floatBegin]{%
+  \newcounter{FP@#1C}%
+  \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}
+\providecommand*\ext@lstlisting{lol}%
+\newfloat@ForEachNew[@rotfloat]{%
+  \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
+  \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}
+\newcommand*\newfloat@For@SC[2]{%
+  \def#1{b}% = \sidecaptionvpos{#2}{b} (v1.6)
+  \newenvironment{SC#2}%
+    {\SC@float[#1]{#2}}{\endSC@float}%
+  \newenvironment{SC#2*}%
+    {\SC@dblfloat[#1]{#2}}{\endSC@dblfloat}}
+\@onlypreamble\newfloat@For@SC
+\newfloat@ForEachNew[SC@float]{%
+  \expandafter\newfloat@For@SC\csname SC@#1@vpos\endcsname{#1}}
+\newfloat@ForEachNew[wrapfloat]{%
+  \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
+\endinput
+%%
+%% End of file `newfloat.sty'.
