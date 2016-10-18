@@ -8,7 +8,7 @@ except ImportError:
 from scrapy.resolver import dnscache
 
 
-class DNSCache(TestCase):
+class DNSCacheTest(TestCase):
     def setUp(self):
         self._original_expiration = dnscache.expiration
 
