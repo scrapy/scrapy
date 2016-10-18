@@ -50,6 +50,11 @@ class OffsiteMiddleware(object):
     def get_host_regex(self, spider):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
+        invalid_domains = [d for d in allowed_domains if '/' in d]
+        if invalid_domains:
+            logger.warn(
+                'Invalid domains being ignored: %s.'
+                ' Check the allowed_domains spider attribute.' % invalid_domains)
         if not allowed_domains:
             return re.compile('') # allow all by default
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
