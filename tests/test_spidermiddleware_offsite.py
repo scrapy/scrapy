@@ -68,3 +68,13 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
       reqs = [Request('http://scrapytest.org/1')]
       out = list(self.mw.process_spider_output(res, reqs, self.spider))
       self.assertEquals(out, reqs)
+
+class TestOffsiteMiddlewareInvalidAllowedDomain(TestOffsiteMiddleware):
+    def _get_spiderargs(self):
+        return dict(name='foo', 
+                    allowed_domains=['http://scrapytest.org', 
+                                     'http//test.scrapy.org', 
+                                     'scrapy.org'])
+
+
+
