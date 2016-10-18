@@ -28,7 +28,7 @@ dnscache = ExpiringCache(10000)
 
 
 class CachingThreadedResolver(ThreadedResolver):
-    def __init__(self, reactor, cache_size, timeout, expiration=86400):
+    def __init__(self, reactor, cache_size, timeout, expiration=None):
         super(CachingThreadedResolver, self).__init__(reactor)
         dnscache.limit = cache_size
         self.timeout = timeout
