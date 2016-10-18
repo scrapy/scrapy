@@ -106,8 +106,11 @@ format::
 
    class JsonWriterPipeline(object):
 
-       def __init__(self):
+       def open_spider(self, spider):
            self.file = open('items.jl', 'wb')
+
+       def close_spider(self, spider):
+           self.file.close()
 
        def process_item(self, item, spider):
            line = json.dumps(dict(item)) + "\n"
@@ -126,14 +129,7 @@ MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
 The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.
-
-.. note::
-
-    Previous example (JsonWriterPipeline) doesn't clean up resources properly.
-    Fixing it is left as an exercise for the reader.
-
-::
+method and how to clean up the resources properly.::
 
     import pymongo
 
