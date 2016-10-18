@@ -341,6 +341,15 @@ Whether to enable DNS in-memory cache.
 
 .. setting:: DNSCACHE_SIZE
 
+DNSCACHE_EXPIRATION
+-------------------
+
+Default: ``86400``
+
+DNS cache expiration time in seconds.
+
+.. setting:: DNSCACHE_EXPIRATION
+
 DNSCACHE_SIZE
 -------------
 
