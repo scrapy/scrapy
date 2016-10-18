@@ -21,7 +21,7 @@ else:
 
 from twisted.internet import defer, reactor, ssl
 
-from utils.misc import arg_to_iter
+from .utils.misc import arg_to_iter
 
 logger = logging.getLogger(__name__)
 
