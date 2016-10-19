@@ -26,7 +26,7 @@ class RequestSerializationTest(unittest.TestCase):
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},
-            flags= ['testFlag'])
+            flags=['testFlag'])
         self._assert_serializes_ok(r)
 
     def test_latin1_body(self):
