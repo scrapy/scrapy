@@ -32,7 +32,7 @@ def request_to_dict(request, spider=None):
         '_encoding': request._encoding,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
-        'flags' : request.flags
+        'flags': request.flags
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
