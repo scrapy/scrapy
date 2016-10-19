@@ -7,7 +7,7 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse)
+from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
@@ -103,3 +103,35 @@ def guess_scheme(url):
         return any_to_uri(url)
     else:
         return add_http_if_no_scheme(url)
+
+
+def strip_url_credentials(url, origin_only=False, keep_fragments=False):
+
+    if url is None:
+        return None
+
+    if not isinstance(url, ParseResult):
+        parsed_url = urlparse(url)
+    else:
+        parsed_url = url
+
+    netloc = parsed_url.netloc
+    # strip username and password if present
+    if parsed_url.username or parsed_url.password:
+        netloc = netloc.split('@')[-1]
+
+    # strip standard protocol numbers
+    # Note: strictly speaking, standard port numbers should only be
+    # stripped when comparing origins
+    if parsed_url.port:
+        if (parsed_url.scheme, parsed_url.port) in (('http', 80), ('https', 443)):
+            netloc = netloc.replace(':{p.port}'.format(p=parsed_url), '')
+
+    return urlunparse((
+        parsed_url.scheme,
+        netloc,
+        '/' if origin_only else parsed_url.path,
+        '' if origin_only else parsed_url.params,
+        '' if origin_only else parsed_url.query,
+        '' if not keep_fragments else parsed_url.fragment
+    ))

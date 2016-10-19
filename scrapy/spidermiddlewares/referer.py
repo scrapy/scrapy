@@ -2,14 +2,13 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
-from six.moves.urllib.parse import ParseResult, urlunparse
-
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
 from scrapy.utils.python import to_native_str
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
+from scrapy.utils.url import strip_url_credentials
 
 
 LOCAL_SCHEMES = ('about', 'blob', 'data', 'filesystem',)
@@ -31,14 +30,10 @@ class ReferrerPolicy(object):
         raise NotImplementedError()
 
     def stripped_referrer(self, req_or_resp):
-        stripped = self.strip_url(req_or_resp)
-        if stripped is not None:
-            return urlunparse(stripped)
+        return self.strip_url(req_or_resp)
 
     def origin_referrer(self, req_or_resp):
-        stripped = self.strip_url(req_or_resp, origin_only=True)
-        if stripped is not None:
-            return urlunparse(stripped)
+        return self.strip_url(req_or_resp, origin_only=True)
 
     def strip_url(self, req_or_resp, origin_only=False):
         """
@@ -56,33 +51,13 @@ class ReferrerPolicy(object):
         """
         if req_or_resp.url is None or not req_or_resp.url:
             return None
-        parsed = urlparse_cached(req_or_resp)
-
-        if parsed.scheme in self.NOREFERRER_SCHEMES:
-            return None
-
-        netloc = parsed.netloc
-        # strip username and password if present
-        if parsed.username or parsed.password:
-            netloc = netloc.replace('{p.username}:{p.password}@'.format(p=parsed), '')
-
-        # strip standard protocol numbers
-        # Note: strictly speaking, standard port numbers should only be
-        # stripped when comparing origins
-        if parsed.port:
-            if (parsed.scheme, parsed.port) in (('http', 80), ('https', 443)):
-                netloc = netloc.replace(':{p.port}'.format(p=parsed), '')
-
-        return ParseResult(parsed.scheme,
-                           netloc,
-                           '/' if origin_only else parsed.path,
-                           '' if origin_only else parsed.params,
-                           '' if origin_only else parsed.query,
-                           '')
+        parsed_url = urlparse_cached(req_or_resp)
+        if parsed_url.scheme not in self.NOREFERRER_SCHEMES:
+            return strip_url_credentials(parsed_url, origin_only=origin_only)
 
     def origin(self, req_or_resp):
-        """Return (scheme, host, path) tuple for a request or response URL."""
-        return tuple(self.strip_url(req_or_resp, origin_only=True)[:3])
+        """Return serialized origin (scheme, host, path) for a request or response URL."""
+        return self.strip_url(req_or_resp, origin_only=True)
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -178,7 +153,7 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
         if origin == self.origin(request):
             return self.stripped_referrer(response)
         else:
-            return urlunparse(origin + ('', '', ''))
+            return origin
 
 
 class UnsafeUrlPolicy(ReferrerPolicy):

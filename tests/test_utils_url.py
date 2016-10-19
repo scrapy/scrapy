@@ -6,7 +6,8 @@ from six.moves.urllib.parse import urlparse
 
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, parse_url)
+                              add_http_if_no_scheme, guess_scheme,
+                              parse_url, strip_url_credentials)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -240,6 +241,95 @@ for k, args in enumerate ([
     t_method.__name__ = 'test_uri_skipped_%03d' % k
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
+
+class StripUrlCredentials(unittest.TestCase):
+
+    def test_noop(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com/index.html'),
+            'http://www.example.com/index.html')
+
+    def test_noop_query_string(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com/index.html?somekey=somevalue'),
+            'http://www.example.com/index.html?somekey=somevalue')
+
+    def test_fragments(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com/index.html?somekey=somevalue#section', keep_fragments=True),
+            'http://www.example.com/index.html?somekey=somevalue#section')
+
+    def test_noop_trailing_path(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com/'),
+            'http://www.example.com/')
+
+    def test_noop_trailing_path2(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com'),
+            'http://www.example.com')
+
+    def test_trailing_path_origin(self):
+        self.assertEqual(strip_url_credentials(
+            'http://www.example.com', origin_only=True),
+            'http://www.example.com/')
+
+    def test_username(self):
+        # username is stripped (and fragment too)
+        self.assertEqual(strip_url_credentials(
+            'http://username@www.example.com/index.html?somekey=somevalue#section'),
+            'http://www.example.com/index.html?somekey=somevalue')
+
+    def test_username_empty_pass(self):
+        # same as above
+        self.assertEqual(strip_url_credentials(
+            'https://username:@www.example.com/index.html?somekey=somevalue#section'),
+            'https://www.example.com/index.html?somekey=somevalue')
+
+    def test_username_password(self):
+        self.assertEqual(strip_url_credentials(
+            'ftp://username:password@www.example.com/index.html?somekey=somevalue#section'),
+            'ftp://www.example.com/index.html?somekey=somevalue')
+
+    def test_default_http_port(self):
+        self.assertEqual(strip_url_credentials(
+            'http://username:password@www.example.com:80/index.html'),
+            'http://www.example.com/index.html')
+
+    def test_non_default_http_port(self):
+        self.assertEqual(strip_url_credentials(
+            'http://username:password@www.example.com:8080/index.html'),
+            'http://www.example.com:8080/index.html')
+
+    def test_default_https_port(self):
+        self.assertEqual(strip_url_credentials(
+            'https://username:password@www.example.com:443/index.html'),
+            'https://www.example.com/index.html')
+
+    def test_non_default_https_port(self):
+        self.assertEqual(strip_url_credentials(
+            'https://username:password@www.example.com:442/index.html'),
+            'https://www.example.com:442/index.html')
+
+    def test_origin_only(self):
+        self.assertEqual(strip_url_credentials(
+            'http://username:password@www.example.com/index.html', origin_only=True),
+            'http://www.example.com/')
+
+    def test_default_http_port_origin_only(self):
+        self.assertEqual(strip_url_credentials(
+            'http://username:password@www.example.com:80/index.html', origin_only=True),
+            'http://www.example.com/')
+
+    def test_non_default_http_port_origin_only(self):
+        self.assertEqual(strip_url_credentials(
+            'http://username:password@www.example.com:8008/index.html', origin_only=True),
+            'http://www.example.com:8008/')
+
+    def test_default_https_port_origin_only(self):
+        self.assertEqual(strip_url_credentials(
+            'https://username:password@www.example.com:443/index.html', origin_only=True),
+            'https://www.example.com/')
 
 if __name__ == "__main__":
     unittest.main()
