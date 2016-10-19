@@ -64,7 +64,7 @@ def request_from_dict(d, spider=None):
         encoding=d['_encoding'],
         priority=d['priority'],
         dont_filter=d['dont_filter'],
-        flags= d.get('flags'))
+        flags=d.get('flags'))
 
 
 def _find_method(obj, func):

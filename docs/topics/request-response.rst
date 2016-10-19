@@ -122,7 +122,7 @@ Request objects
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
-    :type flags: dict
+    :type flags: list
 
     .. attribute:: Request.url
 
