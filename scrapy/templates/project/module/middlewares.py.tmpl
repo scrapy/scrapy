@@ -5,22 +5,34 @@
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
+from scrapy import signals
+
 
 class ${ProjectName}SpiderMiddleware(object):
+    # If any of methods bellow is not defined, in practice, the middleware
+    # manager only add the methods that the middleware has defined.
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        # This method is used by Scrapy to create your spiders.
+        s = cls(crawler.stats)
+        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        return s
 
     def process_spider_input(response, spider):
         # Called for each response that goes through the spider
         # middleware and into the spider.
 
         # Should return None or raise an exception.
-        pass
+        return None
 
     def process_spider_output(response, result, spider):
         # Called with the results returned from the Spider, after
         # it has processed the response.
 
         # Must return an iterable of Request, dict or Item objects.
-        pass
+        for i in result:
+            yield i
 
     def process_spider_exception(response, exception, spider):
         # Called when a spider or process_spider_input() method
@@ -36,4 +48,5 @@ class ${ProjectName}SpiderMiddleware(object):
         # that it doesn’t have a response associated.
 
         # Must return only requests (not items).
-        pass
+        for r in start_requests:
+            yield r
