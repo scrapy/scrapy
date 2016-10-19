@@ -9,8 +9,9 @@ from scrapy import signals
 
 
 class ${ProjectName}SpiderMiddleware(object):
-    # If any of methods bellow is not defined, in practice, the middleware
-    # manager only add the methods that the middleware has defined.
+    # Not all methods need to be defined. If a method is not defined,
+    # scrapy acts as if the spider middleware does not modify the
+    # passed objects.
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -50,3 +51,6 @@ class ${ProjectName}SpiderMiddleware(object):
         # Must return only requests (not items).
         for r in start_requests:
             yield r
+
+    def spider_opened(self, spider):
+        spider.logger.info('Spider opened: %s' % spider.name)
