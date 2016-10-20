@@ -507,7 +507,13 @@ Response objects
 
     .. attribute:: Response.headers
 
-        A dictionary-like object which contains the response headers.
+        A dictionary-like object which contains the response headers. Values can
+        be accessed using :meth:`get` to return the first header value with the
+        specified name or :meth:`getlist` to return all header values with the
+        specified name. For example, this call will give you all cookies in the
+        headers::
+
+            response.headers.getlist('Set-Cookie')
 
     .. attribute:: Response.body
 
