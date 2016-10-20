@@ -813,7 +813,6 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
         self.factory = FTPFactory(portal=p,
                                   userAnonymous=self.username)
-        print("self.factory.allowAnonymous=%r" % self.factory.allowAnonymous)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         self.download_handler = FTPDownloadHandler(Settings())
