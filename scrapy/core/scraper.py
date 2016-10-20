@@ -119,7 +119,7 @@ class Scraper(object):
             self._scrape(response, request, spider).chainDeferred(deferred)
 
     def _scrape(self, response, request, spider):
-        """Handle the downloaded response or failure trough the spider
+        """Handle the downloaded response or failure through the spider
         callback/errback"""
         assert isinstance(response, (Response, Failure))
 
