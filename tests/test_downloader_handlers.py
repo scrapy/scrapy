@@ -676,10 +676,11 @@ class S3TestCase(unittest.TestCase):
             b'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
 
 
-class FTPTestCase(unittest.TestCase):
+class BaseFTPTestCase(unittest.TestCase):
 
     username = "scrapy"
     password = "passwd"
+    req_meta = {"ftp_user": username, "ftp_password": password}
 
     if six.PY3:
         skip = "Twisted missing ftp support for PY3"
@@ -722,7 +723,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_success(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -734,7 +735,7 @@ class FTPTestCase(unittest.TestCase):
     def test_ftp_download_path_with_spaces(self):
         request = Request(
             url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
-            meta={"ftp_user": self.username, "ftp_password": self.password}
+            meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
 
@@ -746,7 +747,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_notexist(self):
         request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -755,8 +756,10 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         local_fname = "/tmp/file.txt"
+        meta = {"ftp_local_filename": local_fname}
+        meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -768,13 +771,50 @@ class FTPTestCase(unittest.TestCase):
             os.remove(local_fname)
         return self._add_test_callbacks(d, _test)
 
+
+class FTPTestCase(BaseFTPTestCase):
+
     def test_invalid_credentials(self):
         from twisted.protocols.ftp import ConnectionLost
 
+        meta = dict(self.req_meta)
+        meta.update({"ftp_password": 'invalid'})
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": 'invalid'})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
         return self._add_test_callbacks(d, errback=_test)
+
+
+class AnonymousFTPTestCase(BaseFTPTestCase):
+
+    username = "anonymous"
+    req_meta = {}
+
+    def setUp(self):
+        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
+        # setup dir and test file
+        self.directory = self.mktemp()
+        os.mkdir(self.directory)
+
+        fp = FilePath(self.directory)
+        fp.child('file.txt').setContent("I have the power!")
+        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+
+        # setup server for anonymous access
+        realm = FTPRealm(anonymousRoot=self.directory)
+        p = portal.Portal(realm)
+        p.registerChecker(checkers.AllowAnonymousAccess(),
+                          credentials.IAnonymous)
+
+        self.factory = FTPFactory(portal=p,
+                                  userAnonymous=self.username)
+        print("self.factory.allowAnonymous=%r" % self.factory.allowAnonymous)
+        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+        self.portNum = self.port.getHost().port
+        self.download_handler = FTPDownloadHandler(Settings())
+        self.addCleanup(self.port.stopListening)
