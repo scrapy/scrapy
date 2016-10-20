@@ -167,15 +167,15 @@ In order to access settings and other crawler attributes you have to use
 
   class CustomMiddleware(object):
 
-  def __init__(self, middleware_arg):
+    def __init__(self, middleware_arg):
       self.middleware_arg = middleware_arg
       self.log('Middleware parameter: {}'.format(middleware_arg))
 
-  @classmethod
-  def from_crawler(cls, crawler):
+    @classmethod
+    def from_crawler(cls, crawler):
       settings = crawler.settings
       middleware_arg = settings.get('MIDDLEWARE_ARG')
-    return cls(middleware_arg)
+      return cls(middleware_arg)
 
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
