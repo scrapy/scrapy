@@ -23,7 +23,12 @@ class SpiderLoader(object):
 
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
-            self._spiders[spcls.name] = spcls
+            if spcls.name in self._spiders.keys():
+                import warnings
+                warnings.warn("There are several spiders with the same name (" + spcls.name +
+                              "), this can cause unexpected behavior", UserWarning)
+        self._spiders[spcls.name] = spcls
+    
 
     def _load_all_spiders(self):
         for name in self.spider_modules:
