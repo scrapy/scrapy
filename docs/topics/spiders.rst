@@ -285,7 +285,7 @@ Spider arguments are passed through the :command:`crawl` command using the
 
     scrapy crawl myspider -a category=electronics
 
-Spiders receive arguments in their constructors::
+Spiders can access arguments in their `__init__` methods::
 
     import scrapy
 
