@@ -3,6 +3,30 @@
 Release notes
 =============
 
+Scrapy 1.2.1 (2016-10-21)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Include OpenSSL's more permissive default ciphers when establishing
+  TLS/SSL connections (:issue:`2314`).
+- Fix "Location" HTTP header decoding on non-ASCII URL redirects (:issue:`2321`).
+
+Documentation
+~~~~~~~~~~~~~
+
+- Fix JsonWriterPipeline example (:issue:`2302`).
+- Various notes: :issue:`2330` on spider names,
+  :issue:`2329` on middleware methods processing order,
+  :issue:`2327` on getting multi-valued HTTP headers as lists.
+
+Other changes
+~~~~~~~~~~~~~
+
+- Removed ``www.`` from ``start_urls`` in built-in spider templates (:issue:`2299`).
+
+
 Scrapy 1.2.0 (2016-10-03)
 -------------------------
 
