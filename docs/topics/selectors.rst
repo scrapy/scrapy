@@ -626,6 +626,11 @@ Built-in Selectors reference
      ``regex`` can be either a compiled regular expression or a string which
      will be compiled to a regular expression using ``re.compile(regex)``
 
+    .. note::
+
+        Note that ``re`` and ``re_first`` both escape HTML entities. If you want to
+        get raw unescaped content, use extract() or extract_first()
+
   .. method:: register_namespace(prefix, uri)
 
      Register the given namespace to be used in this :class:`Selector`.
