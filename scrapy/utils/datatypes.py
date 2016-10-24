@@ -312,7 +312,8 @@ class ExpiringCache(LocalCache):
 
     Dictionary with finite number of keys and time-based expiration.
 
-    Membership tests (key in dict, dict.has_key) will not trigger expiration.
+    Membership tests (key in dict, dict.has_key) are not guaranteed to trigger
+    expiration.
 
     """
     def __init__(self, limit=None, expiration=None):
@@ -334,3 +335,24 @@ class ExpiringCache(LocalCache):
             return self[key]
         except KeyError:
             return default
+
+    def iteritems(self):
+        for k in self.iterkeys():
+            yield k, self[k]
+
+    def itervalues(self):
+        for k in self.iterkeys():
+            yield self[k]
+
+    if six.PY2:
+        def items(self):
+            return list(self.iteritems())
+
+        def values(self):
+            return list(self.itervalues())
+    else:
+        def iterkeys(self):
+            # For iteritems() and itervalues() above.
+            return self.keys()
+        items = iteritems
+        values = itervalues
