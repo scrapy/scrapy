@@ -67,17 +67,18 @@ class FTPDownloadHandler(object):
     }
 
     def __init__(self, settings):
-        self.anonymous_user = settings['FTP_ANONYMOUS_USER']
-        self.anonymous_password = settings['FTP_ANONYMOUS_PASSWORD']
+        self.default_user = settings['FTP_USER']
+        self.default_password = settings['FTP_PASSWORD']
+        self.passive_mode = settings['FTP_PASSIVE_MODE']
 
     def download_request(self, request, spider):
         parsed_url = urlparse_cached(request)
-        user = request.meta.get("ftp_user", self.anonymous_user)
-        password = request.meta.get("ftp_password")
-        if user == self.anonymous_user and password is None:
-            password = self.anonymous_password
+        user = request.meta.get("ftp_user", self.default_user)
+        password = request.meta.get("ftp_password", self.default_password)
+        passive_mode = 1 if bool(request.meta.get("ftp_passive",
+                                                  self.passive_mode)) else 0
         creator = ClientCreator(reactor, FTPClient, user, password,
-            passive=request.meta.get("ftp_passive", 1))
+            passive=passive_mode)
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
                                 request, unquote(parsed_url.path))
 

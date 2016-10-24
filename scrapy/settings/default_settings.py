@@ -161,8 +161,9 @@ FEED_EXPORTERS_BASE = {
 
 FILES_STORE_S3_ACL = 'private'
 
-FTP_ANONYMOUS_USER = 'anonymous'
-FTP_ANONYMOUS_PASSWORD = 'anonymous@example.com'
+FTP_USER = 'anonymous'
+FTP_PASSWORD = 'anonymous@example.com'
+FTP_PASSIVE_MODE = True
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
