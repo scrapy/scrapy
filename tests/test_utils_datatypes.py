@@ -1,7 +1,12 @@
 import copy
+import time
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaselessDict, ExpiringCache
 
 __doctests__ = ['scrapy.utils.datatypes']
 
@@ -128,6 +133,47 @@ class CaselessDictTest(unittest.TestCase):
         assert isinstance(h2, CaselessDict)
 
 
+class ExpiringCacheTest(unittest.TestCase):
+    def test_expiration(self):
+        cache = ExpiringCache(limit=1000, expiration=100)
+
+        now = time.time()
+        later = now + 50
+        after_expiration = now + 110
+
+        with mock.patch('time.time', return_value=now):
+            cache['key'] = "some value"
+
+        with mock.patch('time.time', return_value=later):
+            assert cache['key'] == "some value"
+
+        with mock.patch('time.time', return_value=after_expiration):
+            with self.assertRaises(KeyError):
+                cache['key']
+
+    def test_limit(self):
+        cache = ExpiringCache(limit=1000, expiration=None)
+
+        for i in range(1001):
+            cache[i] = str(i)
+
+        with self.assertRaises(KeyError):
+            cache[0]
+
+        assert cache[1] == "1"
+        assert list(cache.keys()) == list(range(1, 1001))
+
+    def test_dict_methods(self):
+        cache = ExpiringCache(limit=1000, expiration=100)
+
+        cache["a"] = 1
+        assert cache.get("a") == 1
+        assert cache.get("b") == None
+        assert cache.setdefault("c", 3) == 3
+        assert cache["c"] == 3
+        assert list(cache.items()) == [("a", 1), ("c", 3)]
+        assert list(cache.values()) == [1, 3]
+
+
 if __name__ == "__main__":
     unittest.main()
-

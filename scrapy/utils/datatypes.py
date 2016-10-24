@@ -7,6 +7,7 @@ This module must not depend on any module outside the Standard Library.
 
 import copy
 import six
+import time
 import warnings
 from collections import OrderedDict
 
@@ -304,3 +305,32 @@ class LocalCache(OrderedDict):
         while len(self) >= self.limit:
             self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
+
+
+class ExpiringCache(LocalCache):
+    """
+
+    Dictionary with finite number of keys and time-based expiration.
+
+    Membership tests (key in dict, dict.has_key) will not trigger expiration.
+
+    """
+    def __init__(self, limit=None, expiration=None):
+        super(ExpiringCache, self).__init__(limit)
+        self.expiration = expiration
+
+    def __getitem__(self, key):
+        setting_time, value = super(ExpiringCache, self).__getitem__(key)
+        if self.expiration and setting_time + self.expiration < time.time():
+            del self[key]
+            raise KeyError("key expired")
+        return value
+
+    def __setitem__(self, key, value):
+        super(ExpiringCache, self).__setitem__(key, (time.time(), value))
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default

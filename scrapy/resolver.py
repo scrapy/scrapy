@@ -1,28 +1,10 @@
-import time
-
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
 
-from scrapy.utils.datatypes import LocalCache
+from scrapy.utils.datatypes import ExpiringCache
 
 
 # TODO: cache misses
-
-class ExpiringCache(LocalCache):
-    def __init__(self, limit=None, expiration=None):
-        super(ExpiringCache, self).__init__(limit)
-        self.expiration = expiration
-
-    def __getitem__(self, key):
-        setting_time, value = super(ExpiringCache, self).__getitem__(key)
-        if self.expiration and setting_time + self.expiration < time.time():
-            del self[key]
-            raise KeyError("key expired")
-        return value
-
-    def __setitem__(self, key, value):
-        super(ExpiringCache, self).__setitem__(key, (time.time(), value))
-
 
 dnscache = ExpiringCache(10000)
 
