@@ -258,8 +258,8 @@ class CrawlerProcess(CrawlerRunner):
         """
         This method starts a Twisted `reactor`_, adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
-        on :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_EXPIRATION` and
-        :setting:`DNSCACHE_SIZE`.
+        on :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_EXPIRATION_SECS`
+        and :setting:`DNSCACHE_SIZE`.
 
         If `stop_after_crawl` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -289,7 +289,7 @@ class CrawlerProcess(CrawlerRunner):
             reactor=reactor,
             cache_size=cache_size,
             timeout=self.settings.getfloat('DNS_TIMEOUT'),
-            expiration=self.settings.getint('DNSCACHE_EXPIRATION')
+            expiration=self.settings.getint('DNSCACHE_EXPIRATION_SECS')
         )
 
     def _graceful_stop_reactor(self):
