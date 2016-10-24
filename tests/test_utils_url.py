@@ -7,7 +7,7 @@ from six.moves.urllib.parse import urlparse
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
                               add_http_if_no_scheme, guess_scheme,
-                              parse_url, strip_url_credentials)
+                              parse_url, strip_url)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -242,94 +242,158 @@ for k, args in enumerate ([
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
 
-class StripUrlCredentials(unittest.TestCase):
+class StripUrl(unittest.TestCase):
 
     def test_noop(self):
-        self.assertEqual(strip_url_credentials(
+        self.assertEqual(strip_url(
             'http://www.example.com/index.html'),
             'http://www.example.com/index.html')
 
     def test_noop_query_string(self):
-        self.assertEqual(strip_url_credentials(
+        self.assertEqual(strip_url(
             'http://www.example.com/index.html?somekey=somevalue'),
             'http://www.example.com/index.html?somekey=somevalue')
 
     def test_fragments(self):
-        self.assertEqual(strip_url_credentials(
-            'http://www.example.com/index.html?somekey=somevalue#section', keep_fragments=True),
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html?somekey=somevalue#section', strip_fragment=False),
             'http://www.example.com/index.html?somekey=somevalue#section')
 
-    def test_noop_trailing_path(self):
-        self.assertEqual(strip_url_credentials(
-            'http://www.example.com/'),
-            'http://www.example.com/')
+    def test_path(self):
+        for input_url, origin, output_url in [
+            ('http://www.example.com/',
+             False,
+             'http://www.example.com/'),
 
-    def test_noop_trailing_path2(self):
-        self.assertEqual(strip_url_credentials(
-            'http://www.example.com'),
-            'http://www.example.com')
+            ('http://www.example.com',
+             False,
+             'http://www.example.com'),
 
-    def test_trailing_path_origin(self):
-        self.assertEqual(strip_url_credentials(
-            'http://www.example.com', origin_only=True),
-            'http://www.example.com/')
+            ('http://www.example.com',
+             True,
+             'http://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(input_url, origin_only=origin), output_url)
+            self.assertEqual(strip_url(urlparse(input_url), origin_only=origin), output_url)
 
-    def test_username(self):
-        # username is stripped (and fragment too)
-        self.assertEqual(strip_url_credentials(
-            'http://username@www.example.com/index.html?somekey=somevalue#section'),
-            'http://www.example.com/index.html?somekey=somevalue')
+    def test_credentials(self):
+        for i, o in [
+            ('http://username@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
 
-    def test_username_empty_pass(self):
-        # same as above
-        self.assertEqual(strip_url_credentials(
-            'https://username:@www.example.com/index.html?somekey=somevalue#section'),
-            'https://www.example.com/index.html?somekey=somevalue')
+            ('https://username:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
 
-    def test_username_password(self):
-        self.assertEqual(strip_url_credentials(
-            'ftp://username:password@www.example.com/index.html?somekey=somevalue#section'),
-            'ftp://www.example.com/index.html?somekey=somevalue')
+            ('ftp://username:password@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+            self.assertEqual(strip_url(urlparse(i), strip_credentials=True), o)
 
-    def test_default_http_port(self):
-        self.assertEqual(strip_url_credentials(
-            'http://username:password@www.example.com:80/index.html'),
-            'http://www.example.com/index.html')
+    def test_default_ports_creds_off(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
 
-    def test_non_default_http_port(self):
-        self.assertEqual(strip_url_credentials(
-            'http://username:password@www.example.com:8080/index.html'),
-            'http://www.example.com:8080/index.html')
+            ('http://username:password@www.example.com:8080/index.html#section',
+             'http://www.example.com:8080/index.html'),
 
-    def test_default_https_port(self):
-        self.assertEqual(strip_url_credentials(
-            'https://username:password@www.example.com:443/index.html'),
-            'https://www.example.com/index.html')
+            ('http://username:password@www.example.com:443/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://www.example.com:443/index.html?somekey=somevalue&someotherkey=sov'),
 
-    def test_non_default_https_port(self):
-        self.assertEqual(strip_url_credentials(
-            'https://username:password@www.example.com:442/index.html'),
-            'https://www.example.com:442/index.html')
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i), o)
+            self.assertEqual(strip_url(urlparse(i)), o)
+
+    def test_default_ports(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html',
+             'http://username:password@www.example.com/index.html'),
+
+            ('http://username:password@www.example.com:8080/index.html',
+             'http://username:password@www.example.com:8080/index.html'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=True, strip_credentials=False), o)
+            self.assertEqual(strip_url(urlparse(i), strip_default_port=True, strip_credentials=False), o)
+
+    def test_default_ports_keep(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com:21/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=False, strip_credentials=False), o)
+            self.assertEqual(strip_url(urlparse(i), strip_default_port=False, strip_credentials=False), o)
 
     def test_origin_only(self):
-        self.assertEqual(strip_url_credentials(
-            'http://username:password@www.example.com/index.html', origin_only=True),
-            'http://www.example.com/')
+        for i, o in [
+            ('http://username:password@www.example.com/index.html',
+             'http://www.example.com/'),
 
-    def test_default_http_port_origin_only(self):
-        self.assertEqual(strip_url_credentials(
-            'http://username:password@www.example.com:80/index.html', origin_only=True),
-            'http://www.example.com/')
+            ('http://username:password@www.example.com:80/foo/bar?query=value#somefrag',
+             'http://www.example.com/'),
 
-    def test_non_default_http_port_origin_only(self):
-        self.assertEqual(strip_url_credentials(
-            'http://username:password@www.example.com:8008/index.html', origin_only=True),
-            'http://www.example.com:8008/')
+            ('http://username:password@www.example.com:8008/foo/bar?query=value#somefrag',
+             'http://www.example.com:8008/'),
 
-    def test_default_https_port_origin_only(self):
-        self.assertEqual(strip_url_credentials(
-            'https://username:password@www.example.com:443/index.html', origin_only=True),
-            'https://www.example.com/')
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(i, origin_only=True), o)
+            self.assertEqual(strip_url(urlparse(i), origin_only=True), o)
+
 
 if __name__ == "__main__":
     unittest.main()

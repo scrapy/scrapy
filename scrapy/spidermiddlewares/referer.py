@@ -8,7 +8,7 @@ from scrapy import signals
 from scrapy.utils.python import to_native_str
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
-from scrapy.utils.url import strip_url_credentials
+from scrapy.utils.url import strip_url
 
 
 LOCAL_SCHEMES = ('about', 'blob', 'data', 'filesystem',)
@@ -53,7 +53,11 @@ class ReferrerPolicy(object):
             return None
         parsed_url = urlparse_cached(req_or_resp)
         if parsed_url.scheme not in self.NOREFERRER_SCHEMES:
-            return strip_url_credentials(parsed_url, origin_only=origin_only)
+            return strip_url(parsed_url,
+                             strip_credentials=True,
+                             strip_fragment=True,
+                             strip_default_port=True,
+                             origin_only=origin_only)
 
     def origin(self, req_or_resp):
         """Return serialized origin (scheme, host, path) for a request or response URL."""
