@@ -13,6 +13,7 @@ from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
+from scrapy.extensions.httpcache import TIMESTAMP_HEADER
 
 
 class _BaseTest(unittest.TestCase):
@@ -74,7 +75,10 @@ class _BaseTest(unittest.TestCase):
     def assertEqualResponse(self, response1, response2):
         self.assertEqual(response1.url, response2.url)
         self.assertEqual(response1.status, response2.status)
-        self.assertEqual(response1.headers, response2.headers)
+        h1, h2 = dict(response1.headers), dict(response2.headers)
+        h1.pop(TIMESTAMP_HEADER, None)
+        h2.pop(TIMESTAMP_HEADER, None)
+        self.assertEqual(h1, h2)
         self.assertEqual(response1.body, response2.body)
 
     def assertEqualRequest(self, request1, request2):
@@ -172,6 +176,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert 'cached' in response.flags
+            assert TIMESTAMP_HEADER in response.headers
 
     def test_different_request_response_urls(self):
         with self._middleware() as mw:
@@ -183,6 +188,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(cached, Response)
             self.assertEqualResponse(res, cached)
             assert 'cached' in cached.flags
+            assert TIMESTAMP_HEADER in cached.headers
 
     def test_middleware_ignore_missing(self):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
@@ -192,6 +198,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert 'cached' in response.flags
+            assert TIMESTAMP_HEADER in response.headers
 
     def test_middleware_ignore_schemes(self):
         # http responses are cached by default
@@ -204,6 +211,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(cached, Response), type(cached)
             self.assertEqualResponse(res, cached)
             assert 'cached' in cached.flags
+            assert TIMESTAMP_HEADER in cached.headers
 
         # file response is not cached by default
         req, res = Request('file:///tmp/t.txt'), Response('file:///tmp/t.txt')
@@ -224,6 +232,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(cached, Response), type(cached)
             self.assertEqualResponse(res, cached)
             assert 'cached' in cached.flags
+            assert TIMESTAMP_HEADER in cached.headers
 
         # ignore s3 scheme
         req, res = Request('s3://bucket/key2'), Response('http://bucket/key2')
@@ -250,6 +259,7 @@ class DummyPolicyTest(_BaseTest):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert 'cached' in response.flags
+            assert TIMESTAMP_HEADER in response.headers
 
 
 class RFC2616PolicyTest(DefaultStorageTest):
