@@ -55,7 +55,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1._encoding, r2._encoding)
         self.assertEqual(r1.priority, r2.priority)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
-        self.assertEquals(r1.flags, r2.flags)
+        self.assertEqual(r1.flags, r2.flags)
 
     def test_request_class(self):
         r = FormRequest("http://www.example.com")
