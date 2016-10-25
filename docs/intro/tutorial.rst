@@ -205,6 +205,10 @@ using the shell :ref:`Scrapy shell <topics-shell>`. Run::
    command-line, otherwise urls containing arguments (ie. ``&`` character)
    will not work.
 
+   On Windows, use double quotes instead::
+
+       scrapy shell "http://quotes.toscrape.com/page/1/"
+
 You will see something like::
 
     [ ... Scrapy log here ... ]
