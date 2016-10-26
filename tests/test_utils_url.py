@@ -290,6 +290,26 @@ class StripUrl(unittest.TestCase):
             self.assertEqual(strip_url(i, strip_credentials=True), o)
             self.assertEqual(strip_url(urlparse(i), strip_credentials=True), o)
 
+    def test_credentials_encoded_delims(self):
+        for i, o in [
+            # user: "username@"
+            # password: none
+            ('http://username%40@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "username:pass"
+            # password: ""
+            ('https://username%3Apass:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "me"
+            # password: "user@domain.com"
+            ('ftp://me:user%40domain.com@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+            self.assertEqual(strip_url(urlparse(i), strip_credentials=True), o)
+
     def test_default_ports_creds_off(self):
         for i, o in [
             ('http://username:password@www.example.com:80/index.html?somekey=somevalue#section',
