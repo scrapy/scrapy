@@ -145,6 +145,22 @@ class AuthMiddlewareFtpAuthTest(AuthMiddlewareTest):
         self.assertEquals(req.meta['ftp_password'], 'password')
         self.assertEquals(new_req.url, 'ftp://scrapytest.org/')
 
+    def test_auth_from_ftp_url_encoded_delims_user(self):
+        req = Request('ftp://username%3A:password@scrapytest.org/')
+        new_req = self.mw.process_request(req, self.spider)
+        assert new_req is not None
+        self.assertEquals(req.meta['ftp_user'], 'username:')
+        self.assertEquals(req.meta['ftp_password'], 'password')
+        self.assertEquals(new_req.url, 'ftp://scrapytest.org/')
+
+    def test_auth_from_ftp_url_encoded_delims_password(self):
+        req = Request('ftp://username:pass%40word@scrapytest.org/')
+        new_req = self.mw.process_request(req, self.spider)
+        assert new_req is not None
+        self.assertEquals(req.meta['ftp_user'], 'username')
+        self.assertEquals(req.meta['ftp_password'], 'pass@word')
+        self.assertEquals(new_req.url, 'ftp://scrapytest.org/')
+
     def test_auth_from_ftp_url_empty_user(self):
         req = Request('ftp://:password@scrapytest.org/')
         new_req = self.mw.process_request(req, self.spider)

@@ -3,7 +3,7 @@ HTTP/FTP Authorization downloader middleware
 
 See documentation in docs/topics/downloader-middleware.rst
 """
-from six.moves.urllib.parse import urlunparse
+from six.moves.urllib.parse import unquote, urlunparse
 
 from w3lib.http import basic_auth_header
 
@@ -20,6 +20,11 @@ def credstrip_url(parsed_url):
         parsed_url.params,
         parsed_url.query,
         parsed_url.fragment))
+
+
+def _unquote(s):
+    if s is not None:
+        return unquote(s)
 
 
 class AuthMiddleware(object):
@@ -56,7 +61,8 @@ class AuthMiddleware(object):
             new_url = None
             # credentials from URL override spider attributes
             if url.username or url.password:
-                auth = basic_auth_header(url.username, url.password)
+                auth = basic_auth_header(_unquote(url.username),
+                                         _unquote(url.password))
 
                 # no credentials in new url
                 new_url = credstrip_url(url)
@@ -72,8 +78,8 @@ class AuthMiddleware(object):
         elif url.scheme.startswith('ftp'):
             if url.username or url.password:
                 # priorly set credentials take precedence
-                request.meta.setdefault('ftp_user', url.username)
-                request.meta.setdefault('ftp_password', url.password)
+                request.meta.setdefault('ftp_user', _unquote(url.username))
+                request.meta.setdefault('ftp_password', _unquote(url.password))
 
                 # no credentials in new url
                 return request.replace(url=credstrip_url(url))
