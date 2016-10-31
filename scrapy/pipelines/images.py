@@ -46,6 +46,7 @@ class ImagesPipeline(FilesPipeline):
     THUMBS = {}
     DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
+    IMAGES_S3_SECURE_CONNECTION = False
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings,
@@ -90,6 +91,7 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['IMAGES_STORE_S3_ACL']
+        s3store.AWS_SECURE_CONNECTION = settings['IMAGES_S3_SECURE_CONNECTION']
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
