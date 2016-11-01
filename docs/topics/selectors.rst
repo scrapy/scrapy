@@ -628,8 +628,7 @@ Built-in Selectors reference
 
     .. note::
 
-        Note that ``re`` and ``re_first`` both escape HTML entities. If you want to
-        get raw unescaped content, use extract() or extract_first()
+        Note that ``re()`` and ``re_first()`` both decode HTML entities (except ``&lt;`` and ``&amp;``).
 
   .. method:: register_namespace(prefix, uri)
 
