@@ -161,7 +161,7 @@ FEED_EXPORTERS_BASE = {
 }
 
 FILES_STORE_S3_ACL = 'private'
-FILES_S3_SECURE_CONNECTION = True
+files_s3_secure_connection = True
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
@@ -179,7 +179,7 @@ HTTPCACHE_GZIP = False
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
 IMAGES_STORE_S3_ACL = 'private'
-IMAGES_S3_SECURE_CONNECTION = True
+images_s3_secure_connection = True
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
