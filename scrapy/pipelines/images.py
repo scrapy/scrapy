@@ -91,7 +91,7 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['IMAGES_STORE_S3_ACL']
-        s3store.AWS_SECURE_CONNECTION = settings['IMAGES_S3_SECURE_CONNECTION']
+        s3store.SECURE_CONNECTION = settings['images_s3_secure_connection']
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
