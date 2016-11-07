@@ -17,3 +17,4 @@ omit =
   scrapy/spider.py
   scrapy/contrib/*
   scrapy/contrib_exp/*
+  scrapy/dispatch/weakref_backports.py

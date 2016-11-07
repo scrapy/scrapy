@@ -31,7 +31,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def tearDown(self):
         for name, signal in vars(signals).items():
-            if not name.startswith('_'):
+            if not name.startswith('_') and name != 'Signal':
                 disconnect_all(signal)
 
     def test_default_media_to_download(self):

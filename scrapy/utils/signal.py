@@ -1,6 +1,11 @@
-"""Helper functions for working with signals"""
+"""Helper functions for working with signals
+
+   **Deprecated**. Use instance methods of `Scrapy.dispatch.Signal` class
+   instead.
+"""
 
 import logging
+import warnings
 
 from twisted.internet.defer import maybeDeferred, DeferredList, Deferred
 from twisted.python.failure import Failure
@@ -9,6 +14,13 @@ from pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
     getAllReceivers, disconnect
 from pydispatch.robustapply import robustApply
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.exceptions import ScrapyDeprecationWarning
+
+warnings.warn("`scrapy.utils.signal` is deprecated, signals are now objects of"
+              " the `scrapy.dispatch.Signal` class with the utility functions"
+              " available as instance method of the same.",
+              ScrapyDeprecationWarning, stacklevel=2)
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +39,10 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         try:
             response = robustApply(receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                                   *arguments, **named)
             if isinstance(response, Deferred):
-                logger.error("Cannot return deferreds from signal handler: %(receiver)s",
+                logger.error("""Cannot return deferreds from """
+                             """signal handler: %(receiver)s""",
                              {'receiver': receiver}, extra={'spider': spider})
         except dont_log:
             result = Failure()
@@ -62,7 +75,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                          *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))
         dfds.append(d)

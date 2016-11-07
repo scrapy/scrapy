@@ -31,10 +31,10 @@ class HttpCacheMiddleware(object):
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         self.storage.open_spider(spider)
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, **kw):
         self.storage.close_spider(spider)
 
     def process_request(self, request, spider):

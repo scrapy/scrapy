@@ -20,6 +20,7 @@ from scrapy import signals
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
+from scrapy.dispatch import Signal
 
 try:
     import guppy
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # signal to update telnet variables
 # args: telnet_vars
-update_telnet_vars = object()
+update_telnet_vars = Signal()
 
 
 class TelnetConsole(protocol.ServerFactory):
@@ -52,14 +53,14 @@ class TelnetConsole(protocol.ServerFactory):
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def start_listening(self):
+    def start_listening(self, **kw):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
         logger.debug("Telnet console listening on %(host)s:%(port)d",
                      {'host': h.host, 'port': h.port},
                      extra={'crawler': self.crawler})
 
-    def stop_listening(self):
+    def stop_listening(self, **kw):
         self.port.stopListening()
 
     def protocol(self):

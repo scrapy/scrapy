@@ -22,12 +22,12 @@ class SpiderState(object):
         crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, **kw):
         if self.jobdir:
             with open(self.statefn, 'wb') as f:
                 pickle.dump(spider.state, f, protocol=2)
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider, **kw):
         if self.jobdir and os.path.exists(self.statefn):
             with open(self.statefn, 'rb') as f:
                 spider.state = pickle.load(f)

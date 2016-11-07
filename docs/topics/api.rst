@@ -207,6 +207,16 @@ Signals API
     :members:
     :undoc-members:
 
+.. _topics-api-dispatch:
+
+Dispatch API
+-------------
+
+.. autoclass:: scrapy.dispatch.Signal
+    :members: connect, disconnect, send_catch_log, send_catch_log_deferred
+
+.. autofunction:: scrapy.dispatch.receiver
+
 .. _topics-api-stats:
 
 Stats Collector API
