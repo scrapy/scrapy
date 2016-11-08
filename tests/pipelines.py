@@ -1,5 +1,5 @@
 """
-Some pipelines used for testing and benchmarking
+Some pipelines used for testing
 """
 
 class ZeroDivisionErrorPipeline(object):
