@@ -261,6 +261,7 @@ with multiples lines
         yield self.assertFailure(
             self.runner.crawl(crawler, "http://localhost:8998/status?n=200"),
             ZeroDivisionError)
+        self.assertFalse(crawler.crawling)
 
     @defer.inlineCallbacks
     def test_crawlerrunner_accepts_crawler(self):
