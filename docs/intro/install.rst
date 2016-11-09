@@ -245,12 +245,12 @@ Using Anaconda is an alternative to using a virtualenv and installing with ``pip
   For Windows users, or if you have issues installing through ``pip``, this is
   the recommended way to install Scrapy.
 
-If you already have `Anaconda`_ or `Miniconda`_ installed,
-`Scrapinghub`_ maintains official conda packages for Linux, Windows and OS X.
+If you already have `Anaconda`_ or `Miniconda`_ installed, the `conda-forge`_
+community have up-to-date packages for Linux, Windows and OS X.
 
 To install Scrapy using ``conda``, run::
 
-  conda install -c scrapinghub scrapy
+  conda install -c conda-forge scrapy
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
@@ -268,3 +268,4 @@ To install Scrapy using ``conda``, run::
 .. _Scrapinghub: http://scrapinghub.com
 .. _Anaconda: http://docs.continuum.io/anaconda/index
 .. _Miniconda: http://conda.pydata.org/docs/install/quick.html
+.. _conda-forge: https://conda-forge.github.io/
