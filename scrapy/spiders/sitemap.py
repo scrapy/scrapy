@@ -5,7 +5,8 @@ import six
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
-from scrapy.utils.gz import gunzip, is_gzipped
+from scrapy.utils.gz import gunzip, gzip_magic_number
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +60,22 @@ class SitemapSpider(Spider):
         """
         if isinstance(response, XmlResponse):
             return response.body
-        elif is_gzipped(response):
-            return gunzip(response.body)
-        elif response.url.endswith('.xml'):
+        elif gzip_magic_number(response):
+            try:
+                return gunzip(response.body)
+            except:
+                pass
+        # actual gzipped sitemap files are decompressed above ;
+        # if we are here (response body is not gzipped)
+        # and have a response for .xml.gz,
+        # it usually means that it was already gunzipped
+        # by HttpCompression middleware,
+        # the HTTP response being sent with "Content-Encoding: gzip"
+        # without actually being a .xml.gz file in the first place,
+        # merely XML gzip-compressed on the fly,
+        # in other word, here, we have plain XML
+        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
             return response.body
-        elif response.url.endswith('.xml.gz'):
-            return gunzip(response.body)
 
 
 def regex(x):
