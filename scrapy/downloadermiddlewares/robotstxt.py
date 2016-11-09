@@ -13,6 +13,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import to_native_str
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,9 @@ class RobotsTxtMiddleware(object):
                 # Running rp.parse() will set rp state from
                 # 'disallow all' to 'allow any'.
                 pass
-        rp.parse(body.splitlines())
+        # stdlib's robotparser expects native 'str' ;
+        # with unicode input, non-ASCII encoded bytes decoding fails in Python2
+        rp.parse(to_native_str(body).splitlines())
 
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
