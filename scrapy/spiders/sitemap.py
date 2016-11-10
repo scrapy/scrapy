@@ -61,10 +61,7 @@ class SitemapSpider(Spider):
         if isinstance(response, XmlResponse):
             return response.body
         elif gzip_magic_number(response):
-            try:
-                return gunzip(response.body)
-            except:
-                pass
+            return gunzip(response.body)
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
         # and have a response for .xml.gz,
