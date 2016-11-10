@@ -7,6 +7,7 @@ from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
 from scrapy.utils.python import to_native_str
+from scrapy.exceptions import NotSupported
 
 
 class BaseResponseTest(unittest.TestCase):
@@ -126,6 +127,18 @@ class BaseResponseTest(unittest.TestCase):
         joined = self.response_class('http://www.example.com').urljoin('/test')
         absolute = 'http://www.example.com/test'
         self.assertEqual(joined, absolute)
+
+    def test_shortcut_attributes(self):
+        r = self.response_class("http://example.com", body=b'hello')
+        if self.response_class == Response:
+            msg = "Response content isn't text"
+            self.assertRaisesRegexp(AttributeError, msg, getattr, r, 'text')
+            self.assertRaisesRegexp(NotSupported, msg, r.css, 'body')
+            self.assertRaisesRegexp(NotSupported, msg, r.xpath, '//body')
+        else:
+            r.text
+            r.css('body')
+            r.xpath('//body')
 
 
 class TextResponseTest(BaseResponseTest):
