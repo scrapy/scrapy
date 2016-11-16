@@ -1,3 +1,5 @@
+:orphan: Ubuntu packages are obsolete
+
 .. _topics-ubuntu:
 
 ===============
