@@ -85,7 +85,7 @@ class S3FilesStore(object):
 
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
-    SECURE_CONNECTION = False
+    secure_connection = False
 
     HEADERS = {
         'Cache-Control': 'max-age=172800',
@@ -123,7 +123,7 @@ class S3FilesStore(object):
     def _get_boto_bucket(self):
         # disable ssl (is_secure=False) because of this python bug:
         # http://bugs.python.org/issue5103
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=self.SECURE_CONNECTION)
+        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=self.secure_connection)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
@@ -259,7 +259,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
-        s3store.SECURE_CONNECTION = settings['files_s3_secure_connection']
+        s3store.secure_connection = settings['FILES_S3_SECURE_CONNECTION']
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
