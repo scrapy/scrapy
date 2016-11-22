@@ -26,12 +26,25 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         if opts.verbose:
+            import cssselect
+            import parsel
             import lxml.etree
+            import w3lib
+
             lxml_version = ".".join(map(str, lxml.etree.LXML_VERSION))
             libxml2_version = ".".join(map(str, lxml.etree.LIBXML_VERSION))
+
+            try:
+                w3lib_version = w3lib.__version__
+            except AttributeError:
+                w3lib_version = "<1.14.3"
+
             print("Scrapy    : %s" % scrapy.__version__)
             print("lxml      : %s" % lxml_version)
             print("libxml2   : %s" % libxml2_version)
+            print("cssselect : %s" % cssselect.__version__)
+            print("parsel    : %s" % parsel.__version__)
+            print("w3lib     : %s" % w3lib_version)
             print("Twisted   : %s" % twisted.version.short())
             print("Python    : %s" % sys.version.replace("\n", "- "))
             print("pyOpenSSL : %s" % self._get_openssl_version())
