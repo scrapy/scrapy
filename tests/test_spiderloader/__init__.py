@@ -101,3 +101,52 @@ class SpiderLoaderTest(unittest.TestCase):
 
             spiders = spider_loader.list()
             self.assertEqual(spiders, [])
+
+
+class DuplicateSpiderNameLoaderTest(unittest.TestCase):
+
+    def setUp(self):
+        orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
+        self.tmpdir = self.mktemp()
+        os.mkdir(self.tmpdir)
+        self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
+        shutil.copytree(orig_spiders_dir, self.spiders_dir)
+        sys.path.append(self.tmpdir)
+        self.settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
+
+    def tearDown(self):
+        del sys.modules['test_spiders_xxx']
+        sys.path.remove(self.tmpdir)
+
+    def test_dupename_warning(self):
+        # copy 1 spider module so as to have duplicate spider name
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider3.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider3dupe.py'))
+
+        with warnings.catch_warnings(record=True) as w:
+            spider_loader = SpiderLoader.from_settings(self.settings)
+
+            self.assertEqual(len(w), 1)
+            self.assertIn("several spiders with the same name (spider3)", str(w[0].message))
+
+            spiders = set(spider_loader.list())
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3']))
+
+    def test_multiple_dupename_warning(self):
+        # copy 2 spider modules so as to have duplicate spider name
+        # This should issue 2 warning, 1 for each duplicate spider name
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider1.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider1dupe.py'))
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider2.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider2dupe.py'))
+
+        with warnings.catch_warnings(record=True) as w:
+            spider_loader = SpiderLoader.from_settings(self.settings)
+
+            self.assertEqual(len(w), 2)
+            msgs = sorted(str(wrn.message) for wrn in w)
+            self.assertIn("several spiders with the same name (spider1)", msgs[0])
+            self.assertIn("several spiders with the same name (spider2)", msgs[1])
+
+            spiders = set(spider_loader.list())
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3']))
