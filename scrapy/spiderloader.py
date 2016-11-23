@@ -28,7 +28,6 @@ class SpiderLoader(object):
                 warnings.warn("There are several spiders with the same name (" + spcls.name +
                               "), this can cause unexpected behavior", UserWarning)
             self._spiders[spcls.name] = spcls
-    
 
     def _load_all_spiders(self):
         for name in self.spider_modules:
