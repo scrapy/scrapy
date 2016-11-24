@@ -27,6 +27,8 @@ class Command(ScrapyCommand):
             help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
+        parser.add_option("--no-status-aware", dest="no_status_aware", action="store_true", \
+            default=False, help="do not handle status codes like redirects and print response as-is")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -50,7 +52,8 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         request = Request(args[0], callback=cb, dont_filter=True)
-        request.meta['handle_httpstatus_all'] = True
+        if opts.no_status_aware:
+            request.meta['handle_httpstatus_all'] = True
 
         spidercls = DefaultSpider
         spider_loader = self.crawler_process.spider_loader

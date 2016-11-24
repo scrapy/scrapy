@@ -40,11 +40,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None):
+    def start(self, url=None, request=None, response=None, spider=None, handle_statuses=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider)
+            self.fetch(url, spider, handle_statuses=handle_statuses)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -98,14 +98,14 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, handle_statuses=False, **kwargs):
         if isinstance(request_or_url, Request):
             request = request_or_url
-            url = request.url
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
-            request.meta['handle_httpstatus_all'] = True
+            request = Request(url, dont_filter=True, **kwargs)
+            if handle_statuses:
+                request.meta['handle_httpstatus_all'] = True
         response = None
         try:
             response, spider = threads.blockingCallFromThread(
