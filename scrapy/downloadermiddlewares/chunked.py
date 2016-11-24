@@ -1,4 +1,12 @@
+import warnings
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.http import decode_chunked_transfer
+
+
+warnings.warn("Module `scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware` "
+              "is deprecated, chunked transfers are supported by default.",
+              ScrapyDeprecationWarning, stacklevel=2)
 
 
 class ChunkedTransferMiddleware(object):
