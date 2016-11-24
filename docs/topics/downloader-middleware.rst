@@ -665,7 +665,13 @@ ChunkedTransferMiddleware
 
 .. class:: ChunkedTransferMiddleware
 
-   This middleware adds support for `chunked transfer encoding`_
+   This middleware adds support for `chunked transfer encoding`_.
+
+.. note::
+    This middleware is not enabled nor used by Scrapy downloader anymore.
+    In fact, Scrapy downloader has built-in support for chunked transfers,
+    so this middleware has no effect in practice.
+
 
 HttpProxyMiddleware
 -------------------
