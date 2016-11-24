@@ -657,22 +657,6 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 
-ChunkedTransferMiddleware
--------------------------
-
-.. module:: scrapy.downloadermiddlewares.chunked
-   :synopsis: Chunked Transfer Middleware
-
-.. class:: ChunkedTransferMiddleware
-
-   This middleware adds support for `chunked transfer encoding`_.
-
-.. note::
-    This middleware is not enabled nor used by Scrapy downloader anymore.
-    In fact, Scrapy downloader has built-in support for chunked transfers,
-    so this middleware has no effect in practice.
-
-
 HttpProxyMiddleware
 -------------------
 
@@ -976,4 +960,3 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
 .. _anydbm: https://docs.python.org/2/library/anydbm.html
-.. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
