@@ -1036,7 +1036,7 @@ Example entry in logs::
 
 .. setting:: SCHEDULER_DISK_QUEUE
 
-    SCHEDULER_DISK_QUEUE
+SCHEDULER_DISK_QUEUE
 --------------------
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
