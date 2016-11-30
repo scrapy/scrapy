@@ -6,13 +6,12 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 import logging
 
-from six.moves.urllib import robotparser
-
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.robotparser import RobotFileParser
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +80,7 @@ class RobotsTxtMiddleware(object):
         return failure
 
     def _parse_robots(self, response, netloc):
-        rp = robotparser.RobotFileParser(response.url)
+        rp = RobotFileParser(response.url)
         body = ''
         if hasattr(response, 'text'):
             body = response.text

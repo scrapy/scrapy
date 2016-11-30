@@ -34,6 +34,9 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         User-Agent: *
         Disallow: /admin/
         Disallow: /static/
+
+        # taken from https://en.wikipedia.org/robots.txt
+        Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
         ''')
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
         def return_response(request, spider):
@@ -48,7 +51,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         return DeferredList([
             self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
             self.assertIgnored(Request('http://site.local/admin/main'), middleware),
-            self.assertIgnored(Request('http://site.local/static/'), middleware)
+            self.assertIgnored(Request('http://site.local/static/'), middleware),
+            self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware)
         ], fireOnOneErrback=True)
 
     def test_robotstxt_ready_parser(self):
