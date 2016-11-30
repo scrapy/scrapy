@@ -4,13 +4,12 @@ Downloader Middleware manager
 See documentation in docs/topics/downloader-middleware.rst
 """
 import six
-
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
-from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.defer import mustbe_deferred
 
 
 class DownloaderMiddlewareManager(MiddlewareManager):

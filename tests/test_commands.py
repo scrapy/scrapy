@@ -1,22 +1,21 @@
 import os
-import sys
 import subprocess
+import sys
 import tempfile
-from time import sleep
-from os.path import exists, join, abspath
-from shutil import rmtree, copytree
-from tempfile import mkdtemp
 from contextlib import contextmanager
+from os.path import abspath, exists, join
+from shutil import copytree, rmtree
+from tempfile import mkdtemp
+from time import sleep
 
-from twisted.trial import unittest
 from twisted.internet import defer
+from twisted.trial import unittest
 
 import scrapy
-from scrapy.utils.python import to_native_str
-from scrapy.utils.python import retry_on_eintr
+from scrapy.utils.python import retry_on_eintr, to_native_str
 from scrapy.utils.test import get_testenv
-from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+from scrapy.utils.testsite import SiteTest
 
 
 class ProjectTest(unittest.TestCase):

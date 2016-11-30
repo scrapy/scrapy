@@ -1,8 +1,8 @@
 """
 Scrapy extension for collecting scraping stats
 """
-import pprint
 import logging
+import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -80,5 +80,3 @@ class DummyStatsCollector(StatsCollector):
 
     def min_value(self, key, value, spider=None):
         pass
-
-

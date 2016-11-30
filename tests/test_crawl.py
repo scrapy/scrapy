@@ -1,18 +1,20 @@
 import json
-import socket
 import logging
+import socket
 
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from tests import mock
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
+from tests.spiders import (
+    BrokenStartRequestsSpider, DelaySpider, DuplicateStartRequestsSpider, FollowAllSpider, SimpleSpider,
+    SingleRequestSpider,
+)
 
 
 class CrawlTestCase(TestCase):

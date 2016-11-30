@@ -1,28 +1,27 @@
 """Download handlers for http and https schemes"""
 
-import re
 import logging
+import re
+import warnings
 from io import BytesIO
 from time import time
-import warnings
-from six.moves.urllib.parse import urldefrag
 
-from zope.interface import implementer
-from twisted.internet import defer, reactor, protocol
-from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
+from six.moves.urllib.parse import urldefrag
+from twisted.internet import defer, protocol, reactor
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
-from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, TCP4ClientEndpoint
+from twisted.web.http_headers import Headers as TxHeaders
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
+from zope.interface import implementer
 
+from scrapy import twisted_version
+from scrapy.core.downloader.tls import openssl_methods
+from scrapy.core.downloader.webclient import _parse
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
-from scrapy.core.downloader.webclient import _parse
-from scrapy.core.downloader.tls import openssl_methods
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy import twisted_version
+from scrapy.xlib.tx import Agent, HTTPConnectionPool, ProxyAgent, ResponseDone, TCP4ClientEndpoint
 
 logger = logging.getLogger(__name__)
 

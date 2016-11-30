@@ -1,16 +1,16 @@
-import os
 import hashlib
+import os
 import random
 import warnings
-from tempfile import mkdtemp, TemporaryFile
 from shutil import rmtree
+from tempfile import TemporaryFile, mkdtemp
 
 from twisted.trial import unittest
 
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
+from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
+from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
 skip = False

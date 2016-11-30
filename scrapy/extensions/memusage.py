@@ -3,11 +3,11 @@ MemoryUsage extension
 
 See documentation in docs/topics/extensions.rst
 """
-import sys
-import socket
 import logging
-from pprint import pformat
+import socket
+import sys
 from importlib import import_module
+from pprint import pformat
 
 from twisted.internet import task
 

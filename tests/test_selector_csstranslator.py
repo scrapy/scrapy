@@ -2,12 +2,10 @@
 Selector tests for cssselect backend
 """
 import warnings
+
 from twisted.trial import unittest
-from scrapy.selector.csstranslator import (
-    ScrapyHTMLTranslator,
-    ScrapyGenericTranslator,
-    ScrapyXPathExpr
-)
+
+from scrapy.selector.csstranslator import ScrapyGenericTranslator, ScrapyHTMLTranslator, ScrapyXPathExpr
 
 
 class DeprecatedClassesTest(unittest.TestCase):
@@ -18,5 +16,3 @@ class DeprecatedClassesTest(unittest.TestCase):
                 obj = cls()
                 self.assertIn('%s is deprecated' % cls.__name__, str(w[-1].message),
                               'Missing deprecate warning for %s' % cls.__name__)
-
-

@@ -2,13 +2,14 @@ from __future__ import print_function
 
 import logging
 from collections import defaultdict
+
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
-from scrapy.utils.defer import mustbe_deferred, defer_result
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.defer import defer_result, mustbe_deferred
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.request import request_fingerprint
 
 logger = logging.getLogger(__name__)
 

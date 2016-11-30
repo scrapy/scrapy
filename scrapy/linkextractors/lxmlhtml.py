@@ -1,17 +1,15 @@
 """
 Link extractor based on lxml.html
 """
-import six
-from six.moves.urllib.parse import urlparse, urljoin
-
 import lxml.etree as etree
+import six
+from six.moves.urllib.parse import urljoin, urlparse
 
 from scrapy.link import Link
-from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
-from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.linkextractors import FilteringLinkExtractor
+from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
+from scrapy.utils.python import to_native_str, unique as unique_list
 from scrapy.utils.response import get_base_url
-
 
 # from lxml/src/lxml/html/__init__.py
 XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"

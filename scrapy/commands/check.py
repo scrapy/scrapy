@@ -1,13 +1,14 @@
 from __future__ import print_function
-import time
+
 import sys
+import time
 from collections import defaultdict
-from unittest import TextTestRunner, TextTestResult as _TextTestResult
+from unittest import TextTestResult as _TextTestResult, TextTestRunner
 
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.misc import load_object
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.misc import load_object
 
 
 class TextTestResult(_TextTestResult):
@@ -95,4 +96,3 @@ class Command(ScrapyCommand):
             result.printErrors()
             result.printSummary(start, stop)
             self.exitcode = int(not result.wasSuccessful())
-

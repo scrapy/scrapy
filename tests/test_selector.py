@@ -1,10 +1,12 @@
 import warnings
 import weakref
-from twisted.trial import unittest
-from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.selector import Selector
-from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
+
 from lxml import etree
+from twisted.trial import unittest
+
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.selector import Selector
+from scrapy.selector.lxmlsel import HtmlXPathSelector, XmlXPathSelector, XPathSelector
 
 
 class SelectorTestCase(unittest.TestCase):

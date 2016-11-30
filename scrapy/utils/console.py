@@ -1,5 +1,6 @@
-from functools import wraps
 from collections import OrderedDict
+from functools import wraps
+
 
 def _embed_ipython_shell(namespace={}, banner=''):
     """Start an IPython Shell"""

@@ -1,13 +1,14 @@
+import re
 import struct
+from gzip import GzipFile
+
+import six
 
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
-from gzip import GzipFile
 
-import six
-import re
 
 # - Python>=3.5 GzipFile's read() has issues returning leftover
 #   uncompressed data when input is corrupted

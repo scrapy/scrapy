@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
+
+from scrapy.http import Headers, HtmlResponse, Response, TextResponse, XmlResponse
 from scrapy.responsetypes import responsetypes
 
-from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
 
 class ResponseTypesTest(unittest.TestCase):
 

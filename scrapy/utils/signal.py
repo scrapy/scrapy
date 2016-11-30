@@ -2,12 +2,11 @@
 
 import logging
 
-from twisted.internet.defer import maybeDeferred, DeferredList, Deferred
+from pydispatch.dispatcher import Anonymous, Any, disconnect, getAllReceivers, liveReceivers
+from pydispatch.robustapply import robustApply
+from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python.failure import Failure
 
-from pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
-    getAllReceivers, disconnect
-from pydispatch.robustapply import robustApply
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)

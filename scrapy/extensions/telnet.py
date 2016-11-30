@@ -4,10 +4,17 @@ Scrapy Telnet Console extension
 See documentation in docs/topics/telnetconsole.rst
 """
 
-import pprint
 import logging
+import pprint
 
 from twisted.internet import protocol
+
+from scrapy import signals
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.engine import print_engine_status
+from scrapy.utils.reactor import listen_tcp
+from scrapy.utils.trackref import print_live_refs
+
 try:
     from twisted.conch import manhole, telnet
     from twisted.conch.insults import insults
@@ -15,11 +22,6 @@ try:
 except ImportError:
     TWISTED_CONCH_AVAILABLE = False
 
-from scrapy.exceptions import NotConfigured
-from scrapy import signals
-from scrapy.utils.trackref import print_live_refs
-from scrapy.utils.engine import print_engine_status
-from scrapy.utils.reactor import listen_tcp
 
 try:
     import guppy

@@ -1,16 +1,16 @@
-import six
-import json
 import copy
+import json
 import warnings
 from collections import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
-from scrapy.utils.deprecate import create_deprecated_class
+import six
+
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import create_deprecated_class
 
 from . import default_settings
-
 
 SETTINGS_PRIORITIES = {
     'default': 0,

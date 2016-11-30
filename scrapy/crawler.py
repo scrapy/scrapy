@@ -1,23 +1,23 @@
-import six
-import signal
 import logging
+import signal
+import sys
 import warnings
 
-import sys
-from twisted.internet import reactor, defer
-from zope.interface.verify import verifyClass, DoesNotImplement
+import six
+from twisted.internet import defer, reactor
+from zope.interface.verify import DoesNotImplement, verifyClass
 
+from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.resolver import CachingThreadedResolver
-from scrapy.interfaces import ISpiderLoader
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
+from scrapy.interfaces import ISpiderLoader
+from scrapy.resolver import CachingThreadedResolver
 from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-from scrapy.utils.misc import load_object
 from scrapy.utils.log import LogCounterHandler, configure_logging, log_scrapy_info
-from scrapy import signals
+from scrapy.utils.misc import load_object
+from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 logger = logging.getLogger(__name__)
 

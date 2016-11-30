@@ -5,9 +5,11 @@ See documentation in docs/topics/spider-middleware.rst
 """
 import six
 from twisted.python.failure import Failure
+
 from scrapy.middleware import MiddlewareManager
-from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.defer import mustbe_deferred
+
 
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')

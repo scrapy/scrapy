@@ -5,32 +5,34 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+import logging
 import os
 import os.path
 import time
-import logging
-from email.utils import parsedate_tz, mktime_tz
-from six.moves.urllib.parse import urlparse
 from collections import defaultdict
+from email.utils import mktime_tz, parsedate_tz
+
 import six
+from six.moves.urllib.parse import urlparse
+from twisted.internet import defer, threads
+
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http import Request
+from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
+from scrapy.utils.boto import is_botocore
+from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import md5sum
+from scrapy.utils.python import to_bytes
+from scrapy.utils.request import referer_str
 
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
 
-from twisted.internet import defer, threads
 
-from scrapy.pipelines.media import MediaPipeline
-from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
-from scrapy.utils.misc import md5sum
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
-from scrapy.utils.request import referer_str
-from scrapy.utils.boto import is_botocore
-from scrapy.utils.datatypes import CaselessDict
 
 logger = logging.getLogger(__name__)
 

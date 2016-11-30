@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import re
+
 import logging
+import re
 
 import six
 from w3lib import html
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
-
 
 logger = logging.getLogger(__name__)
 

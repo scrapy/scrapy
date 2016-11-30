@@ -5,6 +5,7 @@ See documentation in docs/topics/extensions.rst
 """
 
 import gc
+
 import six
 
 from scrapy import signals

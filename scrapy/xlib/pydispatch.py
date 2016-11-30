@@ -1,15 +1,10 @@
 from __future__ import absolute_import
 
 import warnings
-from scrapy.exceptions import ScrapyDeprecationWarning
 
-from pydispatch import (
-    dispatcher,
-    errors,
-    robust,
-    robustapply,
-    saferef,
-)
+from pydispatch import dispatcher, errors, robust, robustapply, saferef
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 warnings.warn("Importing from scrapy.xlib.pydispatch is deprecated and will"
               " no longer be supported in future Scrapy versions."

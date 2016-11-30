@@ -6,6 +6,7 @@ For new code, always import from w3lib.http instead of this module
 
 from w3lib.http import *
 
+
 def decode_chunked_transfer(chunked_body):
     """Parsed body received with chunked transfer encoding, and return the
     decoded body.
@@ -23,4 +24,3 @@ def decode_chunked_transfer(chunked_body):
         body += t[:size]
         t = t[size+2:]
     return body
-

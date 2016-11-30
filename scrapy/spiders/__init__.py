@@ -7,11 +7,11 @@ import logging
 import warnings
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class Spider(object_ref):
@@ -112,6 +112,6 @@ spiders = ObsoleteClass(
 )
 
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
-from scrapy.spiders.sitemap import SitemapSpider
+from scrapy.spiders.crawl import CrawlSpider, Rule  # isort:skip
+from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider  # isort:skip
+from scrapy.spiders.sitemap import SitemapSpider  # isort:skip

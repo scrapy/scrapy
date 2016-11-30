@@ -1,40 +1,44 @@
-import os
-import six
 import contextlib
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+import os
 
-from twisted.trial import unittest
+import six
+from twisted.cred import checkers, credentials, portal
+from twisted.internet import defer, error, reactor
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
-from twisted.internet import reactor, defer, error
-from twisted.web import server, static, util, resource
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
-from twisted.cred import portal, checkers, credentials
+from twisted.trial import unittest
+from twisted.web import resource, server, static, util
+from twisted.web.test.test_webclient import (
+    BrokenDownloadResource, ForeverTakingResource, HostHeaderResource, NoLengthResource, PayloadResource,
+)
 from w3lib.url import path_to_file_uri
 
 from scrapy import twisted_version
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-
-from scrapy.spiders import Spider
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.http.response.text import TextResponse
 from scrapy.settings import Settings
-from scrapy.utils.test import get_crawler, skip_if_no_boto
+from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
-from scrapy.exceptions import NotConfigured
-
+from scrapy.utils.test import get_crawler, skip_if_no_boto
 from tests.mockserver import MockServer, ssl_context_factory
 from tests.spiders import SingleRequestSpider
+
+from scrapy.core.downloader.handlers.http import HttpDownloadHandler, HTTPDownloadHandler  # isort:skip bug isort#484
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
+
+
+
 
 class DummyDH(object):
 

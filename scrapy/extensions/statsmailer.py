@@ -5,8 +5,9 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 """
 
 from scrapy import signals
-from scrapy.mail import MailSender
 from scrapy.exceptions import NotConfigured
+from scrapy.mail import MailSender
+
 
 class StatsMailer(object):
 

@@ -4,14 +4,15 @@ Mail sending helpers
 See documentation in docs/topics/email.rst
 """
 import logging
-
-from six.moves import cStringIO as StringIO
-import six
-
 from email.utils import COMMASPACE, formatdate
+
+import six
+from six.moves import cStringIO as StringIO
+from six.moves.email_mime_base import MIMEBase
 from six.moves.email_mime_multipart import MIMEMultipart
 from six.moves.email_mime_text import MIMEText
-from six.moves.email_mime_base import MIMEBase
+from twisted.internet import defer, reactor, ssl
+
 if six.PY2:
     from email.MIMENonMultipart import MIMENonMultipart
     from email import Encoders
@@ -19,7 +20,6 @@ else:
     from email.mime.nonmultipart import MIMENonMultipart
     from email import encoders as Encoders
 
-from twisted.internet import defer, reactor, ssl
 
 logger = logging.getLogger(__name__)
 

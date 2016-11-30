@@ -4,19 +4,19 @@ extracts information from them"""
 import logging
 from collections import deque
 
-from twisted.python.failure import Failure
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
-from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
-from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.misc import load_object
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
+from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.utils.defer import defer_result, defer_succeed, iter_errback, parallel
+from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
+from scrapy.utils.misc import load_object
 from scrapy.utils.request import referer_str
+from scrapy.utils.spider import iterate_spider_output
 
 logger = logging.getLogger(__name__)
 
@@ -238,4 +238,3 @@ class Scraper(object):
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)
-

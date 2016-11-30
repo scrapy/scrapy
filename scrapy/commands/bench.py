@@ -1,6 +1,6 @@
+import subprocess
 import sys
 import time
-import subprocess
 
 from six.moves.urllib.parse import urlencode
 

@@ -1,6 +1,6 @@
-from scrapy.item import BaseItem
-from scrapy.http import Request
 from scrapy.exceptions import ContractFail
+from scrapy.http import Request
+from scrapy.item import BaseItem
 
 from . import Contract
 

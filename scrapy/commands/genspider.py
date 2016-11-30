@@ -1,15 +1,15 @@
 from __future__ import print_function
+
 import os
 import shutil
 import string
-
 from importlib import import_module
-from os.path import join, dirname, abspath, exists, splitext
+from os.path import abspath, dirname, exists, join, splitext
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
+from scrapy.utils.template import render_templatefile, string_camelcase
 
 
 def sanitize_module_name(module_name):

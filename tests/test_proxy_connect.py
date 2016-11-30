@@ -1,18 +1,18 @@
 import json
 import os
 import time
-
 from threading import Thread
+
 from libmproxy import controller, proxy
 from netlib import http_auth
 from testfixtures import LogCapture
-
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_crawler
+
 from scrapy.http import Request
-from tests.spiders import SimpleSpider, SingleRequestSpider
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
+from tests.spiders import SimpleSpider, SingleRequestSpider
 
 
 class HTTPSProxy(controller.Master, Thread):

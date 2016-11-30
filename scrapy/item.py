@@ -4,10 +4,10 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-from pprint import pformat
-from collections import MutableMapping
-
 from abc import ABCMeta
+from collections import MutableMapping
+from pprint import pformat
+
 import six
 
 from scrapy.utils.trackref import object_ref

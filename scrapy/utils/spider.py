@@ -1,10 +1,10 @@
-import logging
 import inspect
+import logging
 
 import six
 
 from scrapy.spiders import Spider
-from scrapy.utils.misc import  arg_to_iter
+from scrapy.utils.misc import arg_to_iter
 
 logger = logging.getLogger(__name__)
 

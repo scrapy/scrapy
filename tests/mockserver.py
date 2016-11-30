@@ -1,13 +1,19 @@
 from __future__ import print_function
-import sys, time, random, os, json
+
+import json
+import os
+import random
+import sys
+import time
+from subprocess import PIPE, Popen
+
 from six.moves.urllib.parse import urlencode
-from subprocess import Popen, PIPE
-from twisted.web.server import Site, NOT_DONE_YET
+from twisted.internet import defer, reactor, ssl
 from twisted.web.resource import Resource
-from twisted.internet import reactor, defer, ssl
+from twisted.web.server import NOT_DONE_YET, Site
+
 from scrapy import twisted_version
 from scrapy.utils.python import to_bytes, to_unicode
-
 
 if twisted_version < (11, 0, 0):
     def deferLater(clock, delay, func, *args, **kw):

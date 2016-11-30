@@ -1,12 +1,12 @@
-import sys
 import os
+import sys
 from importlib import import_module
 
-from scrapy.utils.spider import iter_spider_classes
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
+from scrapy.utils.spider import iter_spider_classes
 
 
 def _import_file(filepath):

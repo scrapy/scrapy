@@ -3,13 +3,14 @@ XPath selectors based on lxml
 """
 
 import warnings
+
 from parsel import Selector as _ParselSelector
-from scrapy.utils.trackref import object_ref
-from scrapy.utils.python import to_bytes
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.utils.decorators import deprecated
-from scrapy.exceptions import ScrapyDeprecationWarning
-
+from scrapy.utils.python import to_bytes
+from scrapy.utils.trackref import object_ref
 
 __all__ = ['Selector', 'SelectorList']
 

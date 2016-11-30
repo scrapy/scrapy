@@ -1,7 +1,8 @@
-import unittest
 import copy
+import unittest
 
 from scrapy.http import Headers
+
 
 class HeadersTest(unittest.TestCase):
 

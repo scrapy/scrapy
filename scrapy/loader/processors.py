@@ -4,8 +4,9 @@ This module provides some commonly used processors for Item Loaders.
 See documentation in docs/topics/loaders.rst
 """
 
-from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
+from scrapy.utils.misc import arg_to_iter
+
 from .common import wrap_loader_context
 
 

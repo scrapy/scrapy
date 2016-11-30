@@ -1,10 +1,13 @@
 from email.utils import formatdate
+
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError, ConnectionDone, ConnectionLost, ConnectionRefusedError, DNSLookupError, TCPTimedOutError,
+    TimeoutError,
+)
+
 from scrapy import signals
-from scrapy.exceptions import NotConfigured, IgnoreRequest
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.xlib.tx import ResponseFailed
 

@@ -6,11 +6,12 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+
 import six
 
-from scrapy.http import Request, HtmlResponse
-from scrapy.utils.spider import iterate_spider_output
+from scrapy.http import HtmlResponse, Request
 from scrapy.spiders import Spider
+from scrapy.utils.spider import iterate_spider_output
 
 
 def identity(x):

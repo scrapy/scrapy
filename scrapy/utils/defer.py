@@ -7,6 +7,7 @@ from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
 
+
 def defer_fail(_failure):
     """Same as twisted.internet.defer.fail but delay calling errback until
     next reactor loop

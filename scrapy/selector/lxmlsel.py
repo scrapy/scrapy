@@ -2,8 +2,8 @@
 XPath selectors based on lxml
 """
 from scrapy.utils.deprecate import create_deprecated_class
-from .unified import Selector, SelectorList
 
+from .unified import Selector, SelectorList
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
            'XPathSelectorList']

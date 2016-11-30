@@ -6,8 +6,8 @@ See documentation in docs/topics/spider-middleware.rst
 
 import logging
 
-from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+from scrapy.http import Request
 
 logger = logging.getLogger(__name__)
 

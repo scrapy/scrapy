@@ -4,6 +4,7 @@ See documentation in docs/topics/loaders.rst
 
 """
 from collections import defaultdict
+
 import six
 
 from scrapy.item import Item

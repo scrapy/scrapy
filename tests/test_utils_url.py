@@ -5,8 +5,7 @@ import six
 from six.moves.urllib.parse import urlparse
 
 from scrapy.spiders import Spider
-from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, parse_url)
+from scrapy.utils.url import add_http_if_no_scheme, guess_scheme, parse_url, url_is_from_any_domain, url_is_from_spider
 
 __doctests__ = ['scrapy.utils.url']
 

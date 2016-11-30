@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.settings import BaseSettings
-from scrapy.utils.conf import build_component_list, arglist_to_dict
+from scrapy.utils.conf import arglist_to_dict, build_component_list
 
 
 class BuildComponentListTest(unittest.TestCase):

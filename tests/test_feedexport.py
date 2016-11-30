@@ -1,27 +1,27 @@
 from __future__ import absolute_import
-import os
+
 import csv
 import json
-from io import BytesIO
-import tempfile
+import os
 import shutil
-from six.moves.urllib.parse import urlparse
+import tempfile
+from io import BytesIO
 
-from zope.interface.verify import verifyObject
-from twisted.trial import unittest
+from six.moves.urllib.parse import urlparse
 from twisted.internet import defer
-from scrapy.crawler import CrawlerRunner
-from scrapy.settings import Settings
-from tests.mockserver import MockServer
+from twisted.trial import unittest
 from w3lib.url import path_to_file_uri
+from zope.interface.verify import verifyObject
 
 import scrapy
+from scrapy.crawler import CrawlerRunner
 from scrapy.extensions.feedexport import (
-    IFeedStorage, FileFeedStorage, FTPFeedStorage,
-    S3FeedStorage, StdoutFeedStorage,
-    BlockingFeedStorage)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
+    BlockingFeedStorage, FileFeedStorage, FTPFeedStorage, IFeedStorage, S3FeedStorage, StdoutFeedStorage,
+)
+from scrapy.settings import Settings
 from scrapy.utils.python import to_native_str
+from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
+from tests.mockserver import MockServer
 
 
 class FileFeedStorageTest(unittest.TestCase):

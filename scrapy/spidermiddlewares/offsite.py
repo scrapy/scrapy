@@ -4,8 +4,8 @@ Offsite Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 
-import re
 import logging
+import re
 
 from scrapy import signals
 from scrapy.http import Request

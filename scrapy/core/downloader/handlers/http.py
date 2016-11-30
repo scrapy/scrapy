@@ -1,4 +1,5 @@
 from scrapy import twisted_version
+
 from .http10 import HTTP10DownloadHandler
 
 if twisted_version >= (11, 1, 0):

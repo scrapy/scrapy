@@ -3,8 +3,9 @@ RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
 
-from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+from scrapy.http import Request
+
 
 class RefererMiddleware(object):
 
@@ -20,4 +21,3 @@ class RefererMiddleware(object):
                 r.headers.setdefault('Referer', response.url)
             return r
         return (_set_referer(r) for r in result or ())
-

@@ -1,8 +1,8 @@
 import unittest
 
 from scrapy.downloadermiddlewares.downloadtimeout import DownloadTimeoutMiddleware
-from scrapy.spiders import Spider
 from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 

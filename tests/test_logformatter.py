@@ -1,10 +1,11 @@
 import unittest
+
 import six
 
-from scrapy.spiders import Spider
 from scrapy.http import Request, Response
-from scrapy.item import Item, Field
+from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
+from scrapy.spiders import Spider
 
 
 class CustomItem(Item):

@@ -1,9 +1,11 @@
 import os
+
 from six.moves import cPickle as pickle
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
+
 
 class SpiderState(object):
     """Store and load spider state during a scraping job"""

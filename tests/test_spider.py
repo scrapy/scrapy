@@ -7,16 +7,14 @@ from testfixtures import LogCapture
 from twisted.trial import unittest
 
 from scrapy import signals
-from scrapy.settings import Settings
-from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
-from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
-    CSVFeedSpider, SitemapSpider
-from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.trackref import object_ref
+from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
+from scrapy.linkextractors import LinkExtractor
+from scrapy.settings import Settings
+from scrapy.spiders import BaseSpider, CrawlSpider, CSVFeedSpider, Rule, SitemapSpider, Spider, XMLFeedSpider
+from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler
-
+from scrapy.utils.trackref import object_ref
 from tests import mock
 
 

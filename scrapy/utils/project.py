@@ -1,13 +1,13 @@
 import os
-from six.moves import cPickle as pickle
 import warnings
-
 from importlib import import_module
-from os.path import join, dirname, abspath, isabs, exists
+from os.path import abspath, dirname, exists, isabs, join
 
-from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
-from scrapy.settings import Settings
+from six.moves import cPickle as pickle
+
 from scrapy.exceptions import NotConfigured
+from scrapy.settings import Settings
+from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 
 ENVVAR = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'

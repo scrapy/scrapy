@@ -6,9 +6,27 @@
 HTTP client.
 """
 
-from __future__ import division, absolute_import
+from __future__ import absolute_import, division
 
 import os
+import zlib
+
+from twisted.internet import defer, protocol, reactor, task
+from twisted.internet.interfaces import IProtocol
+from twisted.python import failure, log
+from twisted.python.components import proxyForInterface
+from twisted.python.failure import Failure
+from twisted.web import error, http
+from twisted.web.error import SchemeNotSupported
+from twisted.web.http_headers import Headers
+from zope.interface import implementer
+
+from ._newclient import (
+    HTTP11ClientProtocol, PotentialDataLoss, Request, RequestNotSent, RequestTransmissionFailed, Response,
+    ResponseDone, ResponseFailed, ResponseNeverReceived, _WrapperException,
+)
+from .endpoints import SSL4ClientEndpoint, TCP4ClientEndpoint
+from .iweb import UNKNOWN_LENGTH, IBodyProducer, IResponse
 
 try:
     from urlparse import urlunparse
@@ -20,22 +38,9 @@ except ImportError:
     def urlunparse(parts):
         result = _urlunparse(tuple([p.decode("charmap") for p in parts]))
         return result.encode("charmap")
-import zlib
 
-from zope.interface import implementer
 
-from twisted.python import log
-from twisted.python.failure import Failure
-from twisted.web import http
-from twisted.internet import defer, protocol, task, reactor
-from twisted.internet.interfaces import IProtocol
-from twisted.python import failure
-from twisted.python.components import proxyForInterface
-from twisted.web import error
-from twisted.web.http_headers import Headers
 
-from .endpoints import TCP4ClientEndpoint, SSL4ClientEndpoint
-from .iweb import IResponse, UNKNOWN_LENGTH, IBodyProducer
 
 
 class PartialDownloadError(error.Error):
@@ -134,12 +139,6 @@ def _makeGetterFactory(url, factoryFactory, contextFactory=None,
 # should be significantly better than anything above, though it is not yet
 # feature equivalent.
 
-from twisted.web.error import SchemeNotSupported
-from ._newclient import Request, Response, HTTP11ClientProtocol
-from ._newclient import ResponseDone, ResponseFailed
-from ._newclient import RequestNotSent, RequestTransmissionFailed
-from ._newclient import (
-    ResponseNeverReceived, PotentialDataLoss, _WrapperException)
 
 try:
     from twisted.internet.ssl import ClientContextFactory

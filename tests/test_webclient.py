@@ -3,18 +3,22 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
+
 import six
 from six.moves.urllib.parse import urlparse
-
-from twisted.trial import unittest
-from twisted.web import server, static, util, resource
-from twisted.internet import reactor, defer
-from twisted.test.proto_helpers import StringTransport
-from twisted.python.filepath import FilePath
+from twisted.internet import defer, reactor
 from twisted.protocols.policies import WrappingFactory
+from twisted.python.filepath import FilePath
+from twisted.test.proto_helpers import StringTransport
+from twisted.trial import unittest
+from twisted.web import resource, server, static, util
+from twisted.web.test.test_webclient import (
+    BrokenDownloadResource, ErrorResource, ForeverTakingResource, HostHeaderResource, NoLengthResource,
+    PayloadResource,
+)
 
 from scrapy.core.downloader import webclient as client
-from scrapy.http import Request, Headers
+from scrapy.http import Headers, Request
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -210,9 +214,6 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             Headers({'Hello': ['World'], 'Foo': ['Bar']}))
 
 
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        ErrorResource, NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
 
 
 class EncodingResource(resource.Resource):

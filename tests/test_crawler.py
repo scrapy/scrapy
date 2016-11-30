@@ -1,13 +1,13 @@
-import warnings
 import unittest
+import warnings
 
 import scrapy
-from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
+from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
+from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
-from scrapy.extensions.throttle import AutoThrottle
+from scrapy.utils.spider import DefaultSpider
 
 
 class BaseCrawlerTest(unittest.TestCase):

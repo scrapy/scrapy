@@ -1,7 +1,7 @@
 import time
-from six.moves.http_cookiejar import (
-    CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
-)
+
+from six.moves.http_cookiejar import IPV4_RE, CookieJar as _CookieJar, DefaultCookiePolicy
+
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_native_str
 

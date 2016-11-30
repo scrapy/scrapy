@@ -1,9 +1,9 @@
 
 from __future__ import absolute_import
 
-from twisted.internet import reactor
-
 import signal
+
+from twisted.internet import reactor
 
 signal_names = {}
 for signame in dir(signal):

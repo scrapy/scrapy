@@ -1,11 +1,13 @@
 from __future__ import absolute_import
+
 import re
-from twisted.internet import reactor, error
+
+from twisted.internet import error, reactor
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
-                                                    logger as mw_module_logger)
+
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware, logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings

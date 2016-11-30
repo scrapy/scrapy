@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-import sys
-import os
 
-from twisted.internet import reactor, defer, protocol
+import os
+import sys
+
+from twisted.internet import defer, protocol, reactor
 
 
 class ProcessTest(object):

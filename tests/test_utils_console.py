@@ -1,6 +1,7 @@
 import unittest
 
 from scrapy.utils.console import get_shell_embed_func
+
 try:
     import bpython
     bpy = True

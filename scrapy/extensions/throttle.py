@@ -1,7 +1,7 @@
 import logging
 
-from scrapy.exceptions import NotConfigured
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 
 logger = logging.getLogger(__name__)
 

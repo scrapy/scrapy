@@ -1,5 +1,6 @@
 import six
 from w3lib.http import headers_dict_to_raw
+
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.python import to_unicode
 
@@ -91,5 +92,3 @@ class Headers(CaselessDict):
     def __copy__(self):
         return self.__class__(self)
     copy = __copy__
-
-

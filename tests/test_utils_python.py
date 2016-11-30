@@ -2,12 +2,13 @@ import functools
 import operator
 import unittest
 from itertools import count
+
 import six
 
 from scrapy.utils.python import (
-    memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
-    without_none_values)
+    WeakKeyCache, binary_is_text, equal_attributes, get_func_args, memoizemethod_noargs, stringify_dict, to_bytes,
+    to_unicode, without_none_values,
+)
 
 __doctests__ = ['scrapy.utils.python']
 

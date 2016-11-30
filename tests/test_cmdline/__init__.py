@@ -2,17 +2,20 @@ import json
 import os
 import pstats
 import shutil
-import six
-from subprocess import Popen, PIPE
 import sys
 import tempfile
 import unittest
+from subprocess import PIPE, Popen
+
+import six
+
+from scrapy.utils.test import get_testenv
+
 try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
 
-from scrapy.utils.test import get_testenv
 
 
 class CmdlineTest(unittest.TestCase):

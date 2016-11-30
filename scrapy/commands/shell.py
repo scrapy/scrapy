@@ -6,9 +6,9 @@ See documentation in docs/topics/shell.rst
 from threading import Thread
 
 from scrapy.commands import ScrapyCommand
-from scrapy.shell import Shell
 from scrapy.http import Request
-from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.shell import Shell
+from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
 

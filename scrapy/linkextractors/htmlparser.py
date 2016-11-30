@@ -3,15 +3,15 @@ HTMLParser-based link extractor
 """
 
 import warnings
+
 import six
 from six.moves.html_parser import HTMLParser
 from six.moves.urllib.parse import urljoin
-
 from w3lib.url import safe_url_string
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class HtmlParserLinkExtractor(HTMLParser):

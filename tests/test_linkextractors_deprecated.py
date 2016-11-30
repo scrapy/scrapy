@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
-from scrapy.linkextractors.regex import RegexLinkExtractor
+
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors.htmlparser import HtmlParserLinkExtractor
-from scrapy.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
+from scrapy.linkextractors.regex import RegexLinkExtractor
+from scrapy.linkextractors.sgml import BaseSgmlLinkExtractor, SgmlLinkExtractor
 from tests import get_testdata
-
 from tests.test_linkextractors import Base
 
 

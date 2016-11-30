@@ -1,5 +1,6 @@
-from six.moves.urllib.parse import urlparse
 import unittest
+
+from six.moves.urllib.parse import urlparse
 
 
 class UrlparseTestCase(unittest.TestCase):
