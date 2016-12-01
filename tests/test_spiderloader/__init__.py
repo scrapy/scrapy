@@ -66,7 +66,7 @@ class SpiderLoaderTest(unittest.TestCase):
         self.spider_loader = SpiderLoader.from_settings(settings)
         assert len(self.spider_loader._spiders) == 1
 
-    def test_load_spider_module(self):
+    def test_load_spider_module_multiple(self):
         prefix = 'tests.test_spiderloader.test_spiders.'
         module = ','.join(prefix + s for s in ('spider1', 'spider2'))
         settings = Settings({'SPIDER_MODULES': module})
