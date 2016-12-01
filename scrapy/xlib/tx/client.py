@@ -29,23 +29,18 @@ from twisted.python.failure import Failure
 from twisted.web import http
 from twisted.internet import defer, protocol, task, reactor
 from twisted.internet.interfaces import IProtocol
+from twisted.internet.endpoints import TCP4ClientEndpoint, SSL4ClientEndpoint
 from twisted.python import failure
 from twisted.python.components import proxyForInterface
 from twisted.web import error
-from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IResponse
 from twisted.web.http_headers import Headers
 
 from twisted.web.client import (
-    PartialDownloadError,
+    PartialDownloadError, FileBodyProducer,
+    CookieAgent, GzipDecoder, ContentDecoderAgent, RedirectAgent,
+    Agent, ProxyAgent, HTTPConnectionPool, readBody,
 )
-# newer than 10.0.0
-#from twisted.web.client import (
-#    CookieAgent, GzipDecoder, ContentDecoderAgent, RedirectAgent, FileBodyProducer,
-#    HTTPConnectionPool, Agent, ProxyAgent,
-#)
-
-from .endpoints import TCP4ClientEndpoint, SSL4ClientEndpoint
-from .iweb import IResponse
 
 ''' {{{
 class PartialDownloadError(error.Error):
@@ -54,7 +49,7 @@ class PartialDownloadError(error.Error):
 
     @ivar response: All of the response body which was downloaded.
     """
-}}} '''
+
 
 class _URL(tuple):
     """
@@ -138,22 +133,21 @@ def _makeGetterFactory(url, factoryFactory, contextFactory=None,
     else:
         reactor.connectTCP(host, port, factory)
     return factory
-
+}}} '''
 
 # The code which follows is based on the new HTTP client implementation.  It
 # should be significantly better than anything above, though it is not yet
 # feature equivalent.
 
-from twisted.web.error import SchemeNotSupported
-from ._newclient import Request, Response, HTTP11ClientProtocol
-from twisted.web._newclient import ResponseDone
-from ._newclient import ResponseFailed
-from twisted.web._newclient import RequestNotSent, RequestTransmissionFailed
-from twisted.web._newclient import (
-    PotentialDataLoss, _WrapperException)
-from ._newclient import (
-    ResponseNeverReceived)
+#from twisted.web.error import SchemeNotSupported
+from twisted.web._newclient import Response
+#from twisted.web._newclient import Request, HTTP11ClientProtocol
+from twisted.web._newclient import ResponseDone, ResponseFailed
+#from twisted.web._newclient import RequestNotSent, RequestTransmissionFailed
+#from twisted.web._newclient import (
+#    ResponseNeverReceived, PotentialDataLoss, _WrapperException)
 
+''' {{{
 try:
     from twisted.internet.ssl import ClientContextFactory
 except ImportError:
@@ -1170,7 +1164,7 @@ def readBody(response):
     d = defer.Deferred()
     response.deliverBody(_ReadBodyProtocol(response.code, response.phrase, d))
     return d
-
+}}} '''
 
 
 __all__ = [

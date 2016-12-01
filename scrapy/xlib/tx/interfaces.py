@@ -13,24 +13,21 @@ from zope.interface import Interface, Attribute
 
 from twisted.internet.interfaces import (
     IAddress, IConnector, IResolverSimple, IReactorTCP, IReactorSSL,
-    IReactorUDP, IReactorMulticast, IReactorProcess,
+    IReactorWin32Events, IReactorUDP, IReactorMulticast, IReactorProcess,
     IReactorTime, IDelayedCall, IReactorThreads, IReactorCore,
-    IReactorPluggableResolver, IReactorFDSet,
+    IReactorPluggableResolver, IReactorDaemonize, IReactorFDSet,
     IListeningPort, ILoggingContext, IFileDescriptor, IReadDescriptor,
     IWriteDescriptor, IReadWriteDescriptor, IHalfCloseableDescriptor,
     ISystemHandle, IConsumer, IProducer, IPushProducer, IPullProducer,
     IProtocol, IProcessProtocol, IHalfCloseableProtocol,
-    IProtocolFactory, ITransport, IProcessTransport, IServiceCollection,
+    IFileDescriptorReceiver, IProtocolFactory, ITransport, ITCPTransport,
+    IUNIXTransport,
+    ITLSTransport, ISSLTransport, IProcessTransport, IServiceCollection,
     IUDPTransport, IUNIXDatagramTransport, IUNIXDatagramConnectedTransport,
-    IMulticastTransport,
+    IMulticastTransport, IStreamClientEndpoint, IStreamServerEndpoint,
+    IStreamServerEndpointStringParser, IStreamClientEndpointStringParser,
+    IReactorUNIX, IReactorUNIXDatagram, IReactorSocket, IResolver
 )
-# newer than 10.0.0
-#from twisted.internet.interfaces import (
-#    IResolver, IReactorUNIX, IReactorUNIXDatagram, IReactorWin32Events, IReactorSocket,
-#    IReactorDaemonize, IFileDescriptorReceiver, ITCPTransport, IUNIXTransport,
-#    ITLSTransport, ISSLTransport, IStreamClientEndpoint, IStreamServerEndpoint,
-#    IStreamServerEndpointStringParser, IStreamClientEndpointStringParser,
-#)
 
 ''' {{{
 class IAddress(Interface):
@@ -95,7 +92,7 @@ class IResolverSimple(Interface):
         @raise twisted.internet.defer.TimeoutError: Raised (asynchronously)
         if the name cannot be resolved within the specified timeout period.
         """
-}}} '''
+
 
 
 class IResolver(IResolverSimple):
@@ -635,7 +632,7 @@ class IResolver(IResolverSimple):
         """
 
 
-''' {{{
+
 class IReactorTCP(Interface):
 
     def listenTCP(port, factory, backlog=50, interface=''):
@@ -722,7 +719,7 @@ class IReactorSSL(Interface):
 
         @param interface: the hostname to bind to, defaults to '' (all)
         """
-}}} '''
+
 
 
 class IReactorUNIX(Interface):
@@ -850,7 +847,7 @@ class IReactorWin32Events(Interface):
         """
 
 
-''' {{{
+
 class IReactorUDP(Interface):
     """
     UDP socket methods.
@@ -889,7 +886,7 @@ class IReactorMulticast(Interface):
         @see: L{twisted.internet.interfaces.IMulticastTransport}
         @see: U{http://twistedmatrix.com/documents/current/core/howto/udp.html}
         """
-}}} '''
+
 
 
 class IReactorSocket(Interface):
@@ -991,7 +988,7 @@ class IReactorSocket(Interface):
         """
 
 
-''' {{{
+
 class IReactorProcess(Interface):
 
     def spawnProcess(processProtocol, executable, args=(), env={}, path=None,
@@ -1368,7 +1365,7 @@ class IReactorPluggableResolver(Interface):
 
         @return: The previously installed resolver.
         """
-}}} '''
+
 
 class IReactorDaemonize(Interface):
     """
@@ -1400,7 +1397,7 @@ class IReactorDaemonize(Interface):
         """
 
 
-''' {{{
+
 class IReactorFDSet(Interface):
     """
     Implement me to be able to use L{IFileDescriptor} type resources.
@@ -1884,7 +1881,7 @@ class IHalfCloseableProtocol(Interface):
         This will never be called for TCP connections as TCP does not
         support notification of this type of half-close.
         """
-}}} '''
+
 
 
 class IFileDescriptorReceiver(Interface):
@@ -1905,7 +1902,7 @@ class IFileDescriptorReceiver(Interface):
         """
 
 
-''' {{{
+
 class IProtocolFactory(Interface):
     """
     Interface for protocol factories.
@@ -1995,7 +1992,7 @@ class ITransport(Interface):
 
         @return: An L{IAddress} provider.
         """
-}}} '''
+
 
 class ITCPTransport(ITransport):
     """
@@ -2116,7 +2113,7 @@ class ISSLTransport(ITCPTransport):
         Return an object with the peer's certificate info.
         """
 
-''' {{{
+
 class IProcessTransport(ITransport):
     """
     A process transport.
@@ -2345,7 +2342,7 @@ class IMulticastTransport(Interface):
         """
         Leave multicast group, return L{Deferred} of success.
         """
-}}} '''
+
 
 class IStreamClientEndpoint(Interface):
     """
@@ -2461,3 +2458,4 @@ class IStreamClientEndpointStringParser(Interface):
         @return: a client endpoint
         @rtype: L{IStreamClientEndpoint}
         """
+}}} '''

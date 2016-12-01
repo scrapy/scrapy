@@ -21,38 +21,33 @@ from zope.interface import implementer, directlyProvides
 import warnings
 
 from twisted.internet import interfaces, defer, error, fdesc
-from twisted.internet.protocol import (
-        ClientFactory, Protocol, Factory)
+#from twisted.internet.protocol import (
+#        ClientFactory, Protocol)
+from twisted.internet.protocol import Factory
 #from twisted.internet import threads, ProcessProtocol
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
-from twisted.internet.interfaces import IStreamClientEndpointStringParser
+#from twisted.internet.interfaces import IStreamClientEndpointStringParser
 from twisted.python.filepath import FilePath
 #from twisted.python.failure import Failure
 #from twisted.python import log
-from twisted.python.components import proxyForInterface
+#from twisted.python.components import proxyForInterface
 
 from twisted.plugin import IPlugin, getPlugins
 #from twisted.internet import stdio
 
-# newer than 10.0.0
-#from twisted.internet.endpoints import (
-#    TCP4ServerEndpoint, TCP6ServerEndpoint, TCP4ClientEndpoint, SSL4ServerEndpoint, SSL4ClientEndpoint,
-#    UNIXServerEndpoint, UNIXClientEndpoint, AdoptedStreamServerEndpoint, connectProtocol,
-#    quoteStringArgument,
-#    serverFromString, #> using newer _parseSSL, _tokenize in _serverParsers
-#    clientFromString, #> using newer _clientParsers
-#    _WrappingProtocol, _WrappingFactory, _TCPServerEndpoint,
-#    _parseTCP, _parseUNIX, _loadCAsFromDir,
-#    _parseSSL, _tokenize,
-#    _parseClientTCP, _parseClientSSL, _parseClientUNIX,
-#)
-
-from .interfaces import IFileDescriptorReceiver
+from twisted.internet.endpoints import (
+    clientFromString, serverFromString, quoteStringArgument,
+    TCP4ServerEndpoint, TCP6ServerEndpoint,
+    TCP4ClientEndpoint, TCP6ClientEndpoint,
+    UNIXServerEndpoint, UNIXClientEndpoint,
+    SSL4ServerEndpoint, SSL4ClientEndpoint,
+    AdoptedStreamServerEndpoint, connectProtocol,
+)
 
 
 __all__ = ["TCP4ClientEndpoint", "SSL4ServerEndpoint"]
 
-
+''' {{{
 class _WrappingProtocol(Protocol):
     """
     Wrap another protocol in order to notify my user when a connection has
@@ -71,7 +66,7 @@ class _WrappingProtocol(Protocol):
         self._wrappedProtocol = wrappedProtocol
 
         for iface in [interfaces.IHalfCloseableProtocol,
-                      IFileDescriptorReceiver]:
+                      interfaces.IFileDescriptorReceiver]:
             if iface.providedBy(self._wrappedProtocol):
                 directlyProvides(self, iface)
 
@@ -606,6 +601,7 @@ class AdoptedStreamServerEndpoint(object):
         except:
             return defer.fail()
         return defer.succeed(port)
+
 
 
 
@@ -1280,4 +1276,4 @@ def connectProtocol(endpoint, protocol):
         def buildProtocol(self, addr):
             return protocol
     return endpoint.connect(OneShotFactory())
-
+}}} '''

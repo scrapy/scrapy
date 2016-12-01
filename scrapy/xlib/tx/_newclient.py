@@ -38,26 +38,21 @@ from twisted.internet.error import ConnectionDone
 from twisted.internet.defer import Deferred, succeed, fail, maybeDeferred
 from twisted.internet.defer import CancelledError
 from twisted.internet.protocol import Protocol
-from twisted.protocols.basic import LineReceiver
-from twisted.web.iweb import UNKNOWN_LENGTH
-from twisted.web.http_headers import Headers
+#from twisted.protocols.basic import LineReceiver
+from twisted.web.iweb import UNKNOWN_LENGTH, IResponse
+#from twisted.web.http_headers import Headers
 from twisted.web.http import NO_CONTENT, NOT_MODIFIED
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.http import _IdentityTransferDecoder, _ChunkedTransferDecoder
 
 from twisted.web._newclient import (
     BadHeaders, ExcessWrite, ParseError, BadResponseVersion, _WrapperException,
-    RequestGenerationFailed, RequestTransmissionFailed,
-    WrongBodyLength, ResponseDone, RequestNotSent,
-    LengthEnforcingConsumer, makeStatefulDispatcher, ChunkedEncoder,
-    TransportProxyProducer,
+    RequestGenerationFailed, RequestTransmissionFailed, ConnectionAborted,
+    WrongBodyLength, ResponseDone, ResponseFailed, RequestNotSent,
+    ResponseNeverReceived, HTTPParser, HTTPClientParser, Request,
+    LengthEnforcingConsumer, makeStatefulDispatcher, Response, ChunkedEncoder,
+    TransportProxyProducer, HTTP11ClientProtocol
 )
-# newer than 10.0.0
-#from twisted.web._newclient import (
-#    ConnectionAborted, ResponseFailed, ResponseNeverReceived, HTTPParser,
-#    HTTPClientParser, Request, Response, HTTP11ClientProtocol,
-#)
-from .iweb import IResponse
 
 # States HTTPParser can be in
 STATUS = 'STATUS'
@@ -130,7 +125,7 @@ class RequestTransmissionFailed(_WrapperException):
     @ivar reasons: A C{list} of one or more L{Failure} instances giving the
         reasons the request transmission was considered to have failed.
     """
-}}} '''
+
 
 
 class ConnectionAborted(Exception):
@@ -139,7 +134,7 @@ class ConnectionAborted(Exception):
     """
 
 
-''' {{{
+
 class WrongBodyLength(Exception):
     """
     An L{IBodyProducer} declared the number of bytes it was going to
@@ -155,7 +150,7 @@ class ResponseDone(Exception):
     protocol passed to L{Response.deliverBody} and indicates that the entire
     response has been delivered.
     """
-}}} '''
+
 
 
 class ResponseFailed(_WrapperException):
@@ -182,7 +177,7 @@ class ResponseNeverReceived(ResponseFailed):
     """
 
 
-''' {{{
+
 class RequestNotSent(Exception):
     """
     L{RequestNotSent} indicates that an attempt was made to issue a request but
@@ -191,7 +186,7 @@ class RequestNotSent(Exception):
     to send a request using a protocol which is no longer connected to a
     server.
     """
-}}} '''
+
 
 
 def _callAppFunction(function):
@@ -777,7 +772,7 @@ class Request:
         _callAppFunction(self.bodyProducer.stopProducing)
 
 
-''' {{{
+
 class LengthEnforcingConsumer:
     """
     An L{IConsumer} proxy which enforces an exact length requirement on the
@@ -1201,7 +1196,7 @@ class TransportProxyProducer:
         """
         if self._producer is not None:
             self._producer.pauseProducing()
-}}} '''
+
 
 
 class HTTP11ClientProtocol(Protocol):
@@ -1527,3 +1522,4 @@ class HTTP11ClientProtocol(Protocol):
         d = Deferred()
         self._abortDeferreds.append(d)
         return d
+}}} '''
