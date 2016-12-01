@@ -32,19 +32,29 @@ from twisted.internet.interfaces import IProtocol
 from twisted.python import failure
 from twisted.python.components import proxyForInterface
 from twisted.web import error
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
 from twisted.web.http_headers import Headers
 
+from twisted.web.client import (
+    PartialDownloadError,
+)
+# newer than 10.0.0
+#from twisted.web.client import (
+#    CookieAgent, GzipDecoder, ContentDecoderAgent, RedirectAgent, FileBodyProducer,
+#    HTTPConnectionPool, Agent, ProxyAgent,
+#)
+
 from .endpoints import TCP4ClientEndpoint, SSL4ClientEndpoint
-from .iweb import IResponse, UNKNOWN_LENGTH, IBodyProducer
+from .iweb import IResponse
 
-
+''' {{{
 class PartialDownloadError(error.Error):
     """
     Page was only partially downloaded, we got disconnected in middle.
 
     @ivar response: All of the response body which was downloaded.
     """
-
+}}} '''
 
 class _URL(tuple):
     """
@@ -136,10 +146,13 @@ def _makeGetterFactory(url, factoryFactory, contextFactory=None,
 
 from twisted.web.error import SchemeNotSupported
 from ._newclient import Request, Response, HTTP11ClientProtocol
-from ._newclient import ResponseDone, ResponseFailed
-from ._newclient import RequestNotSent, RequestTransmissionFailed
+from twisted.web._newclient import ResponseDone
+from ._newclient import ResponseFailed
+from twisted.web._newclient import RequestNotSent, RequestTransmissionFailed
+from twisted.web._newclient import (
+    PotentialDataLoss, _WrapperException)
 from ._newclient import (
-    ResponseNeverReceived, PotentialDataLoss, _WrapperException)
+    ResponseNeverReceived)
 
 try:
     from twisted.internet.ssl import ClientContextFactory
@@ -1161,8 +1174,7 @@ def readBody(response):
 
 
 __all__ = [
-    'PartialDownloadError', 'HTTPPageGetter', 'HTTPPageDownloader',
-    'HTTPClientFactory', 'HTTPDownloader', 'getPage', 'downloadPage',
+    'PartialDownloadError',
     'ResponseDone', 'Response', 'ResponseFailed', 'Agent', 'CookieAgent',
     'ProxyAgent', 'ContentDecoderAgent', 'GzipDecoder', 'RedirectAgent',
     'HTTPConnectionPool', 'readBody']

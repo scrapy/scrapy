@@ -15,9 +15,9 @@ else:
     client = endpoints = _Mock()
 
 
-Agent = client.Agent
-ProxyAgent = client.ProxyAgent
-ResponseDone = client.ResponseDone
-ResponseFailed = client.ResponseFailed
-HTTPConnectionPool = client.HTTPConnectionPool
-TCP4ClientEndpoint = endpoints.TCP4ClientEndpoint
+Agent = client.Agent  # since < 11.1
+ProxyAgent = client.ProxyAgent  # since 11.1
+ResponseDone = client.ResponseDone  # since 11.1
+ResponseFailed = client.ResponseFailed  # since 11.1
+HTTPConnectionPool = client.HTTPConnectionPool  # since 12.1
+TCP4ClientEndpoint = endpoints.TCP4ClientEndpoint  # since 10.1
