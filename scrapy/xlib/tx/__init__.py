@@ -1,19 +1,10 @@
-from scrapy import twisted_version
-if twisted_version > (13, 0, 0):
-    from twisted.web import client
-    from twisted.internet import endpoints
-if twisted_version >= (11, 1, 0):
-    from . import client, endpoints
-else:
-    from scrapy.exceptions import NotSupported
-    class _Mocked(object):
-        def __init__(self, *args, **kw):
-            raise NotSupported('HTTP1.1 not supported')
-    class _Mock(object):
-        def __getattr__(self, name):
-            return _Mocked
-    client = endpoints = _Mock()
+from __future__ import absolute_import
 
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+
+from twisted.web import client
+from twisted.internet import endpoints
 
 Agent = client.Agent  # since < 11.1
 ProxyAgent = client.ProxyAgent  # since 11.1
@@ -21,3 +12,8 @@ ResponseDone = client.ResponseDone  # since 11.1
 ResponseFailed = client.ResponseFailed  # since 11.1
 HTTPConnectionPool = client.HTTPConnectionPool  # since 12.1
 TCP4ClientEndpoint = endpoints.TCP4ClientEndpoint  # since 10.1
+
+warnings.warn("Importing from scrapy.xlib.tx is deprecated and will"
+              " no longer be supported in future Scrapy versions."
+              " Update your code to import from twisted proper.",
+              ScrapyDeprecationWarning, stacklevel=2)
