@@ -87,13 +87,13 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: str or iterable
+        :type to: str or list of str
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: str or iterable
+        :type cc: str or list of str
 
         :param body: the e-mail body
         :type body: str
