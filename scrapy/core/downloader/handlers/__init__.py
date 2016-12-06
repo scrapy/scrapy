@@ -1,14 +1,15 @@
 """Download handlers for different schemes"""
 
 import logging
-from twisted.internet import defer
+
 import six
-from scrapy.exceptions import NotSupported, NotConfigured
+from twisted.internet import defer
+
+from scrapy import signals
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import without_none_values
-from scrapy import signals
-
 
 logger = logging.getLogger(__name__)
 

@@ -13,10 +13,10 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
-from scrapy.http import Response, Request
+from scrapy.http import Request, Response
+from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 

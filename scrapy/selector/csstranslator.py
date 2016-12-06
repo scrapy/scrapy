@@ -1,6 +1,6 @@
-from parsel.csstranslator import XPathExpr, GenericTranslator, HTMLTranslator
-from scrapy.utils.deprecate import create_deprecated_class
+from parsel.csstranslator import GenericTranslator, HTMLTranslator, XPathExpr
 
+from scrapy.utils.deprecate import create_deprecated_class
 
 ScrapyXPathExpr = create_deprecated_class(
     'ScrapyXPathExpr', XPathExpr,

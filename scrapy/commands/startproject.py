@@ -1,16 +1,16 @@
 from __future__ import print_function
-import re
+
 import os
+import re
 import string
 from importlib import import_module
-from os.path import join, exists, abspath
-from shutil import ignore_patterns, move, copy2, copystat
+from os.path import abspath, exists, join
+from shutil import copy2, copystat, ignore_patterns, move
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
-
+from scrapy.utils.template import render_templatefile, string_camelcase
 
 TEMPLATES_TO_RENDER = (
     ('scrapy.cfg',),
@@ -118,4 +118,3 @@ class Command(ScrapyCommand):
         _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
             join(scrapy.__path__[0], 'templates')
         return join(_templates_base_dir, 'project')
-    

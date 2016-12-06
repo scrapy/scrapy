@@ -1,7 +1,7 @@
 from unittest import TestCase
 
+from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
-from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 
 
@@ -18,4 +18,3 @@ class TestUrlLengthMiddleware(TestCase):
         spider = Spider('foo')
         out = list(mw.process_spider_output(res, reqs, spider))
         self.assertEquals(out, [short_url_req])
-

@@ -4,7 +4,7 @@ Helper functions for serializing (and deserializing) requests.
 import six
 
 from scrapy.http import Request
-from scrapy.utils.python import to_unicode, to_native_str
+from scrapy.utils.python import to_native_str, to_unicode
 
 
 def request_to_dict(request, spider=None):

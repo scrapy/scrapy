@@ -1,10 +1,11 @@
 # coding=utf-8
 
 import unittest
-from io import BytesIO
 from email.charset import Charset
+from io import BytesIO
 
 from scrapy.mail import MailSender
+
 
 class MailSenderTest(unittest.TestCase):
 

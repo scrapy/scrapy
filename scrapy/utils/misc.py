@@ -1,15 +1,14 @@
 """Helper functions which don't fit anywhere else"""
-import re
 import hashlib
+import re
 from importlib import import_module
 from pkgutil import iter_modules
 
 import six
 from w3lib.html import replace_entities
 
-from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
-
+from scrapy.utils.python import flatten, to_unicode
 
 _ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
 
@@ -116,4 +115,3 @@ def md5sum(file):
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
     return True if rel is not None and 'nofollow' in rel.split() else False
-    

@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.http import decode_chunked_transfer
 
+
 class ChunkedTest(unittest.TestCase):
 
     def test_decode_chunked_transfer(self):
@@ -16,5 +17,3 @@ class ChunkedTest(unittest.TestCase):
             "This is the data in the first chunk\r\n" +
             "and this is the second one\r\n" +
             "consequence")
-
-

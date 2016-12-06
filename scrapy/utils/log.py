@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import overridden_settings, Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings, overridden_settings
 
 logger = logging.getLogger(__name__)
 

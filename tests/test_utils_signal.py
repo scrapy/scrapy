@@ -1,8 +1,8 @@
-from testfixtures import LogCapture
-from twisted.trial import unittest
-from twisted.python.failure import Failure
-from twisted.internet import defer, reactor
 from pydispatch import dispatcher
+from testfixtures import LogCapture
+from twisted.internet import defer, reactor
+from twisted.python.failure import Failure
+from twisted.trial import unittest
 
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 

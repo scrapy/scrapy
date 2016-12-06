@@ -10,9 +10,8 @@ Interface definitions for L{twisted.web}.
     body is not known in advance.
 """
 
-from zope.interface import Interface, Attribute
-
 from twisted.internet.interfaces import IPushProducer
+from zope.interface import Attribute, Interface
 
 
 class IRequest(Interface):

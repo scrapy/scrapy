@@ -4,16 +4,16 @@ scrapy.http.Request objects
 """
 
 from __future__ import print_function
+
 import hashlib
 import weakref
+
 from six.moves.urllib.parse import urlunparse
-
 from w3lib.http import basic_auth_header
-from scrapy.utils.python import to_bytes, to_native_str
-
 from w3lib.url import canonicalize_url
-from scrapy.utils.httpobj import urlparse_cached
 
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes, to_native_str
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
 def request_fingerprint(request, include_headers=None):

@@ -1,7 +1,8 @@
 import unittest
 
-from scrapy.item import Item, Field
 import six
+
+from scrapy.item import Field, Item
 
 
 class ItemTest(unittest.TestCase):

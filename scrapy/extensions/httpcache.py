@@ -1,18 +1,21 @@
 from __future__ import print_function
-import os
+
 import gzip
-from six.moves import cPickle as pickle
+import os
+from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
-from email.utils import mktime_tz, parsedate_tz
-from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
+
+from six.moves import cPickle as pickle
+from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
+
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.request import request_fingerprint
 
 
 class DummyPolicy(object):

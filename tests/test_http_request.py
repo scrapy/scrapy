@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 import cgi
-import unittest
 import re
+import unittest
 
 import six
 from six.moves import xmlrpc_client as xmlrpclib
-from six.moves.urllib.parse import urlparse, parse_qs, unquote
+from six.moves.urllib.parse import parse_qs, unquote, urlparse
+
+from scrapy.http import FormRequest, Headers, HtmlResponse, Request, XmlRpcRequest
+from scrapy.utils.python import to_bytes, to_native_str
+
 if six.PY3:
     from urllib.parse import unquote_to_bytes
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
-from scrapy.utils.python import to_bytes, to_native_str
 
 
 class RequestTest(unittest.TestCase):

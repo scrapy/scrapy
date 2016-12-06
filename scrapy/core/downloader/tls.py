@@ -1,6 +1,6 @@
 import logging
-from OpenSSL import SSL
 
+from OpenSSL import SSL
 
 logger = logging.getLogger(__name__)
 

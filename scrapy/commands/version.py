@@ -1,9 +1,10 @@
 from __future__ import print_function
-import sys
-import platform
 
-import twisted
+import platform
+import sys
+
 import OpenSSL
+import twisted
 
 import scrapy
 from scrapy.commands import ScrapyCommand

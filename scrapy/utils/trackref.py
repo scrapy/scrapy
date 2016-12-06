@@ -10,12 +10,13 @@ alias to object in that case).
 """
 
 from __future__ import print_function
-import weakref
-from time import time
-from operator import itemgetter
-from collections import defaultdict
-import six
 
+import weakref
+from collections import defaultdict
+from operator import itemgetter
+from time import time
+
+import six
 
 NoneType = type(None)
 live_refs = defaultdict(weakref.WeakKeyDictionary)

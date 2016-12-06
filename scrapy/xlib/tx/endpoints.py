@@ -12,29 +12,23 @@ parsed by the L{clientFromString} and L{serverFromString} functions.
 @since: 10.1
 """
 
-from __future__ import division, absolute_import
+from __future__ import absolute_import, division
 
 import os
 import socket
-
-from zope.interface import implementer, directlyProvides
 import warnings
 
-from twisted.internet import interfaces, defer, error, fdesc, threads
-from twisted.internet.protocol import (
-        ClientFactory, Protocol, ProcessProtocol, Factory)
-from twisted.internet.interfaces import IStreamServerEndpointStringParser
-from twisted.internet.interfaces import IStreamClientEndpointStringParser
-from twisted.python.filepath import FilePath
-from twisted.python.failure import Failure
+from twisted.internet import defer, error, fdesc, interfaces, stdio, threads
+from twisted.internet.interfaces import IStreamClientEndpointStringParser, IStreamServerEndpointStringParser
+from twisted.internet.protocol import ClientFactory, Factory, ProcessProtocol, Protocol
+from twisted.plugin import IPlugin, getPlugins
 from twisted.python import log
 from twisted.python.components import proxyForInterface
-
-from twisted.plugin import IPlugin, getPlugins
-from twisted.internet import stdio
+from twisted.python.failure import Failure
+from twisted.python.filepath import FilePath
+from zope.interface import directlyProvides, implementer
 
 from .interfaces import IFileDescriptorReceiver
-
 
 __all__ = ["TCP4ClientEndpoint", "SSL4ServerEndpoint"]
 
@@ -1266,4 +1260,3 @@ def connectProtocol(endpoint, protocol):
         def buildProtocol(self, addr):
             return protocol
     return endpoint.connect(OneShotFactory())
-

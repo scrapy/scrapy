@@ -3,8 +3,10 @@ pprint and pformat wrappers with colorization support
 """
 
 from __future__ import print_function
+
 import sys
 from pprint import pformat as pformat_
+
 
 def _colorize(text, colorize=True):
     if not colorize or not sys.stdout.isatty():

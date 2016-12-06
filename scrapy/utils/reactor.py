@@ -1,4 +1,5 @@
-from twisted.internet import reactor, error
+from twisted.internet import error, reactor
+
 
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""

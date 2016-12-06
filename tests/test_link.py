@@ -1,5 +1,6 @@
 import unittest
 import warnings
+
 import six
 
 from scrapy.link import Link

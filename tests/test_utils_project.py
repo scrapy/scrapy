@@ -1,8 +1,9 @@
-import unittest
-import os
-import tempfile
-import shutil
 import contextlib
+import os
+import shutil
+import tempfile
+import unittest
+
 from scrapy.utils.project import data_path
 
 

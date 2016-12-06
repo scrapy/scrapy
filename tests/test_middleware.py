@@ -1,9 +1,10 @@
+import six
 from twisted.trial import unittest
 
-from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
-import six
+from scrapy.settings import Settings
+
 
 class M1(object):
 

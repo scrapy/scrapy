@@ -1,5 +1,7 @@
-import six
 import unittest
+
+import six
+
 from scrapy.utils import trackref
 from tests import mock
 

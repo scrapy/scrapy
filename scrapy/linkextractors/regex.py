@@ -1,9 +1,10 @@
 import re
-from six.moves.urllib.parse import urljoin
 
-from w3lib.html import remove_tags, replace_entities, replace_escape_chars, get_base_url
+from six.moves.urllib.parse import urljoin
+from w3lib.html import get_base_url, remove_tags, replace_entities, replace_escape_chars
 
 from scrapy.link import Link
+
 from .sgml import SgmlLinkExtractor
 
 linkre = re.compile(

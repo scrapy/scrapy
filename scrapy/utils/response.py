@@ -3,15 +3,15 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
+import tempfile
 import weakref
 import webbrowser
-import tempfile
 
 from twisted.web import http
-from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
 
 from scrapy.utils.decorators import deprecated
+from scrapy.utils.python import to_bytes, to_native_str
 
 
 @deprecated

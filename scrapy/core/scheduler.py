@@ -1,11 +1,11 @@
-import os
 import json
 import logging
-from os.path import join, exists
+import os
+from os.path import exists, join
 
-from scrapy.utils.reqser import request_to_dict, request_from_dict
-from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
+from scrapy.utils.misc import load_object
+from scrapy.utils.reqser import request_from_dict, request_to_dict
 
 logger = logging.getLogger(__name__)
 

@@ -28,23 +28,21 @@ Various other classes in this module support this usage:
 
 __metaclass__ = type
 
-from zope.interface import implements
-
-from twisted.python import log
-from twisted.python.reflect import fullyQualifiedName
-from twisted.python.failure import Failure
-from twisted.internet.interfaces import IConsumer, IPushProducer
+from twisted.internet.defer import CancelledError, Deferred, fail, maybeDeferred, succeed
 from twisted.internet.error import ConnectionDone
-from twisted.internet.defer import Deferred, succeed, fail, maybeDeferred
-from twisted.internet.defer import CancelledError
+from twisted.internet.interfaces import IConsumer, IPushProducer
 from twisted.internet.protocol import Protocol
 from twisted.protocols.basic import LineReceiver
+from twisted.python import log
+from twisted.python.failure import Failure
+from twisted.python.reflect import fullyQualifiedName
+from twisted.web.http import (
+    NO_CONTENT, NOT_MODIFIED, PotentialDataLoss, _ChunkedTransferDecoder, _DataLoss, _IdentityTransferDecoder,
+)
 from twisted.web.http_headers import Headers
-from twisted.web.http import NO_CONTENT, NOT_MODIFIED
-from twisted.web.http import _DataLoss, PotentialDataLoss
-from twisted.web.http import _IdentityTransferDecoder, _ChunkedTransferDecoder
+from zope.interface import implements
 
-from .iweb import IResponse, UNKNOWN_LENGTH
+from .iweb import UNKNOWN_LENGTH, IResponse
 
 # States HTTPParser can be in
 STATUS = 'STATUS'

@@ -1,8 +1,10 @@
 from queuelib.tests import test_queue as t
-from scrapy.squeues import MarshalFifoDiskQueue, MarshalLifoDiskQueue, PickleFifoDiskQueue, PickleLifoDiskQueue
-from scrapy.item import Item, Field
+
 from scrapy.http import Request
+from scrapy.item import Field, Item
 from scrapy.loader import ItemLoader
+from scrapy.squeues import MarshalFifoDiskQueue, MarshalLifoDiskQueue, PickleFifoDiskQueue, PickleLifoDiskQueue
+
 
 class TestItem(Item):
     name = Field()

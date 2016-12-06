@@ -1,17 +1,20 @@
 from __future__ import print_function
-import sys
-import optparse
+
 import cProfile
 import inspect
+import optparse
+import sys
+
 import pkg_resources
 
 import scrapy
-from scrapy.crawler import CrawlerProcess
 from scrapy.commands import ScrapyCommand
+from scrapy.crawler import CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
-from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.settings.deprecated import check_deprecated_settings
+from scrapy.utils.misc import walk_modules
+from scrapy.utils.project import get_project_settings, inside_project
+
 
 def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with

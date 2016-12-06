@@ -7,15 +7,12 @@ For more info see docs/topics/link-extractors.rst
 """
 import re
 
-from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
+from six.moves.urllib.parse import urlparse
 from w3lib.url import canonicalize_url
 
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.url import (
-    url_is_from_any_domain, url_has_any_extension,
-)
-
+from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
@@ -110,4 +107,4 @@ class FilteringLinkExtractor(object):
 
 
 # Top-level imports
-from .lxmlhtml import LxmlLinkExtractor as LinkExtractor
+from .lxmlhtml import LxmlLinkExtractor as LinkExtractor  # isort:skip

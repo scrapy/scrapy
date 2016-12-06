@@ -1,19 +1,20 @@
 """
 SGMLParser-based Link extractors
 """
-import six
-from six.moves.urllib.parse import urljoin
 import warnings
-from sgmllib import SGMLParser
 
+import six
+from sgmllib import SGMLParser
+from six.moves.urllib.parse import urljoin
 from w3lib.url import safe_url_string
-from scrapy.selector import Selector
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
+from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
-from scrapy.utils.python import unique as unique_list, to_unicode
+from scrapy.utils.python import to_unicode, unique as unique_list
 from scrapy.utils.response import get_base_url
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class BaseSgmlLinkExtractor(SGMLParser):

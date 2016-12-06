@@ -3,9 +3,9 @@ Scheduler queues
 """
 
 import marshal
+from queuelib import queue
 from six.moves import cPickle as pickle
 
-from queuelib import queue
 
 def _serializable_queue(queue_class, serialize, deserialize):
 

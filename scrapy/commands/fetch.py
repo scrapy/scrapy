@@ -1,11 +1,15 @@
 from __future__ import print_function
-import sys, six
+
+import sys
+
+import six
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
-from scrapy.http import Request
 from scrapy.exceptions import UsageError
-from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.http import Request
+from scrapy.utils.spider import DefaultSpider, spidercls_for_request
+
 
 class Command(ScrapyCommand):
 

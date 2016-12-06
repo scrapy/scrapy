@@ -14,14 +14,15 @@ there is no more failed pages to retry this middleware sends a signal
 import logging
 
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError, ConnectionDone, ConnectionLost, ConnectionRefusedError, DNSLookupError, TCPTimedOutError,
+    TimeoutError,
+)
 
+from scrapy.core.downloader.handlers.http11 import TunnelError
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
-from scrapy.core.downloader.handlers.http11 import TunnelError
 
 logger = logging.getLogger(__name__)
 

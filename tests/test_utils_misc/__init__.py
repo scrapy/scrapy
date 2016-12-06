@@ -1,9 +1,9 @@
-import sys
 import os
+import sys
 import unittest
 
-from scrapy.item import Item, Field
-from scrapy.utils.misc import load_object, arg_to_iter, walk_modules
+from scrapy.item import Field, Item
+from scrapy.utils.misc import arg_to_iter, load_object, walk_modules
 
 __doctests__ = ['scrapy.utils.misc']
 

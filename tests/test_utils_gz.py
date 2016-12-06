@@ -3,8 +3,8 @@ from os.path import join
 
 from w3lib.encoding import html_to_unicode
 
+from scrapy.http import Headers, Response
 from scrapy.utils.gz import gunzip, is_gzipped
-from scrapy.http import Response, Headers
 from tests import tests_datadir
 
 SAMPLEDIR = join(tests_datadir, 'compressed')

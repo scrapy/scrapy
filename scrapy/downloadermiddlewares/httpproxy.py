@@ -1,15 +1,17 @@
 import base64
+
+from six.moves.urllib.parse import unquote, urlunparse
 from six.moves.urllib.request import getproxies, proxy_bypass
-from six.moves.urllib.parse import unquote
+
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
+
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
-from six.moves.urllib.parse import urlunparse
 
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.python import to_bytes
 
 
 class HttpProxyMiddleware(object):

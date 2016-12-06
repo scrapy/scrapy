@@ -16,7 +16,7 @@ Scrapy developers, if you add a setting here remember to:
 import os
 import sys
 from importlib import import_module
-from os.path import join, abspath, dirname
+from os.path import abspath, dirname, join
 
 import six
 

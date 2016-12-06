@@ -4,19 +4,19 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import sys
 import pprint
+import sys
+import warnings
+from xml.sax.saxutils import XMLGenerator
+
 import marshal
 import six
 from six.moves import cPickle as pickle
-from xml.sax.saxutils import XMLGenerator
 
-from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
-from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
-import warnings
-
+from scrapy.item import BaseItem
+from scrapy.utils.python import is_listlike, to_bytes, to_native_str, to_unicode
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',

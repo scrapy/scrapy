@@ -1,13 +1,14 @@
 import unittest
-import six
 from functools import partial
 
-from scrapy.loader import ItemLoader
-from scrapy.loader.processors import Join, Identity, TakeFirst, \
-    Compose, MapCompose, SelectJmes
-from scrapy.item import Item, Field
-from scrapy.selector import Selector
+import six
+
 from scrapy.http import HtmlResponse
+from scrapy.item import Field, Item
+from scrapy.loader import ItemLoader
+from scrapy.loader.processors import Compose, Identity, Join, MapCompose, SelectJmes, TakeFirst
+from scrapy.selector import Selector
+
 
 # test items
 class NameItem(Item):

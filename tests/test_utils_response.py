@@ -1,11 +1,13 @@
 import os
 import unittest
+
 from six.moves.urllib.parse import urlparse
 
-from scrapy.http import Response, TextResponse, HtmlResponse
+from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.utils.python import to_bytes
-from scrapy.utils.response import (response_httprepr, open_in_browser,
-                                   get_meta_refresh, get_base_url, response_status_message)
+from scrapy.utils.response import (
+    get_base_url, get_meta_refresh, open_in_browser, response_httprepr, response_status_message,
+)
 
 __doctests__ = ['scrapy.utils.response']
 

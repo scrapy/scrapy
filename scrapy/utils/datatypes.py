@@ -6,9 +6,10 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import copy
-import six
 import warnings
 from collections import OrderedDict
+
+import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 

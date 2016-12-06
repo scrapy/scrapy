@@ -30,14 +30,15 @@ In case of status 200 request, response.headers will come with two keys:
 
 import re
 from io import BytesIO
-from six.moves.urllib.parse import urlparse, unquote
 
+from six.moves.urllib.parse import unquote, urlparse
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
-from twisted.internet.protocol import Protocol, ClientCreator
+from twisted.internet.protocol import ClientCreator, Protocol
+from twisted.protocols.ftp import CommandFailed, FTPClient
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
+
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
@@ -101,4 +102,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-

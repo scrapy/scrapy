@@ -1,13 +1,14 @@
-import re
 import logging
+import re
 from unittest import TestCase
+
 from testfixtures import LogCapture
 
-from scrapy.http import Response, Request
+from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
+from scrapy.exceptions import NotConfigured
+from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from scrapy.exceptions import NotConfigured
-from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):

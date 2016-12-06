@@ -1,9 +1,11 @@
-from os.path import join, abspath
-from twisted.trial import unittest
+from os.path import abspath, join
+
 from twisted.internet import defer
-from scrapy.utils.testsite import SiteTest
-from scrapy.utils.testproc import ProcessTest
+from twisted.trial import unittest
+
 from scrapy.utils.python import to_native_str
+from scrapy.utils.testproc import ProcessTest
+from scrapy.utils.testsite import SiteTest
 from tests.test_commands import CommandTest
 
 

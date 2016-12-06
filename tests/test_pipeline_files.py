@@ -1,24 +1,23 @@
+import hashlib
 import os
 import random
 import time
-import hashlib
 import warnings
-from tempfile import mkdtemp
 from shutil import rmtree
-from six.moves.urllib.parse import urlparse
+from tempfile import mkdtemp
+
 from six import BytesIO
-
-from twisted.trial import unittest
+from six.moves.urllib.parse import urlparse
 from twisted.internet import defer
+from twisted.trial import unittest
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
+from scrapy.item import Field, Item
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore
 from scrapy.settings import Settings
+from scrapy.utils.boto import is_botocore
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
-from scrapy.utils.boto import is_botocore
-
 from tests import mock
 
 

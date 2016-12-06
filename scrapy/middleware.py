@@ -1,10 +1,10 @@
-from collections import defaultdict
 import logging
 import pprint
+from collections import defaultdict
 
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.defer import process_chain, process_chain_both, process_parallel
 from scrapy.utils.misc import load_object
-from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
 
 logger = logging.getLogger(__name__)
 

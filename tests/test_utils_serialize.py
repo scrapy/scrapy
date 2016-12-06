@@ -1,12 +1,12 @@
+import datetime
 import json
 import unittest
-import datetime
 from decimal import Decimal
 
 from twisted.internet import defer
 
-from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.http import Request, Response
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
 class JsonEncoderTestCase(unittest.TestCase):

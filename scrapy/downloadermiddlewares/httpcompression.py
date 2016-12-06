@@ -1,9 +1,9 @@
 import zlib
 
-from scrapy.utils.gz import gunzip, is_gzipped
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.exceptions import NotConfigured
+from scrapy.utils.gz import gunzip, is_gzipped
 
 
 class HttpCompressionMiddleware(object):
@@ -56,4 +56,3 @@ class HttpCompressionMiddleware(object):
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
         return body
-

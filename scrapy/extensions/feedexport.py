@@ -4,27 +4,27 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
-import os
-import sys
 import logging
+import os
 import posixpath
-from tempfile import NamedTemporaryFile
+import sys
 from datetime import datetime
+from ftplib import FTP
+from tempfile import NamedTemporaryFile
+
 import six
 from six.moves.urllib.parse import urlparse
-from ftplib import FTP
-
-from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
+from zope.interface import Interface, implementer
 
 from scrapy import signals
-from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import without_none_values
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.ftp import ftp_makedirs_cwd
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ import os
 import signal
 import warnings
 
-from twisted.internet import reactor, threads, defer
+from twisted.internet import defer, reactor, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -19,11 +19,10 @@ from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.console import start_python_console
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
 class Shell(object):

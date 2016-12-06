@@ -5,22 +5,24 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+
 import six
+from PIL import Image
+
+from scrapy.exceptions import DropItem
+from scrapy.http import Request
+#TODO: from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.files import FileException, FilesPipeline
+from scrapy.settings import Settings
+from scrapy.utils.misc import md5sum
+from scrapy.utils.python import to_bytes
 
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
 
-from PIL import Image
 
-from scrapy.utils.misc import md5sum
-from scrapy.utils.python import to_bytes
-from scrapy.http import Request
-from scrapy.settings import Settings
-from scrapy.exceptions import DropItem
-#TODO: from scrapy.pipelines.media import MediaPipeline
-from scrapy.pipelines.files import FileException, FilesPipeline
 
 
 class NoimagesDrop(DropItem):

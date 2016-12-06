@@ -1,8 +1,9 @@
 import os
+
 from scrapy.commands import ScrapyCommand
+from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
-from scrapy.exceptions import UsageError
 
 
 class Command(ScrapyCommand):

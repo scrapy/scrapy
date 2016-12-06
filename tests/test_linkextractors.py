@@ -430,4 +430,3 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
-

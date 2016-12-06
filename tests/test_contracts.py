@@ -2,15 +2,11 @@ from unittest import TextTestResult
 
 from twisted.trial import unittest
 
-from scrapy.spiders import Spider
-from scrapy.http import Request
-from scrapy.item import Item, Field
 from scrapy.contracts import ContractsManager
-from scrapy.contracts.default import (
-    UrlContract,
-    ReturnsContract,
-    ScrapesContract,
-)
+from scrapy.contracts.default import ReturnsContract, ScrapesContract, UrlContract
+from scrapy.http import Request
+from scrapy.item import Field, Item
+from scrapy.spiders import Spider
 
 
 class TestItem(Item):

@@ -3,11 +3,10 @@ import unittest
 import six
 from w3lib.encoding import resolve_encoding
 
-from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
-                         XmlResponse, Headers)
+from scrapy.exceptions import NotSupported
+from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import to_native_str
-from scrapy.exceptions import NotSupported
 
 
 class BaseResponseTest(unittest.TestCase):

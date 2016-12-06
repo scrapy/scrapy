@@ -7,12 +7,11 @@ See documentation in docs/topics/request-response.rst
 
 import six
 from six.moves.urllib.parse import urljoin
+from w3lib.encoding import html_body_declared_encoding, html_to_unicode, http_content_type_encoding, resolve_encoding
 
-from w3lib.encoding import html_to_unicode, resolve_encoding, \
-    html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
-from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs, to_native_str
+from scrapy.utils.response import get_base_url
 
 
 class TextResponse(Response):

@@ -1,4 +1,5 @@
 from scrapy import twisted_version
+
 if twisted_version > (13, 0, 0):
     from twisted.web import client
     from twisted.internet import endpoints
