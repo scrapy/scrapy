@@ -244,7 +244,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
-            "IMAGES_EXPIRES": random.randint(1, 1000),
+            "IMAGES_EXPIRES": random.randint(100, 1000),
             "IMAGES_STORE": self.tempdir,
             "IMAGES_RESULT_FIELD": random_string(),
             "IMAGES_URLS_FIELD": random_string(),
