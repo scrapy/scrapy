@@ -1033,6 +1033,35 @@ Example entry in logs::
     (type Request)> - no more unserializable requests will be logged
     (see 'scheduler/unserializable' stats counter)
 
+
+.. setting:: SCHEDULER_DISK_QUEUE
+
+SCHEDULER_DISK_QUEUE
+--------------------
+
+Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
+
+Type of disk queue that will be used by scheduler. Other available types are
+``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
+``scrapy.squeues.MarshalLifoDiskQueue``.
+
+.. setting:: SCHEDULER_MEMORY_QUEUE
+
+SCHEDULER_MEMORY_QUEUE
+----------------------
+Default: ``'scrapy.squeues.LifoMemoryQueue'``
+
+Type of in-memory queue used by scheduler. Other available type is:
+``scrapy.squeues.FifoMemoryQueue``.
+
+.. setting:: SCHEDULER_PRIORITY_QUEUE
+
+SCHEDULER_PRIORITY_QUEUE
+------------------------
+Default: ``'queuelib.PriorityQueue'``
+
+Type of priority queue used by scheduler.
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
