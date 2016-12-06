@@ -23,7 +23,7 @@ Documentation
 - Document ``"download_latency"`` key in ``Request``'s ``meta`` dict (:issue:`2033`)
 - Remove page on (deprecated & unsupported) Ubuntu packages from ToC (:issue:`2335`)
 - A few fixed typos (:issue:`2346`, :issue:`2369`, :issue:`2369`, :issue:`2380`)
-  and clarifications (:issue:`2354`, :issue:`2325`)
+  and clarifications (:issue:`2354`, :issue:`2325`, :issue:`2414`)
 
 Other changes
 ~~~~~~~~~~~~~
