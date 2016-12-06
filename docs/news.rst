@@ -3,6 +3,41 @@
 Release notes
 =============
 
+Scrapy 1.2.2 (2016-12-06)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Fix a cryptic traceback when a pipeline fails on ``open_spider()`` (:issue:`2011`)
+- Fix embedded IPython shell variables (fixing :issue:`396` that re-appeared
+  in 1.2.0, fixed in :issue:`2418`)
+- A couple of patches when dealing with robots.txt:
+
+  - handle (non-standard) relative sitemap URLs (:issue:`2390`)
+  - handle non-ASCII URLs and User-Agents in Python 2 (:issue:`2373`)
+
+Documentation
+~~~~~~~~~~~~~
+
+- Document ``"download_latency"`` key in ``Request``'s ``meta`` dict (:issue:`2033`)
+- Remove page on (deprecated & unsupported) Ubuntu packages from ToC (:issue:`2335`)
+- A few fixed typos (:issue:`2346`, :issue:`2369`, :issue:`2369`, :issue:`2380`)
+  and clarifications (:issue:`2354`, :issue:`2325`, :issue:`2414`)
+
+Other changes
+~~~~~~~~~~~~~
+
+- Advertize `conda-forge`_ as Scrapy's official conda channel (:issue:`2387`)
+- More helpful error messages when trying to use ``.css()`` or ``.xpath()``
+  on non-Text Responses (:issue:`2264`)
+- ``startproject`` command now generates a sample ``middlewares.py`` file (:issue:`2335`)
+- Add more dependencies' version info in ``scrapy version`` verbose output (:issue:`2404`)
+- Remove all ``*.pyc`` files from source distribution (:issue:`2386`)
+
+.. _conda-forge: https://anaconda.org/conda-forge/scrapy
+
+
 Scrapy 1.2.1 (2016-10-21)
 -------------------------
 
