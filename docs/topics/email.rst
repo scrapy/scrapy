@@ -35,12 +35,6 @@ And here is how to use it to send an e-mail (without attachments)::
 
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
-.. note::
-    As shown in the example above, ``to`` and ``cc`` need to be lists
-    of email addresses, not single addresses, and even for one recipient,
-    i.e. ``to="someone@example.com"`` will not work.
-
-
 MailSender class reference
 ==========================
 
@@ -87,13 +81,13 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: list
+        :type to: str or list of str
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: list
+        :type cc: str or list of str
 
         :param body: the e-mail body
         :type body: str
