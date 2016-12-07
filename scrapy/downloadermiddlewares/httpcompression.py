@@ -27,7 +27,17 @@ class HttpCompressionMiddleware(object):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding and not is_gzipped(response):
                 encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                try:
+                    decoded_body = self._decode(response.body, encoding.lower())
+                except (IOError, zlib.error):
+                    # Propagate decompression failures of successful responses.
+                    if 200 <= response.status < 300:
+                        raise
+                    # For unsuccessful responses, it's often because
+                    # the body is plain text or HTML, wrongly advertized as gzipped.
+                    # we make the bet it's ok to pass it as-is for redirects,
+                    # 4xx's and 5xx's
+                    decoded_body = response.body
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url)
                 kwargs = dict(cls=respcls, body=decoded_body)
