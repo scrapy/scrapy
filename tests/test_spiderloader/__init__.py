@@ -40,19 +40,19 @@ class SpiderLoaderTest(unittest.TestCase):
 
     def test_list(self):
         self.assertEqual(set(self.spider_loader.list()),
-            set(['spider1', 'spider2', 'spider3']))
+            set(['Spider0', 'spider1', 'spider2', 'spider3']))
 
     def test_load(self):
         spider1 = self.spider_loader.load("spider1")
         self.assertEqual(spider1.__name__, 'Spider1')
 
     def test_find_by_request(self):
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy1.org/test')),
-            ['spider1'])
+        self.assertEqual(set(self.spider_loader.find_by_request(Request('http://scrapy1.org/test'))),
+            set(['Spider0', 'spider1']))
         self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy2.org/test')),
             ['spider2'])
         self.assertEqual(set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))),
-            set(['spider1', 'spider2']))
+            set(['Spider0', 'spider1', 'spider2']))
         self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy999.org/test')),
             [])
         self.assertEqual(self.spider_loader.find_by_request(Request('http://spider3.com')),
@@ -77,7 +77,7 @@ class SpiderLoaderTest(unittest.TestCase):
         module = 'tests.test_spiderloader.test_spiders.spider0'
         settings = Settings({'SPIDER_MODULES': [module]})
         self.spider_loader = SpiderLoader.from_settings(settings)
-        assert len(self.spider_loader._spiders) == 0
+        assert len(self.spider_loader._spiders) == 1
 
     def test_crawler_runner_loading(self):
         module = 'tests.test_spiderloader.test_spiders.spider1'
