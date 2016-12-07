@@ -24,7 +24,7 @@ from twisted.internet import interfaces, defer, error, fdesc, threads
 from twisted.internet.protocol import (
         ClientFactory, Protocol, ProcessProtocol, Factory)
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
-from twisted.internet.interfaces import IStreamClientEndpointStringParser
+from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
 from twisted.python.filepath import FilePath
 from twisted.python.failure import Failure
 from twisted.python import log
@@ -1238,7 +1238,7 @@ def clientFromString(reactor, description):
     args, kwargs = _parse(description)
     aname = args.pop(0)
     name = aname.upper()
-    for plugin in getPlugins(IStreamClientEndpointStringParser):
+    for plugin in getPlugins(IStreamClientEndpointStringParserWithReactor):
         if plugin.prefix.upper() == name:
             return plugin.parseStreamClient(*args, **kwargs)
     if name not in _clientParsers:
