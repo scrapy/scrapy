@@ -38,5 +38,6 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
         os.remove(render_path)
         assert not os.path.exists(render_path)  # Failure of test iself
 
+
 if '__main__' == __name__:
     unittest.main()

@@ -24,9 +24,10 @@ if 'COV_CORE_CONFIG' in os.environ:
 try:
     import unittest.mock as mock
 except ImportError:
-    import mock
+    import mock # flake8: noqa
 
 tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data')
+
 
 def get_testdata(*paths):
     """Return test data"""

@@ -5,6 +5,7 @@ from scrapy.utils.datatypes import CaselessDict
 
 __doctests__ = ['scrapy.utils.datatypes']
 
+
 class CaselessDictTest(unittest.TestCase):
 
     def test_init(self):
@@ -130,4 +131,3 @@ class CaselessDictTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

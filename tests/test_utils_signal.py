@@ -40,7 +40,7 @@ class SendCatchLogTest(unittest.TestCase):
 
     def error_handler(self, arg, handlers_called):
         handlers_called.add(self.error_handler)
-        a = 1/0
+        raise ZeroDivisionError
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -65,6 +65,7 @@ class SendCatchLogDeferredTest2(SendCatchLogTest):
 
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
+
 
 class SendCatchLogTest2(unittest.TestCase):
 

@@ -7,6 +7,7 @@ from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
 
+
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
@@ -51,6 +52,7 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out, reqs)
 
+
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
     def _get_spider(self):
@@ -60,11 +62,11 @@ class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
     def _get_spider(self):
-      bad_hostname = urlparse('http:////scrapytest.org').hostname
-      return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+        bad_hostname = urlparse('http:////scrapytest.org').hostname
+        return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
     def test_process_spider_output(self):
-      res = Response('http://scrapytest.org')
-      reqs = [Request('http://scrapytest.org/1')]
-      out = list(self.mw.process_spider_output(res, reqs, self.spider))
-      self.assertEquals(out, reqs)
+        res = Response('http://scrapytest.org')
+        reqs = [Request('http://scrapytest.org/1')]
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEquals(out, reqs)

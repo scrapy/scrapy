@@ -11,7 +11,7 @@ from tests.test_linkextractors import Base
 
 
 class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
-    # XXX: should we move some of these tests to base link extractor tests?
+    # TODO: should we move some of these tests to base link extractor tests?
 
     def test_basic(self):
         html = """<html><head><title>Page title<title>
@@ -122,7 +122,7 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                           Link(url='http://www.google.com/something', text=u''),
-                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'), ])
 
     def test_link_wrong_href(self):
         html = """
@@ -132,10 +132,11 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
         """
         response = HtmlResponse("http://example.org/index.html", body=html)
         lx = HtmlParserLinkExtractor()
-        self.assertEqual([link for link in lx.extract_links(response)], [
-            Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
-            Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
-        ])
+        self.assertEqual(
+            [link for link in lx.extract_links(response)],
+            [Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
+             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False), ]
+        )
 
 
 class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
@@ -174,7 +175,7 @@ class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
-    # XXX: RegexLinkExtractor is not deprecated yet, but it must be rewritten
+    # TODO: RegexLinkExtractor is not deprecated yet, but it must be rewritten
     # not to depend on SgmlLinkExractor. Its speed is also much worse
     # than it should be.
 
@@ -189,7 +190,9 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.com/sample2.html', text=u'sample 2'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://www.google.com/something', text=u''),
-                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'),
+                         ]
+        )
 
     def test_link_wrong_href(self):
         html = """

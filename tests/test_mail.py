@@ -6,6 +6,7 @@ from email.charset import Charset
 
 from scrapy.mail import MailSender
 
+
 class MailSenderTest(unittest.TestCase):
 
     def test_send(self):
@@ -26,7 +27,9 @@ class MailSenderTest(unittest.TestCase):
 
     def test_send_html(self):
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='<p>body</p>', mimetype='text/html', _callback=self._catch_mail_sent)
+        mailsender.send(
+            to=['test@scrapy.org'], subject='subject', body='<p>body</p>', mimetype='text/html',
+            _callback=self._catch_mail_sent)
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg.get_payload(), '<p>body</p>')
@@ -39,8 +42,8 @@ class MailSenderTest(unittest.TestCase):
         attachs = [('attachment', 'text/plain', attach)]
 
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
-                       attachs=attachs, _callback=self._catch_mail_sent)
+        mailsender.send(
+            to=['test@scrapy.org'], subject='subject', body='body', attachs=attachs, _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])
@@ -67,8 +70,8 @@ class MailSenderTest(unittest.TestCase):
         subject = u'sübjèçt'
         body = u'bödÿ-àéïöñß'
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
-                        charset='utf-8', _callback=self._catch_mail_sent)
+        mailsender.send(
+            to=['test@scrapy.org'], subject=subject, body=body, charset='utf-8', _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['subject'], subject)
@@ -109,6 +112,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(text.get_charset(), Charset('utf-8'))
         self.assertEqual(attach.get_payload(decode=True).decode('utf-8'), body)
+
 
 if __name__ == "__main__":
     unittest.main()

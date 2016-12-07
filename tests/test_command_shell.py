@@ -10,7 +10,6 @@ from tests import tests_datadir
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
-
     command = 'shell'
 
     @defer.inlineCallbacks

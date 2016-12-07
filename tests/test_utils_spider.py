@@ -7,13 +7,16 @@ from scrapy.spiders import CrawlSpider
 
 
 class MyBaseSpider(CrawlSpider):
-    pass # abstract spider
+    pass  # abstract spider
+
 
 class MySpider1(MyBaseSpider):
     name = 'myspider1'
 
+
 class MySpider2(MyBaseSpider):
     name = 'myspider2'
+
 
 class UtilsSpidersTestCase(unittest.TestCase):
 
@@ -32,6 +35,6 @@ class UtilsSpidersTestCase(unittest.TestCase):
         it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), {MySpider1, MySpider2})
 
+
 if __name__ == "__main__":
     unittest.main()
-

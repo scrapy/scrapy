@@ -85,7 +85,6 @@ class BinaryIsTextTest(unittest.TestCase):
         assert not binary_is_text(b"\x02\xa3")
 
 
-
 class UtilsPythonTestCase(unittest.TestCase):
 
     def test_equal_attributes(self):
@@ -135,7 +134,10 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.failIf(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+
+        class _Weakme(object):
+            pass
+
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
@@ -219,6 +221,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
 
 if __name__ == "__main__":
     unittest.main()

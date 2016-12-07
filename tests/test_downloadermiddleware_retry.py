@@ -1,8 +1,8 @@
 import unittest
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+    ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
 
 from scrapy import twisted_version
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
@@ -72,10 +72,12 @@ class RetryTest(unittest.TestCase):
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
     def test_twistederrors(self):
-        exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
-                DNSLookupError, ConnectionRefusedError, ConnectionDone,
-                ConnectError, ConnectionLost]
-        if twisted_version >= (11, 1, 0): # http11 available
+        exceptions = [
+            defer.TimeoutError, TCPTimedOutError, TimeoutError,
+            DNSLookupError, ConnectionRefusedError, ConnectionDone,
+            ConnectError, ConnectionLost
+        ]
+        if twisted_version >= (11, 1, 0):  # http11 available
             exceptions.append(ResponseFailed)
 
         for exc in exceptions:

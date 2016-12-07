@@ -16,7 +16,7 @@ class FailureToExcInfoTest(unittest.TestCase):
 
     def test_failure(self):
         try:
-            0/0
+            raise ZeroDivisionError
         except ZeroDivisionError:
             exc_info = sys.exc_info()
             failure = Failure()

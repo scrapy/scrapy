@@ -29,8 +29,7 @@ class SpiderStateTest(unittest.TestCase):
         ss2.spider_closed(spider2)
 
     def test_state_attribute(self):
-        # state attribute must be present if jobdir is not set, to provide a
-        # consistent interface
+        # state attribute must be present if jobdir is not set, to provide a consistent interface
         spider = Spider(name='default')
         ss = SpiderState()
         ss.spider_opened(spider)

@@ -10,7 +10,6 @@ from tests import mock
 
 
 class ManagerTestCase(TestCase):
-
     settings_dict = None
 
     def setUp(self):

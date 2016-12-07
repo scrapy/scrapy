@@ -9,14 +9,11 @@ from tempfile import mkdtemp
 from contextlib import contextmanager
 
 from twisted.trial import unittest
-from twisted.internet import defer
 
 import scrapy
 from scrapy.utils.python import to_native_str
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
-from scrapy.utils.testsite import SiteTest
-from scrapy.utils.testproc import ProcessTest
 
 
 class ProjectTest(unittest.TestCase):
@@ -245,6 +242,7 @@ class BadSpider(scrapy.Spider):
         print(log)
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
+
 
 class BenchCommandTest(CommandTest):
 

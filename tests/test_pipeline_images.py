@@ -1,4 +1,3 @@
-import os
 import hashlib
 import random
 import warnings
@@ -227,7 +226,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         IMAGES_RESULT_FIELD='images'
     )
 
-
     def setUp(self):
         self.tempdir = mkdtemp()
 
@@ -392,6 +390,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
+
 
 def _create_image(format, *a, **kw):
     buf = TemporaryFile()

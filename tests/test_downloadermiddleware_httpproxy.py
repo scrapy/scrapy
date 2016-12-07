@@ -1,17 +1,15 @@
 import os
-import sys
-from twisted.trial.unittest import TestCase, SkipTest
+from twisted.trial.unittest import TestCase
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, Request
+from scrapy.http import Request
 from scrapy.spiders import Spider
 
 spider = Spider('foo')
 
 
 class TestDefaultHeadersMiddleware(TestCase):
-
     failureException = AssertionError
 
     def setUp(self):
@@ -40,8 +38,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         os.environ.pop('file_proxy', None)
         mw = HttpProxyMiddleware()
 
-        for url, proxy in [('http://e.com', http_proxy),
-                ('https://e.com', https_proxy), ('file://tmp/a', None)]:
+        for url, proxy in [('http://e.com', http_proxy), ('https://e.com', https_proxy), ('file://tmp/a', None)]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
             self.assertEquals(req.url, url)
@@ -80,14 +77,14 @@ class TestDefaultHeadersMiddleware(TestCase):
         self.assertEquals(req.headers.get('Proxy-Authorization'), b'Basic beFuOnBhc3M=')
 
     def test_proxy_already_seted(self):
-        os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
+        os.environ['http_proxy'] = 'https://proxy.for.http:3128'
         mw = HttpProxyMiddleware()
         req = Request('http://noproxy.com', meta={'proxy': None})
         assert mw.process_request(req, spider) is None
         assert 'proxy' in req.meta and req.meta['proxy'] is None
 
     def test_no_proxy(self):
-        os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
+        os.environ['http_proxy'] = 'https://proxy.for.http:3128'
         mw = HttpProxyMiddleware()
 
         os.environ['no_proxy'] = '*'

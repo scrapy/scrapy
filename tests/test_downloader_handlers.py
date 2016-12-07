@@ -11,9 +11,8 @@ from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
 from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+from twisted.web.test.test_webclient import ForeverTakingResource, NoLengthResource, \
+    HostHeaderResource, PayloadResource, BrokenDownloadResource
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
@@ -36,6 +35,7 @@ from scrapy.exceptions import NotConfigured
 from tests.mockserver import MockServer, ssl_context_factory
 from tests.spiders import SingleRequestSpider
 
+
 class DummyDH(object):
 
     def __init__(self, crawler):
@@ -55,7 +55,7 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
@@ -65,7 +65,7 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
@@ -75,7 +75,7 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
@@ -256,7 +256,7 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_payload(self):
-        body = b'1'*100 # PayloadResource requires body length to be 100
+        body = b'1' * 100  # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
@@ -400,7 +400,7 @@ class Http11MockServerTestCase(unittest.TestCase):
         if twisted_version > (12, 3, 0):
 
             crawler = get_crawler(SingleRequestSpider)
-            body = b'1'*100 # PayloadResource requires body length to be 100
+            body = b'1' * 100  # PayloadResource requires body length to be 100
             request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
             yield crawler.crawl(seed=request)
             failure = crawler.spider.meta['failure']
@@ -529,7 +529,7 @@ class S3AnonTestCase(unittest.TestCase):
         skip_if_no_boto()
         self.s3reqh = S3DownloadHandler(Settings(),
                 httpdownloadhandler=HttpDownloadHandlerMock,
-                #anon=True, # is implicit
+                # anon=True, # is implicit
         )
         self.download_request = self.s3reqh.download_request
         self.spider = Spider('foo')
@@ -585,11 +585,11 @@ class S3TestCase(unittest.TestCase):
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
-        date ='Tue, 27 Mar 2007 19:36:42 +0000'
+        date = 'Tue, 27 Mar 2007 19:36:42 +0000'
         req = Request('s3://johnsmith/photos/puppy.jpg', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
+        self.assertEqual(httpreq.headers['Authorization'],
                 b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
@@ -602,20 +602,20 @@ class S3TestCase(unittest.TestCase):
             })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
+        self.assertEqual(httpreq.headers['Authorization'],
                 b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
-        req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy', \
+        req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy',
                 method='GET', headers={
                     'User-Agent': 'Mozilla/5.0',
                     'Date': date,
                     })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
+        self.assertEqual(httpreq.headers['Authorization'],
                 b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
@@ -625,19 +625,21 @@ class S3TestCase(unittest.TestCase):
             method='GET', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
+        self.assertEqual(httpreq.headers['Authorization'],
                 b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
-        try: import botocore
-        except ImportError: pass
+        try:
+            import botocore  # flake8: noqa
+        except ImportError:
+            pass
         else:
             raise unittest.SkipTest(
                 'botocore does not support overriding date with x-amz-date')
         # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', \
+        req = Request('s3://johnsmith/photos/puppy.jpg',
                 method='DELETE', headers={
                     'Date': date,
                     'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
@@ -651,7 +653,7 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
-        req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz', \
+        req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz',
                 method='PUT', headers={
                     'User-Agent': 'curl/7.15.5',
                     'Host': 'static.johnsmith.net:8080',
@@ -668,7 +670,7 @@ class S3TestCase(unittest.TestCase):
                     })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
+        self.assertEqual(httpreq.headers['Authorization'],
                 b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
     def test_request_signing7(self):

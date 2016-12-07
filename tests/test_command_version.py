@@ -7,7 +7,6 @@ from scrapy.utils.testproc import ProcessTest
 
 
 class VersionTest(ProcessTest, unittest.TestCase):
-
     command = 'version'
 
     @defer.inlineCallbacks
