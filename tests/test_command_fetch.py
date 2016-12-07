@@ -21,7 +21,7 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_redirect_disabled(self):
-        _, out, err = yield self.execute(['--no-status-aware', self.url('/redirect-no-meta-refresh')])
+        _, out, err = yield self.execute(['--no-redirect', self.url('/redirect-no-meta-refresh')])
         err = err.strip()
         self.assertIn(b'downloader/response_status_count/302', err, err)
         self.assertNotIn(b'downloader/response_status_count/200', err, err)

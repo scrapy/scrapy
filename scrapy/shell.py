@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import os
 import signal
+from six.moves import range
 import warnings
 
 from twisted.internet import reactor, threads, defer
@@ -20,6 +21,7 @@ from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.console import start_python_console
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.conf import get_config
@@ -40,11 +42,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None, handle_statuses=True):
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider, handle_statuses=handle_statuses)
+            self.fetch(url, spider, redirect=redirect)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -98,13 +100,15 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None, handle_statuses=False, **kwargs):
+    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True, **kwargs)
-            if handle_statuses:
+            if redirect:
+                request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+            else:
                 request.meta['handle_httpstatus_all'] = True
         response = None
         try:

@@ -304,3 +304,13 @@ class LocalCache(OrderedDict):
         while len(self) >= self.limit:
             self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
+
+
+class SequenceExclude(object):
+    """Object to test if an item is NOT within some sequence."""
+
+    def __init__(self, seq):
+        self.seq = seq
+
+    def __contains__(self, item):
+        return item not in self.seq

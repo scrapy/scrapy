@@ -5,6 +5,7 @@ from w3lib.url import is_url
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.exceptions import UsageError
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 class Command(ScrapyCommand):
@@ -27,8 +28,8 @@ class Command(ScrapyCommand):
             help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
-        parser.add_option("--no-status-aware", dest="no_status_aware", action="store_true", \
-            default=False, help="do not handle status codes like redirects and print response as-is")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", \
+            default=False, help="do not handle HTTP 3xx status codes and print response as-is")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -52,7 +53,11 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         request = Request(args[0], callback=cb, dont_filter=True)
-        if opts.no_status_aware:
+        # by default, let the framework handle redirects,
+        # i.e. command handles all codes expect 3xx
+        if not opts.no_redirect:
+            request.meta['handle_httpstatus_list'] = SequenceExclude(six.moves.range(300, 400))
+        else:
             request.meta['handle_httpstatus_all'] = True
 
         spidercls = DefaultSpider
