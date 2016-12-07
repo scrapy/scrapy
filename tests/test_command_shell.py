@@ -50,6 +50,16 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         assert out.strip().endswith(b'/redirected')
 
     @defer.inlineCallbacks
+    def test_redirect_follow_302(self):
+        _, out, _ = yield self.execute([self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
+        assert out.strip().endswith(b'200')
+
+    @defer.inlineCallbacks
+    def test_redirect_not_follow_302(self):
+        _, out, _ = yield self.execute(['--no-redirect', self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
+        assert out.strip().endswith(b'302')
+
+    @defer.inlineCallbacks
     def test_request_replace(self):
         url = self.url('/text')
         code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
