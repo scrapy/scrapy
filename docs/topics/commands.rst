@@ -322,6 +322,14 @@ So this command can be used to "see" how your spider would fetch a certain page.
 If used outside a project, no particular per-spider behaviour would be applied
 and it will just use the default Scrapy downloader settings.
 
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``--headers``: print the response's HTTP headers instead of the response's body
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
+
 Usage examples::
 
     $ scrapy fetch --nolog http://www.example.com/some/page.html
@@ -368,10 +376,30 @@ given. Also supports UNIX-style local file paths, either relative with
 ``./`` or ``../`` prefixes or absolute file paths.
 See :ref:`topics-shell` for more info.
 
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``-c code``: evaluate the code in the shell, print the result and exit
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
+
 Usage example::
 
     $ scrapy shell http://www.example.com/some/page.html
     [ ... scrapy shell starts ... ]
+
+    $ scrapy shell --nolog http://www.example.com/ -c '(response.status, response.url)'
+    (200, 'http://www.example.com/')
+
+    # shell follows HTTP redirects by default
+    $ scrapy shell --nolog http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F -c '(response.status, response.url)'
+    (200, 'http://example.com/')
+
+    # you can disable this with --no-redirect
+    $ scrapy shell --no-redirect --nolog http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F -c '(response.status, response.url)'
+    (302, 'http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F')
+
 
 .. command:: parse
 
