@@ -226,6 +226,21 @@ class MySpider(scrapy.Spider):
         self.assertNotIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
 
+    def test_runspider_log_short_names(self):
+        log1 = self.get_log(self.debug_log_spider,
+                            args=('-s', 'LOG_SHORT_NAMES=1'))
+        print(log1)
+        self.assertIn("[myspider] DEBUG: It Works!", log1)
+        self.assertIn("[scrapy]", log1)
+        self.assertNotIn("[scrapy.core.engine]", log1)
+
+        log2 = self.get_log(self.debug_log_spider,
+                            args=('-s', 'LOG_SHORT_NAMES=0'))
+        print(log2)
+        self.assertIn("[myspider] DEBUG: It Works!", log2)
+        self.assertNotIn("[scrapy]", log2)
+        self.assertIn("[scrapy.core.engine]", log2)
+
     def test_runspider_no_spider_found(self):
         log = self.get_log("from scrapy.spiders import Spider\n")
         self.assertIn("No spider found in file", log)
