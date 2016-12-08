@@ -220,6 +220,12 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
+    def test_runspider_log_level(self):
+        log = self.get_log(self.debug_log_spider,
+                           args=('-s', 'LOG_LEVEL=INFO'))
+        self.assertNotIn("DEBUG: It Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+
     def test_runspider_no_spider_found(self):
         log = self.get_log("from scrapy.spiders import Spider\n")
         self.assertIn("No spider found in file", log)
