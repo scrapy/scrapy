@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import traceback
 import warnings
 
 from zope.interface import implementer
@@ -30,9 +31,9 @@ class SpiderLoader(object):
                 for module in walk_modules(name):
                     self._load_spiders(module)
             except ImportError as e:
-                msg = ("Could not load spiders from module '{}'; "
-                       "Check SPIDER_MODULES setting "
-                       "(exception: {})".format(name, str(e)))
+                msg = ("\n{tb}Could not load spiders from module '{modname}'. "
+                       "Check SPIDER_MODULES setting".format(
+                            modname=name, tb=traceback.format_exc()))
                 warnings.warn(msg, RuntimeWarning)
 
     @classmethod
