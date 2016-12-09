@@ -3,6 +3,26 @@
 Release notes
 =============
 
+Scrapy 1.3.0 (2016-12-XX)
+-------------------------
+
+New Features
+~~~~~~~~~~~~
+
+- ``MailSender`` now accepts single strings as values for ``to`` and ``cc``
+  arguments (:issue:`2272`)
+
+Dependencies & Cleanups
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Scrapy now requires Twisted >= 13.1 which is the case for many Linux
+  distributions already.
+- As a consequence, we got rid of ``scrapy.xlib.tx.*`` modules, which
+  copied some of Twisted code for users stuck with an "old" Twisted version
+- ``ChunkedTransferMiddleware`` is deprecated and removed from the default
+  downloader middlewares.
+
+
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
 
