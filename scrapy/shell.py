@@ -7,7 +7,6 @@ from __future__ import print_function
 
 import os
 import signal
-from six.moves import range
 import warnings
 
 from twisted.internet import reactor, threads, defer

@@ -56,7 +56,7 @@ class Command(ScrapyCommand):
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:
-            request.meta['handle_httpstatus_list'] = SequenceExclude(six.moves.range(300, 400))
+            request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
         else:
             request.meta['handle_httpstatus_all'] = True
 
