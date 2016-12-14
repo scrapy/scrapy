@@ -131,26 +131,6 @@ def log_scrapy_info(settings):
     logger.info("Overridden settings: %(settings)r", {'settings': d})
 
 
-class StreamLogger(object):
-    """Fake file-like stream object that redirects writes to a logger instance
-
-    Taken from:
-        http://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
-    """
-    def __init__(self, logger, log_level=logging.INFO):
-        self.logger = logger
-        self.log_level = log_level
-        self.linebuf = ''
-
-    def write(self, buf):
-        for line in buf.rstrip().splitlines():
-            self.logger.log(self.log_level, line.rstrip())
-
-    def flush(self):
-        for h in self.logger.handlers:
-            h.flush()
-
-
 class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
