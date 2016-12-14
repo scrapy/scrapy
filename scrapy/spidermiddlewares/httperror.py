@@ -46,7 +46,7 @@ class HttpErrorMiddleware(object):
 
     def process_spider_exception(self, response, exception, spider):
         if isinstance(exception, HttpError):
-            logger.debug(
+            logger.info(
                 "Ignoring response %(response)r: HTTP status code is not handled or not allowed",
                 {'response': response}, extra={'spider': spider},
             )
