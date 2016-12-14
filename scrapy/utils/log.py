@@ -92,8 +92,9 @@ def configure_logging(settings=None, install_root_handler=True):
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
-    if settings.getbool('LOG_STDOUT'):
-        sys.stdout = StreamLogger(logging.getLogger('stdout'))
+    if settings.getbool('LOG_STDOUT') and settings.get('LOG_FILE'):
+        sys.stdout = twisted_log.StdioOnnaStick()
+        sys.stderr = twisted_log.StdioOnnaStick(isError=True)
 
     if install_root_handler:
         logging.root.setLevel(logging.NOTSET)
