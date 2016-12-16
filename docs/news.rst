@@ -22,6 +22,12 @@ Dependencies & Cleanups
 - ``ChunkedTransferMiddleware`` is deprecated and removed from the default
   downloader middlewares.
 
+Logging
+~~~~~~~
+
+- ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
+  this is technically **backwards incompatible** so please check your log parsers.
+
 
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
