@@ -140,7 +140,7 @@ output examples, which assume you're exporting these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8')
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent_width=None)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -149,7 +149,7 @@ BaseItemExporter
 
    These features can be configured through the constructor arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
-   :attr:`export_empty_fields`, :attr:`encoding`.
+   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent_width`.
 
    .. method:: export_item(item)
 
@@ -215,6 +215,11 @@ BaseItemExporter
       affects unicode values (which are always serialized to str using this
       encoding). Other value types are passed unchanged to the specific
       serialization library.
+
+   .. attribute:: indent_width
+
+      Amount of spaces used to indent the output on each level.
+      Defaults to ``None``, which disables indentation.
 
 .. highlight:: none
 

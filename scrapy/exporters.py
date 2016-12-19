@@ -36,6 +36,7 @@ class BaseItemExporter(object):
         self.encoding = options.pop('encoding', None)
         self.fields_to_export = options.pop('fields_to_export', None)
         self.export_empty_fields = options.pop('export_empty_fields', False)
+        self.indent_width = options.pop('indent_width', None)
         if not dont_fail and options:
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
@@ -99,7 +100,7 @@ class JsonItemExporter(BaseItemExporter):
         self._configure(kwargs, dont_fail=True)
         self.file = file
         kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(**kwargs)
+        self.encoder = ScrapyJSONEncoder(indent=self.indent_width, **kwargs)
         self.first_item = True
 
     def start_exporting(self):
@@ -128,33 +129,52 @@ class XmlItemExporter(BaseItemExporter):
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
 
+    def _beautify_newline(self):
+        if self.indent_width:
+            self._xg_characters('\n')
+
+    def _beautify_indent(self, depth=1):
+        if self.indent_width:
+            self._xg_characters(' ' * self.indent_width * depth)
+
     def start_exporting(self):
         self.xg.startDocument()
         self.xg.startElement(self.root_element, {})
+        self._beautify_newline()
 
     def export_item(self, item):
+        self._beautify_indent(depth=1)
         self.xg.startElement(self.item_element, {})
+        self._beautify_newline()
         for name, value in self._get_serialized_fields(item, default_value=''):
-            self._export_xml_field(name, value)
+            self._export_xml_field(name, value, depth=2)
+        self._beautify_indent(depth=1)
         self.xg.endElement(self.item_element)
+        self._beautify_newline()
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
 
-    def _export_xml_field(self, name, serialized_value):
+    def _export_xml_field(self, name, serialized_value, depth):
+        self._beautify_indent(depth=depth)
         self.xg.startElement(name, {})
         if hasattr(serialized_value, 'items'):
+            self._beautify_newline()
             for subname, value in serialized_value.items():
-                self._export_xml_field(subname, value)
+                self._export_xml_field(subname, value, depth=depth+1)
+            self._beautify_indent(depth=depth)
         elif is_listlike(serialized_value):
+            self._beautify_newline()
             for value in serialized_value:
-                self._export_xml_field('value', value)
+                self._export_xml_field('value', value, depth=depth+1)
+            self._beautify_indent(depth=depth)
         elif isinstance(serialized_value, six.text_type):
             self._xg_characters(serialized_value)
         else:
             self._xg_characters(str(serialized_value))
         self.xg.endElement(name)
+        self._beautify_newline()
 
     # Workaround for http://bugs.python.org/issue17606
     # Before Python 2.7.4 xml.sax.saxutils required bytes;

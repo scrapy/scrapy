@@ -431,10 +431,10 @@ class FeedExportTest(unittest.TestCase):
             'csv': u'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
-        for format in formats:
-            settings = {'FEED_FORMAT': format}
+        for format, expected in formats.items():
+            settings = {'FEED_FORMAT': format, 'FEED_EXPORT_INDENT_WIDTH': None}
             data = yield self.exported_data(items, settings)
-            self.assertEqual(formats[format], data)
+            self.assertEqual(expected, data)
 
         formats = {
             'json': u'[\n{"foo": "Test\xd6"}\n]'.encode('latin-1'),
@@ -443,7 +443,108 @@ class FeedExportTest(unittest.TestCase):
             'csv': u'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
-        for format in formats:
-            settings = {'FEED_FORMAT': format, 'FEED_EXPORT_ENCODING': 'latin-1'}
+        settings = {'FEED_EXPORT_INDENT_WIDTH': None, 'FEED_EXPORT_ENCODING': 'latin-1'}
+        for format, expected in formats.items():
+            settings['FEED_FORMAT'] = format
             data = yield self.exported_data(items, settings)
-            self.assertEqual(formats[format], data)
+            self.assertEqual(expected, data)
+
+    @defer.inlineCallbacks
+    def test_export_indentation(self):
+        items = [dict({'foo': ['bar']})]
+
+        output = [
+            # JSON
+            {
+                'format': 'json',
+                'indent_width': None,
+                'expected': b'[\n{"foo": ["bar"]}\n]',
+            },
+            {
+                'format': 'json',
+                'indent_width': 2,
+                'expected': b"""
+[
+{
+  "foo": [
+    "bar"
+  ]
+}
+]""",
+            },
+            {
+                'format': 'json',
+                'indent_width': 4,
+                'expected': b"""
+[
+{
+    "foo": [
+        "bar"
+    ]
+}
+]""",
+            },
+            {
+                'format': 'json',
+                'indent_width': 5,
+                'expected': b"""
+[
+{
+     "foo": [
+          "bar"
+     ]
+}
+]""",
+            },
+
+            # XML
+            {
+                'format': 'xml',
+                'indent_width': None,
+                'expected': b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo><value>bar</value></foo></item></items>',
+            },
+            {
+                'format': 'xml',
+                'indent_width': 2,
+                'expected': b"""
+<?xml version="1.0" encoding="utf-8"?>
+<items>
+  <item>
+    <foo>
+      <value>bar</value>
+    </foo>
+  </item>
+</items>""",
+            },
+            {
+                'format': 'xml',
+                'indent_width': 4,
+                'expected': b"""
+<?xml version="1.0" encoding="utf-8"?>
+<items>
+    <item>
+        <foo>
+            <value>bar</value>
+        </foo>
+    </item>
+</items>""",
+            },
+            {
+                'format': 'xml',
+                'indent_width': 5,
+                'expected': b"""
+<?xml version="1.0" encoding="utf-8"?>
+<items>
+     <item>
+          <foo>
+               <value>bar</value>
+          </foo>
+     </item>
+</items>""",
+            },
+        ]
+
+        for row in output:
+            settings = {'FEED_FORMAT': row['format'], 'FEED_EXPORT_INDENT_WIDTH': row['indent_width']}
+            data = yield self.exported_data(items, settings)
+            self.assertEqual(row['expected'].strip(), data)

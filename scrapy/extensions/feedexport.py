@@ -172,6 +172,7 @@ class FeedExporter(object):
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
         self._exporting = False
         self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
+        self.indent_width = settings.getint('FEED_EXPORT_INDENT_WIDTH') or None
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
 
@@ -188,7 +189,7 @@ class FeedExporter(object):
         storage = self._get_storage(uri)
         file = storage.open(spider)
         exporter = self._get_exporter(file, fields_to_export=self.export_fields,
-            encoding=self.export_encoding)
+            encoding=self.export_encoding, indent_width=self.indent_width)
         if self.store_empty:
             exporter.start_exporting()
             self._exporting = True
