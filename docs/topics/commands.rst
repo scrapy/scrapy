@@ -382,7 +382,9 @@ Supported options:
 
 * ``-c code``: evaluate the code in the shell, print the result and exit
 
-* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them);
+  this only affects the URL you may pass as argument on the command line;
+  once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
 
 Usage example::
 
@@ -397,6 +399,7 @@ Usage example::
     (200, 'http://example.com/')
 
     # you can disable this with --no-redirect
+    # (only for the URL passed as command line argument)
     $ scrapy shell --no-redirect --nolog http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F -c '(response.status, response.url)'
     (302, 'http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F')
 
