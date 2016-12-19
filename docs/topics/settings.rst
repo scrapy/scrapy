@@ -788,6 +788,16 @@ If ``True``, all standard output (and error) of your process will be redirected
 to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
 log.
 
+.. setting:: LOG_SHORT_NAMES
+
+LOG_SHORT_NAMES
+---------------
+
+Default: ``False``
+
+If ``True``, the logs will just contain the root path. If it is set to ``False``
+then it displays the component responsible for the log output
+
 .. setting:: MEMDEBUG_ENABLED
 
 MEMDEBUG_ENABLED
@@ -1027,7 +1037,7 @@ Stats counter (``scheduler/unserializable``) tracks the number of times this hap
 
 Example entry in logs::
 
-    1956-01-31 00:00:00+0800 [scrapy] ERROR: Unable to serialize request:
+    1956-01-31 00:00:00+0800 [scrapy.core.scheduler] ERROR: Unable to serialize request:
     <GET http://example.com> - reason: cannot serialize <Request at 0x9a7c7ec>
     (type Request)> - no more unserializable requests will be logged
     (see 'scheduler/unserializable' stats counter)

@@ -118,7 +118,8 @@ def _get_handler(settings):
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
-    handler.addFilter(TopLevelFormatter(['scrapy']))
+    if settings.getbool('LOG_SHORT_NAMES'):
+        handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
 
 
