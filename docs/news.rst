@@ -27,6 +27,11 @@ Logging
 
 - ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
   this is technically **backwards incompatible** so please check your log parsers.
+- By default, logger names now use a long-form path, e.g. ``[scrapy.extensions.logstats]``,
+  instead of the shorter "top-level" variant of prior releases (e.g. ``[scrapy]``);
+  this is **backwards incompatible** if you have log parsers expecting the short
+  logger name part. You can switch back to short logger names using :setting:`LOG_SHORT_NAMES`
+  set to ``True``.
 
 
 Scrapy 1.2.2 (2016-12-06)
