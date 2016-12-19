@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import warnings
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -89,3 +90,14 @@ class SpiderLoaderTest(unittest.TestCase):
         crawler = runner.create_crawler('spider1')
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
         self.assertEqual(crawler.spidercls.name, 'spider1')
+
+    def test_bad_spider_modules_warning(self):
+
+        with warnings.catch_warnings(record=True) as w:
+            module = 'tests.test_spiderloader.test_spiders.doesnotexist'
+            settings = Settings({'SPIDER_MODULES': [module]})
+            spider_loader = SpiderLoader.from_settings(settings)
+            self.assertIn("Could not load spiders from module", str(w[0].message))
+
+            spiders = spider_loader.list()
+            self.assertEqual(spiders, [])
