@@ -11,6 +11,9 @@ New Features
 
 - ``MailSender`` now accepts single strings as values for ``to`` and ``cc``
   arguments (:issue:`2272`)
+- ``scrapy fetch url``, ``scrapy shell url`` and ``fetch(url)`` inside
+  scrapy shell now follow HTTP redirections by default (:issue:`2290`);
+  See :command:`fetch` and :command:`shell` for details.
 
 Dependencies & Cleanups
 ~~~~~~~~~~~~~~~~~~~~~~~
