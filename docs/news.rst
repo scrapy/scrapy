@@ -3,6 +3,46 @@
 Release notes
 =============
 
+Scrapy 1.3.0 (2016-12-XX)
+-------------------------
+
+This release comes rather soon after 1.2.2 for one main reason:
+it was found out that releases since 0.18 up to 1.2.2 (included) use
+some backported code from Twisted (``scrapy.xlib.tx.*``),
+even if newer Twisted modules are available.
+Scrapy now uses ``twisted.web.client`` and ``twisted.internet.endpoints`` directly.
+(See also cleanups below.)
+
+As it is a major change, we wanted to get the bug fix out quickly
+while not breaking any projects using the 1.2 series.
+
+New Features
+~~~~~~~~~~~~
+
+- ``MailSender`` now accepts single strings as values for ``to`` and ``cc``
+  arguments (:issue:`2272`)
+- ``scrapy fetch url``, ``scrapy shell url`` and ``fetch(url)`` inside
+  scrapy shell now follow HTTP redirections by default (:issue:`2290`);
+  See :command:`fetch` and :command:`shell` for details.
+- ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
+  this is technically **backwards incompatible** so please check your log parsers.
+- By default, logger names now use a long-form path, e.g. ``[scrapy.extensions.logstats]``,
+  instead of the shorter "top-level" variant of prior releases (e.g. ``[scrapy]``);
+  this is **backwards incompatible** if you have log parsers expecting the short
+  logger name part. You can switch back to short logger names using :setting:`LOG_SHORT_NAMES`
+  set to ``True``.
+
+Dependencies & Cleanups
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Scrapy now requires Twisted >= 13.1 which is the case for many Linux
+  distributions already.
+- As a consequence, we got rid of ``scrapy.xlib.tx.*`` modules, which
+  copied some of Twisted code for users stuck with an "old" Twisted version
+- ``ChunkedTransferMiddleware`` is deprecated and removed from the default
+  downloader middlewares.
+
+
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
 
