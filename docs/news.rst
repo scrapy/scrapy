@@ -8,8 +8,10 @@ Scrapy 1.3.0 (2016-12-XX)
 
 This release comes rather soon after 1.2.2 for one main reason:
 it was found out that releases since 0.18 up to 1.2.2 (included) use
-some backported code from Twisted, even if newer Twisted modules are available.
+some backported code from Twisted (``scrapy.xlib.tx.*``),
+even if newer Twisted modules are available.
 Scrapy now uses ``twisted.web.client`` and ``twisted.internet.endpoints`` directly.
+(See also cleanups below.)
 
 As it is a major change, we wanted to get the bug fix out quickly
 while not breaking any projects using the 1.2 series.
