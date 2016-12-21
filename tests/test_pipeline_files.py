@@ -208,7 +208,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
-            "FILES_EXPIRES": random.randint(1, 1000),
+            "FILES_EXPIRES": random.randint(100, 1000),
             "FILES_URLS_FIELD": random_string(),
             "FILES_RESULT_FIELD": random_string(),
             "FILES_STORE": self.tempdir
