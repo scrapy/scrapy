@@ -75,6 +75,9 @@ Contributing
 
 See http://doc.scrapy.org/en/master/contributing.html
 
+Code of Conduct
+---------------
+
 Please note that this project is released with a Contributor Code of Conduct
 (see https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md).
 
