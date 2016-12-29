@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import traceback
+import warnings
 
 from zope.interface import implementer
 
@@ -18,15 +20,21 @@ class SpiderLoader(object):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self._spiders = {}
         self._load_all_spiders()
-            
+
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
             self._spiders[spcls.name] = spcls
 
     def _load_all_spiders(self):
         for name in self.spider_modules:
-            for module in walk_modules(name):
-                self._load_spiders(module)
+            try:
+                for module in walk_modules(name):
+                    self._load_spiders(module)
+            except ImportError as e:
+                msg = ("\n{tb}Could not load spiders from module '{modname}'. "
+                       "Check SPIDER_MODULES setting".format(
+                            modname=name, tb=traceback.format_exc()))
+                warnings.warn(msg, RuntimeWarning)
 
     @classmethod
     def from_settings(cls, settings):

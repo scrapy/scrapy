@@ -299,6 +299,7 @@ Those are:
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_latency`
 * :reqmeta:`proxy`
 
 .. reqmeta:: bindaddress
@@ -316,6 +317,15 @@ download_timeout
 The amount of time (in secs) that the downloader will wait before timing out.
 See also: :setting:`DOWNLOAD_TIMEOUT`.
 
+.. reqmeta:: download_latency
+
+download_latency
+----------------
+
+The amount of time spent to fetch the response, since the request has been
+started, i.e. HTTP message sent over the network. This meta key only becomes
+available when the response has been downloaded. While most other meta keys are
+used to control Scrapy behavior, this one is supposed to be read-only.
 
 .. _topics-request-response-ref-request-subclasses:
 
@@ -507,7 +517,13 @@ Response objects
 
     .. attribute:: Response.headers
 
-        A dictionary-like object which contains the response headers.
+        A dictionary-like object which contains the response headers. Values can
+        be accessed using :meth:`get` to return the first header value with the
+        specified name or :meth:`getlist` to return all header values with the
+        specified name. For example, this call will give you all cookies in the
+        headers::
+
+            response.headers.getlist('Set-Cookie')
 
     .. attribute:: Response.body
 

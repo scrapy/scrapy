@@ -157,15 +157,15 @@ class RedirectMiddlewareTest(unittest.TestCase):
         latin1_location = u'/ação'.encode('latin1')  # HTTP historically supports latin1
         resp = Response('http://scrapytest.org/first', headers={'Location': latin1_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
-        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
+        perc_encoded_utf8_url = 'http://scrapytest.org/a%E7%E3o'
         self.assertEquals(perc_encoded_utf8_url, req_result.url)
 
-    def test_location_with_wrong_encoding(self):
+    def test_utf8_location(self):
         req = Request('http://scrapytest.org/first')
-        utf8_location = u'/ação'  # header with wrong encoding (utf-8)
+        utf8_location = u'/ação'.encode('utf-8')  # header using UTF-8 encoding
         resp = Response('http://scrapytest.org/first', headers={'Location': utf8_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
-        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%83%C2%A7%C3%83%C2%A3o'
+        perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
         self.assertEquals(perc_encoded_utf8_url, req_result.url)
 
 

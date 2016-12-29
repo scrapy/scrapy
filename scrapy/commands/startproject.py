@@ -17,6 +17,7 @@ TEMPLATES_TO_RENDER = (
     ('${project_name}', 'settings.py.tmpl'),
     ('${project_name}', 'items.py.tmpl'),
     ('${project_name}', 'pipelines.py.tmpl'),
+    ('${project_name}', 'middlewares.py.tmpl'),
 )
 
 IGNORE = ignore_patterns('*.pyc', '.svn')

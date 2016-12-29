@@ -5,7 +5,7 @@ from scrapy.spiders import XMLFeedSpider
 class $classname(XMLFeedSpider):
     name = '$name'
     allowed_domains = ['$domain']
-    start_urls = ['http://www.$domain/feed.xml']
+    start_urls = ['http://$domain/feed.xml']
     iterator = 'iternodes' # you can change this; see the docs
     itertag = 'item' # change it accordingly
 

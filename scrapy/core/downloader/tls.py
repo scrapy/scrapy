@@ -28,6 +28,7 @@ try:
         SSL_CB_HANDSHAKE_START = 0x10
         SSL_CB_HANDSHAKE_DONE = 0x20
 
+    from twisted.internet.ssl import AcceptableCiphers
     from twisted.internet._sslverify import (ClientTLSOptions,
                                              _maybeSetHostNameIndication,
                                              verifyHostname,
@@ -59,6 +60,8 @@ try:
                         'Ignoring error while verifying certificate '
                         'from host "{}" (exception: {})'.format(
                             self._hostnameASCII, repr(e)))
+
+    DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
 
 except ImportError:
     # ImportError should not matter for older Twisted versions

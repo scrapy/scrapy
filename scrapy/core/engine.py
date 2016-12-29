@@ -48,7 +48,8 @@ class Slot(object):
         if self.closing and not self.inprogress:
             if self.nextcall:
                 self.nextcall.cancel()
-                self.heartbeat.stop()
+                if self.heartbeat.running:
+                    self.heartbeat.stop()
             self.closing.callback(None)
 
 

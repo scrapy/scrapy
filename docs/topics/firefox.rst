@@ -17,7 +17,7 @@ when inspecting the page source is not the original HTML, but a modified one
 after applying some browser clean up and executing Javascript code.  Firefox,
 in particular, is known for adding ``<tbody>`` elements to tables.  Scrapy, on
 the other hand, does not modify the original page HTML, so you won't be able to
-extract any data if you use ``<tbody`` in your XPath expressions. 
+extract any data if you use ``<tbody>`` in your XPath expressions. 
 
 Therefore, you should keep in mind the following things when working with
 Firefox and XPath:

@@ -10,7 +10,7 @@ Logging
     about the new logging system.
 
 Scrapy uses `Python's builtin logging system
-<https://docs.python.org/2/library/logging.html>`_ for event logging. We'll
+<https://docs.python.org/3/library/logging.html>`_ for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
 
@@ -150,6 +150,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_FORMAT`
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
+* :setting:`LOG_SHORT_NAMES`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -170,6 +171,10 @@ listed in `logging's logrecord attributes docs
 <https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
 respectively.
 
+If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
+component that prints the log. It is unset by default, hence logs contain the 
+scrapy component responsible for that log output.
+
 Command-line options
 --------------------
 
@@ -187,6 +192,43 @@ to override some of the Scrapy settings regarding logging.
 
     Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
         Further documentation on available handlers
+
+Advanced customization
+----------------------
+
+Because Scrapy uses stdlib logging module, you can customize logging using
+all features of stdlib logging.
+
+For example, let's say you're scraping a website which returns many
+HTTP 404 and 500 responses, and you want to hide all messages like this::
+
+    2016-12-16 22:00:06 [scrapy.spidermiddlewares.httperror] INFO: Ignoring
+    response <500 http://quotes.toscrape.com/page/1-34/>: HTTP status code
+    is not handled or not allowed
+
+The first thing to note is a logger name - it is in brackets:
+``[scrapy.spidermiddlewares.httperror]``. If you get just ``[scrapy]`` then
+:setting:`LOG_SHORT_NAMES` is likely set to True; set it to False and re-run
+the crawl.
+
+Next, we can see that the message has INFO level. To hide it
+we should set logging level for ``scrapy.spidermiddlewares.httperror``
+higher than INFO; next level after INFO is WARNING. It could be done
+e.g. in the spider's ``__init__`` method::
+
+    import logging
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        # ...
+        def __init__(self, *args, **kwargs):
+            logger = logging.getLogger('scrapy.spidermiddlewares.httperror')
+            logger.setLevel(logging.WARNING)
+            super().__init__(*args, **kwargs)
+
+If you run this spider again then INFO messages from
+``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
 scrapy.utils.log module
 =======================

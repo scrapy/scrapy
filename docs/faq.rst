@@ -317,6 +317,6 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
-.. _LIFO: https://en.wikipedia.org/wiki/LIFO
+.. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

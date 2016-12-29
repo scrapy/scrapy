@@ -155,7 +155,6 @@ Solving specific problems
    topics/firebug
    topics/leaks
    topics/media-pipeline
-   topics/ubuntu
    topics/deploy
    topics/autothrottle
    topics/benchmarking
@@ -187,9 +186,6 @@ Solving specific problems
 
 :doc:`topics/media-pipeline`
     Download files and/or images associated with your scraped items.
-
-:doc:`topics/ubuntu`
-    Install latest Scrapy packages easily on Ubuntu
 
 :doc:`topics/deploy`
     Deploying your Scrapy spiders and run them in a remote server.

@@ -118,7 +118,8 @@ def _get_handler(settings):
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
-    handler.addFilter(TopLevelFormatter(['scrapy']))
+    if settings.getbool('LOG_SHORT_NAMES'):
+        handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
 
 
@@ -144,6 +145,10 @@ class StreamLogger(object):
     def write(self, buf):
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
+
+    def flush(self):
+        for h in self.logger.handlers:
+            h.flush()
 
 
 class LogCounterHandler(logging.Handler):

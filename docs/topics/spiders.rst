@@ -24,8 +24,8 @@ For spiders, the scraping cycle goes through something like this:
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
-   dicts with extracted data, :class:`~scrapy.item.Item` objects, 
-   :class:`~scrapy.http.Request` objects, or an iterable of these objects. 
+   dicts with extracted data, :class:`~scrapy.item.Item` objects,
+   :class:`~scrapy.http.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
    response handled by the specified callback.
@@ -56,7 +56,7 @@ scrapy.Spider
    must inherit (including spiders that come bundled with Scrapy, as well as spiders
    that you write yourself). It doesn't provide any special functionality. It just
    provides a default :meth:`start_requests` implementation which sends requests from
-   the :attr:`start_urls` spider attribute and calls the spider's method ``parse`` 
+   the :attr:`start_urls` spider attribute and calls the spider's method ``parse``
    for each of the resulting responses.
 
    .. attribute:: name
@@ -71,6 +71,8 @@ scrapy.Spider
        spider after the domain, with or without the `TLD`_. So, for example, a
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
+
+       .. note:: In Python 2 this must be ASCII only.
 
    .. attribute:: allowed_domains
 
@@ -159,7 +161,7 @@ scrapy.Spider
 
            class MySpider(scrapy.Spider):
                name = 'myspider'
-                
+
                def start_requests(self):
                    return [scrapy.FormRequest("http://www.example.com/login",
                                               formdata={'user': 'john', 'pass': 'secret'},
@@ -245,8 +247,8 @@ Return multiple Requests and items from a single callback::
 
             for url in response.xpath('//a/@href').extract():
                 yield scrapy.Request(url, callback=self.parse)
-                
-Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly; 
+
+Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
 to give data more structure you can use :ref:`topics-items`::
 
     import scrapy
@@ -255,7 +257,7 @@ to give data more structure you can use :ref:`topics-items`::
     class MySpider(scrapy.Spider):
         name = 'example.com'
         allowed_domains = ['example.com']
-        
+
         def start_requests(self):
             yield scrapy.Request('http://www.example.com/1.html', self.parse)
             yield scrapy.Request('http://www.example.com/2.html', self.parse)
@@ -267,7 +269,7 @@ to give data more structure you can use :ref:`topics-items`::
 
             for url in response.xpath('//a/@href').extract():
                 yield scrapy.Request(url, callback=self.parse)
-    
+
 .. _spiderargs:
 
 Spider arguments
@@ -283,7 +285,7 @@ Spider arguments are passed through the :command:`crawl` command using the
 
     scrapy crawl myspider -a category=electronics
 
-Spiders receive arguments in their constructors::
+Spiders can access arguments in their `__init__` methods::
 
     import scrapy
 
@@ -299,7 +301,7 @@ Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
 .. _builtin-spiders:
-                
+
 Generic Spiders
 ===============
 

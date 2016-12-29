@@ -121,8 +121,8 @@ class Command(ScrapyCommand):
     def get_callback_from_rules(self, spider, response):
         if getattr(spider, 'rules', None):
             for rule in spider.rules:
-                if rule.link_extractor.matches(response.url) and rule.callback:
-                    return rule.callback
+                if rule.link_extractor.matches(response.url):
+                    return rule.callback or "parse"
         else:
             logger.error('No CrawlSpider rules found in spider %(spider)r, '
                          'please specify a callback to use for parsing',
@@ -166,6 +166,11 @@ class Command(ScrapyCommand):
             if not cb:
                 if opts.rules and self.first_response == response:
                     cb = self.get_callback_from_rules(spider, response)
+
+                    if not cb:
+                        logger.error('Cannot find a rule that matches %(url)r in spider: %(spider)s',
+                                 {'url': response.url, 'spider': spider.name})
+                        return
                 else:
                     cb = 'parse'
 

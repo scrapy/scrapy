@@ -32,7 +32,7 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
-            for url in sitemap_urls_from_robots(response.text):
+            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
                 yield Request(url, callback=self._parse_sitemap)
         else:
             body = self._get_sitemap_body(response)
