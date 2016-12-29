@@ -51,5 +51,6 @@ setup(
         'parsel>=0.9.5',
         'PyDispatcher>=2.0.5',
         'service_identity',
+        'weakrefmethod',
     ],
 )

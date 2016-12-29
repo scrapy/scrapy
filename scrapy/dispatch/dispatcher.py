@@ -13,8 +13,8 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.dispatch.utils.inspect import func_accepts_kwargs
 from scrapy.dispatch.utils import robust_apply
 from scrapy.exceptions import ScrapyDeprecationWarning
-if six.PY2 or sys.version_info >= (3, 3) and sys.version_info < (3, 4):
-    from .weakref_backports import WeakMethod
+if sys.version_info < (3, 4):
+    from weakrefmethod import WeakMethod
 else:
     from weakref import WeakMethod
 
@@ -124,7 +124,8 @@ class Signal(object):
                     break
             else:
                 self.receivers.append((lookup_key, receiver))
-                self.receiver_accepts_kwargs[accepts_kwargs_lookup] = accepts_kwargs
+                self.receiver_accepts_kwargs[accepts_kwargs_lookup] = \
+                    accepts_kwargs
             self.sender_receivers_cache.clear()
 
     def disconnect(self, receiver=None, sender=None, dispatch_uid=None):
@@ -280,6 +281,7 @@ class Signal(object):
         .. _deferred: http://twistedmatrix.com/documents/current/core/howto/defer.html # noqa
         """
         dont_log = named.pop('dont_log', _IgnoredException)
+
         def logerror(failure, recv):
             spider = named.get('spider', None)
             if dont_log is None or not isinstance(failure.value, dont_log):
