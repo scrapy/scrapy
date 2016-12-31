@@ -139,16 +139,16 @@ class ImagesPipeline(FilesPipeline):
 
     def convert_image(self, image, size=None):
         image_type = image.format
-        if self.convert_image != "PRESERVE":
-            image_type = self.convert_image
+        if self.convert_type != "PRESERVE":
+            image_type = self.convert_type
         if size:
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
         buf = BytesIO()
         try:
-            image.save(buf, image_type)
+            image.save(buf, format=image_type)
         except KeyError:
-            image.save(buf, image.format)
+            image.save(buf, format=image.format)
         return image, buf
 
     def get_media_requests(self, item, info):
@@ -185,13 +185,13 @@ class ImagesPipeline(FilesPipeline):
         ## end of deprecation warning block
 
         image_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        ext = "jpg"
+        ext = "jpeg"
         if self.convert_type == 'PRESERVE':
             if response:
                 ext = Image.open(BytesIO(response.body)).format.lower()
             else:
                 warnings.warn('You are preserving image type and no response body found.'
-                              'Although the type will be preserved, the path extension will default to jpg')
+                              'Although the type will be preserved, the path extension will default to jpeg')
         elif self.convert_type != 'PRESERVE':
             ext = self.convert_type.lower()
         return 'full/%s.%s' % (image_guid, ext)
@@ -219,7 +219,16 @@ class ImagesPipeline(FilesPipeline):
         ## end of deprecation warning block
 
         thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
+        ext = "jpeg"
+        if self.convert_type == 'PRESERVE':
+            if response:
+                ext = Image.open(BytesIO(response.body)).format.lower()
+            else:
+                warnings.warn('You are preserving image type and no response body found.'
+                              'Although the type will be preserved, the path extension will default to jpeg')
+        elif self.convert_type != 'PRESERVE':
+            ext = self.convert_type.lower()
+        return 'thumbs/%s/%s.%s' % (thumb_id, thumb_guid, ext)
 
     # deprecated
     def file_key(self, url):
