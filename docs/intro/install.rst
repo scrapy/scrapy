@@ -7,13 +7,24 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.3 or above
-(except on Windows where Python 3 is not supported yet).
+Scrapy runs on Python 2.7 and Python 3.3 or above.
 
-If you’re already familiar with installation of Python packages,
+If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
+the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
+and OS X.
+
+To install Scrapy using ``conda``, run::
+
+  conda install -c conda-forge scrapy
+
+Alternatively, if you’re already familiar with installation of Python packages,
 you can install Scrapy and its dependencies from PyPI with::
 
     pip install Scrapy
+
+Note that sometimes this may require solving compilation issues for some Scrapy
+dependencies depending on your operating system, so be sure to check the
+:ref:`intro-install-platform-notes`.
 
 We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`,
 to avoid conflicting with your system packages.
@@ -108,42 +119,14 @@ Platform specific installation notes
 Windows
 -------
 
-* Install Python 2.7 from https://www.python.org/downloads/
+Though it's possible to install Scrapy on Windows using pip, we recommend you
+to install `Anaconda`_ or `Miniconda`_ and use the package from the
+`conda-forge`_ channel, which will avoid most installation issues.
 
-  You need to adjust ``PATH`` environment variable to include paths to
-  the Python executable and additional scripts. The following paths need to be
-  added to ``PATH``::
+Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 
-      C:\Python27\;C:\Python27\Scripts\;
+  conda install -c conda-forge scrapy
 
-  To update the ``PATH`` open a Command prompt and run::
-
-      c:\python27\python.exe c:\python27\tools\scripts\win_add2path.py
-
-  Close the command prompt window and reopen it so changes take effect, run the
-  following command and check it shows the expected Python version::
-
-      python --version
-
-* Install `pywin32` from http://sourceforge.net/projects/pywin32/
-
-  Be sure you download the architecture (win32 or amd64) that matches your system
-
-* *(Only required for Python<2.7.9)* Install `pip`_ from
-  https://pip.pypa.io/en/latest/installing/
-
-  Now open a Command prompt to check ``pip`` is installed correctly::
-
-      pip --version
-
-* At this point Python 2.7 and ``pip`` package manager must be working, let's
-  install Scrapy::
-
-      pip install Scrapy
-
-.. note::
-     Python 3 is not supported on Windows. This is because Scrapy core requirement Twisted does not support
-     Python 3 on Windows.
 
 Ubuntu 12.04 or above
 ---------------------
@@ -234,27 +217,8 @@ After any of these workarounds you should be able to install Scrapy::
   pip install Scrapy
 
 
-Anaconda
---------
-
-
-Using Anaconda is an alternative to using a virtualenv and installing with ``pip``.
-
-.. note::
-
-  For Windows users, or if you have issues installing through ``pip``, this is
-  the recommended way to install Scrapy.
-
-If you already have `Anaconda`_ or `Miniconda`_ installed, the `conda-forge`_
-community have up-to-date packages for Linux, Windows and OS X.
-
-To install Scrapy using ``conda``, run::
-
-  conda install -c conda-forge scrapy
-
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
-.. _Control Panel: https://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/
 .. _parsel: https://pypi.python.org/pypi/parsel
 .. _w3lib: https://pypi.python.org/pypi/w3lib
