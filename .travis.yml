@@ -8,8 +8,8 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|dev\d+)?$/
 env:
  - TOXENV=py27
- - TOXENV=jessie
- - TOXENV=py33
+ #- TOXENV=jessie
+ #- TOXENV=py33
  - TOXENV=py35
  - TOXENV=docs
 install:
