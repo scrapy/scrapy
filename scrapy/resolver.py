@@ -18,7 +18,7 @@ class CachingThreadedResolver(ThreadedResolver):
             return defer.succeed(dnscache[name])
         if not timeout:
             timeout = self.timeout
-        d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
+        d = super(CachingThreadedResolver, self).getHostByName(name)
         d.addCallback(self._cache_result, name)
         return d
 
