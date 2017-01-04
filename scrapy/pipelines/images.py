@@ -46,7 +46,6 @@ class ImagesPipeline(FilesPipeline):
     THUMBS = {}
     DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
-    DEFAULT_IMAGES_CONVERT_TYPE = 'JPEG'
 
     def __init__(self, store_uri, download_func=None, settings=None):
         super(ImagesPipeline, self).__init__(store_uri, settings=settings,
@@ -84,9 +83,7 @@ class ImagesPipeline(FilesPipeline):
         self.thumbs = settings.get(
             resolve('IMAGES_THUMBS'), self.THUMBS
         )
-        self.convert_type = settings.get(
-            resolve('IMAGES_CONVERT_TYPE'), self.DEFAULT_IMAGES_CONVERT_TYPE
-        )
+        self.convert_type = settings.get(resolve('IMAGES_CONVERT_TYPE'))
 
     @classmethod
     def from_settings(cls, settings):
@@ -162,6 +159,7 @@ class ImagesPipeline(FilesPipeline):
     def file_path(self, request, response=None, info=None):
         ## start of deprecation warning block (can be removed in the future)
         import warnings
+
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             warnings.warn('ImagesPipeline.image_key(url) and file_key(url) methods are deprecated, '
@@ -185,15 +183,7 @@ class ImagesPipeline(FilesPipeline):
         ## end of deprecation warning block
 
         image_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        ext = "jpeg"
-        if self.convert_type == 'PRESERVE':
-            if response:
-                ext = Image.open(BytesIO(response.body)).format.lower()
-            else:
-                warnings.warn('You are preserving image type and no response body found.'
-                              'Although the type will be preserved, the path extension will default to jpeg')
-        elif self.convert_type != 'PRESERVE':
-            ext = self.convert_type.lower()
+        ext = self._determine_extension(response)
         return 'full/%s.%s' % (image_guid, ext)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
@@ -217,18 +207,22 @@ class ImagesPipeline(FilesPipeline):
             _warn()
             return self.thumb_key(url, thumb_id)
         ## end of deprecation warning block
-
+        ext = self._determine_extension(response)
         thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
+        return 'thumbs/%s/%s.%s' % (thumb_id, thumb_guid, ext)
+
+    def _determine_extension(self, response):
         ext = "jpeg"
         if self.convert_type == 'PRESERVE':
             if response:
                 ext = Image.open(BytesIO(response.body)).format.lower()
             else:
+                import warnings
                 warnings.warn('You are preserving image type and no response body found.'
                               'Although the type will be preserved, the path extension will default to jpeg')
         elif self.convert_type != 'PRESERVE':
             ext = self.convert_type.lower()
-        return 'thumbs/%s/%s.%s' % (thumb_id, thumb_guid, ext)
+        return ext
 
     # deprecated
     def file_key(self, url):
