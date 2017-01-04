@@ -11,7 +11,7 @@ env:
  #- TOXENV=jessie
  #- TOXENV=py33
  - TOXENV=py35
- - TOXENV=docs
+ #- TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
 script: tox
