@@ -130,15 +130,15 @@ will send some requests for the ``quotes.toscrape.com`` domain. You will get an 
 similar to this::
 
     ... (omitted for brevity)
-    2016-09-20 14:48:00 [scrapy] INFO: Spider opened
-    2016-09-20 14:48:00 [scrapy] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
-    2016-09-20 14:48:00 [scrapy] DEBUG: Telnet console listening on 127.0.0.1:6023
-    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
-    2016-09-20 14:48:00 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
-    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-1.html
-    2016-09-20 14:48:01 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
-    2016-09-20 14:48:01 [quotes] DEBUG: Saved file quotes-2.html
-    2016-09-20 14:48:01 [scrapy] INFO: Closing spider (finished)
+    2016-12-16 21:24:05 [scrapy.core.engine] INFO: Spider opened
+    2016-12-16 21:24:05 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2016-12-16 21:24:05 [scrapy.extensions.telnet] DEBUG: Telnet console listening on 127.0.0.1:6023
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
+    2016-12-16 21:24:05 [quotes] DEBUG: Saved file quotes-1.html
+    2016-12-16 21:24:05 [quotes] DEBUG: Saved file quotes-2.html
+    2016-12-16 21:24:05 [scrapy.core.engine] INFO: Closing spider (finished)
     ...
 
 Now, check the files in the current directory. You should notice that two new
@@ -212,7 +212,7 @@ using the shell :ref:`Scrapy shell <topics-shell>`. Run::
 You will see something like::
 
     [ ... Scrapy log here ... ]
-    2016-09-19 12:09:27 [scrapy] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-09-19 12:09:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
     [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
     [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
@@ -429,9 +429,9 @@ in the callback, as you can see below::
 
 If you run this spider, it will output the extracted data with the log::
 
-    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
     {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
-    2016-09-19 18:57:19 [scrapy] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
     {'tags': ['edison', 'failure', 'inspirational', 'paraphrased'], 'author': 'Thomas A. Edison', 'text': "“I have not failed. I've just found 10,000 ways that won't work.”"}
 
 

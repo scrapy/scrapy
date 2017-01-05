@@ -20,6 +20,7 @@ from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.console import start_python_console
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.conf import get_config
@@ -40,11 +41,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None):
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider)
+            self.fetch(url, spider, redirect=redirect)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -98,14 +99,16 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
         if isinstance(request_or_url, Request):
             request = request_or_url
-            url = request.url
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
-            request.meta['handle_httpstatus_all'] = True
+            request = Request(url, dont_filter=True, **kwargs)
+            if redirect:
+                request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+            else:
+                request.meta['handle_httpstatus_all'] = True
         response = None
         try:
             response, spider = threads.blockingCallFromThread(
@@ -144,10 +147,13 @@ class Shell(object):
             if self._is_relevant(v):
                 b.append("  %-10s %s" % (k, v))
         b.append("Useful shortcuts:")
-        b.append("  shelp()           Shell help (print this help)")
         if self.inthread:
-            b.append("  fetch(req_or_url) Fetch request (or URL) and "
-                     "update local objects")
+            b.append("  fetch(url[, redirect=True]) "
+                     "Fetch URL and update local objects "
+                     "(by default, redirects are followed)")
+            b.append("  fetch(req)                  "
+                     "Fetch a scrapy.Request and update local objects ")
+        b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
         return "\n".join("[s] %s" % l for l in b)

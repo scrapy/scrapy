@@ -97,8 +97,12 @@ Available Shortcuts
 
  * ``shelp()`` - print a help with the list of available objects and shortcuts
 
- * ``fetch(request_or_url)`` - fetch a new response from the given request or
-   URL and update all related objects accordingly.
+ * ``fetch(url[, redirect=True])`` - fetch a new response from the given
+   URL and update all related objects accordingly. You can optionaly ask for
+   HTTP 3xx redirections to not be followed by passing ``redirect=False``
+
+ * ``fetch(request)`` - fetch a new response from the given request and
+   update all related objects accordingly.
 
  * ``view(response)`` - open the given response in your local web browser, for
    inspection. This will add a `\<base\> tag`_ to the response body in order
@@ -157,48 +161,64 @@ list of available objects and useful shortcuts (you'll notice that these lines
 all start with the ``[s]`` prefix)::
 
     [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
+    [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x7f07395dd690>
     [s]   item       {}
     [s]   request    <GET http://scrapy.org>
-    [s]   response   <200 http://scrapy.org>
-    [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
-    [s]   spider     <Spider 'default' at 0x20c6f50>
+    [s]   response   <200 https://scrapy.org/>
+    [s]   settings   <scrapy.settings.Settings object at 0x7f07395dd710>
+    [s]   spider     <DefaultSpider 'default' at 0x7f0735891690>
     [s] Useful shortcuts:
+    [s]   fetch(url[, redirect=True]) Fetch URL and update local objects (by default, redirects are followed)
+    [s]   fetch(req)                  Fetch a scrapy.Request and update local objects
     [s]   shelp()           Shell help (print this help)
-    [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
     >>>
+
 
 After that, we can start playing with the objects::
 
     >>> response.xpath('//title/text()').extract_first()
-    u'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
+    'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
     >>> fetch("http://reddit.com")
-    [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x7fb3ed9c9c90>
-    [s]   item       {}
-    [s]   request    <GET http://reddit.com>
-    [s]   response   <200 https://www.reddit.com/>
-    [s]   settings   <scrapy.settings.Settings object at 0x7fb3ed9c9c10>
-    [s]   spider     <DefaultSpider 'default' at 0x7fb3ecdd3390>
-    [s] Useful shortcuts:
-    [s]   shelp()           Shell help (print this help)
-    [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
-    [s]   view(response)    View response in a browser
 
     >>> response.xpath('//title/text()').extract()
-    [u'reddit: the front page of the internet']
+    ['reddit: the front page of the internet']
 
     >>> request = request.replace(method="POST")
 
     >>> fetch(request)
-    [s] Available Scrapy objects:
-    [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
-    ...
 
+    >>> response.status
+    404
+
+    >>> from pprint import pprint
+
+    >>> pprint(response.headers)
+    {'Accept-Ranges': ['bytes'],
+     'Cache-Control': ['max-age=0, must-revalidate'],
+     'Content-Type': ['text/html; charset=UTF-8'],
+     'Date': ['Thu, 08 Dec 2016 16:21:19 GMT'],
+     'Server': ['snooserv'],
+     'Set-Cookie': ['loid=KqNLou0V9SKMX4qb4n; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loidcreated=2016-12-08T16%3A21%3A19.445Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loid=vi0ZVe4NkxNWdlH7r7; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loidcreated=2016-12-08T16%3A21%3A19.459Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure'],
+     'Vary': ['accept-encoding'],
+     'Via': ['1.1 varnish'],
+     'X-Cache': ['MISS'],
+     'X-Cache-Hits': ['0'],
+     'X-Content-Type-Options': ['nosniff'],
+     'X-Frame-Options': ['SAMEORIGIN'],
+     'X-Moose': ['majestic'],
+     'X-Served-By': ['cache-cdg8730-CDG'],
+     'X-Timer': ['S1481214079.394283,VS0,VE159'],
+     'X-Ua-Compatible': ['IE=edge'],
+     'X-Xss-Protection': ['1; mode=block']}
     >>>
+
 
 .. _topics-shell-inspect-response:
 
@@ -234,8 +254,8 @@ Here's an example of how you would call it from your spider::
 
 When you run the spider, you will get something similar to this::
 
-    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
-    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
     [s] Available Scrapy objects:
     [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
     ...
@@ -258,7 +278,7 @@ Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::
 
     >>> ^D
-    2014-01-23 17:50:03-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
+    2014-01-23 17:50:03-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is

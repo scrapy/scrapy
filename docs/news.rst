@@ -3,6 +3,81 @@
 Release notes
 =============
 
+Scrapy 1.3.0 (2016-12-21)
+-------------------------
+
+This release comes rather soon after 1.2.2 for one main reason:
+it was found out that releases since 0.18 up to 1.2.2 (included) use
+some backported code from Twisted (``scrapy.xlib.tx.*``),
+even if newer Twisted modules are available.
+Scrapy now uses ``twisted.web.client`` and ``twisted.internet.endpoints`` directly.
+(See also cleanups below.)
+
+As it is a major change, we wanted to get the bug fix out quickly
+while not breaking any projects using the 1.2 series.
+
+New Features
+~~~~~~~~~~~~
+
+- ``MailSender`` now accepts single strings as values for ``to`` and ``cc``
+  arguments (:issue:`2272`)
+- ``scrapy fetch url``, ``scrapy shell url`` and ``fetch(url)`` inside
+  scrapy shell now follow HTTP redirections by default (:issue:`2290`);
+  See :command:`fetch` and :command:`shell` for details.
+- ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
+  this is technically **backwards incompatible** so please check your log parsers.
+- By default, logger names now use a long-form path, e.g. ``[scrapy.extensions.logstats]``,
+  instead of the shorter "top-level" variant of prior releases (e.g. ``[scrapy]``);
+  this is **backwards incompatible** if you have log parsers expecting the short
+  logger name part. You can switch back to short logger names using :setting:`LOG_SHORT_NAMES`
+  set to ``True``.
+
+Dependencies & Cleanups
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Scrapy now requires Twisted >= 13.1 which is the case for many Linux
+  distributions already.
+- As a consequence, we got rid of ``scrapy.xlib.tx.*`` modules, which
+  copied some of Twisted code for users stuck with an "old" Twisted version
+- ``ChunkedTransferMiddleware`` is deprecated and removed from the default
+  downloader middlewares.
+
+
+Scrapy 1.2.2 (2016-12-06)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Fix a cryptic traceback when a pipeline fails on ``open_spider()`` (:issue:`2011`)
+- Fix embedded IPython shell variables (fixing :issue:`396` that re-appeared
+  in 1.2.0, fixed in :issue:`2418`)
+- A couple of patches when dealing with robots.txt:
+
+  - handle (non-standard) relative sitemap URLs (:issue:`2390`)
+  - handle non-ASCII URLs and User-Agents in Python 2 (:issue:`2373`)
+
+Documentation
+~~~~~~~~~~~~~
+
+- Document ``"download_latency"`` key in ``Request``'s ``meta`` dict (:issue:`2033`)
+- Remove page on (deprecated & unsupported) Ubuntu packages from ToC (:issue:`2335`)
+- A few fixed typos (:issue:`2346`, :issue:`2369`, :issue:`2369`, :issue:`2380`)
+  and clarifications (:issue:`2354`, :issue:`2325`, :issue:`2414`)
+
+Other changes
+~~~~~~~~~~~~~
+
+- Advertize `conda-forge`_ as Scrapy's official conda channel (:issue:`2387`)
+- More helpful error messages when trying to use ``.css()`` or ``.xpath()``
+  on non-Text Responses (:issue:`2264`)
+- ``startproject`` command now generates a sample ``middlewares.py`` file (:issue:`2335`)
+- Add more dependencies' version info in ``scrapy version`` verbose output (:issue:`2404`)
+- Remove all ``*.pyc`` files from source distribution (:issue:`2386`)
+
+.. _conda-forge: https://anaconda.org/conda-forge/scrapy
+
+
 Scrapy 1.2.1 (2016-10-21)
 -------------------------
 

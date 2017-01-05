@@ -238,14 +238,14 @@ header) and all cookies received in responses (ie. ``Set-Cookie`` header).
 
 Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 
-    2011-04-06 14:35:10-0300 [scrapy] INFO: Spider opened
-    2011-04-06 14:35:10-0300 [scrapy] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
+    2011-04-06 14:35:10-0300 [scrapy.core.engine] INFO: Spider opened
+    2011-04-06 14:35:10-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
             Cookie: clientlanguage_nl=en_EN
-    2011-04-06 14:35:14-0300 [scrapy] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
+    2011-04-06 14:35:14-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
             Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
             Set-Cookie: ip_isocode=US
             Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
-    2011-04-06 14:49:50-0300 [scrapy] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
+    2011-04-06 14:49:50-0300 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
     [...]
 
 
@@ -657,16 +657,6 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 
-ChunkedTransferMiddleware
--------------------------
-
-.. module:: scrapy.downloadermiddlewares.chunked
-   :synopsis: Chunked Transfer Middleware
-
-.. class:: ChunkedTransferMiddleware
-
-   This middleware adds support for `chunked transfer encoding`_
-
 HttpProxyMiddleware
 -------------------
 
@@ -970,4 +960,3 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
 .. _anydbm: https://docs.python.org/2/library/anydbm.html
-.. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding

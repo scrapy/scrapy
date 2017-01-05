@@ -38,11 +38,11 @@ class ProjectTest(unittest.TestCase):
             return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
                 env=self.env, **kwargs)
 
-    def proc(self, *new_args, **kwargs):
+    def proc(self, *new_args, **popen_kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             **kwargs)
+                             **popen_kwargs)
 
         waited = 0
         interval = 0.2
@@ -182,6 +182,17 @@ class MiscCommandsTest(CommandTest):
 
 class RunSpiderCommandTest(CommandTest):
 
+    debug_log_spider = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug("It Works!")
+        return []
+"""
+
     @contextmanager
     def _create_file(self, content, name):
         tmpdir = self.mktemp()
@@ -194,32 +205,44 @@ class RunSpiderCommandTest(CommandTest):
         finally:
             rmtree(tmpdir)
 
-    def runspider(self, code, name='myspider.py'):
+    def runspider(self, code, name='myspider.py', args=()):
         with self._create_file(code, name) as fname:
-            return self.proc('runspider', fname)
+            return self.proc('runspider', fname, *args)
+
+    def get_log(self, code, name='myspider.py', args=()):
+        p = self.runspider(code, name=name, args=args)
+        return to_native_str(p.stderr.read())
 
     def test_runspider(self):
-        spider = """
-import scrapy
-
-class MySpider(scrapy.Spider):
-    name = 'myspider'
-
-    def start_requests(self):
-        self.logger.debug("It Works!")
-        return []
-"""
-        p = self.runspider(spider)
-        log = to_native_str(p.stderr.read())
-
+        log = self.get_log(self.debug_log_spider)
         self.assertIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
+    def test_runspider_log_level(self):
+        log = self.get_log(self.debug_log_spider,
+                           args=('-s', 'LOG_LEVEL=INFO'))
+        self.assertNotIn("DEBUG: It Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+
+    def test_runspider_log_short_names(self):
+        log1 = self.get_log(self.debug_log_spider,
+                            args=('-s', 'LOG_SHORT_NAMES=1'))
+        print(log1)
+        self.assertIn("[myspider] DEBUG: It Works!", log1)
+        self.assertIn("[scrapy]", log1)
+        self.assertNotIn("[scrapy.core.engine]", log1)
+
+        log2 = self.get_log(self.debug_log_spider,
+                            args=('-s', 'LOG_SHORT_NAMES=0'))
+        print(log2)
+        self.assertIn("[myspider] DEBUG: It Works!", log2)
+        self.assertNotIn("[scrapy]", log2)
+        self.assertIn("[scrapy.core.engine]", log2)
+
     def test_runspider_no_spider_found(self):
-        p = self.runspider("from scrapy.spiders import Spider\n")
-        log = to_native_str(p.stderr.read())
+        log = self.get_log("from scrapy.spiders import Spider\n")
         self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
@@ -228,12 +251,11 @@ class MySpider(scrapy.Spider):
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
-        p = self.runspider('', 'myspider.txt')
-        log = to_native_str(p.stderr.read())
+        log = self.get_log('', name='myspider.txt')
         self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
-        p = self.runspider("""
+        log = self.get_log("""
 import scrapy
 
 class BadSpider(scrapy.Spider):
@@ -241,10 +263,10 @@ class BadSpider(scrapy.Spider):
     def start_requests(self):
         raise Exception("oops!")
         """, name="badspider.py")
-        log = to_native_str(p.stderr.read())
         print(log)
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
+
 
 class BenchCommandTest(CommandTest):
 

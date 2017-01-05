@@ -21,6 +21,8 @@ else:
 
 from twisted.internet import defer, reactor, ssl
 
+from .utils.misc import arg_to_iter
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +50,10 @@ class MailSender(object):
             msg = MIMEMultipart()
         else:
             msg = MIMENonMultipart(*mimetype.split('/', 1))
+
+        to = list(arg_to_iter(to))
+        cc = list(arg_to_iter(cc))
+
         msg['From'] = self.mailfrom
         msg['To'] = COMMASPACE.join(to)
         msg['Date'] = formatdate(localtime=True)

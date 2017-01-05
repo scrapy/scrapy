@@ -1,3 +1,4 @@
+import logging
 from unittest import TestCase
 
 from testfixtures import LogCapture
@@ -185,3 +186,29 @@ class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
         self.assertIn('Ignoring response <500', str(log))
         self.assertNotIn('Ignoring response <200', str(log))
         self.assertNotIn('Ignoring response <402', str(log))
+
+    @defer.inlineCallbacks
+    def test_logging_level(self):
+        # HttpError logs ignored responses with level INFO
+        crawler = get_crawler(_HttpErrorSpider)
+        with LogCapture(level=logging.INFO) as log:
+            yield crawler.crawl()
+        self.assertEqual(crawler.spider.parsed, {'200'})
+        self.assertEqual(crawler.spider.failed, {'404', '402', '500'})
+
+        self.assertIn('Ignoring response <402', str(log))
+        self.assertIn('Ignoring response <404', str(log))
+        self.assertIn('Ignoring response <500', str(log))
+        self.assertNotIn('Ignoring response <200', str(log))
+
+        # with level WARNING, we shouldn't capture anything from HttpError
+        crawler = get_crawler(_HttpErrorSpider)
+        with LogCapture(level=logging.WARNING) as log:
+            yield crawler.crawl()
+        self.assertEqual(crawler.spider.parsed, {'200'})
+        self.assertEqual(crawler.spider.failed, {'404', '402', '500'})
+
+        self.assertNotIn('Ignoring response <402', str(log))
+        self.assertNotIn('Ignoring response <404', str(log))
+        self.assertNotIn('Ignoring response <500', str(log))
+        self.assertNotIn('Ignoring response <200', str(log))
