@@ -1,5 +1,5 @@
 language: python
-python: 3.6-dev
+python: 3.6
 sudo: false
 branches:
   only:
