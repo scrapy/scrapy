@@ -11,6 +11,7 @@ env:
  - TOXENV=jessie
  - TOXENV=py33
  - TOXENV=py35
+ - TOXENV=py36
  - TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
