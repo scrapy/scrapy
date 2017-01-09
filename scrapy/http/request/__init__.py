@@ -36,7 +36,7 @@ class Request(object_ref):
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None
-        self.flags = None if flags is None else list(flags)
+        self.flags = [] if flags is None else list(flags)
 
     @property
     def meta(self):
