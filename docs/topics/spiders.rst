@@ -297,6 +297,37 @@ Spiders can access arguments in their `__init__` methods::
             self.start_urls = ['http://www.example.com/categories/%s' % category]
             # ...
 
+The default `__init__` method will take any spider arguments
+and copy them to the spider as attributes.
+The above example can also be written as follows::
+
+    import scrapy
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        def start_requests(self):
+            yield scrapy.Request('http://www.example.com/categories/%s' % self.category)
+
+Keep in mind that spider arguments are only strings.
+The spider will not do any parsing on its own.
+If you were to set the `start_urls` attribute from the command line,
+you would have to parse it on your own into a list
+using something like
+`ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
+or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
+and then set it as an attribute.
+Otherwise, you would cause iteration over a `start_urls` string
+(a very common python pitfall)
+resulting in each character being seen as a separate url.
+
+A valid use case is to set the http auth credentials
+used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+or the user agent
+used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
+
+    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
+
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
