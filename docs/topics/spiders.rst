@@ -312,7 +312,7 @@ The above example can also be written as follows::
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the `start_urls` attribute from the command line,
-you would have to parse it on you own into a list
+you would have to parse it on your own into a list
 using something like
 `ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
 or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
