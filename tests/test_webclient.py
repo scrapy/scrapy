@@ -4,7 +4,6 @@ Tests borrowed from the twisted.web.client tests.
 """
 import os
 import six
-from six.moves.urllib.parse import urlparse
 
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
@@ -43,29 +42,29 @@ class ParseUrlTestCase(unittest.TestCase):
     def testParse(self):
         lip = '127.0.0.1'
         tests = (
-    ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
-    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip+':100', lip, 100, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/foo?c=v&c2=v2#frag", ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
 
-    ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
-    ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1:12345/foo",    ('http', lip+':12345', lip, 12345, '/foo')),
-    ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
-    ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
+            ("http://127.0.0.1", ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/", ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/foo", ('http', lip, lip, 80, '/foo')),
+            ("http://127.0.0.1?param=value", ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1:12345/foo", ('http', lip + ':12345', lip, 12345, '/foo')),
+            ("http://spam:12345/foo", ('http', 'spam:12345', 'spam', 12345, '/foo')),
+            ("http://spam.test.org/foo", ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
-    ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
-    ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
-    ("https://127.0.0.1:12345/",      ('https', lip+':12345', lip, 12345, '/')),
+            ("https://127.0.0.1/foo", ('https', lip, lip, 443, '/foo')),
+            ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
+            ("https://127.0.0.1:12345/", ('https', lip + ':12345', lip, 12345, '/')),
 
-    ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
-    ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
-    )
+            ("http://scrapytest.org/foo ", ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
+            ("http://egg:7890 ", ('http', 'egg:7890', 'egg', 7890, '/')),
+        )
 
         for url, test in tests:
             test = tuple(
@@ -90,7 +89,6 @@ class ParseUrlTestCase(unittest.TestCase):
         self.assertTrue(isinstance(host, str))
         self.assertTrue(isinstance(path, str))
         self.assertTrue(isinstance(port, int))
-
 
 
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
@@ -159,7 +157,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers={
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                }))
+            }))
 
         self._test(factory,
             b"GET /bar HTTP/1.0\r\n"
@@ -175,7 +173,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers=Headers({
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                })))
+            })))
 
         self._test(factory,
             b"GET /bar HTTP/1.0\r\n"
@@ -266,7 +264,6 @@ class WebClientTestCase(unittest.TestCase):
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
                 self.assertEquals, to_bytes("www.example.com"))])
 
-
     def test_getPage(self):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
@@ -275,7 +272,6 @@ class WebClientTestCase(unittest.TestCase):
         d = getPage(self.getURL("file"))
         d.addCallback(self.assertEquals, b"0123456789")
         return d
-
 
     def test_getPageHead(self):
         """
@@ -289,7 +285,6 @@ class WebClientTestCase(unittest.TestCase):
             _getPage("head").addCallback(self.assertEqual, b""),
             _getPage("HEAD").addCallback(self.assertEqual, b"")])
 
-
     def test_timeoutNotTriggering(self):
         """
         When a non-zero timeout is passed to L{getPage} and the page is
@@ -301,7 +296,6 @@ class WebClientTestCase(unittest.TestCase):
             self.assertEquals, to_bytes("127.0.0.1:%d" % self.portno))
         return d
 
-
     def test_timeoutTriggering(self):
         """
         When a non-zero timeout is passed to L{getPage} and that many
@@ -311,6 +305,7 @@ class WebClientTestCase(unittest.TestCase):
         finished = self.assertFailure(
             getPage(self.getURL("wait"), timeout=0.000001),
             defer.TimeoutError)
+
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
             # anything.

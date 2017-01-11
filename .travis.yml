@@ -12,8 +12,9 @@ env:
  - TOXENV=py33
  - TOXENV=py35
  - TOXENV=docs
+ - TOXENV=flake8
 install:
- - pip install -U tox twine wheel codecov
+ - pip install -U tox twine wheel codecov flake8
 script: tox
 after_success:
   - codecov

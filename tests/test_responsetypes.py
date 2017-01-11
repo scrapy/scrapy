@@ -4,6 +4,7 @@ from scrapy.responsetypes import responsetypes
 
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
 
+
 class ResponseTypesTest(unittest.TestCase):
 
     def test_from_filename(self):
@@ -88,6 +89,7 @@ class ResponseTypesTest(unittest.TestCase):
     def test_custom_mime_types_loaded(self):
         # check that mime.types files shipped with scrapy are loaded
         self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
+
 
 if __name__ == "__main__":
     unittest.main()

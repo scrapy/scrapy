@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):

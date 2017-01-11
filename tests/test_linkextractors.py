@@ -283,7 +283,7 @@ class Base:
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
             ])
 
-            lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+            lx = self.extractor_cls(attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=())
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
@@ -319,7 +319,7 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
             ])
 
-            lx = self.extractor_cls(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+            lx = self.extractor_cls(tags=("a", "img"), attrs=("href", "src"), deny_extensions=())
             self.assertEqual(lx.extract_links(response), [
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample2.jpg', text=u''),
@@ -430,4 +430,3 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
-

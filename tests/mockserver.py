@@ -1,5 +1,9 @@
 from __future__ import print_function
-import sys, time, random, os, json
+import sys
+import time
+import random
+import os
+import json
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
@@ -206,9 +210,9 @@ class MockServer():
 
 def ssl_context_factory(keyfile='keys/cert.pem', certfile='keys/cert.pem'):
     return ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), keyfile),
-         os.path.join(os.path.dirname(__file__), certfile),
-         )
+        os.path.join(os.path.dirname(__file__), keyfile),
+        os.path.join(os.path.dirname(__file__), certfile),
+    )
 
 
 if __name__ == "__main__":

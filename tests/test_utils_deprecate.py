@@ -28,7 +28,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_no_warning_on_definition(self):
         with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName)
+            pass
 
         w = self._mywarnings(w)
         self.assertEqual(w, [])
@@ -112,12 +112,13 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         # ignore subclassing warnings
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', ScrapyDeprecationWarning)
+
             class UserClass(Deprecated):
                 pass
 
         with warnings.catch_warnings(record=True) as w:
             _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
-            _ = UserClass()  # subclass instances don't warn
+            _ = UserClass()  # subclass instances don't warn # flake8:noqa
 
         w = self._mywarnings(w)
         self.assertEqual(len(w), 1)

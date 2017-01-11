@@ -89,8 +89,8 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
-        r1 = TextResponse('http://www.example.com', \
-                          body=b'<html><p>an Jos\xe9 de</p><html>', \
+        r1 = TextResponse('http://www.example.com',
+                          body=b'<html><p>an Jos\xe9 de</p><html>',
                           encoding='utf-8')
         Selector(r1).xpath('//text()').extract()
 
@@ -129,7 +129,6 @@ class SelectorTestCase(unittest.TestCase):
 
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
-
     text = '<div><img src="a.jpg"><p>Hello</div>'
 
     def test_warnings_xpathselector(self):

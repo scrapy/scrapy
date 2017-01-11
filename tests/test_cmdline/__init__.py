@@ -29,17 +29,14 @@ class CmdlineTest(unittest.TestCase):
         return comm.decode(encoding)
 
     def test_default_settings(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-                         'default')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'default')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
-                         'override')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), 'override')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-                         'override')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'override')
 
     def test_profiling(self):
         path = tempfile.mkdtemp()
@@ -60,9 +57,9 @@ class CmdlineTest(unittest.TestCase):
     def test_override_dict_settings(self):
         EXT_PATH = "tests.test_cmdline.extensions.DummyExtension"
         EXTENSIONS = {EXT_PATH: 200}
-        settingsstr = self._execute('settings', '--get', 'EXTENSIONS', '-s',
-                                    'EXTENSIONS=' + json.dumps(EXTENSIONS))
-        # XXX: There's gotta be a smarter way to do this...
+        settingsstr = self._execute(
+            'settings', '--get', 'EXTENSIONS', '-s', 'EXTENSIONS=' + json.dumps(EXTENSIONS))
+        # TODO: There's gotta be a smarter way to do this...
         self.assertNotIn("...", settingsstr)
         for char in ("'", "<", ">", 'u"'):
             settingsstr = settingsstr.replace(char, '"')

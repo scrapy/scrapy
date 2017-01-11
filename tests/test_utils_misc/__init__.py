@@ -7,6 +7,7 @@ from scrapy.utils.misc import load_object, arg_to_iter, walk_modules
 
 __doctests__ = ['scrapy.utils.misc']
 
+
 class UtilsMiscTestCase(unittest.TestCase):
 
     def test_load_object(self):
@@ -71,8 +72,9 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(list(arg_to_iter(100)), [100])
         self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1, 2, 3])), [1, 2, 3])
-        self.assertEqual(list(arg_to_iter({'a':1})), [{'a': 1}])
+        self.assertEqual(list(arg_to_iter({'a': 1})), [{'a': 1}])
         self.assertEqual(list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -44,6 +44,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         Disallow: /some/randome/page.html
         '''.encode('utf-8'))
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -80,6 +81,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt', body=b'GIF89a\xd3\x00\xfe\x00\xa2')
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -102,6 +104,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt')
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -121,6 +124,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
+
         def return_failure(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
@@ -136,6 +140,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_immediate_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
+
         def immediate_failure(request, spider):
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
@@ -147,6 +152,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
 
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
+
         def ignore_request(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))

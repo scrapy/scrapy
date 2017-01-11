@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
+
 class SitemapTest(unittest.TestCase):
 
     def test_sitemap(self):
@@ -60,7 +61,8 @@ class SitemapTest(unittest.TestCase):
         self.assertEqual(list(s),
             [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
              {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+            ]
+        )
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works

@@ -12,7 +12,6 @@ from scrapy.linkextractors import LinkExtractor
 
 
 class MetaSpider(Spider):
-
     name = 'meta'
 
     def __init__(self, *args, **kwargs):
@@ -24,7 +23,6 @@ class MetaSpider(Spider):
 
 
 class FollowAllSpider(MetaSpider):
-
     name = 'follow'
     link_extractor = LinkExtractor()
 
@@ -44,7 +42,6 @@ class FollowAllSpider(MetaSpider):
 
 
 class DelaySpider(MetaSpider):
-
     name = 'delay'
 
     def __init__(self, n=1, b=0, *args, **kwargs):
@@ -66,7 +63,6 @@ class DelaySpider(MetaSpider):
 
 
 class SimpleSpider(MetaSpider):
-
     name = 'simple'
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
@@ -78,7 +74,6 @@ class SimpleSpider(MetaSpider):
 
 
 class ItemSpider(FollowAllSpider):
-
     name = 'item'
 
     def parse(self, response):
@@ -93,7 +88,6 @@ class DefaultError(Exception):
 
 
 class ErrorSpider(FollowAllSpider):
-
     name = 'error'
     exception_cls = DefaultError
 
@@ -107,7 +101,6 @@ class ErrorSpider(FollowAllSpider):
 
 
 class BrokenStartRequestsSpider(FollowAllSpider):
-
     fail_before_yield = False
     fail_yielding = False
 
@@ -126,8 +119,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
             if self.fail_yielding:
                 2 / 0
 
-        assert self.seedsseen, \
-                'All start requests consumed before any download happened'
+        assert self.seedsseen, 'All start requests consumed before any download happened'
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get('seed'))
@@ -136,7 +128,6 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
 
 class SingleRequestSpider(MetaSpider):
-
     seed = None
     callback_func = None
     errback_func = None

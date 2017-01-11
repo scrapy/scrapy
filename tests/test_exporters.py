@@ -314,6 +314,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)
@@ -342,7 +343,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
 
-        self.assertExportResult(i3,
+        self.assertExportResult(
+            i3,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
                 b'<item>'
@@ -363,7 +365,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', v2={"egg": ["spam"]})
         i3 = TestItem(name=u'buz', age=[i1, i2])
 
-        self.assertExportResult(i3,
+        self.assertExportResult(
+            i3,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
                 b'<item>'
@@ -378,7 +381,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
-        self.assertExportResult(item,
+        self.assertExportResult(
+            item,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
                b'<item>'

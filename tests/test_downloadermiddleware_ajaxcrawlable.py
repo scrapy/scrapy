@@ -7,6 +7,7 @@ from scrapy.utils.test import get_crawler
 
 __doctests__ = ['scrapy.downloadermiddlewares.ajaxcrawl']
 
+
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler(Spider, {'AJAXCRAWL_ENABLED': True})

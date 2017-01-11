@@ -126,7 +126,6 @@ class DefaultStorageTest(_BaseTest):
 
 
 class DbmStorageTest(DefaultStorageTest):
-
     storage_class = 'scrapy.extensions.httpcache.DbmCacheStorage'
 
 
@@ -145,8 +144,8 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
 
 class FilesystemStorageTest(DefaultStorageTest):
-
     storage_class = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
 
 class FilesystemStorageGzipTest(FilesystemStorageTest):
 
@@ -154,14 +153,13 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
 
-class LeveldbStorageTest(DefaultStorageTest):
 
+class LeveldbStorageTest(DefaultStorageTest):
     pytest.importorskip('leveldb')
     storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
 class DummyPolicyTest(_BaseTest):
-
     policy_class = 'scrapy.extensions.httpcache.DummyPolicy'
 
     def test_middleware(self):
@@ -253,7 +251,6 @@ class DummyPolicyTest(_BaseTest):
 
 
 class RFC2616PolicyTest(DefaultStorageTest):
-
     policy_class = 'scrapy.extensions.httpcache.RFC2616Policy'
 
     def _process_requestresponse(self, mw, request, response):
@@ -505,6 +502,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert 'cached' in res2.flags
+
 
 if __name__ == '__main__':
     unittest.main()

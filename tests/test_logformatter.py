@@ -26,15 +26,17 @@ class LoggingContribTest(unittest.TestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
-            "Crawled (200) <GET http://www.example.com> (referer: None)")
+        self.assertEqual(
+            logline, "Crawled (200) <GET http://www.example.com> (referer: None)"
+        )
 
         req = Request("http://www.example.com", headers={'referer': 'http://example.com'})
         res = Response("http://www.example.com", flags=['cached'])
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
-            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
+        self.assertEqual(
+            logline, "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
+        )
 
     def test_dropped(self):
         item = {}
@@ -55,6 +57,7 @@ class LoggingContribTest(unittest.TestCase):
         lines = logline.splitlines()
         assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
+
 
 if __name__ == "__main__":
     unittest.main()

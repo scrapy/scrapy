@@ -9,6 +9,7 @@ from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
 
+
 # test items
 class NameItem(Item):
     name = Field()
@@ -589,8 +590,9 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), u'pa')
 
         self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
-        self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-            [u'http://www.scrapy.org', u'/images/logo.png'])
+        self.assertEqual(
+            l.get_css(['a::attr(href)', 'img::attr(src)']), [u'http://www.scrapy.org', u'/images/logo.png']
+        )
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)
@@ -638,7 +640,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
@@ -653,7 +655,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))

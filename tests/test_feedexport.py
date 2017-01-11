@@ -171,7 +171,7 @@ class FeedExportTest(unittest.TestCase):
         }
         defaults.update(settings or {})
         try:
-            with MockServer() as s:
+            with MockServer() as s:  # flake8: noqa
                 runner = CrawlerRunner(Settings(defaults))
                 yield runner.crawl(spider_cls)
 
@@ -343,9 +343,9 @@ class FeedExportTest(unittest.TestCase):
         header = self.MyItem.fields.keys()
         rows_csv = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
-            {'egg': '',      'foo': 'bar2', 'baz': ''},
+            {'egg': '', 'foo': 'bar2', 'baz': ''},
             {'egg': 'spam3', 'foo': 'bar3', 'baz': 'quux3'},
-            {'egg': 'spam4', 'foo': '',     'baz': ''},
+            {'egg': 'spam4', 'foo': '', 'baz': ''},
         ]
         rows_jl = [dict(row) for row in items]
         yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
@@ -360,10 +360,10 @@ class FeedExportTest(unittest.TestCase):
         header = ["foo", "baz", "hello"]
         settings = {'FEED_EXPORT_FIELDS': header}
         rows = [
-            {'foo': 'bar1', 'baz': '',      'hello': ''},
-            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
+            {'foo': 'bar1', 'baz': '', 'hello': ''},
+            {'foo': 'bar2', 'baz': '', 'hello': 'world2'},
             {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '',     'baz': '',      'hello': 'world4'},
+            {'foo': '', 'baz': '', 'hello': 'world4'},
         ]
         yield self.assertExported(items, header, rows,
                                   settings=settings, ordered=True)
@@ -416,7 +416,6 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_export_encoding(self):
         items = [dict({'foo': u'Test\xd6'})]
-        header = ['foo']
 
         formats = {
             'json': u'[\n{"foo": "Test\\u00d6"}\n]'.encode('utf-8'),

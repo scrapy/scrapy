@@ -20,7 +20,6 @@ def _mocked_download_func(request, info):
 
 
 class BaseMediaPipelineTestCase(unittest.TestCase):
-
     pipeline_class = MediaPipeline
 
     def setUp(self):
@@ -131,9 +130,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
-        self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_downloaded', 'request_callback', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'media_downloaded', 'request_callback', 'item_completed'])
 
     @inlineCallbacks
     def test_result_failure(self):
@@ -145,9 +144,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
-        self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_failed', 'request_errback', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'media_failed', 'request_errback', 'item_completed'])
 
     @inlineCallbacks
     def test_mix_of_success_and_failure(self):
@@ -161,10 +160,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, rsp1), (False, fail)])
         m = self.pipe._mockcalled
         # only once
-        self.assertEqual(m[0], 'get_media_requests') # first hook called
+        self.assertEqual(m[0], 'get_media_requests')  # first hook called
         self.assertEqual(m.count('get_media_requests'), 1)
         self.assertEqual(m.count('item_completed'), 1)
-        self.assertEqual(m[-1], 'item_completed') # last hook called
+        self.assertEqual(m[-1], 'item_completed')  # last hook called
         # twice, one per request
         self.assertEqual(m.count('media_to_download'), 2)
         # one to handle success and other for failure
@@ -175,7 +174,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request('http://url')
-        item = dict(requests=req) # pass a single item
+        item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         assert request_fingerprint(req) in self.info.downloaded
@@ -227,6 +226,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)
@@ -247,5 +247,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled, ['get_media_requests', 'media_to_download', 'item_completed']
+        )
