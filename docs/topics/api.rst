@@ -171,7 +171,8 @@ SpiderLoader API
 
        This class method is used by Scrapy to create an instance of the class.
        It's called with the current project settings, and it loads the spiders
-       found in the modules of the :setting:`SPIDER_MODULES` setting.
+       found recursively in the modules of the :setting:`SPIDER_MODULES`
+       setting.
 
        :param settings: project settings
        :type settings: :class:`~scrapy.settings.Settings` instance

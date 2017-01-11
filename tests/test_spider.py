@@ -332,13 +332,17 @@ class SitemapSpiderTest(SpiderTest):
         robots = b"""# Sitemap files
 Sitemap: http://example.com/sitemap.xml
 Sitemap: http://example.com/sitemap-product-index.xml
+Sitemap: HTTP://example.com/sitemap-uppercase.xml
+Sitemap: /sitemap-relative-url.xml
 """
 
         r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
         spider = self.spider_class("example.com")
         self.assertEqual([req.url for req in spider._parse_sitemap(r)],
                          ['http://example.com/sitemap.xml',
-                          'http://example.com/sitemap-product-index.xml'])
+                          'http://example.com/sitemap-product-index.xml',
+                          'http://example.com/sitemap-uppercase.xml',
+                          'http://www.example.com/sitemap-relative-url.xml'])
 
 
 class BaseSpiderDeprecationTest(unittest.TestCase):

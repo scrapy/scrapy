@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import warnings
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -9,6 +10,7 @@ from twisted.trial import unittest
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 import scrapy
+import tempfile
 from scrapy.interfaces import ISpiderLoader
 from scrapy.spiderloader import SpiderLoader
 from scrapy.settings import Settings
@@ -22,8 +24,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
     def setUp(self):
         orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
+        self.tmpdir = tempfile.mkdtemp()
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
         shutil.copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)
@@ -40,7 +41,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
     def test_list(self):
         self.assertEqual(set(self.spider_loader.list()),
-            set(['spider1', 'spider2', 'spider3']))
+            set(['spider1', 'spider2', 'spider3', 'spider4']))
 
     def test_load(self):
         spider1 = self.spider_loader.load("spider1")
@@ -66,7 +67,7 @@ class SpiderLoaderTest(unittest.TestCase):
         self.spider_loader = SpiderLoader.from_settings(settings)
         assert len(self.spider_loader._spiders) == 1
 
-    def test_load_spider_module(self):
+    def test_load_spider_module_multiple(self):
         prefix = 'tests.test_spiderloader.test_spiders.'
         module = ','.join(prefix + s for s in ('spider1', 'spider2'))
         settings = Settings({'SPIDER_MODULES': module})
@@ -89,3 +90,14 @@ class SpiderLoaderTest(unittest.TestCase):
         crawler = runner.create_crawler('spider1')
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
         self.assertEqual(crawler.spidercls.name, 'spider1')
+
+    def test_bad_spider_modules_warning(self):
+
+        with warnings.catch_warnings(record=True) as w:
+            module = 'tests.test_spiderloader.test_spiders.doesnotexist'
+            settings = Settings({'SPIDER_MODULES': [module]})
+            spider_loader = SpiderLoader.from_settings(settings)
+            self.assertIn("Could not load spiders from module", str(w[0].message))
+
+            spiders = spider_loader.list()
+            self.assertEqual(spiders, [])

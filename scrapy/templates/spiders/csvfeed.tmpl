@@ -5,7 +5,7 @@ from scrapy.spiders import CSVFeedSpider
 class $classname(CSVFeedSpider):
     name = '$name'
     allowed_domains = ['$domain']
-    start_urls = ['http://www.$domain/feed.csv']
+    start_urls = ['http://$domain/feed.csv']
     # headers = ['id', 'name', 'description', 'image_link']
     # delimiter = '\t'
 

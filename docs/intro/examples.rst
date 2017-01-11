@@ -5,21 +5,16 @@ Examples
 ========
 
 The best way to learn is with examples, and Scrapy is no exception. For this
-reason, there is an example Scrapy project named dirbot_, that you can use to
-play and learn more about Scrapy. It contains the dmoz spider described in the
-tutorial.
+reason, there is an example Scrapy project named quotesbot_, that you can use to
+play and learn more about Scrapy. It contains two spiders for
+http://quotes.toscrape.com, one using CSS selectors and another one using XPath
+expressions.
 
-This dirbot_ project is available at: https://github.com/scrapy/dirbot
-
-It contains a README file with a detailed description of the project contents.
+The quotesbot_ project is available at: https://github.com/scrapy/quotesbot.
+You can find more information about it in the project's README.
 
 If you're familiar with git, you can checkout the code. Otherwise you can
-download a tarball or zip file of the project by clicking on `Downloads`_.
+download the project as a zip file by clicking
+`here <https://github.com/scrapy/quotesbot/archive/master.zip>`_.
 
-The `scrapy tag on Snipplr`_ is used for sharing code snippets such as spiders,
-middlewares, extensions, or scripts. Feel free (and encouraged!) to share any
-code there.
-
-.. _dirbot: https://github.com/scrapy/dirbot
-.. _Downloads: https://github.com/scrapy/dirbot/downloads
-.. _scrapy tag on Snipplr: http://snipplr.com/all/tags/scrapy/
+.. _quotesbot: https://github.com/scrapy/quotesbot

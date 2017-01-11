@@ -379,7 +379,7 @@ See here the methods that you can override in your custom Files Pipeline:
       By default the :meth:`get_media_requests` method returns ``None`` which
       means there are no files to download for the item.
 
-   .. method:: FilesPipeline.item_completed(results, items, info)
+   .. method:: FilesPipeline.item_completed(results, item, info)
 
       The :meth:`FilesPipeline.item_completed` method called when all file
       requests for a single item have completed (either finished downloading, or
@@ -422,7 +422,7 @@ See here the methods that you can override in your custom Images Pipeline:
 
       Must return a Request for each image URL.
 
-   .. method:: ImagesPipeline.item_completed(results, items, info)
+   .. method:: ImagesPipeline.item_completed(results, item, info)
 
       The :meth:`ImagesPipeline.item_completed` method is called when all image
       requests for a single item have completed (either finished downloading, or

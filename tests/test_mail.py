@@ -10,7 +10,8 @@ class MailSenderTest(unittest.TestCase):
 
     def test_send(self):
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body', _callback=self._catch_mail_sent)
+        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
+                        _callback=self._catch_mail_sent)
 
         assert self.catched_msg
 
@@ -24,9 +25,16 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg.get_payload(), 'body')
         self.assertEqual(msg.get('Content-Type'), 'text/plain')
 
+    def test_send_single_values_to_and_cc(self):
+        mailsender = MailSender(debug=True)
+        mailsender.send(to='test@scrapy.org', subject='subject', body='body',
+                        cc='test@scrapy.org', _callback=self._catch_mail_sent)
+
     def test_send_html(self):
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='<p>body</p>', mimetype='text/html', _callback=self._catch_mail_sent)
+        mailsender.send(to=['test@scrapy.org'], subject='subject',
+                        body='<p>body</p>', mimetype='text/html',
+                        _callback=self._catch_mail_sent)
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg.get_payload(), '<p>body</p>')
@@ -90,7 +98,8 @@ class MailSenderTest(unittest.TestCase):
 
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
-                        attachs=attachs, charset='utf-8', _callback=self._catch_mail_sent)
+                        attachs=attachs, charset='utf-8',
+                        _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['subject'], subject)
@@ -99,7 +108,8 @@ class MailSenderTest(unittest.TestCase):
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
-        self.assertEqual(msg.get('Content-Type'), 'multipart/mixed; charset="utf-8"')
+        self.assertEqual(msg.get('Content-Type'),
+                         'multipart/mixed; charset="utf-8"')
 
         payload = msg.get_payload()
         assert isinstance(payload, list)

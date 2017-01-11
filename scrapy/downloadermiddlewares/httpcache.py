@@ -3,10 +3,10 @@ from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionRefusedError, ConnectionDone, ConnectError, \
         ConnectionLost, TCPTimedOutError
+from twisted.web.client import ResponseFailed
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.misc import load_object
-from scrapy.xlib.tx import ResponseFailed
 
 
 class HttpCacheMiddleware(object):

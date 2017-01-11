@@ -13,8 +13,9 @@ from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
-from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, TCP4ClientEndpoint
+from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
+    HTTPConnectionPool
+from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
@@ -318,14 +319,13 @@ class ScrapyAgent(object):
         expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
 
         if maxsize and expected_size > maxsize:
-            error_message = ("Cancelling download of {url}: expected response "
-                             "size ({size}) larger than "
-                             "download max size ({maxsize})."
-            ).format(url=request.url, size=expected_size, maxsize=maxsize)
+            error_msg = ("Cancelling download of %(url)s: expected response "
+                         "size (%(size)s) larger than download max size (%(maxsize)s).")
+            error_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
 
-            logger.error(error_message)
+            logger.error(error_msg, error_args)
             txresponse._transport._producer.loseConnection()
-            raise defer.CancelledError(error_message)
+            raise defer.CancelledError(error_msg % error_args)
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "

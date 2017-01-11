@@ -15,6 +15,7 @@ class LogStats(object):
         self.stats = stats
         self.interval = interval
         self.multiplier = 60.0 / self.interval
+        self.task = None
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -47,5 +48,5 @@ class LogStats(object):
         logger.info(msg, log_args, extra={'spider': spider})
 
     def spider_closed(self, spider, reason):
-        if self.task.running:
+        if self.task and self.task.running:
             self.task.stop()

@@ -8,7 +8,7 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|dev\d+)?$/
 env:
  - TOXENV=py27
- - TOXENV=precise
+ - TOXENV=jessie
  - TOXENV=py33
  - TOXENV=py35
  - TOXENV=docs

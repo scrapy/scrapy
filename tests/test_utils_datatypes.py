@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaselessDict, SequenceExclude
 
 __doctests__ = ['scrapy.utils.datatypes']
 
@@ -127,6 +127,67 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(h1.get('header1'), h2.get('header1'))
         assert isinstance(h2, CaselessDict)
 
+
+class SequenceExcludeTest(unittest.TestCase):
+
+    def test_list(self):
+        seq = [1, 2, 3]
+        d = SequenceExclude(seq)
+        self.assertIn(0, d)
+        self.assertIn(4, d)
+        self.assertNotIn(2, d)
+
+    def test_range(self):
+        seq = range(10, 20)
+        d = SequenceExclude(seq)
+        self.assertIn(5, d)
+        self.assertIn(20, d)
+        self.assertNotIn(15, d)
+
+    def test_six_range(self):
+        import six.moves
+        seq = six.moves.range(10**3, 10**6)
+        d = SequenceExclude(seq)
+        self.assertIn(10**2, d)
+        self.assertIn(10**7, d)
+        self.assertNotIn(10**4, d)
+
+    def test_range_step(self):
+        seq = range(10, 20, 3)
+        d = SequenceExclude(seq)
+        are_not_in = [v for v in range(10, 20, 3) if v in d]
+        self.assertEquals([], are_not_in)
+
+        are_not_in = [v for v in range(10, 20) if v in d]
+        self.assertEquals([11, 12, 14, 15, 17, 18], are_not_in)
+
+    def test_string_seq(self):
+        seq = "cde"
+        d = SequenceExclude(seq)
+        chars = "".join(v for v in "abcdefg" if v in d)
+        self.assertEquals("abfg", chars)
+
+    def test_stringset_seq(self):
+        seq = set("cde")
+        d = SequenceExclude(seq)
+        chars = "".join(v for v in "abcdefg" if v in d)
+        self.assertEquals("abfg", chars)
+
+    def test_set(self):
+        """Anything that is not in the supplied sequence will evaluate as 'in' the container."""
+        seq = set([-3, "test", 1.1])
+        d = SequenceExclude(seq)
+        self.assertIn(0, d)
+        self.assertIn("foo", d)
+        self.assertIn(3.14, d)
+        self.assertIn(set("bar"), d)
+
+        # supplied sequence is a set, so checking for list (non)inclusion fails
+        self.assertRaises(TypeError, (0, 1, 2) in d)
+        self.assertRaises(TypeError, d.__contains__, ['a', 'b', 'c'])
+
+        for v in [-3, "test", 1.1]:
+            self.assertNotIn(v, d)
 
 if __name__ == "__main__":
     unittest.main()
