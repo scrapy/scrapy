@@ -4,6 +4,7 @@ from six.moves.urllib.parse import urljoin
 from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse
+from scrapy.http.response import Response
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
@@ -76,6 +77,24 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         redirected = self._redirect_request_using_get(request, redirected_url)
         return self._redirect(redirected, request, spider, response.status)
+
+    def process_exception(self, request, exception, spider):
+        """"
+        This checks for Twisted ResponseFailed exceptions that have response
+        attributes and then uses the partial responses they've received to
+        follow the redirect.
+        """
+        response = getattr(exception, 'response', None)
+        if response is not None:
+            # Convert twisted 3XX Response to scrapy Response and return it
+            if response.code in (301, 302, 303, 307) and response.headers.hasHeader(b'location'):
+                redirect_url = response.headers.getRawHeaders(b'location')[-1]
+                headers = {b'location': redirect_url}
+                scrapy_response = Response(request.url,
+                                           status=response.code,
+                                           headers=headers,
+                                           request=request)
+                return scrapy_response
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
