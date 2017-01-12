@@ -17,7 +17,9 @@ POLICY_NO_REFERRER = "no-referrer"
 POLICY_NO_REFERRER_WHEN_DOWNGRADE = "no-referrer-when-downgrade"
 POLICY_SAME_ORIGIN = "same-origin"
 POLICY_ORIGIN = "origin"
+POLICY_STRICT_ORIGIN = "strict-origin"
 POLICY_ORIGIN_WHEN_CROSS_ORIGIN = "origin-when-cross-origin"
+POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN = "strict-origin-when-cross-origin"
 POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
@@ -139,6 +141,26 @@ class OriginPolicy(ReferrerPolicy):
         return self.origin_referrer(response)
 
 
+class StrictOriginPolicy(ReferrerPolicy):
+    """
+    https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin
+
+    The "strict-origin" policy sends the ASCII serialization
+    of the origin of the request client when making requests:
+    - from a TLS-protected environment settings object to a potentially trustworthy URL, and
+    - from non-TLS-protected environment settings objects to any origin.
+
+    Requests from TLS-protected request clients to non- potentially trustworthy URLs,
+    on the other hand, will contain no referrer information.
+    A Referer HTTP header will not be sent.
+    """
+    name = POLICY_STRICT_ORIGIN
+
+    def referrer(self, response, request):
+        if urlparse_cached(response).scheme == urlparse_cached(request).scheme:
+            return self.origin_referrer(response)
+
+
 class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     """
     https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
@@ -151,6 +173,33 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     from a particular request client.
     """
     name = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
+
+    def referrer(self, response, request):
+        origin = self.origin(response)
+        if origin == self.origin(request):
+            return self.stripped_referrer(response)
+        else:
+            return origin
+
+
+class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
+    """
+    https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
+
+    The "strict-origin-when-cross-origin" policy specifies that a full URL,
+    stripped for use as a referrer, is sent as referrer information
+    when making same-origin requests from a particular request client,
+    and only the ASCII serialization of the origin of the request client
+    when making cross-origin requests:
+
+    - from a TLS-protected environment settings object to a potentially trustworthy URL, and
+    - from non-TLS-protected environment settings objects to any origin.
+
+    Requests from TLS-protected clients to non- potentially trustworthy URLs,
+    on the other hand, will contain no referrer information.
+    A Referer HTTP header will not be sent.
+    """
+    name = POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
 
     def referrer(self, response, request):
         origin = self.origin(response)
