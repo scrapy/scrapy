@@ -63,7 +63,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             return response
 
         allowed_status = (301, 302, 303, 307)
-        if 'Location' not in response.headers or response.status not in allowed_status:
+        if 'location' not in response.headers or response.status not in allowed_status:
             return response
 
         location = safe_url_string(response.headers['location'])
