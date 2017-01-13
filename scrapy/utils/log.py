@@ -92,7 +92,7 @@ def configure_logging(settings=None, install_root_handler=True):
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
-    LOGGING_FROM_SETTINGS = settings.get('LOGGING')
+    LOGGING_FROM_SETTINGS = settings.getdict('LOGGING')
 
     if settings.getbool('LOG_STDOUT'):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
