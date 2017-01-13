@@ -1,0 +1,10 @@
+#!/home/gustavo/scrapy/.scrapy/bin/python
+# EASY-INSTALL-ENTRY-SCRIPT: 'Scrapy==1.2.0','console_scripts','scrapy'
+__requires__ = 'Scrapy==1.2.0'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('Scrapy==1.2.0', 'console_scripts', 'scrapy')()
+    )

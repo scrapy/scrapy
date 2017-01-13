@@ -1,0 +1,134 @@
+# Copyright (c) Twisted Matrix Laboratories.
+# See LICENSE for details.
+
+"""
+Tests for C{await} support in Deferreds.
+
+These tests can only work and be imported on Python 3.5+!
+"""
+
+import types
+
+from twisted.internet.defer import Deferred, ensureDeferred
+from twisted.trial.unittest import TestCase
+from twisted.test.proto_helpers import Clock
+
+
+class AwaitTests(TestCase):
+    """
+    Tests for using Deferreds in conjunction with PEP-492.
+    """
+    def test_awaitReturnsIterable(self):
+        """
+        C{Deferred.__await__} returns an iterable.
+        """
+        d = Deferred()
+        awaitedDeferred = d.__await__()
+        self.assertEqual(awaitedDeferred, iter(awaitedDeferred))
+
+
+    def test_ensureDeferred(self):
+        """
+        L{ensureDeferred} will turn a coroutine into a L{Deferred}.
+        """
+        async def run():
+            d = Deferred()
+            d.callback("bar")
+            await d
+            res = await run2()
+            return res
+
+        async def run2():
+            d = Deferred()
+            d.callback("foo")
+            res = await d
+            return res
+
+        # It's a coroutine...
+        r = run()
+        self.assertIsInstance(r, types.CoroutineType)
+
+        # Now it's a Deferred.
+        d = ensureDeferred(r)
+        self.assertIsInstance(d, Deferred)
+
+        # The Deferred has the result we want.
+        res = self.successResultOf(d)
+        self.assertEqual(res, "foo")
+
+
+    def test_basic(self):
+        """
+        L{ensureDeferred} allows a function to C{await} on a L{Deferred}.
+        """
+        async def run():
+            d = Deferred()
+            d.callback("foo")
+            res = await d
+            return res
+
+        d = ensureDeferred(run())
+        res = self.successResultOf(d)
+        self.assertEqual(res, "foo")
+
+
+    def test_exception(self):
+        """
+        An exception in a coroutine wrapped with L{ensureDeferred} will cause
+        the returned L{Deferred} to fire with a failure.
+        """
+        async def run():
+            d = Deferred()
+            d.callback("foo")
+            await d
+            raise ValueError("Oh no!")
+
+        d = ensureDeferred(run())
+        res = self.failureResultOf(d)
+        self.assertEqual(type(res.value), ValueError)
+        self.assertEqual(res.value.args, ("Oh no!",))
+
+
+    def test_twoDeep(self):
+        """
+        An exception in a coroutine wrapped with L{ensureDeferred} will cause
+        the returned L{Deferred} to fire with a failure.
+        """
+        reactor = Clock()
+        sections = []
+
+        async def runone():
+            sections.append(2)
+            d = Deferred()
+            reactor.callLater(1, d.callback, None)
+            await d
+            sections.append(3)
+            return "Yay!"
+
+
+        async def run():
+            sections.append(1)
+            result = await runone()
+            sections.append(4)
+            d = Deferred()
+            reactor.callLater(1, d.callback, None)
+            await d
+            sections.append(5)
+            return result
+
+        d = ensureDeferred(run())
+
+        reactor.advance(0.9)
+        self.assertEqual(sections, [1, 2])
+
+        reactor.advance(0.1)
+        self.assertEqual(sections, [1, 2, 3, 4])
+
+        reactor.advance(0.9)
+        self.assertEqual(sections, [1, 2, 3, 4])
+
+        reactor.advance(0.1)
+        self.assertEqual(sections, [1, 2, 3, 4, 5])
+
+        res = self.successResultOf(d)
+        self.assertEqual(res, "Yay!")

@@ -1,0 +1,26 @@
+Metadata-Version: 2.0
+Name: w3lib
+Version: 1.15.0
+Summary: Library of web-related functions
+Home-page: https://github.com/scrapy/w3lib
+Author: Scrapy project
+Author-email: info@scrapy.org
+License: BSD
+Platform: Any
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Internet :: WWW/HTTP
+Requires-Dist: six (>=1.4.1)
+
+UNKNOWN
+
+

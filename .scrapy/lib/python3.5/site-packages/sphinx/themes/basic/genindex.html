@@ -1,0 +1,77 @@
+{#
+    basic/genindex.html
+    ~~~~~~~~~~~~~~~~~~~
+
+    Template for an "all-in-one" index.
+
+    :copyright: Copyright 2007-2016 by the Sphinx team, see AUTHORS.
+    :license: BSD, see LICENSE for details.
+#}
+{% macro indexentries(firstname, links) %}
+  <dt>
+  {%- if links -%}
+    <a href="{{ links[0][1] }}">
+    {%- if links[0][0] %}<strong>{% endif -%}
+    {{ firstname|e }}
+    {%- if links[0][0] %}</strong>{% endif -%}
+    </a>
+
+    {%- for ismain, link in links[1:] -%}
+      , <a href="{{ link }}">{% if ismain %}<strong>{% endif -%}
+      [{{ loop.index }}]
+      {%- if ismain %}</strong>{% endif -%}
+      </a>
+    {%- endfor %}
+  {%- else %}
+    {{ firstname|e }}
+  {%- endif %}
+  </dt>
+{% endmacro %}
+
+{%- extends "layout.html" %}
+{% set title = _('Index') %}
+{% block body %}
+
+<h1 id="index">{{ _('Index') }}</h1>
+
+<div class="genindex-jumpbox">
+ {% for key, dummy in genindexentries -%}
+ <a href="#{{ key }}"><strong>{{ key }}</strong></a>
+ {% if not loop.last %}| {% endif %}
+ {%- endfor %}
+</div>
+
+{%- for key, entries in genindexentries %}
+<h2 id="{{ key }}">{{ key }}</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  {%- for column in entries|slice_index(2) if column %}
+  <td style="width: 33%" valign="top"><dl>
+    {%- for entryname, (links, subitems, _) in column %}
+      {{ indexentries(entryname, links) }}
+      {%- if subitems %}
+      <dd><dl>
+      {%- for subentryname, subentrylinks in subitems %}
+        {{ indexentries(subentryname, subentrylinks) }}
+      {%- endfor %}
+      </dl></dd>
+      {%- endif -%}
+    {%- endfor %}
+  </dl></td>
+  {%- endfor %}
+</tr></table>
+{% endfor %}
+
+{% endblock %}
+
+{% block sidebarrel %}
+{% if split_index %}
+   <h4>{{ _('Index') }}</h4>
+   <p>{% for key, dummy in genindexentries -%}
+   <a href="{{ pathto('genindex-' + key) }}"><strong>{{ key }}</strong></a>
+     {% if not loop.last %}| {% endif %}
+   {%- endfor %}</p>
+
+   <p><a href="{{ pathto('genindex-all') }}"><strong>{{ _('Full index on one page') }}</strong></a></p>
+{% endif %}
+   {{ super() }}
+{% endblock %}

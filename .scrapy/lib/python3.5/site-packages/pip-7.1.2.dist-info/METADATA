@@ -1,0 +1,53 @@
+Metadata-Version: 2.0
+Name: pip
+Version: 7.1.2
+Summary: The PyPA recommended tool for installing Python packages.
+Home-page: https://pip.pypa.io/
+Author: The pip developers
+Author-email: python-virtualenv@groups.google.com
+License: MIT
+Keywords: easy_install distutils setuptools egg virtualenv
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Topic :: Software Development :: Build Tools
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Provides-Extra: testing
+Requires-Dist: pytest; extra == 'testing'
+Requires-Dist: virtualenv (>=1.10); extra == 'testing'
+Requires-Dist: scripttest (>=1.3); extra == 'testing'
+Requires-Dist: mock; extra == 'testing'
+
+pip
+===
+
+The `PyPA recommended
+<https://python-packaging-user-guide.readthedocs.org/en/latest/current.html>`_
+tool for installing Python packages.
+
+* `Installation <https://pip.pypa.io/en/stable/installing.html>`_
+* `Documentation <https://pip.pypa.io/>`_
+* `Changelog <https://pip.pypa.io/en/stable/news.html>`_
+* `Github Page <https://github.com/pypa/pip>`_
+* `Issue Tracking <https://github.com/pypa/pip/issues>`_
+* `User mailing list <http://groups.google.com/group/python-virtualenv>`_
+* `Dev mailing list <http://groups.google.com/group/pypa-dev>`_
+* User IRC: #pypa on Freenode.
+* Dev IRC: #pypa-dev on Freenode.
+
+
+.. image:: https://pypip.in/v/pip/badge.png
+        :target: https://pypi.python.org/pypi/pip
+
+.. image:: https://secure.travis-ci.org/pypa/pip.png?branch=develop
+   :target: http://travis-ci.org/pypa/pip
+
+
