@@ -344,9 +344,18 @@ This setting accepts:
 - a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy`` subclass,
   either a custom one or one of the built-in ones
   (see ``scrapy.spidermiddlewares.referer``),
-- or one of the standard W3C-defined string values, i.e. ``"no-referrer"``,
-  ``"no-referrer-when-downgrade"``, ``"same-origin"``, ``"origin"``,
-  ``"origin-when-cross-origin"`` or ``"unsafe-url"``.
+- or one of the standard W3C-defined string values:
+
+  - `"no-referrer" <https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer>`_,
+  - `"no-referrer-when-downgrade" <https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade>`_,
+  - `"same-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-same-origin>`_,
+  - `"origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-origin>`_,
+  - `"strict-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin>`_,
+  - `"origin-when-cross-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin>`_,
+  - `"strict-origin-when-cross-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin>`_,
+  - or `"unsafe-url" <https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url>`_
+    (not recommended).
+
   (It can also be the non-standard value ``"scrapy-default"`` to use
   Scrapy's default referrer policy.)
 
