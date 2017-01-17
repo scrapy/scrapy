@@ -94,12 +94,11 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
     """
     https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
 
-    The "no-referrer-when-downgrade" policy sends a full URL
-    along with requests from a TLS-protected environment settings object
-    to a a priori authenticated URL,
-    and requests from request clients which are not TLS-protected to any origin.
+    The "no-referrer-when-downgrade" policy sends a full URL along with requests
+    from a TLS-protected environment settings object to a potentially trustworthy URL,
+    and requests from clients which are not TLS-protected to any origin.
 
-    Requests from TLS-protected request clients to non-a priori authenticated URLs,
+    Requests from TLS-protected clients to non-potentially trustworthy URLs,
     on the other hand, will contain no referrer information.
     A Referer HTTP header will not be sent.
 
@@ -108,15 +107,8 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
     name = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
     def referrer(self, response, request):
-        # https://www.w3.org/TR/referrer-policy/#determine-requests-referrer:
-        #
-        # If environment is TLS-protected
-        # and the origin of request's current URL is not an a priori authenticated URL,
-        # then return no referrer.
-        if urlparse_cached(response).scheme in ('https', 'ftps') and \
-            urlparse_cached(request).scheme in ('http',):
-                return None
-        return self.stripped_referrer(response)
+        if not self.tls_protected(response) or self.tls_protected(request):
+            return self.stripped_referrer(response)
 
 
 class SameOriginPolicy(ReferrerPolicy):
