@@ -31,13 +31,13 @@ class ReferrerPolicy(object):
     def referrer(self, response, request):
         raise NotImplementedError()
 
-    def stripped_referrer(self, req_or_resp):
-        return self.strip_url(req_or_resp)
+    def stripped_referrer(self, r):
+        return self.strip_url(r)
 
-    def origin_referrer(self, req_or_resp):
-        return self.strip_url(req_or_resp, origin_only=True)
+    def origin_referrer(self, r):
+        return self.strip_url(r, origin_only=True)
 
-    def strip_url(self, req_or_resp, origin_only=False):
+    def strip_url(self, r, origin_only=False):
         """
         https://www.w3.org/TR/referrer-policy/#strip-url
 
@@ -51,9 +51,9 @@ class ReferrerPolicy(object):
             Set url's query to null.
         Return url.
         """
-        if req_or_resp.url is None or not req_or_resp.url:
+        if r is None or not r.url:
             return None
-        parsed_url = urlparse_cached(req_or_resp)
+        parsed_url = urlparse_cached(r)
         if parsed_url.scheme not in self.NOREFERRER_SCHEMES:
             return strip_url(parsed_url,
                              strip_credentials=True,
@@ -61,9 +61,19 @@ class ReferrerPolicy(object):
                              strip_default_port=True,
                              origin_only=origin_only)
 
-    def origin(self, req_or_resp):
+    def origin(self, r):
         """Return serialized origin (scheme, host, path) for a request or response URL."""
-        return self.strip_url(req_or_resp, origin_only=True)
+        return self.strip_url(r, origin_only=True)
+
+    def potentially_trustworthy(self, r):
+        # Note: this does not follow https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy
+        parsed_url = urlparse_cached(r)
+        if parsed_url.scheme in ('data',):
+            return False
+        return self.tls_protected(r)
+
+    def tls_protected(self, r):
+        return urlparse_cached(r).scheme in ('https', 'ftps')
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -157,7 +167,9 @@ class StrictOriginPolicy(ReferrerPolicy):
     name = POLICY_STRICT_ORIGIN
 
     def referrer(self, response, request):
-        if urlparse_cached(response).scheme == urlparse_cached(request).scheme:
+        if ((urlparse_cached(response).scheme == 'https' and
+             self.potentially_trustworthy(request))
+             or urlparse_cached(response).scheme == 'http'):
             return self.origin_referrer(response)
 
 
@@ -205,8 +217,10 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         origin = self.origin(response)
         if origin == self.origin(request):
             return self.stripped_referrer(response)
-        else:
-            return origin
+        elif ((urlparse_cached(response).scheme in ('https', 'ftps') and
+               self.potentially_trustworthy(request))
+              or urlparse_cached(response).scheme == 'http'):
+            return self.origin_referrer(response)
 
 
 class UnsafeUrlPolicy(ReferrerPolicy):
@@ -244,7 +258,9 @@ _policy_classes = {p.name: p for p in (
     NoReferrerWhenDowngradePolicy,
     SameOriginPolicy,
     OriginPolicy,
+    StrictOriginPolicy,
     OriginWhenCrossOriginPolicy,
+    StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
     DefaultReferrerPolicy,
 )}
