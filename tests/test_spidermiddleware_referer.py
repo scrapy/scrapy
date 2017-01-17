@@ -232,7 +232,13 @@ class MixinStrictOriginWhenCrossOrigin(object):
         # downgrade
         ('https://example4.com/page.html',  'http://example4.com/not-page.html',    None),
         ('https://example4.com/page.html',  'http://not.example4.com/',             None),
-        ('ftp://example4.com/urls.zip',     'http://example4.com/not-page.html',    None),
+
+        # non-TLS to non-TLS
+        ('ftp://example4.com/urls.zip',     'http://example4.com/not-page.html',    b'ftp://example4.com/'),
+
+        # upgrade
+        ('http://example4.com/page.html',  'https://example4.com/not-page.html',    b'http://example4.com/'),
+        ('http://example4.com/page.html',  'https://not.example4.com/',             b'http://example4.com/'),
 
         # Different protocols: send origin as referrer
         ('ftps://example4.com/urls.zip',    'https://example4.com/not-page.html',   b'ftps://example4.com/'),

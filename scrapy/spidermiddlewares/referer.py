@@ -159,7 +159,8 @@ class StrictOriginPolicy(ReferrerPolicy):
     name = POLICY_STRICT_ORIGIN
 
     def referrer(self, response, request):
-        if ((self.tls_protected(response) and self.potentially_trustworthy(request))
+        if ((self.tls_protected(response) and
+             self.potentially_trustworthy(request))
             or not self.tls_protected(response)):
             return self.origin_referrer(response)
 
@@ -208,9 +209,9 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         origin = self.origin(response)
         if origin == self.origin(request):
             return self.stripped_referrer(response)
-        elif ((urlparse_cached(response).scheme in ('https', 'ftps') and
+        elif ((self.tls_protected(response) and
                self.potentially_trustworthy(request))
-              or urlparse_cached(response).scheme == 'http'):
+              or not self.tls_protected(response)):
             return self.origin_referrer(response)
 
 
