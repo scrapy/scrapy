@@ -8,6 +8,7 @@ from scrapy.spidermiddlewares.referer import RefererMiddleware, \
     POLICY_NO_REFERRER, POLICY_NO_REFERRER_WHEN_DOWNGRADE, \
     POLICY_SAME_ORIGIN, POLICY_ORIGIN, POLICY_ORIGIN_WHEN_CROSS_ORIGIN, \
     POLICY_SCRAPY_DEFAULT, POLICY_UNSAFE_URL, \
+    POLICY_STRICT_ORIGIN, POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, \
     DefaultReferrerPolicy, \
     NoReferrerPolicy, NoReferrerWhenDowngradePolicy, \
     OriginWhenCrossOriginPolicy, OriginPolicy, \
@@ -39,7 +40,6 @@ class TestRefererMiddleware(TestCase):
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-
             out = list(self.mw.process_spider_output(response, [request], self.spider))
             self.assertEquals(out[0].headers.get('Referer'), referrer)
 
@@ -154,6 +154,25 @@ class MixinOrigin(object):
     ]
 
 
+class MixinStrictOrigin(object):
+    scenarii = [
+        # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
+        ('https://example.com/page.html',   'https://example.com/not-page.html',    b'https://example.com/'),
+        ('https://example.com/page.html',   'https://scrapy.org',                   b'https://example.com/'),
+        ('http://example.com/page.html',    'http://scrapy.org',                    b'http://example.com/'),
+
+        # downgrade: send nothing
+        ('https://example.com/page.html',   'http://scrapy.org',                    None),
+
+        # upgrade: send origin
+        ('http://example.com/page.html',    'https://scrapy.org',                   b'http://example.com/'),
+
+        # test for user/password stripping
+        ('https://user:password@example.com/page.html', 'https://scrapy.org',       b'https://example.com/'),
+        ('https://user:password@example.com/page.html', 'http://scrapy.org',        None),
+    ]
+
+
 class MixinOriginWhenCrossOrigin(object):
     scenarii = [
         # Same origin (protocol, host, port): send referrer
@@ -186,6 +205,44 @@ class MixinOriginWhenCrossOrigin(object):
         ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html',  b'https://example5.com/page.html'),
         # TLS to non-TLS downgrade: send origin
         ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html',   b'https://example5.com/'),
+    ]
+
+
+class MixinStrictOriginWhenCrossOrigin(object):
+    scenarii = [
+        # Same origin (protocol, host, port): send referrer
+        ('https://example.com/page.html',       'https://example.com/not-page.html',        b'https://example.com/page.html'),
+        ('http://example.com/page.html',        'http://example.com/not-page.html',         b'http://example.com/page.html'),
+        ('https://example.com:443/page.html',   'https://example.com/not-page.html',        b'https://example.com/page.html'),
+        ('http://example.com:80/page.html',     'http://example.com/not-page.html',         b'http://example.com/page.html'),
+        ('http://example.com/page.html',        'http://example.com:80/not-page.html',      b'http://example.com/page.html'),
+        ('http://example.com:8888/page.html',   'http://example.com:8888/not-page.html',    b'http://example.com:8888/page.html'),
+
+        # Different host: send origin as referrer
+        ('https://example2.com/page.html',  'https://scrapy.org/otherpage.html',        b'https://example2.com/'),
+        ('https://example2.com/page.html',  'https://not.example2.com/otherpage.html',  b'https://example2.com/'),
+        ('http://example2.com/page.html',   'http://not.example2.com/otherpage.html',   b'http://example2.com/'),
+        # exact match required
+        ('http://example2.com/page.html',   'http://www.example2.com/otherpage.html',   b'http://example2.com/'),
+
+        # Different port: send origin as referrer
+        ('https://example3.com:444/page.html',  'https://example3.com/not-page.html',   b'https://example3.com:444/'),
+        ('http://example3.com:81/page.html',    'http://example3.com/not-page.html',    b'http://example3.com:81/'),
+
+        # downgrade
+        ('https://example4.com/page.html',  'http://example4.com/not-page.html',    None),
+        ('https://example4.com/page.html',  'http://not.example4.com/',             None),
+        ('ftp://example4.com/urls.zip',     'http://example4.com/not-page.html',    None),
+
+        # Different protocols: send origin as referrer
+        ('ftps://example4.com/urls.zip',    'https://example4.com/not-page.html',   b'ftps://example4.com/'),
+        ('ftps://example4.com/urls.zip',    'https://example4.com/not-page.html',   b'ftps://example4.com/'),
+
+        # test for user/password stripping
+        ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html',  b'https://example5.com/page.html'),
+
+        # TLS to non-TLS downgrade: send nothing
+        ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html',   None),
     ]
 
 
@@ -241,8 +298,16 @@ class TestRefererMiddlewareSettingsOrigin(MixinOrigin, TestRefererMiddleware):
     settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginPolicy'}
 
 
+class TestRefererMiddlewareSettingsStrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginPolicy'}
+
+
 class TestRefererMiddlewareSettingsOriginWhenCrossOrigin(MixinOriginWhenCrossOrigin, TestRefererMiddleware):
     settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+
+
+class TestRefererMiddlewareSettingsStrictOriginWhenCrossOrigin(MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware):
+    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
@@ -297,8 +362,16 @@ class TestRefererMiddlewareOrigin(MixinOrigin, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_ORIGIN}
 
 
+class TestRefererMiddlewareSrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
+    req_meta = {'referrer_policy': POLICY_STRICT_ORIGIN}
+
+
 class TestRefererMiddlewareOriginWhenCrossOrigin(MixinOriginWhenCrossOrigin, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
+
+
+class TestRefererMiddlewareStrictOriginWhenCrossOrigin(MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware):
+    req_meta = {'referrer_policy': POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
 
 
 class TestRefererMiddlewareUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
