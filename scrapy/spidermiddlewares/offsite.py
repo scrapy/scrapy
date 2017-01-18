@@ -6,11 +6,12 @@ See documentation in docs/topics/spider-middleware.rst
 
 import re
 import logging
+import sys
 
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
-from urlparse import urlparse
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,10 @@ class OffsiteMiddleware(object):
     def get_host_regex(self, spider):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
+        try:
+            from urllib import urlparse
+        except ImportError:
+            from urllib.parse import urlparse
         if not allowed_domains:
             return re.compile('') # allow all by default
         else:
