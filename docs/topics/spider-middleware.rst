@@ -333,7 +333,7 @@ Whether to enable referer middleware.
 REFERER_POLICY
 ^^^^^^^^^^^^^^
 
-.. versionadded:: 1.3
+.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 
@@ -346,14 +346,14 @@ This setting accepts:
   (see ``scrapy.spidermiddlewares.referer``),
 - or one of the standard W3C-defined string values:
 
-  - `"no-referrer" <https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer>`_,
-  - `"no-referrer-when-downgrade" <https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade>`_,
-  - `"same-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-same-origin>`_,
-  - `"origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-origin>`_,
-  - `"strict-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin>`_,
-  - `"origin-when-cross-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin>`_,
-  - `"strict-origin-when-cross-origin" <https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin>`_,
-  - or `"unsafe-url" <https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url>`_
+  - `"no-referrer"`_,
+  - `"no-referrer-when-downgrade"`_,
+  - `"same-origin"`_,
+  - `"origin"`_,
+  - `"strict-origin"`_,
+  - `"origin-when-cross-origin"`_,
+  - `"strict-origin-when-cross-origin"`_,
+  - or `"unsafe-url"`_
     (not recommended).
 
   (It can also be the non-standard value ``"scrapy-default"`` to use
@@ -364,14 +364,22 @@ with the addition that "Referrer" is not sent if the parent request was
 using ``file://`` or ``s3://`` scheme.
 
 .. warning::
-    By default, Scrapy's default referrer policy, just like `"no-referrer-when-downgrade"`_,
+    Scrapy's default referrer policy, just like `"no-referrer-when-downgrade"`_,
     will send a non-empty "Referer" header from any ``https://`` to any ``https://`` URL,
     even if the domain is different.
     ``same-origin`` may be a better choice if you want to remove referrer
     information for cross-domain requests.
 
 .. _Referrer Policy: https://www.w3.org/TR/referrer-policy
+.. _"no-referrer": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer
 .. _"no-referrer-when-downgrade": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
+.. _"same-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-same-origin
+.. _"origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin
+.. _"strict-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin
+.. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
+.. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
+.. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
 
 UrlLengthMiddleware
 -------------------
