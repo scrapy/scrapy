@@ -349,7 +349,8 @@ This setting accepts:
 - or one of the standard W3C-defined string values:
 
   - `"no-referrer"`_,
-  - `"no-referrer-when-downgrade"`_,
+  - `"no-referrer-when-downgrade"`_
+    (the W3C-recommended default, used by major web browsers),
   - `"same-origin"`_,
   - `"origin"`_,
   - `"strict-origin"`_,
@@ -358,18 +359,19 @@ This setting accepts:
   - or `"unsafe-url"`_
     (not recommended).
 
-  (It can also be the non-standard value ``"scrapy-default"`` to use
-  Scrapy's default referrer policy.)
+It can also be the non-standard value ``"scrapy-default"`` to use
+Scrapy's default referrer policy.
 
 Scrapy's default referrer policy is a variant of `"no-referrer-when-downgrade"`_,
 with the addition that "Referrer" is not sent if the parent request was
 using ``file://`` or ``s3://`` scheme.
 
 .. warning::
-    Scrapy's default referrer policy, just like `"no-referrer-when-downgrade"`_,
-    will send a non-empty "Referer" header from any ``https://`` to any ``https://`` URL,
+    Scrapy's default referrer policy—just like `"no-referrer-when-downgrade"`_,
+    the W3C-recommended value for browsers—will send a non-empty
+    "Referer" header from any ``http(s)://`` to any ``https://`` URL,
     even if the domain is different.
-    ``same-origin`` may be a better choice if you want to remove referrer
+    `"same-origin"`_ may be a better choice if you want to remove referrer
     information for cross-domain requests.
 
 .. note::
