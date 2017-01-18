@@ -307,6 +307,7 @@ Those are:
 * :reqmeta:`proxy`
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* :reqmeta:`referrer_policy`
 
 .. reqmeta:: bindaddress
 

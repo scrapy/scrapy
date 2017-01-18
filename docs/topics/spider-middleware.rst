@@ -337,6 +337,8 @@ REFERER_POLICY
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 
+.. reqmeta:: referrer_policy
+
 `Referrer Policy`_ to apply when populating Request "Referer" header.
 
 This setting accepts:
@@ -369,6 +371,11 @@ using ``file://`` or ``s3://`` scheme.
     even if the domain is different.
     ``same-origin`` may be a better choice if you want to remove referrer
     information for cross-domain requests.
+
+.. note::
+    You can also override the Referrer Policy per request,
+    using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
+    with the same acceptable values as for the ``REFERER_POLICY`` setting.
 
 .. _Referrer Policy: https://www.w3.org/TR/referrer-policy
 .. _"no-referrer": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer
