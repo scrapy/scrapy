@@ -8,7 +8,7 @@ from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy.core.engine import ExecutionEngine
-from scrapy.resolver import CachingThreadedResolver
+from scrapy.resolver import CachingThreadedResolver, CachingGAIResolver
 from scrapy.interfaces import ISpiderLoader
 from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings
@@ -273,7 +273,7 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        reactor.installResolver(self._get_dns_resolver())
+        reactor.installNameResolver(self._get_dns_resolver())
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
@@ -284,11 +284,13 @@ class CrawlerProcess(CrawlerRunner):
             cache_size = self.settings.getint('DNSCACHE_SIZE')
         else:
             cache_size = 0
-        return CachingThreadedResolver(
-            reactor=reactor,
-            cache_size=cache_size,
-            timeout=self.settings.getfloat('DNS_TIMEOUT')
-        )
+
+        return CachingGAIResolver(reactor=reactor, cache_size=cache_size)
+        #return CachingThreadedResolver(
+            #reactor=reactor,
+            #cache_size=cache_size,
+            #timeout=self.settings.getfloat('DNS_TIMEOUT')
+        #)
 
     def _graceful_stop_reactor(self):
         d = self.stop()
