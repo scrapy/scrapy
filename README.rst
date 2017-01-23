@@ -73,13 +73,16 @@ See http://scrapy.org/community/
 Contributing
 ============
 
+See http://doc.scrapy.org/en/master/contributing.html
+
+Code of Conduct
+---------------
+
 Please note that this project is released with a Contributor Code of Conduct
 (see https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md).
 
 By participating in this project you agree to abide by its terms.
 Please report unacceptable behavior to opensource@scrapinghub.com.
-
-See http://doc.scrapy.org/en/master/contributing.html
 
 Companies using Scrapy
 ======================

@@ -1,17 +1,24 @@
 language: python
-python: 3.5
 sudo: false
 branches:
   only:
     - master
     - /^\d\.\d+$/
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
-env:
- - TOXENV=py27
- - TOXENV=jessie
- - TOXENV=py33
- - TOXENV=py35
- - TOXENV=docs
+matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=py27
+    - python: 2.7
+      env: TOXENV=jessie
+    - python: 3.3
+      env: TOXENV=py33
+    - python: 3.5
+      env: TOXENV=py35
+    - python: 3.6
+      env: TOXENV=py36
+    - python: 3.6
+      env: TOXENV=docs
 install:
  - pip install -U tox twine wheel codecov
 script: tox

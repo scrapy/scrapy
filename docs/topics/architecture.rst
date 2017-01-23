@@ -12,7 +12,7 @@ Overview
 
 The following diagram shows an overview of the Scrapy architecture with its
 components and an outline of the data flow that takes place inside the system
-(shown by the green arrows). A brief description of the components is included
+(shown by the red arrows). A brief description of the components is included
 below with links for more detailed information about them. The data flow is
 also described below.
 
