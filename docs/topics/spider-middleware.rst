@@ -363,12 +363,12 @@ It can also be the non-standard value ``"scrapy-default"`` to use
 Scrapy's default referrer policy.
 
 Scrapy's default referrer policy is a variant of `"no-referrer-when-downgrade"`_,
-with the addition that "Referrer" is not sent if the parent request was
+with the addition that "Referer" is not sent if the parent request was
 using ``file://`` or ``s3://`` scheme.
 
 .. warning::
-    Scrapy's default referrer policy—just like `"no-referrer-when-downgrade"`_,
-    the W3C-recommended value for browsers—will send a non-empty
+    Scrapy's default referrer policy — just like `"no-referrer-when-downgrade"`_,
+    the W3C-recommended value for browsers — will send a non-empty
     "Referer" header from any ``http(s)://`` to any ``https://`` URL,
     even if the domain is different.
     `"same-origin"`_ may be a better choice if you want to remove referrer
