@@ -326,9 +326,12 @@ class FilesystemCacheStorage(object):
     def _read_meta(self, spider, request):
         rpath = self._get_request_path(spider, request)
         metapath = os.path.join(rpath, 'pickled_meta')
-        if not os.path.exists(metapath):
-            return  # not found
-        mtime = os.stat(metapath).st_mtime
+        try:
+            mtime = os.stat(metapath).st_mtime
+        except OSError as exc:
+            if exc.errno == os.errno.ENOENT:
+                return  # not found
+            raise
         if 0 < self.expiration_secs < time() - mtime:
             return  # expired
         with self._open(metapath, 'rb') as f:
