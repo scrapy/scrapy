@@ -6,13 +6,11 @@ See documentation in docs/topics/spider-middleware.rst
 
 import re
 import logging
-import sys
 
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from six.moves.urllib.parse import urlparse
-
 
 logger = logging.getLogger(__name__)
 
