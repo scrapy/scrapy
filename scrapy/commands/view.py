@@ -12,8 +12,7 @@ class Command(fetch.Command):
 
     def add_options(self, parser):
         super(Command, self).add_options(parser)
-        parser.add_option("--spider", dest="spider",
-            help="use this spider")
+        parser.remove_option("--headers")
 
     def _print_response(self, response, opts):
         open_in_browser(response)
