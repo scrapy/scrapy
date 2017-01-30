@@ -346,21 +346,21 @@ This setting accepts:
 - a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy`` subclass,
   either a custom one or one of the built-in ones
   (see ``scrapy.spidermiddlewares.referer``),
-- or one of the standard W3C-defined string values:
+- or one of the standard W3C-defined string values
 
-  - `"no-referrer"`_,
-  - `"no-referrer-when-downgrade"`_
-    (the W3C-recommended default, used by major web browsers),
-  - `"same-origin"`_,
-  - `"origin"`_,
-  - `"strict-origin"`_,
-  - `"origin-when-cross-origin"`_,
-  - `"strict-origin-when-cross-origin"`_,
-  - or `"unsafe-url"`_
-    (not recommended).
-
-It can also be the non-standard value ``"scrapy-default"`` to use
-Scrapy's default referrer policy.
+=======================================  ========================================================================  =======================================================
+String value                             Class name
+=======================================  ========================================================================  =======================================================
+`"no-referrer"`_                         ``'scrapy.spidermiddlewares.referer.NoReferrerPolicy'``
+`"no-referrer-when-downgrade"`_          ``'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'``      the W3C-recommended default, used by major web browsers
+`"same-origin"`_                         ``'scrapy.spidermiddlewares.referer.SameOriginPolicy'``
+`"origin"`_                              ``'scrapy.spidermiddlewares.referer.OriginPolicy'``
+`"strict-origin"`_                       ``'scrapy.spidermiddlewares.referer.StrictOriginPolicy'``
+`"origin-when-cross-origin"`_            ``'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'``
+`"strict-origin-when-cross-origin"`_     ``'scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy'``
+`"unsafe-url"`_                          ``'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'``                    NOT recommended
+``"scrapy-default"``                     ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``              Scrapy's default policy (see below)
+=======================================  ========================================================================  =======================================================
 
 Scrapy's default referrer policy is a variant of `"no-referrer-when-downgrade"`_,
 with the addition that "Referer" is not sent if the parent request was
