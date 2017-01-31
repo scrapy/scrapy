@@ -94,7 +94,7 @@ class CrawlTestCase(TestCase):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
             # try to fetch the homepage of a non-existent domain
-            yield crawler.crawl("http://example.commmmm/")
+            yield crawler.crawl("http://example.commmmm./")
         self._assert_retried(l)
 
     @defer.inlineCallbacks
