@@ -91,12 +91,11 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
-        with mock.patch('socket.gethostbyname',
-                        side_effect=socket.gaierror(-5, 'No address associated with hostname')):
-            crawler = self.runner.create_crawler(SimpleSpider)
-            with LogCapture() as l:
-                yield crawler.crawl("http://example.com/")
-            self._assert_retried(l)
+        crawler = self.runner.create_crawler(SimpleSpider)
+        with LogCapture() as l:
+            # try to fetch the homepage of a non-existent domain
+            yield crawler.crawl("http://dns.resolution.invalid/")
+        self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
