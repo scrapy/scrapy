@@ -320,6 +320,20 @@ class TextResponseTest(BaseResponseTest):
             response.selector.css("title::text").extract(),
         )
 
+    def test_selector_shortcuts_kwargs(self):
+        body = b"<html><head><title>Some page</title><body><p class=\"content\">A nice paragraph.</p></body></html>"
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").extract(),
+            response.xpath("normalize-space(//p[@class=\"content\"])").extract(),
+        )
+        self.assertEqual(
+            response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
+                pclass="content", pcount=1).extract(),
+            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").extract(),
+        )
+
     def test_urljoin_with_base_url(self):
         """Test urljoin shortcut which also evaluates base-url through get_base_url()."""
         body = b'<html><body><base href="https://example.net"></body></html>'
@@ -427,4 +441,22 @@ class XmlResponseTest(TextResponseTest):
         self.assertEqual(
             response.xpath("//elem/text()").extract(),
             response.selector.xpath("//elem/text()").extract(),
+        )
+
+    def test_selector_shortcuts_kwargs(self):
+        body = b'''<?xml version="1.0" encoding="utf-8"?>
+        <xml xmlns:somens="http://scrapy.org">
+        <somens:elem>value</somens:elem>
+        </xml>'''
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+        )
+
+        response.selector.register_namespace('s2', 'http://scrapy.org')
+        self.assertEqual(
+            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).extract(),
+            response.selector.xpath("//s2:elem/text()").extract(),
         )
