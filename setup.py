@@ -49,7 +49,7 @@ setup(
         'pyOpenSSL',
         'cssselect>=0.9',
         'six>=1.5.2',
-        'parsel>=0.9.5',
+        'parsel>=1.1',
         'PyDispatcher>=2.0.5',
         'service_identity',
     ],
