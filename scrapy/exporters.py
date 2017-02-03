@@ -214,8 +214,15 @@ class CsvItemExporter(BaseItemExporter):
             write_through=True,
             encoding=self.encoding
         ) if six.PY3 else file
+
+        # don't write a header to a file with contents
+        self.stream.seek(0, 2)
+        if self.stream.tell() > 0:
+            self._headers_not_written = False
+        else:
+            self._headers_not_written = include_headers_line
+
         self.csv_writer = csv.writer(self.stream, **kwargs)
-        self._headers_not_written = include_headers_line
         self._join_multivalued = join_multivalued
 
     def serialize_field(self, field, name, value):
