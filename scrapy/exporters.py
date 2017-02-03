@@ -29,7 +29,7 @@ class BaseItemExporter(object):
         self._configure(kwargs)
 
     def _configure(self, options, dont_fail=False):
-        """Configure the exporter by poping options from the ``options`` dict.
+        """Configure the exporter by popping options from the ``options`` dict.
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses constructors)
         """
@@ -207,9 +207,7 @@ class CsvItemExporter(BaseItemExporter):
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
-        if not self.encoding:
-            self.encoding = 'utf-8'
-        self.include_headers_line = include_headers_line
+        self.encoding = self.encoding or 'utf-8'
         self.stream = io.TextIOWrapper(
             file,
             line_buffering=False,
@@ -217,7 +215,7 @@ class CsvItemExporter(BaseItemExporter):
             encoding=self.encoding
         ) if six.PY3 else file
         self.csv_writer = csv.writer(self.stream, **kwargs)
-        self._headers_not_written = True
+        self._headers_not_written = include_headers_line
         self._join_multivalued = join_multivalued
 
     def serialize_field(self, field, name, value):
@@ -234,8 +232,7 @@ class CsvItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         if self._headers_not_written:
-            self._headers_not_written = False
-            self._write_headers_and_set_fields_to_export(item)
+            self._set_fields_to_export_and_write_headers(item)
 
         fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
@@ -249,17 +246,17 @@ class CsvItemExporter(BaseItemExporter):
             except TypeError:
                 yield s
 
-    def _write_headers_and_set_fields_to_export(self, item):
-        if self.include_headers_line:
-            if not self.fields_to_export:
-                if isinstance(item, dict):
-                    # for dicts try using fields of the first item
-                    self.fields_to_export = list(item.keys())
-                else:
-                    # use fields declared in Item
-                    self.fields_to_export = list(item.fields.keys())
-            row = list(self._build_row(self.fields_to_export))
-            self.csv_writer.writerow(row)
+    def _set_fields_to_export_and_write_headers(self, item):
+        if not self.fields_to_export:
+            if isinstance(item, dict):
+                # for dicts try using fields of the first item
+                self.fields_to_export = list(item.keys())
+            else:
+                # use fields declared in Item
+                self.fields_to_export = list(item.fields.keys())
+        row = list(self._build_row(self.fields_to_export))
+        self.csv_writer.writerow(row)
+        self._headers_not_written = False
 
 
 class PickleItemExporter(BaseItemExporter):
