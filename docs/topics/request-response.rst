@@ -207,12 +207,12 @@ different fields from different pages::
         request = scrapy.Request("http://www.example.com/some_page.html",
                                  callback=self.parse_page2)
         request.meta['item'] = item
-        return request
+        yield request
 
     def parse_page2(self, response):
         item = response.meta['item']
         item['other_url'] = response.url
-        return item
+        yield item
 
 
 .. _topics-request-response-ref-errbacks:
