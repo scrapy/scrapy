@@ -17,6 +17,7 @@ FORMAT = {
         'x-gzip': ('html-gzip.bin', 'gzip'),
         'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
+        'br': ('html-br.bin', 'br')
         }
 
 class HttpCompressionTest(TestCase):
@@ -50,7 +51,8 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
-        self.assertEqual(request.headers.get('Accept-Encoding'), b'gzip,deflate')
+        self.assertEqual(request.headers.get('Accept-Encoding'),
+                         b'gzip,deflate,br')
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
@@ -60,6 +62,15 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         assert newresponse is not response
         assert newresponse.body.startswith(b'<!DOCTYPE')
+        assert 'Content-Encoding' not in newresponse.headers
+
+    def test_process_response_br(self):
+        response = self._getresponse('br')
+        request = response.request
+        self.assertEqual(response.headers['Content-Encoding'], b'br')
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
         assert 'Content-Encoding' not in newresponse.headers
 
     def test_process_response_rawdeflate(self):
