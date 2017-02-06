@@ -827,13 +827,15 @@ Example::
 MEMUSAGE_ENABLED
 ----------------
 
-Default: ``False``
+Default: ``True``
 
 Scope: ``scrapy.extensions.memusage``
 
-Whether to enable the memory usage extension that will shutdown the Scrapy
-process when it exceeds a memory limit, and also notify by email when that
-happened.
+Whether to enable the memory usage extension. This extension keeps track of
+a peak memory used by the process (it writes it to stats). It can also
+optionally shutdown the Scrapy process when it exceeds a memory limit
+(see :setting:`MEMUSAGE_LIMIT_MB`), and notify by email when that happened
+(see :setting:`MEMUSAGE_NOTIFY_MAIL`).
 
 See :ref:`topics-extensions-ref-memusage`.
 
