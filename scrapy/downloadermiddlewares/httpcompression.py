@@ -1,6 +1,5 @@
 import zlib
 
-import brotli
 
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy.http import Response, TextResponse
@@ -8,10 +7,18 @@ from scrapy.responsetypes import responsetypes
 from scrapy.exceptions import NotConfigured
 
 
+ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
+
+try:
+    import brotli
+    ACCEPTED_ENCODINGS.append(b'br')
+except ImportError:
+    pass
+
+
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
@@ -19,7 +26,8 @@ class HttpCompressionMiddleware(object):
         return cls()
 
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding', 'gzip,deflate,br')
+        request.headers.setdefault('Accept-Encoding',
+                                   ",".join(ACCEPTED_ENCODINGS))
 
     def process_response(self, request, response, spider):
 
@@ -57,7 +65,6 @@ class HttpCompressionMiddleware(object):
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
-        if encoding == b"br":
+        if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
         return body
-

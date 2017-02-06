@@ -1,6 +1,6 @@
 from io import BytesIO
 from unittest import TestCase
-from os.path import join, abspath, dirname
+from os.path import join
 from gzip import GzipFile
 
 from scrapy.spiders import Spider
@@ -19,6 +19,7 @@ FORMAT = {
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
         'br': ('html-br.bin', 'br')
         }
+
 
 class HttpCompressionTest(TestCase):
 
