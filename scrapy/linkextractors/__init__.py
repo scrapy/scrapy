@@ -101,7 +101,7 @@ class FilteringLinkExtractor(object):
         links = [x for x in links if self._link_allowed(x)]
         if self.canonicalize:
             for link in links:
-                link.url = canonicalize_url(urlparse(link.url))
+                link.url = canonicalize_url(link.url)
         links = self.link_extractor._process_links(links)
         return links
 
