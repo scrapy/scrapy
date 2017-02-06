@@ -51,7 +51,7 @@ LxmlLinkExtractor
    :synopsis: lxml's HTMLParser-based link extractors
 
 
-.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None, strip=True)
+.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=False, unique=True, process_value=None, strip=True)
 
     LxmlLinkExtractor is the recommended link extractor with handy filtering
     options. It is implemented using lxml's robust HTMLParser.
@@ -103,7 +103,12 @@ LxmlLinkExtractor
     :type attrs: list
 
     :param canonicalize: canonicalize each extracted url (using
-        w3lib.url.canonicalize_url). Defaults to ``True``.
+        w3lib.url.canonicalize_url). Defaults to ``False``.
+        Note that canonicalize_url is meant for duplicate checking;
+        it can change the URL visible at server side, so the response can be
+        different for requests with canonicalized and raw URLs. If you're
+        using LinkExtractor to follow links it is more robust to
+        keep the default ``canonicalize=False``.
     :type canonicalize: boolean
 
     :param unique: whether duplicate filtering should be applied to extracted

@@ -30,6 +30,7 @@ class Base:
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
                 Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
@@ -41,6 +42,7 @@ class Base:
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment')
             ])
 
         def test_extract_filter_allow_with_duplicates(self):
@@ -50,6 +52,27 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
+                Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment')
+            ])
+
+        def test_extract_filter_allow_with_duplicates_canonicalize(self):
+            lx = self.extractor_cls(allow=('sample', ), unique=False,
+                                    canonicalize=True)
+            self.assertEqual([link for link in lx.extract_links(self.response)], [
+                Link(url='http://example.com/sample1.html', text=u''),
+                Link(url='http://example.com/sample2.html', text=u'sample 2'),
+                Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
+                Link(url='http://example.com/sample3.html', text='sample 3 repetition with fragment')
+            ])
+
+        def test_extract_filter_allow_no_duplicates_canonicalize(self):
+            lx = self.extractor_cls(allow=('sample',), unique=True,
+                                    canonicalize=True)
+            self.assertEqual([link for link in lx.extract_links(self.response)], [
+                Link(url='http://example.com/sample1.html', text=u''),
+                Link(url='http://example.com/sample2.html', text=u'sample 2'),
+                Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
             ])
 
         def test_extract_filter_allow_and_deny(self):
@@ -73,6 +96,8 @@ class Base:
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html#foo',
+                     text='sample 3 repetition with fragment')
             ])
 
             lx = self.extractor_cls(allow='sample', deny='3')
@@ -280,6 +305,7 @@ class Base:
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
                 Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
@@ -291,6 +317,7 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample2.jpg', text=u''),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
                 Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
