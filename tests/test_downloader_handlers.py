@@ -791,3 +791,13 @@ class FTPTestCase(unittest.TestCase):
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
         return self._add_test_callbacks(d, errback=_test)
+
+    def test_ftp_netloc_credentials(self):
+        request = Request(url="ftp://%s:%s@127.0.0.1:%s/file.txt" %
+                (self.username, self.password, self.portNum),
+                meta={"ftp_user": 'invalid', "ftp_password": 'invalid'})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+        return self._add_test_callbacks(d, errback=_test)
