@@ -6,6 +6,7 @@ pytest==2.9.2
 pytest-twisted
 pytest-cov==2.2.1
 jmespath
+brotlipy==0.6
 testfixtures
 # optional for shell wrapper tests
 bpython

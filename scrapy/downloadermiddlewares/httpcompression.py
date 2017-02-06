@@ -27,7 +27,7 @@ class HttpCompressionMiddleware(object):
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
-                                   ",".join(ACCEPTED_ENCODINGS))
+                                   b",".join(ACCEPTED_ENCODINGS))
 
     def process_response(self, request, response, spider):
 

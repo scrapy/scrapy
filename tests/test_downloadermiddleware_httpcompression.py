@@ -1,11 +1,12 @@
 from io import BytesIO
-from unittest import TestCase
+from unittest import TestCase, SkipTest
 from os.path import join
 from gzip import GzipFile
 
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
-from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware
+from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
+    ACCEPTED_ENCODINGS
 from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
 
@@ -53,7 +54,7 @@ class HttpCompressionTest(TestCase):
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
         self.assertEqual(request.headers.get('Accept-Encoding'),
-                         b'gzip,deflate,br')
+                         b','.join(ACCEPTED_ENCODINGS))
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
@@ -66,6 +67,10 @@ class HttpCompressionTest(TestCase):
         assert 'Content-Encoding' not in newresponse.headers
 
     def test_process_response_br(self):
+        try:
+            import brotli
+        except ImportError:
+            raise SkipTest("no brotli")
         response = self._getresponse('br')
         request = response.request
         self.assertEqual(response.headers['Content-Encoding'], b'br')
