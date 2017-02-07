@@ -8,8 +8,12 @@ See documentation in docs/topics/request-response.rst
 import six
 from six.moves.urllib.parse import urljoin
 
+import parsel
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
+
+from scrapy.link import Link
+from scrapy.http.request import Request
 from scrapy.http.response import Response
 from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs, to_native_str
@@ -116,3 +120,58 @@ class TextResponse(Response):
 
     def css(self, query):
         return self.selector.css(query)
+
+    def follow(self, url, callback=None, method='GET', headers=None, body=None,
+               cookies=None, meta=None, encoding=None, priority=0,
+               dont_filter=False, errback=None):
+        # type: (...) -> Request
+        """
+        Return a scrapy.Request instance to follow a link ``url``.
+
+        ``url`` can be:
+
+        * absolute URL;
+        * relative URL;
+        * scrapy.link.Link object (e.g. a link extractor result);
+        * attribute Selector (not SelectorList) - e.g.
+          ``response.css('a::attr(href)')[0]`` or
+          ``response.xpath('//img/@src')[0]``.
+        * a Selector for ``<a>`` element, e.g.
+          ``response.css('a.my_link')[0]``.
+        """
+        if isinstance(url, Link):
+            url = url.url
+        elif isinstance(url, parsel.Selector):
+            url = _url_from_selector(url)
+        elif isinstance(url, parsel.SelectorList):
+            raise ValueError("Please pass either string")
+
+
+        encoding = self.encoding if encoding is None else encoding
+        url = self.urljoin(url)
+        return Request(url, callback,
+                       method=method,
+                       headers=headers,
+                       body=body,
+                       cookies=cookies,
+                       meta=meta,
+                       encoding=encoding,
+                       priority=priority,
+                       dont_filter=dont_filter,
+                       errback=errback)
+
+
+def _url_from_selector(sel):
+    # type: (parsel.Selector) -> str
+    if isinstance(sel.root, six.string_types):
+        # e.g. ::attr(href) result
+        return sel.root
+    if not hasattr(sel.root, 'tag'):
+        raise ValueError("Unsupported selector: %s" % sel)
+    if sel.root.tag != 'a':
+        raise ValueError("Only <a> elements are supported; got <%s>" %
+                         sel.root.tag)
+    href = sel.root.get('href')
+    if href is None:
+        raise ValueError("<a> element has no href attribute: %s" % sel)
+    return href

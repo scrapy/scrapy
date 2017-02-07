@@ -683,6 +683,10 @@ TextResponse objects
 
             response.css('p')
 
+    .. method:: TextResponse.follow(url, ...)
+
+        Return a scrapy.Request instance to follow a link ``url``.
+
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
