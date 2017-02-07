@@ -81,6 +81,9 @@ scrapy.Spider
        specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
 
+       .. note:: This needs to be list of domains, not URLs(for example, use
+       'www.example.com' instead of 'http://www.example.com').
+
    .. attribute:: start_urls
 
        A list of URLs where the spider will begin to crawl from, when no
