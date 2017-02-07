@@ -1,10 +1,6 @@
-from scrapy import twisted_version
+from __future__ import absolute_import
 from .http10 import HTTP10DownloadHandler
-
-if twisted_version >= (11, 1, 0):
-    from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
-else:
-    HTTPDownloadHandler = HTTP10DownloadHandler
+from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
 
 
 # backwards compatibility

@@ -17,7 +17,6 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
-from scrapy import twisted_version
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
@@ -281,8 +280,6 @@ class Https10TestCase(Http10TestCase):
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
     download_handler_cls = HTTP11DownloadHandler
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL('file'))
@@ -366,8 +363,6 @@ class Https11InvalidDNSId(Https11TestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -396,31 +391,27 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
+        crawler = get_crawler(SingleRequestSpider)
+        body = b'1' * 100  # PayloadResource requires body length to be 100
+        request = Request('http://localhost:8998/payload', method='POST',
+                          body=body, meta={'download_maxsize': 50})
+        yield crawler.crawl(seed=request)
+        failure = crawler.spider.meta['failure']
+        # download_maxsize < 100, hence the CancelledError
+        self.assertIsInstance(failure.value, defer.CancelledError)
 
-        if twisted_version > (12, 3, 0):
-
-            crawler = get_crawler(SingleRequestSpider)
-            body = b'1'*100 # PayloadResource requires body length to be 100
-            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+        if six.PY2:
+            request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+            request = request.replace(url='http://localhost:8998/xpayload')
             yield crawler.crawl(seed=request)
-            failure = crawler.spider.meta['failure']
-            # download_maxsize < 100, hence the CancelledError
-            self.assertIsInstance(failure.value, defer.CancelledError)
-
-            if six.PY2:
-                request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-                request = request.replace(url='http://localhost:8998/xpayload')
-                yield crawler.crawl(seed=request)
-                # download_maxsize = 50 is enough for the gzipped response
-                failure = crawler.spider.meta.get('failure')
-                self.assertTrue(failure == None)
-                reason = crawler.spider.meta['close_reason']
-                self.assertTrue(reason, 'finished')
-            else:
-                # See issue https://twistedmatrix.com/trac/ticket/8175
-                raise unittest.SkipTest("xpayload only enabled for PY2")
+            # download_maxsize = 50 is enough for the gzipped response
+            failure = crawler.spider.meta.get('failure')
+            self.assertTrue(failure == None)
+            reason = crawler.spider.meta['close_reason']
+            self.assertTrue(reason, 'finished')
         else:
-            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0")
+            # See issue https://twistedmatrix.com/trac/ticket/8175
+            raise unittest.SkipTest("xpayload only enabled for PY2")
 
 
 class UriResource(resource.Resource):
@@ -500,8 +491,6 @@ class Http10ProxyTestCase(HttpProxyTestCase):
 
 class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
@@ -692,8 +681,6 @@ class FTPTestCase(unittest.TestCase):
     username = "scrapy"
     password = "passwd"
 
-    if twisted_version < (10, 2, 0):
-        skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
     if six.PY3:
         skip = "Twisted missing ftp support for PY3"
 
