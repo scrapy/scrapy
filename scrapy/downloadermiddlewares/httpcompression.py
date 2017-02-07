@@ -1,6 +1,5 @@
 import zlib
 
-
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
