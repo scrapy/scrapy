@@ -142,10 +142,9 @@ class TextResponse(Response):
         if isinstance(url, Link):
             url = url.url
         elif isinstance(url, parsel.Selector):
-            url = _url_from_selector(url)
+            url = _url_from_selector(url).strip()
         elif isinstance(url, parsel.SelectorList):
-            raise ValueError("Please pass either string")
-
+            raise ValueError("SelectorList is not supported")
 
         encoding = self.encoding if encoding is None else encoding
         url = self.urljoin(url)
