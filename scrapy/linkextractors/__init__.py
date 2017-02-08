@@ -40,7 +40,7 @@ IGNORED_EXTENSIONS = [
 
 
 _re_type = type(re.compile("", 0))
-_matches = lambda url, regexs: any((r.search(url) for r in regexs))
+_matches = lambda url, regexs: any(r.search(url) for r in regexs)
 _is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file'}
 
 
@@ -93,8 +93,8 @@ class FilteringLinkExtractor(object):
         if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
             return False
 
-        allowed = [regex.search(url) for regex in self.allow_res] if self.allow_res else [True]
-        denied = [regex.search(url) for regex in self.deny_res] if self.deny_res else []
+        allowed = (regex.search(url) for regex in self.allow_res) if self.allow_res else [True]
+        denied = (regex.search(url) for regex in self.deny_res) if self.deny_res else []
         return any(allowed) and not any(denied)
 
     def _process_links(self, links):
