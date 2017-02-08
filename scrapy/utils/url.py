@@ -103,3 +103,16 @@ def guess_scheme(url):
         return any_to_uri(url)
     else:
         return add_http_if_no_scheme(url)
+
+
+def trim_href_attribute(href):
+    """
+    Process href attribute of ``a`` or ``area`` elements according to HTML5
+    standards (strip all leading and trailing whitespaces). References:
+
+    * https://www.w3.org/TR/html5/links.html#links-created-by-a-and-area-elements
+    * https://www.w3.org/TR/html5/infrastructure.html#valid-url-potentially-surrounded-by-spaces
+    * https://www.w3.org/TR/html5/infrastructure.html#strip-leading-and-trailing-whitespace
+    * https://www.w3.org/TR/html5/infrastructure.html#space-character
+    """
+    return href.strip(' \t\n\r\x0c')

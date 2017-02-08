@@ -1,7 +1,6 @@
 """
 HTMLParser-based link extractor
 """
-
 import warnings
 import six
 from six.moves.html_parser import HTMLParser
@@ -11,12 +10,14 @@ from w3lib.url import safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
+from scrapy.utils.url import trim_href_attribute
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class HtmlParserLinkExtractor(HTMLParser):
 
-    def __init__(self, tag="a", attr="href", process=None, unique=False):
+    def __init__(self, tag="a", attr="href", process=None, unique=False,
+                 strip=True):
         HTMLParser.__init__(self)
 
         warnings.warn(
@@ -29,6 +30,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_attr = process if callable(process) else lambda v: v
         self.unique = unique
+        self.strip = strip
 
     def _extract_links(self, response_text, response_url, response_encoding):
         self.reset()
@@ -70,6 +72,8 @@ class HtmlParserLinkExtractor(HTMLParser):
             for attr, value in attrs:
                 if self.scan_attr(attr):
                     url = self.process_attr(value)
+                    if self.strip:
+                        url = trim_href_attribute(url)
                     link = Link(url=url)
                     self.links.append(link)
                     self.current_link = link

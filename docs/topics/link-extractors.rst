@@ -51,7 +51,7 @@ LxmlLinkExtractor
    :synopsis: lxml's HTMLParser-based link extractors
 
 
-.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
+.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None, strip=True)
 
     LxmlLinkExtractor is the recommended link extractor with handy filtering
     options. It is implemented using lxml's robust HTMLParser.
@@ -131,5 +131,13 @@ LxmlLinkExtractor
                     return m.group(1)
 
     :type process_value: callable
+
+    :param strip: whether to strip whitespaces from extracted attributes.
+        According to HTML5 standard, leading and trailing whitespaces
+        must be stripped from ``href`` attributes of ``<a>`` and ``<area>``
+        elements, so LinkExtractor strips them by default. Set ``strip=False``
+        to turn it off (e.g. if you're extracting urls from elements or
+        attributes which allow leading/trailing whitespaces).
+    :type strip: boolean
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py
