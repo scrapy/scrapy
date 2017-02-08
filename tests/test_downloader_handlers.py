@@ -861,6 +861,7 @@ class DataURITestCase(unittest.TestCase):
     def test_text_charset(self):
         def _test(response):
             self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(response.body, b'\xbe\xd3\xbe')
             self.assertEquals(response.encoding, "iso-8859-7")
 
         request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
