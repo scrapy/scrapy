@@ -1,11 +1,14 @@
 import os
 import sys
+from functools import partial
 from twisted.trial.unittest import TestCase, SkipTest
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
+from scrapy.crawler import Crawler
+from scrapy.settings import Settings
 
 spider = Spider('foo')
 
@@ -19,6 +22,11 @@ class TestDefaultHeadersMiddleware(TestCase):
 
     def tearDown(self):
         os.environ = self._oldenv
+
+    def test_not_enabled(self):
+        settings = Settings({'HTTPPROXY_ENABLED': False})
+        crawler = Crawler(spider, settings)
+        self.assertRaises(NotConfigured, partial(HttpProxyMiddleware.from_crawler, crawler))
 
     def test_no_enviroment_proxies(self):
         os.environ = {'dummy_proxy': 'reset_env_and_do_not_raise'}

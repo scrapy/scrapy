@@ -8,6 +8,7 @@ except ImportError:
 from six.moves.urllib.parse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.python import to_bytes
 
 
@@ -21,6 +22,8 @@ class HttpProxyMiddleware(object):
 
     @classmethod
     def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('HTTPPROXY_ENABLED'):
+            raise NotConfigured
         auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING')
         return cls(auth_encoding)
 
