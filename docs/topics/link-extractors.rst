@@ -134,10 +134,11 @@ LxmlLinkExtractor
 
     :param strip: whether to strip whitespaces from extracted attributes.
         According to HTML5 standard, leading and trailing whitespaces
-        must be stripped from ``href`` attributes of ``<a>`` and ``<area>``
-        elements, so LinkExtractor strips them by default. Set ``strip=False``
-        to turn it off (e.g. if you're extracting urls from elements or
-        attributes which allow leading/trailing whitespaces).
+        must be stripped from ``href`` attributes of ``<a>``, ``<area>``
+        and many other elements, ``src`` attribute of ``<img>``, ``<iframe>``
+        elements, etc., so LinkExtractor strips space chars by default.
+        Set ``strip=False`` to turn it off (e.g. if you're extracting urls
+        from elements or attributes which allow leading/trailing whitespaces).
     :type strip: boolean
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

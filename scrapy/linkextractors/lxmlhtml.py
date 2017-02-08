@@ -2,15 +2,15 @@
 Link extractor based on lxml.html
 """
 import six
-from six.moves.urllib.parse import urlparse, urljoin
+from six.moves.urllib.parse import urljoin
 
 import lxml.etree as etree
+from w3lib.html import strip_html5_whitespace
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.utils.response import get_base_url
-from scrapy.utils.url import trim_href_attribute
 from scrapy.linkextractors import FilteringLinkExtractor
 
 
@@ -53,7 +53,7 @@ class LxmlParserLinkExtractor(object):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             try:
                 if self.strip:
-                    attr_val = trim_href_attribute(attr_val)
+                    attr_val = strip_html5_whitespace(attr_val)
                 attr_val = urljoin(base_url, attr_val)
             except ValueError:
                 continue  # skipping bogus links

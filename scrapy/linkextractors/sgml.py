@@ -7,12 +7,13 @@ import warnings
 from sgmllib import SGMLParser
 
 from w3lib.url import safe_url_string
+from w3lib.html import strip_html5_whitespace
+
 from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_unicode
 from scrapy.utils.response import get_base_url
-from scrapy.utils.url import trim_href_attribute
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -81,10 +82,10 @@ class BaseSgmlLinkExtractor(SGMLParser):
         if self.scan_tag(tag):
             for attr, value in attrs:
                 if self.scan_attr(attr):
+                    if self.strip and value is not None:
+                        value = strip_html5_whitespace(value)
                     url = self.process_value(value)
                     if url is not None:
-                        if self.strip:
-                            url = trim_href_attribute(url)
                         link = Link(url=url, nofollow=rel_has_nofollow(dict(attrs).get('rel')))
                         self.links.append(link)
                         self.current_link = link
