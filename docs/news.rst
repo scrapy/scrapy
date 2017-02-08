@@ -3,7 +3,7 @@
 Release notes
 =============
 
-Scrapy 1.3.1 (2017-02-XX)
+Scrapy 1.3.1 (2017-02-08)
 -------------------------
 
 New features
