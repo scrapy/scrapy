@@ -62,6 +62,27 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertRaises(ValueError, build_component_list, duplicate_bs,
                           convert=lambda x: x.lower())
 
+    def test_valid_numbers(self):
+        # work well with None and numeric values
+        d = {'a': 10, 'b': None, 'c': 15, 'd': 5.0}
+        self.assertEqual(build_component_list(d, convert=lambda x: x),
+                         ['d', 'a', 'c'])
+        d = {'a': 33333333333333333333, 'b': 11111111111111111111, 'c': 22222222222222222222}
+        self.assertEqual(build_component_list(d, convert=lambda x: x),
+                         ['b', 'c', 'a'])
+        # raise exception for invalid values
+        d = {'one': '5'}
+        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+        d = {'one': '1.0'}
+        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+        d = {'one': [1, 2, 3]}
+        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+        d = {'one': {'a': 'a', 'b': 2}}
+        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+        d = {'one': 'lorem ipsum',}
+        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+
+
 
 class UtilsConfTestCase(unittest.TestCase):
 
