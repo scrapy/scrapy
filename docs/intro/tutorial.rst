@@ -225,7 +225,7 @@ You will see something like::
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
-    >>> 
+    >>>
 
 Using the shell, you can try selecting elements using `CSS`_ with the response
 object::
@@ -423,7 +423,7 @@ in the callback, as you can see below::
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('span small::text').extract_first(),
+                    'author': quote.css('small.author::text').extract_first(),
                     'tags': quote.css('div.tags a.tag::text').extract(),
                 }
 
@@ -522,7 +522,7 @@ page, extracting data from it::
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('span small::text').extract_first(),
+                    'author': quote.css('small.author::text').extract_first(),
                     'tags': quote.css('div.tags a.tag::text').extract(),
                 }
 
@@ -568,7 +568,7 @@ this time for scraping author information::
 
         def parse(self, response):
             # follow links to author pages
-            for href in response.css('.author+a::attr(href)').extract():
+            for href in response.css('.author + a::attr(href)').extract():
                 yield scrapy.Request(response.urljoin(href),
                                      callback=self.parse_author)
 
@@ -624,7 +624,7 @@ option when running them::
     scrapy crawl quotes -o quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
-spider attributes by default.  
+spider attributes by default.
 
 In this example, the value provided for the ``tag`` argument will be available
 via ``self.tag``. You can use this to make your spider fetch only quotes
@@ -647,7 +647,7 @@ with a specific tag, building the URL based on the argument::
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('span small a::text').extract_first(),
+                    'author': quote.css('small.author::text').extract_first(),
                 }
 
             next_page = response.css('li.next a::attr(href)').extract_first()
