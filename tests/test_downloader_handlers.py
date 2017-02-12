@@ -19,7 +19,7 @@ from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
-from scrapy.core.downloader.handlers.data import DataURIDownloadHandler
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
