@@ -3,6 +3,16 @@
 Release notes
 =============
 
+Scrapy 1.3.2 (2017-02-13)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Preserve crequest class when converting to/from dicts (utils.reqser) (:issue:`2510`).
+- Use consistent selectors for author field in tutorial (:issue:`2551`).
+- Fix TLS compatibility in Twisted 17+ (:issue:`2558`)
+
 Scrapy 1.3.1 (2017-02-08)
 -------------------------
 
