@@ -7,8 +7,7 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.3 or above
-(except on Windows where Python 3 is not supported yet).
+Scrapy runs on Python 2.7 and Python 3.6 or above.
 
 If you’re already familiar with installation of Python packages,
 you can install Scrapy and its dependencies from PyPI with::
@@ -105,8 +104,8 @@ Python virtualenvs can be created to use Python 2 by default, or Python 3 by def
 Platform specific installation notes
 ====================================
 
-Windows
--------
+Windows (Python 2.7)
+--------------------
 
 * Install Python 2.7 from https://www.python.org/downloads/
 
@@ -141,9 +140,18 @@ Windows
 
       pip install Scrapy
 
-.. note::
-     Python 3 is not supported on Windows. This is because Scrapy core requirement Twisted does not support
-     Python 3 on Windows.
+Windows (Python 3.6)
+--------------------
+
+* Install Python 3.6 from https://www.python.org/downloads/
+
+* Install Visual C++ 2015 Build Tools from http://landinghub.visualstudio.com/visual-cpp-build-tools
+
+* *(Optional but recommended)* Create and activate virtual environment. See https://docs.python.org/3/library/venv.html
+
+* Install Scrapy::
+
+      pip install scrapy
 
 Ubuntu 12.04 or above
 ---------------------

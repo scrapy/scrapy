@@ -53,4 +53,7 @@ setup(
         'PyDispatcher>=2.0.5',
         'service_identity',
     ],
+    extras_require={
+        ':sys_platform == "win32"': ['pypiwin32'],
+    },
 )
