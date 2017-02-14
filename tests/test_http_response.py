@@ -143,6 +143,38 @@ class BaseResponseTest(unittest.TestCase):
             r.css('body')
             r.xpath('//body')
 
+    def test_follow_url_absolute(self):
+        self._assert_followed_url('http://foo.example.com',
+                                  'http://foo.example.com')
+
+    def test_follow_url_relative(self):
+        self._assert_followed_url('foo',
+                                  'http://example.com/foo')
+
+    def test_follow_link(self):
+        self._assert_followed_url(Link('http://example.com/foo'),
+                                  'http://example.com/foo')
+
+    def test_follow_whitespace_url(self):
+        self._assert_followed_url('foo ',
+                                  'http://example.com/foo%20')
+
+    def test_follow_whitespace_link(self):
+        self._assert_followed_url(Link('http://example.com/foo '),
+                                  'http://example.com/foo%20')
+
+    def _assert_followed_url(self, follow_obj, target_url, response=None):
+        if response is None:
+            response = self._links_response()
+        req = response.follow(follow_obj)
+        self.assertEqual(req.url, target_url)
+        return req
+
+    def _links_response(self):
+        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        resp = self.response_class('http://example.com/index', body=body)
+        return resp
+
 
 class TextResponseTest(BaseResponseTest):
 
@@ -354,15 +386,80 @@ class TextResponseTest(BaseResponseTest):
         absolute = 'http://www.example.com/elsewhere/test'
         self.assertEqual(joined, absolute)
 
+    def test_follow_selector(self):
+        resp = self._links_response()
+        urls = [
+            'http://example.com/sample2.html',
+            'http://example.com/sample3.html',
+            'http://example.com/sample3.html',
+            'http://www.google.com/something',
+            'http://example.com/innertag.html'
+        ]
+
+        # select <a> elements
+        for sellist in [resp.css('a'), resp.xpath('//a')]:
+            for sel, url in zip(sellist, urls):
+                self._assert_followed_url(sel, url, response=resp)
+
+        # href attributes should work
+        for sellist in [resp.css('a::attr(href)'), resp.xpath('//a/@href')]:
+            for sel, url in zip(sellist, urls):
+                self._assert_followed_url(sel, url, response=resp)
+
+        # non-a elements are not supported
+        self.assertRaises(ValueError, resp.follow, resp.css('div')[0])
+
+    def test_follow_selector_list(self):
+        resp = self._links_response()
+        self.assertRaisesRegex(ValueError, 'SelectorList',
+                               resp.follow, resp.css('a'))
+
+    def test_follow_selector_attribute(self):
+        resp = self._links_response()
+        for src in resp.css('img::attr(src)'):
+            self._assert_followed_url(src, 'http://example.com/sample2.jpg')
+
+    def test_follow_whitespace_selector(self):
+        resp = self.response_class(
+            'http://example.com',
+            body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
+        )
+        self._assert_followed_url(resp.css('a')[0],
+                                 'http://example.com/foo',
+                                  response=resp)
+        self._assert_followed_url(resp.css('a::attr(href)')[0],
+                                 'http://example.com/foo',
+                                  response=resp)
+
+    def test_follow_encoding(self):
+        resp1 = self.response_class(
+            'http://example.com',
+            encoding='utf8',
+            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('utf8')
+        )
+        req = self._assert_followed_url(
+            resp1.css('a')[0],
+            'http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82',
+            response=resp1,
+        )
+        self.assertEqual(req.encoding, 'utf8')
+
+        resp2 = self.response_class(
+            'http://example.com',
+            encoding='cp1251',
+            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('cp1251')
+        )
+        req = self._assert_followed_url(
+            resp2.css('a')[0],
+            'http://example.com/foo?%EF%F0%E8%E2%E5%F2',
+            response=resp2,
+        )
+        self.assertEqual(req.encoding, 'cp1251')
+
 
 class HtmlResponseTest(TextResponseTest):
 
     response_class = HtmlResponse
-
-    def _links_response(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
-        resp = self.response_class('http://example.com/index', body=body)
-        return resp
 
     def test_html_encoding(self):
 
@@ -395,103 +492,6 @@ class HtmlResponseTest(TextResponseTest):
         body = b"""<html><head><meta charset="gb2312" /><title>Some page</title><body>bla bla</body>"""
         r1 = self.response_class("http://www.example.com", body=body)
         self._assert_response_values(r1, 'gb2312', body)
-
-    def assert_followed_url(self, follow_obj, target_url, response=None):
-        if response is None:
-            response = self._links_response()
-        req = response.follow(follow_obj)
-        self.assertEqual(req.url, target_url)
-        return req
-
-    def test_follow_url_absolute(self):
-        self.assert_followed_url('http://foo.example.com',
-                                 'http://foo.example.com')
-
-    def test_follow_url_relative(self):
-        self.assert_followed_url('foo',
-                                 'http://example.com/foo')
-
-    def test_follow_link(self):
-        self.assert_followed_url(Link('http://example.com/foo'),
-                                 'http://example.com/foo')
-
-    def test_follow_selector(self):
-        resp = self._links_response()
-        urls = [
-            'http://example.com/sample2.html',
-            'http://example.com/sample3.html',
-            'http://example.com/sample3.html',
-            'http://www.google.com/something',
-            'http://example.com/innertag.html'
-        ]
-
-        # select <a> elements
-        for sellist in [resp.css('a'), resp.xpath('//a')]:
-            for sel, url in zip(sellist, urls):
-                self.assert_followed_url(sel, url, response=resp)
-
-        # href attributes should work
-        for sellist in [resp.css('a::attr(href)'), resp.xpath('//a/@href')]:
-            for sel, url in zip(sellist, urls):
-                self.assert_followed_url(sel, url, response=resp)
-
-        # non-a elements are not supported
-        self.assertRaises(ValueError, resp.follow, resp.css('div')[0])
-
-    def test_follow_selector_list(self):
-        resp = self._links_response()
-        self.assertRaisesRegex(ValueError, 'SelectorList',
-                               resp.follow, resp.css('a'))
-
-    def test_follow_selector_attribute(self):
-        resp = self._links_response()
-        for src in resp.css('img::attr(src)'):
-            self.assert_followed_url(src, 'http://example.com/sample2.jpg')
-
-    def test_follow_whitespace_url(self):
-        self.assert_followed_url('foo ',
-                                 'http://example.com/foo%20')
-
-    def test_follow_whitespace_link(self):
-        self.assert_followed_url(Link('http://example.com/foo '),
-                                 'http://example.com/foo%20')
-
-    def test_follow_whitespace_selector(self):
-        resp = self.response_class(
-            'http://example.com',
-            body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
-        )
-        self.assert_followed_url(resp.css('a')[0],
-                                 'http://example.com/foo',
-                                 response=resp)
-        self.assert_followed_url(resp.css('a::attr(href)')[0],
-                                 'http://example.com/foo',
-                                 response=resp)
-
-    def test_follow_encoding(self):
-        resp1 = self.response_class(
-            'http://example.com',
-            encoding='utf8',
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('utf8')
-        )
-        req = self.assert_followed_url(
-            resp1.css('a')[0],
-            'http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82',
-            response=resp1,
-        )
-        self.assertEqual(req.encoding, 'utf8')
-
-        resp2 = self.response_class(
-            'http://example.com',
-            encoding='cp1251',
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('cp1251')
-        )
-        req = self.assert_followed_url(
-            resp2.css('a')[0],
-            'http://example.com/foo?%EF%F0%E8%E2%E5%F2',
-            response=resp2,
-        )
-        self.assertEqual(req.encoding, 'cp1251')
 
 
 class XmlResponseTest(TextResponseTest):

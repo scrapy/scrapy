@@ -140,25 +140,22 @@ class TextResponse(Response):
         * a Selector for ``<a>`` element, e.g.
           ``response.css('a.my_link')[0]``.
         """
-        if isinstance(url, Link):
-            url = url.url
-        elif isinstance(url, parsel.Selector):
+        if isinstance(url, parsel.Selector):
             url = _url_from_selector(url)
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
-
         encoding = self.encoding if encoding is None else encoding
-        url = self.urljoin(url)
-        return Request(url, callback,
-                       method=method,
-                       headers=headers,
-                       body=body,
-                       cookies=cookies,
-                       meta=meta,
-                       encoding=encoding,
-                       priority=priority,
-                       dont_filter=dont_filter,
-                       errback=errback)
+        return super(TextResponse, self).follow(url, callback,
+            method=method,
+            headers=headers,
+            body=body,
+            cookies=cookies,
+            meta=meta,
+            encoding=encoding,
+            priority=priority,
+            dont_filter=dont_filter,
+            errback=errback
+        )
 
 
 def _url_from_selector(sel):

@@ -6,7 +6,9 @@ See documentation in docs/topics/request-response.rst
 """
 from six.moves.urllib.parse import urljoin
 
+from scrapy.http.request import Request
 from scrapy.http.headers import Headers
+from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
 from scrapy.exceptions import NotSupported
@@ -101,3 +103,30 @@ class Response(object_ref):
         is text (subclasses of TextResponse).
         """
         raise NotSupported("Response content isn't text")
+
+    def follow(self, url, callback=None, method='GET', headers=None, body=None,
+               cookies=None, meta=None, encoding='utf-8', priority=0,
+               dont_filter=False, errback=None):
+        # type: (...) -> Request
+        """
+        Return a scrapy.Request instance to follow a link ``url``.
+
+        ``url`` can be:
+
+        * absolute URL;
+        * relative URL;
+        * scrapy.link.Link object.
+        """
+        if isinstance(url, Link):
+            url = url.url
+        url = self.urljoin(url)
+        return Request(url, callback,
+                       method=method,
+                       headers=headers,
+                       body=body,
+                       cookies=cookies,
+                       meta=meta,
+                       encoding=encoding,
+                       priority=priority,
+                       dont_filter=dont_filter,
+                       errback=errback)
