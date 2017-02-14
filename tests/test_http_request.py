@@ -8,8 +8,10 @@ from six.moves import xmlrpc_client as xmlrpclib
 from six.moves.urllib.parse import urlparse, parse_qs, unquote
 if six.PY3:
     from urllib.parse import unquote_to_bytes
+from collections import OrderedDict
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
+from scrapy.http import Request, FormRequest, MultipartFile, XmlRpcRequest, Headers, \
+                        HtmlResponse, MultipartFormRequest
 from scrapy.utils.python import to_bytes, to_native_str
 
 
@@ -1070,6 +1072,81 @@ class XmlRpcRequestTest(RequestTest):
 
     def test_latin1(self):
         self._test_request(params=(u'pas£',), encoding='latin1')
+
+
+class MultipartFormRequestTest(RequestTest):
+
+    request_class = MultipartFormRequest
+    default_method = 'POST'
+    default_headers = {b'Content-Type': [b'multipart/form-data']}
+
+    def test_multpart_text_body(self):
+        data = {b'field': b'value'}
+        headers = {b'Content-Type': b'multipart/form-data'}
+        r1 = self.request_class("http://www.example.com", formdata=data, headers=headers)
+        boundary1 = r1._boundary
+        body = b'--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="field"' + \
+               b'\r\n' + \
+               b'\r\nvalue' + \
+               b'\r\n--' + boundary1 + b'--'
+        self.assertEqual(r1.body, body)
+
+    def test_multpart_unicode_body(self):
+        data = {u'Price £': u'£ 100'}
+        headers = {b'Content-Type': b'multipart/form-data'}
+        r1 = self.request_class("http://www.example.com", formdata=data, headers=headers)
+        boundary1 = r1._boundary
+        body = b'--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="Price \xc2\xa3"' + \
+               b'\r\n' + \
+               b'\r\n\xc2\xa3 100' + \
+               b'\r\n--' + boundary1 + b'--'
+        self.assertEqual(r1.body, body)
+
+    def test_multipart_file(self):
+        sample_file = MultipartFile(name='sample.txt', content=u'Text file content £ 100')
+
+        data = OrderedDict((
+            (u'Price £', u'£ 100'),
+            ('file', sample_file)
+        ))
+        headers = {b'Content-Type': b'multipart/form-data'}
+        r1 = self.request_class("http://www.example.com", formdata=data, headers=headers)
+        boundary1 = r1._boundary
+        body = b'--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="Price \xc2\xa3"' + \
+               b'\r\n' + \
+               b'\r\n\xc2\xa3 100' + \
+               b'\r\n--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="file"; filename="sample.txt"' + \
+               b'\r\nContent-Type: application/octet-stream' + \
+               b'\r\n' + \
+               b'\r\nText file content \xc2\xa3 100' + \
+               b'\r\n--' + boundary1 + b'--'
+        self.assertEqual(r1.body, body)
+
+    def test_multipart_file_mimetype(self):
+        sample_file = MultipartFile(name='sample.txt', content=u'Text file content £ 100', mimetype='text/plain')
+
+        data = OrderedDict((
+            (u'Price £', u'£ 100'),
+            ('file', sample_file)
+        ))
+        headers = {b'Content-Type': b'multipart/form-data'}
+        r1 = self.request_class("http://www.example.com", formdata=data, headers=headers)
+        boundary1 = r1._boundary
+        body = b'--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="Price \xc2\xa3"' + \
+               b'\r\n' + \
+               b'\r\n\xc2\xa3 100' + \
+               b'\r\n--' + boundary1 + \
+               b'\r\nContent-Disposition: form-data; name="file"; filename="sample.txt"' + \
+               b'\r\nContent-Type: text/plain' + \
+               b'\r\n' + \
+               b'\r\nText file content \xc2\xa3 100' + \
+               b'\r\n--' + boundary1 + b'--'
+        self.assertEqual(r1.body, body)
 
 
 if __name__ == "__main__":

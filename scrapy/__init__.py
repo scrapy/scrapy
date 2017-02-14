@@ -32,7 +32,7 @@ twisted_version = (_txv.major, _txv.minor, _txv.micro)
 
 # Declare top-level shortcuts
 from scrapy.spiders import Spider
-from scrapy.http import Request, FormRequest
+from scrapy.http import Request, FormRequest, MultipartFormRequest
 from scrapy.selector import Selector
 from scrapy.item import Item, Field
 
