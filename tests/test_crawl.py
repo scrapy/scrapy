@@ -1,5 +1,4 @@
 import json
-import socket
 import logging
 
 from testfixtures import LogCapture
@@ -9,7 +8,6 @@ from twisted.trial.unittest import TestCase
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.python import to_unicode
-from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
@@ -91,12 +89,11 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
-        with mock.patch('socket.gethostbyname',
-                        side_effect=socket.gaierror(-5, 'No address associated with hostname')):
-            crawler = self.runner.create_crawler(SimpleSpider)
-            with LogCapture() as l:
-                yield crawler.crawl("http://example.com/")
-            self._assert_retried(l)
+        crawler = self.runner.create_crawler(SimpleSpider)
+        with LogCapture() as l:
+            # try to fetch the homepage of a non-existent domain
+            yield crawler.crawl("http://dns.resolution.invalid./")
+        self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):

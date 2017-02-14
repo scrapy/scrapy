@@ -1,5 +1,6 @@
 import os
 import sys
+import numbers
 from operator import itemgetter
 
 import six
@@ -34,6 +35,13 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             _check_components(compdict)
             return {convert(k): v for k, v in six.iteritems(compdict)}
 
+    def _validate_values(compdict):
+        """Fail if a value in the components dict is not a real number or None."""
+        for name, value in six.iteritems(compdict):
+            if value is not None and not isinstance(value, numbers.Real):
+                raise ValueError('Invalid value {} for component {}, please provide ' \
+                                 'a real number or None instead'.format(value, name))
+
     # BEGIN Backwards compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
         _check_components(custom)
@@ -43,6 +51,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         compdict.update(custom)
     # END Backwards compatibility
 
+    _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
     return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
 

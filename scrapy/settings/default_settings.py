@@ -174,6 +174,7 @@ HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
+HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
 IMAGES_STORE_S3_ACL = 'private'
