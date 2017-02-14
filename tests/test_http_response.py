@@ -411,8 +411,8 @@ class TextResponseTest(BaseResponseTest):
 
     def test_follow_selector_list(self):
         resp = self._links_response()
-        self.assertRaisesRegex(ValueError, 'SelectorList',
-                               resp.follow, resp.css('a'))
+        self.assertRaisesRegexp(ValueError, 'SelectorList',
+                                resp.follow, resp.css('a'))
 
     def test_follow_selector_attribute(self):
         resp = self._links_response()
@@ -435,7 +435,7 @@ class TextResponseTest(BaseResponseTest):
         resp1 = self.response_class(
             'http://example.com',
             encoding='utf8',
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('utf8')
+            body=u'<html><body><a href="foo?привет">click me</a></body></html>'.encode('utf8')
         )
         req = self._assert_followed_url(
             resp1.css('a')[0],
@@ -447,7 +447,7 @@ class TextResponseTest(BaseResponseTest):
         resp2 = self.response_class(
             'http://example.com',
             encoding='cp1251',
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode('cp1251')
+            body=u'<html><body><a href="foo?привет">click me</a></body></html>'.encode('cp1251')
         )
         req = self._assert_followed_url(
             resp2.css('a')[0],
