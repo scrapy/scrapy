@@ -20,23 +20,25 @@ class HttpProxyMiddleware(object):
         for type, url in getproxies().items():
             self.proxies[type] = self._get_proxy(url, type)
 
-        if not self.proxies:
-            raise NotConfigured
-
     @classmethod
     def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('HTTPPROXY_ENABLED'):
+            raise NotConfigured
         auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING')
         return cls(auth_encoding)
+
+    def _basic_auth_header(self, username, password):
+        user_pass = to_bytes(
+            '%s:%s' % (unquote(username), unquote(password)),
+            encoding=self.auth_encoding)
+        return base64.b64encode(user_pass).strip()
 
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
 
         if user:
-            user_pass = to_bytes(
-                '%s:%s' % (unquote(user), unquote(password)),
-                encoding=self.auth_encoding)
-            creds = base64.b64encode(user_pass).strip()
+            creds = self._basic_auth_header(user, password)
         else:
             creds = None
 
@@ -45,6 +47,15 @@ class HttpProxyMiddleware(object):
     def process_request(self, request, spider):
         # ignore if proxy is already set
         if 'proxy' in request.meta:
+            if request.meta['proxy'] is None:
+                return
+            # extract credentials if present
+            creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
+            request.meta['proxy'] = proxy_url
+            if creds and not request.headers.get('Proxy-Authorization'):
+                request.headers['Proxy-Authorization'] = b'Basic ' + creds
+            return
+        elif not self.proxies:
             return
 
         parsed = urlparse_cached(request)
