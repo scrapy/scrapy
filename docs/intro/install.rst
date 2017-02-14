@@ -7,7 +7,8 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.6.
+Scrapy runs on Python 2.7 and Python 3.3 or above
+(except on Windows where Python 3.6 is required).
 
 If you’re already familiar with installation of Python packages,
 you can install Scrapy and its dependencies from PyPI with::
