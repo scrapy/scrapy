@@ -36,18 +36,16 @@ class RetryMiddleware(object):
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError, TunnelError)
 
-    def __init__(self, crawler):
-        settings = crawler.settings
+    def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
             raise NotConfigured
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
-        self.stats = crawler.stats
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler)
+        return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_retry', False):
@@ -65,6 +63,7 @@ class RetryMiddleware(object):
     def _retry(self, request, reason, spider):
         retries = request.meta.get('retry_times', 0) + 1
 
+        stats = spider.crawler.stats
         if retries <= self.max_retry_times:
             logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
@@ -77,11 +76,11 @@ class RetryMiddleware(object):
             if isinstance(reason, Exception):
                 reason = global_object_name(reason.__class__)
 
-            self.stats.inc_value('retry/count')
-            self.stats.inc_value('retry/reason_count/%s' % reason)
+            stats.inc_value('retry/count')
+            stats.inc_value('retry/reason_count/%s' % reason)
             return retryreq
         else:
-            self.stats.inc_value('retry/max_reached')
+            stats.inc_value('retry/max_reached')
             logger.debug("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
                          extra={'spider': spider})
