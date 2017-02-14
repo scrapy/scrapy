@@ -11,6 +11,7 @@ from six.moves.urllib.parse import urljoin
 import parsel
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
+from w3lib.html import strip_html5_whitespace
 
 from scrapy.link import Link
 from scrapy.http.request import Request
@@ -142,7 +143,7 @@ class TextResponse(Response):
         if isinstance(url, Link):
             url = url.url
         elif isinstance(url, parsel.Selector):
-            url = _url_from_selector(url).strip()
+            url = _url_from_selector(url)
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
 
@@ -164,7 +165,7 @@ def _url_from_selector(sel):
     # type: (parsel.Selector) -> str
     if isinstance(sel.root, six.string_types):
         # e.g. ::attr(href) result
-        return sel.root
+        return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
         raise ValueError("Unsupported selector: %s" % sel)
     if sel.root.tag != 'a':
@@ -173,4 +174,4 @@ def _url_from_selector(sel):
     href = sel.root.get('href')
     if href is None:
         raise ValueError("<a> element has no href attribute: %s" % sel)
-    return href
+    return strip_html5_whitespace(href)
