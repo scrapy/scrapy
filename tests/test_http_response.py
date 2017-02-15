@@ -414,10 +414,23 @@ class TextResponseTest(BaseResponseTest):
         self.assertRaisesRegexp(ValueError, 'SelectorList',
                                 resp.follow, resp.css('a'))
 
+    def test_follow_selector_invalid(self):
+        resp = self._links_response()
+        self.assertRaisesRegexp(ValueError, 'Unsupported',
+                                resp.follow, resp.xpath('count(//div)')[0])
+
     def test_follow_selector_attribute(self):
         resp = self._links_response()
         for src in resp.css('img::attr(src)'):
             self._assert_followed_url(src, 'http://example.com/sample2.jpg')
+
+    def test_follow_selector_no_href(self):
+        resp = self.response_class(
+            url='http://example.com',
+            body=b'<html><body><a name=123>click me</a></body></html>',
+        )
+        self.assertRaisesRegexp(ValueError, 'no href',
+                                resp.follow, resp.css('a')[0])
 
     def test_follow_whitespace_selector(self):
         resp = self.response_class(
