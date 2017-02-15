@@ -109,13 +109,14 @@ class Response(object_ref):
                dont_filter=False, errback=None):
         # type: (...) -> Request
         """
-        Return a scrapy.Request instance to follow a link ``url``.
-
-        ``url`` can be:
-
-        * absolute URL;
-        * relative URL;
-        * scrapy.link.Link object.
+        Return a :class:`~.Request` instance to follow a link ``url``.
+        It accepts the same arguments as ``Request.__init__`` method,
+        but ``url`` can be a relative URL or a ``scrapy.link.Link`` object,
+        not only an absolute URL.
+        
+        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow` 
+        method which supports selectors in addition to absolute/relative URLs
+        and Link objects.
         """
         if isinstance(url, Link):
             url = url.url

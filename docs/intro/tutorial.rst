@@ -399,7 +399,7 @@ quotes elements and put them together into a Python dictionary::
     >>>
 
 Extracting data in our spider
-------------------------------
+-----------------------------
 
 Let's get back to our spider. Until now, it doesn't extract any data in
 particular, just saves the whole HTML page to a local file. Let's integrate the
@@ -551,8 +551,14 @@ In our example, it creates a sort of loop, following all the links to the next p
 until it doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
+
+.. _response-follow-example:
+
+A shortcut for creating Requests
+--------------------------------
+
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.TextResponse.follow>` method::
+:meth:`response.follow <scrapy.http.TextResponse.follow>`::
 
     import scrapy
 
@@ -571,13 +577,32 @@ As a shortcut for creating Request objects you can use
                     'tags': quote.css('div.tags a.tag::text').extract(),
                 }
 
-            for href in response.css('li.next a::attr(href)'):
-                yield response.follow(href, callback=self.parse)
+            next_page = response.css('li.next a::attr(href)').extract_first()
+            if next_page is not None:
+                yield response.follow(next_page, callback=self.parse)
 
-Unlike scrapy.Request, ``response.follow`` supports
-relative URLs directly; you can also pass a selector to it instead of
-a string. Note that ``response.follow`` just returns a Request instance;
-you still have to yield this Request.
+Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
+need to call urljoin. Note that ``response.follow`` just returns a Request
+instance; you still have to yield this Request.
+
+You can also pass a selector to ``response.follow`` instead of a string;
+this selector should extract necessary attributes::
+
+    for href in response.css('li.next a::attr(href)'):
+        yield response.follow(href, callback=self.parse)
+
+For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
+attribute automatically. So the code can be shortened further::
+
+    for a in response.css('li.next a'):
+        yield response.follow(a, callback=self.parse)
+
+.. note::
+
+    ``response.follow(response.css('li.next a'))`` is not valid because
+    ``response.css`` returns a list-like object with selectors for all results,
+    not a single selector. A ``for`` loop like in the example above, or
+    ``response.follow(response.css('li.next a')[0])`` is fine.
 
 More examples and patterns
 --------------------------

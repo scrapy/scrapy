@@ -13,7 +13,6 @@ from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from w3lib.html import strip_html5_whitespace
 
-from scrapy.link import Link
 from scrapy.http.request import Request
 from scrapy.http.response import Response
 from scrapy.utils.response import get_base_url
@@ -127,18 +126,19 @@ class TextResponse(Response):
                dont_filter=False, errback=None):
         # type: (...) -> Request
         """
-        Return a scrapy.Request instance to follow a link ``url``.
-
-        ``url`` can be:
-
-        * absolute URL;
-        * relative URL;
-        * scrapy.link.Link object (e.g. a link extractor result);
-        * attribute Selector (not SelectorList) - e.g.
+        Return a :class:`~.Request` instance to follow a link ``url``.
+        It accepts the same arguments as ``Request.__init__`` method,
+        but ``url`` can be not only an absolute URL, but also
+        
+        * a relative URL;
+        * a scrapy.link.Link object (e.g. a link extractor result);
+        * an attribute Selector (not SelectorList) - e.g.
           ``response.css('a::attr(href)')[0]`` or
           ``response.xpath('//img/@src')[0]``.
         * a Selector for ``<a>`` element, e.g.
           ``response.css('a.my_link')[0]``.
+          
+        See :ref:`response-follow-example` for usage examples.
         """
         if isinstance(url, parsel.Selector):
             url = _url_from_selector(url)
