@@ -36,6 +36,14 @@ class LoggingContribTest(unittest.TestCase):
         self.assertEqual(logline,
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
+    def test_flags_in_request(self):
+        req = Request("http://www.example.com", flags=['test','flag'])
+        res = Response("http://www.example.com")
+        logkws = self.formatter.crawled(req, res, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline,
+        "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
+
     def test_dropped(self):
         item = {}
         exception = Exception(u"\u2018")
