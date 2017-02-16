@@ -12,6 +12,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import method_is_overridden
 
 
 class Spider(object_ref):
@@ -67,7 +68,7 @@ class Spider(object_ref):
 
     def start_requests(self):
         cls = self.__class__
-        if cls.make_requests_from_url is not Spider.make_requests_from_url:
+        if method_is_overridden(cls, Spider, 'make_requests_from_url'):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "
                 "won't be called in future Scrapy releases. Please "
