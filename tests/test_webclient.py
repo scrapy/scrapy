@@ -350,7 +350,7 @@ class WebClientTestCase(unittest.TestCase):
                 b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
                 b'<a href="/file">click here</a>\n    </body>\n</html>\n')
 
-    def test_Encoding(self):
+    def test_encoding(self):
         """ Test that non-standart body encoding matches
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
