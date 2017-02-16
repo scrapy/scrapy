@@ -1,6 +1,7 @@
 import os
 import six
 import contextlib
+import shutil
 try:
     from unittest import mock
 except ImportError:
@@ -84,10 +85,12 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        fd = open(self.tmpname + '^', 'w')
-        fd.write('0123456789')
-        fd.close()
+        with open(self.tmpname + '^', 'w') as f:
+            f.write('0123456789')
         self.download_request = FileDownloadHandler(Settings()).download_request
+
+    def tearDown(self):
+        os.unlink(self.tmpname + '^')
 
     def test_download(self):
         def _test(response):
@@ -134,10 +137,10 @@ class HttpTestCase(unittest.TestCase):
     certfile = 'keys/cert.pem'
 
     def setUp(self):
-        name = self.mktemp()
-        os.mkdir(name)
-        FilePath(name).child("file").setContent(b"0123456789")
-        r = static.File(name)
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
@@ -165,6 +168,7 @@ class HttpTestCase(unittest.TestCase):
         yield self.port.stopListening()
         if hasattr(self.download_handler, 'close'):
             yield self.download_handler.close()
+        shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
         return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
@@ -708,6 +712,9 @@ class FTPTestCase(unittest.TestCase):
         self.portNum = self.port.getHost().port
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
 
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
         def _clean(data):

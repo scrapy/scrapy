@@ -4,7 +4,7 @@ Tests borrowed from the twisted.web.client tests.
 """
 import os
 import six
-from six.moves.urllib.parse import urlparse
+import shutil
 
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
@@ -12,6 +12,7 @@ from twisted.internet import reactor, defer
 from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
+from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import webclient as client
 from scrapy.http import Request, Headers
@@ -229,10 +230,10 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        name = self.mktemp()
-        os.mkdir(name)
-        FilePath(name).child("file").setContent(b"0123456789")
-        r = static.File(name)
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"error", ErrorResource())
@@ -246,8 +247,10 @@ class WebClientTestCase(unittest.TestCase):
         self.port = self._listen(self.wrapper)
         self.portno = self.port.getHost().port
 
+    @inlineCallbacks
     def tearDown(self):
-        return self.port.stopListening()
+        yield self.port.stopListening()
+        shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
         return "http://127.0.0.1:%d/%s" % (self.portno, path)
@@ -266,7 +269,6 @@ class WebClientTestCase(unittest.TestCase):
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
                 self.assertEquals, to_bytes("www.example.com"))])
 
-
     def test_getPage(self):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
@@ -275,7 +277,6 @@ class WebClientTestCase(unittest.TestCase):
         d = getPage(self.getURL("file"))
         d.addCallback(self.assertEquals, b"0123456789")
         return d
-
 
     def test_getPageHead(self):
         """
@@ -289,7 +290,6 @@ class WebClientTestCase(unittest.TestCase):
             _getPage("head").addCallback(self.assertEqual, b""),
             _getPage("HEAD").addCallback(self.assertEqual, b"")])
 
-
     def test_timeoutNotTriggering(self):
         """
         When a non-zero timeout is passed to L{getPage} and the page is
@@ -300,7 +300,6 @@ class WebClientTestCase(unittest.TestCase):
         d.addCallback(
             self.assertEquals, to_bytes("127.0.0.1:%d" % self.portno))
         return d
-
 
     def test_timeoutTriggering(self):
         """
