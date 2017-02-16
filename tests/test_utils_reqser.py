@@ -25,7 +25,8 @@ class RequestSerializationTest(unittest.TestCase):
             cookies={'currency': u'руб'},
             encoding='latin-1',
             priority=20,
-            meta={'a': 'b'})
+            meta={'a': 'b'},
+            flags=['testFlag'])
         self._assert_serializes_ok(r)
 
     def test_latin1_body(self):
@@ -54,6 +55,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1._encoding, r2._encoding)
         self.assertEqual(r1.priority, r2.priority)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
+        self.assertEqual(r1.flags, r2.flags)
 
     def test_request_class(self):
         r = FormRequest("http://www.example.com")
