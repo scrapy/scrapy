@@ -105,7 +105,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._tunneledHost = host
         self._tunneledPort = port
         self._contextFactory = contextFactory
-        self._connectBuffer = b''
+        self._connectBuffer = bytearray()
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
