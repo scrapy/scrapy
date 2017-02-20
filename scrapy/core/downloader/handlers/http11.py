@@ -105,6 +105,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._tunneledHost = host
         self._tunneledPort = port
         self._contextFactory = contextFactory
+        self._connectBuffer = bytearray()
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
@@ -121,8 +122,16 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         created, notifies the client that we are ready to send requests. If not
         raises a TunnelError.
         """
+        self._connectBuffer += rcvd_bytes
+        # make sure that enough (all) bytes are consumed
+        # and that we've got all HTTP headers (ending with a blank line)
+        # from the proxy so that we don't send those bytes to the TLS layer
+        #
+        # see https://github.com/scrapy/scrapy/issues/2491
+        if b'\r\n\r\n' not in self._connectBuffer:
+            return
         self._protocol.dataReceived = self._protocolDataReceived
-        respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(rcvd_bytes)
+        respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group('status')) == 200:
             try:
                 # this sets proper Server Name Indication extension
