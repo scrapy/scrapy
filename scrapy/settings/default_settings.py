@@ -208,7 +208,7 @@ MEMDEBUG_ENABLED = False        # enable memory debugging
 MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown
 
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
-MEMUSAGE_ENABLED = False
+MEMUSAGE_ENABLED = True
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_REPORT = False
