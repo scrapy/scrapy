@@ -376,6 +376,10 @@ fields with form data from :class:`Response` objects.
        control clicked (instead of disabling it) you can also use the
        ``clickdata`` argument.
 
+       .. caution:: Using this method with select elements which have leading
+          or trailing whitespace in the option values will not work due to a
+          `bug in lxml`_, which should be fixed in lxml 3.8 and above.
+
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
        :type response: :class:`Response` object
@@ -710,3 +714,4 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
