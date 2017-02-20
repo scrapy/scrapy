@@ -686,6 +686,42 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FTP_PASSIVE_MODE
+
+FTP_PASSIVE_MODE
+----------------
+
+Default: ``True``
+
+Whether or not to use passive mode when initiating FTP transfers.
+
+.. setting:: FTP_PASSWORD
+
+FTP_PASSWORD
+------------
+
+Default: ``"guest"``
+
+The password to use for FTP connections when there is no ``"ftp_password"``
+in ``Request`` meta.
+
+.. note::
+    Paraphrasing `RFC 1635`_, although it is common to use either the password
+    "guest" or one's e-mail address for anonymous FTP,
+    some FTP servers explicitly ask for the user's e-mail address
+    and will not allow login with the "guest" password.
+
+.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+
+.. setting:: FTP_USER
+
+FTP_USER
+--------
+
+Default: ``"anonymous"``
+
+The username to use for FTP connections when there is no ``"ftp_user"``
+in ``Request`` meta.
 
 .. setting:: ITEM_PIPELINES
 
