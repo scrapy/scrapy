@@ -18,7 +18,7 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None):
+                 dont_filter=False, errback=None, flags=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
@@ -36,6 +36,7 @@ class Request(object_ref):
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None
+        self.flags = [] if flags is None else list(flags)
 
     @property
     def meta(self):

@@ -121,6 +121,9 @@ Request objects
        see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
 
+    :param flags:  Flags sent to the request, can be used for logging or similar purposes.
+    :type flags: list
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
