@@ -117,12 +117,14 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
     def test_extraction(self):
         # Default arguments
         lx = HtmlParserLinkExtractor()
-        self.assertEqual(lx.extract_links(self.response),
-                         [Link(url='http://example.com/sample2.html', text=u'sample 2'),
-                          Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
-                          Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
-                          Link(url='http://www.google.com/something', text=u''),
-                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+        self.assertEqual(lx.extract_links(self.response), [
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
+            Link(url='http://www.google.com/something', text=u''),
+            Link(url='http://example.com/innertag.html', text=u'inner tag'),
+            Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
+        ])
 
     def test_link_wrong_href(self):
         html = """
@@ -220,3 +222,9 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual([link for link in lx.extract_links(response)], [
             Link(url='http://b.com/test.html', text=u'', nofollow=False),
         ])
+
+    @unittest.expectedFailure
+    def test_extraction(self):
+        # RegexLinkExtractor doesn't parse URLs with leading/trailing
+        # whitespaces correctly.
+        super(RegexLinkExtractorTestCase, self).test_extraction()
