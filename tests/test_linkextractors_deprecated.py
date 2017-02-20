@@ -143,6 +143,7 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
 
 class SgmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     extractor_cls = SgmlLinkExtractor
+    escapes_whitespace = True
 
     def test_deny_extensions(self):
         html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
