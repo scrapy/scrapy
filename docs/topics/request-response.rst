@@ -601,6 +601,9 @@ Response objects
 
             urlparse.urljoin(response.url, url)
 
+    .. automethod:: Response.follow
+
+
 .. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
@@ -686,6 +689,8 @@ TextResponse objects
         A shortcut to ``TextResponse.selector.css(query)``::
 
             response.css('p')
+
+    .. automethod:: TextResponse.follow
 
     .. method:: TextResponse.body_as_unicode()
 
