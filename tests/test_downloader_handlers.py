@@ -5,6 +5,7 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -710,6 +711,9 @@ class BaseFTPTestCase(unittest.TestCase):
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
 
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
         def _clean(data):
             self.download_handler.client.transport.loseConnection()
@@ -817,3 +821,6 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         self.portNum = self.port.getHost().port
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
