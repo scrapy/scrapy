@@ -705,6 +705,14 @@ Default: ``"guest"``
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
 
+.. note::
+    Paraphrasing `RFC 1635`_, although it is common to use either the password
+    "guest" or one's e-mail address for anonymous FTP,
+    some FTP servers explicitly ask for the user's e-mail address
+    and will not allow login with the "guest" password.
+
+.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+
 .. setting:: FTP_USER
 
 FTP_USER
