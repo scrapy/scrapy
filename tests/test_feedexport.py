@@ -57,8 +57,11 @@ class FileFeedStorageTest(unittest.TestCase):
         file.write(b"content")
         yield storage.store(file)
         self.assertTrue(os.path.exists(path))
-        with open(path, 'rb') as fp:
-            self.assertEqual(fp.read(), b"content")
+        try:
+            with open(path, 'rb') as fp:
+                self.assertEqual(fp.read(), b"content")
+        finally:
+            os.unlink(path)
 
 
 class FTPFeedStorageTest(unittest.TestCase):
@@ -79,12 +82,15 @@ class FTPFeedStorageTest(unittest.TestCase):
         file.write(b"content")
         yield storage.store(file)
         self.assertTrue(os.path.exists(path))
-        with open(path, 'rb') as fp:
-            self.assertEqual(fp.read(), b"content")
-        # again, to check s3 objects are overwritten
-        yield storage.store(BytesIO(b"new content"))
-        with open(path, 'rb') as fp:
-            self.assertEqual(fp.read(), b"new content")
+        try:
+            with open(path, 'rb') as fp:
+                self.assertEqual(fp.read(), b"content")
+            # again, to check s3 objects are overwritten
+            yield storage.store(BytesIO(b"new content"))
+            with open(path, 'rb') as fp:
+                self.assertEqual(fp.read(), b"new content")
+        finally:
+            os.unlink(path)
 
 
 class BlockingFeedStorageTest(unittest.TestCase):
