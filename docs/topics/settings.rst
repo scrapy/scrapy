@@ -700,7 +700,7 @@ Whether or not to use passive mode when initiating FTP transfers.
 FTP_PASSWORD
 ------------
 
-Default: ``"anonymous@example.com"``
+Default: ``"guest"``
 
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
