@@ -328,10 +328,10 @@ Default: ``True``
 
 Whether to enable referer middleware.
 
-.. setting:: REFERER_POLICY
+.. setting:: REFERRER_POLICY
 
-REFERER_POLICY
-^^^^^^^^^^^^^^
+REFERRER_POLICY
+^^^^^^^^^^^^^^^
 
 .. versionadded:: 1.4
 
@@ -344,10 +344,10 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 .. note::
     You can also set the Referrer Policy per request,
     using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
-    with the same acceptable values as for the ``REFERER_POLICY`` setting.
+    with the same acceptable values as for the ``REFERRER_POLICY`` setting.
 
-Acceptable values for REFERER_POLICY
-************************************
+Acceptable values for REFERRER_POLICY
+*************************************
 
 - either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
   subclass — a custom policy or one of the built-in ones (see classes below),

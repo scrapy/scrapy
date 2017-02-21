@@ -234,7 +234,7 @@ REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
-REFERER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
+REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests

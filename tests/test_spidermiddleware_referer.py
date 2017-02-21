@@ -289,35 +289,35 @@ class TestRefererMiddlewareDefault(MixinDefault, TestRefererMiddleware):
 
 # --- Tests using settings to set policy using class path
 class TestRefererMiddlewareSettingsNoReferrer(MixinNoReferrer, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerPolicy'}
 
 
 class TestRefererMiddlewareSettingsNoReferrerWhenDowngrade(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
 
 
 class TestRefererMiddlewareSettingsSameOrigin(MixinSameOrigin, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsOrigin(MixinOrigin, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsStrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsOriginWhenCrossOrigin(MixinOriginWhenCrossOrigin, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsStrictOriginWhenCrossOrigin(MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy'}
 
 
 class TestRefererMiddlewareSettingsUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'}
 
 
 class CustomPythonOrgPolicy(ReferrerPolicy):
@@ -336,7 +336,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
 
 
 class TestRefererMiddlewareSettingsCustomPolicy(TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'tests.test_spidermiddleware_referer.CustomPythonOrgPolicy'}
+    settings = {'REFERRER_POLICY': 'tests.test_spidermiddleware_referer.CustomPythonOrgPolicy'}
     scenarii = [
         ('https://example.com/',    'https://scrapy.org/',  b'https://python.org/'),
         ('http://example.com/',     'http://scrapy.org/',   b'http://python.org/'),
@@ -385,17 +385,17 @@ class TestRefererMiddlewareUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
 
 
 class TestRefererMiddlewareMetaPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
 
 class TestRefererMiddlewareMetaPredecence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
     req_meta = {'referrer_policy': POLICY_NO_REFERRER}
 
 
 class TestRefererMiddlewareMetaPredecence003(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
 
@@ -411,7 +411,7 @@ class TestRefererMiddlewareSettingsPolicyByName(TestCase):
                 (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
                 (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
             ]:
-            settings = Settings({'REFERER_POLICY': s})
+            settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
             self.assertEquals(mw.default_policy, p)
 
@@ -425,24 +425,24 @@ class TestRefererMiddlewareSettingsPolicyByName(TestCase):
                 (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
                 (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
             ]:
-            settings = Settings({'REFERER_POLICY': s.upper()})
+            settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
             self.assertEquals(mw.default_policy, p)
 
     def test_invalid_name(self):
-        settings = Settings({'REFERER_POLICY': 'some-custom-unknown-policy'})
+        settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(NotConfigured):
             mw = RefererMiddleware(settings)
 
 
 class TestRefererMiddlewarePolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_UNSAFE_URL.upper()}
 
 class TestRefererMiddlewarePolicyHeaderPredecence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER.swapcase()}
 
 class TestRefererMiddlewarePolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
-    settings = {'REFERER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}

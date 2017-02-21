@@ -266,7 +266,7 @@ class RefererMiddleware(object):
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
         if settings is not None:
-            policy = settings.get('REFERER_POLICY')
+            policy = settings.get('REFERRER_POLICY')
             if policy is not None:
                 # expect a string for the path to the policy class
                 try:
