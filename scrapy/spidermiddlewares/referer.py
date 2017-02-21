@@ -240,7 +240,11 @@ class LegacyPolicy(ReferrerPolicy):
 
 
 class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
-
+    """
+    A variant of "no-referrer-when-downgrade",
+    with the addition that "Referer" is not sent if the parent request was
+    using ``file://`` or ``s3://`` scheme.
+    """
     NOREFERRER_SCHEMES = LOCAL_SCHEMES + ('file', 's3')
     name = POLICY_SCRAPY_DEFAULT
 
