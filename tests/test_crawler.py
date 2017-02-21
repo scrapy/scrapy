@@ -1,3 +1,6 @@
+import logging
+import os
+import tempfile
 import warnings
 import unittest
 
@@ -5,6 +8,7 @@ import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
+from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
@@ -72,6 +76,48 @@ class SpiderSettingsTestCase(unittest.TestCase):
         crawler = Crawler(MySpider, {})
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         self.assertIn(AutoThrottle, enabled_exts)
+
+
+class CrawlerLoggingTestCase(unittest.TestCase):
+    def test_no_root_handler_installed(self):
+        handler = get_scrapy_root_handler()
+        if handler is not None:
+            logging.root.removeHandler(handler)
+
+        class MySpider(scrapy.Spider):
+            name = 'spider'
+
+        crawler = Crawler(MySpider, {})
+        assert get_scrapy_root_handler() is None
+
+    def test_spider_custom_settings_log_level(self):
+        with tempfile.NamedTemporaryFile() as log_file:
+            class MySpider(scrapy.Spider):
+                name = 'spider'
+                custom_settings = {
+                    'LOG_LEVEL': 'INFO',
+                    'LOG_FILE': log_file.name,
+                }
+
+            configure_logging()
+            self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
+            crawler = Crawler(MySpider, {})
+            self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
+            info_count = crawler.stats.get_value('log_count/INFO')
+            logging.debug('debug message')
+            logging.info('info message')
+            logging.warning('warning message')
+            logging.error('error message')
+            logged = log_file.read().decode('utf8')
+        self.assertNotIn('debug message', logged)
+        self.assertIn('info message', logged)
+        self.assertIn('warning message', logged)
+        self.assertIn('error message', logged)
+        self.assertEqual(crawler.stats.get_value('log_count/ERROR'), 1)
+        self.assertEqual(crawler.stats.get_value('log_count/WARNING'), 1)
+        self.assertEqual(
+            crawler.stats.get_value('log_count/INFO') - info_count, 1)
+        self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
 
 class SpiderLoaderWithWrongInterface(object):

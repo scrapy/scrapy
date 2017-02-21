@@ -96,9 +96,25 @@ def configure_logging(settings=None, install_root_handler=True):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
 
     if install_root_handler:
-        logging.root.setLevel(logging.NOTSET)
-        handler = _get_handler(settings)
-        logging.root.addHandler(handler)
+        install_scrapy_root_handler(settings)
+
+
+def install_scrapy_root_handler(settings):
+    global _scrapy_root_handler
+
+    if (_scrapy_root_handler is not None
+            and _scrapy_root_handler in logging.root.handlers):
+        logging.root.removeHandler(_scrapy_root_handler)
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def get_scrapy_root_handler():
+    return _scrapy_root_handler
+
+
+_scrapy_root_handler = None
 
 
 def _get_handler(settings):

@@ -97,8 +97,8 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
+        crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
         with LogCapture('scrapy', level=logging.ERROR) as l:
-            crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
             yield crawler.crawl(fail_before_yield=1)
 
         self.assertEqual(len(l.records), 1)
@@ -108,8 +108,8 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_bug_yielding(self):
+        crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
         with LogCapture('scrapy', level=logging.ERROR) as l:
-            crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
             yield crawler.crawl(fail_yielding=1)
 
         self.assertEqual(len(l.records), 1)
