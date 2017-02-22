@@ -48,6 +48,11 @@ class CrawlSpider(Spider):
     def process_results(self, response, results):
         return results
 
+    def _build_request(self, rule, link):
+        r = Request(url=link.url, callback=self._response_downloaded)
+        r.meta.update(rule=rule, link_text=link.text)
+        return r
+
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
             return
@@ -59,8 +64,7 @@ class CrawlSpider(Spider):
                 links = rule.process_links(links)
             for link in links:
                 seen.add(link)
-                r = Request(url=link.url, callback=self._response_downloaded)
-                r.meta.update(rule=n, link_text=link.text)
+                r = self._build_request(n, link)
                 yield rule.process_request(r)
 
     def _response_downloaded(self, response):

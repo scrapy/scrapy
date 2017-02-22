@@ -1,15 +1,15 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
 
-try:
+from scrapy import twisted_version
+
+if twisted_version >= (14, 0, 0):
 
     from zope.interface.declarations import implementer
 
-    # the following should be available from Twisted 14.0.0
     from twisted.internet.ssl import (optionsForClientTLS,
                                       CertificateOptions,
                                       platformTrust)
-
     from twisted.web.client import BrowserLikePolicyForHTTPS
     from twisted.web.iweb import IPolicyForHTTPS
 
@@ -86,7 +86,7 @@ try:
                                             'method': self._ssl_method,
                                        })
 
-except ImportError:
+else:
 
     class ScrapyClientContextFactory(ClientContextFactory):
         "A SSL context factory which is more permissive against SSL bugs."

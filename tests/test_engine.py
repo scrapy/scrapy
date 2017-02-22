@@ -66,8 +66,8 @@ class TestSpider(Spider):
 
 
 class TestDupeFilterSpider(TestSpider):
-    def make_requests_from_url(self, url):
-        return Request(url)  # dont_filter=False
+    def start_requests(self):
+        return (Request(url) for url in self.start_urls)  # no dont_filter=True
 
 
 class DictItemsSpider(TestSpider):

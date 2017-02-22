@@ -556,7 +556,6 @@ class FormRequestTest(RequestTest):
         fs = _qs(req, to_unicode=True, encoding='latin1')
         self.assertTrue(fs[u'price in \u00a5'])
 
-
     def test_from_response_multiple_forms_clickdata(self):
         response = _buildresponse(
             """<form name="form1">
@@ -989,7 +988,7 @@ class FormRequestTest(RequestTest):
             """
             <html>
                 <head>
-                    <base href="http://b.com/">
+                    <base href=" http://b.com/">
                 </head>
                 <body>
                     <form action="test_form">
@@ -1001,6 +1000,11 @@ class FormRequestTest(RequestTest):
         )
         req = self.request_class.from_response(response)
         self.assertEqual(req.url, 'http://b.com/test_form')
+
+    def test_spaces_in_action(self):
+        resp = _buildresponse('<body><form action=" path\n"></form></body>')
+        req = self.request_class.from_response(resp)
+        self.assertEqual(req.url, 'http://example.com/path')
 
     def test_from_response_css(self):
         response = _buildresponse(
@@ -1023,11 +1027,13 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formcss="input[name='abc']")
 
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
     kwargs.setdefault('encoding', 'utf-8')
     return HtmlResponse(**kwargs)
+
 
 def _qs(req, encoding='utf-8', to_unicode=False):
     if req.method == 'POST':

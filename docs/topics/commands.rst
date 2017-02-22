@@ -358,6 +358,12 @@ Opens the given URL in a browser, as your Scrapy spider would "see" it.
 Sometimes spiders see pages differently from regular users, so this can be used
 to check what the spider "sees" and confirm it's what you expect.
 
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
+
 Usage example::
 
     $ scrapy view http://www.example.com/some/page.html

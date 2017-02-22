@@ -114,8 +114,8 @@ class BaseSettings(MutableMapping):
         """
         Get a setting value as a boolean.
 
-        ``1``, ``'1'``, and ``True`` return ``True``, while ``0``, ``'0'``,
-        ``False`` and ``None`` return ``False``.
+        ``1``, ``'1'``, `True`` and ``'True'`` return ``True``,
+        while ``0``, ``'0'``, ``False``, ``'False'`` and ``None`` return ``False``.
 
         For example, settings populated through environment variables set to
         ``'0'`` will return ``False`` when using this method.
@@ -126,7 +126,17 @@ class BaseSettings(MutableMapping):
         :param default: the value to return if no setting is found
         :type default: any
         """
-        return bool(int(self.get(name, default)))
+        got = self.get(name, default)
+        try:
+            return bool(int(got))
+        except ValueError:
+            if got in ("True", "true"):
+                return True
+            if got in ("False", "false"):
+                return False
+            raise ValueError("Supported values for boolean settings "
+                             "are 0/1, True/False, '0'/'1', "
+                             "'True'/'False' and 'true'/'false'")
 
     def getint(self, name, default=0):
         """

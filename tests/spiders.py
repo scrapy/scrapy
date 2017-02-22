@@ -170,10 +170,7 @@ class DuplicateStartRequestsSpider(Spider):
         for i in range(0, self.distinct_urls):
             for j in range(0, self.dupe_factor):
                 url = "http://localhost:8998/echo?headers=1&body=test%d" % i
-                yield self.make_requests_from_url(url)
-
-    def make_requests_from_url(self, url):
-        return Request(url, dont_filter=self.dont_filter)
+                yield Request(url, dont_filter=self.dont_filter)
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
         super(DuplicateStartRequestsSpider, self).__init__(*args, **kwargs)

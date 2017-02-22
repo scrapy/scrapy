@@ -30,7 +30,7 @@ In case of status 200 request, response.headers will come with two keys:
 
 import re
 from io import BytesIO
-from six.moves.urllib.parse import urlparse, unquote
+from six.moves.urllib.parse import unquote
 
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
@@ -38,6 +38,8 @@ from twisted.internet.protocol import Protocol, ClientCreator
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
+
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
@@ -64,14 +66,19 @@ class FTPDownloadHandler(object):
         "default": 503,
     }
 
-    def __init__(self, setting):
-        pass
+    def __init__(self, settings):
+        self.default_user = settings['FTP_USER']
+        self.default_password = settings['FTP_PASSWORD']
+        self.passive_mode = settings['FTP_PASSIVE_MODE']
 
     def download_request(self, request, spider):
-        parsed_url = urlparse(request.url)
-        creator = ClientCreator(reactor, FTPClient, request.meta["ftp_user"],
-                                    request.meta["ftp_password"],
-                                    passive=request.meta.get("ftp_passive", 1))
+        parsed_url = urlparse_cached(request)
+        user = request.meta.get("ftp_user", self.default_user)
+        password = request.meta.get("ftp_password", self.default_password)
+        passive_mode = 1 if bool(request.meta.get("ftp_passive",
+                                                  self.passive_mode)) else 0
+        creator = ClientCreator(reactor, FTPClient, user, password,
+            passive=passive_mode)
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
                                 request, unquote(parsed_url.path))
 

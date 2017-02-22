@@ -318,10 +318,11 @@ HttpCacheMiddleware
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
 
-    Scrapy ships with two HTTP cache storage backends:
+    Scrapy ships with three HTTP cache storage backends:
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
+        * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
     setting. Or you can also implement your own storage backend.
@@ -680,7 +681,9 @@ HttpProxyMiddleware
    * ``no_proxy``
 
    You can also set the meta key ``proxy`` per-request, to a value like
-   ``http://some_proxy_server:port``.
+   ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
+   Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
+   environment variables, and it will also ignore ``no_proxy`` environment variable.
 
 .. _urllib: https://docs.python.org/2/library/urllib.html
 .. _urllib2: https://docs.python.org/2/library/urllib2.html
@@ -748,7 +751,7 @@ REDIRECT_MAX_TIMES
 
 Default: ``20``
 
-The maximum number of redirections that will be follow for a single request.
+The maximum number of redirections that will be followed for a single request.
 
 MetaRefreshMiddleware
 ---------------------
@@ -948,7 +951,15 @@ enable it for :ref:`broad crawls <topics-broad-crawls>`.
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. setting:: HTTPPROXY_ENABLED
 .. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_ENABLED
+^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether or not to enable the :class:`HttpProxyMiddleware`.
 
 HTTPPROXY_AUTH_ENCODING
 ^^^^^^^^^^^^^^^^^^^^^^^
