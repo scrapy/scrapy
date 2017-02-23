@@ -303,6 +303,7 @@ Those are:
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_latency`
+* :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`proxy`
 
 .. reqmeta:: bindaddress
@@ -329,6 +330,14 @@ The amount of time spent to fetch the response, since the request has been
 started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
+
+.. reqmeta:: download_fail_on_dataloss
+
+download_fail_on_dataloss
+-------------------------
+
+Whether or not to fail on broken responses. See:
+:setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
 .. _topics-request-response-ref-request-subclasses:
 

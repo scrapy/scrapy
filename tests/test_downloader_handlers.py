@@ -13,9 +13,11 @@ from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
 from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
+from twisted.web._newclient import ResponseFailed
+from twisted.web.http import _DataLoss
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+        PayloadResource
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
@@ -118,6 +120,52 @@ class ContentLengthHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
 
+class ChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            # Disable terminating chunk on finish.
+            request.chunked = False
+            closeConnection(request)
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenDownloadResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.setHeader(b"Content-Length", b"20")
+            request.write(b"partial")
+            closeConnection(request)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+def closeConnection(request):
+    # We have to force a disconnection for HTTP/1.1 clients. Otherwise
+    # client keeps the connection open waiting for more data.
+    if hasattr(request.channel, 'loseConnection'):  # twisted >=16.3.0
+        request.channel.loseConnection()
+    else:
+        request.channel.transport.loseConnection()
+    request.finish()
+
+
 class EmptyContentTypeHeaderResource(resource.Resource):
     """
     A testing resource which renders itself as the value of request body
@@ -149,6 +197,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"chunked", ChunkedResource())
+        r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.site = server.Site(r, timeout=None)
@@ -340,6 +390,53 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+    def test_download_chunked_content(self):
+        request = Request(self.getURL('chunked'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, b"chunked content\n")
+        return d
+
+    def test_download_broken_content_cause_data_loss(self, url='broken'):
+        request = Request(self.getURL(url))
+        d = self.download_request(request, Spider('foo'))
+
+        def checkDataLoss(failure):
+            if failure.check(ResponseFailed):
+                if any(r.check(_DataLoss) for r in failure.value.reasons):
+                    return None
+            return failure
+
+        d.addCallback(lambda _: self.fail("No DataLoss exception"))
+        d.addErrback(checkDataLoss)
+        return d
+
+    def test_download_broken_chunked_content_cause_data_loss(self):
+        return self.test_download_broken_content_cause_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss(self, url='broken'):
+        request = Request(self.getURL(url), meta={'download_fail_on_dataloss': False})
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss(self):
+        return self.test_download_broken_content_allow_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
+        download_handler = self.download_handler_cls(Settings({
+            'DOWNLOAD_FAIL_ON_DATALOSS': False,
+        }))
+        request = Request(self.getURL(url))
+        d = download_handler.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+        return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
 
 
 class Https11TestCase(Http11TestCase):
