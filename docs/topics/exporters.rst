@@ -140,7 +140,7 @@ output examples, which assume you're exporting these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent_width=None)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=None)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -149,7 +149,7 @@ BaseItemExporter
 
    These features can be configured through the constructor arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
-   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent_width`.
+   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
    .. method:: export_item(item)
 
@@ -216,10 +216,14 @@ BaseItemExporter
       encoding). Other value types are passed unchanged to the specific
       serialization library.
 
-   .. attribute:: indent_width
+   .. attribute:: indent
 
-      Amount of spaces used to indent the output on each level.
-      Defaults to ``None``, which disables indentation.
+      Amount of spaces used to indent the output on each level. Defaults to ``None``,
+      which disables indentation. This argument behaves like ``indent`` in python's
+      JSON module (both for JSON and XML exporters): "If ``indent`` is a non-negative
+      integer, then array elements and object members will be pretty-printed with that
+      indent level. An indent level of 0, or negative, will only insert newlines.
+      ``None`` (the default) selects the most compact representation"
 
 .. highlight:: none
 

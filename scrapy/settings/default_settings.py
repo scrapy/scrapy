@@ -161,7 +161,7 @@ FEED_EXPORTERS_BASE = {
     'marshal': 'scrapy.exporters.MarshalItemExporter',
     'pickle': 'scrapy.exporters.PickleItemExporter',
 }
-FEED_EXPORT_INDENT_WIDTH = None
+FEED_EXPORT_INDENT = None
 
 FILES_STORE_S3_ACL = 'private'
 

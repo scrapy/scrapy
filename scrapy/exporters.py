@@ -36,7 +36,7 @@ class BaseItemExporter(object):
         self.encoding = options.pop('encoding', None)
         self.fields_to_export = options.pop('fields_to_export', None)
         self.export_empty_fields = options.pop('export_empty_fields', False)
-        self.indent_width = options.pop('indent_width', None)
+        self.indent = options.pop('indent', None)
         if not dont_fail and options:
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
@@ -100,20 +100,28 @@ class JsonItemExporter(BaseItemExporter):
         self._configure(kwargs, dont_fail=True)
         self.file = file
         kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(indent=self.indent_width, **kwargs)
+        kwargs.setdefault('indent', self.indent)
+        self.encoder = ScrapyJSONEncoder(**kwargs)
         self.first_item = True
 
+    def _beautify_newline(self):
+        if self.indent is not None:
+            self.file.write(b'\n')
+
     def start_exporting(self):
-        self.file.write(b"[\n")
+        self.file.write(b"[")
+        self._beautify_newline()
 
     def finish_exporting(self):
-        self.file.write(b"\n]")
+        self._beautify_newline()
+        self.file.write(b"]")
 
     def export_item(self, item):
         if self.first_item:
             self.first_item = False
         else:
-            self.file.write(b',\n')
+            self.file.write(b',')
+            self._beautify_newline()
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict)
         self.file.write(to_bytes(data, self.encoding))
@@ -130,12 +138,12 @@ class XmlItemExporter(BaseItemExporter):
         self.xg = XMLGenerator(file, encoding=self.encoding)
 
     def _beautify_newline(self):
-        if self.indent_width:
+        if self.indent is not None:
             self._xg_characters('\n')
 
     def _beautify_indent(self, depth=1):
-        if self.indent_width:
-            self._xg_characters(' ' * self.indent_width * depth)
+        if self.indent:
+            self._xg_characters(' ' * self.indent * depth)
 
     def start_exporting(self):
         self.xg.startDocument()
