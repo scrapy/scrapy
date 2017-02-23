@@ -334,8 +334,6 @@ used to control Scrapy behavior, this one is supposed to be read-only.
 
 .. _topics-request-response-ref-request-subclasses:
 
-.. _topics-request-response-ref-request-subclasses:
-
 Request subclasses
 ==================
 
