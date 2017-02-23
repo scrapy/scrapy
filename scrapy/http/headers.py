@@ -79,13 +79,13 @@ class Headers(CaselessDict):
     def to_string(self):
         return headers_dict_to_raw(self)
 
-    def to_unicode_dict(self):
+    def to_unicode_dict(self, errors='strict'):
         """ Return headers as a CaselessDict with unicode keys
         and unicode values. Multiple values are joined with ','.
         """
         return CaselessDict(
-            (to_unicode(key, encoding=self.encoding),
-             to_unicode(b','.join(value), encoding=self.encoding))
+            (to_unicode(key, encoding=self.encoding, errors=errors),
+             to_unicode(b','.join(value), encoding=self.encoding, errors=errors))
             for key, value in self.items())
 
     def __copy__(self):
