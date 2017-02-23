@@ -304,6 +304,8 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_latency`
 * :reqmeta:`proxy`
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 
 .. reqmeta:: bindaddress
 
@@ -329,6 +331,8 @@ The amount of time spent to fetch the response, since the request has been
 started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
+
+.. _topics-request-response-ref-request-subclasses:
 
 .. _topics-request-response-ref-request-subclasses:
 
