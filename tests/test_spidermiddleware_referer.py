@@ -1,3 +1,4 @@
+from six.moves.urllib.parse import urlparse
 from unittest import TestCase
 
 from scrapy.exceptions import NotConfigured
@@ -326,9 +327,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
     depending on the scheme of the target URL.
     """
     def referrer(self, response, request):
-        from scrapy.utils.httpobj import urlparse_cached
-
-        scheme = urlparse_cached(request).scheme
+        scheme = urlparse(request).scheme
         if scheme == 'https':
             return b'https://python.org/'
         elif scheme == 'http':
@@ -446,3 +445,41 @@ class TestRefererMiddlewarePolicyHeaderPredecence002(MixinNoReferrer, TestRefere
 class TestRefererMiddlewarePolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
+
+
+class TestReferrerPolicyOnRedirect(TestRefererMiddleware):
+
+    req_meta = {}
+    resp_headers = {}
+    #settings = {}
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'}
+    scenarii = [
+        (   # origin
+            'http://scrapytest.org/1',
+
+            # target + redirection
+            ['http://scrapytest.org/2',
+             'http://scrapytest.org/3',],
+
+            b'http://scrapytest.org/1', # expected initial referer
+            b'http://scrapytest.org/1', # expected referer for the redirection request
+
+        ),
+    ]
+
+    def setUp(self):
+        self.spider = Spider('foo')
+        settings = Settings(self.settings)
+        self.mw = RefererMiddleware(settings)
+
+    def test_(self):
+
+        for origin, target_chain, init_referrer, final_referrer in self.scenarii:
+            response = self.get_response(origin)
+            request = self.get_request(target_chain.pop())
+
+
+            out = list(self.mw.process_spider_output(response, [request], self.spider))
+            self.assertEquals(out[0].headers.get('Referer'), init_referrer)
+
+            request.meta['redirected_urls'] = target_chain
