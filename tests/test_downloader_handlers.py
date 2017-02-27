@@ -687,9 +687,6 @@ class BaseFTPTestCase(unittest.TestCase):
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
 
-    if six.PY3:
-        skip = "Twisted missing ftp support for PY3"
-
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -700,8 +697,8 @@ class BaseFTPTestCase(unittest.TestCase):
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
-        fp.child('file.txt').setContent("I have the power!")
-        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -736,8 +733,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'I have the power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
+            self.assertEqual(r.body, b'I have the power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
@@ -749,8 +746,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'Moooooooooo power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['18']})
+            self.assertEqual(r.body, b'Moooooooooo power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'18']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
@@ -763,7 +760,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        local_fname = "/tmp/file.txt"
+        local_fname = b"/tmp/file.txt"
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
@@ -772,10 +769,10 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': ['17']})
+            self.assertEqual(r.headers, {b'Local Filename': [b'/tmp/file.txt'], b'Size': [b'17']})
             self.assertTrue(os.path.exists(local_fname))
-            with open(local_fname) as f:
-                self.assertEqual(f.read(), "I have the power!")
+            with open(local_fname, "rb") as f:
+                self.assertEqual(f.read(), b"I have the power!")
             os.remove(local_fname)
         return self._add_test_callbacks(d, _test)
 
@@ -810,8 +807,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         os.mkdir(self.directory)
 
         fp = FilePath(self.directory)
-        fp.child('file.txt').setContent("I have the power!")
-        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
 
         # setup server for anonymous access
         realm = FTPRealm(anonymousRoot=self.directory)
