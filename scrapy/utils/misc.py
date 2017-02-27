@@ -113,7 +113,7 @@ def md5sum(file):
         m.update(d)
     return m.hexdigest()
 
+
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
     return True if rel is not None and 'nofollow' in rel.split() else False
-    
