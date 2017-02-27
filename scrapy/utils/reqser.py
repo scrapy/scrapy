@@ -5,6 +5,7 @@ import six
 
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode, to_native_str
+from scrapy.utils.misc import load_object
 
 
 def request_to_dict(request, spider=None):
@@ -31,7 +32,10 @@ def request_to_dict(request, spider=None):
         '_encoding': request._encoding,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
+        'flags': request.flags
     }
+    if type(request) is not Request:
+        d['_class'] = request.__module__ + '.' + request.__class__.__name__
     return d
 
 
@@ -47,7 +51,8 @@ def request_from_dict(d, spider=None):
     eb = d['errback']
     if eb and spider:
         eb = _get_method(spider, eb)
-    return Request(
+    request_cls = load_object(d['_class']) if '_class' in d else Request
+    return request_cls(
         url=to_native_str(d['url']),
         callback=cb,
         errback=eb,
@@ -58,7 +63,8 @@ def request_from_dict(d, spider=None):
         meta=d['meta'],
         encoding=d['_encoding'],
         priority=d['priority'],
-        dont_filter=d['dont_filter'])
+        dont_filter=d['dont_filter'],
+        flags=d.get('flags'))
 
 
 def _find_method(obj, func):

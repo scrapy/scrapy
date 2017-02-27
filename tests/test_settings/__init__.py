@@ -211,9 +211,15 @@ class BaseSettingsTest(unittest.TestCase):
             'TEST_ENABLED1': '1',
             'TEST_ENABLED2': True,
             'TEST_ENABLED3': 1,
+            'TEST_ENABLED4': 'True',
+            'TEST_ENABLED5': 'true',
+            'TEST_ENABLED_WRONG': 'on',
             'TEST_DISABLED1': '0',
             'TEST_DISABLED2': False,
             'TEST_DISABLED3': 0,
+            'TEST_DISABLED4': 'False',
+            'TEST_DISABLED5': 'false',
+            'TEST_DISABLED_WRONG': 'off',
             'TEST_INT1': 123,
             'TEST_INT2': '123',
             'TEST_FLOAT1': 123.45,
@@ -231,11 +237,15 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))
         self.assertTrue(settings.getbool('TEST_ENABLED3'))
+        self.assertTrue(settings.getbool('TEST_ENABLED4'))
+        self.assertTrue(settings.getbool('TEST_ENABLED5'))
         self.assertFalse(settings.getbool('TEST_ENABLEDx'))
         self.assertTrue(settings.getbool('TEST_ENABLEDx', True))
         self.assertFalse(settings.getbool('TEST_DISABLED1'))
         self.assertFalse(settings.getbool('TEST_DISABLED2'))
         self.assertFalse(settings.getbool('TEST_DISABLED3'))
+        self.assertFalse(settings.getbool('TEST_DISABLED4'))
+        self.assertFalse(settings.getbool('TEST_DISABLED5'))
         self.assertEqual(settings.getint('TEST_INT1'), 123)
         self.assertEqual(settings.getint('TEST_INT2'), 123)
         self.assertEqual(settings.getint('TEST_INTx'), 0)
@@ -258,6 +268,8 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3'), {})
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
+        self.assertRaises(ValueError, settings.getbool, 'TEST_ENABLED_WRONG')
+        self.assertRaises(ValueError, settings.getbool, 'TEST_DISABLED_WRONG')
 
     def test_getpriority(self):
         settings = BaseSettings({'key': 'value'}, priority=99)

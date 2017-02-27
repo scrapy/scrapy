@@ -31,5 +31,8 @@ class ProjectUtilsTest(unittest.TestCase):
     def test_data_path_inside_project(self):
         with inside_a_project() as proj_path:
             expected = os.path.join(proj_path, '.scrapy', 'somepath')
-            self.assertEquals(expected, data_path('somepath'))
+            self.assertEquals(
+                os.path.realpath(expected),
+                os.path.realpath(data_path('somepath'))
+            )
             self.assertEquals('/absolute/path', data_path('/absolute/path'))

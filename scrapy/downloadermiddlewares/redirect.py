@@ -53,8 +53,10 @@ class BaseRedirectMiddleware(object):
 
 
 class RedirectMiddleware(BaseRedirectMiddleware):
-    """Handle redirection of requests based on response status and meta-refresh html tag"""
-
+    """
+    Handle redirection of requests based on response status
+    and meta-refresh html tag.
+    """
     def process_response(self, request, response, spider):
         if (request.meta.get('dont_redirect', False) or
                 response.status in getattr(spider, 'handle_httpstatus_list', []) or
@@ -92,10 +94,9 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
                 not isinstance(response, HtmlResponse):
             return response
 
-        if isinstance(response, HtmlResponse):
-            interval, url = get_meta_refresh(response)
-            if url and interval < self._maxdelay:
-                redirected = self._redirect_request_using_get(request, url)
-                return self._redirect(redirected, request, spider, 'meta refresh')
+        interval, url = get_meta_refresh(response)
+        if url and interval < self._maxdelay:
+            redirected = self._redirect_request_using_get(request, url)
+            return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response

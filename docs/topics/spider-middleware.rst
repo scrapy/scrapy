@@ -112,7 +112,7 @@ following methods:
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when when a spider or :meth:`process_spider_input`
+        This method is called when a spider or :meth:`process_spider_input`
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an

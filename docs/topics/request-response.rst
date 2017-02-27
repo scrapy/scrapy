@@ -121,6 +121,9 @@ Request objects
        see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
 
+    :param flags:  Flags sent to the request, can be used for logging or similar purposes.
+    :type flags: list
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -207,12 +210,12 @@ different fields from different pages::
         request = scrapy.Request("http://www.example.com/some_page.html",
                                  callback=self.parse_page2)
         request.meta['item'] = item
-        return request
+        yield request
 
     def parse_page2(self, response):
         item = response.meta['item']
         item['other_url'] = response.url
-        return item
+        yield item
 
 
 .. _topics-request-response-ref-errbacks:
@@ -358,7 +361,7 @@ fields with form data from :class:`Response` objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -376,12 +379,19 @@ fields with form data from :class:`Response` objects.
        control clicked (instead of disabling it) you can also use the
        ``clickdata`` argument.
 
+       .. caution:: Using this method with select elements which have leading
+          or trailing whitespace in the option values will not work due to a
+          `bug in lxml`_, which should be fixed in lxml 3.8 and above.
+
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
        :type response: :class:`Response` object
 
        :param formname: if given, the form with name attribute set to this value will be used.
        :type formname: string
+
+       :param formid: if given, the form with id attribute set to this value will be used.
+       :type formid: string
 
        :param formxpath: if given, the first form that matches the xpath will be used.
        :type formxpath: string
@@ -420,6 +430,9 @@ fields with form data from :class:`Response` objects.
 
        .. versionadded:: 1.1.0
           The ``formcss`` parameter.
+
+       .. versionadded:: 1.1.0
+          The ``formid`` parameter.
 
 Request usage examples
 ----------------------
@@ -591,6 +604,9 @@ Response objects
 
             urlparse.urljoin(response.url, url)
 
+    .. automethod:: Response.follow
+
+
 .. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
@@ -677,6 +693,8 @@ TextResponse objects
 
             response.css('p')
 
+    .. automethod:: TextResponse.follow
+
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
@@ -704,3 +722,4 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241

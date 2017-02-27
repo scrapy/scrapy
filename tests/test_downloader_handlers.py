@@ -1,10 +1,12 @@
 import os
 import six
 import contextlib
+import shutil
 try:
     from unittest import mock
 except ImportError:
     import mock
+import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -17,7 +19,6 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
-from scrapy import twisted_version
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
@@ -85,10 +86,12 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        fd = open(self.tmpname + '^', 'w')
-        fd.write('0123456789')
-        fd.close()
+        with open(self.tmpname + '^', 'w') as f:
+            f.write('0123456789')
         self.download_request = FileDownloadHandler(Settings()).download_request
+
+    def tearDown(self):
+        os.unlink(self.tmpname + '^')
 
     def test_download(self):
         def _test(response):
@@ -135,10 +138,10 @@ class HttpTestCase(unittest.TestCase):
     certfile = 'keys/cert.pem'
 
     def setUp(self):
-        name = self.mktemp()
-        os.mkdir(name)
-        FilePath(name).child("file").setContent(b"0123456789")
-        r = static.File(name)
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
@@ -166,6 +169,7 @@ class HttpTestCase(unittest.TestCase):
         yield self.port.stopListening()
         if hasattr(self.download_handler, 'close'):
             yield self.download_handler.close()
+        shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
         return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
@@ -281,8 +285,6 @@ class Https10TestCase(Http10TestCase):
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
     download_handler_cls = HTTP11DownloadHandler
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL('file'))
@@ -366,8 +368,6 @@ class Https11InvalidDNSId(Https11TestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -396,31 +396,27 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
+        crawler = get_crawler(SingleRequestSpider)
+        body = b'1' * 100  # PayloadResource requires body length to be 100
+        request = Request('http://localhost:8998/payload', method='POST',
+                          body=body, meta={'download_maxsize': 50})
+        yield crawler.crawl(seed=request)
+        failure = crawler.spider.meta['failure']
+        # download_maxsize < 100, hence the CancelledError
+        self.assertIsInstance(failure.value, defer.CancelledError)
 
-        if twisted_version > (12, 3, 0):
-
-            crawler = get_crawler(SingleRequestSpider)
-            body = b'1'*100 # PayloadResource requires body length to be 100
-            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+        if six.PY2:
+            request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+            request = request.replace(url='http://localhost:8998/xpayload')
             yield crawler.crawl(seed=request)
-            failure = crawler.spider.meta['failure']
-            # download_maxsize < 100, hence the CancelledError
-            self.assertIsInstance(failure.value, defer.CancelledError)
-
-            if six.PY2:
-                request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-                request = request.replace(url='http://localhost:8998/xpayload')
-                yield crawler.crawl(seed=request)
-                # download_maxsize = 50 is enough for the gzipped response
-                failure = crawler.spider.meta.get('failure')
-                self.assertTrue(failure == None)
-                reason = crawler.spider.meta['close_reason']
-                self.assertTrue(reason, 'finished')
-            else:
-                # See issue https://twistedmatrix.com/trac/ticket/8175
-                raise unittest.SkipTest("xpayload only enabled for PY2")
+            # download_maxsize = 50 is enough for the gzipped response
+            failure = crawler.spider.meta.get('failure')
+            self.assertTrue(failure == None)
+            reason = crawler.spider.meta['close_reason']
+            self.assertTrue(reason, 'finished')
         else:
-            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0")
+            # See issue https://twistedmatrix.com/trac/ticket/8175
+            raise unittest.SkipTest("xpayload only enabled for PY2")
 
 
 class UriResource(resource.Resource):
@@ -500,8 +496,6 @@ class Http10ProxyTestCase(HttpProxyTestCase):
 
 class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP11DownloadHandler
-    if twisted_version < (11, 1, 0):
-        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
@@ -687,13 +681,12 @@ class S3TestCase(unittest.TestCase):
             b'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
 
 
-class FTPTestCase(unittest.TestCase):
+class BaseFTPTestCase(unittest.TestCase):
 
     username = "scrapy"
     password = "passwd"
+    req_meta = {"ftp_user": username, "ftp_password": password}
 
-    if twisted_version < (10, 2, 0):
-        skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
     if six.PY3:
         skip = "Twisted missing ftp support for PY3"
 
@@ -722,6 +715,9 @@ class FTPTestCase(unittest.TestCase):
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
 
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
         def _clean(data):
             self.download_handler.client.transport.loseConnection()
@@ -735,7 +731,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_success(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -747,7 +743,7 @@ class FTPTestCase(unittest.TestCase):
     def test_ftp_download_path_with_spaces(self):
         request = Request(
             url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
-            meta={"ftp_user": self.username, "ftp_password": self.password}
+            meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
 
@@ -759,7 +755,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_notexist(self):
         request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -768,8 +764,10 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         local_fname = "/tmp/file.txt"
+        meta = {"ftp_local_filename": local_fname}
+        meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -781,13 +779,52 @@ class FTPTestCase(unittest.TestCase):
             os.remove(local_fname)
         return self._add_test_callbacks(d, _test)
 
+
+class FTPTestCase(BaseFTPTestCase):
+
     def test_invalid_credentials(self):
         from twisted.protocols.ftp import ConnectionLost
 
+        meta = dict(self.req_meta)
+        meta.update({"ftp_password": 'invalid'})
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": 'invalid'})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
         return self._add_test_callbacks(d, errback=_test)
+
+
+class AnonymousFTPTestCase(BaseFTPTestCase):
+
+    username = "anonymous"
+    req_meta = {}
+
+    def setUp(self):
+        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
+        # setup dir and test file
+        self.directory = self.mktemp()
+        os.mkdir(self.directory)
+
+        fp = FilePath(self.directory)
+        fp.child('file.txt').setContent("I have the power!")
+        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+
+        # setup server for anonymous access
+        realm = FTPRealm(anonymousRoot=self.directory)
+        p = portal.Portal(realm)
+        p.registerChecker(checkers.AllowAnonymousAccess(),
+                          credentials.IAnonymous)
+
+        self.factory = FTPFactory(portal=p,
+                                  userAnonymous=self.username)
+        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+        self.portNum = self.port.getHost().port
+        self.download_handler = FTPDownloadHandler(Settings())
+        self.addCleanup(self.port.stopListening)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)

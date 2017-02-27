@@ -5,10 +5,13 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
+import six
 from six.moves.urllib.parse import urljoin, urlencode
+
 import lxml.html
 from parsel.selector import create_root_node
-import six
+from w3lib.html import strip_html5_whitespace
+
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
@@ -51,7 +54,10 @@ class FormRequest(Request):
 
 def _get_form_url(form, url):
     if url is None:
-        return urljoin(form.base_url, form.action)
+        action = form.get('action')
+        if action is None:
+            return form.base_url
+        return urljoin(form.base_url, strip_html5_whitespace(action))
     return urljoin(form.base_url, url)
 
 
