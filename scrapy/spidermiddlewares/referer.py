@@ -2,6 +2,8 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
+from six.moves.urllib.parse import urlparse
+
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
@@ -32,12 +34,14 @@ class ReferrerPolicy(object):
         raise NotImplementedError()
 
     def stripped_referrer(self, r):
-        return self.strip_url(r)
+        if urlparse(r).scheme not in self.NOREFERRER_SCHEMES:
+            return self.strip_url(r)
 
     def origin_referrer(self, r):
-        return self.strip_url(r, origin_only=True)
+        if urlparse(r).scheme not in self.NOREFERRER_SCHEMES:
+            return self.origin(r)
 
-    def strip_url(self, r, origin_only=False):
+    def strip_url(self, url, origin_only=False):
         """
         https://www.w3.org/TR/referrer-policy/#strip-url
 
@@ -51,29 +55,27 @@ class ReferrerPolicy(object):
             Set url's query to null.
         Return url.
         """
-        if r is None or not r.url:
+        if not url:
             return None
-        parsed_url = urlparse_cached(r)
-        if parsed_url.scheme not in self.NOREFERRER_SCHEMES:
-            return strip_url(parsed_url,
-                             strip_credentials=True,
-                             strip_fragment=True,
-                             strip_default_port=True,
-                             origin_only=origin_only)
+        return strip_url(url,
+                         strip_credentials=True,
+                         strip_fragment=True,
+                         strip_default_port=True,
+                         origin_only=origin_only)
 
     def origin(self, r):
         """Return serialized origin (scheme, host, path) for a request or response URL."""
         return self.strip_url(r, origin_only=True)
 
-    def potentially_trustworthy(self, r):
+    def potentially_trustworthy(self, url):
         # Note: this does not follow https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy
-        parsed_url = urlparse_cached(r)
+        parsed_url = urlparse(url)
         if parsed_url.scheme in ('data',):
             return False
-        return self.tls_protected(r)
+        return self.tls_protected(url)
 
-    def tls_protected(self, r):
-        return urlparse_cached(r).scheme in ('https', 'ftps')
+    def tls_protected(self, url):
+        return urlparse(url).scheme in ('https', 'ftps')
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -287,12 +289,17 @@ class RefererMiddleware(object):
         crawler.signals.connect(mw.request_scheduled, signal=signals.request_scheduled)
         return mw
 
-    def policy(self, response, request):
+    def policy(self, resp_or_url, request):
+        """
+        Determine Referrer-Policy to use from a parent Response (or URL),
+        and a Request to be sent.
+        """
         # policy set in request's meta dict takes precedence over default policy
         policy_name = request.meta.get('referrer_policy')
         if policy_name is None:
-            policy_name = to_native_str(
-                response.headers.get('Referrer-Policy', '').decode('latin1'))
+            if isinstance(resp_or_url, Response):
+                policy_name = to_native_str(
+                    resp_or_url.headers.get('Referrer-Policy', '').decode('latin1'))
 
         cls = _policy_classes.get(policy_name.lower(), self.default_policy)
         return cls()
@@ -300,7 +307,7 @@ class RefererMiddleware(object):
     def process_spider_output(self, response, result, spider):
         def _set_referer(r):
             if isinstance(r, Request):
-                referrer = self.policy(response, r).referrer(response, r)
+                referrer = self.policy(response, r).referrer(response.url, r.url)
                 if referrer is not None:
                     r.headers.setdefault('Referer', referrer)
             return r
@@ -313,9 +320,9 @@ class RefererMiddleware(object):
             request_referrer = request.headers.get('Referer')
             # we don't patch the referrer value if there is none
             if request_referrer is not None:
-                faked_response = Response(redirected_urls[0])
-                policy_referrer = self.policy(faked_response,
-                    request).referrer(faked_response, request)
+                initial_url = redirected_urls[0]
+                policy_referrer = self.policy(initial_url,
+                    request).referrer(orig_url, request.url)
                 if policy_referrer != request_referrer:
                     if policy_referrer is None:
                         request.headers.pop('Referer')

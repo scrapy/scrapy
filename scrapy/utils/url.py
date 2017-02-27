@@ -117,12 +117,7 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
     - `strip_fragment` drops any #fragment component
     """
 
-    if url is None:
-        return None
-    if not isinstance(url, ParseResult):
-        parsed_url = urlparse(url)
-    else:
-        parsed_url = url
+    parsed_url = urlparse(url)
     netloc = parsed_url.netloc
     if (strip_credentials or origin_only) and (parsed_url.username or parsed_url.password):
         netloc = netloc.split('@')[-1]
