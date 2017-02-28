@@ -92,18 +92,17 @@ def configure_logging(settings=None, install_root_handler=True):
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
-    LOGGING_FROM_SETTINGS = settings.getdict('LOGGING')
-
     if settings.getbool('LOG_STDOUT'):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
-        LOGGING_FROM_SETTINGS = None
 
-    elif LOGGING_FROM_SETTINGS:
+    logging_from_settings = settings.getdict('LOGGING')
+
+    if logging_from_settings:
         LOGGING = DEFAULT_LOGGING.copy()
-        LOGGING.update(LOGGING_FROM_SETTINGS)
+        LOGGING.update(logging_from_settings)
         dictConfig(LOGGING)
 
-    if install_root_handler and not LOGGING_FROM_SETTINGS:
+    elif install_root_handler:
         logging.root.setLevel(logging.NOTSET)
         handler = _get_handler(settings)
         logging.root.addHandler(handler)

@@ -1,5 +1,3 @@
-# from logging import FileHandler
-# from logging.handlers import TimedRotatingFileHandler
 from scrapy.utils import log
 import logging
 import unittest
