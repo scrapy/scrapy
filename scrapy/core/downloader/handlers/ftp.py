@@ -39,12 +39,13 @@ from twisted.internet.protocol import Protocol, ClientCreator
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
 
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
         self.__filename = filename
-        self.body = open(filename, "w") if filename else BytesIO()
+        self.body = open(filename, "wb") if filename else BytesIO()
         self.size = 0
 
     def dataReceived(self, data):
@@ -97,7 +98,7 @@ class FTPDownloadHandler(object):
         protocol.close()
         body = protocol.filename or protocol.body.read()
         headers = {"local filename": protocol.filename or '', "size": protocol.size}
-        return respcls(url=request.url, status=200, body=body, headers=headers)
+        return respcls(url=request.url, status=200, body=to_bytes(body), headers=headers)
 
     def _failed(self, result, request):
         message = result.getErrorMessage()
@@ -106,6 +107,6 @@ class FTPDownloadHandler(object):
             if m:
                 ftpcode = m.group()
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=message)
+                return Response(url=request.url, status=httpcode, body=to_bytes(message))
         raise result.type(result.value)
 

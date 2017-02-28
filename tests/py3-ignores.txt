@@ -1,13 +1,6 @@
 tests/test_linkextractors_deprecated.py
 tests/test_proxy_connect.py
 
-scrapy/xlib/tx/iweb.py
-scrapy/xlib/tx/interfaces.py
-scrapy/xlib/tx/endpoints.py
-scrapy/xlib/tx/client.py
-scrapy/xlib/tx/_newclient.py
-scrapy/xlib/tx/__init__.py
-scrapy/core/downloader/handlers/ftp.py
 scrapy/linkextractors/sgml.py
 scrapy/linkextractors/regex.py
 scrapy/linkextractors/htmlparser.py
