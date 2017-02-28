@@ -387,7 +387,7 @@ class FilesPipeline(MediaPipeline):
         checksum = md5sum(buf)
         buf.seek(0)
         d = defer.maybeDeferred(self.store.persist_file(path, buf, info))
-        d.add_callback(item_persisted, path, info)
+        d.add_callback(self.item_persisted, path, info)
         return checksum
 
     def item_completed(self, results, item, info):
