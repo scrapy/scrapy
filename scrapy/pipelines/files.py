@@ -226,7 +226,7 @@ class FilesPipeline(MediaPipeline):
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
@@ -386,13 +386,20 @@ class FilesPipeline(MediaPipeline):
         buf = BytesIO(response.body)
         checksum = md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
+        d = defer.maybeDeferred(self.store.persist_file(path, buf, info))
+        d.add_callback(item_persisted, path, info)
         return checksum
 
     def item_completed(self, results, item, info):
         if isinstance(item, dict) or self.files_result_field in item.fields:
             item[self.files_result_field] = [x for ok, x in results if ok]
         return item
+
+    def item_persisted(self, result, path, info):
+        # This is called when file has been persisted
+        # Use this as a hook
+        ok, value = result
+        return ok, value, path, info
 
     def file_path(self, request, response=None, info=None):
         ## start of deprecation warning block (can be removed in the future)
