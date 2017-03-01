@@ -274,7 +274,6 @@ class StripUrl(unittest.TestCase):
              'http://www.example.com/'),
             ]:
             self.assertEqual(strip_url(input_url, origin_only=origin), output_url)
-            self.assertEqual(strip_url(urlparse(input_url), origin_only=origin), output_url)
 
     def test_credentials(self):
         for i, o in [
@@ -288,7 +287,6 @@ class StripUrl(unittest.TestCase):
              'ftp://www.example.com/index.html?somekey=somevalue'),
             ]:
             self.assertEqual(strip_url(i, strip_credentials=True), o)
-            self.assertEqual(strip_url(urlparse(i), strip_credentials=True), o)
 
     def test_credentials_encoded_delims(self):
         for i, o in [
@@ -308,7 +306,6 @@ class StripUrl(unittest.TestCase):
              'ftp://www.example.com/index.html?somekey=somevalue'),
             ]:
             self.assertEqual(strip_url(i, strip_credentials=True), o)
-            self.assertEqual(strip_url(urlparse(i), strip_credentials=True), o)
 
     def test_default_ports_creds_off(self):
         for i, o in [
@@ -337,7 +334,6 @@ class StripUrl(unittest.TestCase):
              'ftp://www.example.com:221/file.txt'),
             ]:
             self.assertEqual(strip_url(i), o)
-            self.assertEqual(strip_url(urlparse(i)), o)
 
     def test_default_ports(self):
         for i, o in [
@@ -366,7 +362,6 @@ class StripUrl(unittest.TestCase):
              'ftp://username:password@www.example.com:221/file.txt'),
             ]:
             self.assertEqual(strip_url(i, strip_default_port=True, strip_credentials=False), o)
-            self.assertEqual(strip_url(urlparse(i), strip_default_port=True, strip_credentials=False), o)
 
     def test_default_ports_keep(self):
         for i, o in [
@@ -395,7 +390,6 @@ class StripUrl(unittest.TestCase):
              'ftp://username:password@www.example.com:221/file.txt'),
             ]:
             self.assertEqual(strip_url(i, strip_default_port=False, strip_credentials=False), o)
-            self.assertEqual(strip_url(urlparse(i), strip_default_port=False, strip_credentials=False), o)
 
     def test_origin_only(self):
         for i, o in [
@@ -412,7 +406,6 @@ class StripUrl(unittest.TestCase):
              'https://www.example.com/'),
             ]:
             self.assertEqual(strip_url(i, origin_only=True), o)
-            self.assertEqual(strip_url(urlparse(i), origin_only=True), o)
 
 
 if __name__ == "__main__":
