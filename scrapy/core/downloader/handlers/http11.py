@@ -12,9 +12,16 @@ from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
-from twisted.web.http import PotentialDataLoss
-from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool
+from twisted.web.http import (
+    PotentialDataLoss, _IdentityTransferDecoder,
+)
+from twisted.web.client import (
+    Agent, ProxyAgent, ResponseDone, HTTPConnectionPool, _HTTP11ClientFactory,
+)
+from twisted.web._newclient import (
+    HTTP11ClientProtocol as _HTTP11ClientProtocol,
+    HTTPClientParser as _HTTPClientParser,
+)
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
@@ -28,10 +35,47 @@ from scrapy import twisted_version
 logger = logging.getLogger(__name__)
 
 
+class LossyIdentityTransferDecoder(_IdentityTransferDecoder):
+
+    def noMoreData(self):
+        finishCallback = self.finishCallback
+        self.dataCallback = self.finishCallback = None
+        # We aim to handle broken web servers that return wrong Content-Length
+        # value.
+        if finishCallback is not None:
+            finishCallback(b'')
+        if self.contentLength is None:
+            logger.warn("Potential data loss, no content length declared")
+        elif self.contentLength != 0:
+            logger.warn("Data loss, not all data received")
+
+
+class LossyHTTPClientParser(_HTTPClientParser):
+    _transferDecoders = _HTTPClientParser._transferDecoders.copy()
+    _transferDecoders[b'identity'] = LossyIdentityTransferDecoder
+
+
+class LossyHTTP11ClientProtocol(_HTTP11ClientProtocol):
+    HTTPClientParser = LossyHTTPClientParser
+
+
+class LossyHTTP11ClientFactory(_HTTP11ClientFactory):
+    def buildProtocol(self, addr):
+        return LossyHTTP11ClientProtocol(self._quiescentCallback)
+
+
+class LossyHTTPConnectionPool(HTTPConnectionPool):
+    _factory = LossyHTTP11ClientFactory
+
+
 class HTTP11DownloadHandler(object):
 
     def __init__(self, settings):
-        self._pool = HTTPConnectionPool(reactor, persistent=True)
+        if settings.getbool('DOWNLOADER_ALLOW_DATA_LOSS'):
+            pool_cls = LossyHTTPConnectionPool
+        else:
+            pool_cls = HTTPConnectionPool
+        self._pool = pool_cls(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
 
