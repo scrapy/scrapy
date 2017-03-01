@@ -604,6 +604,32 @@ If you want to disable it set to 0.
 
     This feature needs Twisted >= 11.1.
 
+.. setting:: DOWNLOAD_FAIL_ON_DATALOSS
+
+DOWNLOAD_FAIL_ON_DATALOSS
+-------------------------
+
+Default: ``True``
+
+Whether or not to fail on broken responses, that is, declared
+``Content-Length`` does not match content sent by the server or chunked
+response was not properly finish. If ``True``, these responses raise a
+``ResponseFailed([_DataLoss])`` error. If ``False``, these responses
+are passed through and the flag ``dataloss`` is added to the response, i.e.:
+``'dataloss' in response.flags`` is ``True``.
+
+Optionally, this can be set per-request basis by using the
+:reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
+
+.. note::
+
+  A broken response, or data loss error, may happen under several
+  circumstances, from server misconfiguration to network errors to data
+  corruption. It is up to the user to decide if it makes sense to process
+  broken responses considering they may contain partial or incomplete content.
+  If setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
+  the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
