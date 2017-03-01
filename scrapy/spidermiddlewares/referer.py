@@ -4,6 +4,8 @@ originated it.
 """
 from six.moves.urllib.parse import urlparse
 
+from w3lib.url import safe_url_string
+
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
@@ -300,8 +302,7 @@ class RefererMiddleware(object):
             if isinstance(resp_or_url, Response):
                 policy_name = to_native_str(
                     resp_or_url.headers.get('Referrer-Policy', '').decode('latin1'))
-
-        cls = _policy_classes.get(policy_name.lower(), self.default_policy)
+        cls = _policy_classes.get(policy_name.lower()) if policy_name else self.default_policy
         return cls()
 
     def process_spider_output(self, response, result, spider):
@@ -320,9 +321,14 @@ class RefererMiddleware(object):
             request_referrer = request.headers.get('Referer')
             # we don't patch the referrer value if there is none
             if request_referrer is not None:
-                initial_url = redirected_urls[0]
-                policy_referrer = self.policy(initial_url,
-                    request).referrer(orig_url, request.url)
+                # the request's referrer header value acts as a surrogate
+                # for the parent response URL
+                #
+                # Note: if the 3xx response contained a Referrer-Policy header,
+                #       the information is not available using this hook
+                parent_url = safe_url_string(request_referrer)
+                policy_referrer = self.policy(parent_url, request).referrer(
+                    parent_url, request.url)
                 if policy_referrer != request_referrer:
                     if policy_referrer is None:
                         request.headers.pop('Referer')
