@@ -3,6 +3,7 @@ RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
 from six.moves.urllib.parse import urlparse
+import warnings
 
 from w3lib.url import safe_url_string
 
@@ -265,45 +266,69 @@ _policy_classes = {p.name: p for p in (
     DefaultReferrerPolicy,
 )}
 
+
+def _load_policy_class(policy, warning_only=False):
+    """
+    Expect a string for the path to the policy class,
+    otherwise try to interpret the string as a standard value
+    from https://www.w3.org/TR/referrer-policy/#referrer-policies
+    """
+    try:
+        return load_object(policy)
+    except ValueError:
+        try:
+            return _policy_classes[policy.lower()]
+        except KeyError:
+            msg = "Could not load referrer policy %r" % policy
+            if not warning_only:
+                raise RuntimeError(msg)
+            else:
+                warnings.warn(msg, RuntimeWarning)
+                return None
+
+
 class RefererMiddleware(object):
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
         if settings is not None:
-            policy = settings.get('REFERRER_POLICY')
-            if policy is not None:
-                # expect a string for the path to the policy class
-                try:
-                    self.default_policy = load_object(policy)
-                except ValueError:
-                    # otherwise try to interpret the string as standard
-                    # https://www.w3.org/TR/referrer-policy/#referrer-policies
-                    try:
-                        self.default_policy = _policy_classes[policy.lower()]
-                    except:
-                        raise NotConfigured("Unknown referrer policy name %r" % policy)
+            self.default_policy = _load_policy_class(
+                settings.get('REFERRER_POLICY'))
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('REFERER_ENABLED'):
             raise NotConfigured
         mw = cls(crawler.settings)
+
+        # Note: this hook is a bit of a hack to intercept redirections
         crawler.signals.connect(mw.request_scheduled, signal=signals.request_scheduled)
+
         return mw
 
     def policy(self, resp_or_url, request):
         """
         Determine Referrer-Policy to use from a parent Response (or URL),
         and a Request to be sent.
+
+        - if a valid policy is set in Request meta, it is used.
+        - if the policy is set in meta but is wrong (e.g. a typo error),
+          the policy from settings is used
+        - if the policy is not set in Request meta,
+          but there is a Referrer-policy header in the parent response,
+          it is used if valid
+        - otherwise, the policy from settings is used.
         """
-        # policy set in request's meta dict takes precedence over default policy
         policy_name = request.meta.get('referrer_policy')
         if policy_name is None:
             if isinstance(resp_or_url, Response):
                 policy_name = to_native_str(
                     resp_or_url.headers.get('Referrer-Policy', '').decode('latin1'))
-        cls = _policy_classes.get(policy_name.lower()) if policy_name else self.default_policy
-        return cls()
+        if policy_name is None:
+            return self.default_policy()
+
+        cls = _load_policy_class(policy_name, warning_only=True)
+        return cls() if cls else self.default_policy()
 
     def process_spider_output(self, response, result, spider):
         def _set_referer(r):
