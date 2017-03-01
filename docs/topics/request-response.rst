@@ -304,6 +304,8 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_latency`
 * :reqmeta:`proxy`
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 
 .. reqmeta:: bindaddress
 
