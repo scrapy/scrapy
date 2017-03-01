@@ -1,5 +1,6 @@
 from six.moves.urllib.parse import urlparse
 from unittest import TestCase
+import warnings
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
@@ -400,6 +401,79 @@ class TestRequestMetaPredecence003(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
 
+class TestRequestMetaSettingFallback(TestCase):
+
+    params = [
+        (
+            # When an unknown policy is referenced in Request.meta
+            # (here, a typo error),
+            # the policy defined in settings takes precedence
+            {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'},
+            {},
+            {'referrer_policy': 'ssscrapy-default'},
+            OriginWhenCrossOriginPolicy,
+            True
+        ),
+        (
+            # same as above but with string value for settings policy
+            {'REFERRER_POLICY': 'origin-when-cross-origin'},
+            {},
+            {'referrer_policy': 'ssscrapy-default'},
+            OriginWhenCrossOriginPolicy,
+            True
+        ),
+        (
+            # request meta references a wrong policy but it is set,
+            # so the Referrer-Policy header in response is not used,
+            # and the settings' policy is applied
+            {'REFERRER_POLICY': 'origin-when-cross-origin'},
+            {'Referrer-Policy': 'unsafe-url'},
+            {'referrer_policy': 'ssscrapy-default'},
+            OriginWhenCrossOriginPolicy,
+            True
+        ),
+        (
+            # here, request meta does not set the policy
+            # so response headers take precedence
+            {'REFERRER_POLICY': 'origin-when-cross-origin'},
+            {'Referrer-Policy': 'unsafe-url'},
+            {},
+            UnsafeUrlPolicy,
+            False
+        ),
+        (
+            # here, request meta does not set the policy,
+            # but response headers also use an unknown policy,
+            # so the settings' policy is used
+            {'REFERRER_POLICY': 'origin-when-cross-origin'},
+            {'Referrer-Policy': 'unknown'},
+            {},
+            OriginWhenCrossOriginPolicy,
+            True
+        )
+    ]
+
+    def test(self):
+
+        origin = 'http://www.scrapy.org'
+        target = 'http://www.example.com'
+
+        for settings, response_headers, request_meta, policy_class, check_warning in self.params[3:]:
+            spider = Spider('foo')
+            mw = RefererMiddleware(Settings(settings))
+
+            response = Response(origin, headers=response_headers)
+            request = Request(target, meta=request_meta)
+
+            with warnings.catch_warnings(record=True) as w:
+                policy = mw.policy(response, request)
+                self.assertIsInstance(policy, policy_class)
+
+                if check_warning:
+                    self.assertEqual(len(w), 1)
+                    self.assertEqual(w[0].category, RuntimeWarning, w[0].message)
+
+
 class TestSettingsPolicyByName(TestCase):
 
     def test_valid_name(self):
@@ -436,7 +510,7 @@ class TestSettingsPolicyByName(TestCase):
 
     def test_invalid_name(self):
         settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
-        with self.assertRaises(NotConfigured):
+        with self.assertRaises(RuntimeError):
             mw = RefererMiddleware(settings)
 
 
