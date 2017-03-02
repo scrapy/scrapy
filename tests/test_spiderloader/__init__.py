@@ -130,7 +130,7 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             self.assertIn("several spiders with the same name (spider3)", str(w[0].message))
 
             spiders = set(spider_loader.list())
-            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3']))
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
 
     def test_multiple_dupename_warning(self):
         # copy 2 spider modules so as to have duplicate spider name
@@ -149,4 +149,4 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             self.assertIn("several spiders with the same name (spider2)", msgs[1])
 
             spiders = set(spider_loader.list())
-            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3']))
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
