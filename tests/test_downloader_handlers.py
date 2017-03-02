@@ -838,6 +838,16 @@ class DataURITestCase(unittest.TestCase):
         self.download_request = self.download_handler.download_request
         self.spider = Spider('foo')
 
+    def test_response_attrs(self):
+        uri = "data:,A%20brief%20note"
+
+        def _test(response):
+            self.assertEquals(response.url, uri)
+            self.assertFalse(response.headers)
+
+        request = Request(uri)
+        return self.download_request(request, self.spider).addCallback(_test)
+
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEquals(response.text, 'A brief note')
