@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 class MediaPipeline(object):
 
     LOG_FAILED_RESULTS = True
-    ALLOW_REDIRECTS = False
 
     class SpiderInfo(object):
         def __init__(self, spider):
@@ -35,11 +34,22 @@ class MediaPipeline(object):
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name="MediaPipeline")
         self.allow_redirects = settings.getbool(
-            resolve('MEDIA_ALLOW_REDIRECTS'), self.ALLOW_REDIRECTS
+            resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
         self.handle_httpstatus_list = settings.getlist(
             resolve('MEDIA_HTTPSTATUS_LIST'), []
         )
+
+        self.httpstatus_list = []
+        if self.handle_httpstatus_list:
+            self.httpstatus_list = self.handle_httpstatus_list
+        if self.allow_redirects:
+            if not self.httpstatus_list:
+                self.httpstatus_list = [i for i in range(1000)
+                                   if i not in RedirectMiddleware.allowed_status]
+            else:
+                self.httpstatus_list = [i for i in self.httpstatus_list
+                                   if i not in RedirectMiddleware.allowed_status]
 
     def _key_for_pipe(self, key, base_class_name=None,
                       settings=None):
@@ -107,18 +117,8 @@ class MediaPipeline(object):
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _modify_media_request(self, request):
-        httpstatus_list = []
-        if self.handle_httpstatus_list:
-            httpstatus_list = self.handle_httpstatus_list
-        if self.allow_redirects:
-            if not httpstatus_list:
-                httpstatus_list = [i for i in range(1000)
-                                   if i not in RedirectMiddleware.allowed_status]
-            else:
-                httpstatus_list = [i for i in httpstatus_list
-                                   if i not in RedirectMiddleware.allowed_status]
-        if httpstatus_list:
-            request.meta['handle_httpstatus_list'] = httpstatus_list
+        if self.httpstatus_list:
+            request.meta['handle_httpstatus_list'] = self.httpstatus_list
         else:
             request.meta['handle_httpstatus_all'] = True
         return request
