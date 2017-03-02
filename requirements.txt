@@ -1,5 +1,5 @@
 Twisted>=10.0.0,<=16.6
-lxml
+lxml>=2.3
 pyOpenSSL
 cssselect>=0.9
 w3lib>=1.8.0
