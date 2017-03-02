@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import gzip
+import logging
 from six.moves import cPickle as pickle
 from importlib import import_module
 from time import time
@@ -13,6 +14,9 @@ from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+
+
+logger = logging.getLogger(__name__)
 
 
 class DummyPolicy(object):
@@ -216,6 +220,8 @@ class DbmCacheStorage(object):
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
         self.db = None
 
+        logger.debug("Using DBM cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
+
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
         self.db = self.dbmodule.open(dbpath, 'c')
@@ -270,6 +276,8 @@ class FilesystemCacheStorage(object):
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
         self._open = gzip.open if self.use_gzip else open
+
+        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
 
     def open_spider(self, spider):
         pass
@@ -343,6 +351,8 @@ class LeveldbCacheStorage(object):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.db = None
+
+        logger.debug("Using LevelDB cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
 
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)

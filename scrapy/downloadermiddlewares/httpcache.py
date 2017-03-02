@@ -1,5 +1,3 @@
-import logging
-
 from email.utils import formatdate
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
@@ -9,9 +7,6 @@ from twisted.web.client import ResponseFailed
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.misc import load_object
-
-
-logger = logging.getLogger(__name__)
 
 
 class HttpCacheMiddleware(object):
@@ -28,8 +23,6 @@ class HttpCacheMiddleware(object):
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
         self.stats = stats
-
-        logger.debug("Using cache directory %(cachedir)s" % {'cachedir': self.storage.cachedir})
 
     @classmethod
     def from_crawler(cls, crawler):
