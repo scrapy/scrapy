@@ -239,11 +239,6 @@ class UnsafeUrlPolicy(ReferrerPolicy):
         return self.stripped_referrer(response)
 
 
-class LegacyPolicy(ReferrerPolicy):
-    def referrer(self, response, request):
-        return response
-
-
 class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
     """
     A variant of "no-referrer-when-downgrade",
