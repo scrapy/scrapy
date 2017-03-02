@@ -36,13 +36,13 @@ class ReferrerPolicy(object):
     def referrer(self, response, request):
         raise NotImplementedError()
 
-    def stripped_referrer(self, r):
-        if urlparse(r).scheme not in self.NOREFERRER_SCHEMES:
-            return self.strip_url(r)
+    def stripped_referrer(self, url):
+        if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
+            return self.strip_url(url)
 
-    def origin_referrer(self, r):
-        if urlparse(r).scheme not in self.NOREFERRER_SCHEMES:
-            return self.origin(r)
+    def origin_referrer(self, url):
+        if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
+            return self.origin(url)
 
     def strip_url(self, url, origin_only=False):
         """
@@ -66,9 +66,9 @@ class ReferrerPolicy(object):
                          strip_default_port=True,
                          origin_only=origin_only)
 
-    def origin(self, r):
+    def origin(self, url):
         """Return serialized origin (scheme, host, path) for a request or response URL."""
-        return self.strip_url(r, origin_only=True)
+        return self.strip_url(url, origin_only=True)
 
     def potentially_trustworthy(self, url):
         # Note: this does not follow https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy
@@ -241,7 +241,7 @@ class UnsafeUrlPolicy(ReferrerPolicy):
 
 class LegacyPolicy(ReferrerPolicy):
     def referrer(self, response, request):
-        return response.url
+        return response
 
 
 class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
