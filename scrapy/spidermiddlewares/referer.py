@@ -33,7 +33,7 @@ class ReferrerPolicy(object):
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES
 
-    def referrer(self, response, request):
+    def referrer(self, response_url, request_url):
         raise NotImplementedError()
 
     def stripped_referrer(self, url):
@@ -91,7 +91,7 @@ class NoReferrerPolicy(ReferrerPolicy):
     """
     name = POLICY_NO_REFERRER
 
-    def referrer(self, response, request):
+    def referrer(self, response_url, request_url):
         return None
 
 
@@ -111,9 +111,9 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
     """
     name = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
-    def referrer(self, response, request):
-        if not self.tls_protected(response) or self.tls_protected(request):
-            return self.stripped_referrer(response)
+    def referrer(self, response_url, request_url):
+        if not self.tls_protected(response_url) or self.tls_protected(request_url):
+            return self.stripped_referrer(response_url)
 
 
 class SameOriginPolicy(ReferrerPolicy):
@@ -128,9 +128,9 @@ class SameOriginPolicy(ReferrerPolicy):
     """
     name = POLICY_SAME_ORIGIN
 
-    def referrer(self, response, request):
-        if self.origin(response) == self.origin(request):
-            return self.stripped_referrer(response)
+    def referrer(self, response_url, request_url):
+        if self.origin(response_url) == self.origin(request_url):
+            return self.stripped_referrer(response_url)
 
 
 class OriginPolicy(ReferrerPolicy):
@@ -144,8 +144,8 @@ class OriginPolicy(ReferrerPolicy):
     """
     name = POLICY_ORIGIN
 
-    def referrer(self, response, request):
-        return self.origin_referrer(response)
+    def referrer(self, response_url, request_url):
+        return self.origin_referrer(response_url)
 
 
 class StrictOriginPolicy(ReferrerPolicy):
@@ -163,11 +163,11 @@ class StrictOriginPolicy(ReferrerPolicy):
     """
     name = POLICY_STRICT_ORIGIN
 
-    def referrer(self, response, request):
-        if ((self.tls_protected(response) and
-             self.potentially_trustworthy(request))
-            or not self.tls_protected(response)):
-            return self.origin_referrer(response)
+    def referrer(self, response_url, request_url):
+        if ((self.tls_protected(response_url) and
+             self.potentially_trustworthy(request_url))
+            or not self.tls_protected(response_url)):
+            return self.origin_referrer(response_url)
 
 
 class OriginWhenCrossOriginPolicy(ReferrerPolicy):
@@ -183,10 +183,10 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     """
     name = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
 
-    def referrer(self, response, request):
-        origin = self.origin(response)
-        if origin == self.origin(request):
-            return self.stripped_referrer(response)
+    def referrer(self, response_url, request_url):
+        origin = self.origin(response_url)
+        if origin == self.origin(request_url):
+            return self.stripped_referrer(response_url)
         else:
             return origin
 
@@ -210,14 +210,14 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
     """
     name = POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
 
-    def referrer(self, response, request):
-        origin = self.origin(response)
-        if origin == self.origin(request):
-            return self.stripped_referrer(response)
-        elif ((self.tls_protected(response) and
-               self.potentially_trustworthy(request))
-              or not self.tls_protected(response)):
-            return self.origin_referrer(response)
+    def referrer(self, response_url, request_url):
+        origin = self.origin(response_url)
+        if origin == self.origin(request_url):
+            return self.stripped_referrer(response_url)
+        elif ((self.tls_protected(response_url) and
+               self.potentially_trustworthy(request_url))
+              or not self.tls_protected(response_url)):
+            return self.origin_referrer(response_url)
 
 
 class UnsafeUrlPolicy(ReferrerPolicy):
@@ -235,8 +235,8 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     """
     name = POLICY_UNSAFE_URL
 
-    def referrer(self, response, request):
-        return self.stripped_referrer(response)
+    def referrer(self, response_url, request_url):
+        return self.stripped_referrer(response_url)
 
 
 class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
