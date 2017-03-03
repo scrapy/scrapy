@@ -5,7 +5,6 @@ from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -88,7 +87,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def test_modify_media_request(self):
         request = Request('http://url')
-        assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_all': True}
+        self.pipe._modify_media_request(request)
+        assert request.meta == {'handle_httpstatus_all': True}
 
 
 class MediaPipelineAllowRedirectsTestCase(BaseMediaPipelineTestCase):
@@ -100,8 +100,8 @@ class MediaPipelineAllowRedirectsTestCase(BaseMediaPipelineTestCase):
 
     def test_modify_media_request(self):
         request = Request('http://url')
-        meta = self.pipe._modify_media_request(request).meta
-        self.assertIn('handle_httpstatus_list', meta)
+        self.pipe._modify_media_request(request)
+        self.assertIn('handle_httpstatus_list', request.meta)
         for status, check in [
                 (200, True),
 
@@ -118,9 +118,9 @@ class MediaPipelineAllowRedirectsTestCase(BaseMediaPipelineTestCase):
                 (404, True),
                 (500, True)]:
             if check:
-                self.assertIn(status, meta['handle_httpstatus_list'])
+                self.assertIn(status, request.meta['handle_httpstatus_list'])
             else:
-                self.assertNotIn(status, meta['handle_httpstatus_list'])
+                self.assertNotIn(status, request.meta['handle_httpstatus_list'])
 
 
 class MockedMediaPipeline(MediaPipeline):

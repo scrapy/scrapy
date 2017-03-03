@@ -114,7 +114,6 @@ class MediaPipeline(object):
             request.meta['handle_httpstatus_list'] = self.handle_httpstatus_list
         else:
             request.meta['handle_httpstatus_all'] = True
-        return request
 
     def _check_media_to_download(self, result, request, info):
         if result is not None:
@@ -126,7 +125,7 @@ class MediaPipeline(object):
                 callback=self.media_downloaded, callbackArgs=(request, info),
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
-            request = self._modify_media_request(request)
+            self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info),
