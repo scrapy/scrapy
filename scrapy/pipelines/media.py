@@ -33,7 +33,8 @@ class MediaPipeline(object):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name="MediaPipeline")
+                                    base_class_name="MediaPipeline",
+                                    settings=settings)
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
