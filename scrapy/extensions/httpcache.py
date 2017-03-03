@@ -220,11 +220,11 @@ class DbmCacheStorage(object):
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
         self.db = None
 
-        logger.debug("Using DBM cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
-
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
         self.db = self.dbmodule.open(dbpath, 'c')
+
+        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         self.db.close()
@@ -352,11 +352,11 @@ class LeveldbCacheStorage(object):
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.db = None
 
-        logger.debug("Using LevelDB cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
-
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)
         self.db = self._leveldb.LevelDB(dbpath)
+
+        logger.debug("Using LevelDB cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         # Do compactation each time to save space and also recreate files to
