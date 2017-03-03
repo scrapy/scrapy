@@ -3,6 +3,12 @@
 Release notes
 =============
 
+1.1.4 (2017-03-03)
+------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
+
+
 1.1.3 (2016-09-22)
 ------------------
 
@@ -273,6 +279,12 @@ Bugfixes
 - sitemaps extraction from ``robots.txt`` is now case-insensitive (:issue:`1902`).
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
+
+
+1.0.7 (2017-03-03)
+------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 1.0.6 (2016-05-04)
