@@ -3,7 +3,7 @@
 Release notes
 =============
 
-1.0.7 (2017-03-XX)
+1.0.7 (2017-03-03)
 ------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
