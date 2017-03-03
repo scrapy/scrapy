@@ -91,38 +91,6 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         assert request.meta == {'handle_httpstatus_all': True}
 
 
-class MediaPipelineAllowRedirectsTestCase(BaseMediaPipelineTestCase):
-
-    pipeline_class = MediaPipeline
-    settings = {
-        'MEDIA_ALLOW_REDIRECTS': True
-    }
-
-    def test_modify_media_request(self):
-        request = Request('http://url')
-        self.pipe._modify_media_request(request)
-        self.assertIn('handle_httpstatus_list', request.meta)
-        for status, check in [
-                (200, True),
-
-                # These are the status codes we want
-                # the downloader to handle itself
-                (301, False),
-                (302, False),
-                (302, False),
-                (307, False),
-                (308, False),
-
-                # we still want to get 4xx and 5xx
-                (400, True),
-                (404, True),
-                (500, True)]:
-            if check:
-                self.assertIn(status, request.meta['handle_httpstatus_list'])
-            else:
-                self.assertNotIn(status, request.meta['handle_httpstatus_list'])
-
-
 class MockedMediaPipeline(MediaPipeline):
 
     def __init__(self, *args, **kwargs):
@@ -289,3 +257,61 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
         self.assertEqual(self.pipe._mockcalled, \
                 ['get_media_requests', 'media_to_download', 'item_completed'])
+
+
+class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
+
+    def _assert_request_no3xx(self, pipeline_class, settings):
+        pipe = pipeline_class(settings=Settings(settings))
+        request = Request('http://url')
+        pipe._modify_media_request(request)
+
+        self.assertIn('handle_httpstatus_list', request.meta)
+        for status, check in [
+                (200, True),
+
+                # These are the status codes we want
+                # the downloader to handle itself
+                (301, False),
+                (302, False),
+                (302, False),
+                (307, False),
+                (308, False),
+
+                # we still want to get 4xx and 5xx
+                (400, True),
+                (404, True),
+                (500, True)]:
+            if check:
+                self.assertIn(status, request.meta['handle_httpstatus_list'])
+            else:
+                self.assertNotIn(status, request.meta['handle_httpstatus_list'])
+
+    def test_standard_setting(self):
+        self._assert_request_no3xx(
+            MediaPipeline,
+            {
+                'MEDIA_ALLOW_REDIRECTS': True
+            })
+
+    def test_subclass_standard_setting(self):
+
+        class UserDefinedPipeline(MediaPipeline):
+            pass
+
+        self._assert_request_no3xx(
+            UserDefinedPipeline,
+            {
+                'MEDIA_ALLOW_REDIRECTS': True
+            })
+
+    def test_subclass_specific_setting(self):
+
+        class UserDefinedPipeline(MediaPipeline):
+            pass
+
+        self._assert_request_no3xx(
+            UserDefinedPipeline,
+            {
+                'USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS': True
+            })
