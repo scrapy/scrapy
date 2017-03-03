@@ -277,10 +277,9 @@ class FilesystemCacheStorage(object):
         self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
         self._open = gzip.open if self.use_gzip else open
 
-        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir})
-
     def open_spider(self, spider):
-        pass
+        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+                     extra={'spider': spider})
 
     def close_spider(self, spider):
         pass
