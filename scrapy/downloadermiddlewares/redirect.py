@@ -57,8 +57,6 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     Handle redirection of requests based on response status
     and meta-refresh html tag.
     """
-    allowed_status = (301, 302, 303, 307)
-
     def process_response(self, request, response, spider):
         if (request.meta.get('dont_redirect', False) or
                 response.status in getattr(spider, 'handle_httpstatus_list', []) or
@@ -66,7 +64,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
                 request.meta.get('handle_httpstatus_all', False)):
             return response
 
-        if 'Location' not in response.headers or response.status not in self.allowed_status:
+        allowed_status = (301, 302, 303, 307)
+        if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
         location = safe_url_string(response.headers['location'])
