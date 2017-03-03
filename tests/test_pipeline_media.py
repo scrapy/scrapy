@@ -24,11 +24,12 @@ def _mocked_download_func(request, info):
 class BaseMediaPipelineTestCase(unittest.TestCase):
 
     pipeline_class = MediaPipeline
+    settings = None
 
     def setUp(self):
         self.spider = Spider('media.com')
         self.pipe = self.pipeline_class(download_func=_mocked_download_func,
-                                        settings=Settings())
+                                        settings=Settings(self.settings))
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
 
@@ -89,17 +90,37 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         request = Request('http://url')
         assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_all': True}
 
-        request = Request('http://url')
-        self.pipe.handle_httpstatus_list = list(range(100))
-        assert self.pipe._modify_media_request(request).meta == {'handle_httpstatus_list': list(range(100))}
-        self.pipe.handle_httpstatus_list = None
 
+class MediaPipelineAllowRedirectsTestCase(BaseMediaPipelineTestCase):
+
+    pipeline_class = MediaPipeline
+    settings = {
+        'MEDIA_ALLOW_REDIRECTS': True
+    }
+
+    def test_modify_media_request(self):
         request = Request('http://url')
-        self.pipe.allow_redirects = True
-        correct = {'handle_httpstatus_list': [i for i in range(1000)
-                                              if i not in RedirectMiddleware.allowed_status]}
-        assert self.pipe._modify_media_request(request).meta == correct
-        self.pipe.allow_redirects = False
+        meta = self.pipe._modify_media_request(request).meta
+        self.assertIn('handle_httpstatus_list', meta)
+        for status, check in [
+                (200, True),
+
+                # These are the status codes we want
+                # the downloader to handle itself
+                (301, False),
+                (302, False),
+                (302, False),
+                (307, False),
+                (308, False),
+
+                # we still want to get 4xx and 5xx
+                (400, True),
+                (404, True),
+                (500, True)]:
+            if check:
+                self.assertIn(status, meta['handle_httpstatus_list'])
+            else:
+                self.assertNotIn(status, meta['handle_httpstatus_list'])
 
 
 class MockedMediaPipeline(MediaPipeline):

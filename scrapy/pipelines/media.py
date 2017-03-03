@@ -6,8 +6,8 @@ from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.settings import Settings
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
@@ -29,6 +29,7 @@ class MediaPipeline(object):
 
     def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         resolve = functools.partial(self._key_for_pipe,
@@ -36,20 +37,12 @@ class MediaPipeline(object):
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
-        self.handle_httpstatus_list = settings.getlist(
-            resolve('MEDIA_HTTPSTATUS_LIST'), []
-        )
+        self._handle_statuses(self.allow_redirects)
 
-        self.httpstatus_list = []
-        if self.handle_httpstatus_list:
-            self.httpstatus_list = self.handle_httpstatus_list
-        if self.allow_redirects:
-            if not self.httpstatus_list:
-                self.httpstatus_list = [i for i in range(1000)
-                                   if i not in RedirectMiddleware.allowed_status]
-            else:
-                self.httpstatus_list = [i for i in self.httpstatus_list
-                                   if i not in RedirectMiddleware.allowed_status]
+    def _handle_statuses(self, allow_redirects):
+        self.handle_httpstatus_list = None
+        if allow_redirects:
+            self.handle_httpstatus_list = SequenceExclude(range(300, 400))
 
     def _key_for_pipe(self, key, base_class_name=None,
                       settings=None):
@@ -117,8 +110,8 @@ class MediaPipeline(object):
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _modify_media_request(self, request):
-        if self.httpstatus_list:
-            request.meta['handle_httpstatus_list'] = self.httpstatus_list
+        if self.handle_httpstatus_list:
+            request.meta['handle_httpstatus_list'] = self.handle_httpstatus_list
         else:
             request.meta['handle_httpstatus_all'] = True
         return request
