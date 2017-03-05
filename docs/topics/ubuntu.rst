@@ -11,6 +11,9 @@ those in Ubuntu, and more stable too since they're continuously built from
 `GitHub repo`_ (master & stable branches) and so they contain the latest bug
 fixes.
 
+.. caution:: These packages are currently not updated and may not work on
+   Ubuntu 16.04 and above, see :issue:`2076` and :issue:`2137`.
+
 To use the packages:
 
 1. Import the GPG key used to sign Scrapy packages into APT keyring::
