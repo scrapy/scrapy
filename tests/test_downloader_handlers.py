@@ -6,7 +6,6 @@ try:
     from unittest import mock
 except ImportError:
     import mock
-import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -22,6 +21,7 @@ from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -31,6 +31,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.http.response.text import TextResponse
+from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
@@ -922,3 +923,69 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
+
+
+class DataURITestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.download_handler = DataURIDownloadHandler(Settings())
+        self.download_request = self.download_handler.download_request
+        self.spider = Spider('foo')
+
+    def test_response_attrs(self):
+        uri = "data:,A%20brief%20note"
+
+        def _test(response):
+            self.assertEquals(response.url, uri)
+            self.assertFalse(response.headers)
+
+        request = Request(uri)
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype_encoding(self):
+        def _test(response):
+            self.assertEquals(response.text, 'A brief note')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "US-ASCII")
+
+        request = Request("data:,A%20brief%20note")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_text_charset(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(response.body, b'\xbe\xd3\xbe')
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_mediatype_parameters(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "utf-8")
+
+        request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
+                          'charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22'
+                          ',%CE%8E%CE%A3%CE%8E')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_base64(self):
+        def _test(response):
+            self.assertEquals(response.text, 'Hello, world.')
+
+        request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)
