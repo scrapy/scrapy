@@ -526,6 +526,13 @@ class TestPolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMid
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
 
+class TestPolicyHeaderPredecence004(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
+    """
+    The empty string means "no-referrer-when-downgrade"
+    """
+    settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
+    resp_headers = {'Referrer-Policy': ''}
+
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
 
