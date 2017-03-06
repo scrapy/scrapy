@@ -101,6 +101,12 @@ Dependencies & Cleanups
   downloader middlewares.
 
 
+Scrapy 1.2.3 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
+
+
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
 
@@ -227,6 +233,12 @@ Documentation
 - Updated ``Response`` parameters documentation (:issue:`2197`).
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
+
+
+Scrapy 1.1.4 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 Scrapy 1.1.3 (2016-09-22)
@@ -499,6 +511,12 @@ Bugfixes
 - sitemaps extraction from ``robots.txt`` is now case-insensitive (:issue:`1902`).
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
+
+
+Scrapy 1.0.7 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 Scrapy 1.0.6 (2016-05-04)
