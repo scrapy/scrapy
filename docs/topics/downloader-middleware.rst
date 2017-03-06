@@ -645,6 +645,12 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+   This middleware also supports decoding `brotli-compressed`_ responses,
+   provided `brotlipy`_ is installed.
+
+.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
+.. _brotlipy: https://pypi.python.org/pypi/brotlipy
+
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
