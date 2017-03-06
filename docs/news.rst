@@ -3,6 +3,78 @@
 Release notes
 =============
 
+Scrapy 1.4.0 (2017-XX-XX)
+-------------------------
+
+New Features
+~~~~~~~~~~~~
+
+- Use credentials from request.meta['proxy'] #2530
+- [httpcompression] add support for br - brotli content encoding #2535
+- Enable memusage extension by default. #2539
+- response.follow #2540
+- add flags to request #2082
+- Support Anonymous FTP #2343
+- HttpErrorMiddleware stats #2566
+- Retry stats #2543
+- Set canonicalize=False for LinkExtractor #2537
+- Referrer policies in RefererMiddleware #2306
+- Fix referrer policy from response headers and support explicit empty string #2627
+- Data URI download handler. #2334
+- HttpCacheMiddleware: log cache directory at instantiation #2611
+- Add warning on duplicate spider name #2612
+- Allowed passing objects of Mapping class or its subclass to the CaselessDict initializer #2646
+- Allow redirections in media files downloads #2616
+- Travis CI: use portable pypy for Linux #2710
+
+
+Bug fixes
+~~~~~~~~~
+
+- LinkExtractors: strip whitespaces #2547
+- FormRequest: handle whitespaces in action attribute properly #2548
+- Buffer CONNECT response bytes from proxy until all HTTP headers are received #2495
+- Fix FTP downloader and re-enable FTP tests on Python 3 #2599
+- Handle data loss gracefully. #2590
+- Use body to choose response type after decompression content #2393
+- Always decompress Content-Encoding: gzip at HttpCompression stage #2391
+- Respect custom log level (#2581, fixes #1612)
+- [logformatter] 'flags' format spec backward compatibility #2649
+- 'make htmlview' does not open the webbrowser #2661
+- Remove "commands" from the command list  #2695
+
+Cleanups
+~~~~~~~~
+
+- TST remove temp files and folders #2570
+- TST fixed ProjectUtilsTest on OS X #2569
+- Separate building request from _requests_to_follow in CrawlSpider #2562
+- remove “Python 3 progress” badge #2567
+- add a couple more lines to gitignore #2557
+- deprecate Spider.make_requests_from_url. #1728
+- Remove bumpversion prerelease configuration #2159
+- Set context factory implementation based on Twisted version #2577
+- Add omitted "self" arguments #2595
+- Remove redundant slot.add_request() call in ExecutionEngine #2617
+- Removed contrib section in contribution documentation #2636
+- More specific exception catching: os.path.getmtime can only raise os.error in FSFilesStore #2644
+
+Documentation
+~~~~~~~~~~~~~
+
+- Doc: binary mode is required for exporters #2564
+- document issue with FormRequest.from_response due to bug in lxml #2572
+- Use single quotes uniformly #2596
+- Document ftp_user and ftp_password meta keys #2587
+- Update release notes for 1.0.7, 1.1.4 and 1.2.3 #2625
+- DOC Mention brotli support in HttpCompressionMiddleware section #2628
+- Removed contrib section in contribution documentation #2636
+- docs: installation instructions, mention conda in the beginning (closes #2475) #2477
+- FAQ Rewrite note on Python 3 support on Windows #2690
+- DOC Rearrange selector sections #2705
+- Remove __nonzero__ from SelectorList docs #2683
+
+
 Scrapy 1.3.3 (2017-03-10)
 -------------------------
 
@@ -14,6 +86,7 @@ Bug fixes
   These exceptions were silenced as warnings since 1.3.0.
   A new setting is introduced to toggle between warning or exception if needed ;
   see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
+
 
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
