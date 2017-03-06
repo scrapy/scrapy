@@ -43,7 +43,8 @@ def get_meta_refresh(response):
 def response_status_message(status):
     """Return status code plus status text descriptive message
     """
-    return '%s %s' % (status, to_native_str(http.RESPONSES.get(int(status), "Unknown Status")))
+    message = http.RESPONSES.get(int(status), "Unknown Status")
+    return '%s %s' % (status, to_native_str(message))
 
 
 def response_httprepr(response):

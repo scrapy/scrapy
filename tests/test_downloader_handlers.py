@@ -13,9 +13,11 @@ from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
 from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
+from twisted.web._newclient import ResponseFailed
+from twisted.web.http import _DataLoss
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+        PayloadResource
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
@@ -118,6 +120,52 @@ class ContentLengthHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
 
+class ChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            # Disable terminating chunk on finish.
+            request.chunked = False
+            closeConnection(request)
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenDownloadResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.setHeader(b"Content-Length", b"20")
+            request.write(b"partial")
+            closeConnection(request)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+def closeConnection(request):
+    # We have to force a disconnection for HTTP/1.1 clients. Otherwise
+    # client keeps the connection open waiting for more data.
+    if hasattr(request.channel, 'loseConnection'):  # twisted >=16.3.0
+        request.channel.loseConnection()
+    else:
+        request.channel.transport.loseConnection()
+    request.finish()
+
+
 class EmptyContentTypeHeaderResource(resource.Resource):
     """
     A testing resource which renders itself as the value of request body
@@ -149,6 +197,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"chunked", ChunkedResource())
+        r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.site = server.Site(r, timeout=None)
@@ -340,6 +390,53 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+    def test_download_chunked_content(self):
+        request = Request(self.getURL('chunked'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, b"chunked content\n")
+        return d
+
+    def test_download_broken_content_cause_data_loss(self, url='broken'):
+        request = Request(self.getURL(url))
+        d = self.download_request(request, Spider('foo'))
+
+        def checkDataLoss(failure):
+            if failure.check(ResponseFailed):
+                if any(r.check(_DataLoss) for r in failure.value.reasons):
+                    return None
+            return failure
+
+        d.addCallback(lambda _: self.fail("No DataLoss exception"))
+        d.addErrback(checkDataLoss)
+        return d
+
+    def test_download_broken_chunked_content_cause_data_loss(self):
+        return self.test_download_broken_content_cause_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss(self, url='broken'):
+        request = Request(self.getURL(url), meta={'download_fail_on_dataloss': False})
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss(self):
+        return self.test_download_broken_content_allow_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
+        download_handler = self.download_handler_cls(Settings({
+            'DOWNLOAD_FAIL_ON_DATALOSS': False,
+        }))
+        request = Request(self.getURL(url))
+        d = download_handler.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+        return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
 
 
 class Https11TestCase(Http11TestCase):
@@ -687,9 +784,6 @@ class BaseFTPTestCase(unittest.TestCase):
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
 
-    if six.PY3:
-        skip = "Twisted missing ftp support for PY3"
-
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -700,8 +794,8 @@ class BaseFTPTestCase(unittest.TestCase):
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
-        fp.child('file.txt').setContent("I have the power!")
-        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -736,8 +830,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'I have the power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
+            self.assertEqual(r.body, b'I have the power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
@@ -749,8 +843,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'Moooooooooo power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['18']})
+            self.assertEqual(r.body, b'Moooooooooo power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'18']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
@@ -763,7 +857,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        local_fname = "/tmp/file.txt"
+        local_fname = b"/tmp/file.txt"
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
@@ -772,10 +866,10 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': ['17']})
+            self.assertEqual(r.headers, {b'Local Filename': [b'/tmp/file.txt'], b'Size': [b'17']})
             self.assertTrue(os.path.exists(local_fname))
-            with open(local_fname) as f:
-                self.assertEqual(f.read(), "I have the power!")
+            with open(local_fname, "rb") as f:
+                self.assertEqual(f.read(), b"I have the power!")
             os.remove(local_fname)
         return self._add_test_callbacks(d, _test)
 
@@ -810,8 +904,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         os.mkdir(self.directory)
 
         fp = FilePath(self.directory)
-        fp.child('file.txt').setContent("I have the power!")
-        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
 
         # setup server for anonymous access
         realm = FTPRealm(anonymousRoot=self.directory)
