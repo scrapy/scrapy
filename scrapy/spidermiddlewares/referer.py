@@ -261,6 +261,9 @@ _policy_classes = {p.name: p for p in (
     DefaultReferrerPolicy,
 )}
 
+# Reference: https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string
+_policy_classes[''] = NoReferrerWhenDowngradePolicy
+
 
 def _load_policy_class(policy, warning_only=False):
     """
@@ -317,8 +320,9 @@ class RefererMiddleware(object):
         policy_name = request.meta.get('referrer_policy')
         if policy_name is None:
             if isinstance(resp_or_url, Response):
-                policy_name = to_native_str(
-                    resp_or_url.headers.get('Referrer-Policy', '').decode('latin1'))
+                policy_header = resp_or_url.headers.get('Referrer-Policy')
+                if policy_header is not None:
+                    policy_name = to_native_str(policy_header.decode('latin1'))
         if policy_name is None:
             return self.default_policy()
 
