@@ -62,4 +62,4 @@ def is_gzipped(response):
 
 
 def gzip_magic_number(response):
-    return response.body[:2] == b'\x1f\x8b'
+    return response.body[:3] == b'\x1f\x8b\x08'
