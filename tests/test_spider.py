@@ -328,6 +328,10 @@ class SitemapSpiderTest(SpiderTest):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertSitemapBody(r, self.BODY)
 
+        # .xml.gz but body decoded by HttpCompression middleware already
+        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.BODY)
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_urls_from_robotstxt(self):
         robots = b"""# Sitemap files
 Sitemap: http://example.com/sitemap.xml
