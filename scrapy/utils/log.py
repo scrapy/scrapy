@@ -98,7 +98,10 @@ def configure_logging(settings=None, install_root_handler=True):
     if install_root_handler:
         logging.root.setLevel(logging.NOTSET)
         handler = _get_handler(settings)
-        logging.root.addHandler(handler)
+        root_handler_cls = tuple({type(h) for h in logging.root.handlers})
+
+        if not isinstance(handler, root_handler_cls):
+            logging.root.addHandler(handler)
 
 
 def _get_handler(settings):

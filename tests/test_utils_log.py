@@ -8,7 +8,8 @@ from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
-                              LogCounterHandler, StreamLogger)
+                              LogCounterHandler, StreamLogger,
+                              configure_logging)
 from scrapy.utils.test import get_crawler
 
 
@@ -107,3 +108,14 @@ class StreamLoggerTest(unittest.TestCase):
         with LogCapture() as l:
             print('test log msg')
         l.check(('test', 'ERROR', 'test log msg'))
+
+
+class ConfigureLoggingTest(unittest.TestCase):
+  
+    def setUp(self):
+        configure_logging()
+        configure_logging()
+
+    def test_duplicate_log(self):
+        handler_cls = [type(h) for h in logging.root.handlers]
+        self.assertEqual(handler_cls.count(logging.StreamHandler), 1)
