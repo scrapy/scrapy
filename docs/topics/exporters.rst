@@ -140,7 +140,7 @@ output examples, which assume you're exporting these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=None)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -218,12 +218,12 @@ BaseItemExporter
 
    .. attribute:: indent
 
-      Amount of spaces used to indent the output on each level. Defaults to ``None``,
-      which disables indentation. This argument behaves like ``indent`` in python's
-      JSON module (both for JSON and XML exporters): "If ``indent`` is a non-negative
-      integer, then array elements and object members will be pretty-printed with that
-      indent level. An indent level of 0, or negative, will only insert newlines.
-      ``None`` (the default) selects the most compact representation"
+      Amount of spaces used to indent the output on each level. Defaults to ``0``.
+
+      * ``indent=None`` selects the most compact representation,
+        all items in the same line with no indentation
+      * ``indent<=0`` each item on it's own line, no indentation
+      * ``indent>0`` each item on it's own line, indentated with the provided numeric value
 
 .. highlight:: none
 

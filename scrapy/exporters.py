@@ -99,8 +99,12 @@ class JsonItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.file = file
+        # there is a small difference between the behaviour or JsonItemExporter.indent
+        # and ScrapyJSONEncoder.indent. ScrapyJSONEncoder.indent=None is needed to prevent
+        # the addition of newlines everywhere
+        json_indent = self.indent if self.indent is not None and self.indent > 0 else None
+        kwargs.setdefault('indent', json_indent)
         kwargs.setdefault('ensure_ascii', not self.encoding)
-        kwargs.setdefault('indent', self.indent)
         self.encoder = ScrapyJSONEncoder(**kwargs)
         self.first_item = True
 
@@ -137,8 +141,8 @@ class XmlItemExporter(BaseItemExporter):
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
 
-    def _beautify_newline(self):
-        if self.indent is not None:
+    def _beautify_newline(self, new_item=False):
+        if self.indent is not None and (self.indent > 0 or new_item):
             self._xg_characters('\n')
 
     def _beautify_indent(self, depth=1):
@@ -148,7 +152,7 @@ class XmlItemExporter(BaseItemExporter):
     def start_exporting(self):
         self.xg.startDocument()
         self.xg.startElement(self.root_element, {})
-        self._beautify_newline()
+        self._beautify_newline(new_item=True)
 
     def export_item(self, item):
         self._beautify_indent(depth=1)
@@ -158,7 +162,7 @@ class XmlItemExporter(BaseItemExporter):
             self._export_xml_field(name, value, depth=2)
         self._beautify_indent(depth=1)
         self.xg.endElement(self.item_element)
-        self._beautify_newline()
+        self._beautify_newline(new_item=True)
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
