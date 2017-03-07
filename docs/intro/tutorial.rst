@@ -201,13 +201,18 @@ using the shell :ref:`Scrapy shell <topics-shell>`. Run::
 
 .. note::
 
-   Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (ie. ``&`` character)
-   will not work.
+    Remember to always enclose urls in quotes when running Scrapy shell from
+    command-line, otherwise urls containing arguments (ie. ``&`` character)
+    will not work.
 
-   On Windows, use double quotes instead::
+    On Windows, use double quotes instead::
 
-       scrapy shell "http://quotes.toscrape.com/page/1/"
+        scrapy shell "http://quotes.toscrape.com/page/1/"
+
+    In some shell configurations, most notably the
+    `oh-my-zsh <https://github.com/robbyrussell/oh-my-zsh>`_ config for zsh,
+    URLs are escaped automatically when pasted to the shell;
+    don't wrap the URL in quotes in that case.
 
 You will see something like::
 
