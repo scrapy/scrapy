@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+from collections import defaultdict
 import traceback
 import warnings
 
@@ -19,14 +20,21 @@ class SpiderLoader(object):
     def __init__(self, settings):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self._spiders = {}
+        self._found = defaultdict(list)
         self._load_all_spiders()
 
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
+            self._found[spcls.name].append((module.__name__, spcls.__name__))
             if spcls.name in self._spiders.keys():
                 import warnings
-                warnings.warn("There are several spiders with the same name (" + spcls.name +
-                              "), this can cause unexpected behavior", UserWarning)
+                msg = ("There are several spiders with the same name {!r}:\n"
+                       "{}\n    This can cause unexpected behavior.".format(
+                            spcls.name,
+                            "\n".join(
+                                "        {1} (in {0})".format(mod, cls)
+                                for (mod, cls) in self._found[spcls.name])))
+                warnings.warn(msg, UserWarning)
             self._spiders[spcls.name] = spcls
 
     def _load_all_spiders(self):
