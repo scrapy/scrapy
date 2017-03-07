@@ -53,6 +53,8 @@ this::
 
 Where the ``<url>`` is the URL you want to scrape.
 
+.. note:: In some shell configurations, most notably the `oh-my-zsh <https://github.com/robbyrussell/oh-my-zsh>`_ config for zsh, URLs are escaped automatically when pasted to the shell; don't wrap the URL in quotes in that case.
+
 :command:`shell` also works for local files. This can be handy if you want
 to play around with a local copy of a web page. :command:`shell` understands
 the following syntaxes for local files::
