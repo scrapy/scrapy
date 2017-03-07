@@ -19,6 +19,7 @@ class SpiderLoader(object):
     """
     def __init__(self, settings):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
+        self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
         self._spiders = {}
         self._found = defaultdict(list)
         self._load_all_spiders()
@@ -46,10 +47,13 @@ class SpiderLoader(object):
                 for module in walk_modules(name):
                     self._load_spiders(module)
             except ImportError as e:
-                msg = ("\n{tb}Could not load spiders from module '{modname}'. "
-                       "Check SPIDER_MODULES setting".format(
-                            modname=name, tb=traceback.format_exc()))
-                warnings.warn(msg, RuntimeWarning)
+                if self.warn_only:
+                    msg = ("\n{tb}Could not load spiders from module '{modname}'. "
+                           "See above traceback for details.".format(
+                                modname=name, tb=traceback.format_exc()))
+                    warnings.warn(msg, RuntimeWarning)
+                else:
+                    raise
         self._check_name_duplicates()
 
     @classmethod
