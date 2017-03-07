@@ -174,9 +174,9 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is not response
-        assert newresponse.body.startswith(b'<!DOCTYPE')
-        assert 'Content-Encoding' not in newresponse.headers
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
 
     def test_process_response_gzip_app_octetstream_contenttype(self):
         response = self._getresponse('gzip')
@@ -184,9 +184,9 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is not response
-        assert newresponse.body.startswith(b'<!DOCTYPE')
-        assert 'Content-Encoding' not in newresponse.headers
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
 
     def test_process_response_gzip_binary_octetstream_contenttype(self):
         response = self._getresponse('x-gzip')
@@ -194,9 +194,9 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is not response
-        assert newresponse.body.startswith(b'<!DOCTYPE')
-        assert 'Content-Encoding' not in newresponse.headers
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
 
     def test_process_response_gzipped_gzip_file(self):
         """Test that a gzip Content-Encoded .gz file is gunzipped
