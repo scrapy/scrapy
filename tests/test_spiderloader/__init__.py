@@ -127,7 +127,9 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             spider_loader = SpiderLoader.from_settings(self.settings)
 
             self.assertEqual(len(w), 1)
-            self.assertIn("several spiders with the same name 'spider3'", str(w[0].message))
+            msg = str(w[0].message)
+            self.assertIn("several spiders with the same name", msg)
+            self.assertIn("'spider3'", msg)
 
             spiders = set(spider_loader.list())
             self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
@@ -143,10 +145,11 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
 
-            self.assertEqual(len(w), 2)
-            msgs = sorted(str(wrn.message) for wrn in w)
-            self.assertIn("several spiders with the same name 'spider1'", msgs[0])
-            self.assertIn("several spiders with the same name 'spider2'", msgs[1])
+            self.assertEqual(len(w), 1)
+            msg = str(w[0].message)
+            self.assertIn("several spiders with the same name", msg)
+            self.assertIn("'spider1'", msg)
+            self.assertIn("'spider2'", msg)
 
             spiders = set(spider_loader.list())
             self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))

@@ -23,18 +23,21 @@ class SpiderLoader(object):
         self._found = defaultdict(list)
         self._load_all_spiders()
 
+    def _check_name_duplicates(self):
+        dupes = ["\n".join("  {cls} named {name!r} (in {module})".format(
+                                module=mod, cls=cls, name=name)
+                           for (mod, cls) in locations)
+                 for name, locations in self._found.items()
+                 if len(locations)>1]
+        if dupes:
+            msg = ("There are several spiders with the same name:\n\n"
+                   "{}\n\n  This can cause unexpected behavior.".format(
+                        "\n\n".join(dupes)))
+            warnings.warn(msg, UserWarning)
+
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
             self._found[spcls.name].append((module.__name__, spcls.__name__))
-            if spcls.name in self._spiders.keys():
-                import warnings
-                msg = ("There are several spiders with the same name {!r}:\n"
-                       "{}\n    This can cause unexpected behavior.".format(
-                            spcls.name,
-                            "\n".join(
-                                "        {1} (in {0})".format(mod, cls)
-                                for (mod, cls) in self._found[spcls.name])))
-                warnings.warn(msg, UserWarning)
             self._spiders[spcls.name] = spcls
 
     def _load_all_spiders(self):
@@ -47,6 +50,7 @@ class SpiderLoader(object):
                        "Check SPIDER_MODULES setting".format(
                             modname=name, tb=traceback.format_exc()))
                 warnings.warn(msg, RuntimeWarning)
+        self._check_name_duplicates()
 
     @classmethod
     def from_settings(cls, settings):
