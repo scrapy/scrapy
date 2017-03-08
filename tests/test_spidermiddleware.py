@@ -9,16 +9,20 @@ from scrapy.spiders import Spider
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer
 
 
 class TestItem(Item):
     value = Field()
 
 
+class LocalhostSpider(Spider):
+    start_urls = ['http://localhost:8998']  # tests.mockserver.MockServer
+
+
 # ================================================================================
 # exceptions from a spider's parse method
-class BaseExceptionFromParseMethodSpider(Spider):
-    start_urls = ["http://example.com/"]
+class BaseExceptionFromParseMethodSpider(LocalhostSpider):
     custom_settings = {
         'SPIDER_MIDDLEWARES': {'tests.test_spidermiddleware.CatchExceptionMiddleware': 540}
     }
@@ -65,8 +69,7 @@ class CatchExceptionMiddleware(object):
 # exception from a previous middleware's process_spider_input method
 # process_spider_input is not expected to return an iterable, so there are no
 # separate tests for generator/non-generator implementations
-class FromPreviousMiddlewareInputSpider(Spider):
-    start_urls = ["http://example.com/"]
+class FromPreviousMiddlewareInputSpider(LocalhostSpider):
     name = 'not_a_generator_from_previous_middleware_input'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -88,8 +91,7 @@ class RaiseExceptionOnInputMiddleware(object):
 
 # ================================================================================
 # exception from a previous middleware's process_spider_output method (not a generator)
-class NotAGeneratorFromPreviousMiddlewareOutputSpider(Spider):
-    start_urls = ["http://example.com/"]
+class NotAGeneratorFromPreviousMiddlewareOutputSpider(LocalhostSpider):
     name = 'not_a_generator_from_previous_middleware_output'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -111,8 +113,7 @@ class RaiseExceptionOnOutputNotAGeneratorMiddleware(object):
 
 # ================================================================================
 # exception from a previous middleware's process_spider_output method (generator)
-class GeneratorFromPreviousMiddlewareOutputSpider(Spider):
-    start_urls = ["http://example.com/"]
+class GeneratorFromPreviousMiddlewareOutputSpider(LocalhostSpider):
     name = 'generator_from_previous_middleware_output'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -136,8 +137,7 @@ class RaiseExceptionOnOutputGeneratorMiddleware(object):
 
 # ================================================================================
 # do something useful from the exception handler
-class DoSomethingSpider(Spider):
-    start_urls = ["http://example.com"]
+class DoSomethingSpider(LocalhostSpider):
     name = 'do_something'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -155,13 +155,12 @@ class DoSomethingSpider(Spider):
 
 class DoSomethingMiddleware(object):
     def process_spider_exception(self, response, exception, spider):
-        return [Request('http://example.org'), {'value': 10}, TestItem(value='asdf')]
+        return [Request('http://localhost:8998?processed=true'), {'value': 10}, TestItem(value='asdf')]
 
 
 # ================================================================================
 # don't catch InvalidOutput from scrapy's spider middleware manager
-class InvalidReturnValueFromPreviousMiddlewareInputSpider(Spider):
-    start_urls = ["http://example.com/"]
+class InvalidReturnValueFromPreviousMiddlewareInputSpider(LocalhostSpider):
     name = 'invalid_return_value_from_previous_middleware_input'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -181,8 +180,7 @@ class InvalidReturnValueInputMiddleware(object):
         return 1.0  # <type 'float'>, not None
 
 
-class InvalidReturnValueFromPreviousMiddlewareOutputSpider(Spider):
-    start_urls = ["http://example.com/"]
+class InvalidReturnValueFromPreviousMiddlewareOutputSpider(LocalhostSpider):
     name = 'invalid_return_value_from_previous_middleware_output'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -205,8 +203,7 @@ class InvalidReturnValueOutputMiddleware(object):
 # ================================================================================
 # make sure only non already called process_spider_output methods
 # are called if process_spider_exception returns an iterable
-class ExecutionChainSpider(Spider):
-    start_urls = ["http://example.com"]
+class ExecutionChainSpider(LocalhostSpider):
     name = 'execution_chain'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -257,6 +254,13 @@ class ThirdMiddleware(object):
 
 
 class TestSpiderMiddleware(TestCase):
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_process_spider_exception_from_parse_method(self):
@@ -309,8 +313,8 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("ImportError exception caught", str(log))
         self.assertIn("{'value': 10}", str(log))
         self.assertIn("{'value': 'asdf'}", str(log))
-        self.assertIn("{'value': 'http://example.com'}", str(log))
-        self.assertIn("{'value': 'http://example.org'}", str(log))
+        self.assertIn("{'value': 'http://localhost:8998'}", str(log))
+        self.assertIn("{'value': 'http://localhost:8998?processed=true'}", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_invalid_return_value_previous_middleware(self):
