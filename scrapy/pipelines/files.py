@@ -58,7 +58,7 @@ class FSFilesStore(object):
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = os.path.getmtime(absolute_path)
-        except:  # FIXME: catching everything!
+        except os.error:
             return {}
 
         with open(absolute_path, 'rb') as f:
