@@ -1180,6 +1180,29 @@ Default: ``'scrapy.spiderloader.SpiderLoader'``
 The class that will be used for loading spiders, which must implement the
 :ref:`topics-api-spiderloader`.
 
+.. setting:: SPIDER_LOADER_WARN_ONLY
+
+SPIDER_LOADER_WARN_ONLY
+-----------------------
+
+.. versionadded:: 1.4
+
+Default: ``False``
+
+By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+it will fail loudly if there is any ``ImportError`` exception.
+But you can choose to silence this exception and turn it into a simple
+warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
+
+.. note::
+    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
+    already (i.e. they will only issue a warning and will not fail)
+    since they do not actually need to load spider classes to work:
+    :command:`scrapy runspider <runspider>`,
+    :command:`scrapy settings <settings>`,
+    :command:`scrapy startproject <startproject>`,
+    :command:`scrapy version <version>`.
+
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
