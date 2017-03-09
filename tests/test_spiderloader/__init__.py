@@ -95,8 +95,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
         module = 'tests.test_spiderloader.test_spiders.doesnotexist'
         settings = Settings({'SPIDER_MODULES': [module]})
-        with self.assertRaises(ImportError):
-            SpiderLoader.from_settings(settings)
+        self.assertRaises(ImportError, SpiderLoader.from_settings, settings)
 
     def test_bad_spider_modules_warning(self):
 
