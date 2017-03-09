@@ -7,7 +7,7 @@ from scrapy.utils.python import to_unicode
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
-    def __init__(self, seq=None, encoding='utf-8'):
+    def __init__(self, seq=None, encoding='latin1'):
         self.encoding = encoding
         super(Headers, self).__init__(seq)
 

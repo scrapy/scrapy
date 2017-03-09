@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import unittest
 import copy
 
@@ -155,3 +157,18 @@ class HeadersTest(unittest.TestCase):
                                 Headers().setdefault, 'foo', object())
         self.assertRaisesRegexp(TypeError, 'Unsupported value type',
                                 Headers().setlist, 'foo', [object()])
+
+    def test_to_unicode_dict_utf8_fail(self):
+        # value is non-utf8 valid.
+        h = Headers({b'l\xc3\xb1e': b'l\xc3\xb1\x99'}, encoding='utf-8')
+        with self.assertRaises(UnicodeDecodeError):
+            h.to_unicode_dict()
+
+        h = Headers({b'l\xc3\xb1e': b'l\xc3\xb1'}, encoding='utf-8')
+        h.to_unicode_dict()
+
+    def test_to_unicode_dict_default_encoding(self):
+        raw = {b'l\xf1e': b'l\xf1\x99'}
+        expected = {u'l\xf1e': u'l\xf1\x99'}
+        self.assertEqual(Headers(raw).to_unicode_dict(), expected)
+        self.assertEqual(Headers(raw, encoding='latin1').to_unicode_dict(), expected)
