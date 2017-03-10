@@ -1185,7 +1185,7 @@ The class that will be used for loading spiders, which must implement the
 SPIDER_LOADER_WARN_ONLY
 -----------------------
 
-.. versionadded:: 1.4
+.. versionadded:: 1.3.3
 
 Default: ``False``
 
