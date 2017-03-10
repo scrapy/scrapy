@@ -3,13 +3,25 @@
 Release notes
 =============
 
+Scrapy 1.3.3 (2017-03-10)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Make ``SpiderLoader`` raise ``ImportError`` again by default for missing
+  dependencies and wrong :setting:`SPIDER_MODULES`.
+  These exceptions were silenced as warnings since 1.3.0.
+  A new setting is introduced to toggle between warning or exception if needed ;
+  see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
+
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
 
 Bug fixes
 ~~~~~~~~~
 
-- Preserve crequest class when converting to/from dicts (utils.reqser) (:issue:`2510`).
+- Preserve request class when converting to/from dicts (utils.reqser) (:issue:`2510`).
 - Use consistent selectors for author field in tutorial (:issue:`2551`).
 - Fix TLS compatibility in Twisted 17+ (:issue:`2558`)
 
