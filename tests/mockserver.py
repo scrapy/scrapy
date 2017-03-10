@@ -5,13 +5,17 @@ from subprocess import Popen, PIPE
 
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
+from twisted.web.static import File
 from twisted.web.test.test_webclient import PayloadResource
 from twisted.web.server import GzipEncoderFactory
 from twisted.web.resource import EncodingResourceWrapper
+from twisted.web.util import redirectTo
 from twisted.internet import reactor, ssl
 from twisted.internet.task import deferLater
 
+
 from scrapy.utils.python import to_bytes, to_unicode
+from tests import tests_datadir
 
 
 def getarg(request, name, default=None, type=None):
@@ -120,6 +124,16 @@ class Echo(LeafResource):
         return to_bytes(json.dumps(output))
 
 
+class RedirectTo(LeafResource):
+
+    def render(self, request):
+        goto = getarg(request, b'goto', b'/')
+        # we force the body content, otherwise Twisted redirectTo()
+        # returns HTML with <meta http-equiv="refresh"
+        redirectTo(goto, request)
+        return b'redirecting...'
+
+
 class Partial(LeafResource):
 
     def render_GET(self, request):
@@ -160,6 +174,8 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+        self.putChild(b"redirect-to", RedirectTo())
 
     def getChild(self, name, request):
         return self
