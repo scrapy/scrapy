@@ -159,7 +159,7 @@ class DoSomethingMiddleware(object):
 
 
 # ================================================================================
-# don't catch InvalidOutput from scrapy's spider middleware manager
+# don't catch _InvalidOutput from scrapy's spider middleware manager
 class InvalidReturnValueFromPreviousMiddlewareInputSpider(LocalhostSpider):
     name = 'invalid_return_value_from_previous_middleware_input'
     custom_settings = {
@@ -318,19 +318,19 @@ class TestSpiderMiddleware(TestCase):
 
     @defer.inlineCallbacks
     def test_process_spider_exception_invalid_return_value_previous_middleware(self):
-        """ don't catch InvalidOutput from middleware """
+        """ don't catch _InvalidOutput from middleware """
         # on middleware's input
         crawler1 = get_crawler(InvalidReturnValueFromPreviousMiddlewareInputSpider)
         with LogCapture() as log1:
             yield crawler1.crawl()
-        self.assertNotIn("InvalidOutput exception caught", str(log1))
-        self.assertIn("'spider_exceptions/InvalidOutput'", str(log1))
+        self.assertNotIn("_InvalidOutput exception caught", str(log1))
+        self.assertIn("'spider_exceptions/_InvalidOutput'", str(log1))
         # on middleware's output
         crawler2 = get_crawler(InvalidReturnValueFromPreviousMiddlewareOutputSpider)
         with LogCapture() as log2:
             yield crawler2.crawl()
-        self.assertNotIn("InvalidOutput exception caught", str(log2))
-        self.assertIn("'spider_exceptions/InvalidOutput'", str(log2))
+        self.assertNotIn("_InvalidOutput exception caught", str(log2))
+        self.assertIn("'spider_exceptions/_InvalidOutput'", str(log2))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_execution_chain(self):

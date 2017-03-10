@@ -5,7 +5,7 @@ See documentation in docs/topics/spider-middleware.rst
 """
 import six
 from twisted.python.failure import Failure
-from scrapy.exceptions import InvalidOutput
+from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
@@ -42,7 +42,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 try:
                     result = method(response=response, spider=spider)
                     if result is not None:
-                        raise InvalidOutput('Middleware {} must return None or raise ' \
+                        raise _InvalidOutput('Middleware {} must return None or raise ' \
                             'an exception, got {}'.format(fname(method), type(result)))
                 except:
                     return scrape_func(Failure(), request, spider)
@@ -50,13 +50,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         def process_spider_exception(_failure):
             exception = _failure.value
-            # don't handle InvalidOutput exception
-            if isinstance(exception, InvalidOutput):
+            # don't handle _InvalidOutput exception
+            if isinstance(exception, _InvalidOutput):
                 return _failure
             for method in self.methods['process_spider_exception']:
                 result = method(response=response, exception=exception, spider=spider)
                 if result is not None and not _isiterable(result):
-                    raise InvalidOutput('Middleware {} must return None or an iterable ' \
+                    raise _InvalidOutput('Middleware {} must return None or an iterable ' \
                         'object, got {}'.format(fname(method), type(result)))
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
@@ -80,7 +80,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if _isiterable(result):
                     result = wrapper(result)
                 else:
-                    raise InvalidOutput('Middleware {} must return an iterable object, ' \
+                    raise _InvalidOutput('Middleware {} must return an iterable object, ' \
                         'got {}'.format(fname(method), type(result)))
             return result
 
