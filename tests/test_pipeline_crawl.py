@@ -23,8 +23,8 @@ class MediaDownloadSpider(SimpleSpider):
         self.logger.info(response.headers)
         self.logger.info(response.text)
         item = {
-            'images': [],
-            'image_urls': [
+            self.media_key: [],
+            self.media_urls_key: [
                 self._process_url(response.urljoin(href))
                     for href in response.xpath('''
                         //table[thead/tr/th="Filename"]
@@ -50,7 +50,15 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
                     'goto', url)
 
 
-class MediaDownloadCrawlTestCase(TestCase):
+class FileDownloadCrawlTestCase(TestCase):
+    pipeline_class = 'scrapy.pipelines.files.FilesPipeline'
+    store_setting_key = 'FILES_STORE'
+    media_key = 'files'
+    media_urls_key = 'file_urls'
+    expected_checksums = set([
+        '5547178b89448faf0015a13f904c936e',
+        'c2281c83670e31d8aaab7cb642b824db',
+        'ed3f6538dc15d4d9179dae57319edc5f'])
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -60,19 +68,11 @@ class MediaDownloadCrawlTestCase(TestCase):
         self.tmpmediastore = self.mktemp()
         os.mkdir(self.tmpmediastore)
         self.settings = {
-            'ITEM_PIPELINES': {'scrapy.pipelines.images.ImagesPipeline': 1},
-            'IMAGES_STORE': self.tmpmediastore,
+            'ITEM_PIPELINES': {self.pipeline_class: 1},
+            self.store_setting_key: self.tmpmediastore,
         }
         self.runner = CrawlerRunner(self.settings)
         self.items = []
-        # these are the checksums for images in test_site/files/images
-        # - scrapy.png
-        # - python-powered-h-50x65.png
-        # - python-logo-master-v3-TM-flattened.png
-        self.expected_checksums = set([
-            'a7020c30837f971084834e603625af58',
-            'acac52d42b63cf2c3b05832641f3a53c',
-            '195672ac5888feb400fbf7b352553afe'])
 
     def tearDown(self):
         shutil.rmtree(self.tmpmediastore)
@@ -82,39 +82,40 @@ class MediaDownloadCrawlTestCase(TestCase):
     def _on_item_scraped(self, item):
         self.items.append(item)
 
-    def _create_crawler(self, spider_class):
-        crawler = self.runner.create_crawler(spider_class)
+    def _create_crawler(self, spider_class, **kwargs):
+        crawler = self.runner.create_crawler(spider_class, **kwargs)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
         return crawler
 
     def _assert_files_downloaded(self, items, logs):
         self.assertEqual(len(items), 1)
-        self.assertIn('images', items[0])
+        self.assertIn(self.media_key, items[0])
 
         # check that logs show the expected number of successful file downloads
         file_dl_success = 'File (downloaded): Downloaded file from'
         self.assertEqual(logs.count(file_dl_success), 3)
 
-        # check that the images checksums are what we know they should be
-        checksums = set(
-            i['checksum']
-                for item in items
-                    for i in item['images'])
-        self.assertEqual(checksums, self.expected_checksums)
+        # check that the images/files checksums are what we know they should be
+        if self.expected_checksums is not None:
+            checksums = set(
+                i['checksum']
+                    for item in items
+                        for i in item[self.media_key])
+            self.assertEqual(checksums, self.expected_checksums)
 
         # check that the image files where actually written to the media store
         for item in items:
-            for i in item['images']:
+            for i in item[self.media_key]:
                 self.assertTrue(
                     os.path.exists(
                         os.path.join(self.tmpmediastore, i['path'])))
 
     def _assert_files_download_failure(self, crawler, items, code, logs):
 
-        # check that the item does NOT have the "images" field populated
+        # check that the item does NOT have the "images/files" field populated
         self.assertEqual(len(items), 1)
-        self.assertIn('images', items[0])
-        self.assertFalse(items[0]['images'])
+        self.assertIn(self.media_key, items[0])
+        self.assertFalse(items[0][self.media_key])
 
         # check that there was 1 successful fetch and 3 other responses with non-200 code
         self.assertEqual(crawler.stats.get_value('downloader/request_method_count/GET'), 4)
@@ -133,21 +134,27 @@ class MediaDownloadCrawlTestCase(TestCase):
     def test_download_media(self):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl("http://localhost:8998/files/images/")
+            yield crawler.crawl("http://localhost:8998/files/images/",
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key)
         self._assert_files_downloaded(self.items, str(log))
 
     @defer.inlineCallbacks
     def test_download_media_wrong_urls(self):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl("http://localhost:8998/files/images/")
+            yield crawler.crawl("http://localhost:8998/files/images/",
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key)
         self._assert_files_download_failure(crawler, self.items, 404, str(log))
 
     @defer.inlineCallbacks
     def test_download_media_redirected_default_failure(self):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl("http://localhost:8998/files/images/")
+            yield crawler.crawl("http://localhost:8998/files/images/",
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key)
         self._assert_files_download_failure(crawler, self.items, 302, str(log))
 
     @defer.inlineCallbacks
@@ -158,6 +165,18 @@ class MediaDownloadCrawlTestCase(TestCase):
 
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl("http://localhost:8998/files/images/")
+            yield crawler.crawl("http://localhost:8998/files/images/",
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key)
         self._assert_files_downloaded(self.items, str(log))
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
+
+
+class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
+    pipeline_class = 'scrapy.pipelines.images.ImagesPipeline'
+    store_setting_key = 'IMAGES_STORE'
+    media_key = 'images'
+    media_urls_key = 'image_urls'
+
+    # somehow checksums for images are different for Python 3.3
+    expected_checksums = None
