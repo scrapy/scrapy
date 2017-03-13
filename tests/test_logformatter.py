@@ -64,5 +64,32 @@ class LoggingContribTest(unittest.TestCase):
         assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
 
+
+class LogFormatterSubclass(LogFormatter):
+    # Formatter with format spec that is same as in Scrapy before 1.3 version.
+    def crawled(self, request, response, spider):
+        kwargs = super(LogFormatterSubclass, self).crawled(
+        request, response, spider)
+        CRAWLEDMSG = (
+            u"Crawled (%(status)s) %(request)s (referer: "
+            u"%(referer)s)%(flags)s"
+        )
+        return {
+            'level': kwargs['level'],
+            'msg': CRAWLEDMSG,
+            'args': kwargs['args']
+        }
+
+
+class LogformatterSubclassTest(LoggingContribTest):
+    # Test if old crawledmsg format string still works fine
+    def setUp(self):
+        self.formatter = LogFormatterSubclass()
+        self.spider = Spider('default')
+
+    def test_flags_in_request(self):
+        pass
+
+
 if __name__ == "__main__":
     unittest.main()

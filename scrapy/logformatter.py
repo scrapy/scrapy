@@ -43,6 +43,7 @@ class LogFormatter(object):
                 'request_flags' : request_flags,
                 'referer': referer_str(request),
                 'response_flags': response_flags,
+                'flags': response_flags
             }
         }
 
