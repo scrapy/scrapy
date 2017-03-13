@@ -22,3 +22,21 @@ class ItemPipelineManager(MiddlewareManager):
 
     def process_item(self, item, spider):
         return self._process_chain('process_item', item, spider)
+
+
+class ItemPipeline(object):
+    """Base class for scrapy item pipelines.
+    """
+
+    def process_item(self, item, spider):
+        return item
+
+    def open_spider(self, spider):
+        pass
+
+    def close_spider(self, spider):
+        pass
+
+    @classmethod
+    def from_crawler(cls, spider):
+        pass

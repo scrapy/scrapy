@@ -32,7 +32,11 @@ class MiddlewareManager(object):
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
+                mw_from_crawler = None
                 if crawler and hasattr(mwcls, 'from_crawler'):
+                    mw_from_crawler = mwcls.from_crawler(crawler)
+
+                if mw_from_crawler is not None and crawler and hasattr(mwcls, 'from_crawler'):
                     mw = mwcls.from_crawler(crawler)
                 elif hasattr(mwcls, 'from_settings'):
                     mw = mwcls.from_settings(settings)

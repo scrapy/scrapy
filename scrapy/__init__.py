@@ -35,5 +35,6 @@ from scrapy.spiders import Spider
 from scrapy.http import Request, FormRequest
 from scrapy.selector import Selector
 from scrapy.item import Item, Field
+from scrapy.pipelines import ItemPipeline
 
 del sys

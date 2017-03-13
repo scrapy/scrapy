@@ -251,6 +251,19 @@ with multiples lines
     def test_open_spider_error_on_faulty_pipeline(self):
         settings = {
             "ITEM_PIPELINES": {
+                "tests.pipelines.LegacyZeroDivisionErrorPipeline": 300,
+            }
+        }
+        crawler = CrawlerRunner(settings).create_crawler(SimpleSpider)
+        yield self.assertFailure(
+            self.runner.crawl(crawler, "http://localhost:8998/status?n=200"),
+            ZeroDivisionError)
+        self.assertFalse(crawler.crawling)
+
+    @defer.inlineCallbacks
+    def test_open_spider_error_on_faulty_pipeline(self):
+        settings = {
+            "ITEM_PIPELINES": {
                 "tests.pipelines.ZeroDivisionErrorPipeline": 300,
             }
         }

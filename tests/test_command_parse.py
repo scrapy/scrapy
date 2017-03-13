@@ -61,8 +61,9 @@ class MyBadCrawlSpider(CrawlSpider):
         with open(fname, 'w') as f:
             f.write("""
 import logging
+from scrapy import ItemPipeline
 
-class MyPipeline(object):
+class MyPipeline(ItemPipeline):
     component_name = 'my_pipeline'
 
     def process_item(self, item, spider):

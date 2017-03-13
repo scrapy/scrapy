@@ -20,51 +20,54 @@ Typical uses of item pipelines are:
 * storing the scraped item in a database
 
 
-Writing your own item pipeline
-==============================
+scrapy.ItemPipeline
+===================
 
-Each item pipeline component is a Python class that must implement the following method:
+.. class:: ItemPipeline()
 
-.. method:: process_item(self, item, spider)
+   This is the simplest item pipeline, and the one from which every other item
+   pipeline component should inherit. It doesn't provide any special functionality. It
+   just provides a default :meth:`process_item` implementation which returns the item
+   immediately.
 
-   This method is called for every item pipeline component. :meth:`process_item`
-   must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a `Twisted Deferred`_ or raise
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-   processed by further pipeline components.
+   .. method:: process_item(self, item, spider)
 
-   :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object or a dict
+      This method is called for every item pipeline component. :meth:`process_item`
+      must either: return a dict with data, return an :class:`~scrapy.item.Item`
+      (or any descendant class) object, return a `Twisted Deferred`_ or raise
+      :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
+      processed by further pipeline components.
 
-   :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spiders.Spider` object
+      :param item: the item scraped
+      :type item: :class:`~scrapy.item.Item` object or a dict
 
-Additionally, they may also implement the following methods:
+      :param spider: the spider which scraped the item
+      :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. method:: open_spider(self, spider)
+   .. method:: open_spider(self, spider)
 
-   This method is called when the spider is opened.
+      This method is called when the spider is opened.
 
-   :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spiders.Spider` object
+      :param spider: the spider which was opened
+      :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. method:: close_spider(self, spider)
+   .. method:: close_spider(self, spider)
 
-   This method is called when the spider is closed.
+      This method is called when the spider is closed.
 
-   :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spiders.Spider` object
+      :param spider: the spider which was closed
+      :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. method:: from_crawler(cls, crawler)
+   .. method:: from_crawler(cls, crawler)
 
-   If present, this classmethod is called to create a pipeline instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the pipeline. Crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for pipeline to
-   access them and hook its functionality into Scrapy.
+      If present, this classmethod is called to create a pipeline instance
+      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+      of :class:`~scrapy.ItemPipeline`. Crawler object provides access to all
+      Scrapy core components like settings and signals; it is a way for pipeline
+      to access them and hook its functionality into Scrapy.
 
-   :param crawler: crawler that uses this pipeline
-   :type crawler: :class:`~scrapy.crawler.Crawler` object
+      :param crawler: crawler that uses this pipeline
+      :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
 .. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
@@ -80,9 +83,10 @@ Let's take a look at the following hypothetical pipeline that adjusts the
 (``price_excludes_vat`` attribute), and drops those items which don't
 contain a price::
 
+    from scrapy import ItemPipeline
     from scrapy.exceptions import DropItem
 
-    class PricePipeline(object):
+    class PricePipeline(ItemPipeline):
 
         vat_factor = 1.15
 
@@ -103,8 +107,9 @@ single ``items.jl`` file, containing one item per line serialized in JSON
 format::
 
    import json
+   from scrapy import ItemPipeline
 
-   class JsonWriterPipeline(object):
+   class JsonWriterPipeline(ItemPipeline):
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'wb')
@@ -132,8 +137,9 @@ The main point of this example is to show how to use :meth:`from_crawler`
 method and how to clean up the resources properly.::
 
     import pymongo
+    from scrapy import ItemPipeline
 
-    class MongoPipeline(object):
+    class MongoPipeline(ItemPipeline):
     
         collection_name = 'scrapy_items'
 
@@ -176,9 +182,10 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
     import scrapy
     import hashlib
     from urllib.parse import quote
+    from scrapy import ItemPipeline
 
 
-    class ScreenshotPipeline(object):
+    class ScreenshotPipeline(ItemPipeline):
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
@@ -220,8 +227,9 @@ returns multiples items with the same id::
 
 
     from scrapy.exceptions import DropItem
+    from scrapy import ItemPipeline
 
-    class DuplicatesPipeline(object):
+    class DuplicatesPipeline(ItemPipeline):
 
         def __init__(self):
             self.ids_seen = set()
