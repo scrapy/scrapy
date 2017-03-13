@@ -9,12 +9,13 @@ import logging
 
 from scrapy import signals
 from scrapy.http import Request
+from scrapy.spidermiddlewares import SpiderMiddleware
 from scrapy.utils.httpobj import urlparse_cached
 
 logger = logging.getLogger(__name__)
 
 
-class OffsiteMiddleware(object):
+class OffsiteMiddleware(SpiderMiddleware):
 
     def __init__(self, stats):
         self.stats = stats

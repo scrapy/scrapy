@@ -8,11 +8,12 @@ import logging
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+from scrapy.spidermiddlewares import SpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
 
-class UrlLengthMiddleware(object):
+class UrlLengthMiddleware(SpiderMiddleware):
 
     def __init__(self, maxlength):
         self.maxlength = maxlength

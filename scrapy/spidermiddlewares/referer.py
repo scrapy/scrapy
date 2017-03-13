@@ -10,6 +10,7 @@ from w3lib.url import safe_url_string
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
+from scrapy.spidermiddlewares import SpiderMiddleware
 from scrapy.utils.python import to_native_str
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
@@ -285,7 +286,7 @@ def _load_policy_class(policy, warning_only=False):
                 return None
 
 
-class RefererMiddleware(object):
+class RefererMiddleware(SpiderMiddleware):
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
