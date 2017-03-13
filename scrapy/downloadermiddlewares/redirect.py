@@ -3,6 +3,7 @@ from six.moves.urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
+from scrapy.downloadermiddlewares import DownloaderMiddleware
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -10,7 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class BaseRedirectMiddleware(object):
+class BaseRedirectMiddleware(DownloaderMiddleware):
 
     enabled_setting = 'REDIRECT_ENABLED'
 

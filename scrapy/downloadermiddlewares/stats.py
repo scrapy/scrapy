@@ -1,10 +1,11 @@
+from scrapy.downloadermiddlewares import DownloaderMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_httprepr
 from scrapy.utils.response import response_httprepr
 from scrapy.utils.python import global_object_name
 
 
-class DownloaderStats(object):
+class DownloaderStats(DownloaderMiddleware):
 
     def __init__(self, stats):
         self.stats = stats

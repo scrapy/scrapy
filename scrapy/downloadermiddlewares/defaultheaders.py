@@ -4,10 +4,11 @@ DefaultHeaders downloader middleware
 See documentation in docs/topics/downloader-middleware.rst
 """
 
+from scrapy.downloadermiddlewares import DownloaderMiddleware
 from scrapy.utils.python import without_none_values
 
 
-class DefaultHeadersMiddleware(object):
+class DefaultHeadersMiddleware(DownloaderMiddleware):
 
     def __init__(self, headers):
         self._headers = headers

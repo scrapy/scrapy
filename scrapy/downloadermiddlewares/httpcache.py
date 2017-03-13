@@ -5,11 +5,12 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionLost, TCPTimedOutError
 from twisted.web.client import ResponseFailed
 from scrapy import signals
+from scrapy.downloadermiddlewares import DownloaderMiddleware
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.misc import load_object
 
 
-class HttpCacheMiddleware(object):
+class HttpCacheMiddleware(DownloaderMiddleware):
 
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,

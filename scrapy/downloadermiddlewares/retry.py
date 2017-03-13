@@ -19,6 +19,7 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionLost, TCPTimedOutError
 from twisted.web.client import ResponseFailed
 
+from scrapy.downloadermiddlewares import DownloaderMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.core.downloader.handlers.http11 import TunnelError
@@ -27,7 +28,7 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware(DownloaderMiddleware):
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
