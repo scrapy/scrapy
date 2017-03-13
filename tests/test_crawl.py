@@ -248,7 +248,7 @@ with multiples lines
         self.assertFalse(crawler.crawling)
 
     @defer.inlineCallbacks
-    def test_open_spider_error_on_faulty_pipeline(self):
+    def test_open_legacy_spider_error_on_faulty_pipeline(self):
         settings = {
             "ITEM_PIPELINES": {
                 "tests.pipelines.LegacyZeroDivisionErrorPipeline": 300,
