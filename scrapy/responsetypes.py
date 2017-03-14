@@ -69,7 +69,7 @@ class ResponseTypes(object):
         headers"""
         cls = Response
         if 'Content-Type' in headers:
-            cls = self.from_content_type(headers['Content-type'], \
+            cls = self.from_content_type(headers['Content-Type'], \
                 headers.get('Content-Encoding'))
         if cls is Response and 'Content-Disposition' in headers:
             cls = self.from_content_disposition(headers['Content-Disposition'])
