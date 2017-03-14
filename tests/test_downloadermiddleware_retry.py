@@ -105,27 +105,34 @@ class RetryTest(unittest.TestCase):
 
     def test_different_retry(self):
         
-        req = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 1})
-        self._test_retry(req, DNSLookupError('foo'))
+        req = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 3})
+
+        # SETINGS: meta(max_retry_times) = 3, RETRY_TIMES = 2
+        self._test_retry(req, DNSLookupError('foo'), 3)
+
         req2 = Request('http://www.scrapytest.org/invalid_url')
-        self._test_retry(req2, DNSLookupError('foo'))
-
-        stats = self.crawler.stats
-        assert stats.get_value('retry/max_reached') == 2
-        assert stats.get_value('retry/count') == 3
-
-    def _test_retry(self, req, exception):
         
-        req = self.mw.process_exception(req, exception, self.spider)
-        assert isinstance(req, Request)
+        # SETINGS: RETRY_TIMES < meta(max_retry_times)
+        self._test_retry(req2, DNSLookupError('foo'), 2)
 
-        retry_times = req.meta.get('max_retry_times') or self.mw.max_retry_times
+        # SETINGS: RETRY_TIMES = 0
+        self.mw.max_retry_times = 0
+        self._test_retry(req2, DNSLookupError('foo'), 0)
+        
+        # SETINGS: RETRY_TIMES > meta(max_retry_times)
+        self.mw.max_retry_times = 4
+        self._test_retry(req2, DNSLookupError('foo'), 4)
 
-        while req.meta['retry_times'] != retry_times:
+        # RESET RETRY_TIMES SETTINGS
+        self.mw.max_retry_times = 2
+
+    def _test_retry(self, req, exception, max_retry_times):
+        
+        while max_retry_times > 0:
             req = self.mw.process_exception(req, exception, self.spider)
             assert isinstance(req, Request)
-        
-        self.assertEqual(req.meta['retry_times'], retry_times)
+            if req.meta['retry_times'] == max_retry_times:
+                break
 
         # discard it
         req = self.mw.process_exception(req, exception, self.spider)
