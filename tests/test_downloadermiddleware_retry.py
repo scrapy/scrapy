@@ -103,6 +103,34 @@ class RetryTest(unittest.TestCase):
         req = self.mw.process_exception(req, exception, self.spider)
         self.assertEqual(req, None)
 
+    def test_different_retry(self):
+        
+        req = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 1})
+        self._test_retry(req, DNSLookupError('foo'))
+        req2 = Request('http://www.scrapytest.org/invalid_url')
+        self._test_retry(req2, DNSLookupError('foo'))
+
+        stats = self.crawler.stats
+        assert stats.get_value('retry/max_reached') == 2
+        assert stats.get_value('retry/count') == 3
+
+    def _test_retry(self, req, exception):
+        
+        req = self.mw.process_exception(req, exception, self.spider)
+        assert isinstance(req, Request)
+
+        retry_times = req.meta.get('max_retry_times') or self.mw.max_retry_times
+
+        while req.meta['retry_times'] != retry_times:
+            req = self.mw.process_exception(req, exception, self.spider)
+            assert isinstance(req, Request)
+        
+        self.assertEqual(req.meta['retry_times'], retry_times)
+
+        # discard it
+        req = self.mw.process_exception(req, exception, self.spider)
+        self.assertEqual(req, None)
+
 
 if __name__ == "__main__":
     unittest.main()
