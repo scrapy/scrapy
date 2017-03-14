@@ -47,7 +47,7 @@ Set stat value::
 
 Increment stat value::
 
-    stats.inc_value('pages_crawled')
+    stats.inc_value('downloader/response_count')
 
 Set stat value only if greater than previous::
 
@@ -59,13 +59,13 @@ Set stat value only if lower than previous::
 
 Get stat value::
 
-    >>> stats.get_value('pages_crawled')
+    >>> stats.get_value('downloader/response_count')
     8
 
 Get all stats::
 
     >>> stats.get_stats()
-    {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+    {'downloader/response_count': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================
