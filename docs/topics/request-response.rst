@@ -308,6 +308,7 @@ Those are:
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
+* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -341,6 +342,13 @@ download_fail_on_dataloss
 
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
+
+.. reqmeta:: max_retry_times
+
+max_retry_times
+---------------
+
+The meta key is used set retry times per request. When initialized, the :setting:`RETRY_TIMES` setting will be ignored by the downloader middleware.
 
 .. _topics-request-response-ref-request-subclasses:
 
