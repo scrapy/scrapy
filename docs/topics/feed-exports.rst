@@ -318,4 +318,4 @@ A dict containing the built-in feed exporters supported by Scrapy.
 
 .. _URI: http://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: http://aws.amazon.com/s3/
-.. _boto: http://code.google.com/p/boto/
+.. _boto: https://github.com/boto/boto
