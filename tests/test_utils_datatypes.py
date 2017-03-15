@@ -8,17 +8,19 @@ __doctests__ = ['scrapy.utils.datatypes']
 
 class CaselessDictTest(unittest.TestCase):
 
-    def test_init(self):
+    def test_init_dict(self):
         seq = {'red': 1, 'black': 3}
         d = CaselessDict(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
+    def test_init_pair_sequence(self):
         seq = (('red', 1), ('black', 3))
         d = CaselessDict(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
+    def test_init_mapping(self):
         class MyMapping(Mapping):
             def __init__(self, **kwargs):
                 self._d = kwargs
@@ -37,6 +39,7 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
+    def test_init_mutable_mapping(self):
         class MyMutableMapping(MutableMapping):
             def __init__(self, **kwargs):
                 self._d = kwargs
