@@ -20,10 +20,10 @@ Typical uses of item pipelines are:
 * storing the scraped item in a database
 
 
-scrapy.ItemPipeline
-===================
+scrapy.BaseItemPipeline
+=======================
 
-.. class:: ItemPipeline()
+.. class:: BaseItemPipeline()
 
    This is the simplest item pipeline, and the one from which every other item
    pipeline component should inherit. It doesn't provide any special functionality. It
@@ -83,10 +83,10 @@ Let's take a look at the following hypothetical pipeline that adjusts the
 (``price_excludes_vat`` attribute), and drops those items which don't
 contain a price::
 
-    from scrapy import ItemPipeline
+    from scrapy import BaseItemPipeline
     from scrapy.exceptions import DropItem
 
-    class PricePipeline(ItemPipeline):
+    class PricePipeline(BaseItemPipeline):
 
         vat_factor = 1.15
 
@@ -107,9 +107,9 @@ single ``items.jl`` file, containing one item per line serialized in JSON
 format::
 
    import json
-   from scrapy import ItemPipeline
+   from scrapy import BaseItemPipeline
 
-   class JsonWriterPipeline(ItemPipeline):
+   class JsonWriterPipeline(BaseItemPipeline):
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'wb')
@@ -137,9 +137,9 @@ The main point of this example is to show how to use :meth:`from_crawler`
 method and how to clean up the resources properly.::
 
     import pymongo
-    from scrapy import ItemPipeline
+    from scrapy import BaseItemPipeline
 
-    class MongoPipeline(ItemPipeline):
+    class MongoPipeline(BaseItemPipeline):
     
         collection_name = 'scrapy_items'
 
@@ -182,10 +182,10 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
     import scrapy
     import hashlib
     from urllib.parse import quote
-    from scrapy import ItemPipeline
+    from scrapy import BaseItemPipeline
 
 
-    class ScreenshotPipeline(ItemPipeline):
+    class ScreenshotPipeline(BaseItemPipeline):
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
@@ -227,9 +227,9 @@ returns multiples items with the same id::
 
 
     from scrapy.exceptions import DropItem
-    from scrapy import ItemPipeline
+    from scrapy import BaseItemPipeline
 
-    class DuplicatesPipeline(ItemPipeline):
+    class DuplicatesPipeline(BaseItemPipeline):
 
         def __init__(self):
             self.ids_seen = set()

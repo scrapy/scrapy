@@ -4,7 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-from scrapy import ItemPipeline
+from scrapy import BaseItemPipeline
 
-class ${ProjectName}Pipeline(ItemPipeline):
+class ${ProjectName}Pipeline(BaseItemPipeline):
     pass

@@ -24,7 +24,7 @@ class ItemPipelineManager(MiddlewareManager):
         return self._process_chain('process_item', item, spider)
 
 
-class ItemPipeline(object):
+class BaseItemPipeline(object):
     """Base class for scrapy item pipelines.
     """
 

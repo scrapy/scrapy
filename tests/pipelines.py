@@ -1,7 +1,7 @@
 """
 Some pipelines used for testing
 """
-from scrapy import ItemPipeline
+from scrapy import BaseItemPipeline
 
 
 class LegacyZeroDivisionErrorPipeline(object):
@@ -13,7 +13,7 @@ class LegacyZeroDivisionErrorPipeline(object):
         return item
 
 
-class ZeroDivisionErrorPipeline(ItemPipeline):
+class ZeroDivisionErrorPipeline(BaseItemPipeline):
 
     def open_spider(self, spider):
         a = 1/0
