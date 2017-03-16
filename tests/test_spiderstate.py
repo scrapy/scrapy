@@ -22,13 +22,13 @@ class SpiderStateTest(unittest.TestCase):
             ss.spider_opened(spider)
             spider.state['one'] = 1
             spider.state['dt'] = dt
-            ss.spider_closed(spider)
+            ss.spider_closed(spider, None)
 
             spider2 = Spider(name='default')
             ss2 = SpiderState(jobdir)
             ss2.spider_opened(spider2)
             self.assertEqual(spider.state, {'one': 1, 'dt': dt})
-            ss2.spider_closed(spider2)
+            ss2.spider_closed(spider2, None)
         finally:
             shutil.rmtree(jobdir)
 
@@ -39,7 +39,7 @@ class SpiderStateTest(unittest.TestCase):
         ss = SpiderState()
         ss.spider_opened(spider)
         self.assertEqual(spider.state, {})
-        ss.spider_closed(spider)
+        ss.spider_closed(spider, None)
 
     def test_not_configured(self):
         crawler = get_crawler(Spider)

@@ -13,13 +13,14 @@ from twisted.internet import task
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
 
 logger = logging.getLogger(__name__)
 
 
-class MemoryUsage(object):
+class MemoryUsage(BaseExtension):
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):

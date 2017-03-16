@@ -2,11 +2,12 @@ import logging
 
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
+from scrapy.extensions import BaseExtension
 
 logger = logging.getLogger(__name__)
 
 
-class AutoThrottle(object):
+class AutoThrottle(BaseExtension):
 
     def __init__(self, crawler):
         self.crawler = crawler
@@ -15,14 +16,14 @@ class AutoThrottle(object):
 
         self.debug = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
         self.target_concurrency = crawler.settings.getfloat("AUTOTHROTTLE_TARGET_CONCURRENCY")
-        crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(self._response_downloaded, signal=signals.response_downloaded)
+        crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(self.response_downloaded, signal=signals.response_downloaded)
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def _spider_opened(self, spider):
+    def spider_opened(self, spider):
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
         spider.download_delay = self._start_delay(spider)
@@ -37,7 +38,7 @@ class AutoThrottle(object):
     def _start_delay(self, spider):
         return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
 
-    def _response_downloaded(self, response, request, spider):
+    def response_downloaded(self, response, request, spider):
         key, slot = self._get_slot(request, spider)
         latency = request.meta.get('download_latency')
         if latency is None or slot is None:

@@ -9,10 +9,11 @@ import six
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 from scrapy.utils.trackref import live_refs
 
 
-class MemoryDebugger(object):
+class MemoryDebugger(BaseExtension):
 
     def __init__(self, stats):
         self.stats = stats

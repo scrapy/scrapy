@@ -7,8 +7,10 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 from scrapy import signals
 from scrapy.mail import MailSender
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 
-class StatsMailer(object):
+
+class StatsMailer(BaseExtension):
 
     def __init__(self, stats, recipients, mail):
         self.stats = stats
@@ -25,7 +27,7 @@ class StatsMailer(object):
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
         
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, reason):
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"
         body += "\n".join("%-50s : %s" % i for i in self.stats.get_stats().items())

@@ -10,9 +10,10 @@ from twisted.internet import reactor
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 
 
-class CloseSpider(object):
+class CloseSpider(BaseExtension):
 
     def __init__(self, crawler):
         self.crawler = crawler
@@ -32,7 +33,7 @@ class CloseSpider(object):
         if self.close_on.get('errorcount'):
             crawler.signals.connect(self.error_count, signal=signals.spider_error)
         if self.close_on.get('pagecount'):
-            crawler.signals.connect(self.page_count, signal=signals.response_received)
+            crawler.signals.connect(self.response_received, signal=signals.response_received)
         if self.close_on.get('timeout'):
             crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
         if self.close_on.get('itemcount'):
@@ -48,7 +49,7 @@ class CloseSpider(object):
         if self.counter['errorcount'] == self.close_on['errorcount']:
             self.crawler.engine.close_spider(spider, 'closespider_errorcount')
 
-    def page_count(self, response, request, spider):
+    def response_received(self, response, request, spider):
         self.counter['pagecount'] += 1
         if self.counter['pagecount'] == self.close_on['pagecount']:
             self.crawler.engine.close_spider(spider, 'closespider_pagecount')
@@ -63,7 +64,7 @@ class CloseSpider(object):
         if self.counter['itemcount'] == self.close_on['itemcount']:
             self.crawler.engine.close_spider(spider, 'closespider_itemcount')
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, reason):
         task = getattr(self, 'task', False)
         if task and task.active():
             task.cancel()

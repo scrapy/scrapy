@@ -4,8 +4,10 @@ Extension for collecting core stats like items scraped and start/finish times
 import datetime
 
 from scrapy import signals
+from scrapy.extensions import BaseExtension
 
-class CoreStats(object):
+
+class CoreStats(BaseExtension):
 
     def __init__(self, stats):
         self.stats = stats
@@ -30,7 +32,7 @@ class CoreStats(object):
     def item_scraped(self, item, spider):
         self.stats.inc_value('item_scraped_count', spider=spider)
 
-    def response_received(self, spider):
+    def response_received(self, response, request, spider):
         self.stats.inc_value('response_received_count', spider=spider)
 
     def item_dropped(self, item, spider, exception):

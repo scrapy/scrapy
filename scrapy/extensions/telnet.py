@@ -17,6 +17,7 @@ except ImportError:
 
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
+from scrapy.extensions import BaseExtension
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 update_telnet_vars = object()
 
 
-class TelnetConsole(protocol.ServerFactory):
+class TelnetConsole(protocol.ServerFactory, BaseExtension):
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):

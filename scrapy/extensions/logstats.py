@@ -3,12 +3,13 @@ import logging
 from twisted.internet import task
 
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 from scrapy import signals
 
 logger = logging.getLogger(__name__)
 
 
-class LogStats(object):
+class LogStats(BaseExtension):
     """Log basic scraping stats periodically"""
 
     def __init__(self, stats, interval=60.0):

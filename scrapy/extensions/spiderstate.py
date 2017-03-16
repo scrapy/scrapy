@@ -3,9 +3,11 @@ from six.moves import cPickle as pickle
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.extensions import BaseExtension
 from scrapy.utils.job import job_dir
 
-class SpiderState(object):
+
+class SpiderState(BaseExtension):
     """Store and load spider state during a scraping job"""
 
     def __init__(self, jobdir=None):
@@ -22,7 +24,7 @@ class SpiderState(object):
         crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, reason):
         if self.jobdir:
             with open(self.statefn, 'wb') as f:
                 pickle.dump(spider.state, f, protocol=2)
