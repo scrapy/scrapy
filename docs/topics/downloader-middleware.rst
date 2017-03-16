@@ -156,6 +156,12 @@ Each middleware component is a Python class that inherits from this class:
       :param spider: the spider for which this request is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
 
+
+The deprecated way of creating your own downloader middleware was to create class that
+directly inherits from :class:`~object` and implement the required method. While this
+method is still supported, it is encouraged to inherit from
+:class:`~scrapy.downloadermiddlewares.DownloaderMiddleware` instead.
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
