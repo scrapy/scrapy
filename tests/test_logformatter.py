@@ -66,7 +66,6 @@ class LoggingContribTest(unittest.TestCase):
 
 
 class LogFormatterSubclass(LogFormatter):
-    # Formatter with format spec that is same as in Scrapy before 1.3 version.
     def crawled(self, request, response, spider):
         kwargs = super(LogFormatterSubclass, self).crawled(
         request, response, spider)
@@ -82,7 +81,6 @@ class LogFormatterSubclass(LogFormatter):
 
 
 class LogformatterSubclassTest(LoggingContribTest):
-    # Test if old crawledmsg format string still works fine
     def setUp(self):
         self.formatter = LogFormatterSubclass()
         self.spider = Spider('default')

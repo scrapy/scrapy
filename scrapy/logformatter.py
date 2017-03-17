@@ -43,6 +43,7 @@ class LogFormatter(object):
                 'request_flags' : request_flags,
                 'referer': referer_str(request),
                 'response_flags': response_flags,
+                # backward compatibility with Scrapy logformatter below 1.4 version
                 'flags': response_flags
             }
         }
