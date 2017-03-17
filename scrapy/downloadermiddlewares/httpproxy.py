@@ -7,13 +7,13 @@ except ImportError:
     from urllib.request import _parse_proxy
 from six.moves.urllib.parse import urlunparse
 
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.python import to_bytes
 
 
-class HttpProxyMiddleware(DownloaderMiddleware):
+class HttpProxyMiddleware(BaseDownloaderMiddleware):
 
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding

@@ -42,13 +42,13 @@ this:
 4. The :ref:`Engine <component-engine>` sends the Requests to the
    :ref:`Downloader <component-downloader>`, passing through the
    :ref:`Downloader Middlewares <component-downloader-middleware>` (see
-   :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`).
+   :meth:`~scrapy.downloadermiddlewares.BaseDownloaderMiddleware.process_request`).
 
 5. Once the page finishes downloading the
    :ref:`Downloader <component-downloader>` generates a Response (with
    that page) and sends it to the Engine, passing through the
    :ref:`Downloader Middlewares <component-downloader-middleware>` (see
-   :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`).
+   :meth:`~scrapy.downloadermiddlewares.BaseDownloaderMiddleware.process_response`).
 
 6. The :ref:`Engine <component-engine>` receives the Response from the
    :ref:`Downloader <component-downloader>` and sends it to the

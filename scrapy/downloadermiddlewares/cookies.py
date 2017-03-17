@@ -3,7 +3,7 @@ import six
 import logging
 from collections import defaultdict
 
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
@@ -12,7 +12,7 @@ from scrapy.utils.python import to_native_str
 logger = logging.getLogger(__name__)
 
 
-class CookiesMiddleware(DownloaderMiddleware):
+class CookiesMiddleware(BaseDownloaderMiddleware):
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug=False):

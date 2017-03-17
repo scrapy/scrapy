@@ -16,13 +16,13 @@ try:
 except ImportError:
     from io import BytesIO
 
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.responsetypes import responsetypes
 
 logger = logging.getLogger(__name__)
 
 
-class DecompressionMiddleware(DownloaderMiddleware):
+class DecompressionMiddleware(BaseDownloaderMiddleware):
     """ This middleware tries to recognise and extract the possibly compressed
     responses that may arrive. """
 

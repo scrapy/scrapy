@@ -7,10 +7,10 @@ See documentation in docs/topics/downloader-middleware.rst
 from w3lib.http import basic_auth_header
 
 from scrapy import signals
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 
 
-class HttpAuthMiddleware(DownloaderMiddleware):
+class HttpAuthMiddleware(BaseDownloaderMiddleware):
     """Set Basic HTTP Authorization header
     (http_user and http_pass spider class attributes)"""
 

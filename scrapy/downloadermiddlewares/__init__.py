@@ -1,4 +1,4 @@
-class DownloaderMiddleware(object):
+class BaseDownloaderMiddleware(object):
     """Base class for downloader middleware.
     """
     def process_request(self, request, spider):

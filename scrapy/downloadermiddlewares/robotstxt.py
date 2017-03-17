@@ -9,7 +9,7 @@ import logging
 from six.moves.urllib import robotparser
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -19,7 +19,7 @@ from scrapy.utils.python import to_native_str
 logger = logging.getLogger(__name__)
 
 
-class RobotsTxtMiddleware(DownloaderMiddleware):
+class RobotsTxtMiddleware(BaseDownloaderMiddleware):
     DOWNLOAD_PRIORITY = 1000
 
     def __init__(self, crawler):

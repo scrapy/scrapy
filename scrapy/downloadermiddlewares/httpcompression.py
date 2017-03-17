@@ -1,6 +1,6 @@
 import zlib
 
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
@@ -16,7 +16,7 @@ except ImportError:
     pass
 
 
-class HttpCompressionMiddleware(DownloaderMiddleware):
+class HttpCompressionMiddleware(BaseDownloaderMiddleware):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
     @classmethod

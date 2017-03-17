@@ -28,9 +28,9 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
 the last is the one closer to the downloader. In other words,
-the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+the :meth:`~scrapy.downloadermiddlewares.BaseDownloaderMiddleware.process_request`
 method of each middleware will be invoked in increasing
-middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response` method
+middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.BaseDownloaderMiddleware.process_response` method
 of each middleware will be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
@@ -59,7 +59,7 @@ Each middleware component is a Python class that inherits from this class:
 
 .. module:: scrapy.downloadermiddlewares
 
-.. class:: DownloaderMiddleware
+.. class:: BaseDownloaderMiddleware
 
    .. note::  Any of the downloader middleware methods may also return a deferred.
 
@@ -160,7 +160,7 @@ Each middleware component is a Python class that inherits from this class:
 The deprecated way of creating your own downloader middleware was to create class that
 directly inherits from :class:`~object` and implement the required method. While this
 method is still supported, it is encouraged to inherit from
-:class:`~scrapy.downloadermiddlewares.DownloaderMiddleware` instead.
+:class:`~scrapy.downloadermiddlewares.BaseDownloaderMiddleware` instead.
 
 .. _topics-downloader-middleware-ref:
 

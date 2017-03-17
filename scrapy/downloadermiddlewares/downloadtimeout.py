@@ -5,10 +5,10 @@ See documentation in docs/topics/downloader-middleware.rst
 """
 
 from scrapy import signals
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 
 
-class DownloadTimeoutMiddleware(DownloaderMiddleware):
+class DownloadTimeoutMiddleware(BaseDownloaderMiddleware):
 
     def __init__(self, timeout=180):
         self._timeout = timeout

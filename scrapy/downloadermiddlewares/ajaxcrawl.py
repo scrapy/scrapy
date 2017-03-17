@@ -6,7 +6,7 @@ import logging
 import six
 from w3lib import html
 
-from scrapy.downloadermiddlewares import DownloaderMiddleware
+from scrapy.downloadermiddlewares import BaseDownloaderMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
 
@@ -14,7 +14,7 @@ from scrapy.http import HtmlResponse
 logger = logging.getLogger(__name__)
 
 
-class AjaxCrawlMiddleware(DownloaderMiddleware):
+class AjaxCrawlMiddleware(BaseDownloaderMiddleware):
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
