@@ -41,6 +41,49 @@ class TopLevelFormatter(logging.Filter):
             record.name = record.name.split('.', 1)[0]
         return True
 
+LOG_COLORS = {
+    'VDEBUG': 'white',
+    'DEBUG': 'cyan',
+    'INFO': 'green',
+    'WARNING': 'yellow',
+    'ERROR': 'red',
+    'CRITICAL': 'red',
+}
+COLORS = ['black', 'red', 'green', 'yellow', 'blue', 'purple', 'cyan', 'white']
+
+
+class ColoredFormatter(logging.Formatter):
+    """Logging formatter to output colored logs.
+    Attributes:
+        use_colors: Whether to do colored logging or not.
+    Class attributes:
+        COLOR_ESCAPES: A dict mapping color names to escape sequences
+        RESET_ESCAPE: The escape sequence using for resetting colors
+    """
+
+    COLOR_ESCAPES = {color: '\033[{}m'.format(i)
+                     for i, color in enumerate(COLORS, start=30)}
+    RESET_ESCAPE = '\033[0m'
+
+    def __init__(self, fmt, datefmt, use_colors=True):
+        if use_colors:
+            fmt = '%(log_color)s{}'.format(fmt)
+        super(ColoredFormatter, self).__init__(fmt, datefmt)
+        self._use_colors = use_colors
+
+    def format(self, record):
+        if self._use_colors:
+            color_dict = dict(self.COLOR_ESCAPES)
+            color_dict['reset'] = self.RESET_ESCAPE
+            log_color = LOG_COLORS[record.levelname]
+            color_dict['log_color'] = self.COLOR_ESCAPES[log_color]
+        else:
+            color_dict = {color: '' for color in self.COLOR_ESCAPES}
+            color_dict['reset'] = ''
+            color_dict['log_color'] = ''
+        record.__dict__.update(color_dict)
+        return super(ColoredFormatter, self).format(record)
+
 
 DEFAULT_LOGGING = {
     'version': 1,
@@ -120,17 +163,20 @@ _scrapy_root_handler = None
 def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
+    use_colors = False
     if filename:
         encoding = settings.get('LOG_ENCODING')
         handler = logging.FileHandler(filename, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
+        use_colors = settings.get('LOG_COLOR_IF_STDOUT')
     else:
         handler = logging.NullHandler()
 
-    formatter = logging.Formatter(
+    formatter = ColoredFormatter(
         fmt=settings.get('LOG_FORMAT'),
-        datefmt=settings.get('LOG_DATEFORMAT')
+        datefmt=settings.get('LOG_DATEFORMAT'),
+        use_colors=use_colors
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
