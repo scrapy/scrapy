@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class SpiderMiddleware(object):
+class BaseSpiderMiddleware(object):
 
     def process_spider_input(self, response, spider):
         # Called for each response that goes through the spider

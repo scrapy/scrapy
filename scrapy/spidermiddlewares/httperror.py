@@ -6,7 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 import logging
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.spidermiddlewares import SpiderMiddleware
+from scrapy.spidermiddlewares import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class HttpError(IgnoreRequest):
         super(HttpError, self).__init__(*args, **kwargs)
 
 
-class HttpErrorMiddleware(SpiderMiddleware):
+class HttpErrorMiddleware(BaseSpiderMiddleware):
 
     @classmethod
     def from_crawler(cls, crawler):

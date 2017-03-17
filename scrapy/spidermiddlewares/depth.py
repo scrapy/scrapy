@@ -7,12 +7,12 @@ See documentation in docs/topics/spider-middleware.rst
 import logging
 
 from scrapy.http import Request
-from scrapy.spidermiddlewares import SpiderMiddleware
+from scrapy.spidermiddlewares import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
 
-class DepthMiddleware(SpiderMiddleware):
+class DepthMiddleware(BaseSpiderMiddleware):
 
     def __init__(self, maxdepth, stats=None, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth
