@@ -104,11 +104,11 @@ Here is the code of such extension::
     import logging
     from scrapy import signals
     from scrapy.exceptions import NotConfigured
-    from scrapy.extensions import Extension
+    from scrapy.extensions import BaseExtension
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(Extension):
+    class SpiderOpenCloseLogging(BaseExtension):
 
         def __init__(self, item_count):
             self.item_count = item_count
