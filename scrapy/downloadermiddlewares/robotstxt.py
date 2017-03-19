@@ -6,7 +6,10 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 import logging
 
-from six.moves.urllib import robotparser
+import time
+
+from reppy.parser import Rules
+from reppy import Utility
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
@@ -20,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 class RobotsTxtMiddleware(object):
     DOWNLOAD_PRIORITY = 1000
-
+    default_ttl = 3600
+    min_ttl = 60
     def __init__(self, crawler):
         if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
             raise NotConfigured
@@ -41,8 +45,8 @@ class RobotsTxtMiddleware(object):
         return d
 
     def process_request_2(self, rp, request, spider):
-        if rp is not None and not rp.can_fetch(
-                 to_native_str(self._useragent), request.url):
+        if rp is not None and not rp.allowed(request.url,
+                 to_native_str(self._useragent)):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
             raise IgnoreRequest()
@@ -83,21 +87,12 @@ class RobotsTxtMiddleware(object):
         return failure
 
     def _parse_robots(self, response, netloc):
-        rp = robotparser.RobotFileParser(response.url)
+        #rp = robotparser.RobotFileParser(response.url)
         body = ''
-        if hasattr(response, 'text'):
-            body = response.text
-        else: # last effort try
-            try:
-                body = response.body.decode('utf-8')
-            except UnicodeDecodeError:
-                # If we found garbage, disregard it:,
-                # but keep the lookup cached (in self._parsers)
-                # Running rp.parse() will set rp state from
-                # 'disallow all' to 'allow any'.
-                pass
-        # stdlib's robotparser expects native 'str' ;
-        # with unicode input, non-ASCII encoded bytes decoding fails in Python2
+        #A lot of work to provide the expire time which we don't actually use
+        ttl = max(self.min_ttl, Utility.get_ttl(response.headers, self.default_ttl))
+        rp = Rules(response.url, response.status, response.body, time.time() + ttl)
+       rp.parse(response.body)
         rp.parse(to_native_str(body).splitlines())
 
         rp_dfd = self._parsers[netloc]
