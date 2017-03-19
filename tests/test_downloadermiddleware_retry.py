@@ -103,28 +103,74 @@ class RetryTest(unittest.TestCase):
         req = self.mw.process_exception(req, exception, self.spider)
         self.assertEqual(req, None)
 
-    def test_different_retry(self):
+
+class MaxRetryTimesTest(unittest.TestCase):
+    def setUp(self):
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('foo')
+        self.mw = RetryMiddleware.from_crawler(self.crawler)
+        self.mw.max_retry_times = 2
+
+    def test_without_metakey(self):
         
-        req = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 3})
+        req = Request('http://www.scrapytest.org/invalid_url')
 
-        # SETINGS: meta(max_retry_times) = 3, RETRY_TIMES = 2
-        self._test_retry(req, DNSLookupError('foo'), 3)
+        # SETTINGS: RETRY_TIMES is NON-ZERO
+        self.mw.max_retry_times = 5
+        self._test_retry(req, DNSLookupError('foo'), 5)
 
-        req2 = Request('http://www.scrapytest.org/invalid_url')
-        
-        # SETINGS: RETRY_TIMES < meta(max_retry_times)
-        self._test_retry(req2, DNSLookupError('foo'), 2)
-
-        # SETINGS: RETRY_TIMES = 0
+        # SETTINGS: RETRY_TIMES = 0
         self.mw.max_retry_times = 0
-        self._test_retry(req2, DNSLookupError('foo'), 0)
-        
-        # SETINGS: RETRY_TIMES > meta(max_retry_times)
-        self.mw.max_retry_times = 4
-        self._test_retry(req2, DNSLookupError('foo'), 4)
+        self._test_retry(req, DNSLookupError('foo'), 0)
 
         # RESET RETRY_TIMES SETTINGS
         self.mw.max_retry_times = 2
+
+    def test_with_metakey_preceding(self):
+        # request with meta(max_retry_times) is called first
+        
+        req1 = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 3})
+        req2 = Request('http://www.scrapytest.org/invalid_url')
+        req3 = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 4})
+
+        # SETINGS: RETRY_TIMES < meta(max_retry_times)
+        self.mw.max_retry_times = 2
+        self._test_retry(req1, DNSLookupError('foo'), 3)
+        self._test_retry(req2, DNSLookupError('foo'), 2)
+
+        # SETINGS: RETRY_TIMES > meta(max_retry_times)
+        self.mw.max_retry_times = 5
+        self._test_retry(req3, DNSLookupError('foo'), 4)
+        self._test_retry(req2, DNSLookupError('foo'), 5)
+
+        # RESET RETRY_TIMES SETTINGS
+        self.mw.max_retry_times = 2
+
+    def test_with_metakey_succeeding(self):
+        # request with meta(max_retry_times) is called second
+        
+        req1 = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 3})
+        req2 = Request('http://www.scrapytest.org/invalid_url')
+        req3 = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 4})
+
+        # SETINGS: RETRY_TIMES < meta(max_retry_times)
+        self.mw.max_retry_times = 2
+        self._test_retry(req2, DNSLookupError('foo'), 2)
+        self._test_retry(req1, DNSLookupError('foo'), 3)
+
+        # SETINGS: RETRY_TIMES > meta(max_retry_times)
+        self.mw.max_retry_times = 5
+        self._test_retry(req2, DNSLookupError('foo'), 5)
+        self._test_retry(req3, DNSLookupError('foo'), 4)
+
+        # RESET RETRY_TIMES SETTINGS
+        self.mw.max_retry_times = 2
+
+    def test_with_metakey_zero(self):
+        
+        req = Request('http://www.scrapytest.org/invalid_url', meta={'max_retry_times': 0})
+        self._test_retry(req, DNSLookupError('foo'), 0)
+
 
     def _test_retry(self, req, exception, max_retry_times):
         
