@@ -8,8 +8,8 @@ import logging
 
 import time
 
-from reppy.parser import Rules
-from reppy import Utility
+import reppy
+#from reppy.parser import Rules
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
@@ -90,9 +90,9 @@ class RobotsTxtMiddleware(object):
         #rp = robotparser.RobotFileParser(response.url)
         body = ''
         #A lot of work to provide the expire time which we don't actually use
-        ttl = max(self.min_ttl, Utility.get_ttl(response.headers, self.default_ttl))
-        rp = Rules(response.url, response.status, response.body, time.time() + ttl)
-       rp.parse(response.body)
+        ttl = max(self.min_ttl, reppy.Utility.get_ttl(response.headers, self.default_ttl))
+        rp = reppy.parser.Rules(response.url, response.status, response.body, time.time() + ttl)
+        rp.parse(response.body)
         rp.parse(to_native_str(body).splitlines())
 
         rp_dfd = self._parsers[netloc]
