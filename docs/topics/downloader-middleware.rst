@@ -852,10 +852,10 @@ Default: ``2``
 
 Maximum number of times to retry, in addition to the first download.
 
-.. reqmeta:: max_retry_times
-
-If :attr:`Request.meta <scrapy.http.Request.meta>` has ``max_retry_times`` key
-set to some value, this setting will be ignored by this middleware for the corresponding request.
+Maximum number of retries can also be specified per-request using
+:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+When initialized, the :reqmeta:`max_retry_times` meta key takes higher
+precedence over the :setting:`RETRY_TIMES` setting.
 
 .. setting:: RETRY_HTTP_CODES
 

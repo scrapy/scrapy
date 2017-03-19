@@ -348,7 +348,9 @@ Whether or not to fail on broken responses. See:
 max_retry_times
 ---------------
 
-The meta key is used set retry times per request. When initialized, the :setting:`RETRY_TIMES` setting will be ignored by the downloader middleware.
+The meta key is used set retry times per request. When initialized, the
+:reqmeta:`max_retry_times` meta key takes higher precedence over the
+:setting:`RETRY_TIMES` setting.
 
 .. _topics-request-response-ref-request-subclasses:
 
