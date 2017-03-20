@@ -103,3 +103,4 @@ class RobotsTxtMiddleware(object):
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = None
         rp_dfd.callback(None)
+        

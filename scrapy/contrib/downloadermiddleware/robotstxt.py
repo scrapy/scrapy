@@ -4,5 +4,4 @@ warnings.warn("Module `scrapy.contrib.downloadermiddleware.robotstxt` is depreca
               "use `scrapy.downloadermiddlewares.robotstxt` instead",
               ScrapyDeprecationWarning, stacklevel=2)
 
-
 from scrapy.downloadermiddlewares.robotstxt import *
