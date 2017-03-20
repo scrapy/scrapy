@@ -9,7 +9,10 @@ import logging
 import time
 
 import reppy
-#from reppy.parser import Rules
+
+from reppy.ttl import HeaderWithDefaultPolicy
+from reppy.robots import Robots
+
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
@@ -23,8 +26,6 @@ logger = logging.getLogger(__name__)
 
 class RobotsTxtMiddleware(object):
     DOWNLOAD_PRIORITY = 1000
-    default_ttl = 3600
-    min_ttl = 60
     def __init__(self, crawler):
         if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
             raise NotConfigured
@@ -45,7 +46,7 @@ class RobotsTxtMiddleware(object):
         return d
 
     def process_request_2(self, rp, request, spider):
-        if rp is not None and not rp.allowed(request.url,
+        if rp and not rp.allowed(request.url,
                  to_native_str(self._useragent)):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
@@ -87,11 +88,10 @@ class RobotsTxtMiddleware(object):
         return failure
 
     def _parse_robots(self, response, netloc):
-        #rp = robotparser.RobotFileParser(response.url)
         body = ''
-        #A lot of work to provide the expire time which we don't actually use
-        ttl = max(self.min_ttl, reppy.Utility.get_ttl(response.headers, self.default_ttl))
-        rp = reppy.parser.Rules(response.url, response.status, response.body, time.time() + ttl)
+        policy = HeaderWithDefaultPolicy(default=1800, minimum=600)
+
+        rp=Robots.fetch(response.url, ttl_policy=policy)
         rp.parse(response.body)
         rp.parse(to_native_str(body).splitlines())
 
