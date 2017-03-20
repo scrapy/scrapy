@@ -15,7 +15,7 @@ and all its dependencies run
 
 ::
 
-    pip install 'Sphinx >= 1.3' sphinx_rtd_theme
+    pip install -r requirements.txt
 
 
 Compile the documentation
