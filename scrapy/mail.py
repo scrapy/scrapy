@@ -5,10 +5,10 @@ See documentation in docs/topics/email.rst
 """
 import logging
 
-from six.moves import cStringIO as StringIO
 import six
 
 from email.utils import COMMASPACE, formatdate
+from io import BytesIO
 from six.moves.email_mime_multipart import MIMEMultipart
 from six.moves.email_mime_text import MIMEText
 from six.moves.email_mime_base import MIMEBase
@@ -20,6 +20,14 @@ else:
     from email import encoders as Encoders
 
 from twisted.internet import defer, reactor, ssl
+
+try:
+    from twisted.mail.smtp import ESMTPSenderFactory
+except ImportError:
+    """
+    twisted.mail.smtp was not available in
+    older versions of Twisted on Python 3
+    """
 
 from .utils.misc import arg_to_iter
 
@@ -110,9 +118,7 @@ class MailSender(object):
                       'mailattachs': nattachs, 'mailerr': errstr})
 
     def _sendmail(self, to_addrs, msg):
-        # Import twisted.mail here because it is not available in python3
-        from twisted.mail.smtp import ESMTPSenderFactory
-        msg = StringIO(msg)
+        msg = BytesIO(msg.encode('utf-8'))
         d = defer.Deferred()
         factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
             to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
