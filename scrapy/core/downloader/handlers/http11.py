@@ -280,19 +280,7 @@ class ScrapyAgent(object):
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
         else:
-            bodyproducer = None
-            # Setting Content-Length: 0 even for POST requests is not a
-            # MUST per HTTP RFCs, but it's common behavior, and some
-            # servers require this, otherwise returning HTTP 411 Length required
-            #
-            # RFC 7230#section-3.3.2:
-            # "a Content-Length header field is normally sent in a POST
-            # request even when the value is 0 (indicating an empty payload body)."
-            #
-            # Twisted Agent will not add "Content-Length: 0" by itself
-            if method == b'POST':
-                headers.addRawHeader(b'Content-Length', b'0')
-
+            bodyproducer = _RequestBodyProducer(b'') if method == b'POST' else None
         start_time = time()
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
