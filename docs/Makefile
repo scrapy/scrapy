@@ -82,7 +82,8 @@ pydoc-topics: build
 	      "into the Lib/ directory"
 
 htmlview: html
-	 $(PYTHON) -c "import webbrowser; webbrowser.open('build/html/index.html')"
+	 $(PYTHON) -c "import webbrowser, os; webbrowser.open('file://' + \
+	 os.path.realpath('build/html/index.html'))"
 
 clean:
 	-rm -rf build/*
