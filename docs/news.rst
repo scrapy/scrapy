@@ -3,13 +3,25 @@
 Release notes
 =============
 
+Scrapy 1.3.3 (2017-03-10)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Make ``SpiderLoader`` raise ``ImportError`` again by default for missing
+  dependencies and wrong :setting:`SPIDER_MODULES`.
+  These exceptions were silenced as warnings since 1.3.0.
+  A new setting is introduced to toggle between warning or exception if needed ;
+  see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
+
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
 
 Bug fixes
 ~~~~~~~~~
 
-- Preserve crequest class when converting to/from dicts (utils.reqser) (:issue:`2510`).
+- Preserve request class when converting to/from dicts (utils.reqser) (:issue:`2510`).
 - Use consistent selectors for author field in tutorial (:issue:`2551`).
 - Fix TLS compatibility in Twisted 17+ (:issue:`2558`)
 
@@ -99,6 +111,12 @@ Dependencies & Cleanups
   copied some of Twisted code for users stuck with an "old" Twisted version
 - ``ChunkedTransferMiddleware`` is deprecated and removed from the default
   downloader middlewares.
+
+
+Scrapy 1.2.3 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 Scrapy 1.2.2 (2016-12-06)
@@ -227,6 +245,12 @@ Documentation
 - Updated ``Response`` parameters documentation (:issue:`2197`).
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
+
+
+Scrapy 1.1.4 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 Scrapy 1.1.3 (2016-09-22)
@@ -499,6 +523,12 @@ Bugfixes
 - sitemaps extraction from ``robots.txt`` is now case-insensitive (:issue:`1902`).
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
+
+
+Scrapy 1.0.7 (2017-03-03)
+-------------------------
+
+- Packaging fix: disallow unsupported Twisted versions in setup.py
 
 
 Scrapy 1.0.6 (2016-05-04)

@@ -322,6 +322,19 @@ By default, there are no size constraints, so all images are processed.
 
 .. _topics-media-pipeline-override:
 
+Allowing redirections
+---------------------
+
+.. setting:: MEDIA_ALLOW_REDIRECTS
+
+By default media pipelines ignore redirects, i.e. an HTTP redirection
+to a media file URL request will mean the media download is considered failed.
+
+To handle media redirections, set this settings to ``True``:
+
+    MEDIA_ALLOW_REDIRECTS = True
+
+
 Extending the Media Pipelines
 =============================
 

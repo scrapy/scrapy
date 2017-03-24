@@ -392,6 +392,7 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com/sample2.html',
             'http://example.com/sample3.html',
             'http://example.com/sample3.html',
+            'http://example.com/sample3.html#foo',
             'http://www.google.com/something',
             'http://example.com/innertag.html'
         ]

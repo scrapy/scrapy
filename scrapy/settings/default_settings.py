@@ -67,6 +67,7 @@ DOWNLOAD_DELAY = 0
 
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
+    'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
     'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -78,6 +79,8 @@ DOWNLOAD_TIMEOUT = 180      # 3mins
 
 DOWNLOAD_MAXSIZE = 1024*1024*1024   # 1024m
 DOWNLOAD_WARNSIZE = 32*1024*1024    # 32m
+
+DOWNLOAD_FAIL_ON_DATALOSS = True
 
 DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
@@ -232,6 +235,7 @@ REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
+REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
@@ -246,6 +250,7 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
+SPIDER_LOADER_WARN_ONLY = False
 
 SPIDER_MIDDLEWARES = {}
 

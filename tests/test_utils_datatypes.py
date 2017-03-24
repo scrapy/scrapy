@@ -1,5 +1,6 @@
 import copy
 import unittest
+from collections import Mapping, MutableMapping
 
 from scrapy.utils.datatypes import CaselessDict, SequenceExclude
 
@@ -7,13 +8,58 @@ __doctests__ = ['scrapy.utils.datatypes']
 
 class CaselessDictTest(unittest.TestCase):
 
-    def test_init(self):
+    def test_init_dict(self):
         seq = {'red': 1, 'black': 3}
         d = CaselessDict(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
+    def test_init_pair_sequence(self):
         seq = (('red', 1), ('black', 3))
+        d = CaselessDict(seq)
+        self.assertEqual(d['red'], 1)
+        self.assertEqual(d['black'], 3)
+
+    def test_init_mapping(self):
+        class MyMapping(Mapping):
+            def __init__(self, **kwargs):
+                self._d = kwargs
+
+            def __getitem__(self, key):
+                return self._d[key]
+
+            def __iter__(self):
+                return iter(self._d)
+
+            def __len__(self):
+                return len(self._d)
+
+        seq = MyMapping(red=1, black=3)
+        d = CaselessDict(seq)
+        self.assertEqual(d['red'], 1)
+        self.assertEqual(d['black'], 3)
+
+    def test_init_mutable_mapping(self):
+        class MyMutableMapping(MutableMapping):
+            def __init__(self, **kwargs):
+                self._d = kwargs
+
+            def __getitem__(self, key):
+                return self._d[key]
+
+            def __setitem__(self, key, value):
+                self._d[key] = value
+
+            def __delitem__(self, key):
+                del self._d[key]
+
+            def __iter__(self):
+                return iter(self._d)
+
+            def __len__(self):
+                return len(self._d)
+
+        seq = MyMutableMapping(red=1, black=3)
         d = CaselessDict(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)

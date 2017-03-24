@@ -6,20 +6,22 @@ try:
     from unittest import mock
 except ImportError:
     import mock
-import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
 from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
+from twisted.web._newclient import ResponseFailed
+from twisted.web.http import _DataLoss
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+        PayloadResource
 from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -29,6 +31,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.http.response.text import TextResponse
+from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
@@ -118,6 +121,52 @@ class ContentLengthHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
 
+class ChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenChunkedResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            # Disable terminating chunk on finish.
+            request.chunked = False
+            closeConnection(request)
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenDownloadResource(resource.Resource):
+
+    def render(self, request):
+        def response():
+            request.setHeader(b"Content-Length", b"20")
+            request.write(b"partial")
+            closeConnection(request)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+def closeConnection(request):
+    # We have to force a disconnection for HTTP/1.1 clients. Otherwise
+    # client keeps the connection open waiting for more data.
+    if hasattr(request.channel, 'loseConnection'):  # twisted >=16.3.0
+        request.channel.loseConnection()
+    else:
+        request.channel.transport.loseConnection()
+    request.finish()
+
+
 class EmptyContentTypeHeaderResource(resource.Resource):
     """
     A testing resource which renders itself as the value of request body
@@ -149,6 +198,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"chunked", ChunkedResource())
+        r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.site = server.Site(r, timeout=None)
@@ -340,6 +391,53 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, b"0123456789")
         return d
+
+    def test_download_chunked_content(self):
+        request = Request(self.getURL('chunked'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, b"chunked content\n")
+        return d
+
+    def test_download_broken_content_cause_data_loss(self, url='broken'):
+        request = Request(self.getURL(url))
+        d = self.download_request(request, Spider('foo'))
+
+        def checkDataLoss(failure):
+            if failure.check(ResponseFailed):
+                if any(r.check(_DataLoss) for r in failure.value.reasons):
+                    return None
+            return failure
+
+        d.addCallback(lambda _: self.fail("No DataLoss exception"))
+        d.addErrback(checkDataLoss)
+        return d
+
+    def test_download_broken_chunked_content_cause_data_loss(self):
+        return self.test_download_broken_content_cause_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss(self, url='broken'):
+        request = Request(self.getURL(url), meta={'download_fail_on_dataloss': False})
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss(self):
+        return self.test_download_broken_content_allow_data_loss('broken-chunked')
+
+    def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
+        download_handler = self.download_handler_cls(Settings({
+            'DOWNLOAD_FAIL_ON_DATALOSS': False,
+        }))
+        request = Request(self.getURL(url))
+        d = download_handler.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.flags)
+        d.addCallback(self.assertEqual, ['dataloss'])
+        return d
+
+    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+        return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
 
 
 class Https11TestCase(Http11TestCase):
@@ -825,3 +923,69 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
+
+
+class DataURITestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.download_handler = DataURIDownloadHandler(Settings())
+        self.download_request = self.download_handler.download_request
+        self.spider = Spider('foo')
+
+    def test_response_attrs(self):
+        uri = "data:,A%20brief%20note"
+
+        def _test(response):
+            self.assertEquals(response.url, uri)
+            self.assertFalse(response.headers)
+
+        request = Request(uri)
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype_encoding(self):
+        def _test(response):
+            self.assertEquals(response.text, 'A brief note')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "US-ASCII")
+
+        request = Request("data:,A%20brief%20note")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_text_charset(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(response.body, b'\xbe\xd3\xbe')
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_mediatype_parameters(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "utf-8")
+
+        request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
+                          'charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22'
+                          ',%CE%8E%CE%A3%CE%8E')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_base64(self):
+        def _test(response):
+            self.assertEquals(response.text, 'Hello, world.')
+
+        request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)

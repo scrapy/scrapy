@@ -604,6 +604,32 @@ If you want to disable it set to 0.
 
     This feature needs Twisted >= 11.1.
 
+.. setting:: DOWNLOAD_FAIL_ON_DATALOSS
+
+DOWNLOAD_FAIL_ON_DATALOSS
+-------------------------
+
+Default: ``True``
+
+Whether or not to fail on broken responses, that is, declared
+``Content-Length`` does not match content sent by the server or chunked
+response was not properly finish. If ``True``, these responses raise a
+``ResponseFailed([_DataLoss])`` error. If ``False``, these responses
+are passed through and the flag ``dataloss`` is added to the response, i.e.:
+``'dataloss' in response.flags`` is ``True``.
+
+Optionally, this can be set per-request basis by using the
+:reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
+
+.. note::
+
+  A broken response, or data loss error, may happen under several
+  circumstances, from server misconfiguration to network errors to data
+  corruption. It is up to the user to decide if it makes sense to process
+  broken responses considering they may contain partial or incomplete content.
+  If setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
+  the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
@@ -1153,6 +1179,29 @@ Default: ``'scrapy.spiderloader.SpiderLoader'``
 
 The class that will be used for loading spiders, which must implement the
 :ref:`topics-api-spiderloader`.
+
+.. setting:: SPIDER_LOADER_WARN_ONLY
+
+SPIDER_LOADER_WARN_ONLY
+-----------------------
+
+.. versionadded:: 1.3.3
+
+Default: ``False``
+
+By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+it will fail loudly if there is any ``ImportError`` exception.
+But you can choose to silence this exception and turn it into a simple
+warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
+
+.. note::
+    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
+    already (i.e. they will only issue a warning and will not fail)
+    since they do not actually need to load spider classes to work:
+    :command:`scrapy runspider <runspider>`,
+    :command:`scrapy settings <settings>`,
+    :command:`scrapy startproject <startproject>`,
+    :command:`scrapy version <version>`.
 
 .. setting:: SPIDER_MIDDLEWARES
 
