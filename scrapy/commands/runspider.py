@@ -1,5 +1,6 @@
 import sys
 import os
+import warnings
 from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
@@ -83,7 +84,16 @@ class Command(ScrapyCommand):
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError("No spider found in file: %s\n" % filename)
+
+        self._check_multiple_spiders(spclasses)
+
         spidercls = spclasses.pop()
 
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
+
+    def _check_multiple_spiders(self, spclasses):
+        if len(spclasses) > 1:
+            msg = ("\n\nThere are multiple spiders in this file: "
+                   "Only the last-defined spider '{}' will be run.\n".format(spclasses[-1].name))
+            warnings.warn(msg, UserWarning)

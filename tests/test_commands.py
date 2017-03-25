@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import tempfile
+import warnings
 from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
@@ -193,6 +194,24 @@ class MySpider(scrapy.Spider):
         return []
 """
 
+    debug_log_multiple_spiders = """
+import scrapy
+
+class FirstSpider(scrapy.Spider):
+    name = 'spider1'
+
+    def start_requests(self):
+        self.logger.debug("spider1 Works!")
+        return []
+
+class SecondSpider(scrapy.Spider):
+    name = 'spider2'
+
+    def start_requests(self):
+        self.logger.debug("spider2 Works!")
+        return []
+"""
+
     @contextmanager
     def _create_file(self, content, name):
         tmpdir = self.mktemp()
@@ -266,6 +285,15 @@ class BadSpider(scrapy.Spider):
         print(log)
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
+
+    def test_runspider_multiple_spiders(self):
+        log = self.get_log(self.debug_log_multiple_spiders)
+        self.assertIn("multiple spiders in this file", log)
+        self.assertIn("DEBUG: spider2 Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+        self.assertIn("INFO: Closing spider (finished)", log)
+        self.assertIn("INFO: Spider closed (finished)", log)
+
 
 
 class BenchCommandTest(CommandTest):
