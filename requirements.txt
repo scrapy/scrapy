@@ -1,4 +1,4 @@
-Twisted>=13.1.0
+Twisted[tls]>=13.1.0
 lxml
 pyOpenSSL
 cssselect>=0.9
