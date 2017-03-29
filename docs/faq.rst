@@ -74,7 +74,8 @@ Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
 
 .. note::
-    Python 3 is not yet supported on Windows.
+    For Python 3 support on Windows, it is recommended to use
+    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
