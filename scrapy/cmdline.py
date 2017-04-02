@@ -27,8 +27,9 @@ def _get_commands_from_module(module, inproject):
     d = {}
     for cmd in _iter_command_classes(module):
         if inproject or not cmd.requires_project:
-            cmdname = cmd.__module__.split('.')[-1]
-            d[cmdname] = cmd()
+            if not cmd.__module__ == module:
+                cmdname = cmd.__module__.split('.')[-1]
+                d[cmdname] = cmd()
     return d
 
 def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
