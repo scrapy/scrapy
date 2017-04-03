@@ -20,16 +20,16 @@ def _iter_command_classes(module_name):
         for obj in vars(module).values():
             if inspect.isclass(obj) and \
                     issubclass(obj, ScrapyCommand) and \
-                    obj.__module__ == module.__name__:
+                    obj.__module__ == module.__name__ and \
+                    not obj == ScrapyCommand:
                 yield obj
 
 def _get_commands_from_module(module, inproject):
     d = {}
     for cmd in _iter_command_classes(module):
         if inproject or not cmd.requires_project:
-            if not cmd.__module__ == module:
-                cmdname = cmd.__module__.split('.')[-1]
-                d[cmdname] = cmd()
+            cmdname = cmd.__module__.split('.')[-1]
+            d[cmdname] = cmd()
     return d
 
 def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
