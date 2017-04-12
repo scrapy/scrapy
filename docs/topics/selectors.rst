@@ -717,10 +717,6 @@ SelectorList objects
        Call the ``.re()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
-   .. method:: __nonzero__()
-
-        returns True if the list is not empty, False otherwise.
-
 
 Selector examples on HTML response
 ----------------------------------
