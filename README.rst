@@ -89,3 +89,35 @@ Commercial Support
 ==================
 
 See http://scrapy.org/support/
+
+
+
+About avoid getting banned:
+==========================
+GoogleCacheMiddleware
+=====================
+this is a downloadmiddle to avoid getting banned,you can set the 
+GOOGLE_CACHE_DOMAINS variable or you can set the user_agent_list 
+attribute in your spider to define what domain you will use to visit the 
+google cache,it is a list,eg:GOOGLE_CACHE_DOMAINS = ['www.woaidu.org',]
+
+
+RotateUserAgentMiddleware:
+=========================
+this is also a downloadmiddleware to avoid getting banned,you can 
+set the USER_AGENT_LIST in settings,then the middleware will random
+choose one of them as the user-agent,if you don't define it,then it will 
+use the default user-aget,it contains chrome,I E,firefox,Mozilla,opera,netscape.
+
+how to use them:
+================
+* for GoogleCacheMiddleware:
+add "scrapy.contrib.downloadermiddleware.google_cache.GoogleCacheMiddleware":50
+in your DOWNLOADER_MIDDLEWARES,and define GOOGLE_CACHE_DOMAINSin your 
+settings,eg: ['www.woaidu.org',]
+
+* for RotateUserAgentMiddleware
+add 'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
+'woaidu_crawler.contrib.downloadmiddleware.rotate_useragent.RotateUserAgentMiddleware'
+:400, in your DOWNLOADER_MIDDLEWARES.
+
