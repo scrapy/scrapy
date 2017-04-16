@@ -4,7 +4,7 @@ from functools import partial
 
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import Join, Identity, TakeFirst, \
-    Compose, MapCompose, SelectJmes
+    Compose, MapCompose, IMapCompose, SelectJmes
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
@@ -192,8 +192,12 @@ class BasicItemLoaderTest(unittest.TestCase):
             return None if x == 'world' else x
 
         proc = MapCompose(filter_world, str.upper)
-        self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
+        res = proc(['hello', 'world', 'this', 'is', 'scrapy'])
+        self.assertEqual(res,
                          ['HELLO', 'THIS', 'IS', 'SCRAPY'])
+
+        iproc = IMapCompose(filter_world, str.upper)
+        self.assertEquals(list(iproc(['hello', 'world', 'this', 'is', 'scrapy'])), res)
 
     def test_map_compose_filter_multil(self):
         class TestItemLoader(NameItemLoader):
@@ -204,6 +208,16 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value('name'), [u'Mart'])
         item = il.load_item()
         self.assertEqual(item['name'], [u'Mart'])
+
+        class ITestItemLoader(NameItemLoader):
+            name_in = IMapCompose(lambda v: v.title(), lambda v: v[:-1])
+
+        il = ITestItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(list(il.get_output_value('name')), [u'Mart'])
+        item = il.load_item()
+        self.assertEqual(list(item['name']), [u'Mart'])
+
 
     def test_default_input_processor(self):
         il = DefaultedItemLoader()
