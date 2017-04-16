@@ -222,7 +222,11 @@ class Scraper(object):
         self.slot.itemproc_size -= 1
         if isinstance(output, Failure):
             ex = output.value
-            if isinstance(ex, DropItem):
+            if isinstance(ex, SilentDropItem):
+                return self.signals.send_catch_log_deferred(
+                    signal=signals.item_dropped, item=item, response=response,
+                    spider=spider, exception=output.value, dont_log=True)
+            elif isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
                 return self.signals.send_catch_log_deferred(
