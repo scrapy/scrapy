@@ -52,7 +52,7 @@ DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
 
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en',
+    'Accept-Language': 'en-US,en',
 }
 
 DEPTH_LIMIT = 0
