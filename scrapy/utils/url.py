@@ -32,7 +32,7 @@ def url_is_from_spider(url, spider):
 
 
 def url_has_any_extension(url, extensions):
-    return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
+    return posixpath.splitext(parse_url(url).path)[-1].lower() in extensions
 
 
 def parse_url(url, encoding=None):
