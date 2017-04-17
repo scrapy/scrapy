@@ -132,7 +132,8 @@ class ExecutionEngine(object):
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
             else:
-                self.crawl(request, spider)
+                if request:
+                    self.crawl(request, spider)
 
         if self.spider_is_idle(spider) and slot.close_if_idle:
             self._spider_idle(spider)
