@@ -88,13 +88,14 @@ reactor after `MySpider` has finished running.
     import scrapy
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
     configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
-    runner = CrawlerRunner()
+    runner = CrawlerRunner(get_project_settings())
 
     d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
