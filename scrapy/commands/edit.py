@@ -1,21 +1,27 @@
-import sys, os
+import sys
+import os
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 
-class Command(ScrapyCommand):
 
+class Command(ScrapyCommand):
     requires_project = True
     default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
-        return "<spider>"
+        return "[options] <spider>"
 
     def short_desc(self):
         return "Edit spider"
 
     def long_desc(self):
         return "Edit a spider using the editor defined in EDITOR setting"
+
+    def add_options(self, parser):
+        ScrapyCommand.add_options(self, parser)
+        parser.add_option("-e", "--editor", metavar="EDITOR",
+                          help="Editor to use for editing spider file")
 
     def _err(self, msg):
         sys.stderr.write(msg + os.linesep)
@@ -25,7 +31,7 @@ class Command(ScrapyCommand):
         if len(args) != 1:
             raise UsageError()
 
-        editor = self.settings['EDITOR']
+        editor = opts.editor or self.settings['EDITOR']
         try:
             spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
