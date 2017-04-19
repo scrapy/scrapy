@@ -320,8 +320,6 @@ all be dropped because at least one dimension is shorter than the constraint.
 
 By default, there are no size constraints, so all images are processed.
 
-.. _topics-media-pipeline-override:
-
 Allowing redirections
 ---------------------
 
@@ -330,10 +328,11 @@ Allowing redirections
 By default media pipelines ignore redirects, i.e. an HTTP redirection
 to a media file URL request will mean the media download is considered failed.
 
-To handle media redirections, set this settings to ``True``:
+To handle media redirections, set this setting to ``True``::
 
     MEDIA_ALLOW_REDIRECTS = True
 
+.. _topics-media-pipeline-override:
 
 Extending the Media Pipelines
 =============================

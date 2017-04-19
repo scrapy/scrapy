@@ -9,24 +9,40 @@ Scrapy 1.4.0 (2017-XX-XX)
 New Features
 ~~~~~~~~~~~~
 
-- Use credentials from request.meta['proxy'] #2530
-- [httpcompression] add support for br - brotli content encoding #2535
-- Enable memusage extension by default. #2539
-- response.follow #2540
-- add flags to request #2082
-- Support Anonymous FTP #2343
-- HttpErrorMiddleware stats #2566
-- Retry stats #2543
-- Set canonicalize=False for LinkExtractor #2537
-- Referrer policies in RefererMiddleware #2306
-- Fix referrer policy from response headers and support explicit empty string #2627
-- Data URI download handler. #2334
-- HttpCacheMiddleware: log cache directory at instantiation #2611
-- Add warning on duplicate spider name #2612
-- Allowed passing objects of Mapping class or its subclass to the CaselessDict initializer #2646
-- Allow redirections in media files downloads #2616
-- Travis CI: use portable pypy for Linux #2710
+- Accept proxy credentials in request.meta['proxy'] (:issue:`2526`)
+- Support `brotli`_-compressed content; requires optional `brotlipy`_
+  (:issue:`2535`)
+- Enable memusage extension by default (:issue:`2187`) ;
+  **this is technically backwards-incompatible** so please check if you have
+  any non-default ``MEMUSAGE_***`` settings set.
+- New :meth:`Response.follow <scrapy.http.Response.follow>` shortcur
+  for creating requests (:issue:`1940`)
+- Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
+  (:issue:`2047`)
+- Support Anonymous FTP (:issue:`2342`)
+- Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/***``
+  stats to :class:`RetryMiddleware <scrapy.downloadermiddlewares.retry.RetryMiddleware>`
+  (:issue:`2543`)
+- Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/***``
+  stats to :class:`HttpErrorMiddleware <scrapy.spidermiddlewares.httperror.HttpErrorMiddleware>`
+  (:issue:`2566`)
+- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
+  (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
+  **warning, this istechnically backwards-incompatible**
+- Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
+  :class:`RefererMiddleware <scrapy.spidermiddlewares.referer.RefererMiddleware>`
+  (:issue:`2306`)
+- New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
+- Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
+- Warn users when project contains duplicate spider names (fixes :issue:`2181`)
+- :class:`CaselessDict` now accepts ``Mapping`` instances and not only dicts (:issue:`2646`)
+- :ref:`Media downloads <topics-media-pipeline>`, with :class:`FilesPipelines`
+  or :class:`ImagesPipelines`, can now optionally handle HTTP redirects
+  using the new :setting:`MEDIA_ALLOW_REDIRECTS` (:issue:`2616`, fixes :issue:`2004`)
+- Use portable pypy for Linux on Travis CI (:issue:`2710`)
 
+.. _brotli: https://github.com/google/brotli
+.. _brotlipy: https://github.com/python-hyper/brotlipy/
 
 Bug fixes
 ~~~~~~~~~
