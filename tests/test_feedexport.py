@@ -50,12 +50,92 @@ class FileFeedStorageTest(unittest.TestCase):
         st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
+    def _test_filepath_conflicts(self, user_path,files, expected_path):
+        tmpdir = tempfile.mkdtemp()
+        upath = os.path.join(tmpdir, user_path)
+
+        # create files that may or may not conflict with requested user output path
+        for fname in files:
+            fpath = os.path.join(tmpdir, fname)
+            with open(fpath, 'wb') as tmpfile:
+                tmpfile.write(b'[]')
+
+        st = FileFeedStorage(upath)
+        return self._assert_stores(st, os.path.join(tmpdir, expected_path))
+
+    def test_filepath_conflicts_001(self):
+        '''User supplied path already exists.
+
+        Actual file has a .1 suffix.'''
+        return self._test_filepath_conflicts('test.json',
+                                             ['test.json'],
+                                             'test.json.1')
+
+    def test_filepath_conflicts_002(self):
+        '''User supplied path already exists, other digit-suffixed files also.
+
+        Actual file has a digit suffix with next available number.
+        '''
+        return self._test_filepath_conflicts('test.json',
+                                             ['test.json', 'test.json.1'],
+                                             'test.json.2')
+
+    def test_filepath_conflicts_003(self):
+        '''User supplied path already exists, other double-digit-suffixed files also.
+
+        Actual file has a digit suffix with next available number.
+        '''
+        return self._test_filepath_conflicts('test.jl',
+                                             ['test.jl',
+                                              'test.jl.1',
+                                              'test.jl.2',
+                                              'test.jl.3',
+                                              'test.jl.11'],
+                                             'test.jl.12')
+
+    def test_filepath_conflicts_004(self):
+        '''User supplied path does not exist, but other digit-suffixed files do.
+
+        Actual file is what the user asked for.
+        '''
+        return self._test_filepath_conflicts('test.xml',
+                                             ['test.xml.1',
+                                              'test.xml.10',
+                                              'test.xml.test',
+                                              ],
+                                             'test.xml')
+    def test_filepath_conflicts_005(self):
+        '''User supplied path already exists, .1 version does not and,
+        other double-digit-suffixed files exist.
+
+        Actual file has a digit suffix with next available number.
+        '''
+        return self._test_filepath_conflicts('test.xml',
+                                             ['test.xml',
+                                              'test.xml.10',
+                                              'test.xml.test',
+                                              ],
+                                             'test.xml.11')
+
+    def test_filepath_conflicts_006(self):
+        '''User supplied path is a digit-suffixed file, a file with same name also exists.
+
+        Actual file has a digit suffix appended after the first digit suffix.
+        '''
+        return self._test_filepath_conflicts('test.xml.1',
+                                             ['test.xml',
+                                              'test.xml.1',
+                                              'test.xml.10',
+                                              'test.xml.test',
+                                              ],
+                                             'test.xml.1.1')
+
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
         spider = scrapy.Spider("default")
-        file = storage.open(spider)
-        file.write(b"content")
-        yield storage.store(file)
+        f = storage.open(spider)
+        f.write(b"content")
+        yield storage.store(f)
         self.assertTrue(os.path.exists(path))
         try:
             with open(path, 'rb') as fp:
