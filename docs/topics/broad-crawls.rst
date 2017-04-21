@@ -148,7 +148,7 @@ themselves as `ajax crawlable`_. This means they provide plain HTML
 version of content that is usually available only via AJAX.
 Pages can indicate it in two ways:
 
-1) by using ``#!`` in URL - this is the default way;
+1) by using ``#!`` in URL - this is the default way.
 2) by using a special meta tag - this way is used on
    "main", "index" website pages.
 
