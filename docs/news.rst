@@ -9,26 +9,26 @@ Scrapy 1.4.0 (2017-XX-XX)
 New Features
 ~~~~~~~~~~~~
 
-- Accept proxy credentials in request.meta['proxy'] (:issue:`2526`)
+- Accept proxy credentials in :reqmeta:`proxy` request meta key (:issue:`2526`)
 - Support `brotli`_-compressed content; requires optional `brotlipy`_
   (:issue:`2535`)
 - Enable memusage extension by default (:issue:`2187`) ;
   **this is technically backwards-incompatible** so please check if you have
   any non-default ``MEMUSAGE_***`` settings set.
-- New :meth:`Response.follow <scrapy.http.Response.follow>` shortcur
+- New :meth:`Response.follow <scrapy.http.Response.follow>` shortcut
   for creating requests (:issue:`1940`)
 - Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
-  (:issue:`2047`)
+  objects (:issue:`2047`)
 - Support Anonymous FTP (:issue:`2342`)
-- Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/***``
+- Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
   stats to :class:`RetryMiddleware <scrapy.downloadermiddlewares.retry.RetryMiddleware>`
   (:issue:`2543`)
-- Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/***``
+- Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/<status>``
   stats to :class:`HttpErrorMiddleware <scrapy.spidermiddlewares.httperror.HttpErrorMiddleware>`
   (:issue:`2566`)
 - Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
-  **warning, this istechnically backwards-incompatible**
+  **warning, this is technically backwards-incompatible**
 - Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
   :class:`RefererMiddleware <scrapy.spidermiddlewares.referer.RefererMiddleware>`
   (:issue:`2306`)
@@ -38,8 +38,9 @@ New Features
 - :class:`CaselessDict` now accepts ``Mapping`` instances and not only dicts (:issue:`2646`)
 - :ref:`Media downloads <topics-media-pipeline>`, with :class:`FilesPipelines`
   or :class:`ImagesPipelines`, can now optionally handle HTTP redirects
-  using the new :setting:`MEDIA_ALLOW_REDIRECTS` (:issue:`2616`, fixes :issue:`2004`)
-- Use portable pypy for Linux on Travis CI (:issue:`2710`)
+  using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting (:issue:`2616`, fixes :issue:`2004`)
+- Accept non-complete responses from websites using a new
+  :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
 
 .. _brotli: https://github.com/google/brotli
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
@@ -47,48 +48,55 @@ New Features
 Bug fixes
 ~~~~~~~~~
 
-- LinkExtractors: strip whitespaces #2547
-- FormRequest: handle whitespaces in action attribute properly #2548
-- Buffer CONNECT response bytes from proxy until all HTTP headers are received #2495
-- Fix FTP downloader and re-enable FTP tests on Python 3 #2599
-- Handle data loss gracefully. #2590
-- Use body to choose response type after decompression content #2393
-- Always decompress Content-Encoding: gzip at HttpCompression stage #2391
-- Respect custom log level (#2581, fixes #1612)
-- [logformatter] 'flags' format spec backward compatibility #2649
-- 'make htmlview' does not open the webbrowser #2661
-- Remove "commands" from the command list  #2695
+- LinkExtractor now strips leading and trailing whitespaces from attributes
+  (:issue:`2547`, fixes :issue:`1614`)
+- Properly handle whitespaces in action attribute in :class:`FormRequest`
+  (:issue:`2548`)
+- Buffer CONNECT response bytes from proxy until all HTTP headers are received
+  (:issue:`2495`, fixes :issue:`2491`)
+- FTP downloader now works on Python 3, provided you use Twisted>=17.1
+  (:issue:`2599`)
+- Use body to choose response type after decompressing content (:issue:`2393`,
+  fixes :issue:`2145`)
+- Always decompress ``Content-Encoding: gzip`` at :class:`HttpCompressionMiddleware
+  <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>` stage (:issue:`2391`)
+- Respect custom log level in ``Spider.custom_settings`` (:issue:`2581`,
+  fixes :issue:`1612`)
+- 'make htmlview' fix for macOS (:issue:`2661`)
+- Remove "commands" from the command list  (:issue:`2695`)
 
-Cleanups
-~~~~~~~~
+Cleanups & Refactoring
+~~~~~~~~~~~~~~~~~~~~~~
 
-- TST remove temp files and folders #2570
-- TST fixed ProjectUtilsTest on OS X #2569
-- Separate building request from _requests_to_follow in CrawlSpider #2562
-- remove “Python 3 progress” badge #2567
-- add a couple more lines to gitignore #2557
-- deprecate Spider.make_requests_from_url. #1728
-- Remove bumpversion prerelease configuration #2159
-- Set context factory implementation based on Twisted version #2577
-- Add omitted "self" arguments #2595
-- Remove redundant slot.add_request() call in ExecutionEngine #2617
-- Removed contrib section in contribution documentation #2636
-- More specific exception catching: os.path.getmtime can only raise os.error in FSFilesStore #2644
+- Tests: remove temp files and folders (:issue:`2570`),
+  fixed ProjectUtilsTest on OS X (:issue:`2569`),
+  use portable pypy for Linux on Travis CI (:issue:`2710`)
+
+- Separate building request from ``_requests_to_follow`` in CrawlSpider (:issue:`2562`)
+- Remove “Python 3 progress” badge (:issue:`2567`)
+- Add a couple more lines to ``.gitignore`` (:issue:`2557`)
+- Deprecate ``Spider.make_requests_from_url`` (:issue:`1728`)
+- Remove bumpversion prerelease configuration (:issue:`2159`)
+- Set context factory implementation based on Twisted version (:issue:`2577`,
+  fixes :issue:`2560`)
+- Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
+- Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
+- Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
 
 Documentation
 ~~~~~~~~~~~~~
 
-- Doc: binary mode is required for exporters #2564
-- document issue with FormRequest.from_response due to bug in lxml #2572
-- Use single quotes uniformly #2596
-- Document ftp_user and ftp_password meta keys #2587
-- Update release notes for 1.0.7, 1.1.4 and 1.2.3 #2625
-- DOC Mention brotli support in HttpCompressionMiddleware section #2628
-- Removed contrib section in contribution documentation #2636
-- docs: installation instructions, mention conda in the beginning (closes #2475) #2477
-- FAQ Rewrite note on Python 3 support on Windows #2690
-- DOC Rearrange selector sections #2705
-- Remove __nonzero__ from SelectorList docs #2683
+- Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
+- Mention issue with :meth:`FormRequest.from_response
+  <scrapy.http.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+- Use single quotes uniformly in templates (:issue:`2596`)
+- Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
+- Removed section on deprecated ``contrib/`` (:issue:`2636`)
+- Recommend Anaconda when installing Scrapy on Windows
+  (:issue:`2477`, fixes :issue:`2475`)
+- FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
+- Rearrange selector sections (:issue:`2705`)
+- Remove ``__nonzero__`` from :class:`SelectorList` docs (:issue:`2683`)
 
 
 Scrapy 1.3.3 (2017-03-10)
