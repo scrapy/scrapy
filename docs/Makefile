@@ -10,7 +10,8 @@ PAPER        =
 SOURCES      =
 SHELL        = /bin/bash
 
-ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees -D latex_paper_size=$(PAPER) \
+ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees \
+                -D latex_elements.papersize=$(PAPER) \
                 $(SPHINXOPTS) . build/$(BUILDER) $(SOURCES)
 
 .PHONY: help update build html htmlhelp clean
