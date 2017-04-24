@@ -646,6 +646,13 @@ override its ``request_fingerprint`` method. This method should accept
 scrapy :class:`~scrapy.http.Request` object and return its fingerprint
 (a string).
 
+You can disable filtering of duplicate requests by setting
+:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
+Be very careful about this however, because you can get into crawling loops.
+It's usually a better idea to set the ``dont_filter`` parameter to
+``True`` on the specific :class:`~scrapy.http.Request` that should not be
+filtered.
+
 .. setting:: DUPEFILTER_DEBUG
 
 DUPEFILTER_DEBUG
