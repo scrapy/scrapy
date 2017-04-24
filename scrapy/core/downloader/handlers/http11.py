@@ -279,8 +279,10 @@ class ScrapyAgent(object):
             headers.removeHeader(b'Proxy-Authorization')
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
+        elif method == b'POST':
+            bodyproducer = _RequestBodyProducer(b'')
         else:
-            bodyproducer = _RequestBodyProducer(b'') if method == b'POST' else None
+            bodyproducer = None
         start_time = time()
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
