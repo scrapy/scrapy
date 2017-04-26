@@ -15,7 +15,6 @@ from twisted.internet.task import deferLater
 
 
 from scrapy.utils.python import to_bytes, to_unicode
-from tests import tests_datadir
 
 
 def getarg(request, name, default=None, type=None):
@@ -122,6 +121,7 @@ class Echo(LeafResource):
             'body': to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
+    render_POST = render_GET
 
 
 class RedirectTo(LeafResource):
@@ -174,7 +174,11 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
-        self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+        try:
+            from tests import tests_datadir
+            self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+        except:
+            pass
         self.putChild(b"redirect-to", RedirectTo())
 
     def getChild(self, name, request):

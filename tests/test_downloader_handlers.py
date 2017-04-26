@@ -29,7 +29,7 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
 from scrapy.spiders import Spider
-from scrapy.http import Request
+from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
@@ -37,7 +37,7 @@ from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer, ssl_context_factory
+from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -202,6 +202,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -308,6 +309,17 @@ class HttpTestCase(unittest.TestCase):
             self.assertEquals(response.body, b'0')
 
         request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
+    def test_content_length_zero_bodyless_post_only_one(self):
+        def _test(response):
+            import json
+            headers = Headers(json.loads(response.text)['headers'])
+            contentlengths = headers.getlist('Content-Length')
+            self.assertEquals(len(contentlengths), 1)
+            self.assertEquals(contentlengths, [b"0"])
+
+        request = Request(self.getURL('echo'), method='POST')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_payload(self):
