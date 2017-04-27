@@ -183,8 +183,8 @@ class HttpTestCase(unittest.TestCase):
     download_handler_cls = HTTPDownloadHandler
 
     # only used for HTTPS tests
-    keyfile = 'keys/cert.pem'
-    certfile = 'keys/cert.pem'
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
 
     def setUp(self):
         self.tmpname = self.mktemp()
