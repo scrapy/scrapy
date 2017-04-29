@@ -42,8 +42,13 @@ class CrawlSpider(Spider):
     def parse(self, response):
         return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
 
+    def _parse_links(self, response):
+        for extractor in [r.link_extractor for r in self.rules]:
+            for link in extractor.extract_links(response):
+                yield Request(link.url)
+
     def parse_start_url(self, response):
-        return []
+        list(self._parse_links(response))
 
     def process_results(self, response, results):
         return results
