@@ -417,7 +417,9 @@ fields with form data from :class:`Response` objects.
 
        :param formdata: fields to override in the form data. If a field was
           already present in the response ``<form>`` element, its value is
-          overridden by the one passed in this parameter.
+          overridden by the one passed in this parameter. If a value passed in
+          this parameter is ``None``, the field will not be included in the
+          request, even if it was present in the response ``<form>`` element.
        :type formdata: dict
 
        :param clickdata: attributes to lookup the control clicked. If it's not
