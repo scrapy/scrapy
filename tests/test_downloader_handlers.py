@@ -177,6 +177,16 @@ class EmptyContentTypeHeaderResource(resource.Resource):
         return request.content.read()
 
 
+class LargeChunkedFileResource(resource.Resource):
+    def render(self, request):
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
@@ -202,6 +212,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        r.putChild(b"largechunkedfile", LargeChunkedFileResource())
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
@@ -383,6 +394,25 @@ class Http11TestCase(HttpTestCase):
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
         yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_very_large_file(self):
+        with mock.patch('scrapy.core.downloader.handlers.http11.logger') as logger:
+            request = Request(self.getURL('largechunkedfile'))
+
+            def check(logger):
+                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+
+            d = self.download_request(request, Spider('foo', download_maxsize=1500))
+            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+            # As the error message is logged in the dataReceived callback, we
+            # have to give a bit of time to the reactor to process the queue
+            # after closing the connection.
+            d = defer.Deferred()
+            d.addCallback(check)
+            reactor.callLater(.1, d.callback, logger)
+            yield d
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_per_req(self):
