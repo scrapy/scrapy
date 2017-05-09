@@ -466,28 +466,23 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'json',
                 'indent': -1,
-                'expected': b"""
-[
+                'expected': b"""[
 {"foo": ["bar"]},
 {"key": "value"}
-]
-""",
+]""",
             },
             {
                 'format': 'json',
                 'indent': 0,
-                'expected': b"""
-[
+                'expected': b"""[
 {"foo": ["bar"]},
 {"key": "value"}
-]
-""",
+]""",
             },
             {
                 'format': 'json',
                 'indent': 2,
-                'expected': b"""
-[
+                'expected': b"""[
 {
   "foo": [
     "bar"
@@ -501,8 +496,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'json',
                 'indent': 4,
-                'expected': b"""
-[
+                'expected': b"""[
 {
     "foo": [
         "bar"
@@ -516,8 +510,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'json',
                 'indent': 5,
-                'expected': b"""
-[
+                'expected': b"""[
 {
      "foo": [
           "bar"
@@ -533,15 +526,13 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'xml',
                 'indent': None,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items><item><foo><value>bar</value></foo></item><item><key>value</key></item></items>""",
             },
             {
                 'format': 'xml',
                 'indent': -1,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
 <item><foo><value>bar</value></foo></item>
 <item><key>value</key></item>
@@ -550,8 +541,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'xml',
                 'indent': 0,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
 <item><foo><value>bar</value></foo></item>
 <item><key>value</key></item>
@@ -560,8 +550,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'xml',
                 'indent': 2,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
   <item>
     <foo>
@@ -576,8 +565,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'xml',
                 'indent': 4,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
     <item>
         <foo>
@@ -592,8 +580,7 @@ class FeedExportTest(unittest.TestCase):
             {
                 'format': 'xml',
                 'indent': 5,
-                'expected': b"""
-<?xml version="1.0" encoding="utf-8"?>
+                'expected': b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
      <item>
           <foo>
@@ -611,4 +598,4 @@ class FeedExportTest(unittest.TestCase):
             settings = {'FEED_FORMAT': row['format'], 'FEED_EXPORT_INDENT': row['indent']}
             data = yield self.exported_data(items, settings)
             print(row['format'], row['indent'])
-            self.assertEqual(row['expected'].strip(), data)
+            self.assertEqual(row['expected'], data)
