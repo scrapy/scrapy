@@ -6,6 +6,52 @@ Release notes
 Scrapy 1.4.0 (2017-XX-XX)
 -------------------------
 
+Scrapy 1.4 does not bring that many breathtaking new features
+but quite a few handy improvements nonetheless.
+
+Scrapy now supports anonymous FTP sessions with customizable user and
+password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
+**And if you're using Twisted version 17.1.0 or above, FTP is now available
+with Python 3.**
+
+Link extractors now work similarly to what a regular modern browser would
+do. Especially, leading and trailing whitespace are removed from attributes
+(think ``href="   http://example.com"``) when building ``Link`` objects.
+This whitespace-stripping also happens for ``action`` attributes with
+``FormRequest``.
+**Please also note that link extractors do not canonicalize URLs by default
+anymore.** This was puzzling users every now and then, and it's not what
+browsers do in fact, so we removed that extra transformation on extractred
+links.
+
+There's a new ``response.follow()`` shortcut for creating URLs directly
+from the response instance in callbacks.
+For example, instead of::
+
+    scrapy.Request(response.urljoin(somehrefvalue))
+
+you can now use the simpler::
+
+    response.follow(somehrefvalue)
+
+
+For those of you wanting more control on the ``Referer:`` header that Scrapy
+sends when following links, you can set your own ``Referrer Policy``.
+Prior to Scrapy 1.4, the default ``RefererMiddleware`` would simply and
+blindly set it to the URL of the response that generated the HTTP request
+(which could leak information on your URL seeds).
+By default, Scrapy now behaves much like your regular browser does.
+And this policy is fully customizable with W3C standard values
+(or with something really custom of your own if you wish).
+See :setting:`REFERRER_POLICY` for details.
+
+Last but not least, Scrapy now has the option to make JSON and XML items
+more human-readable, with newlines between items and even custom indenting
+offset, using the new :setting:`FEED_EXPORT_INDENT` setting.
+
+Enjoy! (Or read on for the rest of changes in this release.)
+
+
 New Features
 ~~~~~~~~~~~~
 
