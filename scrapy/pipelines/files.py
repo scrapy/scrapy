@@ -83,6 +83,9 @@ class S3FilesStore(object):
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
 
+    STORAGE_CLASS = 'STANDARD'  # Overriden from settings.FILES_STORE_S3_STORAGE_CLASS in
+                                # FilesPipeline.from_settings.
+
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
     HEADERS = {
@@ -150,6 +153,7 @@ class S3FilesStore(object):
                 Body=buf,
                 Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
                 ACL=self.POLICY,
+                StorageClass=self.STORAGE_CLASS,
                 **extra)
         else:
             b = self._get_boto_bucket()
@@ -158,6 +162,7 @@ class S3FilesStore(object):
                 for metakey, metavalue in six.iteritems(meta):
                     k.set_metadata(metakey, str(metavalue))
             h = self.HEADERS.copy()
+            h['X-Amz-Storage-Class'] = self.STORAGE_CLASS
             if headers:
                 h.update(headers)
             return threads.deferToThread(
@@ -257,6 +262,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
+        s3store.STORAGE_CLASS = settings['FILES_STORE_S3_STORAGE_CLASS']
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
