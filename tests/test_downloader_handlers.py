@@ -1,10 +1,12 @@
 import os
 import six
 import contextlib
+import shutil
 try:
     from unittest import mock
 except ImportError:
     import mock
+import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -84,10 +86,12 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        fd = open(self.tmpname + '^', 'w')
-        fd.write('0123456789')
-        fd.close()
+        with open(self.tmpname + '^', 'w') as f:
+            f.write('0123456789')
         self.download_request = FileDownloadHandler(Settings()).download_request
+
+    def tearDown(self):
+        os.unlink(self.tmpname + '^')
 
     def test_download(self):
         def _test(response):
@@ -134,10 +138,10 @@ class HttpTestCase(unittest.TestCase):
     certfile = 'keys/cert.pem'
 
     def setUp(self):
-        name = self.mktemp()
-        os.mkdir(name)
-        FilePath(name).child("file").setContent(b"0123456789")
-        r = static.File(name)
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
@@ -165,6 +169,7 @@ class HttpTestCase(unittest.TestCase):
         yield self.port.stopListening()
         if hasattr(self.download_handler, 'close'):
             yield self.download_handler.close()
+        shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
         return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
@@ -676,13 +681,11 @@ class S3TestCase(unittest.TestCase):
             b'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
 
 
-class FTPTestCase(unittest.TestCase):
+class BaseFTPTestCase(unittest.TestCase):
 
     username = "scrapy"
     password = "passwd"
-
-    if six.PY3:
-        skip = "Twisted missing ftp support for PY3"
+    req_meta = {"ftp_user": username, "ftp_password": password}
 
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
@@ -694,8 +697,8 @@ class FTPTestCase(unittest.TestCase):
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
-        fp.child('file.txt').setContent("I have the power!")
-        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -708,6 +711,9 @@ class FTPTestCase(unittest.TestCase):
         self.portNum = self.port.getHost().port
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
 
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
         def _clean(data):
@@ -722,31 +728,31 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_success(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'I have the power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
+            self.assertEqual(r.body, b'I have the power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
         request = Request(
             url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
-            meta={"ftp_user": self.username, "ftp_password": self.password}
+            meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, 'Moooooooooo power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['18']})
+            self.assertEqual(r.body, b'Moooooooooo power!')
+            self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'18']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
         request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -754,27 +760,68 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        local_fname = "/tmp/file.txt"
+        local_fname = b"/tmp/file.txt"
+        meta = {"ftp_local_filename": local_fname}
+        meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': ['17']})
+            self.assertEqual(r.headers, {b'Local Filename': [b'/tmp/file.txt'], b'Size': [b'17']})
             self.assertTrue(os.path.exists(local_fname))
-            with open(local_fname) as f:
-                self.assertEqual(f.read(), "I have the power!")
+            with open(local_fname, "rb") as f:
+                self.assertEqual(f.read(), b"I have the power!")
             os.remove(local_fname)
         return self._add_test_callbacks(d, _test)
+
+
+class FTPTestCase(BaseFTPTestCase):
 
     def test_invalid_credentials(self):
         from twisted.protocols.ftp import ConnectionLost
 
+        meta = dict(self.req_meta)
+        meta.update({"ftp_password": 'invalid'})
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": 'invalid'})
+                          meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
         return self._add_test_callbacks(d, errback=_test)
+
+
+class AnonymousFTPTestCase(BaseFTPTestCase):
+
+    username = "anonymous"
+    req_meta = {}
+
+    def setUp(self):
+        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
+        # setup dir and test file
+        self.directory = self.mktemp()
+        os.mkdir(self.directory)
+
+        fp = FilePath(self.directory)
+        fp.child('file.txt').setContent(b"I have the power!")
+        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
+
+        # setup server for anonymous access
+        realm = FTPRealm(anonymousRoot=self.directory)
+        p = portal.Portal(realm)
+        p.registerChecker(checkers.AllowAnonymousAccess(),
+                          credentials.IAnonymous)
+
+        self.factory = FTPFactory(portal=p,
+                                  userAnonymous=self.username)
+        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+        self.portNum = self.port.getHost().port
+        self.download_handler = FTPDownloadHandler(Settings())
+        self.addCleanup(self.port.stopListening)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)

@@ -10,9 +10,10 @@ linkre = re.compile(
         "<a\s.*?href=(\"[.#]+?\"|\'[.#]+?\'|[^\s]+?)(>|\s.*?>)(.*?)<[/ ]?a>",
         re.DOTALL | re.IGNORECASE)
 
+
 def clean_link(link_text):
     """Remove leading and trailing whitespace and punctuation"""
-    return link_text.strip("\t\r\n '\"")
+    return link_text.strip("\t\r\n '\"\x0c")
 
 
 class RegexLinkExtractor(SgmlLinkExtractor):

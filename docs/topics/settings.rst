@@ -686,6 +686,42 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FTP_PASSIVE_MODE
+
+FTP_PASSIVE_MODE
+----------------
+
+Default: ``True``
+
+Whether or not to use passive mode when initiating FTP transfers.
+
+.. setting:: FTP_PASSWORD
+
+FTP_PASSWORD
+------------
+
+Default: ``"guest"``
+
+The password to use for FTP connections when there is no ``"ftp_password"``
+in ``Request`` meta.
+
+.. note::
+    Paraphrasing `RFC 1635`_, although it is common to use either the password
+    "guest" or one's e-mail address for anonymous FTP,
+    some FTP servers explicitly ask for the user's e-mail address
+    and will not allow login with the "guest" password.
+
+.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+
+.. setting:: FTP_USER
+
+FTP_USER
+--------
+
+Default: ``"anonymous"``
+
+The username to use for FTP connections when there is no ``"ftp_user"``
+in ``Request`` meta.
 
 .. setting:: ITEM_PIPELINES
 
@@ -827,13 +863,15 @@ Example::
 MEMUSAGE_ENABLED
 ----------------
 
-Default: ``False``
+Default: ``True``
 
 Scope: ``scrapy.extensions.memusage``
 
-Whether to enable the memory usage extension that will shutdown the Scrapy
-process when it exceeds a memory limit, and also notify by email when that
-happened.
+Whether to enable the memory usage extension. This extension keeps track of
+a peak memory used by the process (it writes it to stats). It can also
+optionally shutdown the Scrapy process when it exceeds a memory limit
+(see :setting:`MEMUSAGE_LIMIT_MB`), and notify by email when that happened
+(see :setting:`MEMUSAGE_NOTIFY_MAIL`).
 
 See :ref:`topics-extensions-ref-memusage`.
 

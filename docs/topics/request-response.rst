@@ -121,6 +121,9 @@ Request objects
        see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
 
+    :param flags:  Flags sent to the request, can be used for logging or similar purposes.
+    :type flags: list
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -376,6 +379,10 @@ fields with form data from :class:`Response` objects.
        control clicked (instead of disabling it) you can also use the
        ``clickdata`` argument.
 
+       .. caution:: Using this method with select elements which have leading
+          or trailing whitespace in the option values will not work due to a
+          `bug in lxml`_, which should be fixed in lxml 3.8 and above.
+
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
        :type response: :class:`Response` object
@@ -597,6 +604,9 @@ Response objects
 
             urlparse.urljoin(response.url, url)
 
+    .. automethod:: Response.follow
+
+
 .. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
@@ -683,6 +693,8 @@ TextResponse objects
 
             response.css('p')
 
+    .. automethod:: TextResponse.follow
+
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
@@ -710,3 +722,4 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241

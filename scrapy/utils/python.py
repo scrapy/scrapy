@@ -344,3 +344,14 @@ def without_none_values(iterable):
         return {k: v for k, v in six.iteritems(iterable) if v is not None}
     except AttributeError:
         return type(iterable)((v for v in iterable if v is not None))
+
+
+def global_object_name(obj):
+    """
+    Return full name of a global object.
+
+    >>> from scrapy import Request
+    >>> global_object_name(Request)
+    'scrapy.http.request.Request'
+    """
+    return "%s.%s" % (obj.__module__, obj.__name__)

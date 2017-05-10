@@ -8,3 +8,4 @@ botocore
 # optional for shell wrapper tests
 bpython
 ipython
+brotlipy

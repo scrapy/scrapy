@@ -399,7 +399,7 @@ quotes elements and put them together into a Python dictionary::
     >>>
 
 Extracting data in our spider
-------------------------------
+-----------------------------
 
 Let's get back to our spider. Until now, it doesn't extract any data in
 particular, just saves the whole HTML page to a local file. Let's integrate the
@@ -551,12 +551,64 @@ In our example, it creates a sort of loop, following all the links to the next p
 until it doesn't find one -- handy for crawling blogs, forums and other sites with
 pagination.
 
+
+.. _response-follow-example:
+
+A shortcut for creating Requests
+--------------------------------
+
+As a shortcut for creating Request objects you can use
+:meth:`response.follow <scrapy.http.TextResponse.follow>`::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+            'http://quotes.toscrape.com/page/1/',
+        ]
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').extract_first(),
+                    'author': quote.css('span small::text').extract_first(),
+                    'tags': quote.css('div.tags a.tag::text').extract(),
+                }
+
+            next_page = response.css('li.next a::attr(href)').extract_first()
+            if next_page is not None:
+                yield response.follow(next_page, callback=self.parse)
+
+Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
+need to call urljoin. Note that ``response.follow`` just returns a Request
+instance; you still have to yield this Request.
+
+You can also pass a selector to ``response.follow`` instead of a string;
+this selector should extract necessary attributes::
+
+    for href in response.css('li.next a::attr(href)'):
+        yield response.follow(href, callback=self.parse)
+
+For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
+attribute automatically. So the code can be shortened further::
+
+    for a in response.css('li.next a'):
+        yield response.follow(a, callback=self.parse)
+
+.. note::
+
+    ``response.follow(response.css('li.next a'))`` is not valid because
+    ``response.css`` returns a list-like object with selectors for all results,
+    not a single selector. A ``for`` loop like in the example above, or
+    ``response.follow(response.css('li.next a')[0])`` is fine.
+
 More examples and patterns
 --------------------------
 
 Here is another spider that illustrates callbacks and following links,
 this time for scraping author information::
-
 
     import scrapy
 
@@ -568,15 +620,12 @@ this time for scraping author information::
 
         def parse(self, response):
             # follow links to author pages
-            for href in response.css('.author + a::attr(href)').extract():
-                yield scrapy.Request(response.urljoin(href),
-                                     callback=self.parse_author)
+            for href in response.css('.author + a::attr(href)'):
+                yield response.follow(href, self.parse_author)
 
             # follow pagination links
-            next_page = response.css('li.next a::attr(href)').extract_first()
-            if next_page is not None:
-                next_page = response.urljoin(next_page)
-                yield scrapy.Request(next_page, callback=self.parse)
+            for href in response.css('li.next a::attr(href)'):
+                yield response.follow(href, self.parse)
 
         def parse_author(self, response):
             def extract_with_css(query):
@@ -591,6 +640,9 @@ this time for scraping author information::
 This spider will start from the main page, it will follow all the links to the
 authors pages calling the ``parse_author`` callback for each of them, and also
 the pagination links with the ``parse`` callback as we saw before.
+
+Here we're passing callbacks to ``response.follow`` as positional arguments
+to make the code shorter; it also works for ``scrapy.Request``.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
@@ -652,8 +704,7 @@ with a specific tag, building the URL based on the argument::
 
             next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
-                next_page = response.urljoin(next_page)
-                yield scrapy.Request(next_page, self.parse)
+                yield response.follow(next_page, self.parse)
 
 
 If you pass the ``tag=humor`` argument to this spider, you'll notice that it

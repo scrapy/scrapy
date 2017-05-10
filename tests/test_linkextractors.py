@@ -32,6 +32,7 @@ class Base:
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
+                Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
             ])
 
         def test_extract_filter_allow(self):
@@ -281,6 +282,7 @@ class Base:
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
+                Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
             ])
 
             lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
@@ -291,6 +293,7 @@ class Base:
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                 Link(url='http://www.google.com/something', text=u''),
                 Link(url='http://example.com/innertag.html', text=u'inner tag'),
+                Link(url='http://example.com/page%204.html', text=u'href with whitespaces'),
             ])
 
             lx = self.extractor_cls(attrs=None)

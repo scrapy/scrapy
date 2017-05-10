@@ -32,6 +32,7 @@ def request_to_dict(request, spider=None):
         '_encoding': request._encoding,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
+        'flags': request.flags
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
@@ -62,7 +63,8 @@ def request_from_dict(d, spider=None):
         meta=d['meta'],
         encoding=d['_encoding'],
         priority=d['priority'],
-        dont_filter=d['dont_filter'])
+        dont_filter=d['dont_filter'],
+        flags=d.get('flags'))
 
 
 def _find_method(obj, func):

@@ -7,7 +7,7 @@ from scrapy.utils.request import referer_str
 
 SCRAPEDMSG = u"Scraped from %(src)s" + os.linesep + "%(item)s"
 DROPPEDMSG = u"Dropped: %(exception)s" + os.linesep + "%(item)s"
-CRAWLEDMSG = u"Crawled (%(status)s) %(request)s (referer: %(referer)s)%(flags)s"
+CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
 
 
 class LogFormatter(object):
@@ -32,15 +32,17 @@ class LogFormatter(object):
     """
 
     def crawled(self, request, response, spider):
-        flags = ' %s' % str(response.flags) if response.flags else ''
+        request_flags = ' %s' % str(request.flags) if request.flags else ''
+        response_flags = ' %s' % str(response.flags) if response.flags else ''
         return {
             'level': logging.DEBUG,
             'msg': CRAWLEDMSG,
             'args': {
                 'status': response.status,
                 'request': request,
+                'request_flags' : request_flags,
                 'referer': referer_str(request),
-                'flags': flags,
+                'response_flags': response_flags,
             }
         }
 
