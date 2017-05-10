@@ -222,8 +222,8 @@ BaseItemExporter
 
       * ``indent=None`` selects the most compact representation,
         all items in the same line with no indentation
-      * ``indent<=0`` each item on it's own line, no indentation
-      * ``indent>0`` each item on it's own line, indentated with the provided numeric value
+      * ``indent<=0`` each item on its own line, no indentation
+      * ``indent>0`` each item on its own line, indented with the provided numeric value
 
 .. highlight:: none
 

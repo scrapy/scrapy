@@ -279,7 +279,7 @@ is a non-negative integer, then array elements and object members will be pretty
 with that indent level. An indent level of ``0``, or negative, will put each item on a new line.
 ``None`` selects the most compact representation
 
-Currently used by :class:`~scrapy.exporters.JsonItemExporter`
+Currently implemented only by :class:`~scrapy.exporters.JsonItemExporter`
 and :class:`~scrapy.exporters.XmlItemExporter`
 
 .. setting:: FEED_STORE_EMPTY
