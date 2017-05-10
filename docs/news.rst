@@ -24,8 +24,8 @@ anymore.** This was puzzling users every now and then, and it's not what
 browsers do in fact, so we removed that extra transformation on extractred
 links.
 
-There's a new ``response.follow()`` shortcut for creating URLs directly
-from the response instance in callbacks.
+There's a new ``response.follow()`` shortcut for creating requests directly
+from a response instance and a relative URL.
 For example, instead of::
 
     scrapy.Request(response.urljoin(somehrefvalue))
@@ -33,7 +33,6 @@ For example, instead of::
 you can now use the simpler::
 
     response.follow(somehrefvalue)
-
 
 For those of you wanting more control on the ``Referer:`` header that Scrapy
 sends when following links, you can set your own ``Referrer Policy``.
