@@ -27,7 +27,7 @@ Scrapy from scripts as described in :ref:`run-from-script`.
 Log levels
 ==========
 
-Python's builtin logging defines 5 different levels to indicate severity on a
+Python's builtin logging defines 5 different levels to indicate the severity of a
 given log message. Here are the standard ones, listed in decreasing order:
 
 1. ``logging.CRITICAL`` - for critical errors (highest severity)
@@ -47,20 +47,20 @@ level::
 
 There are shortcuts for issuing log messages on any of the standard 5 levels,
 and there's also a general ``logging.log`` method which takes a given level as
-argument.  If you need so, last example could be rewrote as::
+argument.  If needed, the last example could be rewritten as::
 
     import logging
     logging.log(logging.WARNING, "This is a warning")
 
-On top of that, you can create different "loggers" to encapsulate messages (For
-example, a common practice it's to create different loggers for every module).
+On top of that, you can create different "loggers" to encapsulate messages. (For
+example, a common practice is to create different loggers for every module).
 These loggers can be configured independently, and they allow hierarchical
 constructions.
 
-Last examples use the root logger behind the scenes, which is a top level
+The previous examples use the root logger behind the scenes, which is a top level
 logger where all messages are propagated to (unless otherwise specified). Using
 ``logging`` helpers is merely a shortcut for getting the root logger
-explicitly, so this is also an equivalent of last snippets::
+explicitly, so this is also an equivalent of the last snippets::
 
     import logging
     logger = logging.getLogger()
@@ -95,7 +95,7 @@ Logging from Spiders
 ====================
 
 Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider
-instance, that can be accessed and used like this::
+instance, which can be accessed and used like this::
 
     import scrapy
 
