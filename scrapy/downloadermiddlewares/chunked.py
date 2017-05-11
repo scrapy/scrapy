@@ -15,7 +15,7 @@ class ChunkedTransferMiddleware(object):
     """
 
     def process_response(self, request, response, spider):
-        if response.headers.get('Transfer-Encoding') == 'chunked':
+        if response.headers.get(b'Transfer-Encoding') == b'chunked':
             body = decode_chunked_transfer(response.body)
             return response.replace(body=body)
         return response

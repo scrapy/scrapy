@@ -14,13 +14,20 @@ def decode_chunked_transfer(chunked_body):
     http://en.wikipedia.org/wiki/Chunked_transfer_encoding
 
     """
-    body, h, t = '', '', chunked_body
-    while t:
-        h, t = t.split('\r\n', 1)
-        if h == '0':
-            break
-        size = int(h, 16)
-        body += t[:size]
-        t = t[size+2:]
-    return body
+    body_parts = []
+    pos = 0
+    while pos < len(chunked_body):
+        separator_pos = chunked_body.find(b'\r\n', pos)
+        if separator_pos == -1:
+            separator_pos = len(chunked_body)
 
+        chunk_size = chunked_body[pos:separator_pos]
+        if chunk_size == b'0':
+            break
+        size = int(chunk_size, 16)
+        pos = separator_pos + 2
+        chunk_data = chunked_body[pos:pos+size]
+        body_parts.append(chunk_data)
+        pos += size + 2
+
+    return b''.join(body_parts)
