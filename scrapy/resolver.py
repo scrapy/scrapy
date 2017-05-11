@@ -1,4 +1,4 @@
-from six import text_type
+from six import PY2, text_type
 
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
@@ -16,7 +16,7 @@ class CachingThreadedResolver(ThreadedResolver):
         self.timeout = timeout
 
     def getHostByName(self, name, timeout=None):
-        if isinstance(name, text_type):
+        if PY2 and isinstance(name, text_type):
             try:
                 safe_name = name.encode('idna')
             except UnicodeError:
