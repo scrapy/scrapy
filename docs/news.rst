@@ -109,6 +109,8 @@ Bug fixes
   fixes :issue:`1612`)
 - 'make htmlview' fix for macOS (:issue:`2661`)
 - Remove "commands" from the command list  (:issue:`2695`)
+- Fix duplicate Content-Length header for POST requests with empty body (:issue:`2677`)
+- Properly cancel large downloads, i.e. above :setting:`DOWNLOAD_MAXSIZE` (:issue:`1616`)
 
 Cleanups & Refactoring
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +118,6 @@ Cleanups & Refactoring
 - Tests: remove temp files and folders (:issue:`2570`),
   fixed ProjectUtilsTest on OS X (:issue:`2569`),
   use portable pypy for Linux on Travis CI (:issue:`2710`)
-
 - Separate building request from ``_requests_to_follow`` in CrawlSpider (:issue:`2562`)
 - Remove “Python 3 progress” badge (:issue:`2567`)
 - Add a couple more lines to ``.gitignore`` (:issue:`2557`)
@@ -127,6 +128,7 @@ Cleanups & Refactoring
 - Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
 - Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
 - Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
+- Change "localhost" test server certificate (:issue:`2720`)
 
 Documentation
 ~~~~~~~~~~~~~
@@ -142,6 +144,10 @@ Documentation
 - FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
 - Rearrange selector sections (:issue:`2705`)
 - Remove ``__nonzero__`` from :class:`SelectorList` docs (:issue:`2683`)
+- Mention how to disable request filtering in documentation of
+  :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
+- Add sphinx_rtd_theme to docs setup readme (:issue:`2668`)
+- Open file in text mode in JSON item writer example (:issue:`2729`)
 
 
 Scrapy 1.3.3 (2017-03-10)
