@@ -43,7 +43,7 @@ install:
 
 addons:
   hosts:
-    - δπθ.localhost
+    - xn--pxaix.localhost
 
 script: tox
 after_success:
