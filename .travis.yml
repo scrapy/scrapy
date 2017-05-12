@@ -41,6 +41,10 @@ install:
       fi
   - pip install -U tox twine wheel codecov
 
+addons:
+  hosts:
+    - δπθ.localhost
+
 script: tox
 after_success:
   - codecov
