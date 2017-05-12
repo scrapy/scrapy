@@ -375,6 +375,60 @@ class TestS3FilesStore(unittest.TestCase):
             self.assertEqual(key.content_type, 'image/png')
 
 
+class FilesPipelineCustomStorageTestCase(unittest.TestCase):
+
+    def setUp(self):
+        custom_settings = {'FILES_STORE': 'dict://fake_file',
+                           'FILES_STORE_SCHEMES': {'dict': 'tests.test_pipeline_files.DictFilesStore'}}
+        self.pipeline = FilesPipeline.from_settings(Settings(custom_settings))
+        self.pipeline.download_func = _mocked_download_func
+        self.pipeline.open_spider(None)
+
+    @defer.inlineCallbacks
+    def test_file_stored(self):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
+            mock.patch.object(DictFilesStore, 'stat_file', return_value={
+                'checksum': 'abc', 'last_modified': time.time()}),
+            mock.patch.object(FilesPipeline, 'get_media_requests',
+                              return_value=[_prepare_request_object(item_url)])
+        ]
+        for p in patchers:
+            p.start()
+
+        result = yield self.pipeline.process_item(item, None)
+        self.assertEqual(result['files'][0]['checksum'], 'abc')
+
+
+class DictFilesStore(object):
+
+    def __init__(self, uri):
+        assert uri.startswith('dict://')
+        self.basedir = uri[5:]
+        self.checksums = {}
+        self.last_modified = {}
+
+    def stat_file(self, path, info):
+        absolute_path = self._get_filesystem_path(path)
+        if absolute_path in self.files:
+            return {'last_modified': self.last_modified[absolute_path],
+                    'checksum': self.checksums[absolute_path]}
+        else:
+            return {}
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        absolute_path = self._get_filesystem_path(path)
+        content = buf.getvalue()
+        self.checksums[absolute_path] = hashlib.md5(content).hexdigest()
+        self.last_modified[absolute_path] = time.time()
+
+    def _get_filesystem_path(self, path):
+        path_comps = path.split('/')
+        return os.path.join(self.basedir, *path_comps)
+
+
 class ItemWithFiles(Item):
     file_urls = Field()
     files = Field()

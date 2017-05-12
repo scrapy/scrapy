@@ -86,6 +86,7 @@ class ImagesPipeline(FilesPipeline):
 
     @classmethod
     def from_settings(cls, settings):
+        cls.STORE_SCHEMES = cls._load_components(settings, 'FILES_STORE_SCHEMES')
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']

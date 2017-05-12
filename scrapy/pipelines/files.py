@@ -25,9 +25,11 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
+from scrapy.utils.misc import load_object
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
+from scrapy.utils.python import without_none_values
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
@@ -215,11 +217,6 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME = "file"
     EXPIRES = 90
-    STORE_SCHEMES = {
-        '': FSFilesStore,
-        'file': FSFilesStore,
-        's3': S3FilesStore,
-    }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
 
@@ -253,6 +250,7 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def from_settings(cls, settings):
+        cls.STORE_SCHEMES = cls._load_components(settings, 'FILES_STORE_SCHEMES')
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
@@ -260,6 +258,17 @@ class FilesPipeline(MediaPipeline):
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
+
+    @staticmethod
+    def _load_components(settings, setting_prefix):
+        conf = without_none_values(settings.getwithbase(setting_prefix))
+        d = {}
+        for k, v in conf.items():
+            try:
+                d[k] = load_object(v)
+            except NotConfigured:
+                pass
+        return d
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
