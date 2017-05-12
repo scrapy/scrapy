@@ -86,6 +86,8 @@ New Features
   using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting (:issue:`2616`, fixes :issue:`2004`)
 - Accept non-complete responses from websites using a new
   :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
+- Optional pretty-printing of JSON and XML items via
+  :setting:`FEED_EXPORT_INDENT` setting (:issue:`2456`, fixes :issue:`1327`)
 
 .. _brotli: https://github.com/google/brotli
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
