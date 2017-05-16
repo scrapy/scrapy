@@ -88,6 +88,8 @@ New Features
   :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
 - Optional pretty-printing of JSON and XML items via
   :setting:`FEED_EXPORT_INDENT` setting (:issue:`2456`, fixes :issue:`1327`)
+- Allow dropping fields in ``FormRequest.from_response`` formdata when
+  ``None`` value is passed (:issue:`667`)
 
 .. _brotli: https://github.com/google/brotli
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
