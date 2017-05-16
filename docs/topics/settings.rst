@@ -959,19 +959,6 @@ Example::
 
 See :ref:`topics-extensions-ref-memusage`.
 
-.. setting:: MEMUSAGE_REPORT
-
-MEMUSAGE_REPORT
----------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-Whether to send a memory usage report after each spider has been closed.
-
-See :ref:`topics-extensions-ref-memusage`.
-
 .. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
