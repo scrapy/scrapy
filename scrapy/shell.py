@@ -40,6 +40,8 @@ class Shell(object):
         self.inthread = not threadable.isInIOThread()
         self.code = code
         self.vars = {}
+        self.dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
+        self.df = self.dupefilter_cls.from_settings(crawler.settings)
 
     def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
@@ -110,12 +112,18 @@ class Shell(object):
             else:
                 request.meta['handle_httpstatus_all'] = True
         response = None
-        try:
-            response, spider = threads.blockingCallFromThread(
-                reactor, self._schedule, request, spider)
-        except IgnoreRequest:
-            pass
-        self.populate_vars(response, request, spider)
+        seen = self.df.request_seen(request)
+        if not seen:
+            request = request.replace(dont_filter=True)
+        if not request.dont_filter and seen:
+            self.df.log(request, self.spider)
+        else:
+            try:
+                response, spider = threads.blockingCallFromThread(
+                    reactor, self._schedule, request, spider)
+            except IgnoreRequest:
+                pass
+            self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
         import scrapy
