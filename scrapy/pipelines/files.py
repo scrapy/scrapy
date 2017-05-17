@@ -217,6 +217,11 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME = "file"
     EXPIRES = 90
+    STORE_SCHEMES = {
+        '': FSFilesStore,
+        'file': FSFilesStore,
+        's3': S3FilesStore,
+    }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
 
