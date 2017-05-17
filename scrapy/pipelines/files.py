@@ -43,7 +43,7 @@ class FileException(Exception):
 
 class FSFilesStore(object):
 
-    def __init__(self, basedir):
+    def __init__(self, basedir, **kwargs):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
         self.basedir = basedir
@@ -82,16 +82,15 @@ class FSFilesStore(object):
 
 class S3FilesStore(object):
 
-    AWS_ACCESS_KEY_ID = None
-    AWS_SECRET_ACCESS_KEY = None
-
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
-                        # FilesPipeline.from_settings.
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
 
-    def __init__(self, uri):
+    def __init__(self, uri, settings, s3_policy_key='FILES_STORE_S3_ACL', **kwargs):
+        self.AWS_ACCESS_KEY_ID = settings.get('AWS_ACCESS_KEY_ID')
+        self.AWS_SECRET_ACCESS_KEY = settings.get('AWS_SECRET_ACCESS_KEY')
+        self.POLICY = settings.get(s3_policy_key, 'private')
+
         self.is_botocore = is_botocore()
         if self.is_botocore:
             import botocore.session
@@ -224,6 +223,7 @@ class FilesPipeline(MediaPipeline):
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
+    S3_POLICY_KEY = 'FILES_STORE_S3_ACL'
 
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
@@ -233,7 +233,7 @@ class FilesPipeline(MediaPipeline):
             settings = Settings(settings)
 
         cls_name = "FilesPipeline"
-        self.store = self._get_store(store_uri)
+        self.store = self._get_store(store_uri, settings, s3_policy_key=self.S3_POLICY_KEY)
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
@@ -256,10 +256,6 @@ class FilesPipeline(MediaPipeline):
     @classmethod
     def from_settings(cls, settings):
         cls.STORE_SCHEMES = cls._load_components(settings, 'FILES_STORE_SCHEMES')
-        s3store = cls.STORE_SCHEMES['s3']
-        s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
-        s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
-        s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
@@ -275,13 +271,13 @@ class FilesPipeline(MediaPipeline):
                 pass
         return d
 
-    def _get_store(self, uri):
+    def _get_store(self, uri, settings, s3_policy_key):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        return store_cls(uri, settings=settings, s3_policy_key=s3_policy_key)
 
     def media_to_download(self, request, info):
         def _onsuccess(result):

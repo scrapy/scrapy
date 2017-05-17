@@ -393,6 +393,33 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
 
+
+class ImagesPipelineTestCaseS3Settings(unittest.TestCase):
+
+    def test_aws_settings(self):
+        """
+        The AWS settings should be set from settings.
+        """
+        pipe = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/files/',
+                                                      'AWS_ACCESS_KEY_ID': 'example_id',
+                                                      'AWS_SECRET_ACCESS_KEY': 'example_key'}))
+        self.assertEqual(pipe.store.AWS_ACCESS_KEY_ID, 'example_id')
+        self.assertEqual(pipe.store.AWS_SECRET_ACCESS_KEY, 'example_key')
+
+
+    def test_policy_settings(self):
+        """
+        If IMAGES_STORE_S3_ACL is set, the POLICY attribute should be overridden.
+        """
+        pipe = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/files/',
+                                                      'IMAGES_STORE_S3_ACL': 'public'}))
+        self.assertEqual(pipe.store.POLICY, 'public')
+
+        pipe = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/files/',
+                                                      'IMAGES_STORE_S3_ACL': 'private'}))
+        self.assertEqual(pipe.store.POLICY, 'private')
+
+
 def _create_image(format, *a, **kw):
     buf = TemporaryFile()
     Image.new(*a, **kw).save(buf, format)

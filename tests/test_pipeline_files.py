@@ -340,6 +340,30 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
                              expected_value)
 
 
+class FilesPipelineTestCaseS3Settings(unittest.TestCase):
+
+    def test_aws_settings(self):
+        """
+        The AWS settings should be set from settings.
+        """
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'AWS_ACCESS_KEY_ID': 'example_id',
+                                                     'AWS_SECRET_ACCESS_KEY': 'example_key'}))
+        self.assertEqual(pipe.store.AWS_ACCESS_KEY_ID, 'example_id')
+        self.assertEqual(pipe.store.AWS_SECRET_ACCESS_KEY, 'example_key')
+
+    def test_policy_settings(self):
+        """
+        If FILES_STORE_S3_ACL is set, the POLICY attribute should be overridden.
+        """
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'FILES_STORE_S3_ACL': 'public'}))
+        self.assertEqual(pipe.store.POLICY, 'public')
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'FILES_STORE_S3_ACL': 'private'}))
+        self.assertEqual(pipe.store.POLICY, 'private')
+
+
 class TestS3FilesStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
@@ -404,7 +428,7 @@ class FilesPipelineCustomStorageTestCase(unittest.TestCase):
 
 class DictFilesStore(object):
 
-    def __init__(self, uri):
+    def __init__(self, uri, **kwargs):
         assert uri.startswith('dict://')
         self.basedir = uri[5:]
         self.checksums = {}
