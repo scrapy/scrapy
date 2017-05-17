@@ -32,8 +32,11 @@ class Request(object_ref):
         self.errback = errback
 
         self.cookies = cookies or {}
-        self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
+        if isinstance(headers, Headers):
+            self.headers = headers.copy()
+        else:
+            self.headers = Headers(headers or {}, encoding=encoding)
 
         self._meta = dict(meta) if meta else None
         self.flags = [] if flags is None else list(flags)

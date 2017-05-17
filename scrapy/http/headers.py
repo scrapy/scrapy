@@ -7,13 +7,18 @@ from scrapy.utils.python import to_unicode
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
-    def __init__(self, seq=None, encoding='utf-8'):
+    def __init__(self, seq=None, encoding='utf-8', capitalize=True):
+        """
+        'capitalize' argument is True by default to preserve backwards
+        compatibility, i.e.: capitalize all keys.
+        """
         self.encoding = encoding
-        super(Headers, self).__init__(seq)
+        self.capitalize = capitalize
+        super(Headers, self).__init__(seq, make_keys_lower=False)
 
     def normkey(self, key):
         """Normalize key to bytes"""
-        return self._tobytes(key.title())
+        return self._tobytes(key.title() if self.capitalize else key)
 
     def normvalue(self, value):
         """Normalize values to bytes"""
@@ -83,13 +88,15 @@ class Headers(CaselessDict):
         """ Return headers as a CaselessDict with unicode keys
         and unicode values. Multiple values are joined with ','.
         """
-        return CaselessDict(
+        seq = (
             (to_unicode(key, encoding=self.encoding),
-             to_unicode(b','.join(value), encoding=self.encoding))
-            for key, value in self.items())
+            to_unicode(b','.join(value), encoding=self.encoding))
+            for key, value in self.items()
+        )
+        return CaselessDict(seq=seq, make_keys_lower=False)
 
     def __copy__(self):
-        return self.__class__(self)
+        return self.__class__(self, encoding=self.encoding, capitalize=self.capitalize)
     copy = __copy__
 
 

@@ -185,55 +185,71 @@ class SiteNode(object):
 
 class CaselessDict(dict):
 
-    __slots__ = ()
+    __slots__ = ('_lower_keys', 'make_keys_lower')
 
-    def __init__(self, seq=None):
+    def __init__(self, seq=None, make_keys_lower=True):
+        """
+        'make_keys_lower' argument is True by default to preserve backwards
+        compatibility, i.e.: converting all keys to lowercase.
+        """
         super(CaselessDict, self).__init__()
+        self._lower_keys = dict()
+        self.make_keys_lower = make_keys_lower
         if seq:
             self.update(seq)
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, self.normkey(key))
+        return dict.__getitem__(self, self._lower_keys[self._lower(key)])
 
     def __setitem__(self, key, value):
+        dict.__setitem__(self._lower_keys, self._lower(key), self.normkey(key))
         dict.__setitem__(self, self.normkey(key), self.normvalue(value))
 
     def __delitem__(self, key):
-        dict.__delitem__(self, self.normkey(key))
+        dict.__delitem__(self, self._lower_keys[self._lower(key)])
+        dict.__delitem__(self._lower_keys, self._lower(key))
 
     def __contains__(self, key):
-        return dict.__contains__(self, self.normkey(key))
+        return dict.__contains__(self._lower_keys, self._lower(key))
     has_key = __contains__
 
     def __copy__(self):
-        return self.__class__(self)
+        return self.__class__(self, make_keys_lower=self.make_keys_lower)
     copy = __copy__
 
     def normkey(self, key):
         """Method to normalize dictionary key access"""
-        return key.lower()
+        return key.lower() if self.make_keys_lower else key
 
     def normvalue(self, value):
-        """Method to normalize values prior to be setted"""
+        """Method to normalize values prior to be set"""
         return value
 
+    def _lower(self, key):
+        """Convert a key to lowercase"""
+        return self.normkey(key).lower()
+
     def get(self, key, def_val=None):
-        return dict.get(self, self.normkey(key), self.normvalue(def_val))
+        _key = dict.get(self._lower_keys, self._lower(key), key)
+        return dict.get(self, _key, self.normvalue(def_val))
 
     def setdefault(self, key, def_val=None):
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
+        _key = dict.setdefault(self._lower_keys, self._lower(key), self.normkey(key))
+        return dict.setdefault(self, _key, self.normvalue(def_val))
 
     def update(self, seq):
         seq = seq.items() if isinstance(seq, Mapping) else seq
-        iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
-        super(CaselessDict, self).update(iseq)
+        for key, value in seq:
+            self._lower_keys[self._lower(key)] = self.normkey(key)
+            self[self.normkey(key)] = value
 
     @classmethod
-    def fromkeys(cls, keys, value=None):
-        return cls((k, value) for k in keys)
+    def fromkeys(cls, keys, value=None, make_keys_lower=True):
+        return cls(((k, value) for k in keys), make_keys_lower=make_keys_lower)
 
     def pop(self, key, *args):
-        return dict.pop(self, self.normkey(key), *args)
+        _key = dict.pop(self._lower_keys, self._lower(key), key)
+        return dict.pop(self, _key, *args)
 
 
 class MergeDict(object):

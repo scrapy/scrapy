@@ -22,6 +22,13 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h.getlist('Accept', ['text/html', 'images/jpeg']),
                          [b'text/html', b'images/jpeg'])
 
+    def test_preserve_key_capitalization(self):
+        h = Headers(capitalize=False)
+        h['Content-TYPE'] = 'text/html'
+        self.assertEqual(h['Content-Type'], b'text/html')
+        self.assertEqual(h['Content-TYPE'], b'text/html')
+        self.assertEqual(list(h.keys()), [b'Content-TYPE'])
+
     def test_single_value(self):
         h = Headers()
         h['Content-Type'] = 'text/html'

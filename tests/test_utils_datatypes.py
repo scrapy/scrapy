@@ -137,6 +137,13 @@ class CaselessDictTest(unittest.TestCase):
         d['key-one'] = 2
         self.assertEqual(list(d.keys()), ['Key-One'])
 
+    def test_preserve_key_capitalization(self):
+        d = CaselessDict(make_keys_lower=False)
+        d['key-ONE'] = 1
+        self.assertEqual(d['key-one'], 1)
+        self.assertEqual(d['key-ONE'], 1)
+        self.assertEqual(list(d.keys()), ['key-ONE'])
+
     def test_normvalue(self):
         class MyDict(CaselessDict):
             def normvalue(self, value):
