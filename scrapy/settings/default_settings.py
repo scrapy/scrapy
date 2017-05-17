@@ -186,6 +186,7 @@ HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
 IMAGES_STORE_S3_ACL = 'private'
+IMAGES_CONVERT_TYPE = 'JPEG'
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
