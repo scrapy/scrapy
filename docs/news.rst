@@ -90,6 +90,8 @@ New Features
   :setting:`FEED_EXPORT_INDENT` setting (:issue:`2456`, fixes :issue:`1327`)
 - Allow dropping fields in ``FormRequest.from_response`` formdata when
   ``None`` value is passed (:issue:`667`)
+- Per-request retry times with the new :reqmeta:`max_retry_times` meta key
+  (:issue:`2642`)
 
 .. _brotli: https://github.com/google/brotli
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
@@ -133,6 +135,7 @@ Cleanups & Refactoring
 - Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
 - Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
 - Change "localhost" test server certificate (:issue:`2720`)
+- Remove unused ``MEMUSAGE_REPORT`` setting (:issue:`2576`)
 
 Documentation
 ~~~~~~~~~~~~~
