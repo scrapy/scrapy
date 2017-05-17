@@ -220,7 +220,6 @@ can be configured with the following settings:
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
 * :setting:`MEMUSAGE_NOTIFY_MAIL`
-* :setting:`MEMUSAGE_REPORT`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
