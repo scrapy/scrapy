@@ -3,6 +3,191 @@
 Release notes
 =============
 
+Scrapy 1.4.0 (2017-XX-XX)
+-------------------------
+
+Scrapy 1.4 does not bring that many breathtaking new features
+but quite a few handy improvements nonetheless.
+
+Scrapy now supports anonymous FTP sessions with customizable user and
+password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
+And if you're using Twisted version 17.1.0 or above, FTP is now available
+with Python 3. 
+
+There's a new :meth:`response.follow <scrapy.http.TextResponse.follow>` method
+for creating requests; **it is now a recommended way to create Requests
+in Scrapy spiders**. This method makes it easier to write correct
+spiders; ``response.follow`` has several advantages over creating
+``scrapy.Request`` objects directly:
+
+* it handles relative URLs;
+* it works properly with non-ascii URLs on non-UTF8 pages;
+* in addition to absolute and relative URLs it supports Selectors;
+  for ``<a>`` elements it can also extract their href values.
+
+For example, instead of this::
+
+    for href in response.css('li.page a::attr(href)').extract():
+        url = response.urljoin(href)
+        yield scrapy.Request(url, self.parse, encoding=response.encoding)
+
+One can now write this::
+
+    for a in response.css('li.page a'):
+        yield response.follow(a, self.parse)
+
+Link extractors are also improved. They work similarly to what a regular
+modern browser would do: leading and trailing whitespace are removed
+from attributes (think ``href="   http://example.com"``) when building
+``Link`` objects. This whitespace-stripping also happens for ``action``
+attributes with ``FormRequest``.
+
+**Please also note that link extractors do not canonicalize URLs by default
+anymore.** This was puzzling users every now and then, and it's not what
+browsers do in fact, so we removed that extra transformation on extractred
+links.
+
+For those of you wanting more control on the ``Referer:`` header that Scrapy
+sends when following links, you can set your own ``Referrer Policy``.
+Prior to Scrapy 1.4, the default ``RefererMiddleware`` would simply and
+blindly set it to the URL of the response that generated the HTTP request
+(which could leak information on your URL seeds).
+By default, Scrapy now behaves much like your regular browser does.
+And this policy is fully customizable with W3C standard values
+(or with something really custom of your own if you wish).
+See :setting:`REFERRER_POLICY` for details.
+
+To make Scrapy spiders easier to debug, Scrapy logs more stats by default
+in 1.4: memory usage stats, detailed retry stats, detailed HTTP error code
+stats. A similar change is that HTTP cache path is also visible in logs now.
+
+Last but not least, Scrapy now has the option to make JSON and XML items
+more human-readable, with newlines between items and even custom indenting
+offset, using the new :setting:`FEED_EXPORT_INDENT` setting.
+
+Enjoy! (Or read on for the rest of changes in this release.)
+
+Deprecations and Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
+  (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
+  **warning, this is technically backwards-incompatible**
+- Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
+  **this is technically backwards-incompatible** so please check if you have
+  any non-default ``MEMUSAGE_***`` options set.
+- ``EDITOR`` environment variable now takes precedence over ``EDITOR``
+  option defined in settings.py (:issue:`1829`); Scrapy default settings
+  no longer depend on environment variables. **This is technically a backwards
+  incompatible change**.
+- ``Spider.make_requests_from_url`` is deprecated
+  (:issue:`1728`, fixes :issue:`1495`).
+
+New Features
+~~~~~~~~~~~~
+
+- Accept proxy credentials in :reqmeta:`proxy` request meta key (:issue:`2526`)
+- Support `brotli`_-compressed content; requires optional `brotlipy`_
+  (:issue:`2535`)
+- New :ref:`response.follow <response-follow-example>` shortcut
+  for creating requests (:issue:`1940`)
+- Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
+  objects (:issue:`2047`)
+- Support Anonymous FTP (:issue:`2342`)
+- Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
+  stats to :class:`RetryMiddleware <scrapy.downloadermiddlewares.retry.RetryMiddleware>`
+  (:issue:`2543`)
+- Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/<status>``
+  stats to :class:`HttpErrorMiddleware <scrapy.spidermiddlewares.httperror.HttpErrorMiddleware>`
+  (:issue:`2566`)
+- Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
+  :class:`RefererMiddleware <scrapy.spidermiddlewares.referer.RefererMiddleware>`
+  (:issue:`2306`)
+- New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
+- Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
+- Warn users when project contains duplicate spider names (fixes :issue:`2181`)
+- :class:`CaselessDict` now accepts ``Mapping`` instances and not only dicts (:issue:`2646`)
+- :ref:`Media downloads <topics-media-pipeline>`, with :class:`FilesPipelines`
+  or :class:`ImagesPipelines`, can now optionally handle HTTP redirects
+  using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting (:issue:`2616`, fixes :issue:`2004`)
+- Accept non-complete responses from websites using a new
+  :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
+- Optional pretty-printing of JSON and XML items via
+  :setting:`FEED_EXPORT_INDENT` setting (:issue:`2456`, fixes :issue:`1327`)
+- Allow dropping fields in ``FormRequest.from_response`` formdata when
+  ``None`` value is passed (:issue:`667`)
+- Per-request retry times with the new :reqmeta:`max_retry_times` meta key
+  (:issue:`2642`)
+- ``python -m scrapy`` as a more explicit alternative to ``scrapy`` command
+  (:issue:`2740`)
+
+.. _brotli: https://github.com/google/brotli
+.. _brotlipy: https://github.com/python-hyper/brotlipy/
+
+Bug fixes
+~~~~~~~~~
+
+- LinkExtractor now strips leading and trailing whitespaces from attributes
+  (:issue:`2547`, fixes :issue:`1614`)
+- Properly handle whitespaces in action attribute in :class:`FormRequest`
+  (:issue:`2548`)
+- Buffer CONNECT response bytes from proxy until all HTTP headers are received
+  (:issue:`2495`, fixes :issue:`2491`)
+- FTP downloader now works on Python 3, provided you use Twisted>=17.1
+  (:issue:`2599`)
+- Use body to choose response type after decompressing content (:issue:`2393`,
+  fixes :issue:`2145`)
+- Always decompress ``Content-Encoding: gzip`` at :class:`HttpCompressionMiddleware
+  <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>` stage (:issue:`2391`)
+- Respect custom log level in ``Spider.custom_settings`` (:issue:`2581`,
+  fixes :issue:`1612`)
+- 'make htmlview' fix for macOS (:issue:`2661`)
+- Remove "commands" from the command list  (:issue:`2695`)
+- Fix duplicate Content-Length header for POST requests with empty body (:issue:`2677`)
+- Properly cancel large downloads, i.e. above :setting:`DOWNLOAD_MAXSIZE` (:issue:`1616`)
+- ImagesPipeline: fixed processing of transparent PNG images with palette
+  (:issue:`2675`)
+
+Cleanups & Refactoring
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Tests: remove temp files and folders (:issue:`2570`),
+  fixed ProjectUtilsTest on OS X (:issue:`2569`),
+  use portable pypy for Linux on Travis CI (:issue:`2710`)
+- Separate building request from ``_requests_to_follow`` in CrawlSpider (:issue:`2562`)
+- Remove “Python 3 progress” badge (:issue:`2567`)
+- Add a couple more lines to ``.gitignore`` (:issue:`2557`)
+- Remove bumpversion prerelease configuration (:issue:`2159`)
+- Add codecov.yml file (:issue:`2750`)
+- Set context factory implementation based on Twisted version (:issue:`2577`,
+  fixes :issue:`2560`)
+- Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
+- Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
+- Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
+- Change "localhost" test server certificate (:issue:`2720`)
+- Remove unused ``MEMUSAGE_REPORT`` setting (:issue:`2576`)
+
+Documentation
+~~~~~~~~~~~~~
+
+- Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
+- Mention issue with :meth:`FormRequest.from_response
+  <scrapy.http.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+- Use single quotes uniformly in templates (:issue:`2596`)
+- Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
+- Removed section on deprecated ``contrib/`` (:issue:`2636`)
+- Recommend Anaconda when installing Scrapy on Windows
+  (:issue:`2477`, fixes :issue:`2475`)
+- FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
+- Rearrange selector sections (:issue:`2705`)
+- Remove ``__nonzero__`` from :class:`SelectorList` docs (:issue:`2683`)
+- Mention how to disable request filtering in documentation of
+  :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
+- Add sphinx_rtd_theme to docs setup readme (:issue:`2668`)
+- Open file in text mode in JSON item writer example (:issue:`2729`)
+- Clarify ``allowed_domains`` example (:issue:`2670`)
+
+
 Scrapy 1.3.3 (2017-03-10)
 -------------------------
 
@@ -14,6 +199,7 @@ Bug fixes
   These exceptions were silenced as warnings since 1.3.0.
   A new setting is introduced to toggle between warning or exception if needed ;
   see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
+
 
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
