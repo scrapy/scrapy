@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys
+import sys, os
 import optparse
 import cProfile
 import inspect
@@ -107,6 +107,12 @@ def execute(argv=None, settings=None):
 
     if settings is None:
         settings = get_project_settings()
+        # set EDITOR from environment if available
+        try:
+            editor = os.environ['EDITOR']
+        except KeyError: pass
+        else:
+            settings['EDITOR'] = editor
     check_deprecated_settings(settings)
 
     # --- backwards compatibility for scrapy.conf.settings singleton ---

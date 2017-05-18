@@ -291,12 +291,12 @@ edit
 * Syntax: ``scrapy edit <spider>``
 * Requires project: *yes*
 
-Edit the given spider using the editor defined in the :setting:`EDITOR`
-setting.
+Edit the given spider using the editor defined in the ``EDITOR`` environment
+variable or (if unset) the :setting:`EDITOR` setting.
 
 This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
-debug his spiders.
+debug spiders.
 
 Usage example::
 
