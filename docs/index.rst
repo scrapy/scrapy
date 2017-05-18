@@ -4,7 +4,7 @@
 Scrapy |version| documentation
 ==============================
 
-This documentation contains everything you need to know about Scrapy.
+This documentation contains important basic information related to Scrapy.
 
 Getting help
 ============
