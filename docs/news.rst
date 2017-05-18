@@ -3,7 +3,7 @@
 Release notes
 =============
 
-Scrapy 1.4.0 (2017-XX-XX)
+Scrapy 1.4.0 (2017-05-18)
 -------------------------
 
 Scrapy 1.4 does not bring that many breathtaking new features
