@@ -67,6 +67,21 @@ offset, using the new :setting:`FEED_EXPORT_INDENT` setting.
 
 Enjoy! (Or read on for the rest of changes in this release.)
 
+Deprecations and Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
+  (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
+  **warning, this is technically backwards-incompatible**
+- Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
+  **this is technically backwards-incompatible** so please check if you have
+  any non-default ``MEMUSAGE_***`` options set.
+- ``EDITOR`` environment variable now takes precedence over ``EDITOR``
+  option defined in settings.py (:issue:`1829`); Scrapy default settings
+  no longer depend on environment variables. **This is technically a backwards
+  incompatible change**.
+- ``Spider.make_requests_from_url`` is deprecated
+  (:issue:`1728`, fixes :issue:`1495`).
 
 New Features
 ~~~~~~~~~~~~
@@ -74,9 +89,6 @@ New Features
 - Accept proxy credentials in :reqmeta:`proxy` request meta key (:issue:`2526`)
 - Support `brotli`_-compressed content; requires optional `brotlipy`_
   (:issue:`2535`)
-- Enable memusage extension by default (:issue:`2187`) ;
-  **this is technically backwards-incompatible** so please check if you have
-  any non-default ``MEMUSAGE_***`` settings set.
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
 - Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
@@ -88,9 +100,6 @@ New Features
 - Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/<status>``
   stats to :class:`HttpErrorMiddleware <scrapy.spidermiddlewares.httperror.HttpErrorMiddleware>`
   (:issue:`2566`)
-- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
-  (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
-  **warning, this is technically backwards-incompatible**
 - Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
   :class:`RefererMiddleware <scrapy.spidermiddlewares.referer.RefererMiddleware>`
   (:issue:`2306`)
@@ -109,6 +118,8 @@ New Features
   ``None`` value is passed (:issue:`667`)
 - Per-request retry times with the new :reqmeta:`max_retry_times` meta key
   (:issue:`2642`)
+- ``python -m scrapy`` as a more explicit alternative to ``scrapy`` command
+  (:issue:`2740`)
 
 .. _brotli: https://github.com/google/brotli
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
@@ -134,6 +145,8 @@ Bug fixes
 - Remove "commands" from the command list  (:issue:`2695`)
 - Fix duplicate Content-Length header for POST requests with empty body (:issue:`2677`)
 - Properly cancel large downloads, i.e. above :setting:`DOWNLOAD_MAXSIZE` (:issue:`1616`)
+- ImagesPipeline: fixed processing of transparent PNG images with palette
+  (:issue:`2675`)
 
 Cleanups & Refactoring
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -144,8 +157,8 @@ Cleanups & Refactoring
 - Separate building request from ``_requests_to_follow`` in CrawlSpider (:issue:`2562`)
 - Remove “Python 3 progress” badge (:issue:`2567`)
 - Add a couple more lines to ``.gitignore`` (:issue:`2557`)
-- Deprecate ``Spider.make_requests_from_url`` (:issue:`1728`)
 - Remove bumpversion prerelease configuration (:issue:`2159`)
+- Add codecov.yml file (:issue:`2750`)
 - Set context factory implementation based on Twisted version (:issue:`2577`,
   fixes :issue:`2560`)
 - Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
@@ -172,6 +185,7 @@ Documentation
   :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
 - Add sphinx_rtd_theme to docs setup readme (:issue:`2668`)
 - Open file in text mode in JSON item writer example (:issue:`2729`)
+- Clarify ``allowed_domains`` example (:issue:`2670`)
 
 
 Scrapy 1.3.3 (2017-03-10)
