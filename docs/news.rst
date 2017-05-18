@@ -11,28 +11,41 @@ but quite a few handy improvements nonetheless.
 
 Scrapy now supports anonymous FTP sessions with customizable user and
 password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
-**And if you're using Twisted version 17.1.0 or above, FTP is now available
-with Python 3.**
+And if you're using Twisted version 17.1.0 or above, FTP is now available
+with Python 3. 
 
-Link extractors now work similarly to what a regular modern browser would
-do. Especially, leading and trailing whitespace are removed from attributes
-(think ``href="   http://example.com"``) when building ``Link`` objects.
-This whitespace-stripping also happens for ``action`` attributes with
-``FormRequest``.
+There's a new :meth:`response.follow <scrapy.http.TextResponse.follow>` method
+for creating requests; **it is now a recommended way to create Requests
+in Scrapy spiders**. This method makes it easier to write correct
+spiders; ``response.follow`` has several advantages over creating
+``scrapy.Request`` objects directly:
+
+* it handles relative URLs;
+* it works properly with non-ascii URLs on non-UTF8 pages;
+* in addition to absolute and relative URLs it supports Selectors;
+  for ``<a>`` elements it can also extract their href values.
+
+For example, instead of this::
+
+    for href in response.css('li.page a::attr(href)').extract():
+        url = response.urljoin(href)
+        yield scrapy.Request(url, self.parse, encoding=response.encoding)
+
+One can now write this::
+
+    for a in response.css('li.page a'):
+        yield response.follow(a, self.parse)
+
+Link extractors are also improved. They work similarly to what a regular
+modern browser would do: leading and trailing whitespace are removed
+from attributes (think ``href="   http://example.com"``) when building
+``Link`` objects. This whitespace-stripping also happens for ``action``
+attributes with ``FormRequest``.
+
 **Please also note that link extractors do not canonicalize URLs by default
 anymore.** This was puzzling users every now and then, and it's not what
 browsers do in fact, so we removed that extra transformation on extractred
 links.
-
-There's a new ``response.follow()`` shortcut for creating requests directly
-from a response instance and a relative URL.
-For example, instead of::
-
-    scrapy.Request(response.urljoin(somehrefvalue))
-
-you can now use the simpler::
-
-    response.follow(somehrefvalue)
 
 For those of you wanting more control on the ``Referer:`` header that Scrapy
 sends when following links, you can set your own ``Referrer Policy``.
@@ -43,6 +56,10 @@ By default, Scrapy now behaves much like your regular browser does.
 And this policy is fully customizable with W3C standard values
 (or with something really custom of your own if you wish).
 See :setting:`REFERRER_POLICY` for details.
+
+To make Scrapy spiders easier to debug, Scrapy logs more stats by default
+in 1.4: memory usage stats, detailed retry stats, detailed HTTP error code
+stats. A similar change is that HTTP cache path is also visible in logs now.
 
 Last but not least, Scrapy now has the option to make JSON and XML items
 more human-readable, with newlines between items and even custom indenting
@@ -60,7 +77,7 @@ New Features
 - Enable memusage extension by default (:issue:`2187`) ;
   **this is technically backwards-incompatible** so please check if you have
   any non-default ``MEMUSAGE_***`` settings set.
-- New :meth:`Response.follow <scrapy.http.Response.follow>` shortcut
+- New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
 - Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
   objects (:issue:`2047`)
