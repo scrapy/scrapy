@@ -107,7 +107,7 @@ format::
    class JsonWriterPipeline(object):
 
        def open_spider(self, spider):
-           self.file = open('items.jl', 'wb')
+           self.file = open('items.jl', 'w')
 
        def close_spider(self, spider):
            self.file.close()
@@ -134,7 +134,7 @@ method and how to clean up the resources properly.::
     import pymongo
 
     class MongoPipeline(object):
-    
+
         collection_name = 'scrapy_items'
 
         def __init__(self, mongo_uri, mongo_db):
@@ -248,4 +248,3 @@ To activate an Item Pipeline component you must add its class to the
 The integer values you assign to classes in this setting determine the
 order in which they run: items go through from lower valued to higher
 valued classes. It's customary to define these numbers in the 0-1000 range.
-

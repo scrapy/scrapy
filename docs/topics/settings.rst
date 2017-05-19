@@ -646,6 +646,13 @@ override its ``request_fingerprint`` method. This method should accept
 scrapy :class:`~scrapy.http.Request` object and return its fingerprint
 (a string).
 
+You can disable filtering of duplicate requests by setting
+:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
+Be very careful about this however, because you can get into crawling loops.
+It's usually a better idea to set the ``dont_filter`` parameter to
+``True`` on the specific :class:`~scrapy.http.Request` that should not be
+filtered.
+
 .. setting:: DUPEFILTER_DEBUG
 
 DUPEFILTER_DEBUG
@@ -661,11 +668,11 @@ Setting :setting:`DUPEFILTER_DEBUG` to ``True`` will make it log all duplicate r
 EDITOR
 ------
 
-Default: `depends on the environment`
+Default: ``vi`` (on Unix systems) or the IDLE editor (on Windows)
 
-The editor to use for editing spiders with the :command:`edit` command. It
-defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
-to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
+The editor to use for editing spiders with the :command:`edit` command.
+Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
+command will prefer it over the default setting.
 
 .. setting:: EXTENSIONS
 
@@ -952,19 +959,6 @@ Example::
 
 See :ref:`topics-extensions-ref-memusage`.
 
-.. setting:: MEMUSAGE_REPORT
-
-MEMUSAGE_REPORT
----------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-Whether to send a memory usage report after each spider has been closed.
-
-See :ref:`topics-extensions-ref-memusage`.
-
 .. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
@@ -1179,6 +1173,29 @@ Default: ``'scrapy.spiderloader.SpiderLoader'``
 
 The class that will be used for loading spiders, which must implement the
 :ref:`topics-api-spiderloader`.
+
+.. setting:: SPIDER_LOADER_WARN_ONLY
+
+SPIDER_LOADER_WARN_ONLY
+-----------------------
+
+.. versionadded:: 1.3.3
+
+Default: ``False``
+
+By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+it will fail loudly if there is any ``ImportError`` exception.
+But you can choose to silence this exception and turn it into a simple
+warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
+
+.. note::
+    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
+    already (i.e. they will only issue a warning and will not fail)
+    since they do not actually need to load spider classes to work:
+    :command:`scrapy runspider <runspider>`,
+    :command:`scrapy settings <settings>`,
+    :command:`scrapy startproject <startproject>`,
+    :command:`scrapy version <version>`.
 
 .. setting:: SPIDER_MIDDLEWARES
 

@@ -96,6 +96,14 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
 
+        # transparency case with palette: P and PNG
+        COLOUR = (0, 127, 255, 50)
+        im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        im = im.convert('P')
+        converted, _ = self.pipeline.convert_image(im)
+        self.assertEquals(converted.mode, 'RGB')
+        self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
+
 
 class DeprecatedImagesPipeline(ImagesPipeline):
     def file_key(self, url):

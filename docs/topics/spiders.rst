@@ -80,6 +80,9 @@ scrapy.Spider
        allowed to crawl. Requests for URLs not belonging to the domain names
        specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
+       
+       Let's say your target url is ``https://www.example.com/1.html``,
+       then add ``'example.com'`` to the list.
 
    .. attribute:: start_urls
 

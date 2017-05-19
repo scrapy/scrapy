@@ -8,7 +8,7 @@ Link extractors are objects whose only purpose is to extract links from web
 pages (:class:`scrapy.http.Response` objects) which will be eventually
 followed.
 
-There is ``scrapy.linkextractors import LinkExtractor`` available
+There is ``scrapy.linkextractors.LinkExtractor`` available
 in Scrapy, but you can create your own custom Link Extractors to suit your
 needs by implementing a simple interface.
 

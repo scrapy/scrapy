@@ -593,6 +593,9 @@ Built-in Selectors reference
 .. module:: scrapy.selector
    :synopsis: Selector class
 
+Selector objects
+----------------
+
 .. class:: Selector(response=None, text=None, type=None)
 
   An instance of :class:`Selector` is a wrapper over response to select
@@ -714,13 +717,9 @@ SelectorList objects
        Call the ``.re()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
-   .. method:: __nonzero__()
-
-        returns True if the list is not empty, False otherwise.
-
 
 Selector examples on HTML response
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------
 
 Here's a couple of :class:`Selector` examples to illustrate several concepts.
 In all cases, we assume there is already a :class:`Selector` instantiated with
@@ -745,7 +744,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
           print node.xpath("@class").extract()
 
 Selector examples on XML response
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 Here's a couple of examples to illustrate several concepts. In both cases we
 assume there is already a :class:`Selector` instantiated with an
@@ -767,7 +766,7 @@ assume there is already a :class:`Selector` instantiated with an
 .. _removing-namespaces:
 
 Removing namespaces
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more

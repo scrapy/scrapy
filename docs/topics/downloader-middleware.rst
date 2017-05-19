@@ -645,6 +645,12 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+   This middleware also supports decoding `brotli-compressed`_ responses,
+   provided `brotlipy`_ is installed.
+
+.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
+.. _brotlipy: https://pypi.python.org/pypi/brotlipy
+
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -845,6 +851,11 @@ RETRY_TIMES
 Default: ``2``
 
 Maximum number of times to retry, in addition to the first download.
+
+Maximum number of retries can also be specified per-request using
+:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+When initialized, the :reqmeta:`max_retry_times` meta key takes higher
+precedence over the :setting:`RETRY_TIMES` setting.
 
 .. setting:: RETRY_HTTP_CODES
 

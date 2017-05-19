@@ -425,6 +425,17 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'one'], [b'1'])
         self.assertEqual(fs[b'two'], [b'2'])
 
+    def test_from_response_drop_params(self):
+        response = _buildresponse(
+            """<form action="get.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': None})
+        fs = _qs(req)
+        self.assertEqual(fs[b'one'], [b'1'])
+        self.assertNotIn(b'two', fs)
+
     def test_from_response_override_method(self):
         response = _buildresponse(
                 '''<html><body>

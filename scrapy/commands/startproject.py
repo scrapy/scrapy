@@ -26,7 +26,8 @@ IGNORE = ignore_patterns('*.pyc', '.svn')
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {'LOG_ENABLED': False,
+                        'SPIDER_LOADER_WARN_ONLY': True}
 
     def syntax(self):
         return "<project_name> [project_dir]"
@@ -118,4 +119,4 @@ class Command(ScrapyCommand):
         _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
             join(scrapy.__path__[0], 'templates')
         return join(_templates_base_dir, 'project')
-    
+

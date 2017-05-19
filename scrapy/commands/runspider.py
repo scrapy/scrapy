@@ -28,6 +28,7 @@ def _import_file(filepath):
 class Command(ScrapyCommand):
 
     requires_project = False
+    default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
 
     def syntax(self):
         return "[options] <spider_file>"

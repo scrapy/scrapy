@@ -209,6 +209,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_ENCODING`
  * :setting:`FEED_EXPORT_FIELDS`
+ * :setting:`FEED_EXPORT_INDENT`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -265,6 +266,22 @@ If an exporter requires a fixed set of fields (this is the case for
 :ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS
 is empty or None, then Scrapy tries to infer field names from the
 exported data - currently it uses field names from the first item.
+
+.. setting:: FEED_EXPORT_INDENT
+
+FEED_EXPORT_INDENT
+------------------
+
+Default: ``0``
+
+Amount of spaces used to indent the output on each level. If ``FEED_EXPORT_INDENT``
+is a non-negative integer, then array elements and object members will be pretty-printed
+with that indent level. An indent level of ``0`` (the default), or negative,
+will put each item on a new line. ``None`` selects the most compact representation.
+
+Currently implemented only by :class:`~scrapy.exporters.JsonItemExporter`
+and :class:`~scrapy.exporters.XmlItemExporter`, i.e. when you are exporting
+to ``.json`` or ``.xml``.
 
 .. setting:: FEED_STORE_EMPTY
 

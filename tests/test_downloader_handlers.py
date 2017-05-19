@@ -6,7 +6,6 @@ try:
     from unittest import mock
 except ImportError:
     import mock
-import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -22,6 +21,7 @@ from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -29,14 +29,15 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
 from scrapy.spiders import Spider
-from scrapy.http import Request
+from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
+from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer, ssl_context_factory
+from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -176,14 +177,24 @@ class EmptyContentTypeHeaderResource(resource.Resource):
         return request.content.read()
 
 
+class LargeChunkedFileResource(resource.Resource):
+    def render(self, request):
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
     # only used for HTTPS tests
-    keyfile = 'keys/cert.pem'
-    certfile = 'keys/cert.pem'
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
 
     def setUp(self):
         self.tmpname = self.mktemp()
@@ -201,6 +212,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        r.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -309,6 +322,17 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
+    def test_content_length_zero_bodyless_post_only_one(self):
+        def _test(response):
+            import json
+            headers = Headers(json.loads(response.text)['headers'])
+            contentlengths = headers.getlist('Content-Length')
+            self.assertEquals(len(contentlengths), 1)
+            self.assertEquals(contentlengths, [b"0"])
+
+        request = Request(self.getURL('echo'), method='POST')
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
     def test_payload(self):
         body = b'1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
@@ -370,6 +394,25 @@ class Http11TestCase(HttpTestCase):
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
         yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_very_large_file(self):
+        with mock.patch('scrapy.core.downloader.handlers.http11.logger') as logger:
+            request = Request(self.getURL('largechunkedfile'))
+
+            def check(logger):
+                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+
+            d = self.download_request(request, Spider('foo', download_maxsize=1500))
+            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+            # As the error message is logged in the dataReceived callback, we
+            # have to give a bit of time to the reactor to process the queue
+            # after closing the connection.
+            d = defer.Deferred()
+            d.addCallback(check)
+            reactor.callLater(.1, d.callback, logger)
+            yield d
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_per_req(self):
@@ -922,3 +965,69 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
+
+
+class DataURITestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.download_handler = DataURIDownloadHandler(Settings())
+        self.download_request = self.download_handler.download_request
+        self.spider = Spider('foo')
+
+    def test_response_attrs(self):
+        uri = "data:,A%20brief%20note"
+
+        def _test(response):
+            self.assertEquals(response.url, uri)
+            self.assertFalse(response.headers)
+
+        request = Request(uri)
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype_encoding(self):
+        def _test(response):
+            self.assertEquals(response.text, 'A brief note')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "US-ASCII")
+
+        request = Request("data:,A%20brief%20note")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_text_charset(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(response.body, b'\xbe\xd3\xbe')
+            self.assertEquals(response.encoding, "iso-8859-7")
+
+        request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_mediatype_parameters(self):
+        def _test(response):
+            self.assertEquals(response.text, u'\u038e\u03a3\u038e')
+            self.assertEquals(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEquals(response.encoding, "utf-8")
+
+        request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
+                          'charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22'
+                          ',%CE%8E%CE%A3%CE%8E')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_base64(self):
+        def _test(response):
+            self.assertEquals(response.text, 'Hello, world.')
+
+        request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)

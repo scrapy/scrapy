@@ -135,7 +135,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend(formdata.items())
+    values.extend((k, v) for k, v in formdata.items() if v is not None)
     return values
 
 

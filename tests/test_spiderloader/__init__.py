@@ -91,13 +91,71 @@ class SpiderLoaderTest(unittest.TestCase):
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
         self.assertEqual(crawler.spidercls.name, 'spider1')
 
+    def test_bad_spider_modules_exception(self):
+
+        module = 'tests.test_spiderloader.test_spiders.doesnotexist'
+        settings = Settings({'SPIDER_MODULES': [module]})
+        self.assertRaises(ImportError, SpiderLoader.from_settings, settings)
+
     def test_bad_spider_modules_warning(self):
 
         with warnings.catch_warnings(record=True) as w:
             module = 'tests.test_spiderloader.test_spiders.doesnotexist'
-            settings = Settings({'SPIDER_MODULES': [module]})
+            settings = Settings({'SPIDER_MODULES': [module],
+                                 'SPIDER_LOADER_WARN_ONLY': True})
             spider_loader = SpiderLoader.from_settings(settings)
             self.assertIn("Could not load spiders from module", str(w[0].message))
 
             spiders = spider_loader.list()
             self.assertEqual(spiders, [])
+
+class DuplicateSpiderNameLoaderTest(unittest.TestCase):
+
+    def setUp(self):
+        orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
+        self.tmpdir = self.mktemp()
+        os.mkdir(self.tmpdir)
+        self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
+        shutil.copytree(orig_spiders_dir, self.spiders_dir)
+        sys.path.append(self.tmpdir)
+        self.settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
+
+    def tearDown(self):
+        del sys.modules['test_spiders_xxx']
+        sys.path.remove(self.tmpdir)
+
+    def test_dupename_warning(self):
+        # copy 1 spider module so as to have duplicate spider name
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider3.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider3dupe.py'))
+
+        with warnings.catch_warnings(record=True) as w:
+            spider_loader = SpiderLoader.from_settings(self.settings)
+
+            self.assertEqual(len(w), 1)
+            msg = str(w[0].message)
+            self.assertIn("several spiders with the same name", msg)
+            self.assertIn("'spider3'", msg)
+
+            spiders = set(spider_loader.list())
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
+
+    def test_multiple_dupename_warning(self):
+        # copy 2 spider modules so as to have duplicate spider name
+        # This should issue 2 warning, 1 for each duplicate spider name
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider1.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider1dupe.py'))
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider2.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider2dupe.py'))
+
+        with warnings.catch_warnings(record=True) as w:
+            spider_loader = SpiderLoader.from_settings(self.settings)
+
+            self.assertEqual(len(w), 1)
+            msg = str(w[0].message)
+            self.assertIn("several spiders with the same name", msg)
+            self.assertIn("'spider1'", msg)
+            self.assertIn("'spider2'", msg)
+
+            spiders = set(spider_loader.list())
+            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))

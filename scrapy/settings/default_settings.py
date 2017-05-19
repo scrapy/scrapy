@@ -13,7 +13,6 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
-import os
 import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
@@ -67,6 +66,7 @@ DOWNLOAD_DELAY = 0
 
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
+    'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
     'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -113,13 +113,9 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
 
-try:
-    EDITOR = os.environ['EDITOR']
-except KeyError:
-    if sys.platform == 'win32':
-        EDITOR = '%s -m idlelib.idle'
-    else:
-        EDITOR = 'vi'
+EDITOR = 'vi'
+if sys.platform == 'win32':
+    EDITOR = '%s -m idlelib.idle'
 
 EXTENSIONS = {}
 
@@ -160,6 +156,7 @@ FEED_EXPORTERS_BASE = {
     'marshal': 'scrapy.exporters.MarshalItemExporter',
     'pickle': 'scrapy.exporters.PickleItemExporter',
 }
+FEED_EXPORT_INDENT = 0
 
 FILES_STORE_S3_ACL = 'private'
 
@@ -217,7 +214,6 @@ MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_ENABLED = True
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
-MEMUSAGE_REPORT = False
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
@@ -249,6 +245,7 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
+SPIDER_LOADER_WARN_ONLY = False
 
 SPIDER_MIDDLEWARES = {}
 

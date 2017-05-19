@@ -1,0 +1,6 @@
+comment:
+  layout: "header, diff, tree"
+
+coverage:
+  status:
+    project: false

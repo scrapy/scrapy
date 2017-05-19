@@ -16,7 +16,9 @@ from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy.utils.log import LogCounterHandler, configure_logging, log_scrapy_info
+from scrapy.utils.log import (
+    LogCounterHandler, configure_logging, log_scrapy_info,
+    get_scrapy_root_handler, install_scrapy_root_handler)
 from scrapy import signals
 
 logger = logging.getLogger(__name__)
@@ -35,8 +37,11 @@ class Crawler(object):
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
-        handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
+        handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
+        if get_scrapy_root_handler() is not None:
+            # scrapy root handler alread installed: update it with new settings
+            install_scrapy_root_handler(self.settings)
         # lambda is assigned to Crawler attribute because this way it is not
         # garbage collected after leaving __init__ scope
         self.__remove_handler = lambda: logging.root.removeHandler(handler)
