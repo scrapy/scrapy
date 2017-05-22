@@ -1,4 +1,3 @@
-#-*- coding:utf-8 ¨C*-
 from scrapy.commands import fetch, ScrapyCommand
 from scrapy.utils.response import open_in_browser
 

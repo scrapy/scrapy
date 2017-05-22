@@ -1,3 +1,4 @@
+#-*- coding:utf-8 ¨C*-
 import os
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict

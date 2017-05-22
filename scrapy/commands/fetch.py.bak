@@ -1,4 +1,3 @@
-#-*- coding:utf-8 ¨C*-
 from __future__ import print_function
 import sys, six
 from w3lib.url import is_url

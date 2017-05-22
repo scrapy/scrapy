@@ -14,7 +14,7 @@ class ScrapyCommand(object):
 	
     # 定义此命令是否需要项目才能运行
     requires_project = False
-    # TODO 未知
+    # TODO
     crawler_process = None
 
     # default settings to be used for this command instead of global defaults
