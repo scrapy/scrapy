@@ -12,7 +12,7 @@ from scrapy.http import Request
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 from scrapy.utils.url import guess_scheme
 
-
+# shell命令, 进入scrpay交互环境(常用)
 class Command(ScrapyCommand):
 
     requires_project = False

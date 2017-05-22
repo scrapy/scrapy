@@ -2,6 +2,7 @@
 from __future__ import print_function
 from scrapy.commands import ScrapyCommand
 
+# 查看项目内有效的爬虫
 class Command(ScrapyCommand):
 
     requires_project = True

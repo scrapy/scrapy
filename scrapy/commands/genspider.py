@@ -23,7 +23,7 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
-
+# ππΩ®≈¿≥Ê
 class Command(ScrapyCommand):
 
     requires_project = False

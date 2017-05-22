@@ -9,7 +9,7 @@ import OpenSSL
 import scrapy
 from scrapy.commands import ScrapyCommand
 
-# 显示版本信息
+# 显示版本信息 
 class Command(ScrapyCommand):
 
     default_settings = {'LOG_ENABLED': False,
@@ -21,8 +21,10 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Print Scrapy version"
 
+    # scrapy version 或者 scrapy version -v
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
+        # 如果命令行中指定了--verbose或者-v则opts.verbose将被赋值为true，否则被赋值为false
         parser.add_option("--verbose", "-v", dest="verbose", action="store_true",
             help="also display twisted/python/platform info (useful for bug reports)")
 

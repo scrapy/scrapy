@@ -72,7 +72,7 @@ class ScrapyCommand(object):
         group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
             help="log level (default: %s)" % self.settings['LOG_LEVEL'])
         
-        # 如果命令行中指定了nolog则opts.nolog将被赋予true值           
+        # 如果命令行中指定了nolog参数则opts.nolog将被赋予true值           
         group.add_option("--nolog", action="store_true",
             help="disable logging completely")
             
@@ -113,7 +113,7 @@ class ScrapyCommand(object):
         if opts.pdb:
             failure.startDebugMode()
 
-    # 留给子类去实现的，该类不可运行 
+    # 留给子类去实现的，该方法不可直接运行 
     def run(self, args, opts):
         """
         Entry point for running commands
