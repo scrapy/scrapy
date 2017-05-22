@@ -50,7 +50,7 @@ class ScrapyCommand(object):
         """
         return self.short_desc()
 
-    # 显示帮助信息
+    # 帮助信息
     def help(self):
         """An extensive help for the command. It will be shown when using the
         "help" command. It can contain newlines, since not post-formatting will
