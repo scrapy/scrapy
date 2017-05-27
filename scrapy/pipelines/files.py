@@ -82,6 +82,9 @@ class S3FilesStore(object):
 
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_REGION_NAME = None
+
+    AWS_REGION_TO_HOST = {}
 
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
@@ -93,10 +96,12 @@ class S3FilesStore(object):
         self.is_botocore = is_botocore()
         if self.is_botocore:
             import botocore.session
+            from botocore.client import Config
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
                 's3', aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY)
+                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+                region_name=self.AWS_REGION_NAME, config=Config(signature_version='s3v4'))
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
@@ -121,7 +126,11 @@ class S3FilesStore(object):
     def _get_boto_bucket(self):
         # disable ssl (is_secure=False) because of this python bug:
         # http://bugs.python.org/issue5103
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
+        host = self.AWS_REGION_TO_HOST.get(self.AWS_REGION_NAME)
+        if host:
+            c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False, host=host)
+        else:
+            c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
@@ -257,6 +266,8 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
+        s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
+        s3store.AWS_REGION_TO_HOST = settings['AWS_REGION_TO_HOST']
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
