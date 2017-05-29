@@ -6,6 +6,7 @@ from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
+from tests import mock
 
 class TestOffsiteMiddleware(TestCase):
 
@@ -68,3 +69,12 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
       reqs = [Request('http://scrapytest.org/1')]
       out = list(self.mw.process_spider_output(res, reqs, self.spider))
       self.assertEquals(out, reqs)
+
+
+class TestOffsiteMiddleware5(TestOffsiteMiddleware):
+    def _get_spiderargs(self):
+        return dict(name='foo',
+                    allowed_domains=['scrapytest.org', 'scrapy.org',
+                                     'http://invalid.scrapy.org',
+                                     'https://invalid2.scrapy.org',
+                                     'scrapy.test.org'])

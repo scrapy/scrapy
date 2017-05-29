@@ -84,6 +84,9 @@ scrapy.Spider
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
 
+       Note that this need to be a list of domains, not URLs (for example, use `google.com`
+       instead of `http://google.com`.
+
    .. attribute:: start_urls
 
        A list of URLs where the spider will begin to crawl from, when no
