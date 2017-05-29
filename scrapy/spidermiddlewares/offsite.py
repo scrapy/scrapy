@@ -51,8 +51,14 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
-        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
+            return re.compile('')  # allow all by default
+        invalid_domains = [d for d in allowed_domains if '/' in d or d is None]
+        if invalid_domains:
+            logging.warn(
+                    "allowed_domains accepts only domains, not URLs.\
+                    Invalid_domains being ignored:%s." %invalid_domains)
+        regex = r'^(.*\.)?(%s)$' % '|'.join(
+              re.escape(d) for d in allowed_domains if d not in invalid_domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):
