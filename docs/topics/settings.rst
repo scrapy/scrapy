@@ -627,7 +627,7 @@ Optionally, this can be set per-request basis by using the
   circumstances, from server misconfiguration to network errors to data
   corruption. It is up to the user to decide if it makes sense to process
   broken responses considering they may contain partial or incomplete content.
-  If setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
+  If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
 
 .. setting:: DUPEFILTER_CLASS
