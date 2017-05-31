@@ -127,7 +127,7 @@ class S3FilesStore(object):
                 metadata = boto_key.metadata
             file_format = file_format.split('/')
             file_format.reverse()
-            if getattr(info.spider, 'files_info'):
+            if getattr(info.spider, 'files_info', None) != None:
                 info.spider.files_info[path] = {'format': file_format[0], 'quality': quality, 'checksum': checksum}
                 info.spider.files_info[path].update(metadata)
             return {'checksum': checksum, 'last_modified': modified_stamp}

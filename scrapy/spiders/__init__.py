@@ -22,6 +22,7 @@ class Spider(object_ref):
 
     name = None
     custom_settings = None
+    files_info = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
