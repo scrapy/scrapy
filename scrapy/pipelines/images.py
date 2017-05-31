@@ -90,6 +90,8 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['IMAGES_STORE_S3_ACL']
+        s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
+        s3store.AWS_REGION_TO_HOST = settings['AWS_REGION_TO_HOST']
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
