@@ -114,11 +114,22 @@ class S3FilesStore(object):
                 checksum = boto_key['ETag'].strip('"')
                 last_modified = boto_key['LastModified']
                 modified_stamp = time.mktime(last_modified.timetuple())
+                quality = boto_key.get('ContentLength', 0)
+                file_format = boto_key.get('ContentType', '')
+                metadata = boto_key['Metadata']
             else:
                 checksum = boto_key.etag.strip('"')
                 last_modified = boto_key.last_modified
                 modified_tuple = parsedate_tz(last_modified)
                 modified_stamp = int(mktime_tz(modified_tuple))
+                quality = boto_key.content_length
+                file_format = boto_key.content_type
+                metadata = boto_key.metadata
+            file_format = file_format.split('/')
+            file_format.reverse()
+            if getattr(info.spider, 'files_info'):
+                info.spider.files_info[path] = {'format': file_format[0], 'quality': quality, 'checksum': checksum}
+                info.spider.files_info[path].update(metadata)
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)

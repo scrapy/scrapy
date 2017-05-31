@@ -106,6 +106,8 @@ class ImagesPipeline(FilesPipeline):
                 buf.seek(0)
                 checksum = md5sum(buf)
             width, height = image.size
+            if getattr(info.spider, 'files_info'):
+                info.spider.files_info[path] = {'width': width, 'height': height, 'format': image.format.lower(), 'quality': len(buf.getvalue()), 'checksum': checksum}
             self.store.persist_file(
                 path, buf, info,
                 meta={'width': width, 'height': height},
