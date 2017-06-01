@@ -80,7 +80,7 @@ scrapy.Spider
        allowed to crawl. Requests for URLs not belonging to the domain names
        specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
-       
+
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
 
@@ -756,4 +756,4 @@ Combine SitemapSpider with other sources of urls::
 .. _Sitemap index files: http://www.sitemaps.org/protocol.html#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
-.. _Scrapyd documentation: http://scrapyd.readthedocs.org/en/latest/
+.. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

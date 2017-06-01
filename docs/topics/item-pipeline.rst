@@ -208,7 +208,7 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
             item["screenshot_filename"] = filename
             return item
 
-.. _Splash: http://splash.readthedocs.io/en/stable/
+.. _Splash: https://splash.readthedocs.io/en/stable/
 .. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter

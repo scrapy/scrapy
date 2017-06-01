@@ -12,7 +12,7 @@ but quite a few handy improvements nonetheless.
 Scrapy now supports anonymous FTP sessions with customizable user and
 password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
 And if you're using Twisted version 17.1.0 or above, FTP is now available
-with Python 3. 
+with Python 3.
 
 There's a new :meth:`response.follow <scrapy.http.TextResponse.follow>` method
 for creating requests; **it is now a recommended way to create Requests
@@ -407,7 +407,7 @@ Refactoring
 
 - ``canonicalize_url`` has been moved to `w3lib.url`_ (:issue:`2168`).
 
-.. _w3lib.url: http://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.url.canonicalize_url
+.. _w3lib.url: https://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.url.canonicalize_url
 
 Tests & Requirements
 ~~~~~~~~~~~~~~~~~~~~

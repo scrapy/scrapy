@@ -107,7 +107,7 @@ Python virtualenvs can be created to use Python 2 by default, or Python 3 by def
 
 .. _virtualenv: https://virtualenv.pypa.io
 .. _virtualenv installation instructions: https://virtualenv.pypa.io/en/stable/installation/
-.. _virtualenvwrapper: http://virtualenvwrapper.readthedocs.io/en/latest/install.html
+.. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/install.html
 .. _user guide: https://virtualenv.pypa.io/en/stable/userguide/
 
 
