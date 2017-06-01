@@ -14,7 +14,11 @@ from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, ResponseFailed, URI
+    HTTPConnectionPool, ResponseFailed
+try:
+    from twisted.web.client import URI
+except ImportError:
+    from twisted.web.client import _URI as URI
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
@@ -244,7 +248,12 @@ class ScrapyProxyAgent(Agent):
         """
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
-        proxyEndpoint = self._getEndpoint(self._proxyURI)
+        if twisted_version >= (15, 0, 0):
+            proxyEndpoint = self._getEndpoint(self._proxyURI)
+        else:
+            proxyEndpoint = self._getEndpoint(self._proxyURI.scheme,
+                                              self._proxyURI.host,
+                                              self._proxyURI.port)
         key = ("http-proxy", self._proxyURI.host, self._proxyURI.port)
         return self._requestWithEndpoint(key, proxyEndpoint, method,
                                          URI.fromBytes(uri), headers,
