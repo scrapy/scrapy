@@ -416,6 +416,8 @@ class FilesPipeline(MediaPipeline):
             return self.file_key(url)
         ## end of deprecation warning block
 
+        # some urls like http://www.example.com/video.mp4?user=admin&password=pass should strip from ? to the end
+        url = url.split('?')[0]
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
