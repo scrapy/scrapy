@@ -53,6 +53,9 @@ class LxmlParserLinkExtractor(object):
                 yield (el, attrib, attribs[attrib])
 
     def _extract_links(self, selector, response_url, response_encoding, base_url):
+        if selector.root is None:
+            return []
+
         links = []
         # hacky way to get the underlying lxml parsed document
         for el, attr, attr_val in self._iter_links(selector.root):

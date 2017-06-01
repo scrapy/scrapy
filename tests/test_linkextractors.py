@@ -451,6 +451,12 @@ class Base:
                 Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
             ])
 
+        def test_comment_only_response(self):
+            html = b"<!-- hello world -->"
+            response = HtmlResponse("http://example.org/index.html", body=html)
+            lx = self.extractor_cls()
+            self.assertEqual(lx.extract_links(response), [])
+
 
 class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     extractor_cls = LxmlLinkExtractor
