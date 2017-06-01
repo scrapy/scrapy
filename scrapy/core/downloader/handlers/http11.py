@@ -283,7 +283,7 @@ class ScrapyAgent(object):
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
             else:
-                return self._ProxyAgent(reactor, proxyURI=proxy,
+                return self._ProxyAgent(reactor, proxyURI=to_bytes(proxy, encoding='ascii'),
                     connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
