@@ -155,3 +155,13 @@ class HeadersTest(unittest.TestCase):
                                 Headers().setdefault, 'foo', object())
         self.assertRaisesRegexp(TypeError, 'Unsupported value type',
                                 Headers().setlist, 'foo', [object()])
+
+    def test_to_unicode_dict(self):
+        h = Headers({b'header': b'value'})
+        self.assertEqual(h.to_unicode_dict(), {u'header': u'value'})
+
+    def test_to_unicode_dict_with_params(self):
+        h = Headers({b'l\xc3\xa1\x99': b'\xc3\xb1e\x99'})
+        self.assertEqual(h.to_unicode_dict(errors='ignore'), {u'l\xe1': u'\xf1e'})
+        h = Headers({b'l\xf1\x99': b'\xb1e\x99'})
+        self.assertEqual(h.to_unicode_dict(encoding='latin1'), {u'l\xf1\x99': u'\xb1e\x99'})
