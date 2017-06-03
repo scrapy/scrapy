@@ -2,11 +2,13 @@ from __future__ import absolute_import
 import re
 import json
 import marshal
+import sys
 import tempfile
 import unittest
 from io import BytesIO
 from datetime import datetime
 from six.moves import cPickle as pickle
+from traceback import format_tb
 
 import lxml.etree
 import six
@@ -148,6 +150,27 @@ class PythonItemExporterTest(BaseItemExporterTest):
         ie = self._get_exporter()
         exported = ie.export_item(item)
         self.assertEqual(exported, item)
+
+    def test_export_item_errors_mention_item_itself(self):
+        exporter = PythonItemExporter(binary=True)
+        item = {'foo': {None: 'asdf'}}
+
+        regexp = ('Cannot serialize item:'
+                  ' TypeError: to_bytes must receive .*, got NoneType\n'
+                  'item={\'foo\': {None: \'asdf\'}}$')
+        with self.assertRaisesRegexp(ValueError, regexp):
+            try:
+                exporter.export_item(item)
+            except Exception:
+                _, _, tb = sys.exc_info()
+                raise
+            else:
+                tb = None
+        self.assertTrue(tb)
+        formatted_tb = ''.join(format_tb(tb))
+        # Ensure _export_item_impl (and below) is not lost from the traceback.
+        self.assertRegexpMatches(
+            formatted_tb, 'line \d+, in _export_item_impl\n')
 
 
 class PprintItemExporterTest(BaseItemExporterTest):
