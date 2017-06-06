@@ -29,6 +29,8 @@ class Request(object_ref):
 
         assert callback or not errback, "Cannot use errback without a callback"
         self.callback = callback
+        if callback is not None and callable(callback):
+            raise TypeError('Callback is not a callable funtion')
         self.errback = errback
 
         self.cookies = cookies or {}
