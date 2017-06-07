@@ -71,6 +71,7 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
+   topics/streaming
 
 
 :doc:`topics/commands`
@@ -108,6 +109,9 @@ Basic concepts
 
 :doc:`topics/exceptions`
     See all available exceptions and their meaning.
+
+:doc:`topics/streaming`
+    Write Spiders using any Programming Language using Scrapy Streaming.
 
 
 Built-in services
