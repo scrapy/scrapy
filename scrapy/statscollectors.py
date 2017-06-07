@@ -50,7 +50,7 @@ class StatsCollector(object):
     def _persist_stats(self, stats, spider):
         pass
 
-    def __format__(self, _):
+    def __str__(self):
         return pprint.pformat(self._stats)
 
 
