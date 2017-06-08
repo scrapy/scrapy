@@ -16,7 +16,7 @@ from scrapy.utils.httpobj import urlparse_cached
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
-def request_fingerprint(request, include_headers=None):
+def request_fingerprint(request, include_headers=None, include_fragments=False):
     """
     Return the request fingerprint.
 
@@ -50,7 +50,7 @@ def request_fingerprint(request, include_headers=None):
     if include_headers not in cache:
         fp = hashlib.sha1()
         fp.update(to_bytes(request.method))
-        fp.update(to_bytes(canonicalize_url(request.url)))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=include_fragments)))
         fp.update(request.body or b'')
         if include_headers:
             for hdr in include_headers:

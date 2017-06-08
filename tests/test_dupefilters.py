@@ -77,3 +77,34 @@ class RFPDupeFilterTest(unittest.TestCase):
         assert case_insensitive_dupefilter.request_seen(r2)
 
         case_insensitive_dupefilter.close('finished')
+
+    def test_fingerprint_fragments(self):
+        """Test fingerprints with url fragments and without
+        """
+
+        r1 = Request('http://scrapytest.org/one/')
+        r2 = Request('http://scrapytest.org/one/#somekey=value')
+        r3 = Request('http://scrapytest.org/one/#somekey=differentvalue')
+
+        dupefilter = RFPDupeFilter()
+        dupefilter.open()
+
+        assert not dupefilter.request_seen(r1)
+        assert dupefilter.request_seen(r2)
+        assert dupefilter.request_seen(r3)
+
+        dupefilter.close('finished')
+
+        r1 = Request('http://scrapytest.org/one/')
+        r2 = Request('http://scrapytest.org/one/#somekey=value')
+        r3 = Request('http://scrapytest.org/one/#somekey=differentvalue')
+
+        dupefilter = RFPDupeFilter(fragments=True)
+        dupefilter.open()
+
+        assert not dupefilter.request_seen(r1)
+        assert not dupefilter.request_seen(r2)
+        assert not dupefilter.request_seen(r3)
+
+        dupefilter.close('finished')
+

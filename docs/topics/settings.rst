@@ -663,6 +663,16 @@ Default: ``False``
 By default, ``RFPDupeFilter`` only logs the first duplicate request.
 Setting :setting:`DUPEFILTER_DEBUG` to ``True`` will make it log all duplicate requests.
 
+.. setting:: DUPEFILTER_INCLUDE_URLFRAGMENTS
+
+DUPEFILTER_INCLUDE_URLFRAGMENTS
+-------------------------------
+
+Default: ``False``
+
+Directs the dupefilter to respect url fragments. The default is false, which means
+url fragments are ignored when calculating the request fingerprint. Affects RFPDupeFilter.
+
 .. setting:: EDITOR
 
 EDITOR
