@@ -186,19 +186,20 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
         for cls in TestItem, dict:
             url = 'http://www.example.com/images/1.jpg'
             item = cls({'name': 'item1', 'image_urls': [url]})
-            pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['images'], [results[0][1]])
+            cases = ('s3://example/images/', 'blob://container/SCRAPYTEST/')
+            for image_store in cases:
+                pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': image_store}))
+                requests = list(pipeline.get_media_requests(item, None))
+                self.assertEqual(requests[0].url, url)
+                results = [(True, {'url': url})]
+                pipeline.item_completed(results, item, None)
+                self.assertEqual(item['images'], [results[0][1]])
 
     def test_item_fields_override_settings(self):
         class TestItem(Item):
             name = Field()
             image = Field()
             stored_image = Field()
-
         for cls in TestItem, dict:
             url = 'http://www.example.com/images/1.jpg'
             item = cls({'name': 'item1', 'image': [url]})

@@ -11,12 +11,16 @@ from six import BytesIO
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, AzureBlobStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
+from scrapy.utils.test import (
+    assert_aws_environ,
+    get_s3_content_and_delete,
+    get_blob_storage_content_and_delete,
+)
 from scrapy.utils.boto import is_botocore
 
 from tests import mock
@@ -373,6 +377,33 @@ class TestS3FilesStore(unittest.TestCase):
             self.assertEqual(
                 key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
             self.assertEqual(key.content_type, 'image/png')
+
+
+class TestAzureFilesStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        uri = os.environ.get('BlobStorage_TEST_FILE_URI')
+        account_name = os.environ.get('AZURE_ACCOUNT_NAME')
+        account_key = os.environ.get('AZURE_ACCESS_KEY')
+        if not uri:
+            raise unittest.SkipTest("No AZURE URI available for testing")
+        data = b"TestBlobStorageFilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = ''
+        store = AzureBlobStore(uri)
+        store.AZURE_ACCOUNT_NAME = account_name
+        store.AZURE_ACCESS_KEY = account_key
+        yield store.persist_file(
+            path, buf, info=None, meta=meta,
+            headers={'Content-Type': 'image/png'})
+        s = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', s)
+        self.assertIn('checksum', s)
+        u = urlparse(uri)
+        content, metadata = get_blob_storage_content_and_delete(u.hostname, u.path[1:])
+        self.assertEqual(content, data)
+        self.assertEqual(metadata, meta)
 
 
 class ItemWithFiles(Item):

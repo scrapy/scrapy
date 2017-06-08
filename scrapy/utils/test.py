@@ -75,3 +75,17 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+
+def get_blob_storage_content_and_delete(container, path):
+    from azure.storage.blob import BlockBlobService
+    for env in ('AZURE_ACCOUNT_NAME', 'AZURE_ACCESS_KEY'):
+        if env not in os.environ:
+            raise SkipTest("Azure keys not found")
+
+    block_blob_service = BlockBlobService(account_name=os.environ['AZURE_ACCOUNT_NAME'],
+                                          account_key=os.environ['AZURE_ACCESS_KEY'])
+    result = block_blob_service.get_blob_to_bytes(container, path)
+    block_blob_service.delete_blob(container, path)
+
+    return result.content, result.metadata
