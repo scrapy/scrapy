@@ -1,0 +1,56 @@
+.xpath_panel {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.xpath_panel > label {
+    margin-top: 10px;
+    margin-bottom: 2px;
+}
+
+.xpath_panel > .html_output {
+    border: solid 1px #8D8D8D;
+    background-color: #F2F2F2;
+    min-height: 25px;
+    border-radius: 5px;
+    font-family: monospace;
+}
+
+.result_node {
+    margin: 10px;
+    border: solid 1px #8D8D8D;
+    background-color: #fff;
+    min-height: 25px;
+    padding: 4px 8px;
+    border-radius: 5px;
+}
+
+.result_node + .result_node {
+    margin-top: 10px;
+}
+
+.error_output {
+    color: #FD7C82;
+    border: solid 1px #FD7C82;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.xpath_panel > textarea {
+    min-height: 200px;
+    overflow-y: scroll;
+}
+
+.xpath_panel > input {
+    width: 100%;
+}
+
+.xpath_panel > input,
+.xpath_panel > textarea {
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 5px;
+}
