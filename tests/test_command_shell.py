@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from os.path import join
 
 from twisted.trial import unittest
@@ -113,3 +114,12 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
                                        check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'DNS lookup failed', err)
+
+    @defer.inlineCallbacks
+    def test_dns_idna(self):
+        """Twisted 17.1+ passes Unicode domain to getHostByName() in Python 2.7,
+        and Scrapy's resolver must be able to handle them."""
+        # this is the same as http://δπθ.localhost, which should resolve to localhost also
+        url = self.url('/text').replace('//localhost', '//xn--pxaix.localhost')
+        _, out, _ = yield self.execute([url, '-c', 'response.body'])
+        assert b'Works' in out

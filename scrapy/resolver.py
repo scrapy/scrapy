@@ -1,3 +1,5 @@
+from six import PY2, text_type
+
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
 
@@ -14,6 +16,12 @@ class CachingThreadedResolver(ThreadedResolver):
         self.timeout = timeout
 
     def getHostByName(self, name, timeout=None):
+        if PY2 and isinstance(name, text_type):
+            try:
+                name = name.encode('idna')
+            except UnicodeError:
+                # we did our best, let it fail later if it has to.
+                pass
         if name in dnscache:
             return defer.succeed(dnscache[name])
         # in Twisted<=16.6, getHostByName() is always called with
