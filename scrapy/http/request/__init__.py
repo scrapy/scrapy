@@ -16,6 +16,7 @@ from scrapy.http.common import obsolete_setter
 
 class Request(object_ref):
 
+	# 这里指明默认方法是GET方法
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None, flags=None):

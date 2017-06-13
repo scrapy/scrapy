@@ -1,3 +1,4 @@
+#-*- coding:utf-8 –*-
 from __future__ import print_function
 import sys, six
 from w3lib.url import is_url
@@ -8,8 +9,10 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
+# 以spider下载页面的方式获取页面，可以查看spider如何获取某个特定页面。
 class Command(ScrapyCommand):
 
+    # 不需要项目就可以运行
     requires_project = False
 
     def syntax(self):
@@ -22,6 +25,7 @@ class Command(ScrapyCommand):
         return "Fetch a URL using the Scrapy downloader and print its content " \
             "to stdout. You may want to use --nolog to disable logging"
 
+    # scrapy fetch --headers http://www.baidu.com
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",

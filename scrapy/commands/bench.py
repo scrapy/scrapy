@@ -1,3 +1,4 @@
+#-*- coding:utf-8 ¨C*-
 import sys
 import time
 import subprocess

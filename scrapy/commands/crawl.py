@@ -1,10 +1,11 @@
+#-*- coding:utf-8 –*-
 import os
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
 from scrapy.exceptions import UsageError
 
-
+# 运行爬虫(常用)
 class Command(ScrapyCommand):
 
     requires_project = True
@@ -17,10 +18,13 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
+        
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
+        
         parser.add_option("-o", "--output", metavar="FILE",
                           help="dump scraped items into FILE (use - for stdout)")
+        
         parser.add_option("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items with -o")
 

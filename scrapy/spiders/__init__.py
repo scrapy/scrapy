@@ -14,21 +14,21 @@ from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
 
-
+# 所有爬虫的基类，用户定义的爬虫必须从这个类继承
 class Spider(object_ref):
-    """Base class for scrapy spiders. All spiders must inherit from this
-    class.
-    """
-
+	
+	# 定义Spider名字的字符串，用于定位并初始化spider，必须唯一，一般做法是该网站加后缀_spider
     name = None
     custom_settings = None
 
+	# 初始化爬虫的name(必须)和start_urls(可选)
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
         elif not getattr(self, 'name', None):
             raise ValueError("%s must have a name" % type(self).__name__)
         self.__dict__.update(kwargs)
+		# spider最开始从该列表开始进行爬取，后续的url将从获得的数据中提取
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
 
@@ -38,12 +38,6 @@ class Spider(object_ref):
         return logging.LoggerAdapter(logger, {'spider': self})
 
     def log(self, message, level=logging.DEBUG, **kw):
-        """Log the given message at the given log level
-
-        This helper wraps a log call to the logger within the spider, but you
-        can use it directly (e.g. Spider.logger.info('msg')) or use any other
-        Python logger too.
-        """
         self.logger.log(level, message, **kw)
 
     @classmethod
@@ -66,6 +60,8 @@ class Spider(object_ref):
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
+	# 读取start_urls内的所有地址并调用make_requests_from_url()为每个地址生成一个Request对象后返回这些对象的迭代器。由scrapy下载并返回response
+	# 该方法仅调用一次
     def start_requests(self):
         cls = self.__class__
         if method_is_overridden(cls, Spider, 'make_requests_from_url'):
@@ -82,10 +78,13 @@ class Spider(object_ref):
             for url in self.start_urls:
                 yield Request(url, dont_filter=True)
 
+	# 生成Request对象的函数，默认的回调函数是parse(),提交方法是GET方法
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
         return Request(url, dont_filter=True)
 
+	# 解析response内容，并返回Item或Requests(需指定回调函数)。如果返回Item，则传给Item Pipline去做持久化，如果返回Request，则交给scrapy去下载并由指定的回调函数去处理，一直进行循环，直到处理完所有的数据为止。
+	# 用户必须实现这个类，否则会抛出异常
     def parse(self, response):
         raise NotImplementedError
 

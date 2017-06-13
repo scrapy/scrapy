@@ -1,3 +1,4 @@
+#-*- coding:utf-8 ¨C*-
 import sys, os
 
 from scrapy.commands import ScrapyCommand

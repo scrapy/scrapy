@@ -1,3 +1,4 @@
+#-*- coding:utf-8 –*-
 from __future__ import print_function
 import re
 import os
@@ -22,7 +23,7 @@ TEMPLATES_TO_RENDER = (
 
 IGNORE = ignore_patterns('*.pyc', '.svn')
 
-
+# 创建项目(常用)
 class Command(ScrapyCommand):
 
     requires_project = False

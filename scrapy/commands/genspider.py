@@ -1,3 +1,4 @@
+#-*- coding:utf-8 ®C*-
 from __future__ import print_function
 import os
 import shutil
@@ -22,7 +23,7 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
-
+# ππΩ®≈¿≥Ê
 class Command(ScrapyCommand):
 
     requires_project = False

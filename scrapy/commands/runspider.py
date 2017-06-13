@@ -1,3 +1,4 @@
+#-*- coding:utf-8 ¨C*-
 import sys
 import os
 from importlib import import_module
