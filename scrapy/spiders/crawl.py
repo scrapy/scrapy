@@ -12,6 +12,7 @@ from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spiders import Spider
 
+# https://docs.scrapy.org/en/latest/
 
 def identity(x):
     return x
@@ -19,6 +20,13 @@ def identity(x):
 
 class Rule(object):
 
+	# link_extractor是一个Link Extractor对象，其定义了如何从爬取到的页面提取链接。
+	# follow是一个布尔(boolean)值，指定了根据该规则从response提取的链接是否需要跟进。
+	# Rule(LinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))) -- 提取匹配 'category.php' (但不匹配 'subsection.php') 的链接并跟进链接(没有callback意味着follow默认为True)
+	# Rule(LinkExtractor(allow=('item\.php', )), callback='parse_item') -- 提取匹配 'item.php' 的链接并使用spider的parse_item方法进行分析
+	# Rule(LinkExtractor(allow='^https://movie\.douban\.com/subject/\d+/reviews$',restrict_xpaths=('//div[@class="review-more"]/a')),follow = True)
+	# Rule(LinkExtractor(allow='^https://movie\.douban\.com/subject/\d+/reviews.*',restrict_xpaths=('//div[@id="paginator"]/a')),callback='parse_content', follow = True)) 
+	# Rule(LinkExtractor(allow=(r'https://movie.douban.com/subject/\d+/')), callback="parse_item1")
     def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
         self.link_extractor = link_extractor
         self.callback = callback
