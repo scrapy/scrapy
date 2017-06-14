@@ -1,5 +1,6 @@
 from docutils import nodes
 from sphinx.util.compat import Directive
+from sphinx.search import SkipNode
 
 
 class xpath_demo_node(nodes.Element):
@@ -29,9 +30,15 @@ def setup(app):
         html=(
             visit_xpath_demo_node,
             depart_xpath_demo_node,
-        )
+        ),
+        # latex build are failing, so let's skip the xpath nodes
+        latex=(skip_node, None),
     )
     app.add_directive('xpathdemo', XPathDemoDirective)
+
+
+def skip_node(self, node):
+    raise SkipNode
 
 
 def visit_xpath_demo_node(self, node):
