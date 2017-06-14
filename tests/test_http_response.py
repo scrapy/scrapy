@@ -162,7 +162,6 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
-
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
@@ -401,6 +400,13 @@ class TextResponseTest(BaseResponseTest):
         for sellist in [resp.css('a'), resp.xpath('//a')]:
             for sel, url in zip(sellist, urls):
                 self._assert_followed_url(sel, url, response=resp)
+
+        # select <link> elements
+        self._assert_followed_url(
+            Selector(text='<link href="foo"></link>').css('link')[0],
+            'http://example.com/foo',
+            response=resp
+        )
 
         # href attributes should work
         for sellist in [resp.css('a::attr(href)'), resp.xpath('//a/@href')]:
