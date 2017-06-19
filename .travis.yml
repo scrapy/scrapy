@@ -11,6 +11,8 @@ matrix:
       env: TOXENV=py27
     - python: 2.7
       env: TOXENV=jessie
+    - python: 2.7
+      env: TOXENV=pypy
     - python: 3.3
       env: TOXENV=py33
     - python: 3.5
@@ -21,9 +23,6 @@ matrix:
       env: TOXENV=pypy
     - python: 3.6
       env: TOXENV=docs
-  allow_failures:
-    - python: 2.7
-      env: TOXENV=pypy
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
