@@ -360,14 +360,7 @@ def global_object_name(obj):
     return "%s.%s" % (obj.__module__, obj.__name__)
 
 
-if sys.platform.startswith('java'):
-    def garbage_collect():
-        # Some JVM GCs will execute finalizers in a different thread, meaning
-        # we need to wait for that to complete before we go on looking for the
-        # effects of that.
-        gc.collect()
-        time.sleep(0.1)
-elif hasattr(sys, "pypy_version_info"):
+if hasattr(sys, "pypy_version_info"):
     def garbage_collect():
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
