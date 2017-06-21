@@ -37,19 +37,26 @@ XPath data model
 ----------------
 
 XPath's `data model <http://www.w3.org/TR/xpath/#data-model>`__ is a
-tree of nodes representing a document. Nodes can be:
+tree of nodes representing a document. Nodes can be either:
 
--  element nodes (``<p>This is a paragraph</p>``)
--  attribute nodes (``href="page.html"`` inside an ``<a>`` tag)
--  text nodes (``"I have something to say"``)
--  comment nodes (``<!-- a comment -->``)
--  (and 3 other types that we won’t cover here.)
+-  **element nodes** (``<p>This is a paragraph</p>``),
+-  or **attribute nodes** (``href="page.html"`` inside an ``<a>`` tag),
+-  or **text nodes** (``"I have something to say"``),
+-  or **comment nodes** (``<!-- a comment -->``),
+-  (or root nodes, or namespace nodes, or processing instructions nodes
+   but we will not cover them here.)
+
+In XPath's data model, everything is a node : elements, attributes,
+comments... (**but not all nodes are elements.**)
+
+And nodes have an order, the **document order**: the order in which they
+appear in the XML/HTML source.
 
 In effect, this data model allows you to represent everything inside an
 XML or HTML document, in a structured, ordered and hierarchical way.
 
-Throughout this tutorial, we'll use this sample HTML page to illustrate
-how XPath works:
+Throughout this tutorial, we'll use the following sample HTML page to
+illustrate how XPath works:
 
 ::
 
@@ -75,14 +82,8 @@ how XPath works:
     </body>
     </html>
 
-In XPath's data model, everything is a node : elements, attributes,
-comments... (**but not all nodes are elements.**)
-
-And nodes have an order, the **document order**, the order in which they
-appear in the XML/HTML source.
-
 Here is an ASCII tree representation of our toy HTML document for an
-XPath engine:
+XPath engine, according to the data model:
 
 ::
 
@@ -138,6 +139,8 @@ You can see various tree branches and leaves:
 -  ``(ATTR)`` represent attribute nodes
 -  ``(COMM)`` represent comment nodes
 
+The ``#<number>`` are the document orders of each node.
+
 .. note::
     You can also notice that **text with only whitespace** (space and
     newlines in our example) **are proper nodes**, they do have their
@@ -151,23 +154,28 @@ allowing you to play around with XPath expressions and see the output
 live.
 We will also illustrate some Python pattern for data extraction with
 XPath using the `parsel <https://github.com/scrapy/parsel>`__ library
-which powers Scrapy selector udner the hood.
-It is a Python module written on top of lxml.
+which powers Scrapy selectors under the hood.
+It is a Python module written on top of `lxml <http://lxml.de/>`__.
 
 .. note::
-    lxml itself is built using the C library libxml2, which has a
-    conformant XPath 1.0 engine. You should be able to run the same XPath
-    expressions with any XPath 1.0 engine, and get the same results.
+    lxml itself is built using the C library `libxml2 <http://www.xmlsoft.org/>`__,
+    which has a conformant XPath 1.0 engine.
+    You should be able to run the same XPath expressions with
+    any XPath 1.0 engine, and get the same results.
 
-This tutorial will only showcase XPath 1.0. (`XPath has already reached
-version 3 <https://www.w3.org/TR/xpath-3/>`__, but you can already do a
-lot with XPath 1.0 and Python)
+This tutorial only showcases XPath 1.0. (`XPath has reached version 3
+<https://www.w3.org/TR/xpath-3/>`__, but you can already do a
+lot with XPath 1.0 and Python. And there's no XPath>1.0 implementation
+in Python today.)
 
 When showing Python code snippets using Parsel, we assume that we have
-a ``Selector`` (called ``doc``) created with the HTML content, similarly
+a ``Selector`` -- called ``doc`` -- created with the HTML content, similarly
 to the following:
 
 .. code:: python
+
+    import parsel
+
 
     htmlsample = '''<html>
     <head>
@@ -205,9 +213,9 @@ When applied over a document, an XPath expression can return either:
 -  a boolean
 
 .. note::
-    **When an XPath expression returns node-sets, you do get a set of
-    nodes, even if there's only one node in the set.** With parsel, you get
-    a ``list`` of nodes, not a Python ``set``.
+    **When an XPath expression returns a node-set, you do get a set of
+    nodes, even if there's only one node in the set.**
+    With parsel, you get a ``list`` of nodes though, not a Python ``set``.
 
 XPath expressions
 -----------------
@@ -224,12 +232,12 @@ Selecting the root node of a document (warning: special case)
 
 The root node is a special node: this is a quote from XPath 1.0 specs:
 
-    *The root node is the root of the tree. A root node does not occur
+    *"The root node is the root of the tree. A root node does not occur
     except as the root of the tree. The element node for the document
-    element is a child of the root node.*
+    element is a child of the root node."*
 
 Selecting the root node of a document with XPath is one of the shortest
-XPath expressions: ``'/'`` (a string with only a forward slash).
+XPath expressions: ``"/"`` (a string with only a forward slash).
 
 .. xpathdemo:: /
 
@@ -259,8 +267,8 @@ This is very similar to ``cd /`` in a shell within a Unix filesystem
 (going to the root directory).
 
 .. warning::
-    Unfortunately, this ``"/"`` expressions does not work as expected
-    with parsel.** We get an empty list instead of the root node.
+    Unfortunately, this ``"/"`` expression does not work as expected
+    with parsel. We get an empty list instead of the root node.
 
     It is a limitation of lxml apparently, because
     it works with libxml2 directly. In practice though, this doesn't matter
@@ -271,7 +279,7 @@ Selecting elements
 ~~~~~~~~~~~~~~~~~~
 
 Elements build the structure and hierarchy of the document. An element
-in HTML (and XML) is what you see HTML source code between an opening
+in HTML (and XML) is what you see in the source code between an opening
 and corresponding closing tag, and everything in between.
 
 -  ``<title>This is a title</title>`` is a ``title`` element,
@@ -283,17 +291,20 @@ HTML documents.
 
 Elements can have children -- the root node being the ancestor of them
 all. Their children can also have children and so on. Sometimes,
-elements only have one child.
+elements only have one child. This hierarchy forms a family tree of nodes.
 
 .. note::
-    **text nodes are not elements.** They do not have children nodes.
-    But text nodes are always children of some element. Therefore, text
-    nodes are always leaves of the document tree.
+    **Text nodes are not elements.** (They are still nodes, obviously.)
+    They do not have children nodes, but they are always children
+    of some element.
+
+    Therefore, text nodes are always leaves of the document tree.
 
 We said earlier that the document element is a child of the root node.
 In fact, the document element is the only child of the root node. And
-for our sample HTML document, it's the top-level ``<html>`` element.
-Still, selecting it will return a single-node node-set:
+for our sample HTML document, it's the top-level ``<html>...</html>`` element.
+Still, selecting it will return a single-node node-set, the XPath expression
+being ``/*``:
 
 .. xpathdemo:: /*
 
@@ -323,7 +334,7 @@ The asterisk here, ``*``, means "any element". And ``/*`` means "any
 element under the root node". HTML documents have only one element like
 this: the ``<html>`` element.
 
-Another example: get ``<title>`` elements:
+Another example: how to get ``<title>`` elements? Use ``/html/head/title``:
 
 .. xpathdemo:: /html/head/title
 
@@ -354,16 +365,20 @@ intuitively understand what this does:
 
 * start from the root (of the document)
 
-    * select the ``<html>`` node
+    * select the ``<html>`` node (with ``/html``)
 
         * select the ``<head>`` node under the ``<html>`` node
+          (appending ``/head``)
 
             * select the ``<title>`` node under the ``<head>`` node
+              (appending ``/title``)
 
 In other words, the XPath expression represents the path from the root
-node to the target node(s). Much like a Unix filepath represents the
-path from the filesystem root to the target file(s).
+node down to the target node(s). Parts of this path are read **from left to right**,
+and represent a top-to-bottom direction in the document tree.
 
+Much like a Unix filepath represents the path from the filesystem's root
+to the target file(s) or directory(ies).
 There's one major difference with a Unix filesystem though: in an HTML
 or XML document, an element can have multiple children with the same name.
 For example, the ``<div>`` just under the ``<body>`` has 2 ``<div>`` children:
@@ -450,18 +465,24 @@ There are other elements with those two paragraphs under that very
     </body>
     </html>
 
-See the ``<br>`` being selected? It's an empty element but it is there
-nonetheless.
+.. note::
+    Continuing the filesystem anamogy, ``*`` is similar in effect to what
+    you can do in a Unix shell to find files or directories without explicit
+    full names.
+
+See the ``<br/>`` being selected? It's an empty element (i.e. with node children)
+but it is there nonetheless.
 
 Selecting text nodes
 ~~~~~~~~~~~~~~~~~~~~
 
 If we stay around these ``<p>`` and ``<br>`` elements, you may have noticed
-that the ASCII tree representation above also shows some text after the
-break: the string ``"Apparently."``. It is a text node.
+that the ASCII tree representation from the beginning also shows some text after the
+``<br/>`` break: the string ``"Apparently."``. It is a text node.
 
 Selecting text nodes is a bit different than selecting elements:
-you use the special ``text()`` syntax. Let's try it:
+you use the special ``text()`` syntax. Let's try it by replacing the last
+part of our last XPath expression, forming ``/html/body/div/div[1]/text()``:
 
 .. xpathdemo:: /html/body/div/div[1]/text()
 
@@ -492,8 +513,8 @@ But we got four! And three of them are blank even. Why is that?
 
 In fact, HTML authors usually indent their tags with whitespace for
 readability. This does not usually change the layout in your browser.
-But this whitespace counts as text nodes for XPath data model, it is not
-stripped nor filtered.
+But this **whitespace counts as text nodes** for XPath's data model,
+it is not stripped nor filtered.
 
 Let's represent that ``<div>`` as a Python string as it appears in the
 HTML source::
@@ -511,7 +532,7 @@ Another example is to get the text nodes of ``<title>`` elements
 (remember that ``<title>`` is an element, and that it happens it
 contains a text node, with the string content "This is a title"):
 
-.. xpathdemo:: /html/body/div/div[1]/text()
+.. xpathdemo:: /html/head/title/text()
 
     <html>
     <head>
@@ -544,19 +565,21 @@ contains a text node, with the string content "This is a title"):
 Selecting nodes without a full, explicit path
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-What we did until now is indicate how to get to nodes, element by
-element, from parent to child. This assumes that you know the hierarchy
-of nodes beforehand. This *can* be the case, but most often than not,
-either you do not know or you don't want to indicate all the steps from
+What we did until now is tell the XPath engine how to get to nodes,
+node by node, from parent to child, from root node down to target nodes.
+This assumes that you know the hierarchy of nodes beforehand.
+This *can* be the case, but most often than not,
+either you do not know or you do not want to indicate all the steps from
 the root node down to the node(s) you are interested in (this can be
 very error prone -- have you put enough ``div/div/div...``?).
 
 XPath provides a handy shortcut when you do not know at what level you
 expect your target node to be.
-
 Say for example that we want to select all ``<p>`` paragraph elements
-inside the ``<body>``. We don't *a-priori* know what their parent node
-is. The shortcut to use is ``//`` (two forward slashes):
+inside the ``<body>``. We don't *a-priori* know what their parent node is.
+(For all we know, they can be anywhere under the ``<body>`` element.)
+The shortcut to use is ``//`` (two forward slashes).
+Let's try this: ``//body//p``
 
 .. xpathdemo:: //body//p
 
@@ -585,7 +608,7 @@ is. The shortcut to use is ``//`` (two forward slashes):
 So we got 2 paragraphs, what we expected.
 
 This also works for text nodes (there are a lot of them in our sample
-document!):
+document!). Try ``//body//text()``:
 
 .. xpathdemo:: //body//text()
 
@@ -616,7 +639,6 @@ Selecting attributes
 ~~~~~~~~~~~~~~~~~~~~
 
 Elements can also have attributes.
-
 In our sample document, we have two ``<a>`` elements, each with a
 ``href`` attribute. There's also a ``<meta>`` element with two
 attributes: ``content`` and ``http-equiv``.
@@ -682,8 +704,8 @@ want any attributes, whatever their name.
 Get a string representation of an element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-XPath also comes with a few string functions, that you can wrap around
-an XPath expression selecting elements:
+The XPath language also comes with a few string functions, that you can
+wrap around an XPath expression selecting elements:
 
 .. xpathdemo:: string(/html/head/title)
 
@@ -710,12 +732,21 @@ an XPath expression selecting elements:
     </html>
 
 
-This example uses one of several handy string functions in XPath.
+This example uses ``string(<xpathexpression>)``, one of several handy
+`functions <https://www.w3.org/TR/xpath/#section-String-Functions>`__ in XPath.
 ``string()`` will concatenate all text content from the selected node
 and all of its children, recursively, effectively stripping HTML tags.
 
-What happens when you apply ``string()`` on the document ``<body>``? You
-get a text representation of the document, without the tags:
+You may wonder what's the difference between ``string(/html/head/title)``
+and ``/html/head/title/text()`` from earlier? Here, in fact, you get the same
+result because ``<title>`` only has one child text node.
+(Concatenating this list of one text node is the same as getting it
+directly with ``text()`` at the end.)
+
+But string functions can be very handy when you apply them on nodes that
+have multiple children and multiple text node children or descendant.
+What happens when you apply ``string()`` on the document ``<body>`` for example?
+You get a text representation of the document, without the tags:
 
 
 .. xpathdemo:: string(string(//body))
@@ -747,7 +778,6 @@ Counting elements
 ~~~~~~~~~~~~~~~~~
 
 We said earlier that XPath expressions could also return numbers.
-
 One example of this is counting the number of paragraphs in the
 document:
 
