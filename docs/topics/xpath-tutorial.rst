@@ -199,6 +199,19 @@ to the following:
     </body>
     </html>'''
 
+    #
+    # Below is a small "hack" to change the representation of extracted
+    #  nodes when using parsel.
+    # This is to represent return values as serialized HTML element or
+    # string, and not parsel's wrapper objects.
+    #
+    parsel.Selector.__str__ = parsel.Selector.extract
+    parsel.Selector.__repr__ = parsel.Selector.__str__
+    parsel.SelectorList.__repr__ = lambda x: '[{}]'.format(
+        '\n '.join("({}) {!r}".format(i, repr(s))
+                   for i, s in enumerate(x, start=1))
+    ).replace(r'\n', '\n')
+
     doc = parsel.Selector(text=htmlsample)
 
 XPath return types
@@ -903,67 +916,52 @@ Part 2: Location Paths: how to move inside the document tree
 ============================================================
 
 A **Location path** is the most common XPath expression.
-
 It is used to move in any direction from a starting point (*the context
 node*) to any node(s) in the tree:
 
--  It is a string, with a series of “location steps”:
-   ``"step1 / step2 / step3 ..."``
--  It represents the selection and filtering of nodes, processed step by
-   step, from left to right.
--  Each step is of the form: ``AXIS :: NODETEST [PREDICATE]*``
+-  It is a string, with a series of **“location steps”**:
+   ``"step1 / step2 / step3 ..."``;
+-  It represents the **selection and filtering of nodes**, processed step by
+   step, **from left to right**;
+-  Each step is of the form ``axis :: nodetest [predicate]*``
 
-So the examples we saw earlier are or contain an XPath expression:
+   - an *axis* (implicit or explicit),
+   - a *node test*,
+   - zero or more *predicates*.
+
+So the examples we saw earlier are (or contain) an XPath location path:
 ``/html/head/title``, ``//body//p`` etc.
 
-**Note:** whitespace does NOT matter, except for ``“//”`` and ``“..”``
-(``“/   /”`` and ``“.  .”`` are syntax errors.). The following 3
-expressions produce the same result
+.. tip::
+    Whitespace does NOT matter in XPath.
 
-.. code:: python
+    (Except for ``“//”`` and ``“..”``;
+    ``“/   /”`` and ``“.  .”`` are syntax errors.)
 
-    doc.xpath('/html/head/title')
+    For example, the following three expressions produce the same result:
 
+    .. code:: pycon
 
+        >>> doc.xpath('/html/head/title')
+        [(1) '<title>This is a title</title>']
 
+    .. code:: pycon
 
-.. parsed-literal::
-
-    [(1) '<title>This is a title</title>']
-
-
-
-.. code:: python
-
-    doc.xpath('/    html   / head   /title')
+        >>> doc.xpath('/    html   / head   /title')
+        [(1) '<title>This is a title</title>']
 
 
 
+    .. code:: pycon
 
-.. parsed-literal::
+        >>> doc.xpath('''
+        ...     /html
+        ...         /head
+        ...             /title''')
+        [(1) '<title>This is a title</title>']
 
-    [(1) '<title>This is a title</title>']
-
-
-
-.. code:: python
-
-    doc.xpath('''
-        /html
-            /head
-                /title''')
-
-
-
-
-.. parsed-literal::
-
-    [(1) '<title>This is a title</title>']
-
-
-
-So **don’t be afraid of indenting your XPath expressions to improve
-readability.**
+    So **don’t be afraid to indent your XPath expressions to improve
+    readability.**
 
 Relative vs. absolute paths
 ---------------------------
@@ -973,133 +971,110 @@ Location paths can be relative or absolute:
 -  ``"step1/step2/step3"`` is relative
 -  ``"/step1/step2/step3"`` is absolute
 
-i.e. an absolute path is a relative path starting with "/" (slash)
+In other words, an absolute path is a relative path starting with "/" (forward slash).
+Absolute paths are relative to the root node.
 
-In other terms, absolute paths are relative to the root node.
+.. tip::
+    Use relative paths whenever possible. This prevents unexpected
+    selection of duplicate nodes in loop iterations.
 
-**Tip**: use relative paths whenever possible. This prevents unexpected
-selection of same nodes in loop iterations.
+    For example, in our sample document, only one ``<div>`` contains
+    paragraphs. Looping on each ``<div>`` and using the absolute location
+    path ``//p`` will produce the same result for each iteration: returning
+    ALL paragraphs in the document everytime.
 
-For example, in our sample document, only one ``<div>`` contains
-paragraphs. Looping on each ``<div>`` and using the absolute location
-path ``//p`` will produce the same result for each iteration: returning
-ALL paragraphs in the document everytime.
+    .. code:: pycon
 
-.. code:: python
-
-    for div in doc.xpath('//body//div'):
-        print(div.xpath('//p'))
-
-
-.. parsed-literal::
-
-    [(1) '<p>This is a paragraph.</p>'
-     (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
-    [(1) '<p>This is a paragraph.</p>'
-     (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
-    [(1) '<p>This is a paragraph.</p>'
-     (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+        >>> for div in doc.xpath('//body//div'):
+        ...     print(div.xpath('//p'))
+        [(1) '<p>This is a paragraph.</p>'
+         (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+        [(1) '<p>This is a paragraph.</p>'
+         (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+        [(1) '<p>This is a paragraph.</p>'
+         (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
 
 
-Compare this with using the relative ``'p'`` or ``'./p'`` expression
-that will only look at children ``<p>`` under each ``<div>``, and only
-one of those ``<div>`` will show having paragraphs as shown below:
+    Compare this with using the relative ``'p'`` or ``'./p'`` expression
+    that will only look at children ``<p>`` under each ``<div>``, and only
+    one of those ``<div>`` will show having paragraphs as shown below:
 
-.. code:: python
+    .. code:: pycon
 
-    for div in doc.xpath('//body//div'):
-        print(div.xpath('p'))
+        >>> for div in doc.xpath('//body//div'):
+        ...     print(div.xpath('p'))
+        []
+        [(1) '<p>This is a paragraph.</p>'
+         (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+        []
 
+    .. code:: pycon
 
-.. parsed-literal::
-
-    []
-    [(1) '<p>This is a paragraph.</p>'
-     (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
-    []
-
-
-.. code:: python
-
-    for div in doc.xpath('//body//div'):
-        print(div.xpath('./p'))
-
-
-.. parsed-literal::
-
-    []
-    [(1) '<p>This is a paragraph.</p>'
-     (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
-    []
+        >>> for div in doc.xpath('//body//div'):
+        ...     print(div.xpath('./p'))
+        []
+        [(1) '<p>This is a paragraph.</p>'
+         (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+        []
 
 
-Abbreviated syntax
-------------------
+Abbreviated syntax vs. full syntax
+----------------------------------
 
-What we’ve seen earlier is in fact the “abbreviated syntax” for XPath
-expressions.
+What we’ve seen earlier is in fact the “`abbreviated syntax
+<https://www.w3.org/TR/xpath/#path-abbrev>`__” for XPath
+expressions. The full syntax is quite verbose (but you sometimes need it):
 
-The full syntax is quite verbose (but you sometimes need it):
+.. list-table::
+   :header-rows: 1
 
-+-----------------------------+----------------------------------------------+
-| Abbreviated syntax          | Full syntax                                  |
-+=============================+==============================================+
-| ``/html/head/title``        | ``/child::html /child:: head /child:: title` |
-|                             | `                                            |
-+-----------------------------+----------------------------------------------+
-| ``//meta/@content``         | ``/descendant-or-self::node() /child::meta / |
-|                             | attribute::content``                         |
-+-----------------------------+----------------------------------------------+
-| ``//div/div[@class="second" | ``/descendant-or-self::node() /child::div /c |
-| ]``                         | hild::div [attribute::class = "second"]``    |
-+-----------------------------+----------------------------------------------+
-| ``//div/a/text()``          | ``/descendant-or-self::node() /child::div /c |
-|                             | hild::a /child::text()``                     |
-+-----------------------------+----------------------------------------------+
+   * - Abbreviated syntax
+     - Full syntax
+   * - ``/html/head/title``
+     - ``/child::html /child:: head /child:: title``
+   * - ``//meta/@content``
+     - ``/descendant-or-self::node() /child::meta / attribute::content``
+   * - ``//div/div[@class="second"]``
+     - ``/descendant-or-self::node() /child::div /child::div [attribute::class = "second"]``
+   * - ``//div/a/text()``
+     - ``/descendant-or-self::node() /child::div /child::a /child::text()``
 
 What are these ``child::``, ``descendant-or-self::`` and
-``attribute::``, you may ask? They're axes.
+``attribute::``, you may ask? They are axes.
 
 Axes: moving around
 -------------------
 
-Remember: each step of an XPath location path is of the form
-``AXIS :: NODETEST [PREDICATE]*``.
+.. important::
+    Remember that each step of an XPath location path is of the form
+    ``AXIS :: nodetest [predicate]*``.
 
-The "axis" is the first part of each location path step. It can be
-explicit, or implicit in abbreviated syntax. For example, in
-``/html/head/title``, the ``child::`` axis is omitted in each step.
+    The "axis" is the first part of each location path step. It can be
+    explicit, or implicit in abbreviated syntax. For example, in
+    ``/html/head/title``, the ``child::`` axis is omitted in each step.
 
-In this section, we'll use explicit axes as much as we can.
+    In this section, we'll use explicit axes as much as we can.
 
-**AXIS** :: \_nodetest [predicate]\*\_
-
-**Axes give the direction to go next, one location step at a time**
+**Axes give the direction to go next, one location step at a time.**
 
 -  ``self`` (where you are)
--  ``parent``, ``child`` (direct hop)
+-  ``parent``, ``child`` (direct hop up or down the document tree)
 -  ``ancestor``, ``ancestor-or-self``, ``descendant``,
    ``descendant-or-self`` (multi-hop)
 -  ``following``, ``following-sibling``, ``preceding``,
    ``preceding-sibling`` (document order)
 -  ``attribute``, ``namespace`` (non-element)
 
-Move up or down the tree: self, child, descendant, parent, ancestor
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Stay where you are: self
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let's assume that we have selected the first ``<div>`` element in our
 sample document, the one just under the ``<body>`` element:
 
-.. code:: python
+.. code:: pycon
 
-    first_div = doc.xpath('//body/div')[0]
-    first_div
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div = doc.xpath('//body/div')[0]
+    >>> first_div
     <div>
         <div>
           <p>This is a paragraph.</p>
@@ -1117,18 +1092,12 @@ sample document, the one just under the ``<body>`` element:
 
 
 The ``self`` axis represents *the context node*, i.e. where you are
-currently in the Location Path step. (This may not sounds very useful,
+currently in the Location Path steps. (This may not sound very useful,
 but we will see later when this can be handy.)
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('self::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('self::*')
     [(1) '<div>
         <div>
           <p>This is a paragraph.</p>
@@ -1147,15 +1116,9 @@ but we will see later when this can be handy.)
 
 If you chain ``self::`` steps, you'll stay on the same context node:
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('self::*/self::*/self::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('self::*/self::*/self::*')
     [(1) '<div>
         <div>
           <p>This is a paragraph.</p>
@@ -1172,18 +1135,30 @@ If you chain ``self::`` steps, you'll stay on the same context node:
 
 
 
-``self::`` is usually seen in abbreviated form: i.e. a '.' (dot). So you
-could aslo use:
+``self::`` is usually seen in abbreviated form, i.e. in '.' (one dot)
+which means ``self::node()``.
+So you could also use:
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('.')
+    >>> first_div.xpath('.')
+    [(1) '<div>
+        <div>
+          <p>This is a paragraph.</p>
+          <p>Is this <a href="page2.html">a link</a>?</p>
+          <br>
+          Apparently.
+        </div>
+        <div class="second">
+          Nothing to add.
+          Except maybe this <a href="page3.html">other link</a>.
+          <!-- And this comment -->
+        </div>
+      </div>']
 
+.. code:: pycon
 
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('././.')
     [(1) '<div>
         <div>
           <p>This is a paragraph.</p>
@@ -1199,44 +1174,15 @@ could aslo use:
       </div>']
 
 
-
-.. code:: python
-
-    first_div.xpath('././.')
-
-
-
-
-.. parsed-literal::
-
-    [(1) '<div>
-        <div>
-          <p>This is a paragraph.</p>
-          <p>Is this <a href="page2.html">a link</a>?</p>
-          <br>
-          Apparently.
-        </div>
-        <div class="second">
-          Nothing to add.
-          Except maybe this <a href="page3.html">other link</a>.
-          <!-- And this comment -->
-        </div>
-      </div>']
-
-
+Move up or down the tree: child, descendant, parent, ancestor
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``child`` axis is for immediate children nodes of the context node.
-Here, our context ``<div>`` node has 2 ``<div>`` children:
+Here, our context node ``<div>`` has two ``<div>`` children:
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('child::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('child::*')
     [(1) '<div>
           <p>This is a paragraph.</p>
           <p>Is this <a href="page2.html">a link</a>?</p>
@@ -1250,23 +1196,16 @@ Here, our context ``<div>`` node has 2 ``<div>`` children:
         </div>']
 
 
-
 ``child`` is in fact the default axis, hence it can be omitted (e.g. we
 saw that ``/html/head/title`` is equivalent of
 ``/child::html/child::head/child::title``.)
 
 The ``parent`` axis is the dual of ``child``: you go up one level in the
-DOM:
+document tree:
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('parent::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('parent::*')
     [(1) '<body>
       <div>
         <div>
@@ -1283,20 +1222,12 @@ DOM:
       </div>
     </body>']
 
-
-
-There's an alias for ``parent::``: it's ``..`` (2 dots, much like in a
+There's an alias for ``parent::``: it's ``..`` (two dots, much like in a
 Unix filesystem):
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('..')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('..')
     [(1) '<body>
       <div>
         <div>
@@ -1312,7 +1243,6 @@ Unix filesystem):
         </div>
       </div>
     </body>']
-
 
 
 Let's simplify our ASCII tree representation from earlier to only
@@ -1360,18 +1290,12 @@ With this simplified tree representation, this is what ``self``,
 Recursively go up or down
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``descendant`` axis is similar to ``child`` but also goes deeper in
+The ``descendant`` axis is similar to ``child`` but also goes deeper down
 the tree, looking at children of each child, recursively:
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('descendant::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('descendant::*')
     [(1) '<div>
           <p>This is a paragraph.</p>
           <p>Is this <a href="page2.html">a link</a>?</p>
@@ -1390,19 +1314,13 @@ the tree, looking at children of each child, recursively:
      (7) '<a href="page3.html">other link</a>']
 
 
-
 You might guess already what ``ancestor`` is for: it is the dual axis of
-``descendant``:
+``descendant``. It goes to the parent of the context node, the parent of
+this parent, the parent of the parent of this parent, etc.
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('ancestor::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('ancestor::*')
     [(1) '<html>
     <head>
       <title>This is a title</title>
@@ -1442,20 +1360,17 @@ You might guess already what ``ancestor`` is for: it is the dual axis of
 
 
 
-Special case of ``descendant-or-self`` axis
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Special case of ``descendant-or-/ancestor-or-self`` axes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO: explain
+The last axes to be aware of when you need to move up or down the document
+tree are ``descendant-or-self`` and ``ancestor-or-self``.
+They are the same as ``descendant`` or ``ancestor`` except they also
+include the context node.
 
-.. code:: python
+.. code:: pycon
 
-    first_div.xpath('./descendant-or-self::node()/text()')
-
-
-
-
-.. parsed-literal::
-
+    >>> first_div.xpath('./descendant-or-self::node()/text()')
     [(1) '
         '
      (2) '
@@ -1485,17 +1400,16 @@ TODO: explain
       ']
 
 
-
 Move "sideways": children nodes of the same parent
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If nodes can have parents, children, ancestors and descendants, they can
-also have siblings (to continue the family metaphor). **Siblings are
+also have siblings (to continue the family analogy). **Siblings are
 nodes that have the same parent node.**
 
 Some siblings may come before the context node (they appear before in
 the document, their order is lower), or they can come after the context
-node. There are 2 axis for these 2 directions: ``preceding-sibling`` and
+node. There are two axis for these two directions: ``preceding-sibling`` and
 ``following-sibling``.
 
 Let's first select this paragraph from our sample document:
@@ -1506,37 +1420,27 @@ of the 1st ``<div>`` of the ``<div>`` we used above:
 
     paragraph = first_div.xpath('child::div[1]/child::p[2]')[0]
 
-You can notice above that we started using 2 new patterns along with the
-axes:
+Here we started using 2 new patterns along with the axes:
 
--  ``child::div`` vs. ``child::*``: ``*`` means "any element node" (this
-   is a *NODETEST* that we'll cover afterwards)
+-  ``child::div`` vs. ``child::*``:
+
+   - ``*`` means "any element node" (this is a *node-test* that we'll cover afterwards),
+   - while ``child::div`` means "any child that is a ``<div>`` element".
+
 -  ``[1]`` and ``[2]``: which mean *first* and *second* in the current
-   step's node-set (this is a kind of *PREDICATE* that we'll cover
+   step's node-set (this is a kind of *predicate* that we'll cover
    afterwards also)
 
-.. code:: python
+.. code:: pycon
 
-    paragraph.xpath('preceding-sibling::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> paragraph.xpath('preceding-sibling::*')
     [(1) '<p>This is a paragraph.</p>']
 
 
 
-.. code:: python
+.. code:: pycon
 
-    paragraph.xpath('following-sibling::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> paragraph.xpath('following-sibling::*')
     [(1) '<br>']
 
 
@@ -1572,19 +1476,31 @@ representation:
                                  +-- #32--<div>
                                      +-- #35--<a>
 
-.. code:: python
+Earlier we were also able to get text nodes that were siblings of these
+``<p>`` elements. Why did they not get selected?
 
-    paragraph.xpath('following-sibling::node()')
+The reason is that ``child::*`` means "any child *element*", not "any node."
+(Remember that text nodes are not elements.)
 
+To also get text node siblings, you need to use either ``child::text()``
+or ``child::node()``. (But we may be getting ahead of ourselves with *node tests*.)
 
+.. code:: pycon
 
-
-.. parsed-literal::
-
+    >>> paragraph.xpath('following-sibling::node()')
     [(1) '
           '
      (2) '<br>'
      (3) '
+          Apparently.
+        ']
+
+.. code:: pycon
+
+    >>> paragraph.xpath('following-sibling::text()')
+    [(1) '
+          '
+     (2) '
           Apparently.
         ']
 
@@ -1593,27 +1509,22 @@ representation:
 Nodes before and after, in document order
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``preceding`` and ``following`` are 2 special axes that do not look at
+``preceding`` and ``following`` are two special axes that do not look at
 the tree hierarchy, but work on the document order of nodes.
 
-Remember, all nodes in XPath data model have an order, called the
-*document order*. Node 1 is the first node in the HTML source, node 2 is
-the node appearing next etc.
+.. important::
+    Remember, all nodes in XPath data model have an order, called the
+    *document order*. Node 1 is the first node in the HTML source, node 2 is
+    the node appearing next etc.
 
-::
+    ::
 
-      #1    #2    #3   ...
-    <html><head><title>...
+          #1    #2    #3   ...
+        <html><head><title>...
 
-.. code:: python
+.. code:: pycon
 
-    paragraph.xpath('preceding::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> paragraph.xpath('preceding::*')
     [(1) '<head>
       <title>This is a title</title>
       <meta content="text/html; charset=utf-8" http-equiv="content-type">
@@ -1624,15 +1535,9 @@ the node appearing next etc.
 
 
 
-.. code:: python
+.. code:: pycon
 
-    paragraph.xpath('following::*')
-
-
-
-
-.. parsed-literal::
-
+    >>> paragraph.xpath('following::*')
     [(1) '<br>'
      (2) '<div class="second">
           Nothing to add.
@@ -1642,105 +1547,134 @@ the node appearing next etc.
      (3) '<a href="page3.html">other link</a>']
 
 
+This is what these axes select in our ASCII-tree representation:
 
-Note that ``preceding`` does not include ancestors and ``following``
-does not include descendants.
+::
 
-This property is mentioned in XPath specs like this:
+                    # 0--(ROOT)
+                     +-- # 1--<html>
+                         |   |
+                    +--> +-- # 3--<head>
+                    |    |   |
+                    +------> +-- # 5--<title>
+                    |    |   |
+                    +------> +-- # 8--<meta>
+                    |    |
+                    |    +-- #13--<body>
+                    |        |
+                    |        +-- #15--<div>
+                    |            |
+                    |            +-- #17--<div>
+                    |            |   |
+                    |            |   |
+    preceding::* ---+--------------> +-- #19--<p>
+                                 |   |
+                                 |   |
+    self::* -----------------------> +-- #22--<p>
+                                 |   |   |
+                                 |   |   +-- #24--<a>
+                                 |   |
+                                 |   |
+    following::* -----------+------> +-- #29--<br>
+                            |    |
+                            |    |
+                            +--> +-- #32--<div>
+                            |        |
+                            +------> +-- #35--<a>
 
-    The ancestor, descendant, following, preceding and self axes
-    partition a document (ignoring attribute and namespace nodes): they
-    do not overlap and together they contain all the nodes in the
-    document.
+.. note::
+    Notice that ``preceding`` does not include ancestors and ``following``
+    does not include descendants.
+    This property `is mentioned in XPath specs <https://www.w3.org/TR/xpath/#axes>`__
+    like this:
 
-i.e.
-``document == self U (ancestor U preceding) U (descendant U following)``
+        *"The ancestor, descendant, following, preceding and self axes
+        partition a document (ignoring attribute and namespace nodes): they
+        do not overlap and together they contain all the nodes in the
+        document."*
+
+    In other words::
+
+        document == self ∪ (ancestor ∪ preceding) ∪ (descendant ∪ following)
+
+    (``∪`` denoting the "union" for node-sets.)
 
 Node tests
 ----------
 
-A "node test" is the second part of each step in a location path.
+.. important::
+    A "node test" is the second part of each step in a location path.
+    ::
+        axis :: NODETEST [predicate]*
 
-*axis* :: **NODETEST** \_[predicate]\*\_
+    Node tests select node types along the step's axis.
 
-Node tests select node types along the step's axis.
-
-They can be:
+a node test can be:
 
 -  a *name test*:
 
--  such as "p", "title" or "a" for elements: ``/html/head/title``
-   contains 3 steps, each with a name test node test
--  or "href" or "src" for attributes: ``/a/@href`` selects "href"
-   attributes of
+    -  such as ``p``, ``title`` or ``a`` for elements: ``/html/head/title``
+       contains 3 steps, each with a *name test* node-test
+    -  or ``href`` or ``src`` for attributes: ``/a/@href`` selects "href"
+       attributes of ``<a>`` elements
 
--  a \*node type test":
+-  a *node type test*:
 
--  "node()": any node type
--  "text()": text nodes
--  "comment()": comment nodes
--  "\*" (an asterisk): the meaning depends on the axis:
+    -  ``node()``: any node type
+    -  ``text()``: text nodes
+    -  ``comment()``: comment nodes
+    -  ``*`` (an asterisk): the meaning depends on the axis:
 
-   -  an "\*" step alone selects any element nodes (a.k.a tags)
-   -  an "@\*" selects any attribute node
+       -  an ``*`` step alone selects any element node
+       -  an ``@*`` selects any attribute node
 
-**Note:** ``text()`` is not a function call that converts a node to it's
-text representation, it's just a test on the node type.
+.. warning::
+    ``text()`` is not a function call that converts a node to it's
+    text representation, it's just a test on the node type.
 
-Compare these 2 expressions:
+    Compare these two expressions:
 
-.. code:: python
+    .. code:: pycon
 
-    paragraph.xpath('child::text()')
+        >>> paragraph.xpath('child::text()')
+        [(1) 'Is this '
+         (2) '?']
 
+    .. code:: pycon
 
+        >>> paragraph.xpath('string(self::*)')
+        [(1) 'Is this a link?']
 
+    ``child::text()`` selects all children nodes that are also text nodes.
 
-.. parsed-literal::
+    The "a" string is part of the ``<a>`` inside the paragraph, so it's not selected.
+    It is not a direct child of the ``<p>`` element.
 
-    [(1) 'Is this '
-     (2) '?']
-
-
-
-.. code:: python
-
-    paragraph.xpath('string(self::*)')
-
-
-
-
-.. parsed-literal::
-
-    [(1) 'Is this a link?']
-
-
-
-``child::text()`` selector all children nodes that are also text nodes.
-"a" is part of the ``<a>`` inside the paragraph, sot it's not selected.
-
-Whereas ``string(self::*)`` applies to the paragraph (the context node,
-selected with ``self::*``) and recursively gets text content of
-children, children of children and so on.
+    Whereas ``string(self::*)`` applies to the paragraph (the context node,
+    selected with ``self::*``) and recursively gets text content of
+    children, children of children and so on.
 
 Predicates
 ----------
 
-*axis* :: *nodetest* \*\* [PREDICATE]\* \*\*
+.. important::
+    Predicates are the last part of each step in a location path. Predicates
+    are optional.
+    ::
 
-Predicates are the last part of each step in a location path. Predicates
-are optional.
+        axis :: nodetest [PREDICATE]*
 
-They are used to further filter nodes on properties that cannot be
-expressed with the step's axis and node test.
+    They are used to further filter nodes on properties that cannot be
+    expressed with the step's axis and node test.
 
 Remember that XPath location paths work step by step. Each step produces
 a node-set for each node from the previous step's node-set, with
 possibly more than 1 node in each node set.
 
-You may not be interested in all nodes from a node test.
+You may not be interested in all nodes from a node test. And predicates
+are used to tell the XPath engine the condition(s) they should meet.
 
-The syntax for predicates is simple: just surround conditions withing
+The syntax for predicates is simple: just surround conditions within
 square brackets. What's inside the square brackets can be:
 
 -  a number (see positional predicates below)
@@ -1753,57 +1687,149 @@ Positional predicates
 ~~~~~~~~~~~~~~~~~~~~~
 
 The first use-case is selecting nodes based on their position in a
-node-set. Node-sets order depends on the axis, but let's consider that
+node-set.
+
+Node-sets order depends on the axis, but let's consider that
 the order of a node in a node-set is the document order.
 
-Let's say we don't want the 2 paragraphs in the ``<div>`` we looked at
+Let's say we don't want the two paragraphs in the ``<div>`` we looked at
 earlier, only the first one:
 
-.. code:: python
+.. code:: pycon
 
-    doc.xpath('//body/div/div/p')
-
-
-
-
-.. parsed-literal::
-
+    >>> doc.xpath('//body/div/div/p')
     [(1) '<p>This is a paragraph.</p>'
      (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
 
 
+.. xpathdemo:: //body/div/div/p[1]
 
-.. code:: python
-
-    doc.xpath('//body/div/div/p[1]')
-
-
-
-
-.. parsed-literal::
-
-    [(1) '<p>This is a paragraph.</p>']
-
+    <html>
+    <head>
+      <title>This is a title</title>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    </head>
+    <body>
+      <div>
+        <div>
+          <p>This is a paragraph.</p>
+          <p>Is this <a href="page2.html">a link</a>?</p>
+          <br />
+          Apparently.
+        </div>
+        <div class="second">
+          Nothing to add.
+          Except maybe this <a href="page3.html">other link</a>.
+          <!-- And this comment -->
+        </div>
+      </div>
+    </body>
+    </html>
 
 
 If you want the last node in a node-set, you can use ``last()``:
 
-.. code:: python
+.. xpathdemo:: //body/div/div[last()]
 
-    doc.xpath('//body/div/div[last()]')
-
-
-
-
-.. parsed-literal::
-
-    [(1) '<div class="second">
+    <html>
+    <head>
+      <title>This is a title</title>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    </head>
+    <body>
+      <div>
+        <div>
+          <p>This is a paragraph.</p>
+          <p>Is this <a href="page2.html">a link</a>?</p>
+          <br />
+          Apparently.
+        </div>
+        <div class="second">
           Nothing to add.
           Except maybe this <a href="page3.html">other link</a>.
           <!-- And this comment -->
-        </div>']
+        </div>
+      </div>
+    </body>
+    </html>
 
 
+.. warning::
+    Because location paths work step by step, from left to right,
+    positional predicates are about the **position of a node in a node-set
+    produced by the current step**,
+    not about the position of the node in the document tree.
+
+    For example, ``//body//div[1]`` is NOT the first ``<div>`` under the
+    ``<body>`` element; it will select **all** ``<div>`` that are the first
+    child of their parent:
+
+    .. xpathdemo:: //body//div[1]
+
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
+
+    This becomes more apparent when you expand the expression to its
+    full syntax::
+
+        /descendant-or-self::node()
+            /child::body
+                /descendant-or-self::node()
+                                       ^
+                                       |
+                    # first child of this parent
+                    /child::div[1]
+
+
+    You can however select the first ``<div>`` (in document order)
+    in a ``<body>`` using parentheses to group nodes into a new node-set:
+
+    - first select all ``<div>`` elements -- ``//body//div``,
+    - then group them -- ``( //body//div )``,
+    - and finally select the first one -- ``( //body//div ) [1]``,
+
+    .. xpathdemo:: ( //body//div ) [1]
+
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
 
 Position ranges
 ^^^^^^^^^^^^^^^
@@ -1829,25 +1855,22 @@ TODO: things like ``//table[.//img/@src="pic.png"]`` or
 Special trick for testing multiple node names
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This is when ``self::`` axis can be helpful.
+
 TODO: things like ``./descendant-or-self::*[self::ul or self::ol]``
 
 Nested predicates
 ~~~~~~~~~~~~~~~~~
 
 We said that location paths can be used as predicate. And location paths
-can have predicates. So it's possible end up with nested predicates.
+can have predicates. So it's possible to end up with nested predicates.
+(And that's ok.)
 
-.. code:: python
+.. code:: pycon
 
-    #                <------predicate --------->
-    #                    <-nested predicate->
-    doc.xpath('//div[p  [a/@href="page2.html"]  ]')
-
-
-
-
-.. parsed-literal::
-
+    >>> #                <------predicate --------->
+    >>> #                    <-nested predicate->
+    >>> doc.xpath('//div[p  [a/@href="page2.html"]  ]')
     [(1) '<div>
           <p>This is a paragraph.</p>
           <p>Is this <a href="page2.html">a link</a>?</p>
@@ -1860,21 +1883,29 @@ can have predicates. So it's possible end up with nested predicates.
 In fact, the above is equivalent to ``//div[p/a/@href="page2.html"]``
 with no nesting:
 
-.. code:: python
+    .. xpathdemo:: //div[p/a/@href="page2.html"]
 
-    doc.xpath('//div[p/a/@href="page2.html"]')
-
-
-
-
-.. parsed-literal::
-
-    [(1) '<div>
-          <p>This is a paragraph.</p>
-          <p>Is this <a href="page2.html">a link</a>?</p>
-          <br>
-          Apparently.
-        </div>']
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
 
 
 
@@ -1883,88 +1914,114 @@ Order of predicates is important
 
 You can have multiple predicates in sequence per step, each within its
 ``[]`` brackets, i.e. steps in the form of
-``axis::nodetest[predicate#1][predicate#2][predicate#3]...``
+``axis::nodetest[predicate#1][predicate#2][predicate#3]...``.
 
 Predicates are processed in order, from left to right. And the output of
 one predicate is fed into the next predicate filter, much like steps
 produce node-sets for the next step to process.
 
-So the order of predicates is important.
+So **the order of predicates is important.**
 
 The following 2 location paths produce different results:
 
-.. code:: python
+- ``//div[@class="second"][2]``: will output one ``<div>``
+- ``//div[2][@class="second"]``: will select **nothing**
 
-    doc.xpath('//div[2][@class="second"]')
+    .. xpathdemo:: //div[2][@class="second"]
+
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
+
+    .. xpathdemo:: //div[@class="second"][2]
+
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
 
 
-
-
-.. parsed-literal::
-
-    [(1) '<div class="second">
-          Nothing to add.
-          Except maybe this <a href="page3.html">other link</a>.
-          <!-- And this comment -->
-        </div>']
-
-
-
-.. code:: python
-
-    doc.xpath('//div[@class="second"][2]')
-
-
-
-
-.. parsed-literal::
-
-    []
-
-
-
-The 2nd produces nothing. Why is that?
+The second produces nothing indeed. Why is that?
 
 ``//div[2][@class="second"]`` looks at ``div`` elements that are the 2nd
-child of their parent (because ``div`` means ``child::div``, and ``[2]``
-will select the 2nd node in the current node-set. In our document this
-happens only once. The final predicate, ``[@class="second"]``, filter
-nodes that have a "class" attribute with value "second". This happens to
-be valid for that 2nd child ``div``.
+child of their parent.
+``div`` means ``child::div``, and ``[2]`` will select the 2nd node in the current node-set.
+In our document this happens only once.
+The final predicate, ``[@class="second"]``, filters nodes that have a
+"class" attribute with value "second".
+This happens to be valid for that 2nd child ``div``.
 
 On the contrary, ``//div[@class="second"][2]`` will first produce
 ``//div[@class="second"]``, which only produces single-node node-sets
-(again, there's only 1 ``div`` with "class" attribute with value
+(again, there's only one ``div`` with "class" attribute with value
 "second"). So the subsequent ``[2]`` predicate will never match with
-single-node node-sets.
+single-node node-sets (you cannot select the 2nd element of a 1-element list)
 
 Abbreviation cheatsheet
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-+-----------------------------+----------------------------------------------+
-| Abbreviated step            | Meaning                                      |
-+=============================+==============================================+
-| ``*`` (asterisk)            | all **element** nodes (i.e. not text nodes,  |
-|                             | not attribute nodes;                         |
-+-----------------------------+----------------------------------------------+
-|                             | remember that ``.//*`` is not the same as    |
-|                             | ``.//node()``;                               |
-+-----------------------------+----------------------------------------------+
-|                             | also, there's not ``element()`` node test    |
-+-----------------------------+----------------------------------------------+
-| ``@*``                      | ``attribute::*`` (all attribute nodes)       |
-+-----------------------------+----------------------------------------------+
-| ``//``                      | ``/descendant-or-self::node()/ |             |
-|                             |                   | exactly this, nothing mo |
-|                             | re,  nothing less, |                         |
-|                             |       | so``//*``is not the same as``/descen |
-|                             | dant-or-self::*\ ``|``.\ ``(a single dot)    |
-|                             |         |``\ self::node()\ ``, the context n |
-|                             | ode; useful for formation a relative XPath | |
-|                             |                               | e.g.``.//tr\ |
-|                             |  ``|``..\ ``(2 dots)                |``\ par |
-|                             | ent::node()\`                                |
-+-----------------------------+----------------------------------------------+
+.. list-table::
+   :header-rows: 1
+
+   * - Abbreviated step
+     - Meaning
+
+   * - ``*`` (asterisk)
+     - all **element** nodes (i.e. not text nodes, not attribute nodes).
+
+       Remember that ``.//*`` is not the same as ``.//node()``.
+
+       Also, there's no ``element()`` node test.
+
+   * - ``@*``
+     - ``attribute::*`` (all attribute nodes)
+
+   * - ``//``
+     - ``/descendant-or-self::node()/`` (exactly this, nothing more, nothing less)
+
+       so ``//*`` is not the same as ``/descendant-or-self::*``
+
+   * - ``.`` (a single dot)
+     - ``self::node()``, the context node; useful for making XPaths relative,
+       e.g. ``.//tr``
+
+   * - ``..`` (2 dots)
+     - ``parent::node()``
 
 TODO: explain why ``//*`` is not the same as ``/descendant-or-self::*``
 
@@ -2016,11 +2073,12 @@ TODO
 Summary of tips
 ===============
 
--  Use relative XPath expressions whenever possible
--  Know your axes!
--  Don't forget that XPath has ``string()`` and ``normalize-space()``
-   functions
--  **``text()`` is a node test**, not a function call
--  CSS selectors are very handy, easier to maintain, but also less
-   powerful than XPath
+.. tip::
+    -  Use relative XPath expressions whenever possible
+    -  Know your axes!
+    -  Don't forget that XPath has ``string()`` and ``normalize-space()``
+       functions
+    -  **text() is a node test**, not a function call
+    -  CSS selectors are very handy, easier to maintain, but also less
+       powerful than XPath
 
