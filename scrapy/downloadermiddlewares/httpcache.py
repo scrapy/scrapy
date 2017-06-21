@@ -37,6 +37,7 @@ class HttpCacheMiddleware(object):
     def spider_closed(self, spider):
         self.storage.close_spider(spider)
 
+    @defer.inlineCallbacks
     def process_request(self, request, spider):
         if request.meta.get('dont_cache', False):
             return
@@ -47,7 +48,9 @@ class HttpCacheMiddleware(object):
             return
 
         # Look for cached response and check if expired
-        cachedresponse = self.storage.retrieve_response(spider, request)
+        cachedresponse = yield defer.maybeDeferred(
+            self.storage.retrieve_response, spider, request
+        )
         if cachedresponse is None:
             self.stats.inc_value('httpcache/miss', spider=spider)
             if self.ignore_missing:
@@ -59,20 +62,21 @@ class HttpCacheMiddleware(object):
         cachedresponse.flags.append('cached')
         if self.policy.is_cached_response_fresh(cachedresponse, request):
             self.stats.inc_value('httpcache/hit', spider=spider)
-            return cachedresponse
+            defer.returnValue(cachedresponse)
 
         # Keep a reference to cached response to avoid a second cache lookup on
         # process_response hook
         request.meta['cached_response'] = cachedresponse
 
+    @defer.inlineCallbacks
     def process_response(self, request, response, spider):
         if request.meta.get('dont_cache', False):
-            return response
+            defer.returnValue(response)
 
         # Skip cached responses and uncacheable requests
         if 'cached' in response.flags or '_dont_cache' in request.meta:
             request.meta.pop('_dont_cache', None)
-            return response
+            defer.returnValue(response)
 
         # RFC2616 requires origin server to set Date header,
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
@@ -84,15 +88,15 @@ class HttpCacheMiddleware(object):
         if cachedresponse is None:
             self.stats.inc_value('httpcache/firsthand', spider=spider)
             self._cache_response(spider, response, request, cachedresponse)
-            return response
+            defer.returnValue(response)
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value('httpcache/revalidate', spider=spider)
-            return cachedresponse
+            defer.returnValue(cachedresponse)
 
         self.stats.inc_value('httpcache/invalidate', spider=spider)
-        self._cache_response(spider, response, request, cachedresponse)
-        return response
+        yield self._cache_response(spider, response, request, cachedresponse)
+        defer.returnValue(response)
 
     def process_exception(self, request, exception, spider):
         cachedresponse = request.meta.pop('cached_response', None)
@@ -100,9 +104,12 @@ class HttpCacheMiddleware(object):
             self.stats.inc_value('httpcache/errorrecovery', spider=spider)
             return cachedresponse
 
+    @defer.inlineCallbacks
     def _cache_response(self, spider, response, request, cachedresponse):
         if self.policy.should_cache_response(response, request):
             self.stats.inc_value('httpcache/store', spider=spider)
-            self.storage.store_response(spider, request, response)
+            yield defer.maybeDeferred(
+                self.storage.store_response, spider, request, response
+            )
         else:
             self.stats.inc_value('httpcache/uncacheable', spider=spider)
