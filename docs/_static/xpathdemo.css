@@ -26,6 +26,7 @@
     min-height: 25px;
     padding: 4px 8px;
     border-radius: 5px;
+    white-space: pre;
 }
 
 .result_node + .result_node {
