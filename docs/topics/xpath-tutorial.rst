@@ -1604,7 +1604,9 @@ Node tests
 
 .. important::
     A "node test" is the second part of each step in a location path.
+
     ::
+
         axis :: NODETEST [predicate]*
 
     Node tests select node types along the step's axis.
