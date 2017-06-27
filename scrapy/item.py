@@ -70,13 +70,12 @@ class DictItem(MutableMapping, BaseItem):
 
     def __getattr__(self, name):
         if name in self.fields:
-            raise AttributeError("Use item[%r] to get field value" % name)
+            return self.__getitem__(name)
         raise AttributeError(name)
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):
-            raise AttributeError("Use item[%r] = %r to set field value" %
-                (name, value))
+            self.__setitem__(name, value)
         super(DictItem, self).__setattr__(name, value)
 
     def __len__(self):

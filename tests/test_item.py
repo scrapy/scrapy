@@ -84,14 +84,17 @@ class ItemTest(unittest.TestCase):
             name = Field()
 
         i = TestItem()
-        self.assertRaises(AttributeError, getattr, i, 'name')
+        self.assertRaises(KeyError, getattr, i, 'name')
+        i = TestItem(name='john')
+        self.assertEqual(i.__getattr__('name'), 'john')
 
-    def test_raise_setattr(self):
+    def test_setattr(self):
         class TestItem(Item):
             name = Field()
 
         i = TestItem()
-        self.assertRaises(AttributeError, setattr, i, 'name', 'john')
+        i.__setattr__('name', 'john')
+        self.assertEqual(i['name'], 'john')
 
     def test_custom_methods(self):
         class TestItem(Item):
@@ -257,6 +260,19 @@ class ItemTest(unittest.TestCase):
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
         self.assertNotEqual(item['name'], copied_item['name'])
+
+    def test_assign_field_dot_notation(self):
+        class TestItem(Item):
+            name = Field()
+        i = TestItem()
+        i.name = u'John'
+        self.assertEqual(i['name'], u'John')
+
+    def test_get_field_dot_notation(self):
+        class TestItem(Item):
+            name = Field()
+        i = TestItem(name='John')
+        self.assertEqual(i.name, i['name'])
 
 
 class ItemMetaTest(unittest.TestCase):
