@@ -1,6 +1,7 @@
 import sys
 import unittest
 
+import attr
 import six
 
 from scrapy.item import ABCMeta, Item, ItemMeta, Field
@@ -273,6 +274,13 @@ class ItemTest(unittest.TestCase):
             name = Field()
         i = TestItem(name='John')
         self.assertEqual(i.name, i['name'])
+
+    def test_attr_decorated_items(self):
+        @attr.s
+        class TestItem(Item):
+            name = attr.ib(default='default')
+        i = TestItem()
+        self.assertEqual(i['name'], 'default')
 
 
 class ItemMetaTest(unittest.TestCase):
