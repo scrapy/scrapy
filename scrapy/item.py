@@ -8,6 +8,7 @@ from pprint import pformat
 from collections import MutableMapping
 
 from abc import ABCMeta
+from attr._make import _CountingAttr, _Nothing
 import six
 
 from scrapy.utils.trackref import object_ref
@@ -35,6 +36,11 @@ class ItemMeta(ABCMeta):
             v = getattr(_class, n)
             if isinstance(v, Field):
                 fields[n] = v
+            elif isinstance(v, _CountingAttr):
+                field_dict = {}
+                if not isinstance(v._default, _Nothing):
+                    field_dict['default'] = v._default
+                fields[n] = field_dict
             elif n in attrs:
                 new_attrs[n] = attrs[n]
 
@@ -54,6 +60,9 @@ class DictItem(MutableMapping, BaseItem):
         if args or kwargs:  # avoid creating dict for most common case
             for k, v in six.iteritems(dict(*args, **kwargs)):
                 self[k] = v
+        for field in self.fields:
+            if field not in self and 'default' in self.fields[field].keys():
+                self[field] = self.fields[field]['default']
 
     def __getitem__(self, key):
         return self._values[key]
@@ -71,6 +80,8 @@ class DictItem(MutableMapping, BaseItem):
     def __getattr__(self, name):
         if name in self.fields:
             return self.__getitem__(name)
+        if '_value' in name:
+            raise AttributeError("%s. Associated with __init__ issues" % name)
         raise AttributeError(name)
 
     def __setattr__(self, name, value):

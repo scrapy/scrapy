@@ -276,11 +276,46 @@ class ItemTest(unittest.TestCase):
         self.assertEqual(i.name, i['name'])
 
     def test_attr_decorated_items(self):
+        @attr.s(hash=True, init=False, repr=False)
+        class TestItem(Item):
+            name = attr.ib(default='Default')
+            origin = attr.ib()
+        i = TestItem()
+        self.assertEqual(i['name'], 'Default')
+        self.assertEqual(i.__str__(), "{'name': 'Default'}")
+        self.assertEqual(
+            i.fields,
+            {'origin': {}, 'name': {'default': 'Default'}}
+        )
+        with self.assertRaises(KeyError):
+            my_origin = i['origin']
+        i['origin'] = 'Origin'
+        self.assertEqual(i.__str__(), "{'name': 'Default', 'origin': 'Origin'}")
+
+    def test_attr_decorated_items_str_issues(self):
+        @attr.s(hash=True, init=False)
+        class TestItem(Item):
+            name = attr.ib(default='Default')
+            origin = attr.ib()
+        i = TestItem()
+        self.assertFalse(i.__str__() == "{'name': 'Default'}")
+
+    def test_attr_decorated_items_init_errors(self):
+        @attr.s(hash=True)
+        class TestItem(Item):
+            name = attr.ib(default='Default')
+            origin = attr.ib()
+        i = TestItem()
+        exception_text = "%s. Associated with __init__ issues" % '_value'
+        self.assertRaises(AttributeError, getattr, i, exception_text)
+
+    def test_attr_decorated_items_hash_errors(self):
         @attr.s
         class TestItem(Item):
-            name = attr.ib(default='default')
-        i = TestItem()
-        self.assertEqual(i['name'], 'default')
+            name = attr.ib(default='Default')
+            origin = attr.ib()
+        with self.assertRaises(TypeError):
+            i = TestItem()
 
 
 class ItemMetaTest(unittest.TestCase):
