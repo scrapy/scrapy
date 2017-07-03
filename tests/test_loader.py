@@ -290,7 +290,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = TestItemLoader()
         il.add_value('name', [u'$10'])
         try:
-            float('$10')
+            float(u'$10')
         except Exception as e:
             expected_exc_str = str(e)
 
