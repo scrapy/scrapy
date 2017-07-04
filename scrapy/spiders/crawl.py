@@ -32,20 +32,47 @@ class Rule(object):
 
 
 class CrawlSpider(Spider):
+    """
+    Class for spiders that crawl over web pages and extract/parse their links
+    given some crawling rules.
 
+    These crawling rules are established by setting the 'rules' class attribute,
+    which is a tuple of Rule objects.
+    When the spider is running, it iterates over these rules with each response
+    and do what it has to (extract links if follow=True, and return items/requests if
+    there's a parsing method defined in the rule).
+    """
     rules = ()
 
     def __init__(self, *a, **kw):
+        """Constructor takes care of compiling rules"""
         super(CrawlSpider, self).__init__(*a, **kw)
         self._compile_rules()
 
     def parse(self, response):
+        """
+        This function is called by the framework core for all the
+        start_urls. Do not override this function, override parse_start_url
+        instead.
+        """
         return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
 
     def parse_start_url(self, response):
+        """
+        Overrideable callback function for processing start_urls. It must
+        return a list of BaseItem and/or Requests.
+        """
         return []
 
     def process_results(self, response, results):
+        """
+        This overridable method is called for each result (item or request)
+        returned by the spider, and it's intended to perform any last time
+        processing required before returning the results to the framework core,
+        for example setting the item GUIDs. It receives a list of results and
+        the response which originated that results. It must return a list
+        of results (Items or Requests).
+        """
         return results
 
     def _build_request(self, rule, link):
@@ -54,6 +81,11 @@ class CrawlSpider(Spider):
         return r
 
     def _requests_to_follow(self, response):
+        """
+        This method iterates over each of the spider's rules, extracts the links
+        matching each case, filters them (if needed), and returns a list of unique
+        requests per response.
+        """
         if not isinstance(response, HtmlResponse):
             return
         seen = set()
@@ -68,6 +100,11 @@ class CrawlSpider(Spider):
                 yield rule.process_request(r)
 
     def _response_downloaded(self, response):
+        """
+        This is were any response arrives, and were it's decided whether
+        to extract links or not from it, and if it will be parsed or not.
+        It returns a list of requests/items.
+        """
         rule = self._rules[response.meta['rule']]
         return self._parse_response(response, rule.callback, rule.cb_kwargs, rule.follow)
 
@@ -83,6 +120,7 @@ class CrawlSpider(Spider):
                 yield request_or_item
 
     def _compile_rules(self):
+        """Compile the crawling rules"""
         def get_method(method):
             if callable(method):
                 return method
