@@ -1599,6 +1599,11 @@ This is what these axes select in our ASCII-tree representation:
 
     (``∪`` denoting the "union" for node-sets.)
 
+Attribute axis
+~~~~~~~~~~~~~~
+
+TODO.
+
 Node tests
 ----------
 
@@ -1656,6 +1661,39 @@ a node test can be:
     selected with ``self::*``) and recursively gets text content of
     children, children of children and so on.
 
+Abbreviation cheatsheet
+-----------------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Abbreviated step
+     - Meaning
+
+   * - ``*`` (asterisk)
+     - all **element** nodes (i.e. not text nodes, not attribute nodes).
+
+       Remember that ``.//*`` is not the same as ``.//node()``.
+
+       Also, there's no ``element()`` node test.
+
+   * - ``@*``
+     - ``attribute::*`` (all attribute nodes)
+
+   * - ``//``
+     - ``/descendant-or-self::node()/`` (exactly this, nothing more, nothing less)
+
+       so ``//*`` is not the same as ``/descendant-or-self::*``
+
+   * - ``.`` (a single dot)
+     - ``self::node()``, the context node; useful for making XPaths relative,
+       e.g. ``.//tr``
+
+   * - ``..`` (2 dots)
+     - ``parent::node()``
+
+TODO: explain why ``//*`` is not the same as ``/descendant-or-self::*``
+
 Predicates
 ----------
 
@@ -1689,19 +1727,20 @@ Positional predicates
 ~~~~~~~~~~~~~~~~~~~~~
 
 The first use-case is selecting nodes based on their position in a
-node-set.
+node-set. (Node-sets order depends on the axis, but let's consider that
+the order of a node in a node-set is the document order.)
 
-Node-sets order depends on the axis, but let's consider that
-the order of a node in a node-set is the document order.
-
-Let's say we don't want the two paragraphs in the ``<div>`` we looked at
-earlier, only the first one:
+Remember the two paragraphs in the ``<div>`` we looked at
+earlier:
 
 .. code:: pycon
 
     >>> doc.xpath('//body/div/div/p')
     [(1) '<p>This is a paragraph.</p>'
      (2) '<p>Is this <a href="page2.html">a link</a>?</p>']
+
+Let's say that we are not interested in the two paragraphs but only
+the first one. You would use ``[1]`` as predicate:
 
 
 .. xpathdemo:: //body/div/div/p[1]
@@ -1728,6 +1767,8 @@ earlier, only the first one:
     </body>
     </html>
 
+.. warning::
+    Positions in XPath start from 1, not 0.
 
 If you want the last node in a node-set, you can use ``last()``:
 
@@ -1836,30 +1877,209 @@ If you want the last node in a node-set, you can use ``last()``:
 Position ranges
 ^^^^^^^^^^^^^^^
 
-TODO: things like ``//table/tbody/tr[position() > 2]``
+Sometimes you need more than one node in a node-set but not all of them.
+For that you can use boolean expression in your predicate in conjunction
+with the ``position()`` function that returns the node's position.
+
+Let's change our sample HTML document a bit to include a list of five items.
+Say we need all but the 1st and last one.
+You can use ``[position()>1 and position()<last()]``:
+
+
+.. xpathdemo:: //body//div//li[position()>1 and position()<last()]
+
+    <html>
+    <body>
+      <div>
+        <div>
+          <ol>
+           <li>first item</li>
+           <li>second item</li>
+           <li>third item</li>
+           <li>fourth item</li>
+           <li>fifth item</li>
+          </ol>
+        </div>
+        <div class="second">
+          Nothing to add.
+          Except maybe this <a href="page3.html">other link</a>.
+          <!-- And this comment -->
+        </div>
+      </div>
+    </body>
+    </html>
+
+``//body//div//li[position()>1 and position()<last()]`` correctly
+selects the 2nd, 3rd and 4th items.
 
 Location paths as predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO: things like ``//table[tr/div/a]``
+Location paths can also serve as predicates within a parent location path.
+
+It can happen that your HTML mamrkup does not distinguish the elements
+you are after with any "class" or "id" attributes, but maybe these
+elements have a structural feature that you can use to identify them.
+
+For example, a ``<table>`` element may have rows -- ``table/tr`` --
+with or without link anchors in them.
+Within each ``<tr>`` row, ``td/a`` selects something on some rows,
+nothing for others:
+
+.. xpathdemo:: //table/tr [ td/a ]
+
+    <html>
+    <body>
+      <div>
+        <div>
+          <table>
+           <tr><td>first row</td></tr>
+           <tr><td>second row with <a href="http://www.example.com/2">a link</a></td></tr>
+           <tr><td>third row</td></tr>
+           <tr><td>fourth row with <a href="http://www.example.com/4">another link</a></td></tr>
+          </table>
+        </div>
+      </div>
+    </body>
+    </html>
 
 Boolean predicates
 ~~~~~~~~~~~~~~~~~~
 
-TODO: things like ``//table[count(tr)=10]``
+We saw boolean predicates earlier with positional ranges. But you can
+craft complex boolean filters based on any features of nodes; structural
+information on children or parent nodes, text values, position, etc.
+
+A simple example could be selecting a ``<table>`` that has a specific
+number of rows, say, 5. You can simply count the number of rows:
+
+
+.. xpathdemo:: //table[ count(tr)=5 ]
+
+    <html>
+    <body>
+      <div>
+        <div>
+          <table>
+           <tr><td>first row</td></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+          </table>
+        </div>
+        <div>
+          <table>
+           <tr><td>first row</td></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+           <tr><td>fourth row</td></tr>
+           <tr><td>fifth row</td></tr>
+          </table>
+        </div>
+      </div>
+    </body>
+    </html>
+
 
 Special case of string value tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO: things like ``//table[.//img/@src="pic.png"]`` or
-``//table[th="Some headers"]``
+XPath also allows comparing string values of nodes within predicates.
+If you use an equality operation with a location path and a string,
+each node of the location path will be converted to its string value
+and then compared with the string value to match.
+
+This may sound more obscure than it is. Say for example that you have
+two tables, with different headers. You know the string value
+of the header in the table you want, "The header I want."
+
+::
+
+        <div>
+          <table>
+           <tr><th>The header I want</th></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+          </table>
+        </div>
+        <div>
+          <table>
+           <tr><th>Another header I do NOT want</th></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+           <tr><td>fourth row</td></tr>
+           <tr><td>fifth row</td></tr>
+          </table>
+        </div>
+
+To select the different headers, you would use ``//table/tr/th``.
+You want the ``<table>`` so you can move the ``tr/th`` part inside
+a predicate and compare it with string "The header I want".
+
+.. xpathdemo:: //table[ tr/th = "The header I want" ]
+
+    <html>
+    <body>
+      <div>
+        <div>
+          <table>
+           <tr><th>The header I want</th></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+          </table>
+        </div>
+        <div>
+          <table>
+           <tr><th>Another header I do NOT want</th></tr>
+           <tr><td>second row</td></tr>
+           <tr><td>third row</td></tr>
+           <tr><td>fourth row</td></tr>
+           <tr><td>fifth row</td></tr>
+          </table>
+        </div>
+      </div>
+    </body>
+    </html>
+
+This kind of predicates also works for attribute values, e.g. testing
+links to some website::
+
+    //body//p [ a/@href="http://www.example.com" ]
 
 Special trick for testing multiple node names
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+In a predicate you can also test the current node of the node-set.
+For example if you want to test for several wanted element names.
 This is when ``self::`` axis can be helpful.
 
-TODO: things like ``./descendant-or-self::*[self::ul or self::ol]``
+One example is testing different kind of lists, ordered or unordered:
+
+.. xpathdemo:: //body//*[self::ul or self::ol]//li
+
+    <html>
+    <body>
+      <div>
+        <div>
+          <ol>
+           <li>first ordered item</li>
+           <li>second ordered item</li>
+           <li>third ordered item</li>
+          </ol>
+        </div>
+        <div>
+          <ul>
+           <li>first unordered item</li>
+           <li>second unordered item</li>
+           <li>third unordered item</li>
+          </ul>
+        </div>
+      </div>
+    </body>
+    </html>
+
+.. note::
+    Here we saw that predicates can also appear in the middle of the location
+    path. Indeed, predicates are (a optional) part of each location step.
 
 Nested predicates
 ~~~~~~~~~~~~~~~~~
@@ -1885,6 +2105,30 @@ can have predicates. So it's possible to end up with nested predicates.
 In fact, the above is equivalent to ``//div[p/a/@href="page2.html"]``
 with no nesting:
 
+    .. xpathdemo:: //div[p  [a/@href="page2.html"]  ]
+
+        <html>
+        <head>
+          <title>This is a title</title>
+          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+        </head>
+        <body>
+          <div>
+            <div>
+              <p>This is a paragraph.</p>
+              <p>Is this <a href="page2.html">a link</a>?</p>
+              <br />
+              Apparently.
+            </div>
+            <div class="second">
+              Nothing to add.
+              Except maybe this <a href="page3.html">other link</a>.
+              <!-- And this comment -->
+            </div>
+          </div>
+        </body>
+        </html>
+
     .. xpathdemo:: //div[p/a/@href="page2.html"]
 
         <html>
@@ -1909,8 +2153,6 @@ with no nesting:
         </body>
         </html>
 
-
-
 Order of predicates is important
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1929,53 +2171,55 @@ The following 2 location paths produce different results:
 - ``//div[@class="second"][2]``: will output one ``<div>``
 - ``//div[2][@class="second"]``: will select **nothing**
 
-    .. xpathdemo:: //div[2][@class="second"]
+See for yourself:
 
-        <html>
-        <head>
-          <title>This is a title</title>
-          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-        </head>
-        <body>
-          <div>
-            <div>
-              <p>This is a paragraph.</p>
-              <p>Is this <a href="page2.html">a link</a>?</p>
-              <br />
-              Apparently.
-            </div>
-            <div class="second">
-              Nothing to add.
-              Except maybe this <a href="page3.html">other link</a>.
-              <!-- And this comment -->
-            </div>
-          </div>
-        </body>
-        </html>
+.. xpathdemo:: //div[2][@class="second"]
 
-    .. xpathdemo:: //div[@class="second"][2]
+    <html>
+    <head>
+      <title>This is a title</title>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    </head>
+    <body>
+      <div>
+        <div>
+          <p>This is a paragraph.</p>
+          <p>Is this <a href="page2.html">a link</a>?</p>
+          <br />
+          Apparently.
+        </div>
+        <div class="second">
+          Nothing to add.
+          Except maybe this <a href="page3.html">other link</a>.
+          <!-- And this comment -->
+        </div>
+      </div>
+    </body>
+    </html>
 
-        <html>
-        <head>
-          <title>This is a title</title>
-          <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-        </head>
-        <body>
-          <div>
-            <div>
-              <p>This is a paragraph.</p>
-              <p>Is this <a href="page2.html">a link</a>?</p>
-              <br />
-              Apparently.
-            </div>
-            <div class="second">
-              Nothing to add.
-              Except maybe this <a href="page3.html">other link</a>.
-              <!-- And this comment -->
-            </div>
-          </div>
-        </body>
-        </html>
+.. xpathdemo:: //div[@class="second"][2]
+
+    <html>
+    <head>
+      <title>This is a title</title>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    </head>
+    <body>
+      <div>
+        <div>
+          <p>This is a paragraph.</p>
+          <p>Is this <a href="page2.html">a link</a>?</p>
+          <br />
+          Apparently.
+        </div>
+        <div class="second">
+          Nothing to add.
+          Except maybe this <a href="page3.html">other link</a>.
+          <!-- And this comment -->
+        </div>
+      </div>
+    </body>
+    </html>
 
 
 The second produces nothing indeed. Why is that?
@@ -1994,39 +2238,33 @@ On the contrary, ``//div[@class="second"][2]`` will first produce
 "second"). So the subsequent ``[2]`` predicate will never match with
 single-node node-sets (you cannot select the 2nd element of a 1-element list)
 
-Abbreviation cheatsheet
-~~~~~~~~~~~~~~~~~~~~~~~
 
-.. list-table::
-   :header-rows: 1
+.. warning::
+    Beware of ``position()`` in chained predicates.
 
-   * - Abbreviated step
-     - Meaning
+    Much like ``[...][2]`` is different from ``[2][...]``, if you chain
+    positional predicates, remember that the position is relative to
+    the node-set processed by the previous predicate.
 
-   * - ``*`` (asterisk)
-     - all **element** nodes (i.e. not text nodes, not attribute nodes).
+    For example, we saw that ``position()>1`` would filter out the first
+    nodes in a node-set. Chaining ``[position()>1]`` will remove the first
+    node each time it's used:
 
-       Remember that ``.//*`` is not the same as ``.//node()``.
+    .. xpathdemo:: //ol/li[position()>1][position()>1][position()>1]
 
-       Also, there's no ``element()`` node test.
-
-   * - ``@*``
-     - ``attribute::*`` (all attribute nodes)
-
-   * - ``//``
-     - ``/descendant-or-self::node()/`` (exactly this, nothing more, nothing less)
-
-       so ``//*`` is not the same as ``/descendant-or-self::*``
-
-   * - ``.`` (a single dot)
-     - ``self::node()``, the context node; useful for making XPaths relative,
-       e.g. ``.//tr``
-
-   * - ``..`` (2 dots)
-     - ``parent::node()``
-
-TODO: explain why ``//*`` is not the same as ``/descendant-or-self::*``
-
+        <html>
+        <body>
+          <div>
+            <ol>
+              <li>first item</li>
+              <li>second item</li>
+              <li>third item</li>
+              <li>fourth item</li>
+              <li>fifth item</li>
+            </ol>
+          </div>
+        </body>
+        </html>
 String functions
 ----------------
 
