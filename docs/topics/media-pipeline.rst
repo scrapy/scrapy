@@ -121,7 +121,8 @@ in more details below:
   by default redirects are not followed.
   See :ref:`topics-media-pipeline-redirects`.
 - ``MEDIA_CACHE_SIZE`` to limit the cache size: by default meta information
-  (url, path and checksum) for all downloaded files and images is cached.
+  (url, path and checksum) for all downloaded files and images is cached
+  in order to avoid downloading the same file multiple times.
   See :ref:`topics-media-pipeline-cache`.
 
 
@@ -354,14 +355,20 @@ Limiting cache size
 .. setting:: MEDIA_CACHE_SIZE
 
 By default media pipeline caches meta information
-(url, path and checksum) for all downloaded files and images.
-This might consume noticeable amount of memory for large-scale crawls
-with millions of items downloaded. Set it to the number of most recently
-used items you wish to keep::
+(url, path and checksum) for all downloaded files and images
+in order to avoid downloading the same file multiple times.
+This caching might consume noticeable amount of memory for large-scale crawls
+with millions of items downloaded. In order to limit the cache size
+(and memory usage), set the maximal cache size::
 
     MEDIA_CACHE_SIZE = 10000
 
-Zero is also an allowed value, this will disable the cache completely.
+Zero is also an allowed value, this will disable the cache completely::
+
+    MEDIA_CACHE_SIZE = 0
+
+Cache size is not limited by default, a ``None`` or an empty string ``''``
+value for ``MEDIA_CACHE_SIZE`` enable this behaviour.
 
 .. _topics-media-pipeline-override:
 

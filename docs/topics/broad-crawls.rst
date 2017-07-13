@@ -163,3 +163,17 @@ It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 
 .. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+
+Limit media pipeline caching
+============================
+
+By default media pipeline caches meta information
+(url, path and checksum) for all downloaded files and images
+in order to avoid downloading the same file multiple times.
+This caching might consume noticeable amount of memory for large-scale crawls
+with millions of items downloaded.
+It's possible to :ref:`limit caching <topics-media-pipeline-cache>`
+to cap the memory usage::
+
+    MEDIA_CACHE_SIZE = 10000
+

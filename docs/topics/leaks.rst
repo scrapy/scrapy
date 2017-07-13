@@ -53,6 +53,17 @@ While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
 
+Media pipeline caching
+----------------------
+
+By default media pipeline caches meta information
+(url, path and checksum) for all downloaded files and images
+in order to avoid downloading the same file multiple times.
+This caching might consume noticeable amount of memory for large-scale crawls
+with millions of items downloaded.
+It's possible to :ref:`limit caching <topics-media-pipeline-cache>`
+to cap the memory usage.
+
 .. _topics-leaks-trackrefs:
 
 Debugging memory leaks with ``trackref``
