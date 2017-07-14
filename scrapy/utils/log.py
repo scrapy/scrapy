@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import yaml
 import logging
 import warnings
 from logging.config import dictConfig
@@ -87,10 +88,20 @@ def configure_logging(settings=None, install_root_handler=True):
     observer = twisted_log.PythonLoggingObserver('twisted')
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
-
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
+
+    LOG_CONFIG_FILE_LOADED = False
+    LOG_CONFIG_FILE = settings.get("LOG_CONFIG_FILE")
+    if LOG_CONFIG_FILE:
+        if LOG_CONFIG_FILE[-3:] == "yml":
+            with open(LOG_CONFIG_FILE) as f:
+                config = yaml.load(f)
+                config.setdefault('version', 1)
+                dictConfig(config)
+                LOG_CONFIG_FILE_LOADED = True
+    if not LOG_CONFIG_FILE_LOADED:
+        dictConfig(DEFAULT_LOGGING)
 
     if settings.getbool('LOG_STDOUT'):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
@@ -98,6 +109,8 @@ def configure_logging(settings=None, install_root_handler=True):
     if install_root_handler:
         install_scrapy_root_handler(settings)
 
+    if not LOG_CONFIG_FILE_LOADED:
+        logger.error("LOG_CONFIG_FILE from settings could not be loaded. Make sure it's a valid YAML file.")
 
 def install_scrapy_root_handler(settings):
     global _scrapy_root_handler
