@@ -99,6 +99,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.bucketname = u.hostname
         self.access_key = u.username or settings['AWS_ACCESS_KEY_ID']
         self.secret_key = u.password or settings['AWS_SECRET_ACCESS_KEY']
+        self.region_name = settings['AWS_REGION_NAME']
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
         if self.is_botocore:
@@ -106,7 +107,8 @@ class S3FeedStorage(BlockingFeedStorage):
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
                 's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
+                aws_secret_access_key=self.secret_key,
+                region_name=self.region_name)
         else:
             import boto
             self.connect_s3 = boto.connect_s3
