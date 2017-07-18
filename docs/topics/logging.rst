@@ -149,6 +149,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_LEVEL`
 * :setting:`LOG_FORMAT`
 * :setting:`LOG_DATEFORMAT`
+* :setting:`LOG_DATETIME_UTC`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
 
@@ -171,8 +172,17 @@ listed in `logging's logrecord attributes docs
 <https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
 respectively.
 
+.. note::
+    By default, when expanding ``%(asctime)s`` from :setting:`LOG_FORMAT`,
+    **a non-timezone-aware time object is used.**
+
+    To use UTC time, you need to set ``LOG_DATETIME_UTC = True``.
+    In addition to this, you may also want to update :setting:`LOG_FORMAT`
+    to follow ISO 8601 for UTC date and time,
+    e.g. ``LOG_FORMAT = '%Y-%m-%dT%H:%M:%SZ'`` or ``LOG_FORMAT = '%Y-%m-%dT%H:%M:%S+0000'``
+
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
-component that prints the log. It is unset by default, hence logs contain the 
+component that prints the log. It is unset by default, hence logs contain the
 scrapy component responsible for that log output.
 
 Command-line options
