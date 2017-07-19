@@ -82,6 +82,7 @@ class S3FilesStore(object):
 
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_REGION_NAME = 'us-east-1'
 
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
@@ -92,16 +93,24 @@ class S3FilesStore(object):
     def __init__(self, uri):
         self.is_botocore = is_botocore()
         if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY)
+            self.region_name = self.AWS_REGION_NAME
+            self._s3_client = None
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
+
+    @property
+    def s3_client(self):
+        if self._s3_client is None:
+            import botocore.session
+            session = botocore.session.get_session()
+            self._s3_client = session.create_client('s3',
+                aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+                region_name=self.region_name)
+        return self._s3_client
 
     def stat_file(self, path, info):
         def _onsuccess(boto_key):
@@ -226,12 +235,12 @@ class FilesPipeline(MediaPipeline):
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         cls_name = "FilesPipeline"
-        self.store = self._get_store(store_uri)
+        self.store = self._get_store(store_uri, settings)
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
@@ -261,13 +270,19 @@ class FilesPipeline(MediaPipeline):
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
 
-    def _get_store(self, uri):
+    def _get_store(self, uri, settings):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        store = store_cls(uri)
+        # this is a bit ugly but since S3FilesStore does not accept
+        # settings when instantiated, and to keep it backward-ompatible,
+        # the store object is patched with the region name
+        if scheme == 's3':
+            store.region_name = settings['AWS_REGION_NAME']
+        return store
 
     def media_to_download(self, request, info):
         def _onsuccess(result):
