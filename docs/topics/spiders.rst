@@ -362,7 +362,13 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
-   This spider also exposes an overrideable method:
+   This spider also exposes a few overrideable methods:
+
+   .. method:: parse(response)
+
+      This function is called by the framework core for all the
+      start_urls. Do not override this function, override parse_start_url
+      instead.
 
    .. method:: parse_start_url(response)
 
@@ -370,6 +376,15 @@ CrawlSpider
       the initial responses and must return either an
       :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
       object, or an iterable containing any of them.
+
+   .. method:: process_results(response, results)
+
+      This overridable method is called for each result (item or request)
+      returned by the spider, and it's intended to perform any last time
+      processing required before returning the results to the framework core,
+      for example setting the item GUIDs. It receives a list of results and
+      the response which originated that results. It must return a list
+      of results (Items or Requests).
 
 Crawling rules
 ~~~~~~~~~~~~~~
