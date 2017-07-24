@@ -235,6 +235,26 @@ class RequestTest(unittest.TestCase):
         self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
 
+    def test_callback_is_callable(self):
+        def a_function():
+            pass
+        r = self.request_class('http://example.com')
+        self.assertIsNone(r.callback)
+        r = self.request_class('http://example.com', a_function)
+        self.assertIs(r.callback, a_function)
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', 'a_function')
+
+    def test_errback_is_callable(self):
+        def a_function():
+            pass
+        r = self.request_class('http://example.com')
+        self.assertIsNone(r.errback)
+        r = self.request_class('http://example.com', a_function, errback=a_function)
+        self.assertIs(r.errback, a_function)
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', a_function, errback='a_function')
+
 
 class FormRequestTest(RequestTest):
 
