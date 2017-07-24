@@ -578,8 +578,7 @@ CSVFeedSpider
 
    .. attribute:: headers
 
-       A list of the rows contained in the file CSV feed which will be used to
-       extract fields from it.
+       A list of the column names in the CSV file.
 
    .. method:: parse_row(response, row)
 
