@@ -22,12 +22,12 @@ class RedirectMiddlewareTest(unittest.TestCase):
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert req2.priority > req.priority
 
-    def test_redirect_301(self):
-        def _test(method):
-            url = 'http://www.example.com/301'
+    def test_redirect_3xx_permanent(self):
+        def _test(method, status=301):
+            url = 'http://www.example.com/{}'.format(status)
             url2 = 'http://www.example.com/redirected'
             req = Request(url, method=method)
-            rsp = Response(url, headers={'Location': url2}, status=301)
+            rsp = Response(url, headers={'Location': url2}, status=status)
 
             req2 = self.mw.process_response(req, rsp, self.spider)
             assert isinstance(req2, Request)
@@ -41,6 +41,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         _test('GET')
         _test('POST')
         _test('HEAD')
+
+        _test('GET', status=308)
+        _test('POST', status=308)
+        _test('HEAD', status=308)
 
     def test_dont_redirect(self):
         url = 'http://www.example.com/301'
