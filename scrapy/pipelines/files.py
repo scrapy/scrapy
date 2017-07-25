@@ -423,7 +423,7 @@ class FilesPipeline(MediaPipeline):
             # the file extension contains non alnum characters. e.g. "?"
             # this usually happens if url is somethin like below
             #   https://example.net/some.jpg?ab=1e9b29b5d3d0aa13d601505c6a67ee3e&dc=59C43AAF
-            media_ext = os.path.splitext(url.split('?',1)[0])[1]
+            media_ext = os.path.splitext(urlparse(url).path)[1]
 
         return 'full/%s%s' % (media_guid, media_ext)
 
