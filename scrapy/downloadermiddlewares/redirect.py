@@ -64,7 +64,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
                 request.meta.get('handle_httpstatus_all', False)):
             return response
 
-        allowed_status = (301, 302, 303, 307)
+        allowed_status = (301, 302, 303, 307, 308)
         if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
@@ -72,7 +72,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         redirected_url = urljoin(request.url, location)
 
-        if response.status in (301, 307) or request.method == 'HEAD':
+        if response.status in (301, 307, 308) or request.method == 'HEAD':
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
