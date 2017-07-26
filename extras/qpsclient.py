@@ -9,6 +9,7 @@ usage:
 
 from scrapy.spiders import Spider
 from scrapy.http import Request
+from six.moves import xrange
 
 
 class QPSSpider(Spider):
