@@ -42,6 +42,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         _test('POST')
         _test('HEAD')
 
+        _test('GET', status=307)
+        _test('POST', status=307)
+        _test('HEAD', status=307)
+
         _test('GET', status=308)
         _test('POST', status=308)
         _test('HEAD', status=308)
