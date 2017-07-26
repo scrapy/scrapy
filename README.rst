@@ -49,17 +49,16 @@ The quick way::
 For more details see the install section in the documentation:
 http://doc.scrapy.org/en/latest/intro/install.html
 
-Releases
-========
-
-You can download the latest stable and development releases from:
-http://scrapy.org/download/
-
 Documentation
 =============
 
 Documentation is available online at http://doc.scrapy.org/ and in the ``docs``
 directory.
+
+Releases
+========
+
+You can find release notes at https://doc.scrapy.org/en/latest/news.html
 
 Community (blog, twitter, mail list, IRC)
 =========================================

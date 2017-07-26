@@ -220,7 +220,6 @@ can be configured with the following settings:
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
 * :setting:`MEMUSAGE_NOTIFY_MAIL`
-* :setting:`MEMUSAGE_REPORT`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -278,9 +277,11 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``. If zero (or
-non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the
+spider will be closed with the reason ``closespider_itemcount``.
+Requests which  are currently in the downloader queue (up to
+:setting:`CONCURRENT_REQUESTS` requests) are still processed. 
+If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 

@@ -58,7 +58,7 @@ class FSFilesStore(object):
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = os.path.getmtime(absolute_path)
-        except:  # FIXME: catching everything!
+        except os.error:
             return {}
 
         with open(absolute_path, 'rb') as f:
@@ -249,7 +249,7 @@ class FilesPipeline(MediaPipeline):
             resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
 
-        super(FilesPipeline, self).__init__(download_func=download_func)
+        super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
 
     @classmethod
     def from_settings(cls, settings):

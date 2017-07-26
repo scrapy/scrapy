@@ -5,11 +5,14 @@ from subprocess import Popen, PIPE
 
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
+from twisted.web.static import File
 from twisted.web.test.test_webclient import PayloadResource
 from twisted.web.server import GzipEncoderFactory
 from twisted.web.resource import EncodingResourceWrapper
+from twisted.web.util import redirectTo
 from twisted.internet import reactor, ssl
 from twisted.internet.task import deferLater
+
 
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -118,6 +121,17 @@ class Echo(LeafResource):
             'body': to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
+    render_POST = render_GET
+
+
+class RedirectTo(LeafResource):
+
+    def render(self, request):
+        goto = getarg(request, b'goto', b'/')
+        # we force the body content, otherwise Twisted redirectTo()
+        # returns HTML with <meta http-equiv="refresh"
+        redirectTo(goto, request)
+        return b'redirecting...'
 
 
 class Partial(LeafResource):
@@ -160,6 +174,12 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        try:
+            from tests import tests_datadir
+            self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+        except:
+            pass
+        self.putChild(b"redirect-to", RedirectTo())
 
     def getChild(self, name, request):
         return self
@@ -183,7 +203,7 @@ class MockServer():
         time.sleep(0.2)
 
 
-def ssl_context_factory(keyfile='keys/cert.pem', certfile='keys/cert.pem'):
+def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
     return ssl.DefaultOpenSSLContextFactory(
          os.path.join(os.path.dirname(__file__), keyfile),
          os.path.join(os.path.dirname(__file__), certfile),

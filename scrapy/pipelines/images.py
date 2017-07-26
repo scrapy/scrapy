@@ -132,6 +132,11 @@ class ImagesPipeline(FilesPipeline):
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert('RGB')
+        elif image.mode == 'P':
+            image = image.convert("RGBA")
+            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background.paste(image, image)
+            image = background.convert('RGB')
         elif image.mode != 'RGB':
             image = image.convert('RGB')
 

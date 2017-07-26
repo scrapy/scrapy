@@ -627,7 +627,7 @@ Optionally, this can be set per-request basis by using the
   circumstances, from server misconfiguration to network errors to data
   corruption. It is up to the user to decide if it makes sense to process
   broken responses considering they may contain partial or incomplete content.
-  If setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
+  If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
 
 .. setting:: DUPEFILTER_CLASS
@@ -646,6 +646,13 @@ override its ``request_fingerprint`` method. This method should accept
 scrapy :class:`~scrapy.http.Request` object and return its fingerprint
 (a string).
 
+You can disable filtering of duplicate requests by setting
+:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
+Be very careful about this however, because you can get into crawling loops.
+It's usually a better idea to set the ``dont_filter`` parameter to
+``True`` on the specific :class:`~scrapy.http.Request` that should not be
+filtered.
+
 .. setting:: DUPEFILTER_DEBUG
 
 DUPEFILTER_DEBUG
@@ -661,11 +668,11 @@ Setting :setting:`DUPEFILTER_DEBUG` to ``True`` will make it log all duplicate r
 EDITOR
 ------
 
-Default: `depends on the environment`
+Default: ``vi`` (on Unix systems) or the IDLE editor (on Windows)
 
-The editor to use for editing spiders with the :command:`edit` command. It
-defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
-to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
+The editor to use for editing spiders with the :command:`edit` command.
+Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
+command will prefer it over the default setting.
 
 .. setting:: EXTENSIONS
 
@@ -949,19 +956,6 @@ A list of emails to notify if the memory limit has been reached.
 Example::
 
     MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
-
-See :ref:`topics-extensions-ref-memusage`.
-
-.. setting:: MEMUSAGE_REPORT
-
-MEMUSAGE_REPORT
----------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-Whether to send a memory usage report after each spider has been closed.
 
 See :ref:`topics-extensions-ref-memusage`.
 

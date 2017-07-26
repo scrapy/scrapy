@@ -13,7 +13,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
 
 
 logger = logging.getLogger(__name__)
@@ -362,6 +362,7 @@ class LeveldbCacheStorage(object):
         # avoid them being removed in storages with timestamp-based autoremoval.
         self.db.CompactRange()
         del self.db
+        garbage_collect()
 
     def retrieve_response(self, spider, request):
         data = self._read_data(spider, request)

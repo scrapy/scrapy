@@ -107,7 +107,7 @@ Python virtualenvs can be created to use Python 2 by default, or Python 3 by def
 
 .. _virtualenv: https://virtualenv.pypa.io
 .. _virtualenv installation instructions: https://virtualenv.pypa.io/en/stable/installation/
-.. _virtualenvwrapper: http://virtualenvwrapper.readthedocs.io/en/latest/install.html
+.. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/install.html
 .. _user guide: https://virtualenv.pypa.io/en/stable/userguide/
 
 
@@ -115,6 +115,8 @@ Python virtualenvs can be created to use Python 2 by default, or Python 3 by def
 
 Platform specific installation notes
 ====================================
+
+.. _intro-install-windows:
 
 Windows
 -------
@@ -127,6 +129,8 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 
   conda install -c conda-forge scrapy
 
+
+.. _intro-install-ubuntu:
 
 Ubuntu 12.04 or above
 ---------------------
@@ -162,6 +166,8 @@ you can install Scrapy with ``pip`` after that::
     The same non-python dependencies can be used to install Scrapy in Debian
     Wheezy (7.0) and above.
 
+
+.. _intro-install-macos:
 
 Mac OS X
 --------

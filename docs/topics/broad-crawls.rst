@@ -85,8 +85,8 @@ When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
 ``INFO`` log level. In order to save CPU (and log storage requirements) you
 should not use ``DEBUG`` log level when preforming large broad crawls in
-production. Using ``DEBUG`` level when developing your (broad) crawler may fine
-though.
+production. Using ``DEBUG`` level when developing your (broad) crawler may be 
+fine though.
 
 To set the log level use::
 

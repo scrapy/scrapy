@@ -29,7 +29,7 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
 from scrapy.spiders import Spider
-from scrapy.http import Request
+from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
@@ -37,7 +37,7 @@ from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer, ssl_context_factory
+from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -177,14 +177,24 @@ class EmptyContentTypeHeaderResource(resource.Resource):
         return request.content.read()
 
 
+class LargeChunkedFileResource(resource.Resource):
+    def render(self, request):
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
     # only used for HTTPS tests
-    keyfile = 'keys/cert.pem'
-    certfile = 'keys/cert.pem'
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
 
     def setUp(self):
         self.tmpname = self.mktemp()
@@ -202,6 +212,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        r.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -310,6 +322,17 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
+    def test_content_length_zero_bodyless_post_only_one(self):
+        def _test(response):
+            import json
+            headers = Headers(json.loads(response.text)['headers'])
+            contentlengths = headers.getlist('Content-Length')
+            self.assertEquals(len(contentlengths), 1)
+            self.assertEquals(contentlengths, [b"0"])
+
+        request = Request(self.getURL('echo'), method='POST')
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
     def test_payload(self):
         body = b'1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
@@ -371,6 +394,25 @@ class Http11TestCase(HttpTestCase):
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
         yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_very_large_file(self):
+        with mock.patch('scrapy.core.downloader.handlers.http11.logger') as logger:
+            request = Request(self.getURL('largechunkedfile'))
+
+            def check(logger):
+                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+
+            d = self.download_request(request, Spider('foo', download_maxsize=1500))
+            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+            # As the error message is logged in the dataReceived callback, we
+            # have to give a bit of time to the reactor to process the queue
+            # after closing the connection.
+            d = defer.Deferred()
+            d.addCallback(check)
+            reactor.callLater(.1, d.callback, logger)
+            yield d
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_per_req(self):

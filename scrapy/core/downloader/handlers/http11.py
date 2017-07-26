@@ -279,8 +279,7 @@ class ScrapyAgent(object):
             headers.removeHeader(b'Proxy-Authorization')
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
-        else:
-            bodyproducer = None
+        elif method == b'POST':
             # Setting Content-Length: 0 even for POST requests is not a
             # MUST per HTTP RFCs, but it's common behavior, and some
             # servers require this, otherwise returning HTTP 411 Length required
@@ -289,10 +288,13 @@ class ScrapyAgent(object):
             # "a Content-Length header field is normally sent in a POST
             # request even when the value is 0 (indicating an empty payload body)."
             #
-            # Twisted Agent will not add "Content-Length: 0" by itself
-            if method == b'POST':
-                headers.addRawHeader(b'Content-Length', b'0')
-
+            # Twisted < 17 will not add "Content-Length: 0" by itself;
+            # Twisted >= 17 fixes this;
+            # Using a producer with an empty-string sends `0` as Content-Length
+            # for all versions of Twisted.
+            bodyproducer = _RequestBodyProducer(b'')
+        else:
+            bodyproducer = None
         start_time = time()
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
@@ -346,7 +348,8 @@ class ScrapyAgent(object):
                            {'size': expected_size, 'warnsize': warnsize})
 
         def _cancel(_):
-            txresponse._transport._producer.loseConnection()
+            # Abort connection inmediately.
+            txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(_ResponseReader(
@@ -399,6 +402,11 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
+        # This maybe called several times after cancel was called with buffered
+        # data.
+        if self._finished.called:
+            return
+
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
@@ -407,6 +415,9 @@ class _ResponseReader(protocol.Protocol):
                          "max size (%(maxsize)s).",
                          {'bytes': self._bytes_received,
                           'maxsize': self._maxsize})
+            # Clear buffer earlier to avoid keeping data in memory for a long
+            # time.
+            self._bodybuf.truncate(0)
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:

@@ -112,7 +112,7 @@ format::
    class JsonWriterPipeline(BaseItemPipeline):
 
        def open_spider(self, spider):
-           self.file = open('items.jl', 'wb')
+           self.file = open('items.jl', 'w')
 
        def close_spider(self, spider):
            self.file.close()
@@ -139,8 +139,8 @@ method and how to clean up the resources properly.::
     import pymongo
     from scrapy import BaseItemPipeline
 
+
     class MongoPipeline(BaseItemPipeline):
-    
         collection_name = 'scrapy_items'
 
         def __init__(self, mongo_uri, mongo_db):
@@ -162,7 +162,7 @@ method and how to clean up the resources properly.::
             self.client.close()
 
         def process_item(self, item, spider):
-            self.db[self.collection_name].insert(dict(item))
+            self.db[self.collection_name].insert_one(dict(item))
             return item
 
 .. _MongoDB: https://www.mongodb.org/
@@ -215,7 +215,7 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
             item["screenshot_filename"] = filename
             return item
 
-.. _Splash: http://splash.readthedocs.io/en/stable/
+.. _Splash: https://splash.readthedocs.io/en/stable/
 .. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
@@ -256,4 +256,3 @@ To activate an Item Pipeline component you must add its class to the
 The integer values you assign to classes in this setting determine the
 order in which they run: items go through from lower valued to higher
 valued classes. It's customary to define these numbers in the 0-1000 range.
-
