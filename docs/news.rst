@@ -3,6 +3,53 @@
 Release notes
 =============
 
+Scrapy 1.4.1 (2017-XX-XX)
+-------------------------
+
+New features
+~~~~~~~~~~~~
+
+- Support ``<link>`` tags in ``Response.follow`` (:issue:`2785`)
+- Support for ``ptpython`` REPL (:issue:`2654`)
+- Populate spider variable when using ``shell.inspect_response`` (:issue:`2812`)
+- Handle HTTP 308 Permanent Redirect (:issue:`2844`)
+- Add 522 and 524 to ``RETRY_HTTP_CODES`` (:issue:`2851`)
+- Log versions information at startup (:issue:`2857`)
+- Add template for a downloader middleware (:issue:`2755`)
+- Explicit message for NotImplementedError when parse callback not defined (:issue:`2831`)
+
+Bug fixes
+~~~~~~~~~
+
+- Fix PyPy test failures (:issue:`2793`)
+- Fix DNS resolver when ``DNSCACHE_ENABLED=False`` (:issue:`2811`)
+- Add ``cryptography`` for Debian Jessie tox test env (:issue:`2848`)
+- Add verification to check if Request callback is callable (:issue:`2766`)
+- Port ``extras/qpsclient.py`` to Python 3 (:issue:`2849`)
+- Use getfullargspec under the scenes for Python 3 to stop DeprecationWarning (:issue:`2862`)
+- Update deprecated test aliases (:issue:`2876`)
+- Fix ``SitemapSpider`` support for alternate links (:issue:`2853`)
+- Fix logging of settings overridden by ``custom_settings``;
+  **this is technically backwards-incompatible** because the logger
+  changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``, so please
+  update your log parsers if needed (:issue:`1343`)
+
+Docs
+~~~~
+
+- Added missing bullet point for the ``AUTOTHROTTLE_TARGET_CONCURRENCY`` setting. (:issue:`2756`)
+- Include references to Scrapy subreddit in the docs (:issue:`2762`)
+- Use https:// for readthedocs links
+- Document CloseSpider extension better (:issue:`2759`)
+- Use ``pymongo.collection.Collection.insert_one()`` in MongoDB example (:issue:`2781`)
+- Spelling mistake and typos (:issue:`2828`, :issue:`2837`, :issue:`#2884`)
+- Clarify ``CSVFeedSpider.headers`` documentation (:issue:`2826`)
+- Document ``DontCloseSpider`` exception and clarify ``spider_idle`` (:issue:`2791`)
+- Update "Releases" section in README (:issue:`2764`)
+- Fix rst syntax in ``DOWNLOAD_FAIL_ON_DATALOSS`` docs (:issue:`2763`)
+- Small fix in description of startproject arguments (:issue:`2866`)
+
+
 Scrapy 1.4.0 (2017-05-18)
 -------------------------
 
