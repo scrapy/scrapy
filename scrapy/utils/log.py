@@ -139,10 +139,56 @@ def _get_handler(settings):
     return handler
 
 
+def scrapy_components_versions():
+    import platform
+
+    import cssselect
+    import parsel
+    import lxml.etree
+    import twisted
+    import w3lib
+
+    lxml_version = ".".join(map(str, lxml.etree.LXML_VERSION))
+    libxml2_version = ".".join(map(str, lxml.etree.LIBXML_VERSION))
+
+    try:
+        w3lib_version = w3lib.__version__
+    except AttributeError:
+        w3lib_version = "<1.14.3"
+
+    return [
+        ("Scrapy", scrapy.__version__),
+        ("lxml", lxml_version),
+        ("libxml2", libxml2_version),
+        ("cssselect", cssselect.__version__),
+        ("parsel", parsel.__version__),
+        ("w3lib", w3lib_version),
+        ("Twisted", twisted.version.short()),
+        ("Python", sys.version.replace("\n", "- ")),
+        ("pyOpenSSL", _get_openssl_version()),
+        ("Platform",  platform.platform()),
+    ]
+
+
+def _get_openssl_version():
+    try:
+        import OpenSSL
+        openssl = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)\
+            .decode('ascii', errors='replace')
+    # pyOpenSSL 0.12 does not expose openssl version
+    except AttributeError:
+        openssl = 'Unknown OpenSSL version'
+
+    return '{} ({})'.format(OpenSSL.version.__version__, openssl)
+
+
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-
+    logger.info("Versions: %(versions)s}",
+                {'versions': ", ".join("%s %s" % (name, version)
+                    for name, version in scrapy_components_versions()
+                    if name != "Scrapy")})
     d = dict(overridden_settings(settings))
     logger.info("Overridden settings: %(settings)r", {'settings': d})
 
