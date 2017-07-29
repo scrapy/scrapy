@@ -14,15 +14,6 @@ import sys
 from scrapy.utils.decorators import deprecated
 
 
-# In py3, getargspec is deprecated, so use getfullargspec with same
-# behavior to silence the warning.
-if six.PY3:
-    def getargspec(func):
-        full_argspec = list(inspect.getfullargspec(func))
-        return inspect.ArgSpec(*full_argspec[:4])
-    inspect.getargspec = getargspec
-
-
 def flatten(x):
     """flatten(sequence) -> list
 
@@ -206,10 +197,30 @@ def binary_is_text(data):
     return all(c not in _BINARYCHARS for c in data)
 
 
+def getargspec_py23(func):
+    """getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
+                                                        defaults)
+
+    Identical to inspect.getargspec() in python2, but uses
+    inspect.getfullargspec() for python3 behind the scenes to avoid
+    DeprecationWarning.
+
+    >>> def f(a, b=2, *ar, **kw):
+    ...     pass
+
+    >>> getargspec_py23(f)
+    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
+    """
+    if six.PY3:
+        full_argspec = list(inspect.getfullargspec(func))
+        return inspect.ArgSpec(*full_argspec[:4])
+    return inspect.getargspec(func)
+
+
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
-        func_args, _, _, _ = inspect.getargspec(func)
+        func_args, _, _, _ = getargspec_py23(func)
     elif inspect.isclass(func):
         return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):
@@ -256,9 +267,9 @@ def get_spec(func):
     """
 
     if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = inspect.getargspec(func)
+        spec = getargspec_py23(func)
     elif hasattr(func, '__call__'):
-        spec = inspect.getargspec(func.__call__)
+        spec = getargspec_py23(func.__call__)
     else:
         raise TypeError('%s is not callable' % type(func))
 
