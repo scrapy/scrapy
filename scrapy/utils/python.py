@@ -10,9 +10,17 @@ import errno
 import six
 from functools import partial, wraps
 import sys
-import time
 
 from scrapy.utils.decorators import deprecated
+
+
+# In py3, getargspec is deprecated, so use getfullargspec with same
+# behavior to silence the warning.
+if six.PY3:
+    def getargspec(func):
+        full_argspec = list(inspect.getfullargspec(func))
+        return inspect.ArgSpec(*full_argspec[:4])
+    inspect.getargspec = getargspec
 
 
 def flatten(x):
