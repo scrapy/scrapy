@@ -187,7 +187,7 @@ startproject
 
 Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
-If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
 
 Usage example::
 
