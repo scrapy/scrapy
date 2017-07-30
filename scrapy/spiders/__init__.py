@@ -87,7 +87,7 @@ class Spider(object_ref):
         return Request(url, dont_filter=True)
 
     def parse(self, response):
-        raise NotImplementedError
+        raise NotImplementedError('Spider.parse callback is not defined')
 
     @classmethod
     def update_settings(cls, settings):
