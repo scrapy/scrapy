@@ -437,7 +437,7 @@ class NoParseMethodSpiderTest(unittest.TestCase):
 
     def test_undefined_parse_method(self):
         spider = self.spider_class('example.com')
-        text = 'Random text response'
+        text = b'Random text'
         resp = TextResponse(url="http://www.example.com/random_url", body=text)
 
         exc_msg = 'Spider.parse callback is not defined'
