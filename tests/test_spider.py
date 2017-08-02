@@ -429,3 +429,17 @@ class DeprecationTest(unittest.TestCase):
             self.assertEqual(len(requests), 1)
             self.assertEqual(requests[0].url, 'http://example.com/foo')
             self.assertEqual(len(w), 1)
+
+
+class NoParseMethodSpiderTest(unittest.TestCase):
+
+    spider_class = Spider
+
+    def test_undefined_parse_method(self):
+        spider = self.spider_class('example.com')
+        text = 'Random text response'
+        resp = TextResponse(url="http://www.example.com/random_url", body=text)
+
+        exc_msg = 'Spider.parse callback is not defined'
+        with self.assertRaisesRegexp(NotImplementedError, exc_msg):
+            spider.parse(resp)
