@@ -348,6 +348,33 @@ Sitemap: /sitemap-relative-url.xml
                           'http://example.com/sitemap-uppercase.xml',
                           'http://www.example.com/sitemap-relative-url.xml'])
 
+    def test_alternate_url_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="de-ch"
+                href="http://www.example.com/schweiz-deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="it"
+                href="http://www.example.com/italiano/"/>
+            <xhtml:link rel="alternate" hreflang="it"/><!-- wrong tag without href -->
+        </url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/'])
+
+        spider.sitemap_alternate_links = True
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/',
+                          'http://www.example.com/deutsch/',
+                          'http://www.example.com/schweiz-deutsch/',
+                          'http://www.example.com/italiano/'])
+
 
 class DeprecationTest(unittest.TestCase):
 
