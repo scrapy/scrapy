@@ -278,21 +278,30 @@ DownloadTimeoutMiddleware
     :reqmeta:`download_timeout` Request.meta key; this is supported
     even when DownloadTimeoutMiddleware is disabled.
 
-HttpAuthMiddleware
+AuthMiddleware
 ------------------
 
-.. module:: scrapy.downloadermiddlewares.httpauth
-   :synopsis: HTTP Auth downloader middleware
+.. module:: scrapy.downloadermiddlewares.auth
+   :synopsis: HTTP/FTP Auth downloader middleware
 
-.. class:: HttpAuthMiddleware
+.. class:: AuthMiddleware
 
-    This middleware authenticates all requests generated from certain spiders
-    using `Basic access authentication`_ (aka. HTTP auth).
+    This middleware populates authentication credentials for HTTP and FTP requests.
 
-    To enable HTTP authentication from certain spiders, set the ``http_user``
-    and ``http_pass`` attributes of those spiders.
+    To enable HTTP authentication (`Basic access authentication`_, aka. HTTP auth),
+    you have two options:
 
-    Example::
+    - either set the ``http_user`` and ``http_pass`` attributes of the spider(s)
+      for which you need HTTP auth,
+      and these will be applied to all http(s):// requests,
+    - or, on a per-Request basis, include credentials using the standard URL
+      syntax of ``http://username:password@www.example.com/index.html``
+
+    To populate credentials for FTP requests, use URLs in the form of
+    ``ftp://user:password@www.example.com/document.txt``, which will
+    set the ``meta`` dict ``ftp_user`` and ``ftp_password`` values.
+
+    Example of enabling HTTP Basic Auth for all HTTP requests::
 
         from scrapy.spiders import CrawlSpider
 
@@ -306,6 +315,15 @@ HttpAuthMiddleware
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
+HttpAuthMiddleware
+------------------
+
+.. module:: scrapy.downloadermiddlewares.httpauth
+   :synopsis: HTTP Auth downloader middleware
+
+.. class:: HttpAuthMiddleware
+
+    This middleware is deprecated and redirects to :class:`~.AuthMiddleware`.
 
 HttpCacheMiddleware
 -------------------

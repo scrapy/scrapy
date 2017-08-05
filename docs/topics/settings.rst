@@ -457,7 +457,7 @@ Default::
 
     {
         'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.downloadermiddlewares.auth.AuthMiddleware': 300,
         'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
         'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
         'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 500,
