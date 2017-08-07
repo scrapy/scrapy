@@ -202,22 +202,22 @@ class SequenceExcludeTest(unittest.TestCase):
         seq = range(10, 20, 3)
         d = SequenceExclude(seq)
         are_not_in = [v for v in range(10, 20, 3) if v in d]
-        self.assertEquals([], are_not_in)
+        self.assertEqual([], are_not_in)
 
         are_not_in = [v for v in range(10, 20) if v in d]
-        self.assertEquals([11, 12, 14, 15, 17, 18], are_not_in)
+        self.assertEqual([11, 12, 14, 15, 17, 18], are_not_in)
 
     def test_string_seq(self):
         seq = "cde"
         d = SequenceExclude(seq)
         chars = "".join(v for v in "abcdefg" if v in d)
-        self.assertEquals("abfg", chars)
+        self.assertEqual("abfg", chars)
 
     def test_stringset_seq(self):
         seq = set("cde")
         d = SequenceExclude(seq)
         chars = "".join(v for v in "abcdefg" if v in d)
-        self.assertEquals("abfg", chars)
+        self.assertEqual("abfg", chars)
 
     def test_set(self):
         """Anything that is not in the supplied sequence will evaluate as 'in' the container."""

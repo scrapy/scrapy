@@ -62,7 +62,7 @@ class WrappedResponseTest(TestCase):
         self.wrapped = WrappedResponse(self.response)
 
     def test_info(self):
-        self.assert_(self.wrapped.info() is self.wrapped)
+        self.assertTrue(self.wrapped.info() is self.wrapped)
 
     def test_getheaders(self):
         self.assertEqual(self.wrapped.getheaders('content-type'), ['text/html'])
