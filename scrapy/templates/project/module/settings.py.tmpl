@@ -8,12 +8,14 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
+import os
 
 BOT_NAME = '$project_name'
 
 SPIDER_MODULES = ['$project_name.spiders']
 NEWSPIDER_MODULE = '$project_name.spiders'
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = '$project_name (+http://www.yourdomain.com)'

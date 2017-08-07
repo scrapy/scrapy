@@ -14,6 +14,7 @@ Scrapy developers, if you add a setting here remember to:
 """
 
 import sys
+import os
 from importlib import import_module
 from os.path import join, abspath, dirname
 
@@ -28,6 +29,9 @@ AUTOTHROTTLE_START_DELAY = 5.0
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 
 BOT_NAME = 'scrapybot'
+
+# will be populated by scrapy startproject command
+BASE_DIR = None
 
 CLOSESPIDER_TIMEOUT = 0
 CLOSESPIDER_PAGECOUNT = 0
@@ -237,7 +241,7 @@ RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
 RETRY_PRIORITY_ADJUST = -1
 
-ROBOTSTXT_OBEY = False
+ROBOTSTXT_OBEY = True
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
