@@ -166,7 +166,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         resp = Response('http://scrapytest.org/first', headers={'Location': latin1_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%E7%E3o'
-        self.assertEquals(perc_encoded_utf8_url, req_result.url)
+        self.assertEqual(perc_encoded_utf8_url, req_result.url)
 
     def test_utf8_location(self):
         req = Request('http://scrapytest.org/first')
@@ -174,7 +174,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         resp = Response('http://scrapytest.org/first', headers={'Location': utf8_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
-        self.assertEquals(perc_encoded_utf8_url, req_result.url)
+        self.assertEqual(perc_encoded_utf8_url, req_result.url)
 
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):

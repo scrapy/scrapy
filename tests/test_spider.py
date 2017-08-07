@@ -207,7 +207,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
@@ -234,7 +234,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 2)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html'])
 
@@ -258,7 +258,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])

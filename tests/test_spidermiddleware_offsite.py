@@ -37,7 +37,7 @@ class TestOffsiteMiddleware(TestCase):
         reqs = onsite_reqs + offsite_reqs
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
-        self.assertEquals(out, onsite_reqs)
+        self.assertEqual(out, onsite_reqs)
 
 
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
@@ -49,7 +49,7 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         res = Response('http://scrapytest.org')
         reqs = [Request('http://a.com/b.html'), Request('http://b.com/1')]
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
-        self.assertEquals(out, reqs)
+        self.assertEqual(out, reqs)
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
@@ -67,4 +67,4 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
       res = Response('http://scrapytest.org')
       reqs = [Request('http://scrapytest.org/1')]
       out = list(self.mw.process_spider_output(res, reqs, self.spider))
-      self.assertEquals(out, reqs)
+      self.assertEqual(out, reqs)

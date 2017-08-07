@@ -97,9 +97,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         a = Obj()
         b = Obj()
         # no attributes given return False
-        self.failIf(equal_attributes(a, b, []))
+        self.assertFalse(equal_attributes(a, b, []))
         # not existent attributes
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         a.x = 1
         b.x = 1
@@ -108,7 +108,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         b.y = 2
         # obj1 has no attribute y
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         a.y = 2
         # equal attributes
@@ -116,7 +116,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         a.y = 1
         # differente attributes
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         # test callable
         a.meta = {}
@@ -134,7 +134,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertTrue(equal_attributes(a, b, [compare_z, 'x']))
         # fail z equality
         a.meta['z'] = 2
-        self.failIf(equal_attributes(a, b, [compare_z, 'x']))
+        self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
         class _Weakme(object): pass
@@ -156,9 +156,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = {'a': 123, u'b': b'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d, keys_only=False)
         self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()))
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.values()))
+        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
+        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
 
     @unittest.skipUnless(six.PY2, "deprecated function")
     def test_stringify_dict_tuples(self):
@@ -166,17 +166,17 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = dict(tuples)
         d2 = stringify_dict(tuples, keys_only=False)
         self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.values()))
+        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
+        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
 
     @unittest.skipUnless(six.PY2, "deprecated function")
     def test_stringify_dict_keys_only(self):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d)
         self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()))
+        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
 
     def test_get_func_args(self):
         def f1(a, b, c):
