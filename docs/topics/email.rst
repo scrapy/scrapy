@@ -54,10 +54,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
       setting will be used. If not given, no SMTP authentication will be
       performed.
-    :type smtphost: str
+    :type smtphost: str or bytes
 
     :param smtppass: the SMTP pass for authentication.
-    :type smtppass: str
+    :type smtppass: str or bytes
 
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
