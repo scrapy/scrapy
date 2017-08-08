@@ -24,7 +24,8 @@ else:
 
 from twisted.internet import defer, reactor, ssl
 
-from .utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.python import to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,8 @@ class MailSender(object):
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
         self.smtpport = smtpport
-        self.smtpuser = smtpuser
-        self.smtppass = smtppass
+        self.smtpuser = to_bytes(smtpuser)
+        self.smtppass = to_bytes(smtppass)
         self.smtptls = smtptls
         self.smtpssl = smtpssl
         self.mailfrom = mailfrom
