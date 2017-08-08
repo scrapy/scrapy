@@ -156,7 +156,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = {'a': 123, u'b': b'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d, keys_only=False)
         self.assertEqual(d, d2)
-        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertIsNot(d, d2)  # shouldn't modify in place
         self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
         self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
 
@@ -166,7 +166,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = dict(tuples)
         d2 = stringify_dict(tuples, keys_only=False)
         self.assertEqual(d, d2)
-        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertIsNot(d, d2)  # shouldn't modify in place
         self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
         self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
 
@@ -175,7 +175,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d)
         self.assertEqual(d, d2)
-        self.assertFalse(d is d2)  # shouldn't modify in place
+        self.assertIsNot(d, d2)  # shouldn't modify in place
         self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
 
     def test_get_func_args(self):
