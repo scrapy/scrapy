@@ -326,7 +326,7 @@ class WebClientTestCase(unittest.TestCase):
         return getPage(self.getURL('notsuchfile')).addCallback(self._cbNoSuchFile)
 
     def _cbNoSuchFile(self, pageData):
-        self.assertTrue(b'404 - No Such Resource' in pageData)
+        self.assertIn(b'404 - No Such Resource', pageData)
 
     def testFactoryInfo(self):
         url = self.getURL('file')

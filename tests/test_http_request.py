@@ -64,9 +64,9 @@ class RequestTest(unittest.TestCase):
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
         for k, v in h.iteritems():
-            self.assertTrue(isinstance(k, bytes))
+            self.assertIsInstance(k, bytes)
             for s in v:
-                self.assertTrue(isinstance(s, bytes))
+                self.assertIsInstance(s, bytes)
 
     def test_eq(self):
         url = 'http://www.scrapy.org'
