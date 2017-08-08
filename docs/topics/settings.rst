@@ -180,6 +180,23 @@ such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
 .. setting:: BOT_NAME
 
+BASE_DIR
+--------
+
+Default: ``os.path.abspath(os.path.dirname(__file__))``
+
+The project directory is defined as the base directory for Scrapy. Use this setting
+to read data files relative to the base directory.
+
+Example::
+
+    # my_spider.py
+    filepath = os.path.join(
+        settings.BASE_DIR,
+        "spiders/data/items_to_scrape.csv")
+
+.. setting:: BASE_DIR
+
 BOT_NAME
 --------
 

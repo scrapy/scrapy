@@ -14,7 +14,6 @@ Scrapy developers, if you add a setting here remember to:
 """
 
 import sys
-import os
 from importlib import import_module
 from os.path import join, abspath, dirname
 
@@ -241,7 +240,7 @@ RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
 RETRY_PRIORITY_ADJUST = -1
 
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
