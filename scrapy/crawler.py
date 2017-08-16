@@ -40,7 +40,7 @@ class Crawler(object):
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
         if get_scrapy_root_handler() is not None:
-            # scrapy root handler alread installed: update it with new settings
+            # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
         # lambda is assigned to Crawler attribute because this way it is not
         # garbage collected after leaving __init__ scope
