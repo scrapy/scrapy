@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import numbers
@@ -10,6 +11,7 @@ from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
+logger = logging.getLogger(__name__)
 
 def build_component_list(compdict, custom=None, convert=update_classpath):
     """Compose a component list from a { class: order } dictionary."""
@@ -72,6 +74,7 @@ def closest_scrapy_cfg(path='.', prevpath=None):
     path = os.path.abspath(path)
     cfgfile = os.path.join(path, 'scrapy.cfg')
     if os.path.exists(cfgfile):
+        logger.debug('Scrapy config file used: {}'.format(cfgfile))
         return cfgfile
     return closest_scrapy_cfg(os.path.dirname(path), path)
 
