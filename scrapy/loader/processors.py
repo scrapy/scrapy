@@ -15,13 +15,16 @@ class MapCompose(object):
         self.functions = functions
         self.default_loader_context = default_loader_context
 
+    def _wrap_loader_context(self, func, context):
+        return wrap_loader_context(func, context)
+
     def __call__(self, value, loader_context=None):
         values = arg_to_iter(value)
         if loader_context:
             context = MergeDict(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
+        wrapped_funcs = [self._wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             next_values = []
             for v in values:

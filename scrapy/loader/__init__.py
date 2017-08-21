@@ -96,6 +96,9 @@ class ItemLoader(object):
         self._values.pop(field_name, None)
         self._add_value(field_name, value)
 
+    def _wrap_loader_context(self, proc):
+        return wrap_loader_context(proc, self.context)
+
     def get_value(self, value, *processors, **kw):
         regex = kw.get('re', None)
         if regex:
@@ -105,7 +108,7 @@ class ItemLoader(object):
         for proc in processors:
             if value is None:
                 break
-            proc = wrap_loader_context(proc, self.context)
+            proc = self._wrap_loader_context(proc)
             value = proc(value)
         return value
 
@@ -120,7 +123,7 @@ class ItemLoader(object):
 
     def get_output_value(self, field_name):
         proc = self.get_output_processor(field_name)
-        proc = wrap_loader_context(proc, self.context)
+        proc = self._wrap_loader_context(proc)
         try:
             return proc(self._values[field_name])
         except Exception as e:
@@ -146,7 +149,7 @@ class ItemLoader(object):
 
     def _process_input_value(self, field_name, value):
         proc = self.get_input_processor(field_name)
-        proc = wrap_loader_context(proc, self.context)
+        proc = self._wrap_loader_context(proc)
         return proc(value)
 
     def _get_item_field_attr(self, field_name, key, default=None):
