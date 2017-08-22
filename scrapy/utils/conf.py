@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 import numbers
@@ -11,7 +10,6 @@ from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
-logger = logging.getLogger(__name__)
 
 def build_component_list(compdict, custom=None, convert=update_classpath):
     """Compose a component list from a { class: order } dictionary."""
