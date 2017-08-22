@@ -74,7 +74,6 @@ def closest_scrapy_cfg(path='.', prevpath=None):
     path = os.path.abspath(path)
     cfgfile = os.path.join(path, 'scrapy.cfg')
     if os.path.exists(cfgfile):
-        logger.debug('Scrapy config file used: {}'.format(cfgfile))
         return cfgfile
     return closest_scrapy_cfg(os.path.dirname(path), path)
 

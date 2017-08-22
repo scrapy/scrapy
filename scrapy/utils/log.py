@@ -151,6 +151,11 @@ def log_scrapy_info(settings):
     d = dict(overridden_settings(settings))
     logger.info("Overridden settings: %(settings)r", {'settings': d})
 
+    # Let's check for the scrapy config file and write the path to the log
+    closest = closest_scrapy_cfg()
+    logger.debug('Scrapy config file used: "{}"'.format(closest))
+
+
 
 class StreamLogger(object):
     """Fake file-like stream object that redirects writes to a logger instance
