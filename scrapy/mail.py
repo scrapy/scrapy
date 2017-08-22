@@ -36,8 +36,8 @@ class MailSender(object):
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
         self.smtpport = smtpport
-        self.smtpuser = to_bytes(smtpuser)
-        self.smtppass = to_bytes(smtppass)
+        self.smtpuser = to_bytes(smtpuser) if smtpuser is not None else None
+        self.smtppass = to_bytes(smtppass) if smtppass is not None else None
         self.smtptls = smtptls
         self.smtpssl = smtpssl
         self.mailfrom = mailfrom
