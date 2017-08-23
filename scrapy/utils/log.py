@@ -12,7 +12,7 @@ import scrapy
 from scrapy.settings import overridden_settings, Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.versions import scrapy_components_versions
-
+from scrapy.utils.conf import closest_scrapy_cfg
 
 logger = logging.getLogger(__name__)
 
