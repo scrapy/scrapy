@@ -9,7 +9,7 @@ from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
 
 import scrapy
-from scrapy.settings import overridden_settings, Settings
+from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.versions import scrapy_components_versions
 
@@ -148,8 +148,6 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
-    d = dict(overridden_settings(settings))
-    logger.info("Overridden settings: %(settings)r", {'settings': d})
 
 
 class StreamLogger(object):
