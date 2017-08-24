@@ -11,6 +11,7 @@ from twisted.internet import reactor, defer, task
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
+from scrapy.settings import Settings
 from scrapy import signals
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
@@ -58,7 +59,7 @@ class Slot(object):
         )
 
 
-def _get_concurrency_delay(concurrency, spider, settings):
+def _get_concurrency_delay(concurrency, spider, settings, request=None):
     delay = settings.getfloat('DOWNLOAD_DELAY')
     if hasattr(spider, 'DOWNLOAD_DELAY'):
         warnings.warn("%s.DOWNLOAD_DELAY attribute is deprecated, use %s.download_delay instead" %
@@ -69,6 +70,14 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
     if hasattr(spider, 'max_concurrent_requests'):
         concurrency = spider.max_concurrent_requests
+
+    if request is not None:
+        key = urlparse_cached(request).hostname or ''
+        slotkey = settings.get('DOWNLOADER_SLOTS', {}).get(key)
+        if slotkey:
+            slotsettings = Settings(slotkey)
+            delay = slotsettings.getfloat('DOWNLOAD_DELAY', delay)
+            concurrency = slotsettings.getint('CONCURRENT_REQUESTS_PER_DOMAIN', concurrency)
 
     return concurrency, delay
 
@@ -105,7 +114,7 @@ class Downloader(object):
         key = self._get_slot_key(request, spider)
         if key not in self.slots:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
-            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
+            conc, delay = _get_concurrency_delay(conc, spider, self.settings, request)
             self.slots[key] = Slot(conc, delay, self.randomize_delay)
 
         return key, self.slots[key]
