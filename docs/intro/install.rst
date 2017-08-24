@@ -235,7 +235,7 @@ After any of these workarounds you should be able to install Scrapy::
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
 .. _homebrew: http://brew.sh/
 .. _zsh: http://www.zsh.org/
-.. _Scrapinghub: http://scrapinghub.com
+.. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: http://docs.continuum.io/anaconda/index
 .. _Miniconda: http://conda.pydata.org/docs/install/quick.html
 .. _conda-forge: https://conda-forge.github.io/

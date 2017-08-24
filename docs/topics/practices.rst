@@ -253,5 +253,5 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
-.. _Crawlera: http://scrapinghub.com/crawlera
+.. _Crawlera: https://scrapinghub.com/crawlera
 .. _scrapoxy: http://scrapoxy.io/
