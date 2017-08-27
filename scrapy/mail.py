@@ -67,7 +67,7 @@ class MailSender(object):
             msg.set_charset(charset)
 
         if attachs:
-            msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
+            msg.attach(MIMEText(body, mimetype.split('/')[1], charset or 'us-ascii'))
             for attach_name, mimetype, f in attachs:
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
