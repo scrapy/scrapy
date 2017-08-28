@@ -30,14 +30,20 @@ from scrapy.utils.python import to_bytes
 logger = logging.getLogger(__name__)
 
 
+def _to_bytes_or_none(text):
+    if text is None:
+        return None
+    return to_bytes(text)
+
+
 class MailSender(object):
 
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
         self.smtpport = smtpport
-        self.smtpuser = to_bytes(smtpuser) if smtpuser is not None else None
-        self.smtppass = to_bytes(smtppass) if smtppass is not None else None
+        self.smtpuser = _to_bytes_or_none(smtpuser)
+        self.smtppass = _to_bytes_or_none(smtppass)
         self.smtptls = smtptls
         self.smtpssl = smtpssl
         self.mailfrom = mailfrom
