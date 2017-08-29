@@ -95,6 +95,9 @@ class Downloader(object):
             return response
 
         self.active.add(request)
+        if not request.meta.get('_downloader'):
+            request.meta['_downloader'] = {}
+        request.meta['_downloader']['queued'] = time()
         dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 

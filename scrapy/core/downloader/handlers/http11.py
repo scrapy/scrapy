@@ -296,6 +296,9 @@ class ScrapyAgent(object):
         else:
             bodyproducer = None
         start_time = time()
+        if not request.meta.get('_downloader'):
+            request.meta['_downloader'] = {}
+        request.meta['_downloader']['start_time'] = start_time
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
         # set download latency
@@ -320,10 +323,13 @@ class ScrapyAgent(object):
         raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
 
     def _cb_latency(self, result, request, start_time):
+        #print(result.__dict__)
         request.meta['download_latency'] = time() - start_time
+        request.meta['_downloader']['download_latency'] = request.meta['download_latency']
         return result
 
     def _cb_bodyready(self, txresponse, request):
+        request.meta['_downloader']['body_ready'] = time()
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
             return txresponse, b'', None
@@ -361,6 +367,7 @@ class ScrapyAgent(object):
         return d
 
     def _cb_bodydone(self, result, request, url):
+        request.meta['_downloader']['body_done'] = time()
         txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
@@ -406,6 +413,9 @@ class _ResponseReader(protocol.Protocol):
         # data.
         if self._finished.called:
             return
+
+        if not self._request.meta['_downloader'].get('body_data'):
+            self._request.meta['_downloader']['body_data'] = time()
 
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
