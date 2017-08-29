@@ -52,6 +52,7 @@ class HTTP11DownloadHandler(object):
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
+        self._meta_timings = settings.getbool('DOWNLOADER_META_TIMINGS')
         self._disconnect_timeout = 1
 
     def download_request(self, request, spider):
@@ -59,7 +60,7 @@ class HTTP11DownloadHandler(object):
         agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool,
             maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
             warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
-            fail_on_dataloss=self._fail_on_dataloss)
+            fail_on_dataloss=self._fail_on_dataloss, meta_timings=self._meta_timings)
         return agent.download_request(request)
 
     def close(self):
@@ -235,7 +236,7 @@ class ScrapyAgent(object):
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
-                 maxsize=0, warnsize=0, fail_on_dataloss=True):
+                 maxsize=0, warnsize=0, fail_on_dataloss=True, meta_timings=False):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -243,6 +244,7 @@ class ScrapyAgent(object):
         self._maxsize = maxsize
         self._warnsize = warnsize
         self._fail_on_dataloss = fail_on_dataloss
+        self._meta_timings = meta_timings
         self._txresponse = None
 
     def _get_agent(self, request, timeout):
@@ -296,9 +298,8 @@ class ScrapyAgent(object):
         else:
             bodyproducer = None
         start_time = time()
-        if not request.meta.get('_downloader'):
-            request.meta['_downloader'] = {}
-        request.meta['_downloader']['start_time'] = start_time
+        if self._meta_timings:
+            request.meta['_downloader']['start_time'] = start_time
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
         # set download latency
@@ -323,13 +324,14 @@ class ScrapyAgent(object):
         raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
 
     def _cb_latency(self, result, request, start_time):
-        #print(result.__dict__)
         request.meta['download_latency'] = time() - start_time
-        request.meta['_downloader']['download_latency'] = request.meta['download_latency']
+        if self._meta_timings:
+            request.meta['_downloader']['download_latency'] = request.meta['download_latency']
         return result
 
     def _cb_bodyready(self, txresponse, request):
-        request.meta['_downloader']['body_ready'] = time()
+        if self._meta_timings:
+            request.meta['_downloader']['body_ready'] = time()
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
             return txresponse, b'', None
@@ -359,7 +361,8 @@ class ScrapyAgent(object):
 
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(_ResponseReader(
-            d, txresponse, request, maxsize, warnsize, fail_on_dataloss))
+            d, txresponse, request, maxsize, warnsize, fail_on_dataloss,
+            meta_timings=self._meta_timings))
 
         # save response for timeouts
         self._txresponse = txresponse
@@ -367,7 +370,8 @@ class ScrapyAgent(object):
         return d
 
     def _cb_bodydone(self, result, request, url):
-        request.meta['_downloader']['body_done'] = time()
+        if self._meta_timings:
+            request.meta['_downloader']['body_done'] = time()
         txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
@@ -396,7 +400,7 @@ class _RequestBodyProducer(object):
 class _ResponseReader(protocol.Protocol):
 
     def __init__(self, finished, txresponse, request, maxsize, warnsize,
-                 fail_on_dataloss):
+                 fail_on_dataloss, meta_timings):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
@@ -405,6 +409,7 @@ class _ResponseReader(protocol.Protocol):
         self._warnsize  = warnsize
         self._fail_on_dataloss = fail_on_dataloss
         self._fail_on_dataloss_warned = False
+        self._meta_timings = meta_timings
         self._reached_warnsize = False
         self._bytes_received = 0
 
@@ -414,7 +419,8 @@ class _ResponseReader(protocol.Protocol):
         if self._finished.called:
             return
 
-        if not self._request.meta['_downloader'].get('body_data'):
+        # track time of first bytes written
+        if self._meta_timings and not self._request.meta['_downloader'].get('body_data'):
             self._request.meta['_downloader']['body_data'] = time()
 
         self._bodybuf.write(bodyBytes)

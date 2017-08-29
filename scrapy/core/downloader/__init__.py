@@ -88,16 +88,16 @@ class Downloader(object):
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
+        self.meta_timings = self.settings.getbool('DOWNLOADER_META_TIMINGS')
 
     def fetch(self, request, spider):
         def _deactivate(response):
             self.active.remove(request)
             return response
 
+        if self.meta_timings:
+            request.meta['_downloader'] = {'fetch': time()}
         self.active.add(request)
-        if not request.meta.get('_downloader'):
-            request.meta['_downloader'] = {}
-        request.meta['_downloader']['queued'] = time()
         dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
@@ -133,6 +133,8 @@ class Downloader(object):
 
         slot.active.add(request)
         deferred = defer.Deferred().addBoth(_deactivate)
+        if self.meta_timings:
+            request.meta['_downloader']['queued'] = time()
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
