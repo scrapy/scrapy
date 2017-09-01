@@ -12,7 +12,7 @@ items, to use the data in some other application. That is, after all, the whole
 purpose of the scraping process.
 
 For this purpose Scrapy provides a collection of Item Exporters for different
-output formats, such as XML, CSV or JSON.
+output formats, such as XML, CSV ,JSONLINE or JSON.
 
 Using Item Exporters
 ====================
