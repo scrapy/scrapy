@@ -192,7 +192,7 @@ htmlhelp_basename = 'Scrapydoc'
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
   ('index', 'Scrapy.tex', u'Scrapy Documentation',
-   ur'Scrapy developers', 'manual'),
+   u'Scrapy developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
