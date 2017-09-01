@@ -191,7 +191,7 @@ htmlhelp_basename = 'Scrapydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Scrapy.tex', ur'Scrapy Documentation',
+  ('index', 'Scrapy.tex', u'Scrapy Documentation',
    ur'Scrapy developers', 'manual'),
 ]
 
