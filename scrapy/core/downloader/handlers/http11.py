@@ -313,6 +313,8 @@ class ScrapyAgent(object):
         return d
 
     def _cb_timeout(self, result, request, url, timeout):
+        if self._meta_timings:
+            request.meta['_downloader']['error'] = time()
         if self._timeout_cl.active():
             self._timeout_cl.cancel()
             return result
