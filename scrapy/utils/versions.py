@@ -17,6 +17,11 @@ def scrapy_components_versions():
         w3lib_version = w3lib.__version__
     except AttributeError:
         w3lib_version = "<1.14.3"
+    try:
+        import cryptography
+        cryptography_version = cryptography.__version__
+    except ImportError:
+        cryptography_version = "unknown"
 
     return [
         ("Scrapy", scrapy.__version__),
@@ -28,6 +33,7 @@ def scrapy_components_versions():
         ("Twisted", twisted.version.short()),
         ("Python", sys.version.replace("\n", "- ")),
         ("pyOpenSSL", _get_openssl_version()),
+        ("cryptography", cryptography_version),
         ("Platform",  platform.platform()),
     ]
 
