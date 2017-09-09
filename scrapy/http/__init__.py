@@ -7,6 +7,7 @@ Request and Response outside this module.
 
 from scrapy.http.headers import Headers
 
+from scrapy.http.request.giantfiles import GiantFilesRequest
 from scrapy.http.request import Request
 from scrapy.http.request.form import FormRequest
 from scrapy.http.request.rpc import XmlRpcRequest

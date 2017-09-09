@@ -2,6 +2,9 @@
 
 import re
 import logging
+import hashlib
+import os.path
+
 from io import BytesIO
 from time import time
 import warnings
@@ -17,6 +20,7 @@ from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
     HTTPConnectionPool, ResponseFailed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
+from scrapy.http.request.giantfiles import GiantFilesRequest 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
@@ -27,7 +31,8 @@ from scrapy import twisted_version
 
 logger = logging.getLogger(__name__)
 
-
+IS_GIANTFILE_REQUEST = 1
+NOT_GIANTFILE_REQUEST = 0
 class HTTP11DownloadHandler(object):
 
     def __init__(self, settings):
@@ -352,9 +357,12 @@ class ScrapyAgent(object):
             txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
-        txresponse.deliverBody(_ResponseReader(
-            d, txresponse, request, maxsize, warnsize, fail_on_dataloss))
-
+        if isinstance(request,GiantFilesRequest):
+            txresponse.deliverBody(_ResponseReader(
+                d, txresponse, request, maxsize, warnsize, fail_on_dataloss,IS_GIANTFILE_REQUEST))
+        else:
+            txresponse.deliverBody(_ResponseReader(
+                d, txresponse, request, maxsize, warnsize, fail_on_dataloss,NOT_GIANTFILE_REQUEST))
         # save response for timeouts
         self._txresponse = txresponse
 
@@ -389,18 +397,48 @@ class _RequestBodyProducer(object):
 class _ResponseReader(protocol.Protocol):
 
     def __init__(self, finished, txresponse, request, maxsize, warnsize,
-                 fail_on_dataloss):
+                 fail_on_dataloss,giant_file):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
-        self._bodybuf = BytesIO()
         self._maxsize  = maxsize
         self._warnsize  = warnsize
         self._fail_on_dataloss = fail_on_dataloss
         self._fail_on_dataloss_warned = False
         self._reached_warnsize = False
         self._bytes_received = 0
+        self._giant_file = giant_file
+        self.giant_file_path = ""
+        if giant_file==1:
+          #  self._bodybuf = BytesIO()  
+            self.giant_file_path =  self.getabspath(self.file_path(request.url),request.store_path)
+            dir_name = os.path.dirname(self.giant_file_path)
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
+            f =  open(self.giant_file_path,'wb+') 
+            self._bodybuf = f
+            
+        else:
+            self._bodybuf = BytesIO()
+    def file_path(self, url):
+        '''
+            generate the relative path of the final download file
 
+            I copied these codes from FilesPipeline
+        '''
+
+        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
+        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+       
+        return 'full/%s%s' % (media_guid, media_ext)
+    def getabspath(self,path,store_path):
+        '''
+            generate the absolute path of the final download file
+            I copied these codes from FilesPipeline
+        '''
+        path_comps = path.split('/')
+        
+        return os.path.join(store_path, *path_comps)
     def dataReceived(self, bodyBytes):
         # This maybe called several times after cancel was called with buffered
         # data.
@@ -431,8 +469,15 @@ class _ResponseReader(protocol.Protocol):
         if self._finished.called:
             return
 
-        body = self._bodybuf.getvalue()
+        if self._giant_file == 0:
+            body = self._bodybuf.getvalue()
+        else :
+            body = str(self.giant_file_path)
+            #the body here is the path(type:str) of the giant file in fact.
+            self._bodybuf.close()  
+            #the stream is closed here
         if reason.check(ResponseDone):
+            
             self._finished.callback((self._txresponse, body, None))
             return
 
