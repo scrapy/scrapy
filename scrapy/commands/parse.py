@@ -142,7 +142,8 @@ class Command(ScrapyCommand):
                 logger.error('Unable to find spider for: %(url)s',
                              {'url': url})
 
-        request = Request(url, opts.callback)
+        # Request requires callback argument as callable or None, not string
+        request = Request(url, None)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
         self.spidercls.start_requests = _start_requests
 
@@ -164,7 +165,9 @@ class Command(ScrapyCommand):
             # determine real callback
             cb = response.meta['_callback']
             if not cb:
-                if opts.rules and self.first_response == response:
+                if opts.callback:
+                    cb = opts.callback
+                elif opts.rules and self.first_response == response:
                     cb = self.get_callback_from_rules(spider, response)
 
                     if not cb:

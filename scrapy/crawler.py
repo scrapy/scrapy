@@ -11,7 +11,7 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
 from scrapy.extension import ExtensionManager
-from scrapy.settings import Settings
+from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
@@ -34,13 +34,16 @@ class Crawler(object):
         self.settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
+        d = dict(overridden_settings(self.settings))
+        logger.info("Overridden settings: %(settings)r", {'settings': d})
+
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
         if get_scrapy_root_handler() is not None:
-            # scrapy root handler alread installed: update it with new settings
+            # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
         # lambda is assigned to Crawler attribute because this way it is not
         # garbage collected after leaving __init__ scope
