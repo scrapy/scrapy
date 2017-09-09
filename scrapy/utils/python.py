@@ -1,7 +1,6 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import gc
 import os
 import re
 import inspect
@@ -9,7 +8,7 @@ import weakref
 import errno
 import six
 from functools import partial, wraps
-import sys
+
 
 from scrapy.utils.decorators import deprecated
 
@@ -377,13 +376,3 @@ def global_object_name(obj):
     'scrapy.http.request.Request'
     """
     return "%s.%s" % (obj.__module__, obj.__name__)
-
-
-if hasattr(sys, "pypy_version_info"):
-    def garbage_collect():
-        # Collecting weakreferences can take two collections on PyPy.
-        gc.collect()
-        gc.collect()
-else:
-    def garbage_collect():
-        gc.collect()
