@@ -525,11 +525,11 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. It must be str, not unicode, unless you're
-       using a encoding-aware :ref:`Response subclass
-       <topics-request-response-ref-response-subclasses>`, such as
-       :class:`TextResponse`.
-    :type body: str
+    :param body: the response body. To access the decoded text as str (unicode
+       in Python 2) you can use ``response.text`` from an encoding-aware
+       :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
+       such as :class:`TextResponse`.
+    :type body: bytes
 
     :param flags: is a list containing the initial values for the
        :attr:`Response.flags` attribute. If given, the list will be shallow
