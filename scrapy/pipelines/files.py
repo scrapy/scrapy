@@ -218,6 +218,12 @@ class GCSFilesStore(object):
 
         return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
 
+    def _get_content_type(self, headers):
+        if headers and 'Content-Type' in headers:
+            return headers['Content-Type']
+        else:
+            return 'application/octet-stream'
+
     def persist_file(self, path, buf, info, meta=None, headers=None):
         blob = self.bucket.blob(self.prefix + path)
         blob.cache_control = self.CACHE_CONTROL
@@ -225,7 +231,7 @@ class GCSFilesStore(object):
         return threads.deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
-            content_type='application/octet-stream'
+            content_type=self._get_content_type(headers)
         )
 
 
