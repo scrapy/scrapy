@@ -28,7 +28,7 @@ IGNORED_EXTENSIONS = [
 
     # video
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a',
+    'm4a', 'm4v',
 
     # office suites
     'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
