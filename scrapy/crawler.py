@@ -242,10 +242,10 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, install_root_logging_handler=True):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        configure_logging(self.settings)
+        configure_logging(self.settings, install_root_logging_handler)
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
