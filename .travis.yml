@@ -1,10 +1,5 @@
 language: python
 sudo: false
-branches:
-  only:
-    - master
-    - /^\d\.\d+$/
-    - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
     - python: 2.7
@@ -21,6 +16,10 @@ matrix:
       env: TOXENV=py36
     - python: 3.6
       env: TOXENV=docs
+before_install:
+  - mkdir -p $HOME/bin
+  - curl -fsSL https://testspace-client.s3.amazonaws.com/testspace-linux.tgz | tar -zxvf- -C $HOME/bin
+  - testspace config url open.testspace.com
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
@@ -39,24 +38,7 @@ install:
   - pip install -U tox twine wheel codecov
 
 script: tox
-after_success:
-  - codecov
-notifications:
-  irc:
-    use_notice: true
-    skip_join: true
-    channels:
-    - irc.freenode.org#scrapy
-cache:
-  directories:
-    - $HOME/.cache/pip
-deploy:
-  provider: pypi
-  distributions: "sdist bdist_wheel"
-  user: scrapy
-  password:
-    secure: JaAKcy1AXWXDK3LXdjOtKyaVPCSFoCGCnW15g4f65E/8Fsi9ZzDfmBa4Equs3IQb/vs/if2SVrzJSr7arN7r9Z38Iv1mUXHkFAyA3Ym8mThfABBzzcUWEQhIHrCX0Tdlx9wQkkhs+PZhorlmRS4gg5s6DzPaeA2g8SCgmlRmFfA=
-  on:
-    tags: true
-    repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"
+after_script:
+  - if [ "${TOXENV}" != "docs" ]; then
+      testspace [${TOXENV}/tests]testresults.xml{tests};
+    fi
