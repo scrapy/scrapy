@@ -23,8 +23,11 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         if opts.verbose:
-            for name, version in scrapy_components_versions():
-                print("%-9s : %s" % (name, version))
+            versions = scrapy_components_versions()
+            width = max(len(n) for (n, _) in versions)
+            patt = "%-{}s : %s".format(width)
+            for name, version in versions:
+                print(patt % (name, version))
         else:
             print("Scrapy %s" % scrapy.__version__)
 

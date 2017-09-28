@@ -28,4 +28,4 @@ class VersionTest(ProcessTest, unittest.TestCase):
         self.assertEqual(headers, ['Scrapy', 'lxml', 'libxml2',
                                    'cssselect', 'parsel', 'w3lib',
                                    'Twisted', 'Python', 'pyOpenSSL',
-                                   'Platform'])
+                                   'cryptography', 'Platform'])
