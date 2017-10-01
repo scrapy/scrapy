@@ -28,7 +28,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         crawler = Crawler(spider, settings)
         self.assertRaises(NotConfigured, partial(HttpProxyMiddleware.from_crawler, crawler))
 
-    def test_no_enviroment_proxies(self):
+    def test_no_environment_proxies(self):
         os.environ = {'dummy_proxy': 'reset_env_and_do_not_raise'}
         mw = HttpProxyMiddleware()
 
@@ -38,7 +38,7 @@ class TestDefaultHeadersMiddleware(TestCase):
             self.assertEqual(req.url, url)
             self.assertEqual(req.meta, {})
 
-    def test_enviroment_proxies(self):
+    def test_environment_proxies(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
         os.environ['https_proxy'] = https_proxy = 'http://proxy.for.https:8080'
         os.environ.pop('file_proxy', None)
