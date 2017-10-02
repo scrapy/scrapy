@@ -340,6 +340,30 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
                              expected_value)
 
 
+class FilesPipelineTestCaseS3Settings(unittest.TestCase):
+
+    def test_aws_settings(self):
+        """
+        The AWS settings should be set from settings.
+        """
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'AWS_ACCESS_KEY_ID': 'example_id',
+                                                     'AWS_SECRET_ACCESS_KEY': 'example_key'}))
+        self.assertEqual(pipe.store.AWS_ACCESS_KEY_ID, 'example_id')
+        self.assertEqual(pipe.store.AWS_SECRET_ACCESS_KEY, 'example_key')
+
+    def test_policy_settings(self):
+        """
+        If FILES_STORE_S3_ACL is set, the POLICY attribute should be overridden.
+        """
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'FILES_STORE_S3_ACL': 'public'}))
+        self.assertEqual(pipe.store.POLICY, 'public')
+        pipe = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
+                                                     'FILES_STORE_S3_ACL': 'private'}))
+        self.assertEqual(pipe.store.POLICY, 'private')
+
+
 class TestS3FilesStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
@@ -373,6 +397,60 @@ class TestS3FilesStore(unittest.TestCase):
             self.assertEqual(
                 key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
             self.assertEqual(key.content_type, 'image/png')
+
+
+class FilesPipelineCustomStorageTestCase(unittest.TestCase):
+
+    def setUp(self):
+        custom_settings = {'FILES_STORE': 'dict://fake_file',
+                           'FILES_STORE_SCHEMES': {'dict': 'tests.test_pipeline_files.DictFilesStore'}}
+        self.pipeline = FilesPipeline.from_settings(Settings(custom_settings))
+        self.pipeline.download_func = _mocked_download_func
+        self.pipeline.open_spider(None)
+
+    @defer.inlineCallbacks
+    def test_file_stored(self):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
+            mock.patch.object(DictFilesStore, 'stat_file', return_value={
+                'checksum': 'abc', 'last_modified': time.time()}),
+            mock.patch.object(FilesPipeline, 'get_media_requests',
+                              return_value=[_prepare_request_object(item_url)])
+        ]
+        for p in patchers:
+            p.start()
+
+        result = yield self.pipeline.process_item(item, None)
+        self.assertEqual(result['files'][0]['checksum'], 'abc')
+
+
+class DictFilesStore(object):
+
+    def __init__(self, uri, **kwargs):
+        assert uri.startswith('dict://')
+        self.basedir = uri[5:]
+        self.checksums = {}
+        self.last_modified = {}
+
+    def stat_file(self, path, info):
+        absolute_path = self._get_filesystem_path(path)
+        if absolute_path in self.files:
+            return {'last_modified': self.last_modified[absolute_path],
+                    'checksum': self.checksums[absolute_path]}
+        else:
+            return {}
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        absolute_path = self._get_filesystem_path(path)
+        content = buf.getvalue()
+        self.checksums[absolute_path] = hashlib.md5(content).hexdigest()
+        self.last_modified[absolute_path] = time.time()
+
+    def _get_filesystem_path(self, path):
+        path_comps = path.split('/')
+        return os.path.join(self.basedir, *path_comps)
 
 
 class ItemWithFiles(Item):
