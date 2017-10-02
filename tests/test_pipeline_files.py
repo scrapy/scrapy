@@ -11,12 +11,13 @@ from six import BytesIO
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
+from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
 from scrapy.utils.boto import is_botocore
 
 from tests import mock
@@ -373,6 +374,31 @@ class TestS3FilesStore(unittest.TestCase):
             self.assertEqual(
                 key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
             self.assertEqual(key.content_type, 'image/png')
+
+
+class TestGCSFilesStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        assert_gcs_environ()
+        uri = os.environ.get('GCS_TEST_FILE_URI')
+        if not uri:
+            raise unittest.SkipTest("No GCS URI available for testing")
+        data = b"TestGCSFilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = 'full/filename'
+        store = GCSFilesStore(uri)
+        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
+        s = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', s)
+        self.assertIn('checksum', s)
+        self.assertEqual(s['checksum'], 'zc2oVgXkbQr2EQdSdw3OPA==')
+        u = urlparse(uri)
+        content, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
+        self.assertEqual(content, data)
+        self.assertEqual(blob.metadata, {'foo': 'bar'})
+        self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
+        self.assertEqual(blob.content_type, 'application/octet-stream')
 
 
 class ItemWithFiles(Item):

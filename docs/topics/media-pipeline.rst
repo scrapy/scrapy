@@ -15,7 +15,8 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 Both pipelines implement these features:
 
 * Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, Amazon S3 bucket)
+* Specifying where to store the media (filesystem directory, Amazon S3 bucket,
+  Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
@@ -116,10 +117,11 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 Supported Storage
 =================
 
-File system is currently the only officially supported storage, but there is
-also support for storing files in `Amazon S3`_.
+File system is currently the only officially supported storage, but there are
+also support for storing files in `Amazon S3`_ and `Google Cloud Storage`_.
 
 .. _Amazon S3: https://aws.amazon.com/s3/
+.. _Google Cloud Storage: https://cloud.google.com/storage/
 
 File system storage
 -------------------
@@ -170,6 +172,25 @@ policy::
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 .. _canned ACLs: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+
+Google Cloud Storage
+---------------------
+
+.. setting:: GCS_PROJECT_ID
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
+bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
+
+.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+
+For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings::
+
+    IMAGES_STORE = 'gs://bucket/images/'
+    GCS_PROJECT_ID = 'project_id'
+
+For information about authentication, see this `documentation`_.
+
+.. _documentation: https://cloud.google.com/docs/authentication/production
 
 Usage example
 =============
