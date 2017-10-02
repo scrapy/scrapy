@@ -452,7 +452,7 @@ For historic reasons, Scrapy appends to a given file instead of overwriting
 its contents. If you run this command twice without removing the file
 before the second time, you'll end up with a broken JSON file.
 
-You can also used other formats, like `JSON Lines`_::
+You can also use other formats, like `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jl
 
