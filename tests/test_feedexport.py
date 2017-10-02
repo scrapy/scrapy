@@ -6,7 +6,9 @@ from io import BytesIO
 import tempfile
 import shutil
 from six.moves.urllib.parse import urlparse
+import boto3
 
+from moto import mock_s3
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -20,7 +22,7 @@ from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage,
     BlockingFeedStorage)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
+from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_native_str
 
 
@@ -130,21 +132,32 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
     @defer.inlineCallbacks
-    def test_store(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
+    def test_store_with_mock(self):
+        uri = 's3://testbucket/testfile.txt'
+        _, bucket, key, _, _, _ = urlparse(uri)
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
-        file = storage.open(scrapy.Spider("default"))
-        expected_content = b"content: \xe2\x98\x83"
-        file.write(expected_content)
-        yield storage.store(file)
-        u = urlparse(uri)
-        content = get_s3_content_and_delete(u.hostname, u.path[1:])
-        self.assertEqual(content, expected_content)
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
+        with mock_s3():
+            conn = boto3.resource('s3')
+            bucket = conn.Bucket(bucket)
+            bucket.create()
+            file = storage.open(spider)
+            expected_content = b"content: \xe2\x98\x83"
+            file.write(expected_content)
+            yield storage.store(file)
+            # key has to be cleared from slashes for moto
+            content = bucket.Object(key[1:]).get()['Body'].read()
+            self.assertEqual(content, expected_content)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):
