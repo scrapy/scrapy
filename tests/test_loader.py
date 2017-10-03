@@ -612,6 +612,12 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
+    def test_add_xpath_kwargs(self):
+        l = TestItemLoader(response=self.response)
+        l.add_xpath('name', '//a[@href=$href]/text()',
+                    href='http://www.scrapy.org')
+        self.assertEqual(l.get_output_value('name'), [u'Homepage'])
+
 
 class SubselectorLoaderTest(unittest.TestCase):
     response = HtmlResponse(url="", encoding='utf-8', body=b"""
