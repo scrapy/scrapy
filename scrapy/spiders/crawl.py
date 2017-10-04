@@ -7,11 +7,13 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 import six
+import logging
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spiders import Spider
 
+logger = logging.getLogger(__name__)
 
 def identity(x):
     return x
@@ -55,7 +57,11 @@ class CrawlSpider(Spider):
 
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
+        	#add debug message for non-html responses
+            logger.debug("Skipping non-html response {}") 
             return
+
+
         seen = set()
         for n, rule in enumerate(self._rules):
             links = [lnk for lnk in rule.link_extractor.extract_links(response)
