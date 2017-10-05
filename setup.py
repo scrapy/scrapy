@@ -72,6 +72,7 @@ setup(
         'parsel>=1.1',
         'PyDispatcher>=2.0.5',
         'service_identity',
+        'Sickle>=0.6.2',
     ],
     extras_require=extras_require,
 )

@@ -129,3 +129,4 @@ spiders = ObsoleteClass(
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider
+from scrapy.spiders.oaipmh import OAIPMHSpider

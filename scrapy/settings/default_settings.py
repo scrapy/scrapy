@@ -72,6 +72,8 @@ DOWNLOAD_HANDLERS_BASE = {
     'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
     'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
+    'oaipmh+http': 'scrapy.core.downloader.handlers.dummy.DummyDownloadHandler',
+    'oaipmh+https': 'scrapy.core.downloader.handlers.dummy.DummyDownloadHandler',
 }
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
