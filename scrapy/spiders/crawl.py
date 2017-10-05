@@ -56,7 +56,7 @@ class CrawlSpider(Spider):
         return r
 
     def _requests_to_follow(self, response):
-        logger.info("does the spider get here?")
+        logger.info("what does this do? {}")
         if not isinstance(response, HtmlResponse):
             logger.debug("Skipping non-html response {}") 
             return
