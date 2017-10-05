@@ -30,6 +30,7 @@ class Rule(object):
         if follow is None:
             self.follow = False if callback else True
         else:
+            logger.info("enable following links")
             self.follow = follow
 
 
