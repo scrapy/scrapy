@@ -22,8 +22,6 @@ def identity(x):
 class Rule(object):
 
     def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
-        logger.info("new ruleset")
-        print "new ruleset print"
         self.link_extractor = link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
@@ -58,6 +56,7 @@ class CrawlSpider(Spider):
         return r
 
     def _requests_to_follow(self, response):
+        logger.info("does the spider get here?")
         if not isinstance(response, HtmlResponse):
             logger.debug("Skipping non-html response {}") 
             return
