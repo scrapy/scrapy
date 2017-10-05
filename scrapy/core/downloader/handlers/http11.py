@@ -344,7 +344,7 @@ class ScrapyAgent(object):
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s) in request (%(request)s).",
+                           "download warn size (%(warnsize)s) in request %(request)s.",
                            {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
