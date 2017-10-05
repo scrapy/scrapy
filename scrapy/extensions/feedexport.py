@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri):
+    def __init__(uri, settings=None):
         """Initialize the storage with the parameters given in the URI"""
 
     def open(spider):
@@ -63,7 +63,7 @@ class BlockingFeedStorage(object):
 @implementer(IFeedStorage)
 class StdoutFeedStorage(object):
 
-    def __init__(self, uri, _stdout=None):
+    def __init__(self, uri, settings=None, _stdout=None):
         if not _stdout:
             _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
         self._stdout = _stdout
@@ -78,7 +78,7 @@ class StdoutFeedStorage(object):
 @implementer(IFeedStorage)
 class FileFeedStorage(object):
 
-    def __init__(self, uri):
+    def __init__(self, uri, settings=None):
         self.path = file_uri_to_path(uri)
 
     def open(self, spider):
@@ -93,8 +93,7 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
-        from scrapy.conf import settings
+    def __init__(self, uri, settings=None):
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or settings['AWS_ACCESS_KEY_ID']
@@ -126,7 +125,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class FTPFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
+    def __init__(self, uri, settings=None):
         u = urlparse(uri)
         self.host = u.hostname
         self.port = int(u.port or '21')
@@ -257,7 +256,7 @@ class FeedExporter(object):
         return self.exporters[self.format](*args, **kwargs)
 
     def _get_storage(self, uri):
-        return self.storages[urlparse(uri).scheme](uri)
+        return self.storages[urlparse(uri).scheme](uri, self.settings)
 
     def _get_uri_params(self, spider):
         params = {}
