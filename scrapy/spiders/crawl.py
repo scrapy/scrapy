@@ -57,11 +57,8 @@ class CrawlSpider(Spider):
 
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
-        	#add debug message for non-html responses
             logger.debug("Skipping non-html response {}") 
             return
-
-
         seen = set()
         for n, rule in enumerate(self._rules):
             links = [lnk for lnk in rule.link_extractor.extract_links(response)
