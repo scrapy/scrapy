@@ -52,6 +52,12 @@ class LxmlParserLinkExtractor(object):
                     continue
                 yield (el, attrib, attribs[attrib])
 
+    def check_for_invalid_sublink (self, link):
+            invalid_link_substring = "../"
+            if invalid_link_substring in link:
+                link = "/"+link.replace("../", "")
+            return link
+
     def _extract_links(self, selector, response_url, response_encoding, base_url):
         links = []
         # hacky way to get the underlying lxml parsed document
@@ -75,12 +81,6 @@ class LxmlParserLinkExtractor(object):
                         nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
         return self._deduplicate_if_needed(links)
-
-    def check_for_invalid_sublink (link):
-        invalid_link_substring = "../"
-        if invalid_link_substring in link:
-            link = "/"+link.replace("../", "")
-        return link
 
     def extract_links(self, response):
         base_url = get_base_url(response)
