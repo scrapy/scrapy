@@ -58,6 +58,8 @@ class LxmlParserLinkExtractor(object):
         for el, attr, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             try:
+                print "PRINTING attr_val"
+                print attr_val
                 if self.strip:
                     attr_val = strip_html5_whitespace(attr_val)
                 attr_val = urljoin(base_url, attr_val)
@@ -68,9 +70,6 @@ class LxmlParserLinkExtractor(object):
                 if url is None:
                     continue
             url = to_native_str(url, encoding=response_encoding)
-            print "DEBUG PRINT"
-            print url
-            print "DEBUG END"
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
