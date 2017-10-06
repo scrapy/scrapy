@@ -58,10 +58,9 @@ class LxmlParserLinkExtractor(object):
         for el, attr, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             try:
-                print "PRINTING attr_val"
-                print attr_val
                 if self.strip:
                     attr_val = strip_html5_whitespace(attr_val)
+                attr_val = check_for_invalid_sublink(attr_val)
                 attr_val = urljoin(base_url, attr_val)
             except ValueError:
                 continue  # skipping bogus links
@@ -76,6 +75,12 @@ class LxmlParserLinkExtractor(object):
                         nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
         return self._deduplicate_if_needed(links)
+
+    def check_for_invalid_sublink (link):
+        invalid_link_substring = "../"
+        if invalid_link_substring in link:
+            link = "/"+link.replace("../", "")
+        return link
 
     def extract_links(self, response):
         base_url = get_base_url(response)
