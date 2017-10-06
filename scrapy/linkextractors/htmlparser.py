@@ -42,11 +42,16 @@ class HtmlParserLinkExtractor(HTMLParser):
         ret = []
         base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in links:
+            ##########
+            print link
+            ##########
             if isinstance(link.url, six.text_type):
                 link = check_for_invalid_sublink(link)
                 print "DEBUG PRINT AFTER FUNCTION CALL"
                 link.url = link.url.encode(response_encoding)
             try:
+                link = check_for_invalid_sublink(link)
+                print "DEBUG PRINT AFTER FUNCTION CALL IN TRY"
                 link.url = urljoin(base_url, link.url)
             except ValueError:
                 continue
