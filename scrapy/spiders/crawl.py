@@ -61,8 +61,6 @@ class CrawlSpider(Spider):
                 {'response' : response}) 
             return
         seen = set()
-        logger.debug("Continue with html response %(response)s" , 
-            {'response' : response}) 
         for n, rule in enumerate(self._rules):
             links = [lnk for lnk in rule.link_extractor.extract_links(response)
                      if lnk not in seen]
