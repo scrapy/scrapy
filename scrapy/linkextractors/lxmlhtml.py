@@ -66,7 +66,7 @@ class LxmlParserLinkExtractor(object):
             try:
                 if self.strip:
                     attr_val = strip_html5_whitespace(attr_val)
-                attr_val = check_for_invalid_sublink(attr_val)
+                attr_val = self.check_for_invalid_sublink(attr_val)
                 attr_val = urljoin(base_url, attr_val)
             except ValueError:
                 continue  # skipping bogus links
