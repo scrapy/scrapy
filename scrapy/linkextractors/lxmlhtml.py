@@ -55,7 +55,7 @@ class LxmlParserLinkExtractor(object):
     def check_for_invalid_sublink (self, link):
             invalid_link_substring = "../"
             if invalid_link_substring in link:
-                link = "/"+link.replace("../", "")
+                link = link.replace("../", "")
             return link
 
     def _extract_links(self, selector, response_url, response_encoding, base_url):
@@ -73,10 +73,13 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            print "### DEBUG PRINT BEFORE FUNCTION ###"
+            print "### PRINT ORIGINAL URL ###"
+            print url
+            print "### PRINT MODIFIED URL ###"
             url = self.check_for_invalid_sublink(url)
             print url
-            print "### DEBUG PRINT END ###"
+            print "######"
+
             url = to_native_str(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
