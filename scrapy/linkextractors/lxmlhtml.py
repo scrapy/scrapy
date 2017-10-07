@@ -73,16 +73,17 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
+            url = to_native_str(url, encoding=response_encoding)
+            # to fix relative links after process_value
+            url = urljoin(response_url, url)
+
             print "### PRINT ORIGINAL URL ###"
             print url
             print "### PRINT MODIFIED URL ###"
             url = self.check_for_invalid_sublink(url)
             print url
             print "######"
-
-            url = to_native_str(url, encoding=response_encoding)
-            # to fix relative links after process_value
-            url = urljoin(response_url, url)
+            
             link = Link(url, _collect_string_content(el) or u'',
                         nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
