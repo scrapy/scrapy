@@ -6,9 +6,30 @@ import shutil
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
+from scrapy.utils.job import job_dir
+from scrapy.utils.test import get_crawler
 
 
 class RFPDupeFilterTest(unittest.TestCase):
+
+    def test_dupefilter_from_crawler(self):
+
+        class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+                df = cls(job_dir(crawler.settings), debug)
+                df.user_agent = crawler.settings.get('USER_AGENT')
+                return df
+
+        crawler = get_crawler(settings_dict={'DUPEFILTER_DEBUG': True, 'USER_AGENT': 'test ua'})
+        dupefilter = FromCrawlerRFPDupeFilter.from_crawler(crawler)
+
+        self.assertTrue(dupefilter.debug)
+        self.assertEqual(dupefilter.user_agent, 'test ua')
+
+        dupefilter.close('finished')
 
     def test_filter(self):
         dupefilter = RFPDupeFilter()
