@@ -255,61 +255,62 @@ class ThirdMiddleware(object):
 
 class TestSpiderMiddleware(TestCase):
 
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
-    def test_process_spider_exception_from_parse_method(self):
-        # non-generator return value
-        crawler = get_crawler(NotAGeneratorSpider)
+    def crawl_log(self, spider):
+        crawler = get_crawler(spider)
         with LogCapture() as log:
             yield crawler.crawl()
+        raise defer.returnValue(log)
+
+    @defer.inlineCallbacks
+    def test_process_spider_exception_from_parse_method_non_generator(self):
+        # non-generator return value
+        log = yield self.crawl_log(NotAGeneratorSpider)
         self.assertIn("AssertionError exception caught", str(log))
         self.assertIn("spider_exceptions/AssertionError", str(log))
+
+    @defer.inlineCallbacks
+    def test_process_spider_exception_from_parse_method_generator_no_items(self):
         # generator return value, no items before the error
-        crawler = get_crawler(GeneratorErrorBeforeItemsSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(GeneratorErrorBeforeItemsSpider)
         self.assertIn("ValueError exception caught", str(log))
         self.assertIn("spider_exceptions/ValueError", str(log))
+
+    @defer.inlineCallbacks
+    def test_process_spider_exception_from_parse_method_generator_with_items(self):
         # generator return value, 3 items before the error
-        crawler = get_crawler(GeneratorErrorAfterItemsSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(GeneratorErrorAfterItemsSpider)
         self.assertIn("'item_scraped_count': 3", str(log))
         self.assertIn("FloatingPointError exception caught", str(log))
         self.assertIn("spider_exceptions/FloatingPointError", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_from_previous_middleware_input(self):
-        crawler = get_crawler(FromPreviousMiddlewareInputSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(FromPreviousMiddlewareInputSpider)
         self.assertIn("LookupError exception caught", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_from_previous_middleware_output(self):
         # non-generator output value
-        crawler = get_crawler(NotAGeneratorFromPreviousMiddlewareOutputSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(NotAGeneratorFromPreviousMiddlewareOutputSpider)
         self.assertNotIn("UnicodeError exception caught", str(log))
         # generator output value
-        crawler = get_crawler(GeneratorFromPreviousMiddlewareOutputSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(GeneratorFromPreviousMiddlewareOutputSpider)
         self.assertIn("'item_scraped_count': 3", str(log))
         self.assertIn("NameError exception caught", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_do_something(self):
-        crawler = get_crawler(DoSomethingSpider)
-        with LogCapture() as log:
-            yield crawler.crawl()
+        log = yield self.crawl_log(DoSomethingSpider)
         self.assertIn("ImportError exception caught", str(log))
         self.assertIn("{'value': 10}", str(log))
         self.assertIn("{'value': 'asdf'}", str(log))
@@ -320,25 +321,19 @@ class TestSpiderMiddleware(TestCase):
     def test_process_spider_exception_invalid_return_value_previous_middleware(self):
         """ don't catch _InvalidOutput from middleware """
         # on middleware's input
-        crawler1 = get_crawler(InvalidReturnValueFromPreviousMiddlewareInputSpider)
-        with LogCapture() as log1:
-            yield crawler1.crawl()
+        log1 = yield self.crawl_log(InvalidReturnValueFromPreviousMiddlewareInputSpider)
         self.assertNotIn("_InvalidOutput exception caught", str(log1))
         self.assertIn("'spider_exceptions/_InvalidOutput'", str(log1))
         # on middleware's output
-        crawler2 = get_crawler(InvalidReturnValueFromPreviousMiddlewareOutputSpider)
-        with LogCapture() as log2:
-            yield crawler2.crawl()
+        log2 = yield self.crawl_log(InvalidReturnValueFromPreviousMiddlewareOutputSpider)
         self.assertNotIn("_InvalidOutput exception caught", str(log2))
         self.assertIn("'spider_exceptions/_InvalidOutput'", str(log2))
 
     @defer.inlineCallbacks
     def test_process_spider_exception_execution_chain(self):
         # on middleware's input
-        crawler1 = get_crawler(ExecutionChainSpider)
-        with LogCapture() as log1:
-            yield crawler1.crawl()
-        self.assertNotIn("handled_by_first_middleware", str(log1))
-        self.assertNotIn("handled_by_second_middleware", str(log1))
-        self.assertIn("MemoryError exception caught", str(log1))
-        self.assertIn("handled_by_third_middleware", str(log1))
+        log = yield self.crawl_log(ExecutionChainSpider)
+        self.assertNotIn("handled_by_first_middleware", str(log))
+        self.assertNotIn("handled_by_second_middleware", str(log))
+        self.assertIn("MemoryError exception caught", str(log))
+        self.assertIn("handled_by_third_middleware", str(log))
