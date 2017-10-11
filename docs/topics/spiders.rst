@@ -639,6 +639,16 @@ SitemapSpider
     It supports nested sitemaps and discovering sitemap urls from
     `robots.txt`_.
 
+    SitemapSpider will return respective subclasses of `Request` depending
+    on the source of the request.
+    - `RobotsRequest` for sitemap requests from robots.txt
+    - `SitemapIndexRequest` for requests from a sitemap index
+    - `UrlSetRequest` for requests from a sitemap urlset
+
+    This differentiation allows to filter depending on Request type, and
+    for example to only capture sitemap links without necessarily following
+    them.
+
     .. attribute:: sitemap_urls
 
         A list of urls pointing to the sitemaps whose urls you want to crawl.

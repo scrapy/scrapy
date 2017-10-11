@@ -10,9 +10,18 @@ from scrapy.utils.gz import gunzip, is_gzipped
 logger = logging.getLogger(__name__)
 
 # differentiating requests for use in child classes
-class SitemapIndexRequest(Request): pass
-class UrlSetRequest(Request): pass
-class RobotsRequest(Request): pass
+class SitemapIndexRequest(Request):
+    """ Sitemap spider request originating from a sitemap index """
+    pass
+
+class UrlSetRequest(Request):
+    """ Sitemap spider request originating from a sitemap urlset """
+    pass
+
+class RobotsRequest(Request):
+    """ Sitemap spider request originating from a robots.txt """
+    pass
+
 
 class SitemapSpider(Spider):
 
