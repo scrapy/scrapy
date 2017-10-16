@@ -188,9 +188,13 @@ DepthMiddleware
 
 .. class:: DepthMiddleware
 
-   DepthMiddleware is a scrape middleware used for tracking the depth of each
-   Request inside the site being scraped. It can be used to limit the maximum
-   depth to scrape or things like that.
+   DepthMiddleware is used for tracking the depth of each Request inside the
+   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   there is no value previously set (usually just the first Request) and
+   incrementing it by 1 otherwise.
+
+   It can be used to limit the maximum depth to scrape, control Request
+   priority based on their depth, and things like that.
 
    The :class:`DepthMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
