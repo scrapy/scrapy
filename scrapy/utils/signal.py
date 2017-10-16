@@ -70,6 +70,24 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     d.addCallback(lambda out: [x[1] for x in out])
     return d
 
+def send_deferred(signal=Any, sender=Anonymous, *arguments, **named):
+    """Like pydispatcher.send but supports returning deferreds on signal handlers.
+    Returns a deferred that gets fired once all signal handlers deferreds were
+    fired.
+
+    If one signal handler fails, the deffered errback is called.
+    """
+
+    spider = named.get('spider', None)
+    dfds = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
+                *arguments, **named)
+        d.addCallback(lambda result: (receiver, result))
+        dfds.append(d)
+    d = DeferredList(dfds, consumeErrors=True, fireOnOneErrback=True)
+    d.addCallback(lambda out: [x[1] for x in out])
+    return d
 
 def disconnect_all(signal=Any, sender=Any):
     """Disconnect all signal handlers. Useful for cleaning up after running

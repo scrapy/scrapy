@@ -93,6 +93,7 @@ class CrawlerRun(object):
     def __init__(self, spider_class):
         self.spider = None
         self.respplug = []
+        self.reqdownloading = []
         self.reqplug = []
         self.reqdropped = []
         self.itemresp = []
@@ -112,6 +113,7 @@ class CrawlerRun(object):
 
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
+        self.crawler.signals.connect(self.request_downloading, signals.request_downloading)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
@@ -138,6 +140,9 @@ class CrawlerRun(object):
 
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
+
+    def request_downloading(self, request, spider):
+        self.reqdownloading.append((request, spider))
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
@@ -178,9 +183,11 @@ class EngineTest(unittest.TestCase):
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
+        urls_downloading = set([rq[0].url for rq in self.run.reqdownloading])
         urls_visited = set([rp[0].url for rp in self.run.respplug])
         urls_expected = set([self.run.geturl(p) for p in must_be_visited])
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
+        assert urls_expected <= urls_downloading, "URLs not downloading: %s" % list(urls_expected - urls_downloading)
 
     def _assert_scheduled_requests(self, urls_to_visit=None):
         self.assertEqual(urls_to_visit, len(self.run.reqplug))

@@ -161,10 +161,18 @@ class Downloader(object):
     def _download(self, slot, request, spider):
         # The order is very important for the following deferreds. Do not change!
 
-        # 1. Create the download deferred
-        dfd = mustbe_deferred(self.handlers.download_request, request, spider)
+        # 1. Send a signal about incoming download
+        dfd = self.signals.send_deferred(
+                    signal=signals.request_downloading,
+                    request=request,
+                    spider=spider)
 
-        # 2. Notify response_downloaded listeners about the recent download
+        # 2. Create the download deferred
+        def _download_request(_):
+            return mustbe_deferred(self.handlers.download_request, request, spider)
+        dfd.addCallback(_download_request)
+
+        # 3. Notify response_downloaded listeners about the recent download
         # before querying queue for next request
         def _downloaded(response):
             self.signals.send_catch_log(signal=signals.response_downloaded,
@@ -174,7 +182,7 @@ class Downloader(object):
             return response
         dfd.addCallback(_downloaded)
 
-        # 3. After response arrives,  remove the request from transferring
+        # 4. After response arrives,  remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)
