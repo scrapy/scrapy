@@ -54,6 +54,8 @@ This will create a ``tutorial`` directory with the following contents::
             __init__.py
 
             items.py          # project items definition file
+            
+            middlewares.py    # project middlewares file
 
             pipelines.py      # project pipelines file
 
