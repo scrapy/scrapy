@@ -83,6 +83,7 @@ scrapy.Spider
 
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
+       .. note:: allowed_domains should be a list of domains, not URLs.
 
    .. attribute:: start_urls
 
