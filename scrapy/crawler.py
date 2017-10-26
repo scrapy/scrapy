@@ -237,15 +237,18 @@ class CrawlerProcess(CrawlerRunner):
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
 
+    :param install_root_handler: whether to install root logging handler
+        (default: True)
+
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, install_root_handler=True):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        configure_logging(self.settings)
+        configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
