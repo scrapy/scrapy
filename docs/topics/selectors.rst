@@ -36,7 +36,7 @@ documents.
 For a complete reference of the selectors API see
 :ref:`Selector reference <topics-selectors-ref>`
 
-.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
+.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/

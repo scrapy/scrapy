@@ -7,7 +7,7 @@ Scrapy
    :alt: PyPI Version
 
 .. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
-   :target: http://travis-ci.org/scrapy/scrapy
+   :target: https://travis-ci.org/scrapy/scrapy
    :alt: Build Status
 
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
@@ -15,7 +15,7 @@ Scrapy
    :alt: Wheel Status
 
 .. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
-   :target: http://codecov.io/github/scrapy/scrapy?branch=master
+   :target: https://codecov.io/github/scrapy/scrapy?branch=master
    :alt: Coverage report
 
 .. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg

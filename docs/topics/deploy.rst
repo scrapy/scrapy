@@ -55,5 +55,5 @@ just like ``scrapyd-deploy``.
 .. _scrapyd-client: https://github.com/scrapy/scrapyd-client
 .. _shub: https://doc.scrapinghub.com/shub.html
 .. _scrapyd-deploy documentation: https://scrapyd.readthedocs.io/en/latest/deploy.html
-.. _Scrapy Cloud documentation: http://doc.scrapinghub.com/scrapy-cloud.html
+.. _Scrapy Cloud documentation: https://doc.scrapinghub.com/scrapy-cloud.html
 .. _Scrapinghub: https://scrapinghub.com/

@@ -518,8 +518,8 @@ a footer of a page that looks something like:
 Example::
 
     <footer>
-        <a class="social" href="http://facebook.com/whatever">Like Us</a>
-        <a class="social" href="http://twitter.com/whatever">Follow Us</a>
+        <a class="social" href="https://facebook.com/whatever">Like Us</a>
+        <a class="social" href="https://twitter.com/whatever">Follow Us</a>
         <a class="email" href="mailto:whatever@example.com">Email Us</a>
     </footer>
 
