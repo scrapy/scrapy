@@ -344,8 +344,8 @@ class ScrapyAgent(object):
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s).",
-                           {'size': expected_size, 'warnsize': warnsize})
+                           "download warn size (%(warnsize)s) in request %(request)s.",
+                           {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
             # Abort connection inmediately.
@@ -412,9 +412,10 @@ class _ResponseReader(protocol.Protocol):
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s).",
+                         "max size (%(maxsize)s) in request %(request)s.",
                          {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize})
+                          'maxsize': self._maxsize,
+                          'request': self._request})
             # Clear buffer earlier to avoid keeping data in memory for a long
             # time.
             self._bodybuf.truncate(0)
