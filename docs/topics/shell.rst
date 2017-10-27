@@ -39,9 +39,9 @@ variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
     [settings]
     shell = bpython
 
-.. _IPython: http://ipython.org/
-.. _IPython installation guide: http://ipython.org/install.html
-.. _bpython: http://www.bpython-interpreter.org/
+.. _IPython: https://ipython.org/
+.. _IPython installation guide: https://ipython.org/install.html
+.. _bpython: https://www.bpython-interpreter.org/
 
 Launch the shell
 ================

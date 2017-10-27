@@ -164,4 +164,4 @@ interest!
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _Sitemaps: http://www.sitemaps.org
+.. _Sitemaps: https://www.sitemaps.org/index.html

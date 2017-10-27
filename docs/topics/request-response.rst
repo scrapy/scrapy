@@ -734,7 +734,7 @@ HtmlResponse objects
     which adds encoding auto-discovering support by looking into the HTML `meta
     http-equiv`_ attribute.  See :attr:`TextResponse.encoding`.
 
-.. _meta http-equiv: http://www.w3schools.com/TAGS/att_meta_http_equiv.asp
+.. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
 XmlResponse objects
 -------------------

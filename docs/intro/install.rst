@@ -188,7 +188,7 @@ solutions:
   that doesn't conflict with the rest of your system. Here's how to do it using
   the `homebrew`_ package manager:
 
-  * Install `homebrew`_ following the instructions in http://brew.sh/
+  * Install `homebrew`_ following the instructions in https://brew.sh/
 
   * Update your ``PATH`` variable to state that homebrew packages should be
     used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
@@ -233,9 +233,9 @@ After any of these workarounds you should be able to install Scrapy::
 .. _pyOpenSSL: https://pypi.python.org/pypi/pyOpenSSL
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
-.. _homebrew: http://brew.sh/
-.. _zsh: http://www.zsh.org/
+.. _homebrew: https://brew.sh/
+.. _zsh: https://www.zsh.org/
 .. _Scrapinghub: https://scrapinghub.com
-.. _Anaconda: http://docs.continuum.io/anaconda/index
-.. _Miniconda: http://conda.pydata.org/docs/install/quick.html
-.. _conda-forge: https://conda-forge.github.io/
+.. _Anaconda: https://docs.anaconda.com/anaconda/
+.. _Miniconda: https://conda.io/docs/user-guide/install/index.html
+.. _conda-forge: https://conda-forge.org/

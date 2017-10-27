@@ -249,9 +249,9 @@ If you are still unable to prevent your bot getting banned, consider contacting
 
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: http://scrapy.org/support/
-.. _ProxyMesh: http://proxymesh.com/
+.. _ProxyMesh: https://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
 .. _Crawlera: https://scrapinghub.com/crawlera
-.. _scrapoxy: http://scrapoxy.io/
+.. _scrapoxy: https://scrapoxy.io/

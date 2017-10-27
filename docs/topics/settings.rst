@@ -1002,7 +1002,7 @@ The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
 If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
 
-.. _wget: http://www.gnu.org/software/wget/manual/wget.html
+.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
@@ -1317,7 +1317,7 @@ Default: ``2083``
 Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: http://www.boutell.com/newfaq/misc/urllength.html
+the default value for this setting see: https://boutell.com/newfaq/misc/urllength.html
 
 .. setting:: USER_AGENT
 
