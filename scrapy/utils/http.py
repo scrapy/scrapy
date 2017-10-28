@@ -11,7 +11,7 @@ def decode_chunked_transfer(chunked_body):
     decoded body.
 
     For more info see:
-    http://en.wikipedia.org/wiki/Chunked_transfer_encoding
+    https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 
     """
     body, h, t = '', '', chunked_body
