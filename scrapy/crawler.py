@@ -83,7 +83,7 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
             # In Python 2 reraising an exception after yield discards
-            # the original traceback (see http://bugs.python.org/issue7563),
+            # the original traceback (see https://bugs.python.org/issue7563),
             # so sys.exc_info() workaround is used.
             # This workaround also works in Python 3, but it is not needed,
             # and it is slower, so in Python 3 we use native `raise`.

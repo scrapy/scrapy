@@ -31,7 +31,7 @@ crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
 For more information including a list of features check the Scrapy homepage at:
-http://scrapy.org
+https://scrapy.org
 
 Requirements
 ============
@@ -47,12 +47,12 @@ The quick way::
     pip install scrapy
 
 For more details see the install section in the documentation:
-http://doc.scrapy.org/en/latest/intro/install.html
+https://doc.scrapy.org/en/latest/intro/install.html
 
 Documentation
 =============
 
-Documentation is available online at http://doc.scrapy.org/ and in the ``docs``
+Documentation is available online at https://doc.scrapy.org/ and in the ``docs``
 directory.
 
 Releases
@@ -63,12 +63,12 @@ You can find release notes at https://doc.scrapy.org/en/latest/news.html
 Community (blog, twitter, mail list, IRC)
 =========================================
 
-See http://scrapy.org/community/
+See https://scrapy.org/community/
 
 Contributing
 ============
 
-See http://doc.scrapy.org/en/master/contributing.html
+See https://doc.scrapy.org/en/master/contributing.html
 
 Code of Conduct
 ---------------
@@ -82,9 +82,9 @@ Please report unacceptable behavior to opensource@scrapinghub.com.
 Companies using Scrapy
 ======================
 
-See http://scrapy.org/companies/
+See https://scrapy.org/companies/
 
 Commercial Support
 ==================
 
-See http://scrapy.org/support/
+See https://scrapy.org/support/

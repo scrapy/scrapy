@@ -120,7 +120,7 @@ class S3FilesStore(object):
 
     def _get_boto_bucket(self):
         # disable ssl (is_secure=False) because of this python bug:
-        # http://bugs.python.org/issue5103
+        # https://bugs.python.org/issue5103
         c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
@@ -268,7 +268,7 @@ class FilesPipeline(MediaPipeline):
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
-        
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 

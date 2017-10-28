@@ -29,7 +29,7 @@ if has_environment_marker_platform_impl_support():
 setup(
     name='Scrapy',
     version=version,
-    url='http://scrapy.org',
+    url='https://scrapy.org',
     description='A high-level Web Crawling and Web Scraping framework',
     long_description=open('README.rst').read(),
     author='Scrapy developers',

@@ -188,7 +188,7 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endElement(name)
         self._beautify_newline()
 
-    # Workaround for http://bugs.python.org/issue17606
+    # Workaround for https://bugs.python.org/issue17606
     # Before Python 2.7.4 xml.sax.saxutils required bytes;
     # since 2.7.4 it requires unicode. The bug is likely to be
     # fixed in 2.7.6, but 2.7.6 will still support unicode,

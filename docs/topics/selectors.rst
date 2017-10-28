@@ -86,7 +86,7 @@ To explain how to use the selectors we'll use the `Scrapy shell` (which
 provides interactive testing) and an example page located in the Scrapy
 documentation server:
 
-    http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 .. _topics-selectors-htmlcode:
 
@@ -99,7 +99,7 @@ Here's its HTML code:
 
 First, let's open the shell::
 
-    scrapy shell http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    scrapy shell https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have the response available as ``response``
 shell variable, and its attached selector in ``response.selector`` attribute.

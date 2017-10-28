@@ -11,7 +11,7 @@ warnings.warn("Module `scrapy.downloadermiddlewares.chunked` is deprecated, "
 
 class ChunkedTransferMiddleware(object):
     """This middleware adds support for chunked transfer encoding, as
-    documented in: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
+    documented in: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
     """
 
     def process_response(self, request, response, spider):
