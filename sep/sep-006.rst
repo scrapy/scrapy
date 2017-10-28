@@ -58,7 +58,7 @@ As the name of the method for performing selection (the ``x`` method) is not
 descriptive nor mnemotechnic enough and clearly clashes with ``extract`` method
 (x sounds like a short for extract in english), we propose to rename it to
 `select`, `sel` (is shortness if required), or `xpath` after `lxml's
-<http://codespeak.net/lxml/xpathxslt.html>`_ ``xpath`` method.
+<http://lxml.de/xpathxslt.html>`_ ``xpath`` method.
 
 Bonus (ItemBuilder)
 ===================
@@ -72,4 +72,4 @@ References
 ==========
 
  1. XPath Selectors (https://doc.scrapy.org/topics/selectors.html)
- 2. XPath and XSLT with lxml (http://codespeak.net/lxml/xpathxslt.html)
+ 2. XPath and XSLT with lxml (http://lxml.de/xpathxslt.html)
