@@ -1324,7 +1324,7 @@ the default value for this setting see: https://boutell.com/newfaq/misc/urllengt
 USER_AGENT
 ----------
 
-Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
+Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden.
 
