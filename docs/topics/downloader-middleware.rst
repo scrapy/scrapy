@@ -823,6 +823,7 @@ settings (see the settings documentation for more info):
 * :setting:`RETRY_ENABLED`
 * :setting:`RETRY_TIMES`
 * :setting:`RETRY_HTTP_CODES`
+* :setting:`RETRY_EXCEPTIONS`
 
 .. reqmeta:: dont_retry
 
@@ -871,6 +872,31 @@ In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
 
+.. setting:: RETRY_EXCEPTIONS
+
+RETRY_EXCEPTIONS
+^^^^^^^^^^^^^^^^
+
+Default::
+
+    RETRY_EXCEPTIONS = [
+        'twisted.internet.defer.TimeoutError',
+        'twisted.internet.error.TimeoutError',
+        'twisted.internet.error.DNSLookupError',
+        'twisted.internet.error.ConnectionRefusedError',
+        'twisted.internet.error.ConnectionDone',
+        'twisted.internet.error.ConnectError',
+        'twisted.internet.error.ConnectionLost',
+        'twisted.internet.error.TCPTimedOutError',
+        'twisted.web.client.ResponseFailed',
+        IOError,
+        'scrapy.core.downloader.handlers.http11.TunnelError',
+    ]
+
+List of exceptions to retry.
+
+It may contain either an exception or a string, in which case Scrapy would load
+the exception from the absolute object path specified by the string.
 
 .. _topics-dlmw-robots:
 

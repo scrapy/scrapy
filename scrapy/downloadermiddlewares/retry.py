@@ -13,28 +13,16 @@ there is no more failed pages to retry this middleware sends a signal
 """
 import logging
 
-from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
-from twisted.web.client import ResponseFailed
-
+import six
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
-from scrapy.core.downloader.handlers.http11 import TunnelError
 from scrapy.utils.python import global_object_name
+from scrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):
-
-    # IOError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
-    EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
-                           ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError, TunnelError)
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
@@ -42,6 +30,10 @@ class RetryMiddleware(object):
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
+        self.exceptions_to_retry = tuple(
+            load_object(x) if isinstance(x, six.string_types) else x
+            for x in settings.getlist('RETRY_EXCEPTIONS')
+        )
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -56,7 +48,7 @@ class RetryMiddleware(object):
         return response
 
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
+        if isinstance(exception, self.exceptions_to_retry) \
                 and not request.meta.get('dont_retry', False):
             return self._retry(request, exception, spider)
 
