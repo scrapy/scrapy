@@ -30,6 +30,10 @@ class CookiesMiddleware(object):
 
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
+
+        if request.meta.get('cookies_reset', False):
+            jar.clear()
+
         cookies = self._get_request_cookies(jar, request)
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
