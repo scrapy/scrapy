@@ -309,6 +309,7 @@ Those are:
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
 * :reqmeta:`max_retry_times`
+* :reqmeta:`fingerprint`
 
 .. reqmeta:: bindaddress
 
@@ -351,6 +352,15 @@ max_retry_times
 The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: fingerprint
+
+fingerprint
+---------------
+
+The fingerprint of the request to use when caching and filtering duplicates.
+If a callable is given, it shall receive the request as its argument and
+return the fingerprint. If not specified, Scrapy would use ``scrapy.utils.request.request_fingerprint``.
 
 .. _topics-request-response-ref-request-subclasses:
 

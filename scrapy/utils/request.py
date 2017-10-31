@@ -16,7 +16,7 @@ from scrapy.utils.httpobj import urlparse_cached
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
-def request_fingerprint(request, include_headers=None):
+def request_fingerprint(request, include_headers=None, ignore_meta_key=False):
     """
     Return the request fingerprint.
 
@@ -43,6 +43,11 @@ def request_fingerprint(request, include_headers=None):
     include_headers argument, which is a list of Request headers to include.
 
     """
+    if not ignore_meta_key and 'fingerprint' in request.meta:
+        fp = request.meta['fingerprint']
+        if callable(fp):
+            fp = fp(request)
+        return fp
     if include_headers:
         include_headers = tuple(to_bytes(h.lower())
                                  for h in sorted(include_headers))

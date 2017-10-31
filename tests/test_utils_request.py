@@ -56,6 +56,14 @@ class UtilsRequestTest(unittest.TestCase):
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
+        # customized fingerprints
+        r1 = Request("http://www.example.com", meta={'fingerprint': 'foo'})
+        self.assertEqual(request_fingerprint(r1), 'foo')
+        r2 = Request("http://www.example.com", meta={'fingerprint': lambda x: 'bar'})
+        self.assertEqual(request_fingerprint(r2), 'bar')
+        # customized fingerprints shall not be cached
+        self.assertTrue(r1 not in _fingerprint_cache)
+
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
         request_authenticate(r, 'someuser', 'somepass')
