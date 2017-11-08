@@ -127,6 +127,11 @@ following methods:
         If it returns an iterable the :meth:`process_spider_output` pipeline
         kicks in, and no other :meth:`process_spider_exception` will be called.
 
+        If the function is decorated by :func:`scrapy.middleware.use_failure`_
+        the `exception` parameter will be a Twisted `Failure`_ object instead of
+        an `Exception`_. This allow to retrieve the saved traceback of the
+        error.
+
         :param response: the response being processed when the exception was
           raised
         :type response: :class:`~scrapy.http.Response` object
@@ -431,3 +436,4 @@ UrlLengthMiddleware
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
 
+.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

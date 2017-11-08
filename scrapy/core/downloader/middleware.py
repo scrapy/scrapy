@@ -60,8 +60,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
         @defer.inlineCallbacks
         def process_exception(_failure):
-            exception = _failure.value
             for method in self.methods['process_exception']:
+                exception = _failure
+                if not getattr(method, 'use_failure', False):
+                    exception = _failure.value
                 response = yield method(request=request, exception=exception,
                                         spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \

@@ -9,6 +9,13 @@ from scrapy.utils.defer import process_parallel, process_chain, process_chain_bo
 logger = logging.getLogger(__name__)
 
 
+def use_failure(func):
+    """Decorator settings the targetted function to receive an Twisted failure
+    object instead of an Exception."""
+    func.use_failure = True
+    return func
+
+
 class MiddlewareManager(object):
     """Base class for implementing middleware managers"""
 

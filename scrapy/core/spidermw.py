@@ -49,8 +49,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return scrape_func(response, request, spider)
 
         def process_spider_exception(_failure):
-            exception = _failure.value
             for method in self.methods['process_spider_exception']:
+                exception = _failure
+                if not getattr(method, 'use_failure', False):
+                    exception = _failure.value
                 result = method(response=response, exception=exception, spider=spider)
                 assert result is None or _isiterable(result), \
                     'Middleware %s must returns None, or an iterable object, got %s ' % \

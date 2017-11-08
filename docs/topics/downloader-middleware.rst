@@ -148,6 +148,11 @@ more of the following methods:
       :meth:`process_exception` methods of the middleware the same as returning a
       response would.
 
+      If the function is decorated by :func:`scrapy.middleware.use_failure`_
+      the `exception` parameter will be a Twisted `Failure`_ object instead of
+      an `Exception`_. This allow to retrieve the saved traceback of the
+      error.
+
       :param request: the request that generated the exception
       :type request: is a :class:`~scrapy.http.Request` object
 
@@ -982,3 +987,4 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
 .. _anydbm: https://docs.python.org/2/library/anydbm.html
+.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
