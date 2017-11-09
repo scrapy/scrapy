@@ -670,7 +670,8 @@ TextResponse objects
 
        The same as ``response.body.decode(response.encoding)``, but the
        result is cached after the first call, so you can access
-       ``response.text`` multiple times without extra overhead.
+       ``response.text`` multiple times without extra overhead.And you can get
+       the sourcecode of the ``request.url`` from ``response.text``
 
        .. note::
 
