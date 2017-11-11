@@ -29,6 +29,21 @@ class MySpider(scrapy.Spider):
             self.logger.debug('It Works!')
         return [scrapy.Item(), dict(foo='bar')]
 
+    def parse_request_with_meta(self, response):
+        foo = response.meta.get('foo', 'bar')
+
+        if foo == 'bar':
+            self.logger.debug('It Does Not Work :(')
+        else:
+            self.logger.debug('It Works!')
+
+    def parse_request_without_meta(self, response):
+        foo = response.meta.get('foo', 'bar')
+
+        if foo == 'bar':
+            self.logger.debug('It Works!')
+        else:
+            self.logger.debug('It Does Not Work :(')
 
 class MyGoodCrawlSpider(CrawlSpider):
     name = 'goodcrawl{0}'
@@ -83,6 +98,30 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '-c', 'parse',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", to_native_str(stderr))
+
+    @defer.inlineCallbacks
+    def test_request_with_meta(self):
+        raw_json_string = '{"foo" : "baz"}'
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                           '--meta', raw_json_string,
+                                           '-c', 'parse_request_with_meta',
+                                           self.url('/html')])
+        self.assertIn("DEBUG: It Works!", to_native_str(stderr))
+
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                           '-m', raw_json_string,
+                                           '-c', 'parse_request_with_meta',
+                                           self.url('/html')])
+        self.assertIn("DEBUG: It Works!", to_native_str(stderr))
+
+
+    @defer.inlineCallbacks
+    def test_request_without_meta(self):
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                          '-c', 'parse_request_without_meta',
+                                           self.url('/html')])
+        self.assertIn("DEBUG: It Works!", to_native_str(stderr))
+
 
     @defer.inlineCallbacks
     def test_pipelines(self):

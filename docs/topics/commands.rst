@@ -430,6 +430,9 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
+* ``--meta`` or ``-m``: additional request meta that will be pass to the callback 
+  request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
+
 * ``--pipelines``: process items through pipelines
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
