@@ -52,10 +52,10 @@ class OffsiteMiddleware(object):
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
             return re.compile('') # allow all by default
-        for domainIndex in range(0, len(allowed_domains)):
+        for domain in allowed_domains:
             url_pattern = re.compile("^https?://.*$")
-            if url_pattern.match(allowed_domains[domainIndex]):
-                logger.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % allowed_domains[domainIndex])
+            if url_pattern.match(domain):
+                logger.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain)
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 
