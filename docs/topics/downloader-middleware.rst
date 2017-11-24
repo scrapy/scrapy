@@ -157,6 +157,17 @@ more of the following methods:
       :param spider: the spider for which this request is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
 
+   .. method:: from_crawler(cls, crawler)
+    
+      If present, this classmethod is called to create a middleware instance
+      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+      of the middleware. Crawler object provides access to all Scrapy core
+      components like settings and signals; it is a way for middleware to
+      access them and hook its functionality into Scrapy.
+   
+      :param crawler: crawler that uses this middleware
+      :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
