@@ -56,10 +56,15 @@ class OffsiteMiddleware(object):
         for domain in allowed_domains:
             url_pattern = re.compile("^https?://.*$")
             if url_pattern.match(domain):
-                warnings.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain, Warning)
+                warnings.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain, URLWarning)
+                
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 
     def spider_opened(self, spider):
         self.host_regex = self.get_host_regex(spider)
         self.domains_seen = set()
+
+
+class URLWarning(Warning):
+    pass
