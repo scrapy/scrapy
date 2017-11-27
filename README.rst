@@ -1,4 +1,4 @@
-.. image:: https://github.com/Letharrick/scrapy/blob/master/artwork/scrapy-logo.jpg
+.. image:: https://github.com/scrapy/scrapy/blob/master/artwork/scrapy-logo.jpg
     :target: https://scrapy.org
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
