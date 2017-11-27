@@ -1,4 +1,4 @@
-.. image:: http://www.preserveware.com/wp-content/uploads/2017/06/scrapylogo1.png
+.. image:: https://github.com/Letharrick/scrapy/blob/master/artwork/scrapy-logo.jpg
     :target: https://scrapy.org
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
