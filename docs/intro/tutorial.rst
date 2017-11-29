@@ -89,7 +89,7 @@ This is the code for our first Spider. Save it in a file named
                 'http://quotes.toscrape.com/page/2/',
             ]
             for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
+                yield scrapy.Request(url=url, callback=self.parse,dont_filter=True)
 
         def parse(self, response):
             page = response.url.split("/")[-2]
@@ -531,7 +531,7 @@ page, extracting data from it::
             next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
-                yield scrapy.Request(next_page, callback=self.parse)
+                yield scrapy.Request(next_page, callback=self.parse,dont_filter=True)
 
 
 Now, after extracting the data, the ``parse()`` method looks for the link to
@@ -581,7 +581,7 @@ As a shortcut for creating Request objects you can use
 
             next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
-                yield response.follow(next_page, callback=self.parse)
+                yield response.follow(next_page, callback=self.parse,dont_filter=True)
 
 Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
 need to call urljoin. Note that ``response.follow`` just returns a Request
@@ -591,13 +591,13 @@ You can also pass a selector to ``response.follow`` instead of a string;
 this selector should extract necessary attributes::
 
     for href in response.css('li.next a::attr(href)'):
-        yield response.follow(href, callback=self.parse)
+        yield response.follow(href, callback=self.parse,dont_filter=True)
 
 For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
 attribute automatically. So the code can be shortened further::
 
     for a in response.css('li.next a'):
-        yield response.follow(a, callback=self.parse)
+        yield response.follow(a, callback=self.parse,dont_filter=True)
 
 .. note::
 
@@ -623,11 +623,11 @@ this time for scraping author information::
         def parse(self, response):
             # follow links to author pages
             for href in response.css('.author + a::attr(href)'):
-                yield response.follow(href, self.parse_author)
+                yield response.follow(href, self.parse_author,dont_filter=True)
 
             # follow pagination links
             for href in response.css('li.next a::attr(href)'):
-                yield response.follow(href, self.parse)
+                yield response.follow(href, self.parse,dont_filter=True)
 
         def parse_author(self, response):
             def extract_with_css(query):
@@ -695,7 +695,7 @@ with a specific tag, building the URL based on the argument::
             tag = getattr(self, 'tag', None)
             if tag is not None:
                 url = url + 'tag/' + tag
-            yield scrapy.Request(url, self.parse)
+            yield scrapy.Request(url, self.parse,dont_filter=True)
 
         def parse(self, response):
             for quote in response.css('div.quote'):
@@ -706,7 +706,7 @@ with a specific tag, building the URL based on the argument::
 
             next_page = response.css('li.next a::attr(href)').extract_first()
             if next_page is not None:
-                yield response.follow(next_page, self.parse)
+                yield response.follow(next_page, self.parse,dont_filter=True)
 
 
 If you pass the ``tag=humor`` argument to this spider, you'll notice that it
