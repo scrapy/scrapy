@@ -10,6 +10,7 @@ import logging
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
+from six.moves.urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,13 @@ class OffsiteMiddleware(object):
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
             return re.compile('') # allow all by default
+        else:
+            for i, user_domain in enumerate(allowed_domains):
+                parsed_uri = urlparse(user_domain)
+                if user_domain != parsed_uri.netloc and parsed_uri.netloc != '':
+                    allowed_domains[i] = parsed_uri.netloc
+                    logging.warn("%s is an invalid domain and has automatically been converted to %s" % (
+                    user_domain, parsed_uri.netloc))
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 
