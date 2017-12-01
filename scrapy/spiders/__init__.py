@@ -44,7 +44,8 @@ class Spider(object_ref):
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
         """
-        self.logger.log(level, message, **kw)
+        kw.setdefault('args', ())
+        self.logger._log(level, message, **kw)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
