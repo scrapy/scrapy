@@ -44,7 +44,7 @@ class Spider(object_ref):
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
         """
-        kw.setdefault('args', None)
+        kw.setdefault('args', (,))
         self.logger._log(level, message, **kw)
 
     @classmethod
