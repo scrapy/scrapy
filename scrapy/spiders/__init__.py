@@ -45,7 +45,7 @@ class Spider(object_ref):
         Python logger too.
         """
         kw.setdefault('args', ())
-        self.logger._log(level, message, **kw)
+        self.logger.logger._log(level, message, **kw)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
