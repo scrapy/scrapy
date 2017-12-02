@@ -231,14 +231,20 @@ consider contacting `commercial support`_ if in doubt.
 Here are some tips to keep in mind when dealing with these kinds of sites:
 
 * rotate your user agent from a pool of well-known ones from browsers (google
-  around to get a list of them)
+  around to get a list of them). Use recent browser versions and only real
+  user agent strings. Old versions or exotic user agents can lead to captcha
+  challenges.
 * disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behaviour
+  cookies to spot bot behaviour. Alternatively use 
+  :ref:`multiple cookie sessions per spider <cookies-mw>` to keep the number of 
+  requests per session low.
+* send correct HTTP headers with your requests. Many websites check at least 
+  `Referer`. Sometimes other headers are also checked to match user agent string.
 * use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
 * if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
+  services like `BotProxy`_ or `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such downloaders is
@@ -249,6 +255,7 @@ If you are still unable to prevent your bot getting banned, consider contacting
 
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: http://scrapy.org/support/
+.. _BotProxy: https://botproxy.net/
 .. _ProxyMesh: http://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
