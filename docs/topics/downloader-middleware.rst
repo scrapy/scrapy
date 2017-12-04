@@ -190,6 +190,12 @@ The following settings can be used to configure the cookie middleware:
 * :setting:`COOKIES_ENABLED`
 * :setting:`COOKIES_DEBUG`
 
+Notice that if the :class:`~scrapy.http.Request` 
+has ``meta['dont_merge_cookies']`` present then 
+despite the value of :setting:`COOKIES_ENABLED` the cookies received in the
+:class:`~scrapy.http.Response` will **not** be merged with the existing 
+cookies.
+
 .. reqmeta:: cookiejar
 
 Multiple cookie sessions per spider
