@@ -5,7 +5,9 @@ from six.moves.urllib.parse import urlparse
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.offsite import OffsiteMiddleware
+from scrapy.spidermiddlewares.offsite import URLWarning
 from scrapy.utils.test import get_crawler
+import warnings
 
 class TestOffsiteMiddleware(TestCase):
 
@@ -68,3 +70,13 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
       reqs = [Request('http://scrapytest.org/1')]
       out = list(self.mw.process_spider_output(res, reqs, self.spider))
       self.assertEqual(out, reqs)
+
+
+class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
+    
+    def test_get_host_regex(self):
+        self.spider.allowed_domains = ['http://scrapytest.org', 'scrapy.org', 'scrapy.test.org']
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.mw.get_host_regex(self.spider)
+            assert issubclass(w[-1].category, URLWarning)
