@@ -127,8 +127,15 @@ original pull request author haven't had time to address them.
 In this case consider picking up this pull request: open
 a new pull request with all commits from the original pull request, as well as
 additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as soon as original the author is acknowledged by keeping
+not considered rude as soon as the original author is acknowledged by keeping
 his/her commits.
+
+You can pull an existing pull request to a local branch
+by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
+(replace 'upstream' with a remote name for scrapy repository,
+``$PR_NUMBER`` with an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE``
+with a name of the branch you want to create locally).
+See also: https://help.github.com/articles/checking-out-pull-requests-locally/#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
 E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
