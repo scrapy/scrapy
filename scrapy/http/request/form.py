@@ -34,12 +34,11 @@ class FormRequest(Request):
                 self._set_body(querystr)
             else:
                 if '?' in self.url:
-                    """ Update any values in the provided url """
+                    # Update any values in the provided url
                     url_items = self.url[self.url.find('?') + 1:].split('&')
                     url_items = {item[:item.find('=')]: item[item.find('=') + 1:] for item in url_items}
                     url_items.update(formdata)
                     querystr = _urlencode(url_items.items(), self.encoding)
-
                     self._set_url(self.url[:self.url.find('?') + 1] + querystr)
                 else:
                     self._set_url(self.url + '?' + querystr)
