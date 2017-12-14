@@ -33,7 +33,16 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                if '?' in self.url:
+                    """ Update any values in the provided url """
+                    url_items = self.url[self.url.find('?') + 1:].split('&')
+                    url_items = {item[:item.find('=')]: item[item.find('=') + 1:] for item in url_items}
+                    url_items.update(formdata)
+                    querystr = _urlencode(url_items.items(), self.encoding)
+
+                    self._set_url(self.url[:self.url.find('?') + 1] + querystr)
+                else:
+                    self._set_url(self.url + '?' + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
