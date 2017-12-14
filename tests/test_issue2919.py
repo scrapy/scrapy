@@ -9,7 +9,7 @@ class Issue2919Test(unittest.TestCase):
         """
         Validate formdata overrides url params.
         """
-        url = FormRequest('http://example.com/?id=1&id2=2&id4=4', method='GET', formdata={'id': '11', 'id2': '12', 'id3': '13'}).url \
+        url = FormRequest('http://example.com/?id=1&id2=2&id4=4', method='GET', formdata={'id': '11', 'id2': '12', 'id3': '13'}).url
         params = url[url.find('?') + 1:].split('&')
         for param in params:
             key = param.split('=')[0]
