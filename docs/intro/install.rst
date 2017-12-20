@@ -164,7 +164,7 @@ you can install Scrapy with ``pip`` after that::
 
 .. note::
     The same non-Python dependencies can be used to install Scrapy in Debian
-    Jessue (8.0) and above.
+    Jessie (8.0) and above.
 
 
 .. _intro-install-macos:
