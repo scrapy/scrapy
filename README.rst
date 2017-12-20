@@ -6,6 +6,10 @@ Scrapy
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: PyPI Version
 
+.. image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: Supported Python Versions
+
 .. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
    :target: https://travis-ci.org/scrapy/scrapy
    :alt: Build Status
@@ -36,7 +40,7 @@ https://scrapy.org
 Requirements
 ============
 
-* Python 2.7 or Python 3.3+
+* Python 2.7 or Python 3.4+
 * Works on Linux, Windows, Mac OSX, BSD
 
 Install

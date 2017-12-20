@@ -7,7 +7,7 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.3 or above.
+Scrapy runs on Python 2.7 and Python 3.4 or above.
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
@@ -132,12 +132,12 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 
 .. _intro-install-ubuntu:
 
-Ubuntu 12.04 or above
+Ubuntu 14.04 or above
 ---------------------
 
 Scrapy is currently tested with recent-enough versions of lxml,
 twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions.
-But it should support older versions of Ubuntu too, like Ubuntu 12.04,
+But it should support older versions of Ubuntu too, like Ubuntu 14.04,
 albeit with potential issues with TLS connections.
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
@@ -163,8 +163,8 @@ you can install Scrapy with ``pip`` after that::
     pip install scrapy
 
 .. note::
-    The same non-python dependencies can be used to install Scrapy in Debian
-    Wheezy (7.0) and above.
+    The same non-Python dependencies can be used to install Scrapy in Debian
+    Jessie (8.0) and above.
 
 
 .. _intro-install-macos:
