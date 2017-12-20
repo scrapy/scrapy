@@ -13,6 +13,8 @@ matrix:
       env: TOXENV=jessie
     - python: 2.7
       env: TOXENV=pypy
+    - python: 3.4
+      env: TOXENV=py34
     - python: 3.5
       env: TOXENV=py35
     - python: 3.6
