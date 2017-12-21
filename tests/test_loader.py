@@ -99,6 +99,15 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.replace_value('sku', [valid_fragment], re=sku_re)
         self.assertEqual(il.load_item()['sku'], u'1234')
 
+    def test_get_output_value_before_load_item(self):
+        item = TestItem(url='http://example.com', summary='foo bar')
+        il = ItemLoader(item)
+        il.get_output_value('url')
+        self.assertEqual(il.load_item(), {
+            'url': 'http://example.com',
+            'summary': 'foo bar',
+        })
+
     def test_self_referencing_loader(self):
         class MyLoader(ItemLoader):
             url_out = TakeFirst()
