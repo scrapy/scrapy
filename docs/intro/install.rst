@@ -8,7 +8,7 @@ Installing Scrapy
 =================
 
 Scrapy runs on Python 2.7 and Python 3.4 or above
-under CPython (default Python implementation) and PyPy (only for Python 2.7).
+under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
@@ -227,7 +227,8 @@ After any of these workarounds you should be able to install Scrapy::
 PyPy
 ----
 
-We recommend using the latest PyPy version. The version tested is PyPy2-v5.9.0.
+We recommend using the latest PyPy version. The version tested is 5.9.0.
+For PyPy3, only Linux installation was tested.
 
 Most scrapy dependencides now have binary wheels for CPython, but not for PyPy.
 This means that these dependecies will be built during installation.
