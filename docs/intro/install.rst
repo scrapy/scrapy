@@ -7,7 +7,8 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.4 or above.
+Scrapy runs on Python 2.7 and Python 3.4 or above
+under CPython (default Python implementation) and PyPy (only for Python 2.7).
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
@@ -221,6 +222,28 @@ solutions:
 After any of these workarounds you should be able to install Scrapy::
 
   pip install Scrapy
+
+
+PyPy
+----
+
+We recommend using the latest PyPy version. The version tested is PyPy2-v5.9.0.
+
+Most scrapy dependencides now have binary wheels for CPython, but not for PyPy.
+This means that these dependecies will be built during installation.
+On OS X, you are likely to face an issue with building Cryptography dependency,
+solution to this problem is described
+`here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
+that is to ``brew install openssl`` and then export the flags that this command
+recommends (only needed when installing scrapy). Installing on Linux has no special
+issues besides installing build dependencies.
+Installing scrapy with PyPy on Windows is not tested.
+
+You can check that scrapy is installed correctly by running ``scrapy bench``.
+If this command gives errors such as
+``TypeError: ... got 2 unexpected keyword arguments``, this means
+that setuptools was unable to pick up one PyPy-specific dependency.
+To fix this issue, run ``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
 .. _Python: https://www.python.org/
