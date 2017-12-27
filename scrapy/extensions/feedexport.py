@@ -39,7 +39,7 @@ class IFeedStorage(Interface):
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(file):
+    def store(file, uri):
         """Store the given file stream"""
 
 
@@ -53,7 +53,10 @@ class BlockingFeedStorage(object):
 
         return NamedTemporaryFile(prefix='feed-', dir=path)
 
-    def store(self, file):
+    def store(self, file, uri):
+        u = urlparse(uri)
+        self.bucketname = u.hostname
+        self.keyname = u.path[1:]  # remove first "/"
         return threads.deferToThread(self._store_in_thread, file)
 
     def _store_in_thread(self, file):
@@ -71,7 +74,7 @@ class StdoutFeedStorage(object):
     def open(self, spider):
         return self._stdout
 
-    def store(self, file):
+    def store(self, file, uri):
         pass
 
 
@@ -87,7 +90,7 @@ class FileFeedStorage(object):
             os.makedirs(dirname)
         return open(self.path, 'ab')
 
-    def store(self, file):
+    def store(self, file, uri):
         file.close()
 
 
@@ -199,6 +202,7 @@ class FeedExporter(object):
 
     def close_spider(self, spider):
         slot = self.slot
+        slot.uri = self.urifmt % self._get_uri_params(spider)
         if not slot.itemcount and not self.store_empty:
             return
         if self._exporting:
@@ -208,7 +212,7 @@ class FeedExporter(object):
         log_args = {'format': self.format,
                     'itemcount': slot.itemcount,
                     'uri': slot.uri}
-        d = defer.maybeDeferred(slot.storage.store, slot.file)
+        d = defer.maybeDeferred(slot.storage.store, slot.file, slot.uri)
         d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
                                             extra={'spider': spider}))
         d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
