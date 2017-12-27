@@ -227,7 +227,7 @@ Whether to enable the cookies middleware. If disabled, no cookies will be sent
 to web servers.
 
 Notice that if the :class:`~scrapy.http.Request` 
-has ``meta['dont_merge_cookies']`` evaluates to ``True``. 
+has ``meta['dont_merge_cookies']`` evaluated to ``True``. 
 despite the value of :setting:`COOKIES_ENABLED` the cookies will **not** be 
 sent to web servers and received cookies in 
 :class:`~scrapy.http.Response` will **not** be merged with the existing 
