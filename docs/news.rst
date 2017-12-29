@@ -74,7 +74,7 @@ Bug fixes
   :setting:`USER_AGENT` if you relied on old value.
 - Fix PyPy and PyPy3 test failures, support them officially
   (:issue:`2793`, :issue:`2935`, :issue:`2990`, :issue:`3050`, :issue:`2213`,
-   :issue:`3048`)
+  :issue:`3048`)
 - Fix DNS resolver when ``DNSCACHE_ENABLED=False`` (:issue:`2811`)
 - Add ``cryptography`` for Debian Jessie tox test env (:issue:`2848`)
 - Add verification to check if Request callback is callable (:issue:`2766`)
