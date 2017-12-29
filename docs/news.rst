@@ -6,13 +6,35 @@ Release notes
 Scrapy 1.5.0 (2017-XX-XX)
 -------------------------
 
-Supported Environments
-----------------------
+This release brings small new features and improvements across the codebase.
+Some highlights:
 
-* Scrapy 1.5 drops support for Python 3.3;
-* this release also improves Python 3.x support (especially 3.6);
-* PyPy and PyPy3 are now supported officially, by running tests on CI.
-* Ubuntu 12.04 and Debian 7.0 are baseline Linux distributions.
+* Google Cloud Storage is supported in FilesPipeline and ImagesPipeline.
+* Crawling with proxy servers becomes more efficient, as connections
+  to proxies can be reused now.
+* Warnings, exception and logging messages are improved to make debugging
+  easier.
+* ``scrapy parse`` command now allows to set custom request meta via
+  ``--meta`` argument.
+* Compatibility with Python 3.6, PyPy and PyPy3 is improved;
+  PyPy and PyPy3 are now supported officially, by running tests on CI.
+* Better default handling of HTTP 308, 522 and 524 status codes.
+* Documentation is improved, as usual.
+
+Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Scrapy 1.5 drops support for Python 3.3.
+* Default Scrapy User-Agent now uses https link to scrapy.org (:issue:`2983`).
+  **This is technically backwards-incompatible**; override
+  :setting:`USER_AGENT` if you relied on old value.
+* Logging of settings overridden by ``custom_settings`` is fixed;
+  **this is technically backwards-incompatible** because the logger
+  changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``. If you're
+  parsing Scrapy logs, please update your log parsers (:issue:`1343`).
+* LinkExtractor now ignores ``m4v`` extension by default, this is change
+  in behavior.
+* 522 and 524 status codes are added to ``RETRY_HTTP_CODES`` (:issue:`2851`)
 
 New features
 ~~~~~~~~~~~~
@@ -27,19 +49,18 @@ New features
 - Handle HTTP 308 Permanent Redirect (:issue:`2844`)
 - Add 522 and 524 to ``RETRY_HTTP_CODES`` (:issue:`2851`)
 - Log versions information at startup (:issue:`2857`)
+- ``scrapy.mail.MailSender`` now works in Python 3 (it requires Twisted 17.9.0)
+- Connections to proxy servers are reused (:issue:`2743`)
 - Add template for a downloader middleware (:issue:`2755`)
 - Explicit message for NotImplementedError when parse callback not defined
   (:issue:`2831`)
-- Connections to proxy servers are reused (:issue:`2743`)
 - CrawlerProcess got an option to disable installation of root log handler
   (:issue:`2921`)
 - LinkExtractor now ignores ``m4v`` extension by default
-- ``scrapy.mail.MailSender`` now works in Python 3 (it requires Twisted 17.9.0)
 - Better log messages for responses over :setting:`DOWNLOAD_WARNSIZE` and
   :setting:`DOWNLOAD_MAXSIZE` limits (:issue:`2927`)
 - Show warning when a URL is put to ``Spider.allowed_domains`` instead of
   a domain (:issue:`2250`).
-
 
 Bug fixes
 ~~~~~~~~~
@@ -52,7 +73,8 @@ Bug fixes
   **This is technically backwards-incompatible**; override
   :setting:`USER_AGENT` if you relied on old value.
 - Fix PyPy and PyPy3 test failures, support them officially
-  (:issue:`2793`, :issue:`2935`, :issue:`2990`, :issue:`3050`, :issue:`2213`, :issue:`3048`)
+  (:issue:`2793`, :issue:`2935`, :issue:`2990`, :issue:`3050`, :issue:`2213`,
+   :issue:`3048`)
 - Fix DNS resolver when ``DNSCACHE_ENABLED=False`` (:issue:`2811`)
 - Add ``cryptography`` for Debian Jessie tox test env (:issue:`2848`)
 - Add verification to check if Request callback is callable (:issue:`2766`)
@@ -61,7 +83,6 @@ Bug fixes
   (:issue:`2862`)
 - Update deprecated test aliases (:issue:`2876`)
 - Fix ``SitemapSpider`` support for alternate links (:issue:`2853`)
-
 
 Docs
 ~~~~
@@ -92,8 +113,6 @@ Docs
 - A better example of ItemExporters usage (:issue:`2989`)
 - Document ``from_crawler`` methods for spider and downloader middlewares
   (:issue:`3019`)
-
-
 
 
 Scrapy 1.4.0 (2017-05-18)
