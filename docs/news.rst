@@ -3,7 +3,7 @@
 Release notes
 =============
 
-Scrapy 1.5.0 (2017-XX-XX)
+Scrapy 1.5.0 (2017-12-29)
 -------------------------
 
 This release brings small new features and improvements across the codebase.
