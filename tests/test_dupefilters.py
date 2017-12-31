@@ -5,31 +5,49 @@ import shutil
 
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
+from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.job import job_dir
 from scrapy.utils.test import get_crawler
 
 
+class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(crawler.settings), debug)
+        df.method = crawler.settings.get('METHOD')
+        return df
+
+
+class FromSettingsRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_settings(cls, settings):
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(settings), debug)
+        df.method = settings.get('METHOD')
+        return df
+
+
 class RFPDupeFilterTest(unittest.TestCase):
 
-    def test_dupefilter_from_crawler(self):
+    def test_from_crawler_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True, 'METHOD': 'from_crawler',
+                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_crawler')
 
-        class FromCrawlerRFPDupeFilter(RFPDupeFilter):
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
-                df = cls(job_dir(crawler.settings), debug)
-                df.user_agent = crawler.settings.get('USER_AGENT')
-                return df
-
-        crawler = get_crawler(settings_dict={'DUPEFILTER_DEBUG': True, 'USER_AGENT': 'test ua'})
-        dupefilter = FromCrawlerRFPDupeFilter.from_crawler(crawler)
-
-        self.assertTrue(dupefilter.debug)
-        self.assertEqual(dupefilter.user_agent, 'test ua')
-
-        dupefilter.close('finished')
+    def test_from_settings_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True, 'METHOD': 'from_settings',
+                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_filter(self):
         dupefilter = RFPDupeFilter()
