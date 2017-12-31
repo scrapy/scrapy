@@ -23,7 +23,7 @@ In this example, we'll show how to use `Firebug`_ to scrape data from the
 Project`_ used in the :ref:`tutorial <intro-tutorial>` but with a different
 face.
 
-.. _Firebug: http://getfirebug.com
+.. _Firebug: https://getfirebug.com/
 .. _Google Directory: http://directory.google.com/
 .. _Open Directory Project: http://www.dmoz.org
 

@@ -5,7 +5,10 @@ See documentation in docs/topics/email.rst
 """
 import logging
 
-from six.moves import cStringIO as StringIO
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 import six
 
 from email.utils import COMMASPACE, formatdate
@@ -21,9 +24,16 @@ else:
 
 from twisted.internet import defer, reactor, ssl
 
-from .utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.python import to_bytes
 
 logger = logging.getLogger(__name__)
+
+
+def _to_bytes_or_none(text):
+    if text is None:
+        return None
+    return to_bytes(text)
 
 
 class MailSender(object):
@@ -32,8 +42,8 @@ class MailSender(object):
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
         self.smtpport = smtpport
-        self.smtpuser = smtpuser
-        self.smtppass = smtppass
+        self.smtpuser = _to_bytes_or_none(smtpuser)
+        self.smtppass = _to_bytes_or_none(smtppass)
         self.smtptls = smtptls
         self.smtpssl = smtpssl
         self.mailfrom = mailfrom
@@ -88,7 +98,7 @@ class MailSender(object):
                           'mailattachs': len(attachs)})
             return
 
-        dfd = self._sendmail(rcpts, msg.as_string())
+        dfd = self._sendmail(rcpts, msg.as_string().encode(charset or 'utf-8'))
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
             callbackArgs=[to, cc, subject, len(attachs)],
             errbackArgs=[to, cc, subject, len(attachs)])
@@ -112,7 +122,7 @@ class MailSender(object):
     def _sendmail(self, to_addrs, msg):
         # Import twisted.mail here because it is not available in python3
         from twisted.mail.smtp import ESMTPSenderFactory
-        msg = StringIO(msg)
+        msg = BytesIO(msg)
         d = defer.Deferred()
         factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
             to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \

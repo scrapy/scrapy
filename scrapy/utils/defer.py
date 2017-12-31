@@ -57,7 +57,7 @@ def parallel(iterable, count, callable, *args, **named):
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
-    Taken from: http://jcalderone.livejournal.com/24285.html
+    Taken from: https://jcalderone.livejournal.com/24285.html
     """
     coop = task.Cooperator()
     work = (callable(elem, *args, **named) for elem in iterable)

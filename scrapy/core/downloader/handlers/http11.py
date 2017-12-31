@@ -15,6 +15,10 @@ from twisted.internet.error import TimeoutError
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
     HTTPConnectionPool, ResponseFailed
+try:
+    from twisted.web.client import URI
+except ImportError:
+    from twisted.web.client import _URI as URI
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
@@ -228,10 +232,38 @@ class TunnelingAgent(Agent):
             headers, bodyProducer, requestPath)
 
 
+class ScrapyProxyAgent(Agent):
+
+    def __init__(self, reactor, proxyURI,
+                 connectTimeout=None, bindAddress=None, pool=None):
+        super(ScrapyProxyAgent, self).__init__(reactor,
+                                               connectTimeout=connectTimeout,
+                                               bindAddress=bindAddress,
+                                               pool=pool)
+        self._proxyURI = URI.fromBytes(proxyURI)
+
+    def request(self, method, uri, headers=None, bodyProducer=None):
+        """
+        Issue a new request via the configured proxy.
+        """
+        # Cache *all* connections under the same key, since we are only
+        # connecting to a single destination, the proxy:
+        if twisted_version >= (15, 0, 0):
+            proxyEndpoint = self._getEndpoint(self._proxyURI)
+        else:
+            proxyEndpoint = self._getEndpoint(self._proxyURI.scheme,
+                                              self._proxyURI.host,
+                                              self._proxyURI.port)
+        key = ("http-proxy", self._proxyURI.host, self._proxyURI.port)
+        return self._requestWithEndpoint(key, proxyEndpoint, method,
+                                         URI.fromBytes(uri), headers,
+                                         bodyProducer, uri)
+
+
 class ScrapyAgent(object):
 
     _Agent = Agent
-    _ProxyAgent = ProxyAgent
+    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
@@ -260,9 +292,8 @@ class ScrapyAgent(object):
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
             else:
-                endpoint = TCP4ClientEndpoint(reactor, proxyHost, proxyPort,
-                    timeout=timeout, bindAddress=bindaddress)
-                return self._ProxyAgent(endpoint)
+                return self._ProxyAgent(reactor, proxyURI=to_bytes(proxy, encoding='ascii'),
+                    connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
@@ -279,8 +310,7 @@ class ScrapyAgent(object):
             headers.removeHeader(b'Proxy-Authorization')
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
-        else:
-            bodyproducer = None
+        elif method == b'POST':
             # Setting Content-Length: 0 even for POST requests is not a
             # MUST per HTTP RFCs, but it's common behavior, and some
             # servers require this, otherwise returning HTTP 411 Length required
@@ -289,10 +319,13 @@ class ScrapyAgent(object):
             # "a Content-Length header field is normally sent in a POST
             # request even when the value is 0 (indicating an empty payload body)."
             #
-            # Twisted Agent will not add "Content-Length: 0" by itself
-            if method == b'POST':
-                headers.addRawHeader(b'Content-Length', b'0')
-
+            # Twisted < 17 will not add "Content-Length: 0" by itself;
+            # Twisted >= 17 fixes this;
+            # Using a producer with an empty-string sends `0` as Content-Length
+            # for all versions of Twisted.
+            bodyproducer = _RequestBodyProducer(b'')
+        else:
+            bodyproducer = None
         start_time = time()
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
@@ -342,11 +375,12 @@ class ScrapyAgent(object):
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s).",
-                           {'size': expected_size, 'warnsize': warnsize})
+                           "download warn size (%(warnsize)s) in request %(request)s.",
+                           {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
-            txresponse._transport._producer.loseConnection()
+            # Abort connection inmediately.
+            txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(_ResponseReader(
@@ -399,14 +433,23 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
+        # This maybe called several times after cancel was called with buffered
+        # data.
+        if self._finished.called:
+            return
+
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s).",
+                         "max size (%(maxsize)s) in request %(request)s.",
                          {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize})
+                          'maxsize': self._maxsize,
+                          'request': self._request})
+            # Clear buffer earlier to avoid keeping data in memory for a long
+            # time.
+            self._bodybuf.truncate(0)
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:

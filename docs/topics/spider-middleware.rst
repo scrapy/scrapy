@@ -95,7 +95,7 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item` 
+        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
         objects.
 
         :param response: the response which generated this output from the
@@ -164,6 +164,17 @@ following methods:
         :param spider: the spider to whom the start requests belong
         :type spider: :class:`~scrapy.spiders.Spider` object
 
+    .. method:: from_crawler(cls, crawler)
+    
+       If present, this classmethod is called to create a middleware instance
+       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+       of the middleware. Crawler object provides access to all Scrapy core
+       components like settings and signals; it is a way for middleware to
+       access them and hook its functionality into Scrapy.
+    
+       :param crawler: crawler that uses this middleware
+       :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
@@ -188,9 +199,13 @@ DepthMiddleware
 
 .. class:: DepthMiddleware
 
-   DepthMiddleware is a scrape middleware used for tracking the depth of each
-   Request inside the site being scraped. It can be used to limit the maximum
-   depth to scrape or things like that.
+   DepthMiddleware is used for tracking the depth of each Request inside the
+   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   there is no value previously set (usually just the first Request) and
+   incrementing it by 1 otherwise.
+
+   It can be used to limit the maximum depth to scrape, control Request
+   priority based on their depth, and things like that.
 
    The :class:`DepthMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
@@ -327,6 +342,90 @@ REFERER_ENABLED
 Default: ``True``
 
 Whether to enable referer middleware.
+
+.. setting:: REFERRER_POLICY
+
+REFERRER_POLICY
+^^^^^^^^^^^^^^^
+
+.. versionadded:: 1.4
+
+Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
+
+.. reqmeta:: referrer_policy
+
+`Referrer Policy`_ to apply when populating Request "Referer" header.
+
+.. note::
+    You can also set the Referrer Policy per request,
+    using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
+    with the same acceptable values as for the ``REFERRER_POLICY`` setting.
+
+Acceptable values for REFERRER_POLICY
+*************************************
+
+- either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+  subclass — a custom policy or one of the built-in ones (see classes below),
+- or one of the standard W3C-defined string values,
+- or the special ``"scrapy-default"``.
+
+=======================================  ========================================================================
+String value                             Class name (as a string)
+=======================================  ========================================================================
+``"scrapy-default"`` (default)           :class:`scrapy.spidermiddlewares.referer.DefaultReferrerPolicy`
+`"no-referrer"`_                         :class:`scrapy.spidermiddlewares.referer.NoReferrerPolicy`
+`"no-referrer-when-downgrade"`_          :class:`scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy`
+`"same-origin"`_                         :class:`scrapy.spidermiddlewares.referer.SameOriginPolicy`
+`"origin"`_                              :class:`scrapy.spidermiddlewares.referer.OriginPolicy`
+`"strict-origin"`_                       :class:`scrapy.spidermiddlewares.referer.StrictOriginPolicy`
+`"origin-when-cross-origin"`_            :class:`scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy`
+`"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
+`"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
+=======================================  ========================================================================
+
+.. autoclass:: DefaultReferrerPolicy
+.. warning::
+    Scrapy's default referrer policy — just like `"no-referrer-when-downgrade"`_,
+    the W3C-recommended value for browsers — will send a non-empty
+    "Referer" header from any ``http(s)://`` to any ``https://`` URL,
+    even if the domain is different.
+
+    `"same-origin"`_ may be a better choice if you want to remove referrer
+    information for cross-domain requests.
+
+.. autoclass:: NoReferrerPolicy
+
+.. autoclass:: NoReferrerWhenDowngradePolicy
+.. note::
+    "no-referrer-when-downgrade" policy is the W3C-recommended default,
+    and is used by major web browsers.
+
+    However, it is NOT Scrapy's default referrer policy (see :class:`DefaultReferrerPolicy`).
+
+.. autoclass:: SameOriginPolicy
+
+.. autoclass:: OriginPolicy
+
+.. autoclass:: StrictOriginPolicy
+
+.. autoclass:: OriginWhenCrossOriginPolicy
+
+.. autoclass:: StrictOriginWhenCrossOriginPolicy
+
+.. autoclass:: UnsafeUrlPolicy
+.. warning::
+    "unsafe-url" policy is NOT recommended.
+
+.. _Referrer Policy: https://www.w3.org/TR/referrer-policy
+.. _"no-referrer": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer
+.. _"no-referrer-when-downgrade": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
+.. _"same-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-same-origin
+.. _"origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin
+.. _"strict-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin
+.. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
+.. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
+.. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
 
 UrlLengthMiddleware
 -------------------

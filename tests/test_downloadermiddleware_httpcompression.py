@@ -7,6 +7,8 @@ from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
     ACCEPTED_ENCODINGS
+from scrapy.responsetypes import responsetypes
+from scrapy.utils.gz import gunzip
 from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
 
@@ -152,15 +154,29 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
 
+    def test_process_response_no_content_type_header(self):
+        headers = {
+            'Content-Encoding': 'identity',
+        }
+        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        respcls = responsetypes.from_args(url="http://www.example.com/index", headers=headers, body=plainbody)
+        response = respcls("http://www.example.com/index", headers=headers, body=plainbody)
+        request = Request("http://www.example.com/index")
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert isinstance(newresponse, respcls)
+        self.assertEqual(newresponse.body, plainbody)
+        self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
+
     def test_process_response_gzipped_contenttype(self):
         response = self._getresponse('gzip')
         response.headers['Content-Type'] = 'application/gzip'
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIs(newresponse, response)
-        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
-        self.assertEqual(response.headers['Content-Type'], b'application/gzip')
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
 
     def test_process_response_gzip_app_octetstream_contenttype(self):
         response = self._getresponse('gzip')
@@ -168,9 +184,9 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIs(newresponse, response)
-        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
-        self.assertEqual(response.headers['Content-Type'], b'application/octet-stream')
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
 
     def test_process_response_gzip_binary_octetstream_contenttype(self):
         response = self._getresponse('x-gzip')
@@ -178,9 +194,51 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIs(newresponse, response)
-        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
-        self.assertEqual(response.headers['Content-Type'], b'binary/octet-stream')
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertNotIn('Content-Encoding', newresponse.headers)
+
+    def test_process_response_gzipped_gzip_file(self):
+        """Test that a gzip Content-Encoded .gz file is gunzipped
+        only once by the middleware, leaving gunzipping of the file
+        to upper layers.
+        """
+        headers = {
+            'Content-Type': 'application/gzip',
+            'Content-Encoding': 'gzip',
+        }
+        # build a gzipped file (here, a sitemap)
+        f = BytesIO()
+        plainbody = b"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+  <url>
+    <loc>http://www.example.com/</loc>
+    <lastmod>2009-08-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1</priority>
+  </url>
+  <url>
+    <loc>http://www.example.com/Special-Offers.html</loc>
+    <lastmod>2009-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>"""
+        gz_file = GzipFile(fileobj=f, mode='wb')
+        gz_file.write(plainbody)
+        gz_file.close()
+
+        # build a gzipped response body containing this gzipped file
+        r = BytesIO()
+        gz_resp = GzipFile(fileobj=r, mode='wb')
+        gz_resp.write(f.getvalue())
+        gz_resp.close()
+
+        response = Response("http;//www.example.com/", headers=headers, body=r.getvalue())
+        request = Request("http://www.example.com/")
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertEqual(gunzip(newresponse.body), plainbody)
 
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse('gzip')
@@ -190,4 +248,4 @@ class HttpCompressionTest(TestCase):
         response = response.replace(body = None)
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
-        self.assertEquals(response.body, b'')
+        self.assertEqual(response.body, b'')

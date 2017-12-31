@@ -28,7 +28,7 @@ IGNORED_EXTENSIONS = [
 
     # video
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a',
+    'm4a', 'm4v',
 
     # office suites
     'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
@@ -101,7 +101,7 @@ class FilteringLinkExtractor(object):
         links = [x for x in links if self._link_allowed(x)]
         if self.canonicalize:
             for link in links:
-                link.url = canonicalize_url(urlparse(link.url))
+                link.url = canonicalize_url(link.url)
         links = self.link_extractor._process_links(links)
         return links
 

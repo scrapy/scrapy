@@ -75,7 +75,7 @@ class HttpCacheMiddleware(object):
             return response
 
         # RFC2616 requires origin server to set Date header,
-        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
+        # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
         if 'Date' not in response.headers:
             response.headers['Date'] = formatdate(usegmt=1)
 

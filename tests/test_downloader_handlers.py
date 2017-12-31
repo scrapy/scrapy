@@ -6,7 +6,6 @@ try:
     from unittest import mock
 except ImportError:
     import mock
-import shutil
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -22,6 +21,7 @@ from twisted.cred import portal, checkers, credentials
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -29,14 +29,15 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
 from scrapy.spiders import Spider
-from scrapy.http import Request
+from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
+from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer, ssl_context_factory
+from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
@@ -97,9 +98,9 @@ class FileTestCase(unittest.TestCase):
 
     def test_download(self):
         def _test(response):
-            self.assertEquals(response.url, request.url)
-            self.assertEquals(response.status, 200)
-            self.assertEquals(response.body, b'0123456789')
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.body, b'0123456789')
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
@@ -176,14 +177,24 @@ class EmptyContentTypeHeaderResource(resource.Resource):
         return request.content.read()
 
 
+class LargeChunkedFileResource(resource.Resource):
+    def render(self, request):
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+            request.finish()
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
     # only used for HTTPS tests
-    keyfile = 'keys/cert.pem'
-    certfile = 'keys/cert.pem'
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
 
     def setUp(self):
         self.tmpname = self.mktemp()
@@ -201,6 +212,8 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        r.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
@@ -228,28 +241,28 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b"0123456789")
+        d.addCallback(self.assertEqual, b"0123456789")
         return d
 
     def test_download_head(self):
         request = Request(self.getURL('file'), method='HEAD')
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b'')
+        d.addCallback(self.assertEqual, b'')
         return d
 
     def test_redirect_status(self):
         request = Request(self.getURL('redirect'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.status)
-        d.addCallback(self.assertEquals, 302)
+        d.addCallback(self.assertEqual, 302)
         return d
 
     def test_redirect_status_head(self):
         request = Request(self.getURL('redirect'), method='HEAD')
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.status)
-        d.addCallback(self.assertEquals, 302)
+        d.addCallback(self.assertEqual, 302)
         return d
 
     @defer.inlineCallbacks
@@ -272,24 +285,24 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(
+            self.assertEqual(
                 response.body, to_bytes('%s:%d' % (self.host, self.portno)))
-            self.assertEquals(request.headers, {})
+            self.assertEqual(request.headers, {})
 
         request = Request(self.getURL('host'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_host_header_seted_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, b'example.com')
-            self.assertEquals(request.headers.get('Host'), b'example.com')
+            self.assertEqual(response.body, b'example.com')
+            self.assertEqual(request.headers.get('Host'), b'example.com')
 
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b'example.com')
+        d.addCallback(self.assertEqual, b'example.com')
         return d
 
     def test_content_length_zero_bodyless_post_request_headers(self):
@@ -304,9 +317,20 @@ class HttpTestCase(unittest.TestCase):
         https://bugs.python.org/issue14721
         """
         def _test(response):
-            self.assertEquals(response.body, b'0')
+            self.assertEqual(response.body, b'0')
 
         request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
+    def test_content_length_zero_bodyless_post_only_one(self):
+        def _test(response):
+            import json
+            headers = Headers(json.loads(response.text)['headers'])
+            contentlengths = headers.getlist('Content-Length')
+            self.assertEqual(len(contentlengths), 1)
+            self.assertEqual(contentlengths, [b"0"])
+
+        request = Request(self.getURL('echo'), method='POST')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_payload(self):
@@ -314,7 +338,7 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, body)
+        d.addCallback(self.assertEqual, body)
         return d
 
 
@@ -340,7 +364,7 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b"0123456789")
+        d.addCallback(self.assertEqual, b"0123456789")
         return d
 
     def test_response_class_choosing_request(self):
@@ -350,7 +374,7 @@ class Http11TestCase(HttpTestCase):
         body = b'Some plain text\ndata with tabs\t and null bytes\0'
 
         def _test_type(response):
-            self.assertEquals(type(response), TextResponse)
+            self.assertEqual(type(response), TextResponse)
 
         request = Request(self.getURL('nocontenttype'), body=body)
         d = self.download_request(request, Spider('foo'))
@@ -365,11 +389,30 @@ class Http11TestCase(HttpTestCase):
         # response body. (regardless of headers)
         d = self.download_request(request, Spider('foo', download_maxsize=10))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b"0123456789")
+        d.addCallback(self.assertEqual, b"0123456789")
         yield d
 
         d = self.download_request(request, Spider('foo', download_maxsize=9))
         yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_very_large_file(self):
+        with mock.patch('scrapy.core.downloader.handlers.http11.logger') as logger:
+            request = Request(self.getURL('largechunkedfile'))
+
+            def check(logger):
+                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+
+            d = self.download_request(request, Spider('foo', download_maxsize=1500))
+            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+            # As the error message is logged in the dataReceived callback, we
+            # have to give a bit of time to the reactor to process the queue
+            # after closing the connection.
+            d = defer.Deferred()
+            d.addCallback(check)
+            reactor.callLater(.1, d.callback, logger)
+            yield d
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_per_req(self):
@@ -388,14 +431,14 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL('file'))
         d = self.download_request(request, Spider('foo', download_maxsize=100))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b"0123456789")
+        d.addCallback(self.assertEqual, b"0123456789")
         return d
 
     def test_download_chunked_content(self):
         request = Request(self.getURL('chunked'))
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, b"chunked content\n")
+        d.addCallback(self.assertEqual, b"chunked content\n")
         return d
 
     def test_download_broken_content_cause_data_loss(self, url='broken'):
@@ -554,9 +597,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
     def test_download_with_proxy(self):
         def _test(response):
-            self.assertEquals(response.status, 200)
-            self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, b'http://example.com')
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, b'http://example.com')
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -564,9 +607,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
     def test_download_with_proxy_https_noconnect(self):
         def _test(response):
-            self.assertEquals(response.status, 200)
-            self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, b'https://example.com')
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, b'https://example.com')
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
@@ -574,9 +617,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
     def test_download_without_proxy(self):
         def _test(response):
-            self.assertEquals(response.status, 200)
-            self.assertEquals(response.url, request.url)
-            self.assertEquals(response.body, b'/path/to/resource')
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, b'/path/to/resource')
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -922,3 +965,69 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
+
+
+class DataURITestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.download_handler = DataURIDownloadHandler(Settings())
+        self.download_request = self.download_handler.download_request
+        self.spider = Spider('foo')
+
+    def test_response_attrs(self):
+        uri = "data:,A%20brief%20note"
+
+        def _test(response):
+            self.assertEqual(response.url, uri)
+            self.assertFalse(response.headers)
+
+        request = Request(uri)
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype_encoding(self):
+        def _test(response):
+            self.assertEqual(response.text, 'A brief note')
+            self.assertEqual(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(response.encoding, "US-ASCII")
+
+        request = Request("data:,A%20brief%20note")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_default_mediatype(self):
+        def _test(response):
+            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(response.encoding, "iso-8859-7")
+
+        request = Request("data:;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_text_charset(self):
+        def _test(response):
+            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(response.body, b'\xbe\xd3\xbe')
+            self.assertEqual(response.encoding, "iso-8859-7")
+
+        request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_mediatype_parameters(self):
+        def _test(response):
+            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(type(response),
+                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(response.encoding, "utf-8")
+
+        request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
+                          'charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22'
+                          ',%CE%8E%CE%A3%CE%8E')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_base64(self):
+        def _test(response):
+            self.assertEqual(response.text, 'Hello, world.')
+
+        request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)

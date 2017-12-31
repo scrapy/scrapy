@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys
+import sys, os
 import optparse
 import cProfile
 import inspect
@@ -11,6 +11,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
+from scrapy.utils.python import garbage_collect
 from scrapy.settings.deprecated import check_deprecated_settings
 
 def _iter_command_classes(module_name):
@@ -20,7 +21,8 @@ def _iter_command_classes(module_name):
         for obj in vars(module).values():
             if inspect.isclass(obj) and \
                     issubclass(obj, ScrapyCommand) and \
-                    obj.__module__ == module.__name__:
+                    obj.__module__ == module.__name__ and \
+                    not obj == ScrapyCommand:
                 yield obj
 
 def _get_commands_from_module(module, inproject):
@@ -106,6 +108,12 @@ def execute(argv=None, settings=None):
 
     if settings is None:
         settings = get_project_settings()
+        # set EDITOR from environment if available
+        try:
+            editor = os.environ['EDITOR']
+        except KeyError: pass
+        else:
+            settings['EDITOR'] = editor
     check_deprecated_settings(settings)
 
     # --- backwards compatibility for scrapy.conf.settings singleton ---
@@ -158,4 +166,9 @@ def _run_command_profiled(cmd, args, opts):
         p.dump_stats(opts.profile)
 
 if __name__ == '__main__':
-    execute()
+    try:
+        execute()
+    finally:
+        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect()
+        # on exit: http://doc.pypy.org/en/latest/cpython_differences.html?highlight=gc.collect#differences-related-to-garbage-collection-strategies
+        garbage_collect()

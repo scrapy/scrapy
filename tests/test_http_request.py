@@ -64,9 +64,9 @@ class RequestTest(unittest.TestCase):
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
         for k, v in h.iteritems():
-            self.assert_(isinstance(k, bytes))
+            self.assertIsInstance(k, bytes)
             for s in v:
-                self.assert_(isinstance(s, bytes))
+                self.assertIsInstance(s, bytes)
 
     def test_eq(self):
         url = 'http://www.scrapy.org'
@@ -234,6 +234,26 @@ class RequestTest(unittest.TestCase):
         r = self.request_class("http://example.com")
         self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
+
+    def test_callback_is_callable(self):
+        def a_function():
+            pass
+        r = self.request_class('http://example.com')
+        self.assertIsNone(r.callback)
+        r = self.request_class('http://example.com', a_function)
+        self.assertIs(r.callback, a_function)
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', 'a_function')
+
+    def test_errback_is_callable(self):
+        def a_function():
+            pass
+        r = self.request_class('http://example.com')
+        self.assertIsNone(r.errback)
+        r = self.request_class('http://example.com', a_function, errback=a_function)
+        self.assertIs(r.errback, a_function)
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', a_function, errback='a_function')
 
 
 class FormRequestTest(RequestTest):
@@ -424,6 +444,17 @@ class FormRequestTest(RequestTest):
         fs = _qs(req)
         self.assertEqual(fs[b'one'], [b'1'])
         self.assertEqual(fs[b'two'], [b'2'])
+
+    def test_from_response_drop_params(self):
+        response = _buildresponse(
+            """<form action="get.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': None})
+        fs = _qs(req)
+        self.assertEqual(fs[b'one'], [b'1'])
+        self.assertNotIn(b'two', fs)
 
     def test_from_response_override_method(self):
         response = _buildresponse(

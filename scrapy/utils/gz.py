@@ -59,3 +59,7 @@ def is_gzipped(response):
     cenc = response.headers.get('Content-Encoding', b'').lower()
     return (_is_gzipped(ctype) or
             (_is_octetstream(ctype) and cenc in (b'gzip', b'x-gzip')))
+
+
+def gzip_magic_number(response):
+    return response.body[:3] == b'\x1f\x8b\x08'
