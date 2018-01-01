@@ -379,7 +379,7 @@ class ScrapyAgent(object):
                            {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
-            # Abort connection inmediately.
+            # Abort connection immediately.
             txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
