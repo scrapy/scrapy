@@ -98,7 +98,7 @@ Docs
 - Use ``pymongo.collection.Collection.insert_one()`` in MongoDB example
   (:issue:`2781`)
 - Spelling mistake and typos
-  (:issue:`2828`, :issue:`2837`, :issue:`#2884`, :issue:`2924`)
+  (:issue:`2828`, :issue:`2837`, :issue:`2884`, :issue:`2924`)
 - Clarify ``CSVFeedSpider.headers`` documentation (:issue:`2826`)
 - Document ``DontCloseSpider`` exception and clarify ``spider_idle``
   (:issue:`2791`)
