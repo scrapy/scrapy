@@ -83,13 +83,14 @@ class AutoThrottle(object):
         # It works better with problematic sites.
         new_delay = max(target_delay, new_delay)
 
-        # Make sure self.mindelay <= new_delay <= self.max_delay
-        new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
-
         # When the status is 429 (too many request) the delay should always go up
-        # so the new_delay is set to the current delay added by a configurable value
+        # But the latency of a 429 is very small because it has no content
+        # so the new_delay is set to the current delay added by the too_many_request_delay
         if response.status == 429 and self.too_many_request_delay:
             new_delay = slot.delay + self.too_many_request_delay
+
+        # Make sure self.mindelay <= new_delay <= self.max_delay
+        new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
 
         # Dont adjust delay if response status != 200 and new delay is smaller
         # than old one, as error pages (and redirections) are usually small and
