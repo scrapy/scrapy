@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class AutoThrottle(object):
-
     def __init__(self, crawler):
         self.crawler = crawler
         if not crawler.settings.getbool('AUTOTHROTTLE_ENABLED'):
@@ -25,6 +24,7 @@ class AutoThrottle(object):
     def _spider_opened(self, spider):
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
+        self.too_many_request_delay = self._too_many_requests_delay(spider)
         spider.download_delay = self._start_delay(spider)
 
     def _min_delay(self, spider):
@@ -36,6 +36,9 @@ class AutoThrottle(object):
 
     def _start_delay(self, spider):
         return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
+
+    def _too_many_requests_delay(self, spider):
+        return self.crawler.settings.getfloat('AUTOTHROTTLE_429_DELAY')
 
     def _response_downloaded(self, response, request, spider):
         key, slot = self._get_slot(request, spider)
@@ -82,6 +85,11 @@ class AutoThrottle(object):
 
         # Make sure self.mindelay <= new_delay <= self.max_delay
         new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
+
+        # When the status is 429 (too many request) the delay should always go up
+        # so the new_delay is set to the current delay added by a configurable value
+        if response.status == 429 and self.too_many_request_delay:
+            new_delay = slot.delay + self.too_many_request_delay
 
         # Dont adjust delay if response status != 200 and new delay is smaller
         # than old one, as error pages (and redirections) are usually small and
