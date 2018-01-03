@@ -24,7 +24,7 @@ class AutoThrottle(object):
     def _spider_opened(self, spider):
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
-        self.too_many_request_delay = self._too_many_requests_delay(spider)
+        self.too_many_request_delay = self._too_many_requests_delay
         spider.download_delay = self._start_delay(spider)
 
     def _min_delay(self, spider):
@@ -37,7 +37,7 @@ class AutoThrottle(object):
     def _start_delay(self, spider):
         return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY'))
 
-    def _too_many_requests_delay(self, spider):
+    def _too_many_requests_delay(self):
         return self.crawler.settings.getfloat('AUTOTHROTTLE_429_DELAY')
 
     def _response_downloaded(self, response, request, spider):
