@@ -59,8 +59,10 @@ AutoThrottle algorithm adjusts download delays based on the following rules:
    and ``N`` is :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`.
 3. download delay for next requests is set to the average of previous
    download delay and the target download delay;
-4. latencies of non-200 responses are not allowed to decrease the delay;
-5. download delay can't become less than :setting:`DOWNLOAD_DELAY` or greater
+4. When the ::setting::`AUTOTHROTTLE_429_DELAY` is set and a 429 is received
+   it will increase the delay with this value
+5. latencies of non-200 responses are not allowed to decrease the delay;
+6. download delay can't become less than :setting:`DOWNLOAD_DELAY` or greater
    than :setting:`AUTOTHROTTLE_MAX_DELAY`
 
 .. note:: The AutoThrottle extension honours the standard Scrapy settings for
@@ -89,6 +91,7 @@ The settings used to control the AutoThrottle extension are:
 * :setting:`AUTOTHROTTLE_START_DELAY`
 * :setting:`AUTOTHROTTLE_MAX_DELAY`
 * :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
+* :setting:`AUTOTHROTTLE_429_DELAY`
 * :setting:`AUTOTHROTTLE_DEBUG`
 * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
 * :setting:`CONCURRENT_REQUESTS_PER_IP`
@@ -152,6 +155,19 @@ of concurrent requests.
 At every given time point Scrapy can be sending more or less concurrent
 requests than ``AUTOTHROTTLE_TARGET_CONCURRENCY``; it is a suggested
 value the crawler tries to approach, not a hard limit.
+
+.. setting:: AUTOTHROTTLE_429_DELAY
+
+AUTOTHROTTLE_429_DELAY
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Default: `None`
+
+Delay to add when the HTTP 429 (Too Many Requests) status is received.
+
+By default the AutoThrottle will ignore the 429 requests because the latency is low.
+Sometimes it is wanted to decrease the scraping speed when a 429 is received.
+Set this value to a value to delay the spider with this value each time a 429 is received.
 
 .. setting:: AUTOTHROTTLE_DEBUG
 
