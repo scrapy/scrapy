@@ -180,6 +180,34 @@ such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
 .. setting:: BOT_NAME
 
+AWS_ENDPOINT_URL
+----------------
+
+Default: ``None``
+
+Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
+
+.. setting:: AWS_ENDPOINT_URL
+
+AWS_USE_SSL
+-----------
+
+Default: ``None``
+
+Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
+By default SSL will be used.
+
+.. setting:: AWS_USE_SSL
+
+AWS_VERIFY
+----------
+
+Default: ``None``
+
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
+
+.. setting:: AWS_VERIFY
+
 BOT_NAME
 --------
 

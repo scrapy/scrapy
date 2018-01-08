@@ -40,7 +40,6 @@ class FileException(Exception):
 
 
 class FSFilesStore(object):
-
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -79,9 +78,12 @@ class FSFilesStore(object):
 
 
 class S3FilesStore(object):
-
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_ENDPOINT_URL = None
+    AWS_REGION_NAME = None
+    AWS_USE_SSL = None
+    AWS_VERIFY = None
 
     POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
                         # FilesPipeline.from_settings.
@@ -95,8 +97,14 @@ class S3FilesStore(object):
             import botocore.session
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY)
+                's3',
+                aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+                endpoint_url=self.AWS_ENDPOINT_URL,
+                region_name=self.AWS_REGION_NAME,
+                use_ssl=self.AWS_USE_SSL,
+                verify=self.AWS_VERIFY
+            )
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
@@ -181,7 +189,7 @@ class S3FilesStore(object):
             'X-Amz-Grant-Read': 'GrantRead',
             'X-Amz-Grant-Read-ACP': 'GrantReadACP',
             'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
-            })
+        })
         extra = {}
         for key, value in six.iteritems(headers):
             try:
@@ -298,6 +306,10 @@ class FilesPipeline(MediaPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
+        s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
+        s3store.AWS_USE_SSL = settings['AWS_USE_SSL']
+        s3store.AWS_VERIFY = settings['AWS_VERIFY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
         gcs_store = cls.STORE_SCHEMES['gs']
@@ -468,4 +480,5 @@ class FilesPipeline(MediaPipeline):
     # deprecated
     def file_key(self, url):
         return self.file_path(url)
+
     file_key._base = True
