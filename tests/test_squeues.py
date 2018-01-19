@@ -1,4 +1,3 @@
-from sys import version_info
 import pickle
 
 from queuelib.tests import test_queue as t
@@ -32,10 +31,9 @@ def nonserializable_object_test(self):
         a = A()
         a.__reduce__ = a.__reduce_ex__ = None
         self.assertRaises(ValueError, q.push, a)
-    if version_info.major == 3 and version_info.minor >= 6:
-        # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
-        sel = Selector(text='<html><body><p>some text</p></body></html>')
-        self.assertRaises(ValueError, q.push, sel)
+    # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
+    sel = Selector(text='<html><body><p>some text</p></body></html>')
+    self.assertRaises(ValueError, q.push, sel)
 
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
 
