@@ -80,7 +80,8 @@ class ParseCurlCmdTest(unittest.TestCase):
 
     def test_too_few_arguments_error(self):
         self.assertRaisesRegexp(
-            ValueError, 'too few arguments',
+            ValueError,
+            'too few arguments|the following arguments are required:\s*url',
             lambda: parse_curl_cmd('foobarbaz'))
 
     def test_unknown_arg_error(self):
