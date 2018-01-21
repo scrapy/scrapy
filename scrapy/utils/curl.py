@@ -1,7 +1,7 @@
 import argparse
 from shlex import split
 from six.moves.http_cookies import SimpleCookie
-from six import string_types
+from six import string_types, iteritems
 
 
 class CurlParser(argparse.ArgumentParser):
@@ -38,7 +38,7 @@ def parse_curl_cmd(curl_args):
         name = name.strip().title()
         val = val.strip()
         if name == 'Cookie':
-            for name, morsel in SimpleCookie(val).iteritems():
+            for name, morsel in iteritems(SimpleCookie(val)):
                 cookies.append((name, morsel.value))
         else:
             headers.append((name, val))
