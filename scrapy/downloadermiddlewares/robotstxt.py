@@ -41,10 +41,12 @@ class RobotsTxtMiddleware(object):
         return d
 
     def process_request_2(self, rp, request, spider):
-        if rp is not None and not rp.can_fetch(
-                 to_native_str(self._useragent), request.url):
+        if rp is None:
+            return
+        if not rp.can_fetch(to_native_str(self._useragent), request.url):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
+            self.crawler.stats.inc_value('robotstxt/forbidden')
             raise IgnoreRequest()
 
     def robot_parser(self, request, spider):
@@ -63,6 +65,7 @@ class RobotsTxtMiddleware(object):
             dfd.addCallback(self._parse_robots, netloc)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
+            self.crawler.stats.inc_value('robotstxt/request_count')
 
         if isinstance(self._parsers[netloc], Deferred):
             d = Deferred()
@@ -83,11 +86,14 @@ class RobotsTxtMiddleware(object):
         return failure
 
     def _parse_robots(self, response, netloc):
+        self.crawler.stats.inc_value('robotstxt/response_count')
+        self.crawler.stats.inc_value(
+            'robotstxt/response_status_count/{}'.format(response.status))
         rp = robotparser.RobotFileParser(response.url)
         body = ''
         if hasattr(response, 'text'):
             body = response.text
-        else: # last effort try
+        else:  # last effort try
             try:
                 body = response.body.decode('utf-8')
             except UnicodeDecodeError:
@@ -95,7 +101,7 @@ class RobotsTxtMiddleware(object):
                 # but keep the lookup cached (in self._parsers)
                 # Running rp.parse() will set rp state from
                 # 'disallow all' to 'allow any'.
-                pass
+                self.crawler.stats.inc_value('robotstxt/unicode_error_count')
         # stdlib's robotparser expects native 'str' ;
         # with unicode input, non-ASCII encoded bytes decoding fails in Python2
         rp.parse(to_native_str(body).splitlines())
@@ -105,6 +111,9 @@ class RobotsTxtMiddleware(object):
         rp_dfd.callback(rp)
 
     def _robots_error(self, failure, netloc):
+        if failure.type is not IgnoreRequest:
+            key = 'robotstxt/exception_count/{}'.format(failure.type)
+            self.crawler.stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = None
         rp_dfd.callback(None)
