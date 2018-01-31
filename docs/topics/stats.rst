@@ -95,6 +95,16 @@ MemoryStatsCollector
        A dict of dicts (keyed by spider name) containing the stats of the last
        scraping run for each spider.
 
+JsonStatsCollector
+--------------------
+
+.. class:: JsonStatsCollector
+
+   Iherits MemoryStatsCollector, the only difference being that this
+   statcollector class logs the run statistics in json for ease of further log
+   parsing.
+
+
 DummyStatsCollector
 -------------------
 

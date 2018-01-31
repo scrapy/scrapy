@@ -1,7 +1,12 @@
 import unittest
 
 from scrapy.spiders import Spider
-from scrapy.statscollectors import StatsCollector, DummyStatsCollector
+from scrapy.statscollectors import (
+    StatsCollector,
+    DummyStatsCollector,
+    MemoryStatsCollector,
+    JsonStatsCollector
+)
 from scrapy.utils.test import get_crawler
 
 
@@ -11,8 +16,8 @@ class StatsCollectorTest(unittest.TestCase):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('foo')
 
-    def test_collector(self):
-        stats = StatsCollector(self.crawler)
+    def collector_test_from_cls(self, cls):
+        stats = cls(self.crawler)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_value('anything'), None)
         self.assertEqual(stats.get_value('anything', 'default'), 'default')
@@ -37,6 +42,15 @@ class StatsCollectorTest(unittest.TestCase):
         self.assertEqual(stats.get_value('test2'), 35)
         stats.min_value('test4', 7)
         self.assertEqual(stats.get_value('test4'), 7)
+
+    def test_collector(self):
+        self.collector_test_from_cls(StatsCollector)
+
+    def test_memory_collector(self):
+        self.collector_test_from_cls(MemoryStatsCollector)
+
+    def test_json_collector(self):
+        self.collector_test_from_cls(JsonStatsCollector)
 
     def test_dummy_collector(self):
         stats = DummyStatsCollector(self.crawler)

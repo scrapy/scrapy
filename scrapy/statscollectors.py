@@ -1,8 +1,11 @@
 """
 Scrapy extension for collecting scraping stats
 """
+import json
 import pprint
 import logging
+
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,25 @@ class MemoryStatsCollector(StatsCollector):
         self.spider_stats[spider.name] = stats
 
 
+class JsonStatsCollector(MemoryStatsCollector):
+    """Extends the MemoryStatsCollector to log the spider's stats as json"""
+
+    def close_spider(self, spider, reason):
+        if self._dump:
+            json_encoded_stats = json.dumps(
+                self._stats,
+                cls=ScrapyJSONEncoder,
+                ensure_ascii=False,
+                sort_keys=True,
+                indent=4,
+            )
+            logger.info(
+                "Dumping Scrapy stats:\n" +
+                json_encoded_stats
+            )
+        self._persist_stats(self._stats, spider)
+
+
 class DummyStatsCollector(StatsCollector):
 
     def get_value(self, key, default=None, spider=None):
@@ -80,5 +102,3 @@ class DummyStatsCollector(StatsCollector):
 
     def min_value(self, key, value, spider=None):
         pass
-
-
