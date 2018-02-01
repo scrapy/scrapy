@@ -22,7 +22,7 @@ Scrapy
    :target: https://codecov.io/github/scrapy/scrapy?branch=master
    :alt: Coverage report
 
-.. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
+.. image:: https://img.shields.io/badge/Anaconda%20Cloud-1.5.0-blue.svg
    :target: https://anaconda.org/conda-forge/scrapy
    :alt: Conda Version
 
