@@ -45,7 +45,7 @@ class RobotsTxtMiddleware(object):
                  to_native_str(self._useragent), request.url):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
-            raise IgnoreRequest()
+            raise IgnoreRequest("Forbidden by robots.txt")
 
     def robot_parser(self, request, spider):
         url = urlparse_cached(request)
