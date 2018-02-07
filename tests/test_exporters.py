@@ -455,11 +455,11 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
 
     def test_two_items_with_failure_between(self):
         i1 = TestItem(name=u'Joseph\xa3', age='22')
-        i2 = TestItem(name=u'Maria', age=date(1234, 1, 1))  # should fail, per https://github.com/scrapy/scrapy/issues/3090
+        i2 = TestItem(name=u'Maria', age=1j)  # Invalid datetimes didn't consistently fail between Python versions
         i3 = TestItem(name=u'Jesus', age='44')
         self.ie.start_exporting()
         self.ie.export_item(i1)
-        self.assertRaises(ValueError, self.ie.export_item, i2)
+        self.assertRaises(TypeError, self.ie.export_item, i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         exported = json.loads(to_unicode(self.output.getvalue()))
