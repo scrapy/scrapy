@@ -112,6 +112,13 @@ class JsonItemExporter(BaseItemExporter):
         if self.indent is not None:
             self.file.write(b'\n')
 
+    def _add_comma_after_first(self):
+        if self.first_item:
+            self.first_item = False
+        else:
+            self.file.write(b',')
+            self._beautify_newline()
+
     def start_exporting(self):
         self.file.write(b"[")
         self._beautify_newline()
@@ -121,13 +128,9 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item):
-        if self.first_item:
-            self.first_item = False
-        else:
-            self.file.write(b',')
-            self._beautify_newline()
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict)
+        self._add_comma_after_first()
         self.file.write(to_bytes(data, self.encoding))
 
 
