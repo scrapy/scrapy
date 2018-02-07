@@ -5,7 +5,7 @@ import marshal
 import tempfile
 import unittest
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, date
 from six.moves import cPickle as pickle
 
 import lxml.etree
@@ -452,6 +452,18 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
 
     def test_two_dict_items(self):
         self.assertTwoItemsExported(dict(self.i))
+
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name=u'Joseph\xa3', age='22')
+        i2 = TestItem(name=u'Maria', age=date(1234, 1, 1))  # should fail, per https://github.com/scrapy/scrapy/issues/3090
+        i3 = TestItem(name=u'Jesus', age='44')
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(ValueError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue()))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
 
     def test_nested_item(self):
         i1 = TestItem(name=u'Joseph\xa3', age='22')
