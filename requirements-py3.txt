@@ -5,3 +5,4 @@ cssselect>=0.9
 queuelib>=1.1.1
 w3lib>=1.17.0
 service_identity
+PyYAML==3.12

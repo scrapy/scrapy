@@ -9,3 +9,4 @@ botocore
 bpython
 ipython
 brotlipy
+PyYAML==3.12
