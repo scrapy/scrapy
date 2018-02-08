@@ -55,9 +55,9 @@ class TelnetConsole(protocol.ServerFactory):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        logger.debug("Telnet console listening on %(host)s:%(port)d",
-                     {'host': h.host, 'port': h.port},
-                     extra={'crawler': self.crawler})
+        logger.info("Telnet console listening on %(host)s:%(port)d",
+                    {'host': h.host, 'port': h.port},
+                    extra={'crawler': self.crawler})
 
     def stop_listening(self):
         self.port.stopListening()
