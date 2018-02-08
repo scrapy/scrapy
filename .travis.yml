@@ -5,6 +5,7 @@ branches:
     - master
     - /^\d\.\d+$/
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
+    - add-test-reporting
 matrix:
   include:
     - python: 2.7
@@ -23,6 +24,12 @@ matrix:
       env: TOXENV=py36
     - python: 3.6
       env: TOXENV=docs
+
+before_install:
+   - mkdir -p $HOME/bin
+   - curl -fsSL https://testspace-client.s3.amazonaws.com/testspace-linux.tgz | tar -zxvf- -C $HOME/bin
+   - testspace config url $TS_ORG.testspace.com
+ 
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
@@ -41,9 +48,16 @@ install:
       fi
   - pip install -U tox twine wheel codecov
 
-script: tox
+script: tox -- --junit-xml=testresults.xml scrapy tests
+
 after_success:
   - codecov
+
+after_script:
+  - if [ "${TOXENV}" != "docs" ]; then
+      testspace [${TOXENV}/tests]testresults.xml{tests};
+    fi
+
 notifications:
   irc:
     use_notice: true
