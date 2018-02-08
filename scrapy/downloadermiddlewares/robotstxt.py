@@ -47,7 +47,7 @@ class RobotsTxtMiddleware(object):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
-            raise IgnoreRequest()
+            raise IgnoreRequest("Forbidden by robots.txt")
 
     def robot_parser(self, request, spider):
         url = urlparse_cached(request)
