@@ -129,9 +129,9 @@ class JsonItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        data = self.encoder.encode(itemdict)
+        data = to_bytes(self.encoder.encode(itemdict), self.encoding)
         self._add_comma_after_first()
-        self.file.write(to_bytes(data, self.encoding))
+        self.file.write(data)
 
 
 class XmlItemExporter(BaseItemExporter):

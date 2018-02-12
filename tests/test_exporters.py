@@ -497,6 +497,25 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.assertEqual(exported, [item])
 
 
+class JsonItemExporterToBytesTest(BaseItemExporterTest):
+
+    def _get_exporter(self, **kwargs):
+        kwargs['encoding'] = 'latin'
+        return JsonItemExporter(self.output, **kwargs)
+
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name=u'Joseph', age='22')
+        i2 = TestItem(name=u'\u263a', age=u'11')
+        i3 = TestItem(name=u'Jesus', age='44')
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue(), encoding='latin'))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
+
+
 class CustomItemExporterTest(unittest.TestCase):
 
     def test_exporter_custom_serializer(self):
