@@ -203,6 +203,8 @@ class Command(ScrapyCommand):
             if depth < opts.depth:
                 for req in requests:
                     req.meta['_depth'] = depth + 1
+                    if(req.callback == callback): 
+                        req.callback = None
                     req.meta['_callback'] = req.callback
                     req.callback = callback
                 return requests
