@@ -6,7 +6,7 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check you are reading the most recent version of this document at
+    Double check that you are reading the most recent version of this document at
     https://doc.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
@@ -18,7 +18,7 @@ There are many ways to contribute to Scrapy. Here are some of them:
 * Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
-* Submit patches for new functionality and/or bug fixes. Please read
+* Submit patches for new functionalities and/or bug fixes. Please read
   :ref:`writing-patches` and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
@@ -80,8 +80,8 @@ guidelines when reporting a new bug.
 Writing patches
 ===============
 
-The better written a patch is, the higher chance that it'll get accepted and
-the sooner that will be merged.
+The better written a patch is, higher is the chance that it'll get accepted and 
+sooner it will be merged.
 
 Well-written patches should:
 
