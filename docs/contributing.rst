@@ -80,8 +80,7 @@ guidelines when reporting a new bug.
 Writing patches
 ===============
 
-The better written a patch is, higher is the chance that it'll get accepted and 
-sooner it will be merged.
+The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
 Well-written patches should:
 
