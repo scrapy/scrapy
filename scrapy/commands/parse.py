@@ -205,12 +205,14 @@ class Command(ScrapyCommand):
                     req.meta['_depth'] = depth + 1
                     req.meta['_callback'] = req.callback
                     req.callback = callback
+                    req.callback = original_callback
                 return requests
 
         #update request meta if any extra meta was passed through the --meta/-m opts.
         if opts.meta:
             request.meta.update(opts.meta)
 
+        original_callback = request.callback
         request.meta['_depth'] = 1
         request.meta['_callback'] = request.callback
         request.callback = callback
