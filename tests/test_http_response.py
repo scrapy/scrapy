@@ -155,6 +155,10 @@ class BaseResponseTest(unittest.TestCase):
         self._assert_followed_url(Link('http://example.com/foo'),
                                   'http://example.com/foo')
 
+    def test_follow_None_url(self):
+        r = self.response_class("http://example.com")
+        self.assertRaises(ValueError, r.follow, None)
+
     def test_follow_whitespace_url(self):
         self._assert_followed_url('foo ',
                                   'http://example.com/foo%20')
