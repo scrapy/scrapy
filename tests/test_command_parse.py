@@ -70,6 +70,19 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
+
+
+class MyInfiniteCallbackSpider(scrapy.Spider):
+
+    name = 'infinitecb{0}'
+
+    def parse(self, response):
+        if response.meta.get('retried'):
+            yield dict(foo='bar')
+            return
+
+        response.meta['retried'] = True
+        yield response.request.replace(dont_filter=True)
 """.format(self.spider_name))
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
@@ -193,3 +206,10 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         )
         self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", to_native_str(stderr))
+
+    @defer.inlineCallbacks
+    def test_parse_item_callback_infinite_loop(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'infinitecb'+self.spider_name, '-d', '2', self.url('/html')]
+        )
+        self.assertIn("""[{'foo': 'bar'}]""", to_native_str(out))
