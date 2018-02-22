@@ -1,4 +1,5 @@
-from scrapy.commands import fetch, ScrapyCommand
+from scrapy.commands import fetch
+from scrapy.commands import ScrapyCommand
 from scrapy.utils.response import open_in_browser
 
 class Command(fetch.Command):

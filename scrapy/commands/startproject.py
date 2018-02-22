@@ -4,11 +4,15 @@ import os
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
-from shutil import ignore_patterns, move, copy2, copystat
+from shutil import ignore_patterns
+from shutil import move
+from shutil import copy2
+from shutil import copystat
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils.template import render_templatefile
+from scrapy.utils.template import string_camelcase
 from scrapy.exceptions import UsageError
 
 
