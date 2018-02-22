@@ -151,6 +151,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_CUSTOM_LEVELS`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -174,6 +175,16 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
 component that prints the log. It is unset by default, hence logs contain the 
 scrapy component responsible for that log output.
+
+With :setting:`LOG_CUSTOM_LEVELS` you can change the log levels of specific
+loggers that 3rd party libraries use. Example:
+We make sure that ``boto``'s log level is set to ``ERROR``
+so that if we use ``LOG_LEVEL`` of ``DEBUG`` it won't print out all the AWS logs::
+
+    LOG_LEVEL = 'DEBUG'  # Added for the purpose of the example
+    LOG_CUSTOM_LEVELS = {
+        'boto': 'ERROR'
+    }
 
 Command-line options
 --------------------

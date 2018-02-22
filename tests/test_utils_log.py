@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
 import sys
 import logging
 import unittest
+import warnings
 
 from testfixtures import LogCapture
+
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
-                              LogCounterHandler, StreamLogger)
+from scrapy.utils.log import (
+    configure_logging, failure_to_exc_info, TopLevelFormatter,
+    LogCounterHandler, StreamLogger)
 from scrapy.utils.test import get_crawler
 
 
@@ -107,3 +111,55 @@ class StreamLoggerTest(unittest.TestCase):
         with LogCapture() as l:
             print('test log msg')
         l.check(('test', 'ERROR', 'test log msg'))
+
+
+class CustomLogLevelTest(unittest.TestCase):
+
+    def setUp(self):
+        _settings = {
+            'LOG_CUSTOM_LEVELS': {
+                'test_custom_log_level_error': 'ERROR',
+                'test_custom_log_level_debug': 'DEBUG',
+            },
+            'LOG_LEVEL': 'INFO',
+        }
+        configure_logging(settings=_settings, install_root_handler=True)
+        self.logger_error = logging.getLogger('test_custom_log_level_error')
+        self.logger_debug = logging.getLogger('test_custom_log_level_debug')
+        self.handler = LogCapture(level=logging.DEBUG)
+
+    def tearDown(self):
+        self.logger_debug.setLevel(logging.NOTSET)
+        self.logger_error.setLevel(logging.NOTSET)
+        for handler in logging.root.handlers:
+            logging.root.removeHandler(handler)
+
+    def test_custom_log_level(self):
+        with self.handler as logc:
+            # the DEBUG logger should log both for debug and error
+            self.logger_debug.debug('should be captured')
+            self.logger_debug.error('should be captured')
+            # the ERROR logger should only log the error
+            self.logger_error.debug('should not be captured')
+            self.logger_error.error('should be captured')
+            logc.check(
+                ('test_custom_log_level_debug', 'DEBUG', 'should be captured'),
+                ('test_custom_log_level_debug', 'ERROR', 'should be captured'),
+                ('test_custom_log_level_error', 'ERROR', 'should be captured'),
+            )
+
+
+class CustomLogLevelBadConfigTest(unittest.TestCase):
+
+    def test_custom_log_level_bad_config(self):
+        _settings = {
+            'LOG_CUSTOM_LEVELS': {
+                'test_custom_log_level_error': 'THISISNOTALEVEL'
+            }
+        }
+        with warnings.catch_warnings(record=True) as w:
+            configure_logging(settings=_settings, install_root_handler=True)
+        msg = str(w[0].message)
+        self.assertEqual(
+            'Incorrect log level used in LOG_CUSTOM_LEVELS for logger %s',
+            msg)

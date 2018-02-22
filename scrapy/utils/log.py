@@ -94,6 +94,14 @@ def configure_logging(settings=None, install_root_handler=True):
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
+    if settings.getdict('LOG_CUSTOM_LEVELS'):
+        for _logger, _level in settings.getdict('LOG_CUSTOM_LEVELS').items():
+            try:
+                level = getattr(logging, _level.upper())
+                logging.getLogger(_logger).setLevel(level)
+            except AttributeError:
+                warnings.warn('Incorrect log level used in LOG_CUSTOM_LEVELS for logger %s')
+
     if settings.getbool('LOG_STDOUT'):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
 
