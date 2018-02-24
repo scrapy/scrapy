@@ -74,6 +74,7 @@ setup(
         'parsel>=1.4',
         'PyDispatcher>=2.0.5',
         'service_identity',
+        'scrapy-httpcache',
     ],
     extras_require=extras_require,
 )

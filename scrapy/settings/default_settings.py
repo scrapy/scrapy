@@ -105,7 +105,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
     'scrapy.downloadermiddlewares.stats.DownloaderStats': 850,
-    'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     # Downloader side
 }
 
@@ -163,19 +162,6 @@ FILES_STORE_S3_ACL = 'private'
 FTP_USER = 'anonymous'
 FTP_PASSWORD = 'guest'
 FTP_PASSIVE_MODE = True
-
-HTTPCACHE_ENABLED = False
-HTTPCACHE_DIR = 'httpcache'
-HTTPCACHE_IGNORE_MISSING = False
-HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
-HTTPCACHE_EXPIRATION_SECS = 0
-HTTPCACHE_ALWAYS_STORE = False
-HTTPCACHE_IGNORE_HTTP_CODES = []
-HTTPCACHE_IGNORE_SCHEMES = ['file']
-HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
-HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
-HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
-HTTPCACHE_GZIP = False
 
 HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
