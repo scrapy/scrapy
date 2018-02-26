@@ -225,7 +225,6 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_parse_item_callback_infinite_loop_custom_callback(self):
         status, out, stderr = yield self.execute(['--spider',
                                                   'infinitecb'+self.spider_name,
-                                                  '-d', '2', '-c', 'custom_parse', 
-                                                  self.url('/html')]
-        )
+                                                  '-d', '2', '-c', 'custom_parse',
+                                                  self.url('/html')])
         self.assertIn("""[{'anotherfoo': 'anotherbar'}]""", to_native_str(out))
