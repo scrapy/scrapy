@@ -18,7 +18,7 @@ Consider the following scrapy spider below::
             )
 
         def parse(self, response):
-            # collect `item_urls`
+            # collect  all urls i.e.`item_urls` from url example.com/page1
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
