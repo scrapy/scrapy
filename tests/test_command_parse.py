@@ -216,6 +216,6 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     @defer.inlineCallbacks
     def test_retry_requests_in_callbacks(self):
         status, out, stderr = yield self.execute(
-            ['--spider', 'retryRequests'+self.spider_name, '-d', '2', self.url('/html')]
+            ['--spider', 'retryRequests'+self.spider_name, '-d', '3', self.url('/html')]
         )
         self.assertIn("""All Good!""", to_native_str(stderr))
