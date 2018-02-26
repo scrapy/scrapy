@@ -64,11 +64,20 @@ class MyRetryRequestsSpider(CrawlSpider):
     start_urls = ['https://httpbin.org/'] 
 
     def parse(self, response):
+        self.logger.info('In parse()')
+        
+        return scrapy.Request(
+            'https://httpbin.org/ip', callback=self.second_parse)
+
+    def second_parse(self, response):
+        self.logger.info('In second_parse()')
         if response.meta.get('retried'):
             self.logger.info("done")
-            return
-        response.meta['retried'] = True
-        yield response.request.replace(dont_filter=True)
+            self.logger.info("All Good!")
+            yield scrapy.Item()
+        else:
+            response.meta['retried'] = True
+            yield response.request.replace(dont_filter=True)
 
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
@@ -209,4 +218,4 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         status, out, stderr = yield self.execute(
             ['--spider', 'retryRequests'+self.spider_name, '-d', '2', self.url('/html')]
         )
-        self.assertIn("""INFO: Closing spider (finished)""", to_native_str(stderr))
+        self.assertIn("""All Good!""", to_native_str(stderr))
