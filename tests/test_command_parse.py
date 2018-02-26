@@ -83,6 +83,13 @@ class MyInfiniteCallbackSpider(scrapy.Spider):
 
         response.meta['retried'] = True
         yield response.request.replace(dont_filter=True)
+
+    def custom_parse(self, response):
+        if response.meta.get('retried'):
+            yield dict(anotherfoo='anotherbar')
+            return
+        response.meta['retried'] = True
+        yield response.request.replace(dont_filter=True)
 """.format(self.spider_name))
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
@@ -213,3 +220,10 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
             ['--spider', 'infinitecb'+self.spider_name, '-d', '2', self.url('/html')]
         )
         self.assertIn("""[{'foo': 'bar'}]""", to_native_str(out))
+
+    @defer.inlineCallbacks
+    def test_parse_item_callback_infinite_loop_custom_callback(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'infinitecb'+self.spider_name, '-d', '2', '-c', 'custom_parse', self.url('/html')]
+        )
+        self.assertIn("""[{'anotherfoo': 'anotherbar'}]""", to_native_str(out))
