@@ -218,30 +218,43 @@ def _getargspec_py23(func):
 
 
 def get_func_args(func, stripself=False):
-    """Return the argument name list of a callable"""
-    if inspect.isfunction(func):
-        func_args, _, _, _ = _getargspec_py23(func)
-    elif inspect.isclass(func):
-        return get_func_args(func.__init__, True)
-    elif inspect.ismethod(func):
-        return get_func_args(func.__func__, True)
-    elif inspect.ismethoddescriptor(func):
-        return []
-    elif isinstance(func, partial):
-        return [x for x in get_func_args(func.func)[len(func.args):]
-                if not (func.keywords and x in func.keywords)]
-    elif hasattr(func, '__call__'):
-        if inspect.isroutine(func):
+    with open("/tmp/_get_func_args", "a") as f:
+
+        """Return the argument name list of a callable"""
+        if inspect.isfunction(func):
+            f.write("0001\n")
+            func_args, _, _, _ = _getargspec_py23(func)
+        elif inspect.isclass(func):
+            f.write("0002\n")
+            return get_func_args(func.__init__, True)
+        elif inspect.ismethod(func):
+            f.write("0003\n")
+            return get_func_args(func.__func__, True)
+        elif inspect.ismethoddescriptor(func):
+            f.write("0004\n")
             return []
-        elif getattr(func, '__name__', None) == '__call__':
-            return []
+        elif isinstance(func, partial):
+            f.write("0005\n")
+            return [x for x in get_func_args(func.func)[len(func.args):]
+                    if not (func.keywords and x in func.keywords)]
+        elif hasattr(func, '__call__'):
+            f.write("0006\n")
+            if inspect.isroutine(func):
+                f.write("0007\n")
+                return []
+            elif getattr(func, '__name__', None) == '__call__':
+                f.write("0008\n")
+                return []
+            else:
+                f.write("0009\n")
+                return get_func_args(func.__call__, True)
         else:
-            return get_func_args(func.__call__, True)
-    else:
-        raise TypeError('%s is not callable' % type(func))
-    if stripself:
-        func_args.pop(0)
-    return func_args
+            f.write("0010\n")
+            raise TypeError('%s is not callable' % type(func))
+        if stripself:
+            f.write("0011\n")
+            func_args.pop(0)
+        return func_args
 
 
 def get_spec(func):
