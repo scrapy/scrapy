@@ -35,6 +35,8 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
+        if item:
+            self.add_value_from_dict(item)
 
     @property
     def _values(self):
@@ -49,6 +51,10 @@ class ItemLoader(object):
             return self.parent.item
         else:
             return self._local_item
+
+    def add_value_from_dict(self,item):
+        for key,value in item.items():
+            self.add_value(key,value)
 
     def nested_xpath(self, xpath, **context):
         selector = self.selector.xpath(xpath)
