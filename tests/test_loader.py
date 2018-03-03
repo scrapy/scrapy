@@ -61,7 +61,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         item = il.load_item()
         assert item is i
-        self.assertEqual(item['summary'], u'lala')
+        self.assertEqual(item['summary'], [u'lala'])
         self.assertEqual(item['name'], [u'marta'])
 
     def test_load_item_using_custom_loader(self):
