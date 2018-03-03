@@ -170,10 +170,12 @@ def _get_clickable(clickdata, form):
     """
     clickables = [
         el for el in form.xpath(
-            'descendant::*[(self::input or self::button)'
-            ' and re:test(@type, "^submit$", "i")]'
-            '|descendant::button[not(@type)]',
-            namespaces={"re": "http://exslt.org/regular-expressions"})
+             'descendant::*[(self::input or self::button)'
+             ' and re:test(@type, "^submit$", "i")]'
+             '|descendant::*[(self::input or self::button)'
+             ' and re:test(@type, "^image$", "i")]'
+             '|descendant::button[not(@type)]',
+             namespaces={"re": "http://exslt.org/regular-expressions"})
         ]
     if not clickables:
         return

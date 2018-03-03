@@ -532,6 +532,16 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response, dont_click=True)
         fs = _qs(req)
         self.assertEqual(fs, {b'i1': [b'i1v']})
+    
+    def test_from_response_clickdata_does_not_ignore_image(self):
+        response = _buildresponse(
+            """<form>
+            <input type="text" name="i1" value="i1v">
+            <input id="image" name="i2" type="image" value="i2v" alt="Login" src="http://my.image.org/1.jpg">
+            </form>""")
+        req = self.request_class.from_response(response, dont_click=True)
+        fs = _qs(req)
+        self.assertEqual(fs, {b'i1': [b'i1v'], b'i2': [b'i2v']})
 
     def test_from_response_dont_submit_reset_as_input(self):
         response = _buildresponse(
