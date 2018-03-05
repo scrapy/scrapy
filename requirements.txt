@@ -1,4 +1,4 @@
-Twisted>=13.1.0
+git+https://github.com/twisted/twisted.git@dcaf946
 lxml
 pyOpenSSL
 cssselect>=0.9
