@@ -1,4 +1,4 @@
-git+https://github.com/lopuhin/twisted.git@9384-remove-async-param
+Twisted>=13.1.0
 lxml
 pyOpenSSL
 cssselect>=0.9
