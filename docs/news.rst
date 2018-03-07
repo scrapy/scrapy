@@ -1888,7 +1888,7 @@ Scrapy 0.14.3
 - include egg files used by testsuite in source distribution. #118 (:commit:`c897793`)
 - update docstring in project template to avoid confusion with genspider command, which may be considered as an advanced feature. refs #107 (:commit:`2548dcc`)
 - added note to docs/topics/firebug.rst about google directory being shut down (:commit:`668e352`)
-- dont discard slot when empty, just save in another dict in order to recycle if needed again. (:commit:`8e9f607`)
+- do not discard slot when empty, just save in another dict in order to recycle if needed again. (:commit:`8e9f607`)
 - do not fail handling unicode xpaths in libxml2 backed selectors (:commit:`b830e95`)
 - fixed minor mistake in Request objects documentation (:commit:`bf3c9ee`)
 - fixed minor defect in link extractors documentation (:commit:`ba14f38`)
@@ -1984,7 +1984,7 @@ Code rearranged and removed
 - Removed googledir project from `examples/googledir`. There's now a new example project called `dirbot` available on github: https://github.com/scrapy/dirbot
 - Removed support for default field values in Scrapy items (:rev:`2616`)
 - Removed experimental crawlspider v2 (:rev:`2632`)
-- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe fltering class as before (`DUPEFILTER_CLASS` setting) (:rev:`2640`)
+- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe filtering class as before (`DUPEFILTER_CLASS` setting) (:rev:`2640`)
 - Removed support for passing urls to ``scrapy crawl`` command (use ``scrapy parse`` instead) (:rev:`2704`)
 - Removed deprecated Execution Queue (:rev:`2704`)
 - Removed (undocumented) spider context extension (from scrapy.contrib.spidercontext) (:rev:`2780`)
@@ -2054,7 +2054,7 @@ New features and improvements
 - Added two new methods to item pipeline open_spider(), close_spider() with deferred support (#195)
 - Support for overriding default request headers per spider (#181)
 - Replaced default Spider Manager with one with similar functionality but not depending on Twisted Plugins (#186)
-- Splitted Debian package into two packages - the library and the service (#187)
+- The Debian package has been split into two packages - library and the service (#187)
 - Scrapy log refactoring (#188)
 - New extension for keeping persistent spider contexts among different runs (#203)
 - Added `dont_redirect` request.meta key for avoiding redirects (#233)
@@ -2075,7 +2075,7 @@ API changes
 - ``url`` and ``body`` attributes of Request objects are now read-only (#230)
 - ``Request.copy()`` and ``Request.replace()`` now also copies their ``callback`` and ``errback`` attributes (#231)
 - Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default)
-- Offsite middelware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
+- Offsite middleware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
 - Removed Spider Manager ``load()`` method. Now spiders are loaded in the constructor itself.
 - Changes to Scrapy Manager (now called "Crawler"):
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
