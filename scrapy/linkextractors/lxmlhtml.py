@@ -76,14 +76,10 @@ class LxmlParserLinkExtractor(object):
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
-        if type(response) == scrapy.http.TextResponse:
-            base_url = get_base_url(response)
-            return self._extract_links(response.selector, response.url, 
-                                       response.encoding, base_url)
-        else:
-            return []
+        base_url = get_base_url(response)
+        return self._extract_links(response.selector, response.url, 
+                                   response.encoding, base_url)
         
-
     def _process_links(self, links):
         """ Normalize and filter extracted links
 
@@ -121,6 +117,8 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             canonicalize=canonicalize, deny_extensions=deny_extensions)
 
     def extract_links(self, response):
+        if not isinstance(response, scrapy.http.TextResponse):
+            return []
         base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [subdoc
