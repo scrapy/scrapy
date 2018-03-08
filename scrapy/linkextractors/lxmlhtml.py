@@ -76,8 +76,13 @@ class LxmlParserLinkExtractor(object):
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
-        base_url = get_base_url(response)
-        return self._extract_links(response.selector, response.url, response.encoding, base_url)
+        if hasattr(response, 'text'):
+            base_url = get_base_url(response)
+            return self._extract_links(response.selector, response.url, 
+                                       response.encoding, base_url)
+        else:
+            return []
+        
 
     def _process_links(self, links):
         """ Normalize and filter extracted links
