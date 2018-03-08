@@ -26,7 +26,10 @@ class ItemLoader(object):
 
     def __init__(self, item=None, selector=None, response=None, parent=None, **context):
         if selector is None and response is not None:
-            selector = self.default_selector_class(response)
+            if response.selector.__class__ == Selector:
+                selector = response.selector
+            else:
+                selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
         if item is None:
