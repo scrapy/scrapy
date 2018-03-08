@@ -76,7 +76,7 @@ class LxmlParserLinkExtractor(object):
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
-        if hasattr(response, 'text'):
+        if type(response) == scrapy.http.TextResponse:
             base_url = get_base_url(response)
             return self._extract_links(response.selector, response.url, 
                                        response.encoding, base_url)
