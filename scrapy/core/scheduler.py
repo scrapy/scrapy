@@ -161,10 +161,7 @@ class DomainScheduler(BaseScheduler):
                  logunser=False, stats=None, pqclass=None):
         super(DomainScheduler, self).__init__(dupefilter, jobdir=jobdir, dqclass=dqclass,
                                               mqclass=mqclass, logunser=logunser,
-                                              stats=stats, pqclass=pqclass)
-
-        self.pqclass = RoundRobinQueue
+                                              stats=stats, pqclass=RoundRobinQueue)
 
     def request_key(cls, request):
         return urlparse(request.url).netloc
-
