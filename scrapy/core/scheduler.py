@@ -6,11 +6,15 @@ from os.path import join, exists
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
+from queuelib import RoundRobinQueue
 
 logger = logging.getLogger(__name__)
 
+def _make_file_safe(string):
+    return "".join([c if c.isalnum() or c in {'-._'} else '_' for c in string])
 
-class Scheduler(object):
+
+class BaseScheduler(object):
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None):
@@ -34,6 +38,9 @@ class Scheduler(object):
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
+    def request_key(self, request):
+        raise NotImplementedError
+
     def has_pending_requests(self):
         return len(self) > 0
 
@@ -45,9 +52,9 @@ class Scheduler(object):
 
     def close(self, reason):
         if self.dqs:
-            prios = self.dqs.close()
+            state = self.dqs.close()
             with open(join(self.dqdir, 'active.json'), 'w') as f:
-                json.dump(prios, f)
+                json.dump(state, f)
         return self.df.close(reason)
 
     def enqueue_request(self, request):
@@ -61,6 +68,7 @@ class Scheduler(object):
             self._mqpush(request)
             self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
+        self.stats.inc_value('scheduler/enqueued/key/{}'.format(self.request_key(request)))
         return True
 
     def next_request(self):
@@ -73,6 +81,7 @@ class Scheduler(object):
                 self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
+            self.stats.inc_value('scheduler/dequeued/key/{}'.format(self.request_key(request)))
         return request
 
     def __len__(self):
@@ -83,7 +92,7 @@ class Scheduler(object):
             return
         try:
             reqd = request_to_dict(request, self.spider)
-            self.dqs.push(reqd, -request.priority)
+            self.dqs.push(reqd, self.request_key(request))
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
@@ -99,7 +108,7 @@ class Scheduler(object):
             return True
 
     def _mqpush(self, request):
-        self.mqs.push(request, -request.priority)
+        self.mqs.push(request, self.request_key(request))
 
     def _dqpop(self):
         if self.dqs:
@@ -107,20 +116,20 @@ class Scheduler(object):
             if d:
                 return request_from_dict(d, self.spider)
 
-    def _newmq(self, priority):
+    def _newmq(self, key):
         return self.mqclass()
 
-    def _newdq(self, priority):
-        return self.dqclass(join(self.dqdir, 'p%s' % priority))
+    def _newdq(self, key):
+        return self.dqclass(join(self.dqdir, _make_file_safe('k%s' % key)))
 
     def _dq(self):
-        activef = join(self.dqdir, 'active.json')
-        if exists(activef):
-            with open(activef) as f:
-                prios = json.load(f)
+        statef = join(self.dqdir, 'active.json')
+        if exists(statef):
+            with open(statef) as f:
+                state = json.load(f)
         else:
-            prios = ()
-        q = self.pqclass(self._newdq, startprios=prios)
+            state = ()
+        q = self.pqclass(self._newdq, state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})
@@ -132,3 +141,30 @@ class Scheduler(object):
             if not exists(dqdir):
                 os.makedirs(dqdir)
             return dqdir
+
+
+class Scheduler(BaseScheduler):
+    """
+    Key is the priority of the request (an integer)
+    """
+
+    def request_key(cls, request):
+        return -request.priority
+
+
+class DomainScheduler(BaseScheduler):
+    """
+    Key is the domain and we round robin.  The pqclass parameter is ignored.
+    """
+
+    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
+                 logunser=False, stats=None, pqclass=None):
+        super(DomainScheduler, self).__init__(dupefilter, jobdir=jobdir, dqclass=dqclass,
+                                              mqclass=mqclass, logunser=logunser,
+                                              stats=stats, pqclass=pqclass)
+
+        self.pqclass = RoundRobinQueue
+
+    def request_key(cls, request):
+        return urlparse(request.url).netloc
+
