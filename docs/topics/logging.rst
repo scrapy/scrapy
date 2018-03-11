@@ -254,18 +254,18 @@ scrapy.utils.log module
     when running custom scripts using :class:`~scrapy.crawler.CrawlerRunner`.
     In that case, its usage is not required but it's recommended.
 
-    If you plan on configuring the handlers yourself is still recommended you
-    call this function, passing ``install_root_handler=False``. Bear in mind
-    there won't be any log output set by default in that case.
+    Another option when running custom scripts is to manually configure the logging.
+    To do this you can use `logging.basicConfig()`_ to set a basic root handler.
 
-    To get you started on manually configuring logging's output, you can use
-    `logging.basicConfig()`_ to set a basic root handler. This is an example
-    on how to redirect ``INFO`` or higher messages to a file::
+    Note that ``scrapy.crawler.CrawlerProcess`` automatically calls ``configure_logging``,
+    so it is recommended to only use `logging.basicConfig()`_ together with
+    ``scrapy.crawler.CrawlerRunner``
+
+    This is an example on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
         from scrapy.utils.log import configure_logging
 
-        configure_logging(install_root_handler=False)
         logging.basicConfig(
             filename='log.txt',
             format='%(levelname)s: %(message)s',
