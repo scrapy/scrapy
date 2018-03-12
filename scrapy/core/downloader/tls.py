@@ -40,6 +40,7 @@ if twisted_version >= (14, 0, 0):
     from twisted.internet._sslverify import (ClientTLSOptions,
                                              verifyHostname,
                                              VerificationError)
+    from service_identity.exceptions import CertificateError
 
     if twisted_version < (17, 0, 0):
         from twisted.internet._sslverify import _maybeSetHostNameIndication
@@ -65,7 +66,7 @@ if twisted_version >= (14, 0, 0):
             elif where & SSL_CB_HANDSHAKE_DONE:
                 try:
                     verifyHostname(connection, self._hostnameASCII)
-                except VerificationError as e:
+                except (CertificateError, VerificationError) as e:
                     logger.warning(
                         'Remote certificate is not valid for hostname "{}"; {}'.format(
                             self._hostnameASCII, e))
