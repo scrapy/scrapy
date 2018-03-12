@@ -78,12 +78,8 @@ class LxmlParserLinkExtractor(object):
 
     def extract_links(self, response):
         base_url = get_base_url(response)
-<<<<<<< HEAD
         return self._extract_links(response.selector, response.url,
                                    response.encoding, base_url)
-=======
-        return self._extract_links(response.selector, response.url, response.encoding, base_url)
->>>>>>> parent of 0e86a9f... Update lxmlhtml.py
 
     def _process_links(self, links):
         """ Normalize and filter extracted links
