@@ -512,6 +512,10 @@ class Https11InvalidDNSPattern(Https11TestCase):
     certfile = 'keys/localhost.ip.crt'
 
     def setUp(self):
+        try:
+            from service_identity.exceptions import CertificateError
+        except ImportError:
+            raise unittest.SkipTest("cryptography lib is too old")
         super(Https11InvalidDNSPattern, self).setUp()
 
 
