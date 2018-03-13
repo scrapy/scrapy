@@ -505,6 +505,15 @@ class Https11InvalidDNSId(Https11TestCase):
         super(Https11InvalidDNSId, self).setUp()
         self.host = '127.0.0.1'
 
+class Https11InvalidDNSPattern(Https11TestCase):
+    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
+
+    keyfile = 'keys/localhost.ip.key'
+    certfile = 'keys/localhost.ip.crt'
+
+    def setUp(self):
+        super(Https11InvalidDNSPattern, self).setUp()
+
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
