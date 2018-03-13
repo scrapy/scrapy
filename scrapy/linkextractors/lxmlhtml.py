@@ -12,6 +12,7 @@ from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.utils.response import get_base_url
+from scrapy.http import TextResponse
 from scrapy.linkextractors import FilteringLinkExtractor
 
 
@@ -77,7 +78,8 @@ class LxmlParserLinkExtractor(object):
 
     def extract_links(self, response):
         base_url = get_base_url(response)
-        return self._extract_links(response.selector, response.url, response.encoding, base_url)
+        return self._extract_links(response.selector, response.url,
+                                   response.encoding, base_url)
 
     def _process_links(self, links):
         """ Normalize and filter extracted links
