@@ -168,7 +168,6 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    print("form =", form.__dict__)
     clickables = [
         el for el in form.xpath(
             'descendant::*[(self::input or self::button)'
@@ -178,7 +177,6 @@ def _get_clickable(clickdata, form):
             '|descendant::button[not(@type)]',
             namespaces={"re": "http://exslt.org/regular-expressions"})
         ]
-    print("clickables =", clickables)
     if not clickables:
         return
 
