@@ -19,21 +19,21 @@ Consider the following scrapy spider below::
 
         def parse(self, response):
             # < your code goes here >
-            # which should collect `item_urls`
+            # which collects `item_urls`
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
         def parse_item(self, response):
             item = MyItem()
             # < Your code goes here >
-            # which should populate `item` fields
-            # and extract item_details_url
+            # which populates `item` fields
+            # and extracts item_details_url
             yield scrapy.Request(item_details_url, self.parse_details, meta={'item': item})
 
         def parse_details(self, response):
             item = response.meta['item']
             # < your code goes here >
-            # which should populate more `item` fields
+            # which populates more `item` fields
             return item
 
 Basically this is a simple spider which parses two pages of items (the
