@@ -19,7 +19,7 @@ Consider the following scrapy spider below::
 
         def parse(self, response):
             # < your code goes here >
-            # which collects `item_urls`
+            # which collects `item_urls`, an array of urls
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
