@@ -17,7 +17,7 @@ class FromCrawlerRFPDupeFilter(RFPDupeFilter):
     def from_crawler(cls, crawler):
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
         df = cls(job_dir(crawler.settings), debug)
-        df.method = crawler.settings.get('METHOD')
+        df.method = 'from_crawler'
         return df
 
 
@@ -27,27 +27,39 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
         df = cls(job_dir(settings), debug)
-        df.method = settings.get('METHOD')
+        df.method = 'from_settings'
         return df
+
+
+class DirectRFPDupeFilter(RFPDupeFilter):
+    method = 'n/a'
 
 
 class RFPDupeFilterTest(unittest.TestCase):
 
-    def test_from_crawler_scheduler(self):
-        settings = {'DUPEFILTER_DEBUG': True, 'METHOD': 'from_crawler',
+    def test_df_from_crawler_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
                     'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_crawler')
 
-    def test_from_settings_scheduler(self):
-        settings = {'DUPEFILTER_DEBUG': True, 'METHOD': 'from_settings',
+    def test_df_from_settings_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
                     'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_settings')
+
+    def test_df_direct_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
+                    'DUPEFILTER_CLASS': __name__  + '.DirectRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'n/a')
 
     def test_filter(self):
         dupefilter = RFPDupeFilter()
