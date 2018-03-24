@@ -31,7 +31,7 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class DirectRFPDupeFilter(RFPDupeFilter):
+class DirectDupeFilter(object):
     method = 'n/a'
 
 
@@ -54,11 +54,9 @@ class RFPDupeFilterTest(unittest.TestCase):
         self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_df_direct_scheduler(self):
-        settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.DirectRFPDupeFilter'}
+        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
-        self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'n/a')
 
     def test_filter(self):
