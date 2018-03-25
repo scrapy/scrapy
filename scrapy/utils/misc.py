@@ -4,6 +4,9 @@ import hashlib
 from importlib import import_module
 from pkgutil import iter_modules
 
+import functools
+from twisted.internet import defer
+from twisted.internet.defer import ensureDeferred
 import six
 from w3lib.html import replace_entities
 
@@ -117,3 +120,10 @@ def md5sum(file):
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
     return True if rel is not None and 'nofollow' in rel.split() else False
+
+def ensure_deferred(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        result = f(*args, **kwargs)
+        return defer.ensureDeferred(result)
+    return wrapper

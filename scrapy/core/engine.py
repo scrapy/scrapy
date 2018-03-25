@@ -10,11 +10,13 @@ from time import time
 from twisted.internet import defer, task
 from twisted.python.failure import Failure
 
+from scrapy.utils.misc import ensure_deferred
 from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
+from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
@@ -26,7 +28,7 @@ class Slot(object):
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
         self.inprogress = set() # requests in progress
-        self.start_requests = iter(start_requests)
+        self.start_requests = start_requests.__aiter__()
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
         self.scheduler = scheduler
@@ -110,7 +112,8 @@ class ExecutionEngine(object):
         """Resume the execution engine"""
         self.paused = False
 
-    def _next_request(self, spider):
+    @ensure_deferred
+    async def _next_request(self, spider):
         slot = self.slot
         if not slot:
             return
@@ -124,8 +127,8 @@ class ExecutionEngine(object):
 
         if slot.start_requests and not self._needs_backout(spider):
             try:
-                request = next(slot.start_requests)
-            except StopIteration:
+                request = await slot.start_requests.__anext__()
+            except StopAsyncIteration:
                 slot.start_requests = None
             except Exception:
                 slot.start_requests = None
@@ -249,21 +252,21 @@ class ExecutionEngine(object):
         dwld.addBoth(_on_complete)
         return dwld
 
-    @defer.inlineCallbacks
-    def open_spider(self, spider, start_requests=(), close_if_idle=True):
+    @ensure_deferred
+    async def open_spider(self, spider, start_requests=(), close_if_idle=True):
         assert self.has_capacity(), "No free spider slot when opening %r" % \
             spider.name
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)
         scheduler = self.scheduler_cls.from_crawler(self.crawler)
-        start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
+        start_requests = await self.scraper.spidermw.process_start_requests(start_requests, spider)
         slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.slot = slot
         self.spider = spider
-        yield scheduler.open(spider)
-        yield self.scraper.open_spider(spider)
+        mustbe_deferred(scheduler.open(spider))
+        await self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
-        yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+        await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         slot.nextcall.schedule()
         slot.heartbeat.start(5)
 

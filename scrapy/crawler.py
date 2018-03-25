@@ -2,11 +2,15 @@ import six
 import signal
 import logging
 import warnings
+import asyncio
 
 import sys
+from twisted.internet import asyncioreactor
+asyncioreactor.install(asyncio.get_event_loop())
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
+from scrapy.utils.misc import ensure_deferred
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
@@ -70,17 +74,18 @@ class Crawler(object):
             self._spiders = _get_spider_loader(self.settings.frozencopy())
         return self._spiders
 
-    @defer.inlineCallbacks
-    def crawl(self, *args, **kwargs):
+    @ensure_deferred
+    async def crawl(self, *args, **kwargs):
         assert not self.crawling, "Crawling already taking place"
         self.crawling = True
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
-            yield defer.maybeDeferred(self.engine.start)
+            start_requests = self.spider.start_requests()
+            start_requests = start_requests.__aiter__()
+            defer.maybeDeferred(self.engine.open_spider(self.spider, start_requests))
+            await defer.maybeDeferred(self.engine.start)
         except Exception:
             # In Python 2 reraising an exception after yield discards
             # the original traceback (see https://bugs.python.org/issue7563),
@@ -92,7 +97,7 @@ class Crawler(object):
 
             self.crawling = False
             if self.engine is not None:
-                yield self.engine.close()
+                await self.engine.close()
 
             if six.PY2:
                 six.reraise(*exc_info)
