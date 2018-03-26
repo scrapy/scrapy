@@ -48,7 +48,7 @@ class FSFilesStore(object):
         self.created_directories = defaultdict(set)
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        absolute_path = self._get_filesystem_path(path)
+        absolute_path = self._get_filesystem_path(path)[:255]
         self._mkdir(os.path.dirname(absolute_path), info)
         with open(absolute_path, 'wb') as f:
             f.write(buf.getvalue())
