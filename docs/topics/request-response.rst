@@ -80,6 +80,8 @@ Request objects
         attributes of the cookie. This is only useful if the cookies are saved
         for later requests.
 
+        .. reqmeta:: dont_merge_cookies
+
         When some site returns cookies (in a response) those are stored in the
         cookies for that domain and will be sent again in future requests. That's
         the typical behaviour of any regular web browser. However, if, for some
@@ -294,7 +296,7 @@ Those are:
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`handle_httpstatus_all`
-* ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
+* :reqmeta:`dont_merge_cookies`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
 * :reqmeta:`redirect_urls`
