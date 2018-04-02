@@ -93,6 +93,7 @@ class ImagesPipeline(FilesPipeline):
 
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
+        gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL']
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
