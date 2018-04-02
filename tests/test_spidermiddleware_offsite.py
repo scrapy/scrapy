@@ -18,7 +18,7 @@ class TestOffsiteMiddleware(TestCase):
         self.mw.spider_opened(self.spider)
 
     def _get_spiderargs(self):
-        return dict(name='foo', allowed_domains=['scrapytest.org', 'scrapy.org', 'scrapy.test.org'])
+        return dict(name='foo', allowed_domains=['scrapytest.org', 'scrapy.org', 'scrapy.test.org', '192.169.0.15:8080'])
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -27,7 +27,8 @@ class TestOffsiteMiddleware(TestCase):
                        Request('http://scrapy.org/1'),
                        Request('http://sub.scrapy.org/1'),
                        Request('http://offsite.tld/letmepass', dont_filter=True),
-                       Request('http://scrapy.test.org/')]
+                       Request('http://scrapy.test.org/'),
+                       Request('http://192.169.0.15:8080')]
         offsite_reqs = [Request('http://scrapy2.org'),
                        Request('http://offsite.tld/'),
                        Request('http://offsite.tld/scrapytest.org'),
