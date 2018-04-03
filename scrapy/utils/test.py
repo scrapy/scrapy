@@ -57,8 +57,9 @@ def get_gcs_content_and_delete(bucket, path):
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
     content = blob.download_as_string()
+    acl = list(blob.acl)  # loads acl before it will be deleted
     bucket.delete_blob(path)
-    return content, blob
+    return content, acl, blob
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
