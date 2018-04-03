@@ -189,6 +189,8 @@ Google Cloud Storage
 ---------------------
 
 .. setting:: GCS_PROJECT_ID
+.. setting:: FILES_STORE_GCS_ACL
+.. setting:: IMAGES_STORE_GCS_ACL
 
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
 bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
@@ -203,6 +205,18 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 For information about authentication, see this `documentation`_.
 
 .. _documentation: https://cloud.google.com/docs/authentication/production
+
+You can modify the Access Control List (ACL) policy used for the stored files,
+which is defined by the :setting:`FILES_STORE_GCS_ACL` and
+:setting:`IMAGES_STORE_GCS_ACL` settings. By default, the ACL is set to
+``projectPrivate``. To make the files publicly available use the ``publicRead``
+policy::
+
+    IMAGES_STORE_GCS_ACL = 'publicRead'
+
+For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
+
+.. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example
 =============
