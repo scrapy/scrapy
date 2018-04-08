@@ -112,7 +112,7 @@ class Command(ScrapyCommand):
         print("    %s\n" % abspath(project_dir))
         print("You can start your first spider with:")
         print("    cd %s" % project_dir)
-        print("    scrapy genspider example example.com")
+        print("    genspider example example.com")
 
     @property
     def templates_dir(self):
