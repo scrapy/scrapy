@@ -194,8 +194,11 @@ class MockServer():
     HTTPS = 'mock_https'
 
     @classmethod
-    def from_mock(cls, path):
-        return os.environ[cls.HTTP] + path
+    def from_mock(cls, path, is_secure=False):
+        key = cls.HTTP
+        if is_secure:
+            key = cls.HTTPS
+        return os.environ[key] + path
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
@@ -214,7 +217,7 @@ class MockServer():
 
             self._oldenv = os.environ.copy()
             os.environ[self.HTTP] = 'http://localhost:%s' % (http_port, )
-            os.environ[self.HTTPS] = 'http://localhost:%s' % (https_port, )
+            os.environ[self.HTTPS] = 'https://localhost:%s' % (https_port, )
 
             return self
 
