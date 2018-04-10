@@ -9,6 +9,7 @@ from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
+from tests.mockserver import MockServer
 
 
 class MetaSpider(Spider):
@@ -33,7 +34,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
+        url = MockServer.from_mock("/follow?%s" % urlencode(qargs, doseq=1))
         self.start_urls = [url]
 
     def parse(self, response):
