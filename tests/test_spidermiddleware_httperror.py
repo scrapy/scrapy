@@ -15,16 +15,16 @@ from scrapy.settings import Settings
 
 class _HttpErrorSpider(Spider):
     name = 'httperror'
-    start_urls = [
-        "http://localhost:8998/status?n=200",
-        "http://localhost:8998/status?n=404",
-        "http://localhost:8998/status?n=402",
-        "http://localhost:8998/status?n=500",
-    ]
     bypass_status_codes = set()
 
     def __init__(self, *args, **kwargs):
         super(_HttpErrorSpider, self).__init__(*args, **kwargs)
+        self.start_urls = [
+            MockServer.from_mock("/status?n=200"),
+            MockServer.from_mock("/status?n=404"),
+            MockServer.from_mock("/status?n=402"),
+            MockServer.from_mock("/status?n=500"),
+        ]
         self.failed = set()
         self.skipped = set()
         self.parsed = set()
