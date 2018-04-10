@@ -211,11 +211,20 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
 
 
 if __name__ == "__main__":
+    http_port = 8998
+    https_port = 8999
+
+    if len(sys.argv) > 1:
+        http_port = int(sys.argv[1])
+
+    if len(sys.argv) > 2:
+        https_port = int(sys.argv[2])
+
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(8998, factory)
+    httpPort = reactor.listenTCP(http_port, factory)
     contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(8999, factory, contextFactory)
+    httpsPort = reactor.listenSSL(https_port, factory, contextFactory)
 
     def print_listening():
         httpHost = httpPort.getHost()
