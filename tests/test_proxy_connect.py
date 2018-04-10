@@ -2,6 +2,7 @@ import json
 import os
 import time
 
+from urlparse import urlsplit, urlunsplit
 from threading import Thread
 from libmproxy import controller, proxy
 from netlib import http_auth
@@ -36,12 +37,20 @@ class ProxyConnectTestCase(TestCase):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
-        self._proxy = HTTPSProxy(8888)
-        self._proxy.start()
+
+        for http_port in range(8000, 10000):
+
+            try:
+                self._proxy = HTTPSProxy(http_port)
+                self._proxy.start()
+                break
+            except Exception:
+                pass
+
         # Wait for the proxy to start.
         time.sleep(1.0)
-        os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:8888'
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+        os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:%d' % (http_port, )
+        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:%d' % (http_port, )
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
@@ -57,12 +66,13 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect(self):
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
+        proxy = os.environ['https_proxy']
+        os.environ['https_proxy'] = proxy + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl("https://localhost:8999/status?n=200")
         self._assert_got_response_code(200, l)
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+        os.environ['https_proxy'] = proxy
 
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
@@ -73,14 +83,18 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888'
+        proxy = os.environ['https_proxy']
+        bad_auth_proxy = list(urlsplit(proxy))
+        bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
+
+        os.environ['https_proxy'] = urlunsplit(bad_auth_proxy)
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl("https://localhost:8999/status?n=200")
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(l)
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+        os.environ['https_proxy'] = proxy
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
@@ -94,7 +108,11 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
+        proxy = os.environ['https_proxy']
+        bad_auth_proxy = list(urlsplit(proxy))
+        bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
+
+        os.environ['https_proxy'] = urlunsplit(bad_auth_proxy) + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl("https://localhost:8999/status?n=200")
