@@ -193,6 +193,10 @@ class MockServer():
     HTTP = 'mock_http'
     HTTPS = 'mock_https'
 
+    @classmethod
+    def from_mock(cls, path):
+        return os.environ[cls.HTTP] + path
+
     def __enter__(self):
         from scrapy.utils.test import get_testenv
 
