@@ -192,10 +192,20 @@ class MockServer():
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
-                          stdout=PIPE, env=get_testenv())
-        self.proc.stdout.readline()
-        return self
+
+        http_port = str(8998)
+        for https_port in range(8999, 10000):
+            https_port = str(https_port)
+
+            self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', http_port, https_port],
+                              stdout=PIPE, env=get_testenv())
+            self.proc.stdout.readline()
+
+            if self.proc.poll() is not None:
+                http_port = https_port
+
+            self._oldenv = os.environ.copy()
+            return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
