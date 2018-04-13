@@ -111,6 +111,7 @@ class ProxyConnectTestCase(TestCase):
         with LogCapture() as l:
             yield crawler.crawl(MockServer.from_mock("/status?n=200", is_secure=True))
         self._assert_got_response_code(407, l)
+        os.environ['https_proxy'] = proxy
 
     def _assert_got_response_code(self, code, log):
         print(log)
