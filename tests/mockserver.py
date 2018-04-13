@@ -201,7 +201,7 @@ class MockServer():
     HTTPS = 'mock_https'
 
     @classmethod
-    def from_mock(cls, path, is_secure=False):
+    def url(cls, path, is_secure=False):
         key = cls.HTTP
         if is_secure:
             key = cls.HTTPS

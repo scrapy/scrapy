@@ -77,7 +77,7 @@ class CrawlTestCase(TestCase):
     def test_retry_503(self):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.from_mock("/status?n=503"))
+            yield crawler.crawl(MockServer.url("/status?n=503"))
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -160,7 +160,7 @@ with multiples lines
 '''})
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.from_mock("/raw?{0}".format(query)))
+            yield crawler.crawl(MockServer.url("/raw?{0}".format(query)))
         self.assertEqual(str(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
@@ -168,7 +168,7 @@ with multiples lines
         # connection lost after receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.from_mock("/drop?abort=0"))
+            yield crawler.crawl(MockServer.url("/drop?abort=0"))
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -176,7 +176,7 @@ with multiples lines
         # connection lost before receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.from_mock("/drop?abort=1"))
+            yield crawler.crawl(MockServer.url("/drop?abort=1"))
         self._assert_retried(l)
 
     def _assert_retried(self, log):
@@ -186,7 +186,7 @@ with multiples lines
     @defer.inlineCallbacks
     def test_referer_header(self):
         """Referer header is set by RefererMiddleware unless it is already set"""
-        req0 = Request(MockServer.from_mock('/echo?headers=1&body=0'), dont_filter=1)
+        req0 = Request(MockServer.url('/echo?headers=1&body=0'), dont_filter=1)
         req1 = req0.replace()
         req2 = req0.replace(headers={'Referer': None})
         req3 = req0.replace(headers={'Referer': 'http://example.com'})
@@ -220,7 +220,7 @@ with multiples lines
             est.append(get_engine_status(crawler.engine))
 
         crawler = self.runner.create_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=MockServer.from_mock('/'), callback_func=cb)
+        yield crawler.crawl(seed=MockServer.url('/'), callback_func=cb)
         self.assertEqual(len(est), 1, est)
         s = dict(est[0])
         self.assertEqual(s['engine.spider.name'], crawler.spider.name)
@@ -256,7 +256,7 @@ with multiples lines
         }
         crawler = CrawlerRunner(settings).create_crawler(SimpleSpider)
         yield self.assertFailure(
-            self.runner.crawl(crawler, MockServer.from_mock("/status?n=200")),
+            self.runner.crawl(crawler, MockServer.url("/status?n=200")),
             ZeroDivisionError)
         self.assertFalse(crawler.crawling)
 
@@ -264,13 +264,13 @@ with multiples lines
     def test_crawlerrunner_accepts_crawler(self):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as log:
-            yield self.runner.crawl(crawler, MockServer.from_mock("/status?n=200"))
+            yield self.runner.crawl(crawler, MockServer.url("/status?n=200"))
         self.assertIn("Got response 200", str(log))
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        self.runner.crawl(SimpleSpider, MockServer.from_mock("/status?n=200"))
-        self.runner.crawl(SimpleSpider, MockServer.from_mock("/status?n=503"))
+        self.runner.crawl(SimpleSpider, MockServer.url("/status?n=200"))
+        self.runner.crawl(SimpleSpider, MockServer.url("/status?n=503"))
 
         with LogCapture() as log:
             yield self.runner.join()

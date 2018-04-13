@@ -20,10 +20,10 @@ class _HttpErrorSpider(Spider):
     def __init__(self, *args, **kwargs):
         super(_HttpErrorSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
-            MockServer.from_mock("/status?n=200"),
-            MockServer.from_mock("/status?n=404"),
-            MockServer.from_mock("/status?n=402"),
-            MockServer.from_mock("/status?n=500"),
+            MockServer.url("/status?n=200"),
+            MockServer.url("/status?n=404"),
+            MockServer.url("/status?n=402"),
+            MockServer.url("/status?n=500"),
         ]
         self.failed = set()
         self.skipped = set()

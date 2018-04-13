@@ -34,7 +34,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = MockServer.from_mock("/follow?%s" % urlencode(qargs, doseq=1))
+        url = MockServer.url("/follow?%s" % urlencode(qargs, doseq=1))
         self.start_urls = [url]
 
     def parse(self, response):
@@ -56,7 +56,7 @@ class DelaySpider(MetaSpider):
 
     def start_requests(self):
         self.t1 = time.time()
-        url = MockServer.from_mock("/delay?n=%s&b=%s" % (self.n, self.b))
+        url = MockServer.url("/delay?n=%s&b=%s" % (self.n, self.b))
         yield Request(url, callback=self.parse, errback=self.errback)
 
     def parse(self, response):
@@ -122,7 +122,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
         for s in range(100):
             qargs = {'total': 10, 'seed': s}
-            url = MockServer.from_mock("/follow?%s") % urlencode(qargs, doseq=1)
+            url = MockServer.url("/follow?%s") % urlencode(qargs, doseq=1)
             yield Request(url, meta={'seed': s})
             if self.fail_yielding:
                 2 / 0
@@ -170,7 +170,7 @@ class DuplicateStartRequestsSpider(Spider):
     def start_requests(self):
         for i in range(0, self.distinct_urls):
             for j in range(0, self.dupe_factor):
-                url = MockServer.from_mock("/echo?headers=1&body=test%d" % i)
+                url = MockServer.url("/echo?headers=1&body=test%d" % i)
                 yield Request(url, dont_filter=self.dont_filter)
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
