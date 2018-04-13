@@ -13,7 +13,7 @@ from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler
 from scrapy.http import Request
 from tests.spiders import SimpleSpider, SingleRequestSpider
-from tests.mockserver import MockServer
+from tests.mockserver import MockServer, get_ephemeral_port
 
 
 class HTTPSProxy(controller.Master, Thread):
@@ -38,14 +38,9 @@ class ProxyConnectTestCase(TestCase):
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
 
-        for http_port in range(8000, 10000):
-
-            try:
-                self._proxy = HTTPSProxy(http_port)
-                self._proxy.start()
-                break
-            except Exception:
-                pass
+        http_port = get_ephemeral_port()
+        self._proxy = HTTPSProxy(http_port)
+        self._proxy.start()
 
         # Wait for the proxy to start.
         time.sleep(1.0)

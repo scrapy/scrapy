@@ -3,6 +3,7 @@ import sys, time, random, os, json
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 
+import socket
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -15,6 +16,12 @@ from twisted.internet.task import deferLater
 
 
 from scrapy.utils.python import to_bytes, to_unicode
+
+
+def get_ephemeral_port():
+    s = socket.socket()
+    s.bind(("", 0))
+    return s.getsockname()[1]
 
 
 def getarg(request, name, default=None, type=None):
@@ -203,23 +210,18 @@ class MockServer():
     def __enter__(self):
         from scrapy.utils.test import get_testenv
 
-        http_port = str(8998)
-        for https_port in range(8999, 10000):
-            https_port = str(https_port)
+        http_port = str(get_ephemeral_port())
+        https_port = str(get_ephemeral_port())
 
-            self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', http_port, https_port],
-                              stdout=PIPE, env=get_testenv())
-            self.proc.stdout.readline()
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', http_port, https_port],
+                          stdout=PIPE, env=get_testenv())
+        self.proc.stdout.readline()
 
-            if self.proc.poll() is not None:
-                http_port = https_port
-                continue
+        self._oldenv = os.environ.copy()
+        os.environ[self.HTTP] = 'http://localhost:%s' % (http_port, )
+        os.environ[self.HTTPS] = 'https://localhost:%s' % (https_port, )
 
-            self._oldenv = os.environ.copy()
-            os.environ[self.HTTP] = 'http://localhost:%s' % (http_port, )
-            os.environ[self.HTTPS] = 'https://localhost:%s' % (https_port, )
-
-            return self
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
