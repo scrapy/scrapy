@@ -319,7 +319,7 @@ class FilesPipeline(MediaPipeline):
 
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
-        gcs_store.POLICY = settings['FILES_STORE_GCS_ACL']
+        gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
