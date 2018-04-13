@@ -159,7 +159,7 @@ FEED_EXPORTERS_BASE = {
 FEED_EXPORT_INDENT = 0
 
 FILES_STORE_S3_ACL = 'private'
-FILES_STORE_GCS_ACL = 'projectPrivate'
+FILES_STORE_GCS_ACL = None
 
 FTP_USER = 'anonymous'
 FTP_PASSWORD = 'guest'
@@ -182,7 +182,7 @@ HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
 IMAGES_STORE_S3_ACL = 'private'
-IMAGES_STORE_GCS_ACL = 'projectPrivate'
+IMAGES_STORE_GCS_ACL = None
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 

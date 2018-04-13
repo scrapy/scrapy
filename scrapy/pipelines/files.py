@@ -207,8 +207,10 @@ class GCSFilesStore(object):
     GCS_PROJECT_ID = None
 
     CACHE_CONTROL = 'max-age=172800'
-    POLICY = 'projectPrivate'  # Overriden from settings.FILES_STORE_GCS_ACL in
-                               # FilesPipeline.from_settings.
+
+    # The bucket's default object ACL will be applied to the object.
+    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    POLICY = None
 
     def __init__(self, uri):
         from google.cloud import storage

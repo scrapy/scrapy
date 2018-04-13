@@ -209,7 +209,8 @@ For information about authentication, see this `documentation`_.
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
 :setting:`IMAGES_STORE_GCS_ACL` settings. By default, the ACL is set to
-``projectPrivate``. To make the files publicly available use the ``publicRead``
+None which means that Cloud Storage applies the bucket's default object ACL to the object.
+To make the files publicly available use the ``publicRead``
 policy::
 
     IMAGES_STORE_GCS_ACL = 'publicRead'
