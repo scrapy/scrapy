@@ -44,7 +44,6 @@ class ProxyConnectTestCase(TestCase):
 
         # Wait for the proxy to start.
         time.sleep(1.0)
-        os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:%d' % (http_port, )
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:%d' % (http_port, )
 
     def tearDown(self):
