@@ -89,7 +89,7 @@ This is the code for our first Spider. Save it in a file named
                 'http://quotes.toscrape.com/page/2/',
             ]
             for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
+                yield scrapy.Request(url=url, callback=self.parse, dont_filter=True)
 
         def parse(self, response):
             page = response.url.split("/")[-2]
@@ -109,7 +109,9 @@ and defines some attributes and methods:
 * :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
   Requests (you can return a list of requests or write a generator function)
   which the Spider will begin to crawl from. Subsequent requests will be
-  generated successively from these initial requests.
+  generated successively from these initial requests. Start requests are built
+  with dont_filter=True, so that on subsequent runs they will not be be skipped
+  because they have already been seen.
 
 * :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
