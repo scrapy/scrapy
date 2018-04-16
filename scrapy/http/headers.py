@@ -24,7 +24,9 @@ class Headers(CaselessDict):
         elif not hasattr(value, '__iter__'):
             value = [value]
 
-        return [self._tobytes(x) for x in value]
+        val_array = [self._tobytes(x) for x in value]
+
+        return val_array[0]
 
     def _tobytes(self, x):
         if isinstance(x, bytes):
