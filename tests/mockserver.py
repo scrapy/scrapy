@@ -212,8 +212,8 @@ class MockServer():
 
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
-        http_address = self.proc.stdout.readline()
-        https_address = self.proc.stdout.readline()
+        http_address = self.proc.stdout.readline().strip()
+        https_address = self.proc.stdout.readline().strip()
 
         self._oldenv = os.environ.copy()
         os.environ[self.HTTP] = http_address
