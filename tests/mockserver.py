@@ -3,7 +3,6 @@ import sys, time, random, os, json
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 
-import socket
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -16,12 +15,6 @@ from twisted.internet.task import deferLater
 
 
 from scrapy.utils.python import to_bytes, to_unicode
-
-
-def get_ephemeral_port():
-    s = socket.socket()
-    s.bind(("", 0))
-    return s.getsockname()[1]
 
 
 def getarg(request, name, default=None, type=None):

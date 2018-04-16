@@ -13,12 +13,12 @@ from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler
 from scrapy.http import Request
 from tests.spiders import SimpleSpider, SingleRequestSpider
-from tests.mockserver import MockServer, get_ephemeral_port
+from tests.mockserver import MockServer
 
 
 class HTTPSProxy(controller.Master, Thread):
 
-    def __init__(self, port):
+    def __init__(self):
         password_manager = http_auth.PassManSingleUser('scrapy', 'scrapy')
         authenticator = http_auth.BasicProxyAuth(password_manager, "mitmproxy")
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -26,9 +26,13 @@ class HTTPSProxy(controller.Master, Thread):
         server = proxy.ProxyServer(proxy.ProxyConfig(
             authenticator = authenticator,
             cacert = cert_path),
-            port)
+            0)
+        self.server = server
         Thread.__init__(self)
         controller.Master.__init__(self, server)
+
+    def http_address(self):
+        return 'http://%s:%d' % self.server.socket.getsockname()
 
 
 class ProxyConnectTestCase(TestCase):
@@ -38,13 +42,12 @@ class ProxyConnectTestCase(TestCase):
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
 
-        http_port = get_ephemeral_port()
-        self._proxy = HTTPSProxy(http_port)
+        self._proxy = HTTPSProxy()
         self._proxy.start()
 
         # Wait for the proxy to start.
         time.sleep(1.0)
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:%d' % (http_port, )
+        os.environ['https_proxy'] = self._proxy.http_address()
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
