@@ -72,7 +72,17 @@ class LxmlParserLinkExtractor(object):
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
                         nofollow=rel_has_nofollow(el.get('rel')))
-            links.append(link)
+            
+            # split url on # to get the fragment, if it exists
+            url_split_on_fragments = url.split('#');
+
+            # if url has a fragment, add it to the link.
+            # without this, link.fragment is never utilized, even if
+            # keep_fragments is true in the arguments supplied to
+            # canonicalize_url above
+            if not url_split_on_fragments:
+                link.fragment = url_split_on_fragments[-1]
+            
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
