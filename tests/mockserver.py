@@ -210,16 +210,14 @@ class MockServer():
     def __enter__(self):
         from scrapy.utils.test import get_testenv
 
-        http_port = str(get_ephemeral_port())
-        https_port = str(get_ephemeral_port())
-
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', http_port, https_port],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
-        self.proc.stdout.readline()
+        http_address = self.proc.stdout.readline()
+        https_address = self.proc.stdout.readline()
 
         self._oldenv = os.environ.copy()
-        os.environ[self.HTTP] = 'http://localhost:%s' % (http_port, )
-        os.environ[self.HTTPS] = 'https://localhost:%s' % (https_port, )
+        os.environ[self.HTTP] = http_address
+        os.environ[self.HTTPS] = https_address
 
         return self
 
@@ -238,25 +236,19 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
 
 
 if __name__ == "__main__":
-    http_port = 8998
-    https_port = 8999
-
-    if len(sys.argv) > 1:
-        http_port = int(sys.argv[1])
-
-    if len(sys.argv) > 2:
-        https_port = int(sys.argv[2])
-
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(http_port, factory)
+    httpPort = reactor.listenTCP(0, factory)
     contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(https_port, factory, contextFactory)
+    httpsPort = reactor.listenSSL(0, factory, contextFactory)
 
     def print_listening():
         httpHost = httpPort.getHost()
         httpsHost = httpsPort.getHost()
-        print("Mock server running at http://%s:%d and https://%s:%d" % (
-            httpHost.host, httpHost.port, httpsHost.host, httpsHost.port))
+        httpAddress = 'http://%s:%d' % (httpHost.host, httpHost.port)
+        httpsAddress = 'https://%s:%d' % (httpsHost.host, httpsHost.port)
+        print(httpAddress)
+        print(httpsAddress)
+
     reactor.callWhenRunning(print_listening)
     reactor.run()
