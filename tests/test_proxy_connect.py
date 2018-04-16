@@ -69,7 +69,6 @@ class ProxyConnectTestCase(TestCase):
         with LogCapture() as l:
             yield crawler.crawl(MockServer.url("/status?n=200"))
         self._assert_got_response_code(200, l)
-        os.environ['https_proxy'] = proxy
 
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
@@ -91,7 +90,6 @@ class ProxyConnectTestCase(TestCase):
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(l)
-        os.environ['https_proxy'] = proxy
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
@@ -114,7 +112,6 @@ class ProxyConnectTestCase(TestCase):
         with LogCapture() as l:
             yield crawler.crawl(MockServer.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(407, l)
-        os.environ['https_proxy'] = proxy
 
     def _assert_got_response_code(self, code, log):
         print(log)
