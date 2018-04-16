@@ -20,6 +20,7 @@ except ImportError:
     from io import BytesIO
 
 from twisted.internet import defer, threads
+from twisted.internet.defer import DeferredList
 
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
@@ -380,7 +381,7 @@ class FilesPipeline(MediaPipeline):
     def media_downloaded(self, response, request, info):
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in [200, 201]:
             logger.warning(
                 'File (code: %(status)s): Error downloading file from '
                 '%(request)s referred in <%(referer)s>',
@@ -391,13 +392,27 @@ class FilesPipeline(MediaPipeline):
             raise FileException('download-error')
 
         if not response.body:
-            logger.warning(
-                'File (empty-content): Empty file from %(request)s referred '
-                'in <%(referer)s>: no-content',
-                {'request': request, 'referer': referer},
-                extra={'spider': info.spider}
-            )
-            raise FileException('empty-content')
+            if response.status == 201 and 'location' in response.headers:
+                logger.debug(
+                    'File (code: %(status)s): Status 201 received. Downloading '
+                    'resource marked by location parameter in the response headers for '
+                    '%(request)s referred in <%(referer)s>',
+                    {'status': response.status,
+                     'request': request, 'referer': referer},
+                    extra={'spider': info.spider}
+                )
+
+                redirect_dlist = [self._process_request(Request(loc), info)]
+                redirect_dfd = DeferredList(redirect_dlist, consumeErrors=1)
+                return redirect_dfd
+            else:
+                logger.warning(
+                    'File (empty-content): Empty file from %(request)s referred '
+                    'in <%(referer)s>: no-content',
+                    {'request': request, 'referer': referer},
+                    extra={'spider': info.spider}
+                )
+                raise FileException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
         logger.debug(
