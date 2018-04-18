@@ -190,16 +190,6 @@ class Root(Resource):
 
 class MockServer():
 
-    HTTP = 'mock_http'
-    HTTPS = 'mock_https'
-
-    @classmethod
-    def url(cls, path, is_secure=False):
-        key = cls.HTTP
-        if is_secure:
-            key = cls.HTTPS
-        return os.environ[key] + path
-
     def __enter__(self):
         from scrapy.utils.test import get_testenv
 
@@ -209,8 +199,8 @@ class MockServer():
         https_address = self.proc.stdout.readline().strip().decode('ascii')
 
         self._oldenv = os.environ.copy()
-        os.environ[self.HTTP] = http_address
-        os.environ[self.HTTPS] = https_address
+        self.http_address = http_address
+        self.https_address = https_address
 
         return self
 
@@ -219,6 +209,22 @@ class MockServer():
         self.proc.wait()
         time.sleep(0.2)
         os.environ = self._oldenv
+
+    def address(self):
+        return MockServerAddress(self.http_address, self.https_address)
+
+
+class MockServerAddress():
+
+    def __init__(self, http_address, https_address):
+        self.http_address = http_address
+        self.https_address = https_address
+
+    def url(self, path, is_secure=False):
+        host = self.http_address
+        if is_secure:
+            host = self.https_address
+        return host + path
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
