@@ -179,7 +179,7 @@ class FeedExportTest(unittest.TestCase):
         try:
             with MockServer() as s:
                 runner = CrawlerRunner(Settings(defaults))
-                spider_cls.start_urls = [MockServer.url('/')]
+                spider_cls.start_urls = [s.address().url('/')]
                 yield runner.crawl(spider_cls)
 
             with open(res_name, 'rb') as f:
