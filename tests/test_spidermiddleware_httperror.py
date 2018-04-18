@@ -11,9 +11,10 @@ from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.httperror import HttpErrorMiddleware, HttpError
 from scrapy.settings import Settings
+from tests.spiders import AddressableSpider
 
 
-class _HttpErrorSpider(Spider):
+class _HttpErrorSpider(AddressableSpider):
     name = 'httperror'
     bypass_status_codes = set()
 
