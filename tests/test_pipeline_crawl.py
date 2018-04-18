@@ -46,7 +46,7 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
 
     def _process_url(self, url):
         return add_or_replace_parameter(
-                    MockServer.url('/redirect-to'),
+                    self.address.url('/redirect-to'),
                     'goto', url)
 
 
@@ -134,7 +134,7 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media(self):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(MockServer.url("/files/images/"),
+            yield crawler.crawl(self.mockserver.address().url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key)
         self._assert_files_downloaded(self.items, str(log))
@@ -143,7 +143,7 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media_wrong_urls(self):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(MockServer.url("/files/images/"),
+            yield crawler.crawl(self.mockserver.address().url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key)
         self._assert_files_download_failure(crawler, self.items, 404, str(log))
@@ -152,9 +152,10 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media_redirected_default_failure(self):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(MockServer.url("/files/images/"),
+            yield crawler.crawl(self.mockserver.address().url("/files/images/"),
                 media_key=self.media_key,
-                media_urls_key=self.media_urls_key)
+                media_urls_key=self.media_urls_key,
+                address=self.mockserver.address())
         self._assert_files_download_failure(crawler, self.items, 302, str(log))
 
     @defer.inlineCallbacks
@@ -165,9 +166,10 @@ class FileDownloadCrawlTestCase(TestCase):
 
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(MockServer.url("/files/images/"),
+            yield crawler.crawl(self.mockserver.address().url("/files/images/"),
                 media_key=self.media_key,
-                media_urls_key=self.media_urls_key)
+                media_urls_key=self.media_urls_key,
+                address=self.mockserver.address())
         self._assert_files_downloaded(self.items, str(log))
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
 
