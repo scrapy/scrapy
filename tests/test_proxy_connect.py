@@ -58,7 +58,7 @@ class ProxyConnectTestCase(TestCase):
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.url("/status?n=200"))
+            yield crawler.crawl(self.mockserver.address().url("/status?n=200"))
         self._assert_got_response_code(200, l)
 
     @defer.inlineCallbacks
@@ -67,7 +67,7 @@ class ProxyConnectTestCase(TestCase):
         os.environ['https_proxy'] = proxy + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.url("/status?n=200"))
+            yield crawler.crawl(self.mockserver.address().url("/status?n=200"))
         self._assert_got_response_code(200, l)
 
     @defer.inlineCallbacks
@@ -86,14 +86,14 @@ class ProxyConnectTestCase(TestCase):
         os.environ['https_proxy'] = urlunsplit(bad_auth_proxy)
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.url("/status?n=200", is_secure=True))
+            yield crawler.crawl(self.mockserver.address().url("/status?n=200", is_secure=True))
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(l)
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
-        request = Request(MockServer.url("/echo"))
+        request = Request(self.mockserver.address().url("/echo"))
         crawler = get_crawler(SingleRequestSpider)
         with LogCapture() as l:
             yield crawler.crawl(seed=request)
@@ -110,7 +110,7 @@ class ProxyConnectTestCase(TestCase):
         os.environ['https_proxy'] = urlunsplit(bad_auth_proxy) + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl(MockServer.url("/status?n=200", is_secure=True))
+            yield crawler.crawl(self.mockserver.address().url("/status?n=200", is_secure=True))
         self._assert_got_response_code(407, l)
 
     def _assert_got_response_code(self, code, log):
