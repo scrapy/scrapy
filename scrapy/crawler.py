@@ -1,3 +1,4 @@
+from functools import reduce
 import six
 import signal
 import logging
@@ -140,6 +141,7 @@ class CrawlerRunner(object):
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
+        self.crawlers_has_spiders = list()
 
     @property
     def spiders(self):
@@ -181,6 +183,7 @@ class CrawlerRunner(object):
         def _done(result):
             self.crawlers.discard(crawler)
             self._active.discard(d)
+            self.crawlers_has_spiders.append(crawler.is_has_spider())
             return result
 
         return d.addBoth(_done)
@@ -223,6 +226,11 @@ class CrawlerRunner(object):
         """
         while self._active:
             yield defer.DeferredList(self._active)
+
+    def is_crawlers_has_spider(self):
+        return reduce(lambda x,y: x and y,
+                      self.crawlers_has_spiders,
+                      True)
 
 
 class CrawlerProcess(CrawlerRunner):

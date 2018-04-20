@@ -219,3 +219,27 @@ class CrawlerHasSpider(twisted.trial.unittest.TestCase):
             yield crawler.crawl()
 
         self.assertEqual(crawler.is_has_spider(), False)
+
+
+class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_has_spider(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(SimpleSpider, "https://localhost:8999/status?n=200")
+        self.assertEqual(runner.is_crawlers_has_spider(), True)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_has_no_spider(self):
+        runner = CrawlerRunner()
+        with self.assertRaises(ValueError):
+            yield runner.crawl(ExceptionSpider)
+
+        self.assertEqual(runner.is_crawlers_has_spider(), False)
