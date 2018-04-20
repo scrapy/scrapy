@@ -13,8 +13,6 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
-from tests.spiders import SimpleSpider
-from tests.mockserver import MockServer
 from twisted.internet import defer
 import twisted.trial.unittest
 
@@ -196,20 +194,20 @@ class ExceptionSpider(scrapy.Spider):
         raise ValueError('Exception in from_crawler method')
 
 
+class NoRequestsSpider(scrapy.Spider):
+    name = 'no_request'
+
+    def start_requests(self):
+        return []
+
+
 class CrawlerHasSpider(twisted.trial.unittest.TestCase):
-
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
-
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_crawler_has_spider(self):
-        crawler = get_crawler(SimpleSpider)
+        crawler = get_crawler(NoRequestsSpider)
         self.assertEqual(crawler.is_has_spider(), False)
-        yield crawler.crawl("https://localhost:8999/status?n=200")
+        yield crawler.crawl()
         self.assertEqual(crawler.is_has_spider(), True)
 
     @defer.inlineCallbacks
@@ -223,17 +221,10 @@ class CrawlerHasSpider(twisted.trial.unittest.TestCase):
 
 class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
 
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
-
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
-
     @defer.inlineCallbacks
     def test_crawler_runner_has_spider(self):
         runner = CrawlerRunner()
-        yield runner.crawl(SimpleSpider, "https://localhost:8999/status?n=200")
+        yield runner.crawl(NoRequestsSpider)
         self.assertEqual(runner.is_crawlers_has_spider(), True)
 
     @defer.inlineCallbacks
