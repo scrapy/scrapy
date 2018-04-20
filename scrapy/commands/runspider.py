@@ -87,3 +87,6 @@ class Command(ScrapyCommand):
 
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
+
+        if not self.crawler_process.is_crawlers_has_spider():
+            self.exitcode = 1
