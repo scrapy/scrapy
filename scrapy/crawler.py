@@ -110,6 +110,9 @@ class Crawler(object):
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
 
+    def has_spider(self):
+        return getattr(self, 'spider', None) is not None
+
 
 class CrawlerRunner(object):
     """

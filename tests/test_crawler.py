@@ -11,7 +11,12 @@ from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
+from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
+from tests.spiders import SimpleSpider
+from tests.mockserver import MockServer
+from twisted.internet import defer
+import twisted.trial.unittest
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -181,3 +186,36 @@ class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_None(self):
         runner = CrawlerProcess()
         self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
+
+
+class ExceptionSpider(scrapy.Spider):
+    name = 'exception'
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError('Exception in from_crawler method')
+
+
+class CrawlerHasSpider(twisted.trial.unittest.TestCase):
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_crawler_has_spider(self):
+        crawler = get_crawler(SimpleSpider)
+        self.assertEqual(crawler.has_spider(), False)
+        yield crawler.crawl("https://localhost:8999/status?n=200")
+        self.assertEqual(crawler.has_spider(), True)
+
+    @defer.inlineCallbacks
+    def test_crawler_has_no_spider(self):
+        crawler = get_crawler(ExceptionSpider)
+        with self.assertRaises(ValueError):
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.has_spider(), False)
