@@ -11,12 +11,12 @@ from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
 
 
-class AddressableSpider(Spider):
+class MockServerSpider(Spider):
     def __init__(self, address=None, *args, **kwargs):
-        super(AddressableSpider, self).__init__(*args, **kwargs)
+        super(MockServerSpider, self).__init__(*args, **kwargs)
         self.address = address
 
-class MetaSpider(AddressableSpider):
+class MetaSpider(MockServerSpider):
 
     name = 'meta'
 
@@ -165,7 +165,7 @@ class SingleRequestSpider(MetaSpider):
             return self.errback_func(failure)
 
 
-class DuplicateStartRequestsSpider(AddressableSpider):
+class DuplicateStartRequestsSpider(MockServerSpider):
     dont_filter = True
     name = 'duplicatestartrequests'
     distinct_urls = 2
