@@ -84,6 +84,7 @@ Get stat key::
    ...
    custom_count
    start_time
+
 Available Stats Collectors
 ==========================
 
