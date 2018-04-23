@@ -198,7 +198,6 @@ class MockServer():
         http_address = self.proc.stdout.readline().strip().decode('ascii')
         https_address = self.proc.stdout.readline().strip().decode('ascii')
 
-        self._oldenv = os.environ.copy()
         self.http_address = http_address
         self.https_address = https_address
 
@@ -208,7 +207,6 @@ class MockServer():
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)
-        os.environ = self._oldenv
 
     def address(self):
         return MockServerAddress(self.http_address, self.https_address)
