@@ -82,6 +82,13 @@ class Spider(object_ref):
             for url in self.start_urls:
                 yield Request(url, dont_filter=True)
 
+    def start_requests_with_control(self):
+        for r in self.start_requests():
+            yield r
+
+            if r is not None:
+                yield None
+
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
         return Request(url, dont_filter=True)
