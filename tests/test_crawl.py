@@ -240,7 +240,7 @@ with multiples lines
             pass
 
         class FaultySpider(SimpleSpider):
-            def start_requests(self):
+            def start_requests_with_control(self):
                 raise TestError
 
         crawler = self.runner.create_crawler(FaultySpider)
