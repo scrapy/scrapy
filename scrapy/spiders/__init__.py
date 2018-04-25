@@ -86,8 +86,8 @@ class Spider(object_ref):
         for r in self.start_requests():
             yield r
 
-            if r is not None:
-                yield None
+            if r != signals.WaitUntilQueueEmpty:
+                yield signals.WaitUntilQueueEmpty
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
