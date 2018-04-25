@@ -208,6 +208,10 @@ class GCSFilesStore(object):
 
     CACHE_CONTROL = 'max-age=172800'
 
+    # The bucket's default object ACL will be applied to the object.
+    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    POLICY = None
+
     def __init__(self, uri):
         from google.cloud import storage
         client = storage.Client(project=self.GCS_PROJECT_ID)
@@ -239,7 +243,8 @@ class GCSFilesStore(object):
         return threads.deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
-            content_type=self._get_content_type(headers)
+            content_type=self._get_content_type(headers),
+            predefined_acl=self.POLICY
         )
 
 
@@ -314,6 +319,7 @@ class FilesPipeline(MediaPipeline):
 
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
+        gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
