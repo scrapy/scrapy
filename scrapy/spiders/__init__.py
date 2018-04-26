@@ -13,10 +13,8 @@ from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.python import iflatten
 
-
-def flatten__(list_):
-    return (item for sublist in list_ for item in sublist)
 
 class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
@@ -87,7 +85,7 @@ class Spider(object_ref):
 
     def start_requests_with_control(self):
         gen_ = ((r, signals.WaitUntilQueueEmpty) if r != signals.WaitUntilQueueEmpty else (r,) for r in self.start_requests())
-        return flatten__(gen_)
+        return iflatten(gen_)
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
