@@ -200,7 +200,7 @@ class MockServer():
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.wait()
-        time.sleep(0.2)
+        time.sleep(20)
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
