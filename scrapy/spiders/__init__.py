@@ -15,7 +15,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
 
 
-def __flatten(list_):
+def flatten__(list_):
     return (item for sublist in list_ for item in sublist)
 
 class Spider(object_ref):
@@ -87,7 +87,7 @@ class Spider(object_ref):
 
     def start_requests_with_control(self):
         gen_ = ((r, signals.WaitUntilQueueEmpty) if r != signals.WaitUntilQueueEmpty else (r,) for r in self.start_requests())
-        return __flatten(gen_)
+        return flatten__(gen_)
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
