@@ -84,7 +84,8 @@ class Spider(object_ref):
                 yield Request(url, dont_filter=True)
 
     def start_requests_with_control(self):
-        gen_ = ((r, signals.WaitUntilQueueEmpty) if r != signals.WaitUntilQueueEmpty else (r,) for r in self.start_requests())
+        sig = signals.WaitUntilQueueEmpty
+        gen_ = ((r, sig) if r != sig else (r,) for r in self.start_requests())
         return iflatten(gen_)
 
     def make_requests_from_url(self, url):
