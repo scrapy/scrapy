@@ -71,6 +71,15 @@ called which actually returns the item populated with the data
 previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
 
+Note that it is also possible for the spider to return/yield the loader it-self,
+letting Scrapy calling the :meth:`ItemLoader.load_item` behind::
+
+    def parse(self, response):
+        loader = ItemLoader(item=Product(), response=response)
+        # (...)
+        return loader
+
+
 .. _topics-loaders-processors:
 
 Input and Output processors

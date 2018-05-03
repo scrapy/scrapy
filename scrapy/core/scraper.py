@@ -15,6 +15,7 @@ from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
+from scrapy.loader import ItemLoader
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.utils.request import referer_str
 
@@ -176,9 +177,13 @@ class Scraper(object):
         return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):
-        """Process each Request/Item (given in the output parameter) returned
-        from the given spider
+        """Process each Request/Item/ItemLoader (given in the output parameter)
+        returned from the given spider
         """
+        # Allow ItemLoader to be returned: convert it to new Item
+        if isinstance(output, ItemLoader):
+            output = output.load_item()
+
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
         elif isinstance(output, (BaseItem, dict)):
@@ -190,7 +195,8 @@ class Scraper(object):
             pass
         else:
             typename = type(output).__name__
-            logger.error('Spider must return Request, BaseItem, dict or None, '
+            logger.error('Spider must return Request, BaseItem, ItemLoader, '
+                         'dict or None, '
                          'got %(typename)r in %(request)s',
                          {'request': request, 'typename': typename},
                          extra={'spider': spider})
