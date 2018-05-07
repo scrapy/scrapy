@@ -1,4 +1,3 @@
-from functools import reduce
 import six
 import signal
 import logging
@@ -228,9 +227,7 @@ class CrawlerRunner(object):
             yield defer.DeferredList(self._active)
 
     def is_crawlers_has_spider(self):
-        return reduce(lambda x,y: x and y,
-                      self.crawlers_has_spiders,
-                      True)
+        return all(self.crawlers_has_spiders)
 
 
 class CrawlerProcess(CrawlerRunner):
