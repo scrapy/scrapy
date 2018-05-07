@@ -208,16 +208,6 @@ class MockServer():
         self.proc.wait()
         time.sleep(0.2)
 
-    def address(self):
-        return MockServerAddress(self.http_address, self.https_address)
-
-
-class MockServerAddress():
-
-    def __init__(self, http_address, https_address):
-        self.http_address = http_address
-        self.https_address = https_address
-
     def url(self, path, is_secure=False):
         host = self.http_address
         if is_secure:
