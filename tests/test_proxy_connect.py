@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from urlparse import urlsplit, urlunsplit
+from six.moves.urllib.parse import urlsplit, urlunsplit
 from threading import Thread
 from libmproxy import controller, proxy
 from netlib import http_auth
