@@ -26,5 +26,3 @@ stats_spider_closed = spider_closed
 item_passed = item_scraped
 
 request_received = request_scheduled
-
-WaitUntilQueueEmpty = object()

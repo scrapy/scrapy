@@ -121,7 +121,7 @@ class ExecutionEngine(object):
         while not self._needs_backout(spider) and slot.start_requests:
             try:
                 request = next(slot.start_requests)
-                if request == signals.WaitUntilQueueEmpty:
+                if request == spider.WaitUntilQueueEmpty:
                     break
                 self.crawl(request, spider)
 
