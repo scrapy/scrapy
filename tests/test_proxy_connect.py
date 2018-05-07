@@ -32,7 +32,7 @@ class HTTPSProxy(controller.Master, Thread):
         controller.Master.__init__(self, server)
 
     def http_address(self):
-        return 'http://%s:%d' % self.server.socket.getsockname()
+        return 'http://scrapy:scrapy@%s:%d' % self.server.socket.getsockname()
 
 
 class ProxyConnectTestCase(TestCase):
@@ -48,6 +48,7 @@ class ProxyConnectTestCase(TestCase):
         # Wait for the proxy to start.
         time.sleep(1.0)
         os.environ['https_proxy'] = self._proxy.http_address()
+        os.environ['http_proxy'] = self._proxy.http_address()
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
