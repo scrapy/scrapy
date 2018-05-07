@@ -46,7 +46,7 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
 
     def _process_url(self, url):
         return add_or_replace_parameter(
-                    self.address.url('/redirect-to'),
+                    self.mockserver.url('/redirect-to'),
                     'goto', url)
 
 
@@ -155,7 +155,7 @@ class FileDownloadCrawlTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                address=self.mockserver)
+                mockserver=self.mockserver)
         self._assert_files_download_failure(crawler, self.items, 302, str(log))
 
     @defer.inlineCallbacks
@@ -169,7 +169,7 @@ class FileDownloadCrawlTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                address=self.mockserver)
+                mockserver=self.mockserver)
         self._assert_files_downloaded(self.items, str(log))
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
 
