@@ -233,6 +233,13 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
         self.assertEqual(runner.is_crawlers_has_spider(), True)
 
     @defer.inlineCallbacks
+    def test_crawler_runner_has_spider_several(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(NoRequestsSpider)
+        yield runner.crawl(NoRequestsSpider)
+        self.assertEqual(runner.is_crawlers_has_spider(), True)
+
+    @defer.inlineCallbacks
     def test_crawler_runner_has_no_spider(self):
         runner = CrawlerRunner()
 
@@ -242,5 +249,20 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
             pass
         else:
             self.fail('Exception should be raised from spider')
+
+        self.assertEqual(runner.is_crawlers_has_spider(), False)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_has_no_spider_several(self):
+        runner = CrawlerRunner()
+
+        try:
+            yield runner.crawl(ExceptionSpider)
+        except ValueError:
+            pass
+        else:
+            self.fail('Exception should be raised from spider')
+
+        yield runner.crawl(NoRequestsSpider)
 
         self.assertEqual(runner.is_crawlers_has_spider(), False)
