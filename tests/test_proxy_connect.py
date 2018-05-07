@@ -35,6 +35,11 @@ class HTTPSProxy(controller.Master, Thread):
         return 'http://scrapy:scrapy@%s:%d' % self.server.socket.getsockname()
 
 
+def _wrong_credentials(proxy_url):
+    bad_auth_proxy = list(urlsplit(proxy_url))
+    bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
+    return urlunsplit(bad_auth_proxy)
+
 class ProxyConnectTestCase(TestCase):
 
     def setUp(self):
@@ -80,11 +85,7 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
-        proxy = os.environ['https_proxy']
-        bad_auth_proxy = list(urlsplit(proxy))
-        bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
-
-        os.environ['https_proxy'] = urlunsplit(bad_auth_proxy)
+        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl(self.mockserver.address().url("/status?n=200", is_secure=True))
@@ -104,11 +105,7 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
-        proxy = os.environ['https_proxy']
-        bad_auth_proxy = list(urlsplit(proxy))
-        bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
-
-        os.environ['https_proxy'] = urlunsplit(bad_auth_proxy) + '?noconnect'
+        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy']) + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl(self.mockserver.address().url("/status?n=200", is_secure=True))
