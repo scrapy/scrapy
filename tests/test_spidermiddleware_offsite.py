@@ -1,3 +1,4 @@
+import re
 from unittest import TestCase
 
 from six.moves.urllib.parse import urlparse
@@ -95,5 +96,7 @@ class TestURLWarnings(OffsiteMiddlewareTestCase, TestCase):
         self.spider.allowed_domains = ['http://scrapytest.org', 'scrapy.org', 'scrapy.test.org']
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            self.mw.get_host_regex(self.spider)
+            host_regex = self.mw.get_host_regex(self.spider)
             assert issubclass(w[-1].category, URLWarning)
+
+        self.assertNotIn(re.escape('http://scrapytest.org'), host_regex.pattern)

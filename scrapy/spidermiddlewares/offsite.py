@@ -60,6 +60,7 @@ class OffsiteMiddleware(object):
         url_pattern = re.compile("^https?://.*$")
         for domain in allowed_domains:
             if url_pattern.match(domain):
+                allowed_domains.remove(domain)
                 warnings.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain, URLWarning)
 
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
