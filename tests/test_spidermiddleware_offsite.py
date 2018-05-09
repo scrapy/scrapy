@@ -55,13 +55,13 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
-    def _get_spider(self):
-        return Spider('foo')
+    def _get_spiderargs(self):
+        return dict(name='foo')
 
 
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
-    def _get_spider(self):
+    def _get_spiderargs(self):
       bad_hostname = urlparse('http:////scrapytest.org').hostname
       return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
