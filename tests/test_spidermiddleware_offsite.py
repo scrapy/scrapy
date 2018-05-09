@@ -9,6 +9,7 @@ from scrapy.spidermiddlewares.offsite import URLWarning
 from scrapy.utils.test import get_crawler
 import warnings
 
+
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
@@ -29,13 +30,13 @@ class TestOffsiteMiddleware(TestCase):
                        Request('http://offsite.tld/letmepass', dont_filter=True),
                        Request('http://scrapy.test.org/')]
         offsite_reqs = [Request('http://scrapy2.org'),
-                       Request('http://offsite.tld/'),
-                       Request('http://offsite.tld/scrapytest.org'),
-                       Request('http://offsite.tld/rogue.scrapytest.org'),
-                       Request('http://rogue.scrapytest.org.haha.com'),
-                       Request('http://roguescrapytest.org'),
-                       Request('http://test.org/'),
-                       Request('http://notscrapy.test.org/')]
+                        Request('http://offsite.tld/'),
+                        Request('http://offsite.tld/scrapytest.org'),
+                        Request('http://offsite.tld/rogue.scrapytest.org'),
+                        Request('http://rogue.scrapytest.org.haha.com'),
+                        Request('http://roguescrapytest.org'),
+                        Request('http://test.org/'),
+                        Request('http://notscrapy.test.org/')]
         reqs = onsite_reqs + offsite_reqs
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
@@ -53,6 +54,7 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEqual(out, reqs)
 
+
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
     def _get_spiderargs(self):
@@ -62,18 +64,18 @@ class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
     def _get_spiderargs(self):
-      bad_hostname = urlparse('http:////scrapytest.org').hostname
-      return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+        bad_hostname = urlparse('http:////scrapytest.org').hostname
+        return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
     def test_process_spider_output(self):
-      res = Response('http://scrapytest.org')
-      reqs = [Request('http://scrapytest.org/1')]
-      out = list(self.mw.process_spider_output(res, reqs, self.spider))
-      self.assertEqual(out, reqs)
+        res = Response('http://scrapytest.org')
+        reqs = [Request('http://scrapytest.org/1')]
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEqual(out, reqs)
 
 
 class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
-    
+
     def test_get_host_regex(self):
         self.spider.allowed_domains = ['http://scrapytest.org', 'scrapy.org', 'scrapy.test.org']
         with warnings.catch_warnings(record=True) as w:
