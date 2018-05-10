@@ -76,5 +76,22 @@ class UtilsRequestTest(unittest.TestCase):
         request_httprepr(Request("file:///tmp/foo.txt"))
         request_httprepr(Request("ftp://localhost/tmp/foo.txt"))
 
+    def test_request_safe_url(self):
+        """Test that a request url is escaped unless specifically requested."""
+        urls = [
+            ('http://google.com/"hello"', 'http://google.com/%22hello%22'),
+            (b'https://www.w3schools.com/action_page2.php?text=5\xe2\x82\xac|A\xc3\xb1o:2018|Nombre:G\xc3\xbcnther"}'.decode('utf8'),
+             'https://www.w3schools.com/action_page2.php?text=5%E2%82%AC|A%C3%B1o:2018|Nombre:G%C3%BCnther%22%7D')
+        ]
+        for url, safe_url in urls:
+            r1 = Request(url)
+            self.assertEqual(r1.url, safe_url)
+            r2 = Request(url, escape_url=False)
+            self.assertEqual(r2.url, url)
+            r3 = r1.replace(escape_url=False)
+            self.assertEqual(r3.url, url)
+            r4 = r2.replace(escape_url=True)
+            self.assertEqual(r4.url, safe_url)
+
 if __name__ == "__main__":
     unittest.main()
