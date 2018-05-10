@@ -10,5 +10,7 @@ def urlparse_cached(request_or_response):
     Request or Response object
     """
     if request_or_response not in _urlparse_cache:
-        _urlparse_cache[request_or_response] = urlparse(request_or_response.url)
+        #Make sure we clean out any domains that might have \n, \t in them.
+        url = request_or_response.url.strip()
+        _urlparse_cache[request_or_response] = urlparse(url)
     return _urlparse_cache[request_or_response]
