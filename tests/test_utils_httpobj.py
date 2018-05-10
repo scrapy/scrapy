@@ -26,7 +26,7 @@ class HttpobjUtilsTest(unittest.TestCase):
         #Test out that urlparse_cached strips out any \n
         # or \t from its url
 
-        normal_url = "http://quotes.toscrape.com/
+        normal_url = "http://quotes.toscrape.com/"
         dirty_url = "\nhttp://quotes.toscrape.com/\n"
 
         request1 = Request(normal_url)
