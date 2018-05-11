@@ -81,6 +81,9 @@ scrapy.Spider
        specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
 
+       Let's say your target url is ``https://www.example.com/1.html``,
+       then add ``'example.com'`` to the list.
+
    .. attribute:: start_urls
 
        A list of URLs where the spider will begin to crawl from, when no
@@ -575,8 +578,7 @@ CSVFeedSpider
 
    .. attribute:: headers
 
-       A list of the rows contained in the file CSV feed which will be used to
-       extract fields from it.
+       A list of the column names in the CSV file.
 
    .. method:: parse_row(response, row)
 
@@ -749,8 +751,8 @@ Combine SitemapSpider with other sources of urls::
         def parse_other(self, response):
             pass # ... scrape other here ...
 
-.. _Sitemaps: http://www.sitemaps.org
-.. _Sitemap index files: http://www.sitemaps.org/protocol.html#index
+.. _Sitemaps: https://www.sitemaps.org/index.html
+.. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
-.. _Scrapyd documentation: http://scrapyd.readthedocs.org/en/latest/
+.. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

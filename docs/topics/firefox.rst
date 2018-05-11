@@ -17,7 +17,7 @@ when inspecting the page source is not the original HTML, but a modified one
 after applying some browser clean up and executing Javascript code.  Firefox,
 in particular, is known for adding ``<tbody>`` elements to tables.  Scrapy, on
 the other hand, does not modify the original page HTML, so you won't be able to
-extract any data if you use ``<tbody>`` in your XPath expressions. 
+extract any data if you use ``<tbody>`` in your XPath expressions.
 
 Therefore, you should keep in mind the following things when working with
 Firefox and XPath:
@@ -71,11 +71,11 @@ Firecookie
 
 `Firecookie`_ makes it easier to view and manage cookies. You can use this
 extension to create a new cookie, delete existing cookies, see a list of cookies
-for the current site, manage cookies permissions and a lot more. 
+for the current site, manage cookies permissions and a lot more.
 
-.. _Firebug: http://getfirebug.com
+.. _Firebug: https://getfirebug.com/
 .. _Inspect Element: https://www.youtube.com/watch?v=-pT_pDe54aA
-.. _XPather: https://addons.mozilla.org/en-US/firefox/addon/xpather/ 
+.. _XPather: https://addons.mozilla.org/en-US/firefox/addon/xpather/
 .. _XPath Checker: https://addons.mozilla.org/en-US/firefox/addon/xpath-checker/
 .. _Tamper Data: https://addons.mozilla.org/en-US/firefox/addon/tamper-data/
 .. _Firecookie: https://addons.mozilla.org/en-US/firefox/addon/firecookie/

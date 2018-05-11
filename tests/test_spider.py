@@ -207,7 +207,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
@@ -234,7 +234,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 2)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html'])
 
@@ -258,7 +258,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
@@ -348,6 +348,33 @@ Sitemap: /sitemap-relative-url.xml
                           'http://example.com/sitemap-uppercase.xml',
                           'http://www.example.com/sitemap-relative-url.xml'])
 
+    def test_alternate_url_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="de-ch"
+                href="http://www.example.com/schweiz-deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="it"
+                href="http://www.example.com/italiano/"/>
+            <xhtml:link rel="alternate" hreflang="it"/><!-- wrong tag without href -->
+        </url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/'])
+
+        spider.sitemap_alternate_links = True
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/',
+                          'http://www.example.com/deutsch/',
+                          'http://www.example.com/schweiz-deutsch/',
+                          'http://www.example.com/italiano/'])
+
 
 class DeprecationTest(unittest.TestCase):
 
@@ -429,3 +456,17 @@ class DeprecationTest(unittest.TestCase):
             self.assertEqual(len(requests), 1)
             self.assertEqual(requests[0].url, 'http://example.com/foo')
             self.assertEqual(len(w), 1)
+
+
+class NoParseMethodSpiderTest(unittest.TestCase):
+
+    spider_class = Spider
+
+    def test_undefined_parse_method(self):
+        spider = self.spider_class('example.com')
+        text = b'Random text'
+        resp = TextResponse(url="http://www.example.com/random_url", body=text)
+
+        exc_msg = 'Spider.parse callback is not defined'
+        with self.assertRaisesRegexp(NotImplementedError, exc_msg):
+            spider.parse(resp)

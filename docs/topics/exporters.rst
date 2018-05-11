@@ -36,38 +36,36 @@ to export
 3. and finally call the :meth:`~BaseItemExporter.finish_exporting` to signal
 the end of the exporting process
 
-Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses an Item
-Exporter to export scraped items to different files, one per spider::
+Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
+Item Exporters to group scraped items to different files according to the
+value of one of their fields::
 
-   from scrapy import signals
-   from scrapy.exporters import XmlItemExporter
+    from scrapy.exporters import XmlItemExporter
 
-   class XmlExportPipeline(object):
+    class PerYearXmlExportPipeline(object):
+        """Distribute items across multiple XML files according to their 'year' field"""
 
-       def __init__(self):
-           self.files = {}
+        def open_spider(self, spider):
+            self.year_to_exporter = {}
 
-        @classmethod
-        def from_crawler(cls, crawler):
-            pipeline = cls()
-            crawler.signals.connect(pipeline.spider_opened, signals.spider_opened)
-            crawler.signals.connect(pipeline.spider_closed, signals.spider_closed)
-            return pipeline
+        def close_spider(self, spider):
+            for exporter in self.year_to_exporter.values():
+                exporter.finish_exporting()
+                exporter.file.close()
 
-       def spider_opened(self, spider):
-           file = open('%s_products.xml' % spider.name, 'w+b')
-           self.files[spider] = file
-           self.exporter = XmlItemExporter(file)
-           self.exporter.start_exporting()
+        def _exporter_for_item(self, item):
+            year = item['year']
+            if year not in self.year_to_exporter:
+                f = open('{}.xml'.format(year), 'wb')
+                exporter = XmlItemExporter(f)
+                exporter.start_exporting()
+                self.year_to_exporter[year] = exporter
+            return self.year_to_exporter[year]
 
-       def spider_closed(self, spider):
-           self.exporter.finish_exporting()
-           file = self.files.pop(spider)
-           file.close()
-
-       def process_item(self, item, spider):
-           self.exporter.export_item(item)
-           return item
+        def process_item(self, item, spider):
+            exporter = self._exporter_for_item(item)
+            exporter.export_item(item)
+            return item
 
 
 .. _topics-exporters-field-serialization:
@@ -140,7 +138,7 @@ output examples, which assume you're exporting these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8')
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -149,7 +147,7 @@ BaseItemExporter
 
    These features can be configured through the constructor arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
-   :attr:`export_empty_fields`, :attr:`encoding`.
+   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
    .. method:: export_item(item)
 
@@ -215,6 +213,15 @@ BaseItemExporter
       affects unicode values (which are always serialized to str using this
       encoding). Other value types are passed unchanged to the specific
       serialization library.
+
+   .. attribute:: indent
+
+      Amount of spaces used to indent the output on each level. Defaults to ``0``.
+
+      * ``indent=None`` selects the most compact representation,
+        all items in the same line with no indentation
+      * ``indent<=0`` each item on its own line, no indentation
+      * ``indent>0`` each item on its own line, indented with the provided numeric value
 
 .. highlight:: none
 

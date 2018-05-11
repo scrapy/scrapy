@@ -13,7 +13,6 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
-import os
 import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
@@ -114,13 +113,9 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
 
-try:
-    EDITOR = os.environ['EDITOR']
-except KeyError:
-    if sys.platform == 'win32':
-        EDITOR = '%s -m idlelib.idle'
-    else:
-        EDITOR = 'vi'
+EDITOR = 'vi'
+if sys.platform == 'win32':
+    EDITOR = '%s -m idlelib.idle'
 
 EXTENSIONS = {}
 
@@ -161,8 +156,10 @@ FEED_EXPORTERS_BASE = {
     'marshal': 'scrapy.exporters.MarshalItemExporter',
     'pickle': 'scrapy.exporters.PickleItemExporter',
 }
+FEED_EXPORT_INDENT = 0
 
 FILES_STORE_S3_ACL = 'private'
+FILES_STORE_GCS_ACL = ''
 
 FTP_USER = 'anonymous'
 FTP_PASSWORD = 'guest'
@@ -185,6 +182,7 @@ HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = 'latin-1'
 
 IMAGES_STORE_S3_ACL = 'private'
+IMAGES_STORE_GCS_ACL = ''
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
@@ -219,7 +217,6 @@ MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_ENABLED = True
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
-MEMUSAGE_REPORT = False
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
@@ -240,7 +237,7 @@ REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 408]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
@@ -276,7 +273,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__version__
+USER_AGENT = 'Scrapy/%s (+https://scrapy.org)' % import_module('scrapy').__version__
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]

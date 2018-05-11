@@ -142,4 +142,4 @@ available in all future runs should they be necessary again::
 
 For more information, check the :ref:`topics-logging` section.
 
-.. _base tag: http://www.w3schools.com/tags/tag_base.asp
+.. _base tag: https://www.w3schools.com/tags/tag_base.asp

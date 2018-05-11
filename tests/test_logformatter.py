@@ -64,5 +64,30 @@ class LoggingContribTest(unittest.TestCase):
         assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
 
+
+class LogFormatterSubclass(LogFormatter):
+    def crawled(self, request, response, spider):
+        kwargs = super(LogFormatterSubclass, self).crawled(
+        request, response, spider)
+        CRAWLEDMSG = (
+            u"Crawled (%(status)s) %(request)s (referer: "
+            u"%(referer)s)%(flags)s"
+        )
+        return {
+            'level': kwargs['level'],
+            'msg': CRAWLEDMSG,
+            'args': kwargs['args']
+        }
+
+
+class LogformatterSubclassTest(LoggingContribTest):
+    def setUp(self):
+        self.formatter = LogFormatterSubclass()
+        self.spider = Spider('default')
+
+    def test_flags_in_request(self):
+        pass
+
+
 if __name__ == "__main__":
     unittest.main()

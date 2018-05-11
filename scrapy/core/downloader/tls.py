@@ -40,6 +40,14 @@ if twisted_version >= (14, 0, 0):
     from twisted.internet._sslverify import (ClientTLSOptions,
                                              verifyHostname,
                                              VerificationError)
+    try:
+        # XXX: this import would fail on Debian jessie with system installed
+        # service_identity library, due to lack of cryptography.x509 dependency
+        # See https://github.com/pyca/service_identity/issues/21
+        from service_identity.exceptions import CertificateError
+        verification_errors = (CertificateError, VerificationError)
+    except ImportError:
+        verification_errors = VerificationError
 
     if twisted_version < (17, 0, 0):
         from twisted.internet._sslverify import _maybeSetHostNameIndication
@@ -55,8 +63,9 @@ if twisted_version >= (14, 0, 0):
         (for genuinely invalid certificates or bugs in verification code).
 
         Same as Twisted's private _sslverify.ClientTLSOptions,
-        except that VerificationError and ValueError exceptions are caught,
-        so that the connection is not closed, only logging warnings.
+        except that VerificationError, CertificateError and ValueError
+        exceptions are caught, so that the connection is not closed, only
+        logging warnings.
         """
 
         def _identityVerifyingInfoCallback(self, connection, where, ret):
@@ -65,7 +74,7 @@ if twisted_version >= (14, 0, 0):
             elif where & SSL_CB_HANDSHAKE_DONE:
                 try:
                     verifyHostname(connection, self._hostnameASCII)
-                except VerificationError as e:
+                except verification_errors as e:
                     logger.warning(
                         'Remote certificate is not valid for hostname "{}"; {}'.format(
                             self._hostnameASCII, e))

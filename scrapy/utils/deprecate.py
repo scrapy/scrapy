@@ -71,8 +71,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
-        # see http://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
-        # and http://docs.python.org/2/reference/datamodel.html#customizing-instance-and-subclass-checks
+        # see https://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
+        # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
         # for implementation details
         def __instancecheck__(cls, inst):
             return any(cls.__subclasscheck__(c)
@@ -159,10 +159,10 @@ def update_classpath(path):
 
 
 def method_is_overridden(subclass, base_class, method_name):
-    """ 
-    Return True if a method named ``method_name`` of a ``base_class`` 
-    is overridden in a ``subclass``. 
-    
+    """
+    Return True if a method named ``method_name`` of a ``base_class``
+    is overridden in a ``subclass``.
+
     >>> class Base(object):
     ...     def foo(self):
     ...         pass

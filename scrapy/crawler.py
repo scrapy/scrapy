@@ -11,7 +11,7 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
 from scrapy.extension import ExtensionManager
-from scrapy.settings import Settings
+from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
@@ -34,13 +34,16 @@ class Crawler(object):
         self.settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
+        d = dict(overridden_settings(self.settings))
+        logger.info("Overridden settings: %(settings)r", {'settings': d})
+
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
         if get_scrapy_root_handler() is not None:
-            # scrapy root handler alread installed: update it with new settings
+            # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
         # lambda is assigned to Crawler attribute because this way it is not
         # garbage collected after leaving __init__ scope
@@ -80,7 +83,7 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
             # In Python 2 reraising an exception after yield discards
-            # the original traceback (see http://bugs.python.org/issue7563),
+            # the original traceback (see https://bugs.python.org/issue7563),
             # so sys.exc_info() workaround is used.
             # This workaround also works in Python 3, but it is not needed,
             # and it is slower, so in Python 3 we use native `raise`.
@@ -234,15 +237,18 @@ class CrawlerProcess(CrawlerRunner):
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
 
+    :param install_root_handler: whether to install root logging handler
+        (default: True)
+
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, install_root_handler=True):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        configure_logging(self.settings)
+        configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):

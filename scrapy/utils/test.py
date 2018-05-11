@@ -20,6 +20,12 @@ def assert_aws_environ():
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
 
+
+def assert_gcs_environ():
+    if 'GCS_PROJECT_ID' not in os.environ:
+        raise SkipTest("GCS_PROJECT_ID not found")
+
+
 def skip_if_no_boto():
     try:
         is_botocore()
@@ -44,6 +50,16 @@ def get_s3_content_and_delete(bucket, path, with_key=False):
         content = key.get_contents_as_string()
         bucket.delete_key(path)
     return (content, key) if with_key else content
+
+def get_gcs_content_and_delete(bucket, path):
+    from google.cloud import storage
+    client = storage.Client(project=os.environ.get('GCS_PROJECT_ID'))
+    bucket = client.get_bucket(bucket)
+    blob = bucket.get_blob(path)
+    content = blob.download_as_string()
+    acl = list(blob.acl)  # loads acl before it will be deleted
+    bucket.delete_blob(path)
+    return content, acl, blob
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
