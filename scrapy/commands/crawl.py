@@ -1,8 +1,16 @@
 import os
+import logging
+import sys
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
 from scrapy.exceptions import UsageError
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.StreamHandler())
+log.setLevel(logging.DEBUG)
+
+exception = None
 
 
 class Command(ScrapyCommand):
@@ -54,5 +62,14 @@ class Command(ScrapyCommand):
             raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
         spname = args[0]
 
-        self.crawler_process.crawl(spname, **opts.spargs)
+        d = self.crawler_process.crawl(spname, **opts.spargs)
+
+        def _crawl_error(_exc):
+            global exception
+            exception = _exc
+
+        d.addErrback(_crawl_error)
         self.crawler_process.start()
+        if exception is not None:
+            log.error(exception)
+            sys.exit(1)
