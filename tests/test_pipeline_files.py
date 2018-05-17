@@ -388,17 +388,20 @@ class TestGCSFilesStore(unittest.TestCase):
         meta = {'foo': 'bar'}
         path = 'full/filename'
         store = GCSFilesStore(uri)
+        store.POLICY = 'authenticatedRead'
+        expected_policy = {'role': 'READER', 'entity': 'allAuthenticatedUsers'}
         yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
         s = yield store.stat_file(path, info=None)
         self.assertIn('last_modified', s)
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], 'zc2oVgXkbQr2EQdSdw3OPA==')
         u = urlparse(uri)
-        content, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
+        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
         self.assertEqual(content, data)
         self.assertEqual(blob.metadata, {'foo': 'bar'})
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
+        self.assertIn(expected_policy, acl)
 
 
 class ItemWithFiles(Item):
