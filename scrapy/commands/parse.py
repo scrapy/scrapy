@@ -148,7 +148,8 @@ class Command(ScrapyCommand):
         # Request requires callback argument as callable or None, not string
         request = Request(url, None)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
-        self.spidercls.start_requests = _start_requests
+        if self.spidercls:
+            self.spidercls.start_requests = _start_requests
 
     def start_parsing(self, url, opts):
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
