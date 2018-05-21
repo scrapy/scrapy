@@ -1,3 +1,4 @@
+import logging
 import zlib
 
 from scrapy.utils.gz import gunzip
