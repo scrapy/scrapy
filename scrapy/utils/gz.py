@@ -30,25 +30,25 @@ def gunzip(data):
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
-    output = b''
+    output_list = []
     chunk = b'.'
     while chunk:
         try:
             chunk = read1(f, 8196)
-            output += chunk
+            output_list.append(chunk)
         except (IOError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
-            # some pages are quite small so output is '' and f.extrabuf
+            # some pages are quite small so output_list is empty and f.extrabuf
             # contains the whole page content
-            if output or getattr(f, 'extrabuf', None):
+            if output_list or getattr(f, 'extrabuf', None):
                 try:
-                    output += f.extrabuf[-f.extrasize:]
+                    output_list.append(f.extrabuf[-f.extrasize:])
                 finally:
                     break
             else:
                 raise
-    return output
+    return b''.join(output_list)
 
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search

@@ -3,8 +3,9 @@ import zlib
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, IgnoreRequest
 
+logger = logging.getLogger(__name__)
 
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
 
@@ -18,11 +19,15 @@ except ImportError:
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+
+    def __init__(self, settings):
+        self._max_uncompressed_size = settings.get('MAX_UNCOMPRESSED_SIZE'], 0)
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls()
+        return cls(crawler.settings)
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
@@ -66,4 +71,14 @@ class HttpCompressionMiddleware(object):
                 body = zlib.decompress(body, -15)
         if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
+
+        if len(body) > self._max_uncompressed_size:
+            error_msg = ("Cancelling processing of %(url)s: Uncompressed "
+                         "response size %(size)s larger than max allowed size "
+                         "(%(maxsize)s).")
+            error_args = {'url': '', 'size': len(body),
+                          'maxsize': self._max_uncompressed_size}
+            logger.error(error_msg, error_args)
+            raise IgnoreRequest(error_msg % error_args)
+
         return body
