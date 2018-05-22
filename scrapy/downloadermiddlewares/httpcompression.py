@@ -22,7 +22,7 @@ class HttpCompressionMiddleware(object):
     sent/received from web sites"""
 
     def __init__(self, settings):
-        self._max_uncompressed_size = settings.get('MAX_UNCOMPRESSED_SIZE'], 0)
+        self._max_size = settings.get('MAX_UNCOMPRESSED_SIZE', 0)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -43,6 +43,16 @@ class HttpCompressionMiddleware(object):
             if content_encoding:
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
+                if self._max_size and len(decoded_body) > self._max_size:
+                    error_msg = ("Cancelling processing of %(url)s: "
+                                 "Uncompressed response size %(size)s larger "
+                                 "than max allowed size (%(maxsize)s).")
+                    error_args = {'url': response.url,
+                                  'size': len(decoded_body),
+                                  'maxsize': self._max_size}
+                    logger.error(error_msg, error_args)
+                    raise IgnoreRequest(error_msg % error_args)
+
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url, body=decoded_body)
                 kwargs = dict(cls=respcls, body=decoded_body)
@@ -72,14 +82,5 @@ class HttpCompressionMiddleware(object):
                 body = zlib.decompress(body, -15)
         if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
-
-        if len(body) > self._max_uncompressed_size:
-            error_msg = ("Cancelling processing of %(url)s: Uncompressed "
-                         "response size %(size)s larger than max allowed size "
-                         "(%(maxsize)s).")
-            error_args = {'url': '', 'size': len(body),
-                          'maxsize': self._max_uncompressed_size}
-            logger.error(error_msg, error_args)
-            raise IgnoreRequest(error_msg % error_args)
 
         return body
