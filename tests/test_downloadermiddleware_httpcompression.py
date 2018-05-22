@@ -5,6 +5,7 @@ from gzip import GzipFile
 
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
+from scrapy.settings import Settings
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
     ACCEPTED_ENCODINGS
 from scrapy.responsetypes import responsetypes
@@ -28,7 +29,8 @@ class HttpCompressionTest(TestCase):
 
     def setUp(self):
         self.spider = Spider('foo')
-        self.mw = HttpCompressionMiddleware()
+        # TODO: Test settings properly before merging.
+        self.mw = HttpCompressionMiddleware(Settings())
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
