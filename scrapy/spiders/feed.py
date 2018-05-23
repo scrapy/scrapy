@@ -61,7 +61,7 @@ class XMLFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response):
         if not hasattr(self, 'parse_node'):
             raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
 
@@ -128,7 +128,7 @@ class CSVFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response):
         if not hasattr(self, 'parse_row'):
             raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
         response = self.adapt_response(response)
