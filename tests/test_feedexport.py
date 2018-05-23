@@ -179,6 +179,7 @@ class FeedExportTest(unittest.TestCase):
         try:
             with MockServer() as s:
                 runner = CrawlerRunner(Settings(defaults))
+                spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
             with open(res_name, 'rb') as f:
@@ -194,7 +195,6 @@ class FeedExportTest(unittest.TestCase):
         """
         class TestSpider(scrapy.Spider):
             name = 'testspider'
-            start_urls = ['http://localhost:8998/']
 
             def parse(self, response):
                 for item in items:
@@ -210,7 +210,6 @@ class FeedExportTest(unittest.TestCase):
         """
         class TestSpider(scrapy.Spider):
             name = 'testspider'
-            start_urls = ['http://localhost:8998/']
 
             def parse(self, response):
                 pass

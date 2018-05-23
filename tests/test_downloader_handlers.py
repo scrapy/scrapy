@@ -534,14 +534,14 @@ class Http11MockServerTestCase(unittest.TestCase):
         crawler = get_crawler(SingleRequestSpider)
         # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
-        yield crawler.crawl(seed=Request(url='http://localhost:8998/partial', meta={'download_maxsize': 1000}))
+        yield crawler.crawl(seed=Request(url=self.mockserver.url('/partial'), meta={'download_maxsize': 1000}))
         failure = crawler.spider.meta['failure']
         self.assertIsInstance(failure.value, defer.CancelledError)
 
     @defer.inlineCallbacks
     def test_download(self):
         crawler = get_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        yield crawler.crawl(seed=Request(url=self.mockserver.url('')))
         failure = crawler.spider.meta.get('failure')
         self.assertTrue(failure == None)
         reason = crawler.spider.meta['close_reason']
@@ -551,7 +551,7 @@ class Http11MockServerTestCase(unittest.TestCase):
     def test_download_gzip_response(self):
         crawler = get_crawler(SingleRequestSpider)
         body = b'1' * 100  # PayloadResource requires body length to be 100
-        request = Request('http://localhost:8998/payload', method='POST',
+        request = Request(self.mockserver.url('/payload'), method='POST',
                           body=body, meta={'download_maxsize': 50})
         yield crawler.crawl(seed=request)
         failure = crawler.spider.meta['failure']
@@ -560,7 +560,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
         if six.PY2:
             request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-            request = request.replace(url='http://localhost:8998/xpayload')
+            request = request.replace(url=self.mockserver.url('/xpayload'))
             yield crawler.crawl(seed=request)
             # download_maxsize = 50 is enough for the gzipped response
             failure = crawler.spider.meta.get('failure')
