@@ -60,11 +60,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return _failure
 
         def process_spider_output(result):
-            for method in self.methods['process_spider_output']:
+            
+            '''for method in self.methods['process_spider_output']:
                 result = method(response=response, result=result, spider=spider)
                 assert _isiterable(result), \
                     'Middleware %s must returns an iterable object, got %s ' % \
-                    (fname(method), type(result))
+                    (fname(method), type(result))'''
             return result
 
         dfd = mustbe_deferred(process_spider_input, response)

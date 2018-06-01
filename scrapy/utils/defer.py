@@ -4,6 +4,8 @@ Helper functions for dealing with Twisted deferreds
 
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
+from scrapy.utils.misc import ensure_deferred
+import types
 
 from scrapy.exceptions import IgnoreRequest
 
@@ -63,6 +65,17 @@ def parallel(iterable, count, callable, *args, **named):
     work = (callable(elem, *args, **named) for elem in iterable)
     return defer.DeferredList([coop.coiterate(work) for _ in range(count)])
 
+def async_parallel(iterable, count, callable, *args, **named):
+    """Execute a callable over the objects in the given iterable, in parallel,
+    using no more than ``count`` concurrent calls.
+
+    Taken from: https://jcalderone.livejournal.com/24285.html
+    """
+    coop = task.Cooperator()
+    work = (callable(elem, *args, **named) for elem in iterable)
+    return defer.DeferredList([coop.coiterate(work) for _ in range(count)])
+    
+
 def process_chain(callbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks"""
     d = defer.Deferred()
@@ -99,8 +112,29 @@ def iter_errback(iterable, errback, *a, **kw):
     it = iter(iterable)
     while True:
         try:
-            yield next(it)
+            val = next(it)
+            yield val
+
         except StopIteration:
             break
         except:
             errback(failure.Failure(), *a, **kw)
+
+def asynciter_errback(iterable, errback, *a, **kw):
+    ''' Wraps an asynchrnous generator iterable, calling an errback if an
+    error is caught while iterating through it
+    '''
+    it = iterable[0]
+    
+    while True:
+        try:
+            val = it.__anext__().send(None)
+            
+        except StopIteration as e:
+            yield e.value
+            
+        except StopAsyncIteration:
+            break
+        except:
+            errback(failure.Failure(), *a, **kw)
+    
