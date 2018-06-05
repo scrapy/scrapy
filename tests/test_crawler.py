@@ -4,6 +4,9 @@ import tempfile
 import warnings
 import unittest
 
+from twisted.internet import defer
+import twisted.trial.unittest
+
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
@@ -13,9 +16,6 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
-from twisted.internet import defer
-import twisted.trial.unittest
-
 
 class BaseCrawlerTest(unittest.TestCase):
 
