@@ -110,7 +110,7 @@ class Crawler(object):
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
 
-    def is_spider_created(self):
+    def _is_spider_created(self):
         return getattr(self, 'spider', None) is not None
 
 
@@ -182,7 +182,7 @@ class CrawlerRunner(object):
         def _done(result):
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.crawlers_has_spiders.append(crawler.is_spider_created())
+            self.crawlers_has_spiders.append(crawler._is_spider_created())
             return result
 
         return d.addBoth(_done)
