@@ -192,15 +192,27 @@ class MockServer():
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
+
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
-        self.proc.stdout.readline()
+        http_address = self.proc.stdout.readline().strip().decode('ascii')
+        https_address = self.proc.stdout.readline().strip().decode('ascii')
+
+        self.http_address = http_address
+        self.https_address = https_address
+
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)
+
+    def url(self, path, is_secure=False):
+        host = self.http_address
+        if is_secure:
+            host = self.https_address
+        return host + path
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
@@ -213,14 +225,17 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
 if __name__ == "__main__":
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(8998, factory)
+    httpPort = reactor.listenTCP(0, factory)
     contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(8999, factory, contextFactory)
+    httpsPort = reactor.listenSSL(0, factory, contextFactory)
 
     def print_listening():
         httpHost = httpPort.getHost()
         httpsHost = httpsPort.getHost()
-        print("Mock server running at http://%s:%d and https://%s:%d" % (
-            httpHost.host, httpHost.port, httpsHost.host, httpsHost.port))
+        httpAddress = 'http://%s:%d' % (httpHost.host, httpHost.port)
+        httpsAddress = 'https://%s:%d' % (httpsHost.host, httpsHost.port)
+        print(httpAddress)
+        print(httpsAddress)
+
     reactor.callWhenRunning(print_listening)
     reactor.run()

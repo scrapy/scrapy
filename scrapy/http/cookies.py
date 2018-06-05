@@ -58,8 +58,8 @@ class CookieJar(object):
     def clear_session_cookies(self, *args, **kwargs):
         return self.jar.clear_session_cookies(*args, **kwargs)
 
-    def clear(self):
-        return self.jar.clear()
+    def clear(self, domain=None, path=None, name=None):
+        return self.jar.clear(domain, path, name)
 
     def __iter__(self):
         return iter(self.jar)

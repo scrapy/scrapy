@@ -26,7 +26,7 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_follow_all(self):
         crawler = self.runner.create_crawler(FollowAllSpider)
-        yield crawler.crawl()
+        yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
 
     @defer.inlineCallbacks
@@ -42,7 +42,7 @@ class CrawlTestCase(TestCase):
     def _test_delay(self, delay, randomize):
         settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
         crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
-        yield crawler.crawl(maxlatency=delay * 2)
+        yield crawler.crawl(maxlatency=delay * 2, mockserver=self.mockserver)
         t = crawler.spider.times
         totaltime = t[-1] - t[0]
         avgd = totaltime / (len(t) - 1)
@@ -53,7 +53,7 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_timeout_success(self):
         crawler = self.runner.create_crawler(DelaySpider)
-        yield crawler.crawl(n=0.5)
+        yield crawler.crawl(n=0.5, mockserver=self.mockserver)
         self.assertTrue(crawler.spider.t1 > 0)
         self.assertTrue(crawler.spider.t2 > 0)
         self.assertTrue(crawler.spider.t2 > crawler.spider.t1)
@@ -61,13 +61,13 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_timeout_failure(self):
         crawler = CrawlerRunner({"DOWNLOAD_TIMEOUT": 0.35}).create_crawler(DelaySpider)
-        yield crawler.crawl(n=0.5)
+        yield crawler.crawl(n=0.5, mockserver=self.mockserver)
         self.assertTrue(crawler.spider.t1 > 0)
         self.assertTrue(crawler.spider.t2 == 0)
         self.assertTrue(crawler.spider.t2_err > 0)
         self.assertTrue(crawler.spider.t2_err > crawler.spider.t1)
         # server hangs after receiving response headers
-        yield crawler.crawl(n=0.5, b=1)
+        yield crawler.crawl(n=0.5, b=1, mockserver=self.mockserver)
         self.assertTrue(crawler.spider.t1 > 0)
         self.assertTrue(crawler.spider.t2 == 0)
         self.assertTrue(crawler.spider.t2_err > 0)
@@ -77,14 +77,14 @@ class CrawlTestCase(TestCase):
     def test_retry_503(self):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/status?n=503")
+            yield crawler.crawl(self.mockserver.url("/status?n=503"), mockserver=self.mockserver)
         self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_retry_conn_failed(self):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:65432/status?n=503")
+            yield crawler.crawl("http://localhost:65432/status?n=503", mockserver=self.mockserver)
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -92,14 +92,14 @@ class CrawlTestCase(TestCase):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
             # try to fetch the homepage of a non-existent domain
-            yield crawler.crawl("http://dns.resolution.invalid./")
+            yield crawler.crawl("http://dns.resolution.invalid./", mockserver=self.mockserver)
         self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
         with LogCapture('scrapy', level=logging.ERROR) as l:
             crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
-            yield crawler.crawl(fail_before_yield=1)
+            yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
 
         self.assertEqual(len(l.records), 1)
         record = l.records[0]
@@ -110,7 +110,7 @@ class CrawlTestCase(TestCase):
     def test_start_requests_bug_yielding(self):
         with LogCapture('scrapy', level=logging.ERROR) as l:
             crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
-            yield crawler.crawl(fail_yielding=1)
+            yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
 
         self.assertEqual(len(l.records), 1)
         record = l.records[0]
@@ -121,7 +121,7 @@ class CrawlTestCase(TestCase):
     def test_start_requests_lazyness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = CrawlerRunner(settings).create_crawler(BrokenStartRequestsSpider)
-        yield crawler.crawl()
+        yield crawler.crawl(mockserver=self.mockserver)
         #self.assertTrue(False, crawler.spider.seedsseen)
         #self.assertTrue(crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
         #                crawler.spider.seedsseen)
@@ -130,10 +130,10 @@ class CrawlTestCase(TestCase):
     def test_start_requests_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = CrawlerRunner(settings).create_crawler(DuplicateStartRequestsSpider)
-        yield crawler.crawl(dont_filter=True, distinct_urls=2, dupe_factor=3)
+        yield crawler.crawl(dont_filter=True, distinct_urls=2, dupe_factor=3, mockserver=self.mockserver)
         self.assertEqual(crawler.spider.visited, 6)
 
-        yield crawler.crawl(dont_filter=False, distinct_urls=3, dupe_factor=4)
+        yield crawler.crawl(dont_filter=False, distinct_urls=3, dupe_factor=4, mockserver=self.mockserver)
         self.assertEqual(crawler.spider.visited, 3)
 
     @defer.inlineCallbacks
@@ -160,7 +160,7 @@ with multiples lines
 '''})
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
+            yield crawler.crawl(self.mockserver.url("/raw?{0}".format(query)), mockserver=self.mockserver)
         self.assertEqual(str(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
@@ -168,7 +168,7 @@ with multiples lines
         # connection lost after receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/drop?abort=0")
+            yield crawler.crawl(self.mockserver.url("/drop?abort=0"), mockserver=self.mockserver)
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -176,7 +176,7 @@ with multiples lines
         # connection lost before receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/drop?abort=1")
+            yield crawler.crawl(self.mockserver.url("/drop?abort=1"), mockserver=self.mockserver)
         self._assert_retried(l)
 
     def _assert_retried(self, log):
@@ -186,7 +186,7 @@ with multiples lines
     @defer.inlineCallbacks
     def test_referer_header(self):
         """Referer header is set by RefererMiddleware unless it is already set"""
-        req0 = Request('http://localhost:8998/echo?headers=1&body=0', dont_filter=1)
+        req0 = Request(self.mockserver.url('/echo?headers=1&body=0'), dont_filter=1)
         req1 = req0.replace()
         req2 = req0.replace(headers={'Referer': None})
         req3 = req0.replace(headers={'Referer': 'http://example.com'})
@@ -194,7 +194,7 @@ with multiples lines
         req1.meta['next'] = req2
         req2.meta['next'] = req3
         crawler = self.runner.create_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=req0)
+        yield crawler.crawl(seed=req0, mockserver=self.mockserver)
         # basic asserts in case of weird communication errors
         self.assertIn('responses', crawler.spider.meta)
         self.assertNotIn('failures', crawler.spider.meta)
@@ -220,7 +220,7 @@ with multiples lines
             est.append(get_engine_status(crawler.engine))
 
         crawler = self.runner.create_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed='http://localhost:8998/', callback_func=cb)
+        yield crawler.crawl(seed=self.mockserver.url('/'), callback_func=cb, mockserver=self.mockserver)
         self.assertEqual(len(est), 1, est)
         s = dict(est[0])
         self.assertEqual(s['engine.spider.name'], crawler.spider.name)
@@ -244,7 +244,7 @@ with multiples lines
                 raise TestError
 
         crawler = self.runner.create_crawler(FaultySpider)
-        yield self.assertFailure(crawler.crawl(), TestError)
+        yield self.assertFailure(crawler.crawl(mockserver=self.mockserver), TestError)
         self.assertFalse(crawler.crawling)
 
     @defer.inlineCallbacks
@@ -256,7 +256,7 @@ with multiples lines
         }
         crawler = CrawlerRunner(settings).create_crawler(SimpleSpider)
         yield self.assertFailure(
-            self.runner.crawl(crawler, "http://localhost:8998/status?n=200"),
+            self.runner.crawl(crawler, self.mockserver.url("/status?n=200"), mockserver=self.mockserver),
             ZeroDivisionError)
         self.assertFalse(crawler.crawling)
 
@@ -264,13 +264,13 @@ with multiples lines
     def test_crawlerrunner_accepts_crawler(self):
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as log:
-            yield self.runner.crawl(crawler, "http://localhost:8998/status?n=200")
+            yield self.runner.crawl(crawler, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
         self.assertIn("Got response 200", str(log))
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        self.runner.crawl(SimpleSpider, "http://localhost:8998/status?n=200")
-        self.runner.crawl(SimpleSpider, "http://localhost:8998/status?n=503")
+        self.runner.crawl(SimpleSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.runner.crawl(SimpleSpider, self.mockserver.url("/status?n=503"), mockserver=self.mockserver)
 
         with LogCapture() as log:
             yield self.runner.join()
