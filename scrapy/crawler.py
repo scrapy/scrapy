@@ -226,7 +226,7 @@ class CrawlerRunner(object):
         while self._active:
             yield defer.DeferredList(self._active)
 
-    def is_crawlers_has_spider(self):
+    def is_spider_created_for_every_crawler(self):
         return all(self.crawlers_has_spiders)
 
 

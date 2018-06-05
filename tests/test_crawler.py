@@ -230,14 +230,14 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
     def test_crawler_runner_has_spider(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.is_crawlers_has_spider(), True)
+        self.assertEqual(runner.is_spider_created_for_every_crawler(), True)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_spider_several(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.is_crawlers_has_spider(), True)
+        self.assertEqual(runner.is_spider_created_for_every_crawler(), True)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_no_spider(self):
@@ -250,7 +250,7 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
         else:
             self.fail('Exception should be raised from spider')
 
-        self.assertEqual(runner.is_crawlers_has_spider(), False)
+        self.assertEqual(runner.is_spider_created_for_every_crawler(), False)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_no_spider_several(self):
@@ -265,4 +265,4 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
 
         yield runner.crawl(NoRequestsSpider)
 
-        self.assertEqual(runner.is_crawlers_has_spider(), False)
+        self.assertEqual(runner.is_spider_created_for_every_crawler(), False)
