@@ -88,5 +88,5 @@ class Command(ScrapyCommand):
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
 
-        if not self.crawler_process.is_spider_created_for_every_crawler():
+        if not self.crawler_process._is_spider_created_for_every_crawler():
             self.exitcode = 1
