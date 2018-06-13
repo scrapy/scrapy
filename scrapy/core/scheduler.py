@@ -3,14 +3,22 @@ import json
 import logging
 from os.path import join, exists
 
-from scrapy.utils.reqser import request_to_dict, request_from_dict
-from scrapy.utils.misc import load_object, create_instance
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.job import job_dir
+from scrapy.utils.misc import load_object, create_instance
+from scrapy.utils.reqser import request_to_dict, request_from_dict
 from queuelib import RoundRobinQueue
 
 logger = logging.getLogger(__name__)
 
 def _make_file_safe(string):
+    """
+    Make key file safe.
+
+    Warning: not a general function.  Works for all numbers and the vast majority of domains.
+    Collisions in file names will only degrade (midly) performance,
+    not lead to incorrect results.
+    """
     return "".join([c if c.isalnum() or c in {'-._'} else '_' for c in string])
 
 
@@ -39,6 +47,12 @@ class BaseScheduler(object):
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
     def request_key(self, request):
+        if 'scheduler_slot' in request.meta:
+            return request.meta['scheduler_slot']
+
+        return self._request_key(request)
+
+    def _request_key(self, request):
         raise NotImplementedError
 
     def has_pending_requests(self):
@@ -148,7 +162,7 @@ class Scheduler(BaseScheduler):
     Key is the priority of the request (an integer)
     """
 
-    def request_key(cls, request):
+    def _request_key(cls, request):
         return -request.priority
 
 
@@ -163,5 +177,5 @@ class DomainScheduler(BaseScheduler):
                                               mqclass=mqclass, logunser=logunser,
                                               stats=stats, pqclass=RoundRobinQueue)
 
-    def request_key(cls, request):
-        return urlparse(request.url).netloc
+    def _request_key(cls, request):
+        return urlparse_cached(request).hostname or ''
