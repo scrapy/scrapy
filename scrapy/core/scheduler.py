@@ -157,7 +157,7 @@ class BaseScheduler(object):
             return dqdir
 
 
-class Scheduler(BaseScheduler):
+class DefaultScheduler(BaseScheduler):
     """
     Key is the priority of the request (an integer)
     """

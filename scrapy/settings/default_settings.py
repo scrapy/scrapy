@@ -241,7 +241,7 @@ RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 
-SCHEDULER = 'scrapy.core.scheduler.Scheduler'
+SCHEDULER = 'scrapy.core.scheduler.DefaultScheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
