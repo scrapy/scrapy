@@ -1,15 +1,40 @@
 import base64
-from six.moves.urllib.request import getproxies, proxy_bypass
-from six.moves.urllib.parse import unquote
+try:
+    from functools import lru_cache
+except:
+    from functools32 import lru_cache
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
-from six.moves.urllib.parse import urlunparse
 
-from scrapy.utils.httpobj import urlparse_cached
+from six.moves.urllib.parse import urlunparse, unquote
+from six.moves.urllib.request import getproxies, proxy_bypass
+
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
+
+
+@lru_cache(maxsize=128)
+def basic_auth_header(auth_encoding, username, password):
+    user_pass = to_bytes(
+        '%s:%s' % (unquote(username), unquote(password)),
+        encoding=auth_encoding)
+    return base64.b64encode(user_pass).strip()
+
+
+@lru_cache(maxsize=128)
+def get_proxy(auth_encoding, url, orig_type):
+    proxy_type, user, password, hostport = _parse_proxy(url)
+    proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
+
+    if user:
+        creds = basic_auth_header(auth_encoding, user, password)
+    else:
+        creds = None
+
+    return creds, proxy_url
 
 
 class HttpProxyMiddleware(object):
@@ -17,8 +42,8 @@ class HttpProxyMiddleware(object):
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding
         self.proxies = {}
-        for type, url in getproxies().items():
-            self.proxies[type] = self._get_proxy(url, type)
+        for type_, url in getproxies().items():
+            self.proxies[type_] = get_proxy(self.auth_encoding, url, type_)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -27,30 +52,13 @@ class HttpProxyMiddleware(object):
         auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING')
         return cls(auth_encoding)
 
-    def _basic_auth_header(self, username, password):
-        user_pass = to_bytes(
-            '%s:%s' % (unquote(username), unquote(password)),
-            encoding=self.auth_encoding)
-        return base64.b64encode(user_pass).strip()
-
-    def _get_proxy(self, url, orig_type):
-        proxy_type, user, password, hostport = _parse_proxy(url)
-        proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
-
-        if user:
-            creds = self._basic_auth_header(user, password)
-        else:
-            creds = None
-
-        return creds, proxy_url
-
     def process_request(self, request, spider):
         # ignore if proxy is already set
         if 'proxy' in request.meta:
             if request.meta['proxy'] is None:
                 return
             # extract credentials if present
-            creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
+            creds, proxy_url = get_proxy(self.auth_encoding, request.meta['proxy'], '')
             request.meta['proxy'] = proxy_url
             if creds and not request.headers.get('Proxy-Authorization'):
                 request.headers['Proxy-Authorization'] = b'Basic ' + creds
