@@ -202,6 +202,7 @@ memory leaks (Requests, Responses, Items, and Selectors). However, there are
 other cases where the memory leaks could come from other (more or less obscure)
 objects. If this is your case, and you can't find your leaks using ``trackref``,
 you still have another resource: the `Guppy library`_.
+If you're using Python3, see :ref:`topics-leaks-muppy`.
 
 .. _Guppy library: https://pypi.python.org/pypi/guppy
 
@@ -252,6 +253,50 @@ knowledge about Python internals. For more info about Guppy, refer to the
 `Guppy documentation`_.
 
 .. _Guppy documentation: http://guppy-pe.sourceforge.net/
+
+.. _topics-leaks-muppy:
+
+Debugging memory leaks with muppy
+=================================
+If you're using Python 3, you can use muppy from `Pympler`_.
+
+.. _Pympler: https://pypi.org/project/Pympler/
+
+If you use ``pip``, you can install muppy with the following command::
+
+    pip install Pympler
+
+Here's an example to view all Python objects available in
+the heap using muppy::
+
+    >>> from pympler import muppy
+    >>> all_objects = muppy.get_objects()
+    >>> len(all_objects)
+    28667
+    >>> from pympler import summary
+    >>> suml = summary.summarize(all_objects)
+    >>> summary.print_(suml)
+                                   types |   # objects |   total size
+    ==================================== | =========== | ============
+                             <class 'str |        9822 |      1.10 MB
+                            <class 'dict |        1658 |    856.62 KB
+                            <class 'type |         436 |    443.60 KB
+                            <class 'code |        2974 |    419.56 KB
+              <class '_io.BufferedWriter |           2 |    256.34 KB
+                             <class 'set |         420 |    159.88 KB
+              <class '_io.BufferedReader |           1 |    128.17 KB
+              <class 'wrapper_descriptor |        1130 |     88.28 KB
+                           <class 'tuple |        1304 |     86.57 KB
+                         <class 'weakref |        1013 |     79.14 KB
+      <class 'builtin_function_or_method |         958 |     67.36 KB
+               <class 'method_descriptor |         865 |     60.82 KB
+                     <class 'abc.ABCMeta |          62 |     59.96 KB
+                            <class 'list |         446 |     58.52 KB
+                             <class 'int |        1425 |     43.20 KB
+
+For more info about muppy, refer to the `muppy documentation`_.
+
+.. _muppy documentation: https://pythonhosted.org/Pympler/muppy.html
 
 .. _topics-leaks-without-leaks:
 
