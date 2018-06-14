@@ -110,9 +110,6 @@ class Crawler(object):
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
 
-    def _is_spider_created(self):
-        return getattr(self, 'spider', None) is not None
-
 
 class CrawlerRunner(object):
     """
@@ -140,7 +137,7 @@ class CrawlerRunner(object):
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
-        self.crawlers_has_spiders = list()
+        self.bootstrap_failed = False
 
     @property
     def spiders(self):
@@ -182,7 +179,7 @@ class CrawlerRunner(object):
         def _done(result):
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.crawlers_has_spiders.append(crawler._is_spider_created())
+            self.bootstrap_failed |= not getattr(crawler, 'spider', None)
             return result
 
         return d.addBoth(_done)
@@ -225,9 +222,6 @@ class CrawlerRunner(object):
         """
         while self._active:
             yield defer.DeferredList(self._active)
-
-    def _is_spider_created_for_every_crawler(self):
-        return all(self.crawlers_has_spiders)
 
 
 class CrawlerProcess(CrawlerRunner):

@@ -201,43 +201,20 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-class CrawlerHasSpider(twisted.trial.unittest.TestCase):
-
-    @defer.inlineCallbacks
-    def test_crawler_has_spider(self):
-        crawler = get_crawler(NoRequestsSpider)
-        self.assertEqual(crawler._is_spider_created(), False)
-        yield crawler.crawl()
-        self.assertEqual(crawler._is_spider_created(), True)
-
-    @defer.inlineCallbacks
-    def test_crawler_has_no_spider(self):
-        crawler = get_crawler(ExceptionSpider)
-
-        try:
-            yield crawler.crawl()
-        except ValueError:
-            pass
-        else:
-            self.fail('Exception should be raised from spider')
-
-        self.assertEqual(crawler._is_spider_created(), False)
-
-
 class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_spider(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner._is_spider_created_for_every_crawler(), True)
+        self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_spider_several(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner._is_spider_created_for_every_crawler(), True)
+        self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_no_spider(self):
@@ -250,7 +227,7 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
         else:
             self.fail('Exception should be raised from spider')
 
-        self.assertEqual(runner._is_spider_created_for_every_crawler(), False)
+        self.assertEqual(runner.bootstrap_failed, True)
 
     @defer.inlineCallbacks
     def test_crawler_runner_has_no_spider_several(self):
@@ -265,4 +242,4 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
 
         yield runner.crawl(NoRequestsSpider)
 
-        self.assertEqual(runner._is_spider_created_for_every_crawler(), False)
+        self.assertEqual(runner.bootstrap_failed, True)
