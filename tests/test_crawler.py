@@ -4,6 +4,9 @@ import tempfile
 import warnings
 import unittest
 
+from twisted.internet import defer
+import twisted.trial.unittest
+
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
@@ -11,8 +14,8 @@ from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
+from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
-
 
 class BaseCrawlerTest(unittest.TestCase):
 
@@ -181,3 +184,62 @@ class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_None(self):
         runner = CrawlerProcess()
         self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
+
+
+class ExceptionSpider(scrapy.Spider):
+    name = 'exception'
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError('Exception in from_crawler method')
+
+
+class NoRequestsSpider(scrapy.Spider):
+    name = 'no_request'
+
+    def start_requests(self):
+        return []
+
+
+class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_successful(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(NoRequestsSpider)
+        self.assertEqual(runner.bootstrap_failed, False)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_successful_for_several(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(NoRequestsSpider)
+        yield runner.crawl(NoRequestsSpider)
+        self.assertEqual(runner.bootstrap_failed, False)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_failed(self):
+        runner = CrawlerRunner()
+
+        try:
+            yield runner.crawl(ExceptionSpider)
+        except ValueError:
+            pass
+        else:
+            self.fail('Exception should be raised from spider')
+
+        self.assertEqual(runner.bootstrap_failed, True)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_failed_for_several(self):
+        runner = CrawlerRunner()
+
+        try:
+            yield runner.crawl(ExceptionSpider)
+        except ValueError:
+            pass
+        else:
+            self.fail('Exception should be raised from spider')
+
+        yield runner.crawl(NoRequestsSpider)
+
+        self.assertEqual(runner.bootstrap_failed, True)
