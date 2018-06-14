@@ -204,20 +204,20 @@ class NoRequestsSpider(scrapy.Spider):
 class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
 
     @defer.inlineCallbacks
-    def test_crawler_runner_has_spider(self):
+    def test_crawler_runner_bootstrap_successful(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
         self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
-    def test_crawler_runner_has_spider_several(self):
+    def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = CrawlerRunner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
         self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
-    def test_crawler_runner_has_no_spider(self):
+    def test_crawler_runner_bootstrap_failed(self):
         runner = CrawlerRunner()
 
         try:
@@ -230,7 +230,7 @@ class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
         self.assertEqual(runner.bootstrap_failed, True)
 
     @defer.inlineCallbacks
-    def test_crawler_runner_has_no_spider_several(self):
+    def test_crawler_runner_bootstrap_failed_for_several(self):
         runner = CrawlerRunner()
 
         try:
