@@ -137,6 +137,7 @@ class CrawlerRunner(object):
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
+        self.bootstrap_failed = False
 
     @property
     def spiders(self):
@@ -178,6 +179,7 @@ class CrawlerRunner(object):
         def _done(result):
             self.crawlers.discard(crawler)
             self._active.discard(d)
+            self.bootstrap_failed |= not getattr(crawler, 'spider', None)
             return result
 
         return d.addBoth(_done)
