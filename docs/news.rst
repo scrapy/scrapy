@@ -156,7 +156,7 @@ attributes with ``FormRequest``.
 
 **Please also note that link extractors do not canonicalize URLs by default
 anymore.** This was puzzling users every now and then, and it's not what
-browsers do in fact, so we removed that extra transformation on extractred
+browsers do in fact, so we removed that extra transformation on extracted
 links.
 
 For those of you wanting more control on the ``Referer:`` header that Scrapy
