@@ -13,7 +13,7 @@ from scrapy.settings import Settings
 spider = Spider('foo')
 
 
-class TestDefaultHeadersMiddleware(TestCase):
+class TestHttpProxyMiddleware(TestCase):
 
     failureException = AssertionError
 
