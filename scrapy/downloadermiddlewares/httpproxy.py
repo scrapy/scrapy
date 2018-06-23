@@ -32,7 +32,7 @@ class HttpProxyMiddleware(object):
 
     def _basic_auth_header(self, username, password):
         user_pass = to_bytes(
-            '{}:{}'.format(unquote(username), unquote(password)),
+            '%s:%s' % (unquote(username), unquote(password)),
             encoding=self.auth_encoding)
         return base64.b64encode(user_pass).strip()
 
