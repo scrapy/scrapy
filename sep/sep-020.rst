@@ -29,7 +29,7 @@ the rows and the further embedded ``<td>`` elements denoting the individual
 fields.
 
 One pattern that is particularly well suited for auto-populating an Item Loader
-is the `definition list <http://www.w3.org/TR/html401/struct/lists.html#h-10.3>`_::
+is the `definition list <https://www.w3.org/TR/html401/struct/lists.html#h-10.3>`_::
 
     <div class="geeks">
         <dl>

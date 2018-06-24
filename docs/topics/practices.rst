@@ -238,7 +238,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alterantive is `scrapoxy`_, a
+  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such downloaders is
@@ -248,10 +248,10 @@ If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
 
 .. _Tor project: https://www.torproject.org/
-.. _commercial support: http://scrapy.org/support/
-.. _ProxyMesh: http://proxymesh.com/
+.. _commercial support: https://scrapy.org/support/
+.. _ProxyMesh: https://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
-.. _Crawlera: http://scrapinghub.com/crawlera
-.. _scrapoxy: http://scrapoxy.io/
+.. _Crawlera: https://scrapinghub.com/crawlera
+.. _scrapoxy: https://scrapoxy.io/

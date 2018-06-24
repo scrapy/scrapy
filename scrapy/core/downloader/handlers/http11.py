@@ -12,9 +12,13 @@ from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
-from twisted.web.http import PotentialDataLoss
+from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool
+    HTTPConnectionPool, ResponseFailed
+try:
+    from twisted.web.client import URI
+except ImportError:
+    from twisted.web.client import _URI as URI
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
@@ -51,13 +55,15 @@ class HTTP11DownloadHandler(object):
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
+        self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
         self._disconnect_timeout = 1
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
         agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool,
             maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
-            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize))
+            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
+            fail_on_dataloss=self._fail_on_dataloss)
         return agent.download_request(request)
 
     def close(self):
@@ -226,20 +232,49 @@ class TunnelingAgent(Agent):
             headers, bodyProducer, requestPath)
 
 
+class ScrapyProxyAgent(Agent):
+
+    def __init__(self, reactor, proxyURI,
+                 connectTimeout=None, bindAddress=None, pool=None):
+        super(ScrapyProxyAgent, self).__init__(reactor,
+                                               connectTimeout=connectTimeout,
+                                               bindAddress=bindAddress,
+                                               pool=pool)
+        self._proxyURI = URI.fromBytes(proxyURI)
+
+    def request(self, method, uri, headers=None, bodyProducer=None):
+        """
+        Issue a new request via the configured proxy.
+        """
+        # Cache *all* connections under the same key, since we are only
+        # connecting to a single destination, the proxy:
+        if twisted_version >= (15, 0, 0):
+            proxyEndpoint = self._getEndpoint(self._proxyURI)
+        else:
+            proxyEndpoint = self._getEndpoint(self._proxyURI.scheme,
+                                              self._proxyURI.host,
+                                              self._proxyURI.port)
+        key = ("http-proxy", self._proxyURI.host, self._proxyURI.port)
+        return self._requestWithEndpoint(key, proxyEndpoint, method,
+                                         URI.fromBytes(uri), headers,
+                                         bodyProducer, uri)
+
+
 class ScrapyAgent(object):
 
     _Agent = Agent
-    _ProxyAgent = ProxyAgent
+    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
-                 maxsize=0, warnsize=0):
+                 maxsize=0, warnsize=0, fail_on_dataloss=True):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
         self._pool = pool
         self._maxsize = maxsize
         self._warnsize = warnsize
+        self._fail_on_dataloss = fail_on_dataloss
         self._txresponse = None
 
     def _get_agent(self, request, timeout):
@@ -257,9 +292,8 @@ class ScrapyAgent(object):
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
             else:
-                endpoint = TCP4ClientEndpoint(reactor, proxyHost, proxyPort,
-                    timeout=timeout, bindAddress=bindaddress)
-                return self._ProxyAgent(endpoint)
+                return self._ProxyAgent(reactor, proxyURI=to_bytes(proxy, encoding='ascii'),
+                    connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
@@ -276,8 +310,7 @@ class ScrapyAgent(object):
             headers.removeHeader(b'Proxy-Authorization')
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
-        else:
-            bodyproducer = None
+        elif method == b'POST':
             # Setting Content-Length: 0 even for POST requests is not a
             # MUST per HTTP RFCs, but it's common behavior, and some
             # servers require this, otherwise returning HTTP 411 Length required
@@ -286,10 +319,13 @@ class ScrapyAgent(object):
             # "a Content-Length header field is normally sent in a POST
             # request even when the value is 0 (indicating an empty payload body)."
             #
-            # Twisted Agent will not add "Content-Length: 0" by itself
-            if method == b'POST':
-                headers.addRawHeader(b'Content-Length', b'0')
-
+            # Twisted < 17 will not add "Content-Length: 0" by itself;
+            # Twisted >= 17 fixes this;
+            # Using a producer with an empty-string sends `0` as Content-Length
+            # for all versions of Twisted.
+            bodyproducer = _RequestBodyProducer(b'')
+        else:
+            bodyproducer = None
         start_time = time()
         d = agent.request(
             method, to_bytes(url, encoding='ascii'), headers, bodyproducer)
@@ -326,6 +362,7 @@ class ScrapyAgent(object):
         maxsize = request.meta.get('download_maxsize', self._maxsize)
         warnsize = request.meta.get('download_warnsize', self._warnsize)
         expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
+        fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
 
         if maxsize and expected_size > maxsize:
             error_msg = ("Cancelling download of %(url)s: expected response "
@@ -338,14 +375,16 @@ class ScrapyAgent(object):
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s).",
-                           {'size': expected_size, 'warnsize': warnsize})
+                           "download warn size (%(warnsize)s) in request %(request)s.",
+                           {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
-            txresponse._transport._producer.loseConnection()
+            # Abort connection immediately.
+            txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
-        txresponse.deliverBody(_ResponseReader(d, txresponse, request, maxsize, warnsize))
+        txresponse.deliverBody(_ResponseReader(
+            d, txresponse, request, maxsize, warnsize, fail_on_dataloss))
 
         # save response for timeouts
         self._txresponse = txresponse
@@ -380,25 +419,37 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request, maxsize, warnsize):
+    def __init__(self, finished, txresponse, request, maxsize, warnsize,
+                 fail_on_dataloss):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
         self._bodybuf = BytesIO()
         self._maxsize  = maxsize
         self._warnsize  = warnsize
+        self._fail_on_dataloss = fail_on_dataloss
+        self._fail_on_dataloss_warned = False
         self._reached_warnsize = False
         self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
+        # This maybe called several times after cancel was called with buffered
+        # data.
+        if self._finished.called:
+            return
+
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s).",
+                         "max size (%(maxsize)s) in request %(request)s.",
                          {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize})
+                          'maxsize': self._maxsize,
+                          'request': self._request})
+            # Clear buffer earlier to avoid keeping data in memory for a long
+            # time.
+            self._bodybuf.truncate(0)
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:
@@ -415,7 +466,22 @@ class _ResponseReader(protocol.Protocol):
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
             self._finished.callback((self._txresponse, body, None))
-        elif reason.check(PotentialDataLoss):
+            return
+
+        if reason.check(PotentialDataLoss):
             self._finished.callback((self._txresponse, body, ['partial']))
-        else:
-            self._finished.errback(reason)
+            return
+
+        if reason.check(ResponseFailed) and any(r.check(_DataLoss) for r in reason.value.reasons):
+            if not self._fail_on_dataloss:
+                self._finished.callback((self._txresponse, body, ['dataloss']))
+                return
+
+            elif not self._fail_on_dataloss_warned:
+                logger.warn("Got data loss in %s. If you want to process broken "
+                            "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
+                            " -- This message won't be shown in further requests",
+                            self._txresponse.request.absoluteURI.decode())
+                self._fail_on_dataloss_warned = True
+
+        self._finished.errback(reason)

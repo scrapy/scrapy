@@ -6,6 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 
 import re
 import logging
+import warnings
 
 from scrapy import signals
 from scrapy.http import Request
@@ -52,9 +53,18 @@ class OffsiteMiddleware(object):
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
             return re.compile('') # allow all by default
+        url_pattern = re.compile("^https?://.*$")
+        for domain in allowed_domains:
+            if url_pattern.match(domain):
+                warnings.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain, URLWarning)
+                
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 
     def spider_opened(self, spider):
         self.host_regex = self.get_host_regex(spider)
         self.domains_seen = set()
+
+
+class URLWarning(Warning):
+    pass

@@ -21,7 +21,7 @@ Python code.
 In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
-.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
+.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _jinja2: http://jinja.pocoo.org/
 .. _Django: https://www.djangoproject.com/
@@ -69,12 +69,15 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 and Python 3.3+.
+Scrapy is supported under Python 2.7 and Python 3.4+
+under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
+PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
 
 .. note::
-    Python 3 is not yet supported on Windows.
+    For Python 3 support on Windows, it is recommended to use
+    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------

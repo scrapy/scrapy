@@ -91,6 +91,10 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.POLICY = settings['IMAGES_STORE_S3_ACL']
 
+        gcs_store = cls.STORE_SCHEMES['gs']
+        gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
+        gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
+
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
@@ -129,6 +133,11 @@ class ImagesPipeline(FilesPipeline):
 
     def convert_image(self, image, size=None):
         if image.format == 'PNG' and image.mode == 'RGBA':
+            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background.paste(image, image)
+            image = background.convert('RGB')
+        elif image.mode == 'P':
+            image = image.convert("RGBA")
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert('RGB')

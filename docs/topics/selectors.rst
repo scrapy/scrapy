@@ -36,7 +36,7 @@ documents.
 For a complete reference of the selectors API see
 :ref:`Selector reference <topics-selectors-ref>`
 
-.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
+.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
@@ -86,7 +86,7 @@ To explain how to use the selectors we'll use the `Scrapy shell` (which
 provides interactive testing) and an example page located in the Scrapy
 documentation server:
 
-    http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 .. _topics-selectors-htmlcode:
 
@@ -99,7 +99,7 @@ Here's its HTML code:
 
 First, let's open the shell::
 
-    scrapy shell http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    scrapy shell https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have the response available as ``response``
 shell variable, and its attached selector in ``response.selector`` attribute.
@@ -593,6 +593,9 @@ Built-in Selectors reference
 .. module:: scrapy.selector
    :synopsis: Selector class
 
+Selector objects
+----------------
+
 .. class:: Selector(response=None, text=None, type=None)
 
   An instance of :class:`Selector` is a wrapper over response to select
@@ -714,13 +717,9 @@ SelectorList objects
        Call the ``.re()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
-   .. method:: __nonzero__()
-
-        returns True if the list is not empty, False otherwise.
-
 
 Selector examples on HTML response
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------
 
 Here's a couple of :class:`Selector` examples to illustrate several concepts.
 In all cases, we assume there is already a :class:`Selector` instantiated with
@@ -745,7 +744,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
           print node.xpath("@class").extract()
 
 Selector examples on XML response
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 Here's a couple of examples to illustrate several concepts. In both cases we
 assume there is already a :class:`Selector` instantiated with an
@@ -767,7 +766,7 @@ assume there is already a :class:`Selector` instantiated with an
 .. _removing-namespaces:
 
 Removing namespaces
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more

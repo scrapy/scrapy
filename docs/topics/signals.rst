@@ -189,13 +189,19 @@ spider_idle
     the engine starts closing the spider. After the spider has finished
     closing, the :signal:`spider_closed` signal is sent.
 
-    You can, for example, schedule some requests in your :signal:`spider_idle`
-    handler to prevent the spider from being closed.
+    You may raise a :exc:`~scrapy.exceptions.DontCloseSpider` exception to
+    prevent the spider from being closed.
 
     This signal does not support returning deferreds from their handlers.
 
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spiders.Spider` object
+
+.. note:: Scheduling some requests in your :signal:`spider_idle` handler does
+    **not** guarantee that it can prevent the spider from being closed,
+    although it sometimes can. That's because the spider may still remain idle
+    if all the scheduled requests are rejected by the scheduler (e.g. filtered
+    due to duplication).
 
 spider_error
 ------------

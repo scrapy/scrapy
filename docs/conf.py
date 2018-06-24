@@ -144,10 +144,6 @@ html_static_path = ['_static']
 # using the given strftime format.
 html_last_updated_fmt = '%b %d, %Y'
 
-# If true, SmartyPants will be used to convert quotes and dashes to
-# typographically correct entities.
-html_use_smartypants = True
-
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
 
@@ -191,8 +187,8 @@ htmlhelp_basename = 'Scrapydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Scrapy.tex', ur'Scrapy Documentation',
-   ur'Scrapy developers', 'manual'),
+  ('index', 'Scrapy.tex', u'Scrapy Documentation',
+   u'Scrapy developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

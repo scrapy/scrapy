@@ -164,7 +164,7 @@ class Shell(object):
 
 def inspect_response(response, spider):
     """Open a shell to inspect the given response"""
-    Shell(spider.crawler).start(response=response)
+    Shell(spider.crawler).start(response=response, spider=spider)
 
 
 def _request_deferred(request):

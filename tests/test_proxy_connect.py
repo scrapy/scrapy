@@ -2,6 +2,7 @@ import json
 import os
 import time
 
+from six.moves.urllib.parse import urlsplit, urlunsplit
 from threading import Thread
 from libmproxy import controller, proxy
 from netlib import http_auth
@@ -17,7 +18,7 @@ from tests.mockserver import MockServer
 
 class HTTPSProxy(controller.Master, Thread):
 
-    def __init__(self, port):
+    def __init__(self):
         password_manager = http_auth.PassManSingleUser('scrapy', 'scrapy')
         authenticator = http_auth.BasicProxyAuth(password_manager, "mitmproxy")
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -25,10 +26,19 @@ class HTTPSProxy(controller.Master, Thread):
         server = proxy.ProxyServer(proxy.ProxyConfig(
             authenticator = authenticator,
             cacert = cert_path),
-            port)
+            0)
+        self.server = server
         Thread.__init__(self)
         controller.Master.__init__(self, server)
 
+    def http_address(self):
+        return 'http://scrapy:scrapy@%s:%d' % self.server.socket.getsockname()
+
+
+def _wrong_credentials(proxy_url):
+    bad_auth_proxy = list(urlsplit(proxy_url))
+    bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
+    return urlunsplit(bad_auth_proxy)
 
 class ProxyConnectTestCase(TestCase):
 
@@ -36,12 +46,14 @@ class ProxyConnectTestCase(TestCase):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
-        self._proxy = HTTPSProxy(8888)
+
+        self._proxy = HTTPSProxy()
         self._proxy.start()
+
         # Wait for the proxy to start.
         time.sleep(1.0)
-        os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:8888'
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+        os.environ['https_proxy'] = self._proxy.http_address()
+        os.environ['http_proxy'] = self._proxy.http_address()
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
@@ -52,17 +64,17 @@ class ProxyConnectTestCase(TestCase):
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, l)
 
     @defer.inlineCallbacks
     def test_https_noconnect(self):
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
+        proxy = os.environ['https_proxy']
+        os.environ['https_proxy'] = proxy + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, l)
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
 
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
@@ -73,18 +85,17 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888'
+        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(l)
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
-        request = Request("https://localhost:8999/echo")
+        request = Request(self.mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)
         with LogCapture() as l:
             yield crawler.crawl(seed=request)
@@ -94,14 +105,16 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
+        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy']) + '?noconnect'
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("https://localhost:8999/status?n=200")
+            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(407, l)
 
     def _assert_got_response_code(self, code, log):
+        print(log)
         self.assertEqual(str(log).count('Crawled (%d)' % code), 1)
 
     def _assert_got_tunnel_error(self, log):
-        self.assertEqual(str(log).count('TunnelError'), 1)
+        print(log)
+        self.assertIn('TunnelError', str(log))

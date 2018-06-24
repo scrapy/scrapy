@@ -290,7 +290,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = TestItemLoader()
         il.add_value('name', [u'$10'])
         try:
-            float('$10')
+            float(u'$10')
         except Exception as e:
             expected_exc_str = str(e)
 
@@ -437,7 +437,7 @@ class ProcessorsTest(unittest.TestCase):
         self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
         self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
         self.assertEqual(proc(['hello', 'world']), u'hello world')
-        self.assert_(isinstance(proc(['hello', 'world']), six.text_type))
+        self.assertIsInstance(proc(['hello', 'world']), six.text_type)
 
     def test_compose(self):
         proc = Compose(lambda v: v[0], str.upper)
@@ -482,7 +482,7 @@ class SelectortemLoaderTest(unittest.TestCase):
     def test_constructor_with_selector(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
-        self.assert_(l.selector is sel)
+        self.assertIs(l.selector, sel)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
@@ -490,21 +490,21 @@ class SelectortemLoaderTest(unittest.TestCase):
     def test_constructor_with_selector_css(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
-        self.assert_(l.selector is sel)
+        self.assertIs(l.selector, sel)
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response_css(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
@@ -526,7 +526,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_xpath(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath('name', '//p/text()')
@@ -552,7 +552,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_xpath_re(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath('name', '//div/text()', re='ma')
@@ -568,7 +568,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_css(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_css('name', 'p::text')
@@ -606,7 +606,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_css_re(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_css('url', 'a::attr(href)')
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')

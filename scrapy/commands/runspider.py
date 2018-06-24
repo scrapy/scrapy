@@ -28,6 +28,7 @@ def _import_file(filepath):
 class Command(ScrapyCommand):
 
     requires_project = False
+    default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
 
     def syntax(self):
         return "[options] <spider_file>"
@@ -86,3 +87,6 @@ class Command(ScrapyCommand):
 
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
+
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1

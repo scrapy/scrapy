@@ -13,7 +13,7 @@ SEP-017: Spider Contracts
 The motivation for Spider Contracts is to build a lightweight mechanism for
 testing your spiders, and be able to run the tests quickly without having to
 wait for all the spider to run. It's partially based on the
-[http://en.wikipedia.org/wiki/Design_by_contract Design by contract]  approach
+[https://en.wikipedia.org/wiki/Design_by_contract Design by contract]  approach
 (hence its name) where you define certain conditions that spider callbacks must
 met, and you give example testing pages.
 

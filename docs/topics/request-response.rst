@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback])
+.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -79,6 +79,8 @@ Request objects
         The latter form allows for customizing the ``domain`` and ``path``
         attributes of the cookie. This is only useful if the cookies are saved
         for later requests.
+
+        .. reqmeta:: dont_merge_cookies
 
         When some site returns cookies (in a response) those are stored in the
         cookies for that domain and will be sent again in future requests. That's
@@ -294,7 +296,7 @@ Those are:
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`handle_httpstatus_all`
-* ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
+* :reqmeta:`dont_merge_cookies`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
 * :reqmeta:`redirect_urls`
@@ -303,7 +305,12 @@ Those are:
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_latency`
+* :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`proxy`
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* :reqmeta:`referrer_policy`
+* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -329,6 +336,23 @@ The amount of time spent to fetch the response, since the request has been
 started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
+
+.. reqmeta:: download_fail_on_dataloss
+
+download_fail_on_dataloss
+-------------------------
+
+Whether or not to fail on broken responses. See:
+:setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
+
+.. reqmeta:: max_retry_times
+
+max_retry_times
+---------------
+
+The meta key is used set retry times per request. When initialized, the
+:reqmeta:`max_retry_times` meta key takes higher precedence over the
+:setting:`RETRY_TIMES` setting.
 
 .. _topics-request-response-ref-request-subclasses:
 
@@ -405,7 +429,9 @@ fields with form data from :class:`Response` objects.
 
        :param formdata: fields to override in the form data. If a field was
           already present in the response ``<form>`` element, its value is
-          overridden by the one passed in this parameter.
+          overridden by the one passed in this parameter. If a value passed in
+          this parameter is ``None``, the field will not be included in the
+          request, even if it was present in the response ``<form>`` element.
        :type formdata: dict
 
        :param clickdata: attributes to lookup the control clicked. If it's not
@@ -501,11 +527,11 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. It must be str, not unicode, unless you're
-       using a encoding-aware :ref:`Response subclass
-       <topics-request-response-ref-response-subclasses>`, such as
-       :class:`TextResponse`.
-    :type body: str
+    :param body: the response body. To access the decoded text as str (unicode
+       in Python 2) you can use ``response.text`` from an encoding-aware
+       :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
+       such as :class:`TextResponse`.
+    :type body: bytes
 
     :param flags: is a list containing the initial values for the
        :attr:`Response.flags` attribute. If given, the list will be shallow
@@ -710,7 +736,7 @@ HtmlResponse objects
     which adds encoding auto-discovering support by looking into the HTML `meta
     http-equiv`_ attribute.  See :attr:`TextResponse.encoding`.
 
-.. _meta http-equiv: http://www.w3schools.com/TAGS/att_meta_http_equiv.asp
+.. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
 XmlResponse objects
 -------------------

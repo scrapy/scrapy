@@ -1,3 +1,4 @@
+import inspect
 import os
 import sys
 import subprocess
@@ -17,6 +18,7 @@ from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 
 class ProjectTest(unittest.TestCase):
@@ -220,10 +222,41 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
+    def test_run_fail_spider(self):
+        proc = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
+        ret = proc.returncode
+        self.assertNotEqual(ret, 0)
+
+    def test_run_good_spider(self):
+        proc = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
+        ret = proc.returncode
+        self.assertEqual(ret, 0)
+
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider,
                            args=('-s', 'LOG_LEVEL=INFO'))
         self.assertNotIn("DEBUG: It Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+
+    def test_runspider_dnscache_disabled(self):
+        # see https://github.com/scrapy/scrapy/issues/2811
+        # The spider below should not be able to connect to localhost:12345,
+        # which is intended,
+        # but this should not be because of DNS lookup error
+        # assumption: localhost will resolve in all cases (true?)
+        log = self.get_log("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    start_urls = ['http://localhost:12345']
+
+    def parse(self, response):
+        return {'test': 'value'}
+""",
+                           args=('-s', 'DNSCACHE_ENABLED=False'))
+        print(log)
+        self.assertNotIn("DNSLookupError", log)
         self.assertIn("INFO: Spider opened", log)
 
     def test_runspider_log_short_names(self):

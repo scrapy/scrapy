@@ -20,7 +20,7 @@ These are some common properties often found in broad crawls:
 
 * they crawl many domains (often, unbounded) instead of a specific set of sites
 
-* they don't necessarily crawl domains to completion, because it would
+* they don't necessarily crawl domains to completion, because it would be
   impractical (or impossible) to do so, and instead limit the crawl by time or
   number of pages crawled
 
@@ -85,8 +85,8 @@ When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
 ``INFO`` log level. In order to save CPU (and log storage requirements) you
 should not use ``DEBUG`` log level when preforming large broad crawls in
-production. Using ``DEBUG`` level when developing your (broad) crawler may fine
-though.
+production. Using ``DEBUG`` level when developing your (broad) crawler may be 
+fine though.
 
 To set the log level use::
 
