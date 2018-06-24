@@ -17,6 +17,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     component_name = 'spider middleware'
 
+    # List of dicts. Each dict represents a spider middleware and contains the
+    # 'process_spider_output', 'process_spider_exception' methods.
+    # The idea is to simulate the behaviour of a Twisted deferred's callback/errback chain
+    output_methods = []
+
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
         return build_component_list(settings.getwithbase('SPIDER_MIDDLEWARES'))
@@ -25,12 +30,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
         super(SpiderMiddlewareManager, self)._add_middleware(mw)
         if hasattr(mw, 'process_spider_input'):
             self.methods['process_spider_input'].append(mw.process_spider_input)
-        if hasattr(mw, 'process_spider_output'):
-            self.methods['process_spider_output'].insert(0, mw.process_spider_output)
-        if hasattr(mw, 'process_spider_exception'):
-            self.methods['process_spider_exception'].insert(0, mw.process_spider_exception)
         if hasattr(mw, 'process_start_requests'):
             self.methods['process_start_requests'].insert(0, mw.process_start_requests)
+        self.output_methods.insert(0, dict(
+            process_spider_output=getattr(mw, 'process_spider_output', None),
+            process_spider_exception=getattr(mw, 'process_spider_exception', None),
+        ))
 
     def scrape_response(self, scrape_func, response, request, spider):
         fname = lambda f:'%s.%s' % (
@@ -48,45 +53,54 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
 
-        def process_spider_exception(_failure):
+        def process_spider_exception(_failure, mw_index):
             exception = _failure.value
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
                 return _failure
-            for method in self.methods['process_spider_exception']:
-                result = method(response=response, exception=exception, spider=spider)
-                if result is not None and not _isiterable(result):
-                    raise _InvalidOutput('Middleware {} must return None or an iterable ' \
-                        'object, got {}'.format(fname(method), type(result)))
-                # stop exception handling by handing control over to the
-                # process_spider_output chain if an iterable has been returned
-                if result is not None:
-                    return result
+            for index, mw in enumerate(self.output_methods):
+                if index < mw_index or mw['process_spider_exception'] is None:
+                    continue
+                result = mw['process_spider_exception'](response=response, exception=exception, spider=spider)
+                mw_index += 1
+                if _isiterable(result):
+                    # stop exception handling by handing control over to the
+                    # process_spider_output chain if an iterable has been returned
+                    return process_spider_output(result, mw_index)
+                elif result is None:
+                    continue
+                else:
+                    raise _InvalidOutput('Middleware {} must return None or an iterable, got {}' \
+                                         .format(fname(mw['process_spider_exception']), type(result)))
             return _failure
 
-        def process_spider_output(result):
+        def process_spider_output(result, mw_index):
             def wrapper(result_iterable):
                 try:
                     for r in result_iterable:
                         yield r
                 except Exception as ex:
-                    exception_result = process_spider_exception(Failure(ex))
+                    # process the exception with the method from the next middleware
+                    exception_result = process_spider_exception(Failure(ex), mw_index)
                     if exception_result is None or isinstance(exception_result, Failure):
                         raise
                     for output in exception_result:
                         yield output
-            for method in self.methods['process_spider_output']:
-                result = method(response=response, result=result, spider=spider)
+            for index, mw in enumerate(self.output_methods):
+                if index < mw_index or mw['process_spider_output'] is None:
+                    continue
+                result = mw['process_spider_output'](response=response, result=result, spider=spider)
+                mw_index += 1
                 if _isiterable(result):
                     result = wrapper(result)
                 else:
-                    raise _InvalidOutput('Middleware {} must return an iterable object, ' \
-                        'got {}'.format(fname(method), type(result)))
+                    raise _InvalidOutput('Middleware {} must return an iterable, got {}' \
+                                         .format(fname(mw['process_spider_output']), type(result)))
             return result
 
         dfd = mustbe_deferred(process_spider_input, response)
-        dfd.addErrback(process_spider_exception)
-        dfd.addCallback(process_spider_output)
+        dfd.addErrback(process_spider_exception, mw_index=0)
+        dfd.addCallback(process_spider_output, mw_index=0)
         return dfd
 
     def process_start_requests(self, start_requests, spider):
