@@ -19,6 +19,9 @@ class OffsiteMiddleware(object):
 
     def __init__(self, stats):
         self.stats = stats
+        # default values
+        self.host_regex = re.compile('')  # allow all by default
+        self.domains_seen = set()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -52,7 +55,7 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
+            return
         url_pattern = re.compile("^https?://.*$")
         for domain in allowed_domains:
             if url_pattern.match(domain):
@@ -62,8 +65,9 @@ class OffsiteMiddleware(object):
         return re.compile(regex)
 
     def spider_opened(self, spider):
-        self.host_regex = self.get_host_regex(spider)
-        self.domains_seen = set()
+        host_regex = self.get_host_regex(spider)
+        if host_regex:
+            self.host_regex = host_regex
 
 
 class URLWarning(Warning):
