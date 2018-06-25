@@ -141,9 +141,18 @@ twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions.
 But it should support older versions of Ubuntu too, like Ubuntu 14.04,
 albeit with potential issues with TLS connections.
 
-**Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with latest Scrapy.
+**Try** not to use the ``python3-scrapy`` / ``python-scrapy`` package provided by Ubuntu, because they are **sometimes** typically too old and slow to catch up with latest Scrapy. To check whether ``python3-scrapy`` or ``python-scrapy`` is up to date with the latest available version, check the ubuntu updates official website below:
 
+- ``python3-scrapy`` : https://www.ubuntuupdates.org/package/core/bionic/universe/base/python3-scrapy
+- ``python-scrapy``  : https://www.ubuntuupdates.org/package/core/bionic/universe/base/python-scrapy
+
+To install ``scrapy`` for python3 as Ubuntu package, run this::
+
+    sudo apt install python3-scrapy
+    
+For python2::
+
+    sudo apt install python-scrapy
 
 To install scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
 these dependencies::
