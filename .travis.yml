@@ -26,7 +26,7 @@ matrix:
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
-        export PYPY_VERSION="pypy-5.9-linux_x86_64-portable"
+        export PYPY_VERSION="pypy-6.0.0-linux_x86_64-portable"
         wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
