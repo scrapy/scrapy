@@ -60,11 +60,11 @@ class ProcessSpiderInputSpider(Spider):
 
 class FailProcessSpiderInputMiddleware:
     def process_spider_input(self, response, spider):
-        logging.warn('Middleware: will raise ZeroDivisionError')
-        raise ZeroDivisionError()
+        logging.warn('Middleware: will raise IndexError')
+        raise IndexError()
 
 
-class TestProcessSpiderInputSpider(CommonTestCase):
+class TestProcessSpiderInput(CommonTestCase):
     @defer.inlineCallbacks
     def test_process_spider_input_errback(self):
         """
@@ -72,6 +72,66 @@ class TestProcessSpiderInputSpider(CommonTestCase):
         process_spider_exception chain, it should go directly to the Request errback
         """
         log = yield self.crawl_log(ProcessSpiderInputSpider)
-        self.assertNotIn('Middleware: ZeroDivisionError exception caught', str(log))
-        self.assertIn('Middleware: will raise ZeroDivisionError', str(log))
-        self.assertIn('Got a Failure on the Request errback', str(log))
+        self.assertNotIn("Middleware: IndexError exception caught", str(log))
+        self.assertIn("Middleware: will raise IndexError", str(log))
+        self.assertIn("Got a Failure on the Request errback", str(log))
+
+
+# ================================================================================
+# (2) exceptions from a spider callback (generator)
+class GeneratorCallbackSpider(Spider):
+    name = 'GeneratorCallbackSpider'
+    start_urls = ['http://localhost:8998']
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            # spider
+            __name__ + '.LogExceptionMiddleware': 10,
+            # engine
+        },
+    }
+
+    def parse(self, response):
+        yield {'test': 1}
+        yield {'test': 2}
+        raise ImportError()
+
+
+class TestGeneratorCallback(CommonTestCase):
+    @defer.inlineCallbacks
+    def test_generator_callback(self):
+        """
+        (2) An exception from a spider's callback should
+        be caught by the process_spider_exception chain
+        """
+        log = yield self.crawl_log(GeneratorCallbackSpider)
+        self.assertIn("Middleware: ImportError exception caught", str(log))
+        self.assertIn("'item_scraped_count': 2", str(log))
+
+
+# ================================================================================
+# (3) exceptions from a spider callback (not a generator)
+class NotAGeneratorCallbackSpider(Spider):
+    name = 'NotAGeneratorCallbackSpider'
+    start_urls = ['http://localhost:8998']
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            # spider
+            __name__ + '.LogExceptionMiddleware': 10,
+            # engine
+        },
+    }
+
+    def parse(self, response):
+        return [{'test': 1}, {'test': 1/0}]
+
+
+class TestNotAGeneratorCallback(CommonTestCase):
+    @defer.inlineCallbacks
+    def test_not_a_generator_callback(self):
+        """
+        (3) An exception from a spider's callback should
+        be caught by the process_spider_exception chain
+        """
+        log = yield self.crawl_log(NotAGeneratorCallbackSpider)
+        self.assertIn("Middleware: ZeroDivisionError exception caught", str(log))
+        self.assertNotIn("item_scraped_count", str(log))
