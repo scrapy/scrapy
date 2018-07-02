@@ -9,7 +9,7 @@ import re
 
 from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
-from w3lib.url import canonicalize_url
+from urlparse4 import canonicalize_url
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
