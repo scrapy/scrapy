@@ -3,7 +3,7 @@ pytest-twisted
 pytest-cov==2.5.1
 testfixtures
 jmespath
-leveldb
+leveldb; sys_platform != "win32"
 botocore
 # optional for shell wrapper tests
 bpython
