@@ -1,14 +1,13 @@
 import base64
+from six.moves.urllib.parse import unquote, urlunparse
 from six.moves.urllib.request import getproxies, proxy_bypass
-from six.moves.urllib.parse import unquote
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
-from six.moves.urllib.parse import urlunparse
 
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 
@@ -17,8 +16,8 @@ class HttpProxyMiddleware(object):
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding
         self.proxies = {}
-        for type, url in getproxies().items():
-            self.proxies[type] = self._get_proxy(url, type)
+        for type_, url in getproxies().items():
+            self.proxies[type_] = self._get_proxy(url, type_)
 
     @classmethod
     def from_crawler(cls, crawler):
