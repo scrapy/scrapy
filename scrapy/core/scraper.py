@@ -212,6 +212,9 @@ class Scraper(object):
                     logger.error('Error downloading %(request)s: %(errmsg)s',
                                  {'request': request, 'errmsg': errmsg},
                                  extra={'spider': spider})
+            return self.signals.send_catch_log_deferred(
+                signal=signals.download_error, request=request,
+                spider=spider, failure=download_failure)
 
         if spider_failure is not download_failure:
             return spider_failure
@@ -232,6 +235,9 @@ class Scraper(object):
                 logger.error('Error processing %(item)s', {'item': item},
                              exc_info=failure_to_exc_info(output),
                              extra={'spider': spider})
+                return self.signals.send_catch_log_deferred(
+                    signal=signals.item_error, item=item, response=response,
+                    spider=spider, failure=output)
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             logger.log(*logformatter_adapter(logkws), extra={'spider': spider})

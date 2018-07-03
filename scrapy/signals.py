@@ -15,8 +15,10 @@ request_scheduled = object()
 request_dropped = object()
 response_received = object()
 response_downloaded = object()
+download_error = object()
 item_scraped = object()
 item_dropped = object()
+item_error = object()
 
 # for backwards compatibility
 stats_spider_opened = spider_opened

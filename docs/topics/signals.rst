@@ -135,6 +135,29 @@ item_dropped
         to be dropped
     :type exception: :exc:`~scrapy.exceptions.DropItem` exception
 
+item_error
+----------
+
+.. signal:: item_error
+.. function:: item_error(item, response, failure, spider)
+
+    Sent after some stage of the :ref:`topics-item-pipeline` raised an
+    exception other than the :exc:`~scrapy.exceptions.DropItem` exception.
+
+    This signal supports returning deferreds from their handlers.
+
+    :param item: the item processed by the :ref:`topics-item-pipeline`
+    :type item: dict or :class:`~scrapy.item.Item` object
+
+    :param spider: the spider which scraped the item
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+    :param response: the response from where the item was scraped
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param failure: the exception raised as a Twisted `Failure`_ object
+    :type failure: `Failure`_ object
+
 spider_closed
 -------------
 
@@ -293,6 +316,28 @@ response_downloaded
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+download_error
+--------------
+
+.. signal:: download_error
+.. function:: download_error(failure, request, spider)
+
+    Sent by the downloader when an error was raised in one of the downloader
+    middleware or the download engine. Unlike the download middleware
+    `process_exception` method, this signal also handles exception from
+    the `process_response` method.
+
+    This signal supports returning deferreds from their handlers.
+
+    :param failure: the exception raised as a Twisted `Failure`_ object
+    :type failure: `Failure`_ object
+
+    :param request: the request that generated the error
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 .. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
