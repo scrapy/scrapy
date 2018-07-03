@@ -9,3 +9,4 @@ botocore
 bpython
 ipython
 brotlipy
+pywin32; sys_platform == "win32"
