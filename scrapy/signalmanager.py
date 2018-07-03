@@ -60,6 +60,24 @@ class SignalManager(object):
         kwargs.setdefault('sender', self.sender)
         return _signal.send_catch_log_deferred(signal, **kwargs)
 
+    def send_deferred(self, signal, **kwargs):
+        """
+        Like :meth:`send_catch_log_deferred` but errback as soon as one signal
+        handler raise an exception.
+
+        Returns a Deferred that gets fired once all signal handlers
+        deferreds were fired. Errback a
+        :class`twisted.internet.defer.FirstError` when one signal handler raise
+        an exception.
+
+        The keyword arguments are passed to the signal handlers (connected
+        through the :meth:`connect` method).
+
+        .. _deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
+        """
+        kwargs.setdefault('sender', self.sender)
+        return _signal.send_deferred(signal, **kwargs)
+
     def disconnect_all(self, signal, **kwargs):
         """
         Disconnect all receivers from the given signal.

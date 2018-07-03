@@ -239,6 +239,23 @@ request_scheduled
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+request_downloading
+-------------------
+
+.. signal:: request_downloading
+.. function:: request_downloading(request, spider)
+
+    Sent when the engine is about to download a :class:`~scrapy.http.Request`.
+    If one handler raise an exception, the download is aborted.
+
+    The signal supports returning deferreds from their handlers.
+
+    :param request: the request that reached the scheduler
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
 request_dropped
 ---------------
 

@@ -1,10 +1,11 @@
+import pytest
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import defer, reactor
 from pydispatch import dispatcher
 
-from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
+from scrapy.utils.signal import send_catch_log, send_catch_log_deferred, send_deferred
 
 
 class SendCatchLogTest(unittest.TestCase):
@@ -77,3 +78,42 @@ class SendCatchLogTest2(unittest.TestCase):
         self.assertEqual(len(l.records), 1)
         self.assertIn("Cannot return deferreds from signal handler", str(l))
         dispatcher.disconnect(test_handler, test_signal)
+
+class SendLogTest(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_send_deferred(self):
+        test_ok_signal = object()
+        test_error_signal = object()
+        handlers_called = set()
+
+        dispatcher.connect(self.error_handler, signal=test_error_signal)
+        dispatcher.connect(self.ok_handler, signal=test_ok_signal)
+        result = yield defer.maybeDeferred(
+            self._get_result, test_ok_signal, arg='test',
+            handlers_called=handlers_called
+        )
+
+        with pytest.raises(defer.FirstError):
+            yield defer.maybeDeferred(
+                self._get_result, test_error_signal, arg='test',
+                handlers_called=handlers_called
+            )
+
+        assert self.error_handler in handlers_called
+        assert self.ok_handler in handlers_called
+        self.assertEqual(result[0], (self.ok_handler, "OK"))
+
+        dispatcher.disconnect(self.error_handler, signal=test_error_signal)
+        dispatcher.disconnect(self.ok_handler, signal=test_ok_signal)
+
+    def _get_result(self, signal, *a, **kw):
+        return send_deferred(signal, *a, **kw)
+
+    def error_handler(self, arg, handlers_called):
+        handlers_called.add(self.error_handler)
+        a = 1/0
+
+    def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == 'test'
+        return "OK"
