@@ -5,6 +5,11 @@ environment:
     - PYTHON: "C:\\Python36"
       TOX_ENV: py36
 
+branches:
+  only:
+    - master
+    - /d+\.\d+\.\d+[\w\-]*$/
+
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "SET TOX_TESTENV_PASSENV=HOME USERPROFILE HOMEPATH HOMEDRIVE"
