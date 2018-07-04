@@ -30,6 +30,9 @@ def get_proxy(url, orig_type, auth_encoding):
     return creds, proxy_url
 
 
+cached_proxy_bypass = proxy_bypass
+
+
 class HttpProxyMiddleware(object):
 
     def __init__(self, auth_encoding='latin-1'):
@@ -82,7 +85,7 @@ class HttpProxyMiddleware(object):
         scheme = parsed.scheme
 
         # 'no_proxy' is only supported by http schemes
-        if scheme in ('http', 'https') and proxy_bypass(parsed.hostname):
+        if scheme in ('http', 'https') and cached_proxy_bypass(parsed.hostname):
             return
 
         if scheme in self.proxies:
