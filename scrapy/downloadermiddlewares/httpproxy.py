@@ -1,4 +1,8 @@
 import base64
+try:
+    from functools import lru_cache
+except ImportError:
+    from functools32 import lru_cache
 from six.moves.urllib.parse import unquote, urlunparse
 from six.moves.urllib.request import getproxies, proxy_bypass
 try:
@@ -30,7 +34,7 @@ def get_proxy(url, orig_type, auth_encoding):
     return creds, proxy_url
 
 
-cached_proxy_bypass = proxy_bypass
+cached_proxy_bypass = lru_cache(maxsize=1024)(proxy_bypass)
 
 
 class HttpProxyMiddleware(object):
