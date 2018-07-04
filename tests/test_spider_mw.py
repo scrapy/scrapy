@@ -14,7 +14,7 @@ from tests.mockserver import MockServer
 TEST_URL = 'http://localhost:8998'
 
 
-class LogExceptionMiddleware(object):
+class LogExceptionMiddleware:
     def process_spider_exception(self, response, exception, spider):
         logging.warn('Middleware: %s exception caught', exception.__class__.__name__)
         return None
@@ -37,7 +37,7 @@ class RecoverySpider(Spider):
         if not response.meta.get('dont_fail'):
             raise ModuleNotFoundError()
 
-class RecoveryMiddleware(object):
+class RecoveryMiddleware:
     def process_spider_exception(self, response, exception, spider):
         logging.warn('Middleware: %s exception caught', exception.__class__.__name__)
         return [
