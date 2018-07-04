@@ -5,256 +5,111 @@ from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 
-from scrapy.spiders import Spider
-from scrapy.item import Item, Field
-from scrapy.http import Request
+from scrapy import Spider, Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
 
-class TestItem(Item):
-    value = Field()
+# TEST_URL = 'http://example.org'
+TEST_URL = 'http://localhost:8998'
 
 
-class LocalhostSpider(Spider):
-    start_urls = ['http://localhost:8998']  # tests.mockserver.MockServer
-
-
-# ================================================================================
-# exceptions from a spider's parse method
-class BaseExceptionFromParseMethodSpider(LocalhostSpider):
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {'tests.test_spidermiddleware.CatchExceptionMiddleware': 540}
-    }
-
-
-class NotAGeneratorSpider(BaseExceptionFromParseMethodSpider):
-    """ return value is NOT a generator """
-    name = 'not_a_generator'
-
-    def parse(self, response):
-        raise AssertionError
-
-
-class GeneratorErrorBeforeItemsSpider(BaseExceptionFromParseMethodSpider):
-    """ return value is a generator; the exception is raised
-    before the items are yielded: no items should be scraped """
-    name = 'generator_error_before_items'
-
-    def parse(self, response):
-        raise ValueError
-        for i in range(3):
-            yield {'value': i}
-
-
-class GeneratorErrorAfterItemsSpider(BaseExceptionFromParseMethodSpider):
-    """ return value is a generator; the exception is raised
-    after the items are yielded: 3 items should be scraped """
-    name = 'generator_error_after_items'
-
-    def parse(self, response):
-        for i in range(3):
-            yield {'value': i}
-        raise FloatingPointError
-
-
-class CatchExceptionMiddleware(object):
+class LogExceptionMiddleware:
     def process_spider_exception(self, response, exception, spider):
-        """ catch an exception and log it """
-        logging.warn('{} exception caught'.format(exception.__class__.__name__))
+        logging.warn('Middleware: %s exception caught', exception.__class__.__name__)
         return None
 
 
 # ================================================================================
-# exception from a previous middleware's process_spider_input method
-# process_spider_input is not expected to return an iterable, so there are no
-# separate tests for generator/non-generator implementations
-class FromPreviousMiddlewareInputSpider(LocalhostSpider):
-    name = 'not_a_generator_from_previous_middleware_input'
+# recover from an exception on a spider callback
+class RecoverySpider(Spider):
+    name = 'RecoverySpider'
+    start_urls = [TEST_URL]
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 540,
-            'tests.test_spidermiddleware.RaiseExceptionOnInputMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        return None
-
-
-class RaiseExceptionOnInputMiddleware(object):
-    def process_spider_input(self, response, spider):
-        raise LookupError
-
-
-# ================================================================================
-# exception from a previous middleware's process_spider_output method (not a generator)
-class NotAGeneratorFromPreviousMiddlewareOutputSpider(LocalhostSpider):
-    name = 'not_a_generator_from_previous_middleware_output'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 540,
-            'tests.test_spidermiddleware.RaiseExceptionOnOutputNotAGeneratorMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        return [{'value': i} for i in range(3)]
-
-
-class RaiseExceptionOnOutputNotAGeneratorMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        raise UnicodeError
-
-
-# ================================================================================
-# exception from a previous middleware's process_spider_output method (generator)
-class GeneratorFromPreviousMiddlewareOutputSpider(LocalhostSpider):
-    name = 'generator_from_previous_middleware_output'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 540,
-            'tests.test_spidermiddleware.RaiseExceptionOnOutputGeneratorMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        return [{'value': i} for i in range(10, 13)]
-
-
-class RaiseExceptionOnOutputGeneratorMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        for r in result:
-            yield r
-        raise NameError
-
-
-# ================================================================================
-# do something useful from the exception handler
-class DoSomethingSpider(LocalhostSpider):
-    name = 'do_something'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.DoSomethingMiddleware': 540,
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        yield {'value': response.url}
-        raise ImportError
-
-
-class DoSomethingMiddleware(object):
-    def process_spider_exception(self, response, exception, spider):
-        return [Request('http://localhost:8998?processed=true'), {'value': 10}, TestItem(value='asdf')]
-
-
-# ================================================================================
-# don't catch _InvalidOutput from scrapy's spider middleware manager
-class InvalidReturnValueFromPreviousMiddlewareInputSpider(LocalhostSpider):
-    name = 'invalid_return_value_from_previous_middleware_input'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.InvalidReturnValueInputMiddleware': 540,
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        return None
-
-
-class InvalidReturnValueInputMiddleware(object):
-    def process_spider_input(self, response, spider):
-        return 1.0  # <type 'float'>, not None
-
-
-class InvalidReturnValueFromPreviousMiddlewareOutputSpider(LocalhostSpider):
-    name = 'invalid_return_value_from_previous_middleware_output'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.CatchExceptionMiddleware': 540,
-            'tests.test_spidermiddleware.InvalidReturnValueOutputMiddleware': 545,
-            # spider side
-        }
-    }
-
-    def parse(self, response):
-        return None
-
-
-class InvalidReturnValueOutputMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        return 1  # <type 'int'>, not an iterable
-
-
-# ================================================================================
-# make sure only non already called process_spider_output methods
-# are called if process_spider_exception returns an iterable
-class ExecutionChainSpider(LocalhostSpider):
-    name = 'execution_chain'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            # engine side
-            'tests.test_spidermiddleware.ThirdMiddleware': 540,
-            'tests.test_spidermiddleware.SecondMiddleware': 541,
-            'tests.test_spidermiddleware.FirstMiddleware': 542
-            # spider side
+            __name__ + '.RecoveryMiddleware': 10,
         },
     }
 
     def parse(self, response):
-        return None
+        yield {'test': 1}
+        self.logger.warn('DONT_FAIL: %s', response.meta.get('dont_fail'))
+        if not response.meta.get('dont_fail'):
+            raise ModuleNotFoundError()
 
-
-class FirstMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        for r in result:
-            if isinstance(r, dict):
-                r['handled_by_first_middleware'] = True
-            yield r
-
+class RecoveryMiddleware:
     def process_spider_exception(self, response, exception, spider):
-        # log exception, handle control to the next middleware's process_spider_exception
-        logging.warn('{} exception caught'.format(exception.__class__.__name__))
-        return None
+        logging.warn('Middleware: %s exception caught', exception.__class__.__name__)
+        return [
+            {'from': 'process_spider_exception'},
+            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
+        ]
 
 
-class SecondMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        for r in result:
-            if isinstance(r, dict):
-                r['handled_by_second_middleware'] = True
-            yield r
-        raise MemoryError
+# ================================================================================
+# (1) exceptions from a spider middleware's process_spider_input method
+class ProcessSpiderInputSpider(Spider):
+    name = 'ProcessSpiderInputSpider'
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            # spider
+            __name__ + '.LogExceptionMiddleware': 10,
+            __name__ + '.FailProcessSpiderInputMiddleware': 8,
+            __name__ + '.LogExceptionMiddleware': 6,
+            # engine
+        }
+    }
+
+    def start_requests(self):
+        yield Request(TEST_URL, callback=self.parse, errback=self.errback)
+
+    def parse(self, response):
+        return [{'test': 1}, {'test': 2}]
+
+    def errback(self, failure):
+        self.logger.warn('Got a Failure on the Request errback')
 
 
-class ThirdMiddleware(object):
-    def process_spider_output(self, response, result, spider):
-        for r in result:
-            if isinstance(r, dict):
-                r['handled_by_third_middleware'] = True
-            yield r
-
-    def process_spider_exception(self, response, exception, spider):
-        # handle control to the next middleware's process_spider_output
-        return [{'item': i} for i in range(3)]
+class FailProcessSpiderInputMiddleware:
+    def process_spider_input(self, response, spider):
+        logging.warn('Middleware: will raise IndexError')
+        raise IndexError()
 
 
+# ================================================================================
+# (2) exceptions from a spider callback (generator)
+class GeneratorCallbackSpider(Spider):
+    name = 'GeneratorCallbackSpider'
+    start_urls = [TEST_URL]
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            __name__ + '.LogExceptionMiddleware': 10,
+        },
+    }
+
+    def parse(self, response):
+        yield {'test': 1}
+        yield {'test': 2}
+        raise ImportError()
+
+
+# ================================================================================
+# (3) exceptions from a spider callback (not a generator)
+class NotAGeneratorCallbackSpider(Spider):
+    name = 'NotAGeneratorCallbackSpider'
+    start_urls = [TEST_URL]
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            __name__ + '.LogExceptionMiddleware': 10,
+        },
+    }
+
+    def parse(self, response):
+        return [{'test': 1}, {'test': 1/0}]
+
+
+# ================================================================================
 class TestSpiderMiddleware(TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -263,7 +118,7 @@ class TestSpiderMiddleware(TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
-
+    
     @defer.inlineCallbacks
     def crawl_log(self, spider):
         crawler = get_crawler(spider)
@@ -271,69 +126,45 @@ class TestSpiderMiddleware(TestCase):
             yield crawler.crawl()
         raise defer.returnValue(log)
 
-    @defer.inlineCallbacks
-    def test_process_spider_exception_from_parse_method_non_generator(self):
-        # non-generator return value
-        log = yield self.crawl_log(NotAGeneratorSpider)
-        self.assertIn("AssertionError exception caught", str(log))
-        self.assertIn("spider_exceptions/AssertionError", str(log))
+    # @defer.inlineCallbacks
+    # def test_recovery(self):
+    #     """
+    #     Recover from an exception from a spider's callback. The final item count should be 3
+    #     (one from the spider before raising the exception, one from the middleware and one
+    #     from the spider when processing the response that was enqueued from the middleware)
+    #     """
+    #     log = yield self.crawl_log(RecoverySpider)
+    #     self.assertIn("Middleware: ModuleNotFoundError exception caught", str(log))
+    #     self.assertEqual(str(log).count("Middleware: ModuleNotFoundError exception caught"), 1)
+    #     self.assertIn("'item_scraped_count': 3", str(log))
 
     @defer.inlineCallbacks
-    def test_process_spider_exception_from_parse_method_generator_no_items(self):
-        # generator return value, no items before the error
-        log = yield self.crawl_log(GeneratorErrorBeforeItemsSpider)
-        self.assertIn("ValueError exception caught", str(log))
-        self.assertIn("spider_exceptions/ValueError", str(log))
-
+    def test_process_spider_input_errback(self):
+        """
+        (1) An exception from the process_spider_input chain should not be caught by the
+        process_spider_exception chain, it should go directly to the Request errback
+        """
+        log1 = yield self.crawl_log(ProcessSpiderInputSpider)
+        self.assertNotIn("Middleware: IndexError exception caught", str(log1))
+        self.assertIn("Middleware: will raise IndexError", str(log1))
+        self.assertIn("Got a Failure on the Request errback", str(log1))
+    
     @defer.inlineCallbacks
-    def test_process_spider_exception_from_parse_method_generator_with_items(self):
-        # generator return value, 3 items before the error
-        log = yield self.crawl_log(GeneratorErrorAfterItemsSpider)
-        self.assertIn("'item_scraped_count': 3", str(log))
-        self.assertIn("FloatingPointError exception caught", str(log))
-        self.assertIn("spider_exceptions/FloatingPointError", str(log))
-
+    def test_generator_callback(self):
+        """
+        (2) An exception from a spider's callback should
+        be caught by the process_spider_exception chain
+        """
+        log2 = yield self.crawl_log(GeneratorCallbackSpider)
+        self.assertIn("Middleware: ImportError exception caught", str(log2))
+        self.assertIn("'item_scraped_count': 2", str(log2))
+    
     @defer.inlineCallbacks
-    def test_process_spider_exception_from_previous_middleware_input(self):
-        log = yield self.crawl_log(FromPreviousMiddlewareInputSpider)
-        self.assertIn("LookupError exception caught", str(log))
-
-    @defer.inlineCallbacks
-    def test_process_spider_exception_from_previous_middleware_output(self):
-        # non-generator output value
-        log = yield self.crawl_log(NotAGeneratorFromPreviousMiddlewareOutputSpider)
-        self.assertNotIn("UnicodeError exception caught", str(log))
-        # generator output value
-        log = yield self.crawl_log(GeneratorFromPreviousMiddlewareOutputSpider)
-        self.assertIn("'item_scraped_count': 3", str(log))
-        self.assertIn("NameError exception caught", str(log))
-
-    @defer.inlineCallbacks
-    def test_process_spider_exception_do_something(self):
-        log = yield self.crawl_log(DoSomethingSpider)
-        self.assertIn("ImportError exception caught", str(log))
-        self.assertIn("{'value': 10}", str(log))
-        self.assertIn("{'value': 'asdf'}", str(log))
-        self.assertIn("{'value': 'http://localhost:8998'}", str(log))
-        self.assertIn("{'value': 'http://localhost:8998?processed=true'}", str(log))
-
-    @defer.inlineCallbacks
-    def test_process_spider_exception_invalid_return_value_previous_middleware(self):
-        """ don't catch _InvalidOutput from middleware """
-        # on middleware's input
-        log1 = yield self.crawl_log(InvalidReturnValueFromPreviousMiddlewareInputSpider)
-        self.assertNotIn("_InvalidOutput exception caught", str(log1))
-        self.assertIn("'spider_exceptions/_InvalidOutput'", str(log1))
-        # on middleware's output
-        log2 = yield self.crawl_log(InvalidReturnValueFromPreviousMiddlewareOutputSpider)
-        self.assertNotIn("_InvalidOutput exception caught", str(log2))
-        self.assertIn("'spider_exceptions/_InvalidOutput'", str(log2))
-
-    @defer.inlineCallbacks
-    def test_process_spider_exception_execution_chain(self):
-        # on middleware's input
-        log = yield self.crawl_log(ExecutionChainSpider)
-        self.assertNotIn("handled_by_first_middleware", str(log))
-        self.assertNotIn("handled_by_second_middleware", str(log))
-        self.assertIn("MemoryError exception caught", str(log))
-        self.assertIn("handled_by_third_middleware", str(log))
+    def test_not_a_generator_callback(self):
+        """
+        (3) An exception from a spider's callback should
+        be caught by the process_spider_exception chain
+        """
+        log3 = yield self.crawl_log(NotAGeneratorCallbackSpider)
+        self.assertIn("Middleware: ZeroDivisionError exception caught", str(log3))
+        self.assertNotIn("item_scraped_count", str(log3))
