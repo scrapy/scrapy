@@ -125,7 +125,6 @@ def _clspath(cls, forced=None):
 
 DEPRECATION_RULES = [
     ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-    ('scrapy.spidermanager.SpiderManager', 'scrapy.spiderloader.SpiderLoader'),
 ]
 
 
