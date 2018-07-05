@@ -1,3 +1,4 @@
+import warnings
 try:
     from functools import lru_cache
 except ImportError:
@@ -11,7 +12,7 @@ except ImportError:
 
 from w3lib.http import basic_auth_header
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 
 
