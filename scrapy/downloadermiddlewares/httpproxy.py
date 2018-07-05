@@ -1,25 +1,18 @@
-import base64
 try:
     from functools import lru_cache
 except ImportError:
     from functools32 import lru_cache
-from six.moves.urllib.parse import unquote, urlunparse
+from six.moves.urllib.parse import urlunparse
 from six.moves.urllib.request import getproxies, proxy_bypass
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
 
+from w3lib.http import basic_auth_header
+
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
-
-
-def basic_auth_header(username, password, auth_encoding):
-    user_pass = to_bytes(
-        '%s:%s' % (unquote(username), unquote(password)),
-        encoding=auth_encoding)
-    return base64.b64encode(user_pass).strip()
 
 
 def get_proxy(url, orig_type, auth_encoding):
@@ -80,7 +73,7 @@ class HttpProxyMiddleware(object):
             creds, proxy_url = get_proxy(request.meta['proxy'], '', self.auth_encoding)
             request.meta['proxy'] = proxy_url
             if creds and not request.headers.get('Proxy-Authorization'):
-                request.headers['Proxy-Authorization'] = b'Basic ' + creds
+                request.headers['Proxy-Authorization'] = creds
             return
         elif not self.proxies:
             return
@@ -99,4 +92,4 @@ class HttpProxyMiddleware(object):
         creds, proxy = self.proxies[scheme]
         request.meta['proxy'] = proxy
         if creds:
-            request.headers['Proxy-Authorization'] = b'Basic ' + creds
+            request.headers['Proxy-Authorization'] = creds
