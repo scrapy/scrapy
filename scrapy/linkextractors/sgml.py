@@ -7,7 +7,7 @@ import warnings
 from sgmllib import SGMLParser
 
 from w3lib.url import safe_url_string
-from urlparse4 import canonicalize_url
+from scurl import canonicalize_url
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.link import Link

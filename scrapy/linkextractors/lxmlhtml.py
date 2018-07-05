@@ -6,7 +6,7 @@ from six.moves.urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
-from urlparse4 import canonicalize_url
+from scurl import canonicalize_url
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
