@@ -13,7 +13,7 @@ from scrapy.utils.python import to_bytes, to_native_str
 
 try:
     from scurl import canonicalize_url
-except ImportError, e:
+except ImportError as e:
     from w3lib.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
 

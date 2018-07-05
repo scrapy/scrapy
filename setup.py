@@ -25,6 +25,11 @@ if has_environment_marker_platform_impl_support():
         'PyPyDispatcher>=2.1.0',
     ]
 
+try:
+    import scurl
+except ImportError as e:
+    print("We noticed that you haven't installed our new library scurl yet. It helps \
+        increase the speed of your spider!")
 
 setup(
     name='Scrapy',
