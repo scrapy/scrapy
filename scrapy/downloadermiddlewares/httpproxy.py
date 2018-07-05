@@ -1,3 +1,4 @@
+import warnings
 try:
     from functools import lru_cache
 except ImportError:
@@ -11,7 +12,7 @@ except ImportError:
 
 from w3lib.http import basic_auth_header
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 
 
@@ -44,6 +45,25 @@ class HttpProxyMiddleware(object):
             raise NotConfigured
         auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING')
         return cls(auth_encoding)
+
+    def _basic_auth_header(self, username, password):
+        warnings.warn(
+            "Method `scrapy.downloadermiddleware.httpproxy.HttpProxyMiddleware._basic_auth_header` "
+            "is deprecated and will be removed in future releases. Please use "
+            "`w3lib.http.basic_auth_header` instead",
+            ScrapyDeprecationWarning, stacklevel=2,
+        )
+        return basic_auth_header(username, password, self.auth_encoding)
+
+    def _get_proxy(self, url, orig_type):
+        warnings.warn(
+            "Method 'scrapy.downloadermiddleware.httpproxy.HttpProxyMiddleware._get_proxy "
+            "is deprecated and will be removed in future releases. Please use "
+            "`scrapy.downloadermiddleware.httpproxy.HttpProxyMiddleware.get_proxy` "
+            "instead",
+            ScrapyDeprecationWarning, stacklevel=2,
+        )
+        return get_proxy(url, orig_type, self.auth_encoding)
 
     def process_request(self, request, spider):
         # ignore if proxy is already set
