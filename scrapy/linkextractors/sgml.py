@@ -9,7 +9,7 @@ from sgmllib import SGMLParser
 from w3lib.url import safe_url_string
 try:
     from scurl import canonicalize_url
-except ImportError, e:
+except ImportError as e:
     from w3lib.url import canonicalize_url
 from w3lib.html import strip_html5_whitespace
 

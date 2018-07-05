@@ -8,7 +8,7 @@ import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
 try:
     from scurl import canonicalize_url
-except ImportError, e:
+except ImportError as e:
     from w3lib.url import canonicalize_url
 
 from scrapy.link import Link

@@ -11,7 +11,7 @@ from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 try:
     from scurl import canonicalize_url
-except ImportError, e:
+except ImportError as e:
     from w3lib.url import canonicalize_url
 
 from scrapy.utils.misc import arg_to_iter
