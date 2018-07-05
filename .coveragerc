@@ -5,6 +5,4 @@ omit =
   tests/*
   scrapy/xlib/*
   scrapy/conf.py
-  scrapy/stats.py
-  scrapy/project.py
   scrapy/log.py
