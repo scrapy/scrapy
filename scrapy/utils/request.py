@@ -11,7 +11,10 @@ from six.moves.urllib.parse import urlunparse
 from w3lib.http import basic_auth_header
 from scrapy.utils.python import to_bytes, to_native_str
 
-from scurl import canonicalize_url
+try:
+    from scurl import canonicalize_url
+except ImportError, e:
+    from w3lib.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
 
 
