@@ -124,26 +124,7 @@ def _clspath(cls, forced=None):
 
 
 DEPRECATION_RULES = [
-    ('scrapy.contrib_exp.downloadermiddleware.decompression.', 'scrapy.downloadermiddlewares.decompression.'),
-    ('scrapy.contrib_exp.iterators.', 'scrapy.utils.iterators.'),
-    ('scrapy.contrib.downloadermiddleware.', 'scrapy.downloadermiddlewares.'),
-    ('scrapy.contrib.exporter.', 'scrapy.exporters.'),
-    ('scrapy.contrib.linkextractors.', 'scrapy.linkextractors.'),
-    ('scrapy.contrib.loader.processor.', 'scrapy.loader.processors.'),
-    ('scrapy.contrib.loader.', 'scrapy.loader.'),
-    ('scrapy.contrib.pipeline.', 'scrapy.pipelines.'),
-    ('scrapy.contrib.spidermiddleware.', 'scrapy.spidermiddlewares.'),
-    ('scrapy.contrib.spiders.', 'scrapy.spiders.'),
-    ('scrapy.contrib.', 'scrapy.extensions.'),
-    ('scrapy.command.', 'scrapy.commands.'),
-    ('scrapy.dupefilter.', 'scrapy.dupefilters.'),
-    ('scrapy.linkextractor.', 'scrapy.linkextractors.'),
     ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-    ('scrapy.spider.', 'scrapy.spiders.'),
-    ('scrapy.squeue.', 'scrapy.squeues.'),
-    ('scrapy.statscol.', 'scrapy.statscollectors.'),
-    ('scrapy.utils.decorator.', 'scrapy.utils.decorators.'),
-    ('scrapy.spidermanager.SpiderManager', 'scrapy.spiderloader.SpiderLoader'),
 ]
 
 

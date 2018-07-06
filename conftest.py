@@ -11,21 +11,12 @@ def _py_files(folder):
 collect_ignore = [
     # deprecated or moved modules
     "scrapy/conf.py",
-    "scrapy/stats.py",
-    "scrapy/project.py",
-    "scrapy/utils/decorator.py",
-    "scrapy/statscol.py",
-    "scrapy/squeue.py",
     "scrapy/log.py",
-    "scrapy/dupefilter.py",
-    "scrapy/command.py",
-    "scrapy/linkextractor.py",
-    "scrapy/spider.py",
 
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
 
-] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
+]
 
 if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15, 5, 0):
     collect_ignore += _py_files("scrapy/xlib/tx")
