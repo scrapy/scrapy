@@ -56,7 +56,7 @@ class ProjectTest(unittest.TestCase):
         finally:
             timer.cancel()
 
-        return to_native_str(stdout), to_native_str(stderr)
+        return p, to_native_str(stdout), to_native_str(stderr)
 
 
 class StartprojectTest(ProjectTest):
@@ -112,7 +112,7 @@ class StartprojectTemplatesTest(ProjectTest):
         assert exists(join(self.tmpl_proj, 'root_template'))
 
         args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
-        out, err = self.proc('startproject', self.project_name, *args)
+        p, out, err = self.proc('startproject', self.project_name, *args)
         self.assertIn("New Scrapy project %r, using template directory" % self.project_name, out)
         self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
@@ -140,10 +140,10 @@ class GenspiderCommandTest(CommandTest):
     def test_template(self, tplname='crawl'):
         args = ['--template=%s' % tplname] if tplname else []
         spname = 'test_spider'
-        out, err = self.proc('genspider', spname, 'test.com', *args)
+        p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
-        out, err = self.proc('genspider', spname, 'test.com', *args)
+        p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Spider %r already exists in module" % spname, out)
 
     def test_template_basic(self):
@@ -210,7 +210,7 @@ class MySpider(scrapy.Spider):
             return self.proc('runspider', fname, *args)
 
     def get_log(self, code, name='myspider.py', args=()):
-        stdout, stderr = self.runspider(code, name=name, args=args)
+        p, stdout, stderr = self.runspider(code, name=name, args=args)
         return stderr
 
     def test_runspider(self):
@@ -221,12 +221,12 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Spider closed (finished)", log)
 
     def test_run_fail_spider(self):
-        proc = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
+        proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
         ret = proc.returncode
         self.assertNotEqual(ret, 0)
 
     def test_run_good_spider(self):
-        proc = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
+        proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
         ret = proc.returncode
         self.assertEqual(ret, 0)
 
@@ -277,7 +277,7 @@ class MySpider(scrapy.Spider):
         self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
-        _, log = self.proc('runspider', 'some_non_existent_file')
+        _, _, log = self.proc('runspider', 'some_non_existent_file')
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
@@ -305,7 +305,7 @@ class BadSpider(scrapy.Spider):
 class BenchCommandTest(CommandTest):
 
     def test_run(self):
-        _, log = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
+        _, _, log = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
                            '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
