@@ -16,6 +16,13 @@ from w3lib.url import _safe_chars, _unquotepath
 from scrapy.utils.python import to_unicode
 
 
+try:
+    import scurl
+except ImportError as e:
+    print("We noticed that you haven't installed our new library scurl yet. It helps \
+        increase the speed of your spider!")
+
+
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""
     host = parse_url(url).netloc.lower()

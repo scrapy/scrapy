@@ -10,7 +10,7 @@ import re
 from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 try:
-    from scurl import canonicalize_url
+    from scrapy.utils.url import canonicalize_url
 except ImportError as e:
     from w3lib.url import canonicalize_url
 
