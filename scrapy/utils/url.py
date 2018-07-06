@@ -17,9 +17,9 @@ from scrapy.utils.python import to_unicode
 
 
 try:
-    import scurl
+    from scurl import canonicalize_url
 except ImportError as e:
-    print("We noticed that you haven't installed our new library scurl yet. It helps \
+    print("We noticed that you haven't installed our new library scurl yet. It helps\
         increase the speed of your spider!")
 
 
