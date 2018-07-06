@@ -7,10 +7,6 @@ import warnings
 from sgmllib import SGMLParser
 
 from w3lib.url import safe_url_string
-try:
-    from scrapy.utils.url import canonicalize_url
-except ImportError as e:
-    from w3lib.url import canonicalize_url
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.link import Link
@@ -18,6 +14,7 @@ from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_unicode
 from scrapy.utils.response import get_base_url
+from scrapy.utils.url import canonicalize_url
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
