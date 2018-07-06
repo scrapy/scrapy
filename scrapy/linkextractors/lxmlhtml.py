@@ -2,19 +2,19 @@
 Link extractor based on lxml.html
 """
 import six
-from six.moves.urllib.parse import urljoin
+try:
+    from scrapy.utils.url import urljoin
+except ImportError as e:
+    from six.moves.urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
-try:
-    from scrapy.utils.url import canonicalize_url
-except ImportError as e:
-    from w3lib.url import canonicalize_url
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list, to_native_str
 from scrapy.utils.response import get_base_url
+from scrapy.utils.url import canonicalize_url
 from scrapy.linkextractors import FilteringLinkExtractor
 
 
