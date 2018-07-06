@@ -284,10 +284,6 @@ class MySpider(scrapy.Spider):
         log = self.get_log('', name='myspider.txt')
         self.assertIn('Unable to load', log)
 
-
-class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
-    command = 'parse'
-
     def test_start_requests_errors(self):
         log = self.get_log("""
 import scrapy
