@@ -18,6 +18,7 @@ from scrapy.utils.python import to_unicode
 
 try:
     from scurl import canonicalize_url
+    print("You are using Scurl, the url library that helps improve the performance of Scrapy")
 except ImportError as e:
     print("We noticed that you haven't installed our new library scurl yet. It helps\
         increase the speed of your spider!")
