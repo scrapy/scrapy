@@ -915,6 +915,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         f, local_fname = tempfile.mkstemp()
+        local_fname = to_bytes(local_fname)
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
