@@ -13,7 +13,12 @@ branches:
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "SET TOX_TESTENV_PASSENV=HOME USERPROFILE HOMEPATH HOMEDRIVE"
-  - "pip install -U tox twine wheel"
+  - "pip install -U tox"
+
 build: false
+skip_tags: true
 test_script:
   - "tox -e %TOX_ENV%"
+
+cache:
+  - '%LOCALAPPDATA%\pip\cache'
