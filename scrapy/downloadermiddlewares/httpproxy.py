@@ -1,19 +1,26 @@
+import base64
 import warnings
 try:
     from functools import lru_cache
 except ImportError:
     from functools32 import lru_cache
-from six.moves.urllib.parse import urlunparse
+from six.moves.urllib.parse import urlunparse, unquote
 from six.moves.urllib.request import getproxies, proxy_bypass
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
 
-from w3lib.http import basic_auth_header
-
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
+
+
+def basic_auth_header(username, password, auth_encoding):
+    user_pass = to_bytes(
+        '%s:%s' % (unquote(username), unquote(password)),
+        encoding=auth_encoding)
+    return b'Basic ' + base64.b64encode(user_pass).strip()
 
 
 def get_proxy(url, orig_type, auth_encoding):
