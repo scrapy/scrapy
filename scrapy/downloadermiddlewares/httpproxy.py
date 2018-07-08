@@ -4,7 +4,7 @@ try:
     from functools import lru_cache
 except ImportError:
     from functools32 import lru_cache
-from six.moves.urllib.parse import urlunparse, unquote
+from six.moves.urllib.parse import unquote, urlunparse
 from six.moves.urllib.request import getproxies, proxy_bypass
 try:
     from urllib2 import _parse_proxy
