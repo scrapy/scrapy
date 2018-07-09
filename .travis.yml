@@ -23,6 +23,8 @@ matrix:
       env: TOXENV=py36
     - python: 3.6
       env: TOXENV=docs
+    - python: 3.7-dev
+      env: TOXENV=py37
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
