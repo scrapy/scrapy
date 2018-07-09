@@ -3,6 +3,15 @@
 Release notes
 =============
 
+Scrapy 1.6.0 (unreleased)
+-------------------------
+
+Cleanups
+~~~~~~~~
+
+* Remove deprecated ``CrawlerSettings`` class.
+* Remove deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes.
+
 Scrapy 1.5.0 (2017-12-29)
 -------------------------
 
