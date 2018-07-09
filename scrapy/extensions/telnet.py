@@ -12,7 +12,7 @@ try:
     from twisted.conch import manhole, telnet
     from twisted.conch.insults import insults
     TWISTED_CONCH_AVAILABLE = True
-except ImportError:
+except (ImportError, SyntaxError):
     TWISTED_CONCH_AVAILABLE = False
 
 from scrapy.exceptions import NotConfigured
@@ -40,7 +40,8 @@ class TelnetConsole(protocol.ServerFactory):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
         if not TWISTED_CONCH_AVAILABLE:
-            raise NotConfigured
+            raise NotConfigured('TelnetConsole not enabled: failed to import '
+                                'required twisted modules.')
         self.crawler = crawler
         self.noisy = False
         self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
