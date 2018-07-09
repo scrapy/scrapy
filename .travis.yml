@@ -23,6 +23,8 @@ matrix:
       env: TOXENV=py36
     - python: 3.7
       env: TOXENV=py37
+      dist: xenial
+      sudo: true
     - python: 3.6
       env: TOXENV=docs
 install:
