@@ -25,6 +25,7 @@ if has_environment_marker_platform_impl_support():
         'PyPyDispatcher>=2.1.0',
     ]
 
+
 setup(
     name='Scrapy',
     version=version,
