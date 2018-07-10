@@ -20,6 +20,8 @@ from scrapy.utils.python import to_unicode
 try:
     from scurl import canonicalize_url, urljoin
 except ImportError as e:
+    from w3lib.url import canonicalize_url
+    from six.moves.urllib.parse import urljoin
     warnings.Warning("We noticed that you haven't installed our new library scurl yet. It helps\
         increase the speed of your spider!")
 
