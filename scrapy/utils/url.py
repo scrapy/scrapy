@@ -5,6 +5,7 @@ library.
 Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
+import warnings
 import posixpath
 import re
 from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
@@ -18,9 +19,8 @@ from scrapy.utils.python import to_unicode
 
 try:
     from scurl import canonicalize_url, urljoin
-    print("You are using Scurl, the url library that helps improve the performance of Scrapy")
 except ImportError as e:
-    print("We noticed that you haven't installed our new library scurl yet. It helps\
+    warnings.Warning("We noticed that you haven't installed our new library scurl yet. It helps\
         increase the speed of your spider!")
 
 
