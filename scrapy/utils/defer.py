@@ -11,7 +11,7 @@ def defer_fail(_failure):
     """Same as twisted.internet.defer.fail but delay calling errback until
     next reactor loop
 
-    It delays by 100ms so reactor has a chance to go trough readers and writers
+    It delays by 100ms so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
     d = defer.Deferred()

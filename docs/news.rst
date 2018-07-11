@@ -98,7 +98,7 @@ Docs
 - Use ``pymongo.collection.Collection.insert_one()`` in MongoDB example
   (:issue:`2781`)
 - Spelling mistake and typos
-  (:issue:`2828`, :issue:`2837`, :issue:`#2884`, :issue:`2924`)
+  (:issue:`2828`, :issue:`2837`, :issue:`2884`, :issue:`2924`)
 - Clarify ``CSVFeedSpider.headers`` documentation (:issue:`2826`)
 - Document ``DontCloseSpider`` exception and clarify ``spider_idle``
   (:issue:`2791`)
@@ -156,7 +156,7 @@ attributes with ``FormRequest``.
 
 **Please also note that link extractors do not canonicalize URLs by default
 anymore.** This was puzzling users every now and then, and it's not what
-browsers do in fact, so we removed that extra transformation on extractred
+browsers do in fact, so we removed that extra transformation on extracted
 links.
 
 For those of you wanting more control on the ``Referer:`` header that Scrapy

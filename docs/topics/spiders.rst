@@ -88,7 +88,7 @@ scrapy.Spider
 
        A list of URLs where the spider will begin to crawl from, when no
        particular URLs are specified. So, the first pages downloaded will be those
-       listed here. The subsequent URLs will be generated successively from data
+       listed here. The subsequent :class:`~scrapy.http.Request` will be generated successively from data
        contained in the start URLs.
 
    .. attribute:: custom_settings

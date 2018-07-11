@@ -177,7 +177,7 @@ The feeds are stored on `Amazon S3`_.
    * ``s3://mybucket/path/to/export.csv``
    * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
- * Required external libraries: `botocore`_ or `boto`_
+ * Required external libraries: `botocore`_ (Python 2 and Python 3) or `boto`_ (Python 2 only)
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:

@@ -6,7 +6,7 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check you are reading the most recent version of this document at
+    Double check that you are reading the most recent version of this document at
     https://doc.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
@@ -18,7 +18,7 @@ There are many ways to contribute to Scrapy. Here are some of them:
 * Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
-* Submit patches for new functionality and/or bug fixes. Please read
+* Submit patches for new functionalities and/or bug fixes. Please read
   :ref:`writing-patches` and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
@@ -48,9 +48,9 @@ guidelines when reporting a new bug.
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__
   (use "scrapy" tag).
 
-* check the `open issues`_ to see if it has already been reported. If it has,
-  don't dismiss the report, but check the ticket history and comments. If you
-  have additional useful information, please leave a comment, or consider
+* check the `open issues`_ to see if the issue has already been reported. If it
+  has, don't dismiss the report, but check the ticket history and comments. If 
+  you have additional useful information, please leave a comment, or consider
   :ref:`sending a pull request <writing-patches>` with a fix.
 
 * search the `scrapy-users`_ list and `Scrapy subreddit`_ to see if it has
@@ -80,8 +80,7 @@ guidelines when reporting a new bug.
 Writing patches
 ===============
 
-The better written a patch is, the higher chance that it'll get accepted and
-the sooner that will be merged.
+The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
 Well-written patches should:
 
@@ -123,7 +122,7 @@ conversation in the `Scrapy subreddit`_ to discuss your idea first.
 Sometimes there is an existing pull request for the problem you'd like to
 solve, which is stalled for some reason. Often the pull request is in a
 right direction, but changes are requested by Scrapy maintainers, and the
-original pull request author haven't had time to address them.
+original pull request author hasn't had time to address them.
 In this case consider picking up this pull request: open
 a new pull request with all commits from the original pull request, as well as
 additional changes to address the raised issues. Doing so helps a lot; it is
@@ -144,7 +143,7 @@ instead of "Fix for #411". Complete titles make it easy to skim through
 the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
-removal, etc) in separate commits than functional changes. This will make pull
+removal, etc) in separate commits from functional changes. This will make pull
 requests easier to review and more likely to get merged.
 
 Coding style
@@ -171,7 +170,7 @@ Documentation policies
   **do** provide a docstring, but make sure sphinx documentation uses
   autodoc_ extension to pull the docstring. For example, the
   :meth:`ItemLoader.add_value` method should be either
-  documented only in the sphinx documentation (not it a docstring), or
+  documented only in the sphinx documentation (not as a docstring), or
   it should have a docstring which is pulled to sphinx documentation using
   autodoc_ extension.
 

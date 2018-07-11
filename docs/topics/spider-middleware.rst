@@ -116,7 +116,7 @@ following methods:
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response`, dict or
+        iterable of :class:`~scrapy.http.Request`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
