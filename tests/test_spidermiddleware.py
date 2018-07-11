@@ -8,10 +8,7 @@ from twisted.internet import defer
 from scrapy import Spider, Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-
-
-# TEST_URL = 'http://example.org'
-TEST_URL = 'http://localhost:8998'
+from tests.spiders import MockServerSpider
 
 
 class LogExceptionMiddleware:
@@ -21,15 +18,17 @@ class LogExceptionMiddleware:
 
 
 # ================================================================================
-# recover from an exception on a spider callback
+# (0) recover from an exception on a spider callback
 class RecoverySpider(Spider):
     name = 'RecoverySpider'
-    start_urls = [TEST_URL]
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             __name__ + '.RecoveryMiddleware': 10,
         },
     }
+
+    def start_requests(self):
+        yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
         yield {'test': 1}
@@ -61,10 +60,11 @@ class ProcessSpiderInputSpider(Spider):
     }
 
     def start_requests(self):
-        yield Request(TEST_URL, callback=self.parse, errback=self.errback)
+        yield Request(url=self.mockserver.url('/status?n=200'),
+                      callback=self.parse, errback=self.errback)
 
     def parse(self, response):
-        return [{'test': 1}, {'test': 2}]
+        return {'from': 'callback'}
 
     def errback(self, failure):
         self.logger.warn('Got a Failure on the Request errback')
@@ -80,12 +80,14 @@ class FailProcessSpiderInputMiddleware:
 # (2) exceptions from a spider callback (generator)
 class GeneratorCallbackSpider(Spider):
     name = 'GeneratorCallbackSpider'
-    start_urls = [TEST_URL]
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             __name__ + '.LogExceptionMiddleware': 10,
         },
     }
+
+    def start_requests(self):
+        yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
         yield {'test': 1}
@@ -97,12 +99,14 @@ class GeneratorCallbackSpider(Spider):
 # (3) exceptions from a spider callback (not a generator)
 class NotAGeneratorCallbackSpider(Spider):
     name = 'NotAGeneratorCallbackSpider'
-    start_urls = [TEST_URL]
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             __name__ + '.LogExceptionMiddleware': 10,
         },
     }
+
+    def start_requests(self):
+        yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
         return [{'test': 1}, {'test': 1/0}]
@@ -123,20 +127,20 @@ class TestSpiderMiddleware(TestCase):
     def crawl_log(self, spider):
         crawler = get_crawler(spider)
         with LogCapture() as log:
-            yield crawler.crawl()
+            yield crawler.crawl(mockserver=self.mockserver)
         raise defer.returnValue(log)
 
-    # @defer.inlineCallbacks
-    # def test_recovery(self):
-    #     """
-    #     Recover from an exception from a spider's callback. The final item count should be 3
-    #     (one from the spider before raising the exception, one from the middleware and one
-    #     from the spider when processing the response that was enqueued from the middleware)
-    #     """
-    #     log = yield self.crawl_log(RecoverySpider)
-    #     self.assertIn("Middleware: ModuleNotFoundError exception caught", str(log))
-    #     self.assertEqual(str(log).count("Middleware: ModuleNotFoundError exception caught"), 1)
-    #     self.assertIn("'item_scraped_count': 3", str(log))
+    @defer.inlineCallbacks
+    def test_recovery(self):
+        """
+        (0) Recover from an exception in a spider callback. The final item count should be 2
+        (one directly from the recovery middleware and one from the spider when processing
+        the request that was enqueued from the recovery middleware)
+        """
+        log = yield self.crawl_log(RecoverySpider)
+        self.assertIn("Middleware: ModuleNotFoundError exception caught", str(log))
+        self.assertEqual(str(log).count("Middleware: ModuleNotFoundError exception caught"), 1)
+        self.assertIn("'item_scraped_count': 2", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_input_errback(self):
@@ -148,21 +152,24 @@ class TestSpiderMiddleware(TestCase):
         self.assertNotIn("Middleware: IndexError exception caught", str(log1))
         self.assertIn("Middleware: will raise IndexError", str(log1))
         self.assertIn("Got a Failure on the Request errback", str(log1))
+        self.assertIn("{'from': 'errback'}", str(log1))
+        self.assertNotIn("{'from': 'callback'}", str(log1))
+        self.assertIn("'item_scraped_count': 1", str(log1))
     
     @defer.inlineCallbacks
     def test_generator_callback(self):
         """
-        (2) An exception from a spider's callback should
+        (2) An exception from a spider callback (returning a generator) should
         be caught by the process_spider_exception chain
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
-        self.assertIn("'item_scraped_count': 2", str(log2))
+        self.assertNotIn("item_scraped_count", str(log2))
     
     @defer.inlineCallbacks
     def test_not_a_generator_callback(self):
         """
-        (3) An exception from a spider's callback should
+        (3) An exception from a spider callback (returning a list) should
         be caught by the process_spider_exception chain
         """
         log3 = yield self.crawl_log(NotAGeneratorCallbackSpider)
