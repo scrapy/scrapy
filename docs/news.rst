@@ -3,6 +3,21 @@
 Release notes
 =============
 
+Scrapy 1.5.1 (2018-07-12)
+-------------------------
+
+This is a maintenance release with important bug fixes, but no new features:
+
+* ``O(N^2)`` gzip decompression issue which affected Python 3 and PyPy
+  is fixed (:issue:`3281`);
+* skipping of TLS validation errors is improved (:issue:`3166`);
+* Ctrl-C handling is fixed in Python 3.5+ (:issue:`3096`);
+* testing fixes (:issue:`3092`, :issue:`3263`);
+* documentation improvements (:issue:`3058`, :issue:`3059`, :issue:`3089`,
+  :issue:`3123`, :issue:`3127`, :issue:`3189`, :issue:`3224`, :issue:`3280`,
+  :issue:`3279`, :issue:`3201`, :issue:`3260`, :issue:`3284`, :issue:`3298`,
+  :issue:`3294`).
+
 Scrapy 1.5.0 (2017-12-29)
 -------------------------
 
