@@ -1,6 +1,6 @@
-pytest==2.9.2
+pytest==3.6.3
 pytest-twisted
-pytest-cov==2.2.1
+pytest-cov==2.5.1
 testfixtures
 jmespath
 leveldb

@@ -98,8 +98,9 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     """
 
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
-    def _getrow(csv_r):
-        return [to_unicode(field, encoding) for field in next(csv_r)]
+
+    def row_to_unicode(row_):
+        return [to_unicode(field, encoding) for field in row_]
 
     # Python 3 csv reader input object needs to return strings
     if six.PY3:
@@ -113,10 +114,14 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
-        headers = _getrow(csv_r)
+        try:
+            row = next(csv_r)
+        except StopIteration:
+            return
+        headers = row_to_unicode(row)
 
-    while True:
-        row = _getrow(csv_r)
+    for row in csv_r:
+        row = row_to_unicode(row)
         if len(row) != len(headers):
             logger.warning("ignoring row %(csvlnum)d (length: %(csvrow)d, "
                            "should be: %(csvheader)d)",
