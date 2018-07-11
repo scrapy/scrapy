@@ -5,6 +5,7 @@ library.
 Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
+import warnings
 import posixpath
 import re
 from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
@@ -14,6 +15,15 @@ from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse
 from w3lib.url import *
 from w3lib.url import _safe_chars, _unquotepath
 from scrapy.utils.python import to_unicode
+
+
+try:
+    from scurl import canonicalize_url, urljoin
+except ImportError as e:
+    from w3lib.url import canonicalize_url
+    from six.moves.urllib.parse import urljoin
+    warnings.warn("We noticed that you haven't installed our new library scurl yet. It helps\
+        increase the speed of your spider!")
 
 
 def url_is_from_any_domain(url, domains):

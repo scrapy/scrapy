@@ -26,6 +26,8 @@ matrix:
       dist: xenial
       sudo: true
     - python: 3.6
+      env: TOXENV=scurl
+    - python: 3.6
       env: TOXENV=docs
 install:
   - |
