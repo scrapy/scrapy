@@ -12,17 +12,29 @@ there is no more failed pages to retry this middleware sends a signal
 (retry_complete), so other extensions could connect to that signal.
 """
 import logging
+import warnings
 
 import six
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.response import response_status_message
 from scrapy.utils.python import global_object_name
 from scrapy.utils.misc import load_object
+from scrapy.settings import Settings
 
 logger = logging.getLogger(__name__)
 
+class BackwardsCompatibilityMetaclass(type):
+    @property
+    def EXCEPTIONS_TO_RETRY(self):
+        warnings.warn("Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
+        "Use the RETRY_EXCEPTIONS setting instead.",
+                      ScrapyDeprecationWarning, stacklevel=2)
+        return tuple(
+                load_object(x) if isinstance(x, six.string_types) else x
+                for x in Settings().getlist('RETRY_EXCEPTIONS')
+            )
 
-class RetryMiddleware(object):
+class RetryMiddleware(six.with_metaclass(BackwardsCompatibilityMetaclass, object)):
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
@@ -30,10 +42,13 @@ class RetryMiddleware(object):
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
-        self.exceptions_to_retry = tuple(
-            load_object(x) if isinstance(x, six.string_types) else x
-            for x in settings.getlist('RETRY_EXCEPTIONS')
-        )
+        if not hasattr(self, "EXCEPTIONS_TO_RETRY"): # If EXCEPTIONS_TO_RETRY is not "overriden"
+            self.exceptions_to_retry = tuple(
+                load_object(x) if isinstance(x, six.string_types) else x
+                for x in settings.getlist('RETRY_EXCEPTIONS')
+            )
+        else:
+            self.exceptions_to_retry = self.EXCEPTIONS_TO_RETRY
 
     @classmethod
     def from_crawler(cls, crawler):
