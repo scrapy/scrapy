@@ -3,6 +3,8 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
+from itertools import chain
+
 import six
 from twisted.python.failure import Failure
 from scrapy.exceptions import _InvalidOutput
@@ -10,8 +12,27 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 
+
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
+
+
+class MutableChain:
+    def __init__(self, *args):
+        self.data = chain(*args)
+
+    def extend(self, iterable):
+        self.data = chain(self.data, iterable)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+    def __next__(self):  # py3
+        return self.data.__next__()
+
+    def next(self):  # py2
+        return self.data.next()
+
 
 class SpiderMiddlewareManager(MiddlewareManager):
 
@@ -68,28 +89,32 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return _failure
 
         def process_spider_output(result, index):
-            def wrapper(result_iterable):
+            # items in this iterable do not need to go through the process_spider_output
+            # chain, they went through it already from the process_spider_exception method
+            recovered = MutableChain()
+
+            def evaluate_result(result_iterable, index):
                 try:
                     for r in result_iterable:
                         yield r
                 except Exception as ex:
-                    # process the exception with the method from the next middleware
                     exception_result = process_spider_exception(Failure(ex), index)
                     if exception_result is None or isinstance(exception_result, Failure):
                         raise
-                    for output in exception_result:
-                        yield output
+                    recovered.extend(exception_result)
+
             for i, method in enumerate(self.methods['process_spider_output']):
                 if i < index or method is None:
                     continue
                 result = method(response=response, result=result, spider=spider)
                 index += 1
                 if _isiterable(result):
-                    result = wrapper(result)
+                    result = evaluate_result(result, index)
                 else:
                     raise _InvalidOutput('Middleware {} must return an iterable, got {}' \
                                          .format(fname(method), type(result)))
-            return result
+
+            return chain(result, recovered)
 
         dfd = mustbe_deferred(process_spider_input, response)
         dfd.addErrback(process_spider_exception, index=0)
