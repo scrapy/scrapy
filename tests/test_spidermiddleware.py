@@ -68,6 +68,7 @@ class ProcessSpiderInputSpider(Spider):
 
     def errback(self, failure):
         self.logger.warn('Got a Failure on the Request errback')
+        return {'from': 'errback'}
 
 
 class FailProcessSpiderInputMiddleware:
@@ -133,14 +134,15 @@ class TestSpiderMiddleware(TestCase):
     @defer.inlineCallbacks
     def test_recovery(self):
         """
-        (0) Recover from an exception in a spider callback. The final item count should be 2
-        (one directly from the recovery middleware and one from the spider when processing
-        the request that was enqueued from the recovery middleware)
+        (0) Recover from an exception in a spider callback. The final item count should be 3
+        (one yielded from the callback method before the exception is raised, one directly
+        from the recovery middleware and one from the spider when processing the request that
+        was enqueued from the recovery middleware)
         """
         log = yield self.crawl_log(RecoverySpider)
         self.assertIn("Middleware: ModuleNotFoundError exception caught", str(log))
         self.assertEqual(str(log).count("Middleware: ModuleNotFoundError exception caught"), 1)
-        self.assertIn("'item_scraped_count': 2", str(log))
+        self.assertIn("'item_scraped_count': 3", str(log))
 
     @defer.inlineCallbacks
     def test_process_spider_input_errback(self):
@@ -164,7 +166,7 @@ class TestSpiderMiddleware(TestCase):
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
-        self.assertNotIn("item_scraped_count", str(log2))
+        self.assertIn("'item_scraped_count': 2", str(log2))
     
     @defer.inlineCallbacks
     def test_not_a_generator_callback(self):
