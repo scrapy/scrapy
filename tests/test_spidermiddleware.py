@@ -114,6 +114,49 @@ class NotAGeneratorCallbackSpider(Spider):
 
 
 # ================================================================================
+# (4) exceptions from a middleware process_spider_output method (generator)
+class GeneratorOutputChainSpider(Spider):
+    name = 'GeneratorOutputChainSpider'
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            __name__ + '.GeneratorFailOutputChainMiddleware': 10,
+            __name__ + '.GeneratorRecoverOutputChainMiddleware': 5,
+        },
+    }
+
+    def start_requests(self):
+        yield Request(self.mockserver.url('/status?n=200'))
+
+    def parse(self, response):
+        yield {'processed': ['parse']}
+
+
+class GeneratorFailOutputChainMiddleware:
+    def process_spider_output(self, response, result, spider):
+        for r in result:
+            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            yield r
+            raise LookupError()
+    
+    def process_spider_exception(self, response, exception, spider):
+        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        logging.info('%s: %s caught', method, exception.__class__.__name__)
+        yield {'processed': [method]}
+
+
+class GeneratorRecoverOutputChainMiddleware:
+    def process_spider_output(self, response, result, spider):
+        for r in result:
+            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            yield r
+
+    def process_spider_exception(self, response, exception, spider):
+        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        logging.info('%s: %s caught', method, exception.__class__.__name__)
+        yield {'processed': [method]}
+
+
+# ================================================================================
 class TestSpiderMiddleware(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -162,7 +205,8 @@ class TestSpiderMiddleware(TestCase):
     def test_generator_callback(self):
         """
         (2) An exception from a spider callback (returning a generator) should
-        be caught by the process_spider_exception chain
+        be caught by the process_spider_exception chain. Items yielded before the
+        exception is raised should be processed normally.
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
@@ -172,8 +216,23 @@ class TestSpiderMiddleware(TestCase):
     def test_not_a_generator_callback(self):
         """
         (3) An exception from a spider callback (returning a list) should
-        be caught by the process_spider_exception chain
+        be caught by the process_spider_exception chain. No items should be processed.
         """
         log3 = yield self.crawl_log(NotAGeneratorCallbackSpider)
         self.assertIn("Middleware: ZeroDivisionError exception caught", str(log3))
         self.assertNotIn("item_scraped_count", str(log3))
+
+    @defer.inlineCallbacks
+    def test_generator_output_chain(self):
+        """
+        (4) An exception from a middleware's process_spider_output method should be sent
+        to the process_spider_exception method from the next middleware in the chain.
+        The final item count should be 2 (one from the spider callback and one from the
+        process_spider_exception chain)
+        """
+        log4 = yield self.crawl_log(GeneratorOutputChainSpider)
+        self.assertIn("'item_scraped_count': 2", str(log4))
+        self.assertIn("GeneratorRecoverOutputChainMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertNotIn("GeneratorFailOutputChainMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertIn("{'processed': ['parse', 'GeneratorFailOutputChainMiddleware.process_spider_output', 'GeneratorRecoverOutputChainMiddleware.process_spider_output']}", str(log4))
+        self.assertIn("{'processed': ['GeneratorRecoverOutputChainMiddleware.process_spider_exception']}", str(log4))

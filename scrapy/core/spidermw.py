@@ -75,8 +75,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
                 return _failure
-            for i, method in enumerate(self.methods['process_spider_exception']):
-                if i < index or method is None:
+            for method in self.methods['process_spider_exception'][index:]:
+                if method is None:
                     continue
                 result = method(response=response, exception=exception, spider=spider)
                 index += 1
@@ -101,13 +101,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     for r in result_iterable:
                         yield r
                 except Exception as ex:
-                    exception_result = process_spider_exception(Failure(ex), index)
+                    exception_result = process_spider_exception(Failure(ex), index+1)
                     if exception_result is None or isinstance(exception_result, Failure):
                         raise
                     recovered.extend(exception_result)
 
-            for i, method in enumerate(self.methods['process_spider_output']):
-                if i < index or method is None:
+            for method in self.methods['process_spider_output'][index:]:
+                if method is None:
                     continue
                 result = method(response=response, result=result, spider=spider)
                 index += 1
