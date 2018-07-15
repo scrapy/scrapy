@@ -4,12 +4,12 @@
 Item Loaders
 ============
 
-.. module:: scrapy.contrib.loader
+.. module:: scrapy.loader
    :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
 <topics-items>`. Even though Items can be populated using their own
-dictionary-like API, the Item Loaders provide a much more convenient API for
+dictionary-like API, Item Loaders provide a much more convenient API for
 populating them from a scraping process, by automating some common tasks like
 parsing the raw extracted data before assigning it.
 
@@ -25,13 +25,13 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with an dict-like object (e.g. Item or dict) or without one, in
+instantiate it with a dict-like object (e.g. Item or dict) or without one, in
 which case an Item is automatically instantiated in the Item Loader constructor
 using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
 Then, you start collecting values into the Item Loader, typically using
-:ref:`XPath Selectors <topics-selectors>`. You can add more than one value to
+:ref:`Selectors <topics-selectors>`. You can add more than one value to
 the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
 
@@ -39,15 +39,15 @@ Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`::
 
-    from scrapy.contrib.loader import XPathItemLoader
+    from scrapy.loader import ItemLoader
     from myproject.items import Product
 
     def parse(self, response):
-        l = XPathItemLoader(item=Product(), response=response)
+        l = ItemLoader(item=Product(), response=response)
         l.add_xpath('name', '//div[@class="product_name"]')
         l.add_xpath('name', '//div[@class="product_title"]')
         l.add_xpath('price', '//p[@id="price"]')
-        l.add_xpath('stock', '//p[@id="stock"]')
+        l.add_css('stock', 'p#stock]')
         l.add_value('last_updated', 'today') # you can also use literal values
         return l.load_item()
 
@@ -58,17 +58,18 @@ extracted from two different XPath locations in the page:
 2. ``//div[@class="product_title"]``
 
 In other words, data is being collected by extracting it from two XPath
-locations, using the :meth:`~XPathItemLoader.add_xpath` method. This is the
+locations, using the :meth:`~ItemLoader.add_xpath` method. This is the
 data that will be assigned to the ``name`` field later.
 
-Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
-finally the ``last_update`` field is populated directly with a literal value
+Afterwards, similar calls are used for ``price`` and ``stock`` fields
+(the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
+and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
-called which actually populates and returns the item populated with the data
-previously extracted and collected with the :meth:`~XPathItemLoader.add_xpath`
-and :meth:`~ItemLoader.add_value` calls.
+called which actually returns the item populated with the data
+previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
 
 .. _topics-loaders-processors:
 
@@ -77,7 +78,7 @@ Input and Output processors
 
 An Item Loader contains one input processor and one output processor for each
 (item) field. The input processor processes the extracted data as soon as it's
-received (through the :meth:`~XPathItemLoader.add_xpath` or
+received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
 :meth:`ItemLoader.load_item` method is called to populate and get the populated
@@ -89,11 +90,12 @@ assigned to the item.
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field)::
 
-    l = XPathItemLoader(Product(), some_xpath_selector)
+    l = ItemLoader(Product(), some_selector)
     l.add_xpath('name', xpath1) # (1)
     l.add_xpath('name', xpath2) # (2)
-    l.add_value('name', 'test') # (3)
-    return l.load_item() # (4)
+    l.add_css('name', css) # (3)
+    l.add_value('name', 'test') # (4)
+    return l.load_item() # (5)
 
 So what happens is:
 
@@ -105,16 +107,23 @@ So what happens is:
    processor* used in (1). The result of the input processor is appended to the
    data collected in (1) (if any).
 
-3. This case is similar to the previous ones, except that the value to be
-   collected is assigned directly, instead of being extracted from a XPath.
+3. This case is similar to the previous ones, except that the data is extracted
+   from the ``css`` CSS selector, and passed through the same *input
+   processor* used in (1) and (2). The result of the input processor is appended to the
+   data collected in (1) and (2) (if any).
+
+4. This case is also similar to the previous ones, except that the value to be
+   collected is assigned directly, instead of being extracted from a XPath
+   expression or a CSS selector.
    However, the value is still passed through the input processors. In this
    case, since the value is not iterable it is converted to an iterable of a
    single element before passing it to the input processor, because input
    processor always receive iterables.
 
-4. The data collected in (1) and (2) is passed through the *output processor* of
-   the ``name`` field. The result of the output processor is the value assigned to
-   the ``name`` field in the item.
+5. The data collected in steps (1), (2), (3) and (4) is passed through
+   the *output processor* of the ``name`` field.
+   The result of the output processor is the value assigned to the ``name``
+   field in the item.
 
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
@@ -127,6 +136,20 @@ accept one (and only one) positional argument, which will be an iterator.
    containing the collected values (for that field). The result of the output
    processors is the value that will be finally assigned to the item.
 
+If you want to use a plain function as a processor, make sure it receives
+``self`` as the first argument::
+
+    def lowercase_processor(self, values):
+        for v in values:
+            yield v.lower()
+
+    class MyItemLoader(ItemLoader):
+        name_in = lowercase_processor
+
+This is because whenever a function is assigned as a class variable, it becomes
+a method and would be passed the instance as the the first argument when being
+called. See `this answer on stackoverflow`_ for more details.
+
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
 processors to populate the fields.
@@ -134,6 +157,7 @@ processors to populate the fields.
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
 
+.. _this answer on stackoverflow: https://stackoverflow.com/a/35322635
 
 Declaring Item Loaders
 ======================
@@ -141,8 +165,8 @@ Declaring Item Loaders
 Item Loaders are declared like Items, by using a class definition syntax. Here
 is an example::
 
-    from scrapy.contrib.loader import ItemLoader
-    from scrapy.contrib.loader.processor import TakeFirst, MapCompose, Join
+    from scrapy.loader import ItemLoader
+    from scrapy.loader.processors import TakeFirst, MapCompose, Join
 
     class ProductLoader(ItemLoader):
 
@@ -172,22 +196,32 @@ this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
-    from scrapy.item import Item, Field
-    from scrapy.contrib.loader.processor import MapCompose, Join, TakeFirst
+    import scrapy
+    from scrapy.loader.processors import Join, MapCompose, TakeFirst
+    from w3lib.html import remove_tags
 
-    from scrapy.utils.markup import remove_entities
-    from myproject.utils import filter_prices
+    def filter_price(value):
+        if value.isdigit():
+            return value
 
-    class Product(Item):
-        name = Field(
-            input_processor=MapCompose(remove_entities),
+    class Product(scrapy.Item):
+        name = scrapy.Field(
+            input_processor=MapCompose(remove_tags),
             output_processor=Join(),
         )
-        price = Field(
-            default=0,
-            input_processor=MapCompose(remove_entities, filter_prices),
+        price = scrapy.Field(
+            input_processor=MapCompose(remove_tags, filter_price),
             output_processor=TakeFirst(),
         )
+
+::
+
+    >>> from scrapy.loader import ItemLoader
+    >>> il = ItemLoader(item=Product())
+    >>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
+    >>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+    >>> il.load_item()
+    {'name': u'Welcome to my website', 'price': u'1000'}
 
 The precedence order, for both input and output processors, is as follows:
 
@@ -218,7 +252,7 @@ value and extracts a length from it::
         return parsed_length
 
 By accepting a ``loader_context`` argument the function is explicitly telling
-the Item Loader that is able to receive an Item Loader context, so the Item
+the Item Loader that it's able to receive an Item Loader context, so the Item
 Loader passes the currently active context when calling it, and the processor
 function (``parse_length`` in this case) can thus use them.
 
@@ -236,7 +270,7 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit='cm')
 
 3. On Item Loader declaration, for those input/output processors that support
-   instatiating them with a Item Loader context. :class:`~processor.MapCompose` is one of
+   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
    them::
 
        class ProductLoader(ItemLoader):
@@ -246,14 +280,35 @@ There are several ways to modify Item Loader context values:
 ItemLoader objects
 ==================
 
-.. class:: ItemLoader([item], \**kwargs)
+.. class:: ItemLoader([item, selector, response], \**kwargs)
 
     Return a new Item Loader for populating the given Item. If no item is
     given, one is instantiated automatically using the class in
     :attr:`default_item_class`.
 
-    The item and the remaining keyword arguments are assigned to the Loader
-    context (accesible through the :attr:`context` attribute).
+    When instantiated with a `selector` or a `response` parameters
+    the :class:`ItemLoader` class provides convenient mechanisms for extracting
+    data from web pages using :ref:`selectors <topics-selectors>`.
+
+    :param item: The item instance to populate using subsequent calls to
+        :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
+        or :meth:`~ItemLoader.add_value`.
+    :type item: :class:`~scrapy.item.Item` object
+
+    :param selector: The selector to extract data from, when using the
+        :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
+        (resp. :meth:`replace_css`) method.
+    :type selector: :class:`~scrapy.selector.Selector` object
+
+    :param response: The response used to construct the selector using the
+        :attr:`default_selector_class`, unless the selector argument is given,
+        in which case this argument is ignored.
+    :type response: :class:`~scrapy.http.Response` object
+
+    The item, selector, response and the remaining keyword arguments are
+    assigned to the Loader context (accessible through the :attr:`context` attribute).
+
+    :class:`ItemLoader` instances have the following methods:
 
     .. method:: get_value(value, \*processors, \**kwargs)
 
@@ -269,7 +324,7 @@ ItemLoader objects
 
         Examples::
 
-            >>> from scrapy.contrib.loader.processor import TakeFirst
+            >>> from scrapy.loader.processors import TakeFirst
             >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
             'FOO`
 
@@ -280,7 +335,7 @@ ItemLoader objects
         The value is first passed through :meth:`get_value` by giving the
         ``processors`` and ``kwargs``, and then passed through the
         :ref:`field input processor <topics-loaders-processors>` and its result
-        appened to the data collected for that field. If the field already
+        appended to the data collected for that field. If the field already
         contains collected data, the new data is added.
 
         The given ``field_name`` can be ``None``, in which case values for
@@ -295,10 +350,95 @@ ItemLoader objects
             loader.add_value('name', u'name: foo', TakeFirst(), re='name: (.+)')
             loader.add_value(None, {'name': u'foo', 'sex': u'male'})
 
-    .. method:: replace_value(field_name, value)
+    .. method:: replace_value(field_name, value, \*processors, \**kwargs)
 
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
+    .. method:: get_xpath(xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`ItemLoader`.
+
+        :param xpath: the XPath to extract data from
+        :type xpath: str
+
+        :param re: a regular expression to use for extracting data from the
+            selected XPath region
+        :type re: str or compiled regex
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.get_xpath('//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
+
+    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`ItemLoader`.
+
+        See :meth:`get_xpath` for ``kwargs``.
+
+        :param xpath: the XPath to extract data from
+        :type xpath: str
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.add_xpath('name', '//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
+
+    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`add_xpath` but replaces collected data instead of
+        adding it.
+
+    .. method:: get_css(css, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.get_value` but receives a CSS selector
+        instead of a value, which is used to extract a list of unicode strings
+        from the selector associated with this :class:`ItemLoader`.
+
+        :param css: the CSS selector to extract data from
+        :type css: str
+
+        :param re: a regular expression to use for extracting data from the
+            selected CSS region
+        :type re: str or compiled regex
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.get_css('p.product-name')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.get_css('p#price', TakeFirst(), re='the price is (.*)')
+
+    .. method:: add_css(field_name, css, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.add_value` but receives a CSS selector
+        instead of a value, which is used to extract a list of unicode strings
+        from the selector associated with this :class:`ItemLoader`.
+
+        See :meth:`get_css` for ``kwargs``.
+
+        :param css: the CSS selector to extract data from
+        :type css: str
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.add_css('name', 'p.product-name')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.add_css('price', 'p#price', re='the price is (.*)')
+
+    .. method:: replace_css(field_name, css, \*processors, \**kwargs)
+
+        Similar to :meth:`add_css` but replaces collected data instead of
+        adding it.
 
     .. method:: load_item()
 
@@ -306,6 +446,22 @@ ItemLoader objects
         data collected is first passed through the :ref:`output processors
         <topics-loaders-processors>` to get the final value to assign to each
         item field.
+
+    .. method:: nested_xpath(xpath)
+
+        Create a nested loader with an xpath selector.
+        The supplied selector is applied relative to selector associated
+        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
+        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
+        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected.
+
+    .. method:: nested_css(css)
+
+        Create a nested loader with a css selector.
+        The supplied selector is applied relative to selector associated
+        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
+        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
+        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected.
 
     .. method:: get_collected_values(field_name)
 
@@ -323,6 +479,8 @@ ItemLoader objects
     .. method:: get_output_processor(field_name)
 
         Return the output processor for the given field.
+
+    :class:`ItemLoader` instances have the following attributes:
 
     .. attribute:: item
 
@@ -348,81 +506,66 @@ ItemLoader objects
         The default output processor to use for those fields which don't specify
         one.
 
-.. class:: XPathItemLoader([item, selector, response], \**kwargs)
-
-    The :class:`XPathItemLoader` class extends the :class:`ItemLoader` class
-    providing more convenient mechanisms for extracting data from web pages
-    using :ref:`XPath selectors <topics-selectors>`.
-
-    :class:`XPathItemLoader` objects accept two more additional parameters in
-    their constructors:
-
-    :param selector: The selector to extract data from, when using the
-        :meth:`add_xpath` or :meth:`replace_xpath` method.
-    :type selector: :class:`~scrapy.selector.XPathSelector` object
-
-    :param response: The response used to construct the selector using the
-        :attr:`default_selector_class`, unless the selector argument is given,
-        in which case this argument is ignored.
-    :type response: :class:`~scrapy.http.Response` object
-
-    .. method:: get_xpath(xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathItemLoader`.
-
-        :param xpath: the XPath to extract data from
-        :type xpath: str
-
-        :param re: a regular expression to use for extracting data from the
-            selected XPath region
-        :type re: str or compiled regex
-
-        Examples::
-
-            # HTML snippet: <p class="product-name">Color TV</p>
-            loader.get_xpath('//p[@class="product-name"]')
-            # HTML snippet: <p id="price">the price is $1200</p>
-            loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
-
-    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathItemLoader`.
-
-        See :meth:`get_xpath` for ``kwargs``.
-
-        :param xpath: the XPath to extract data from
-        :type xpath: str
-
-        Examples::
-
-            # HTML snippet: <p class="product-name">Color TV</p>
-            loader.add_xpath('name', '//p[@class="product-name"]')
-            # HTML snippet: <p id="price">the price is $1200</p>
-            loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
-
-    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`add_xpath` but replaces collected data instead of
-        adding it.
-
     .. attribute:: default_selector_class
 
         The class used to construct the :attr:`selector` of this
-        :class:`XPathItemLoader`, if only a response is given in the constructor.
+        :class:`ItemLoader`, if only a response is given in the constructor.
         If a selector is given in the constructor this attribute is ignored.
         This attribute is sometimes overridden in subclasses.
 
     .. attribute:: selector
 
-        The :class:`~scrapy.selector.XPathSelector` object to extract data from.
+        The :class:`~scrapy.selector.Selector` object to extract data from.
         It's either the selector given in the constructor or one created from
         the response given in the constructor using the
         :attr:`default_selector_class`. This attribute is meant to be
         read-only.
+
+.. _topics-loaders-nested:
+
+Nested Loaders
+==============
+
+When parsing related values from a subsection of a document, it can be
+useful to create nested loaders.  Imagine you're extracting details from
+a footer of a page that looks something like:
+
+Example::
+
+    <footer>
+        <a class="social" href="https://facebook.com/whatever">Like Us</a>
+        <a class="social" href="https://twitter.com/whatever">Follow Us</a>
+        <a class="email" href="mailto:whatever@example.com">Email Us</a>
+    </footer>
+
+Without nested loaders, you need to specify the full xpath (or css) for each value
+that you wish to extract.
+
+Example::
+
+    loader = ItemLoader(item=Item())
+    # load stuff not in the footer
+    loader.add_xpath('social', '//footer/a[@class = "social"]/@href')
+    loader.add_xpath('email', '//footer/a[@class = "email"]/@href')
+    loader.load_item()
+
+Instead, you can create a nested loader with the footer selector and add values
+relative to the footer.  The functionality is the same but you avoid repeating
+the footer selector.
+
+Example::
+
+    loader = ItemLoader(item=Item())
+    # load stuff not in the footer
+    footer_loader = loader.nested_xpath('//footer')
+    footer_loader.add_xpath('social', 'a[@class = "social"]/@href')
+    footer_loader.add_xpath('email', 'a[@class = "email"]/@href')
+    # no need to call footer_loader.load_item()
+    loader.load_item()
+
+You can nest loaders arbitrarily and they work with either xpath or css selectors.
+As a general guideline, use nested loaders when they make your code simpler but do
+not go overboard with nesting or your parser can become difficult to read.
 
 .. _topics-loaders-extending:
 
@@ -430,7 +573,7 @@ Reusing and extending Item Loaders
 ==================================
 
 As your project grows bigger and acquires more and more spiders, maintenance
-becomes a fundamental problem, specially when you have to deal with many
+becomes a fundamental problem, especially when you have to deal with many
 different parsing rules for each spider, having a lot of exceptions, but also
 wanting to reuse the common processors.
 
@@ -441,13 +584,13 @@ support traditional Python class inheritance for dealing with differences of
 specific spiders (or groups of spiders).
 
 Suppose, for example, that some particular site encloses their product names in
-three dashes (ie. ``---Plasma TV---``) and you don't want to end up scraping
+three dashes (e.g. ``---Plasma TV---``) and you don't want to end up scraping
 those dashes in the final product names.
 
 Here's how you can remove those dashes by reusing and extending the default
 Product Item Loader (``ProductLoader``)::
 
-    from scrapy.contrib.loader.processor import MapCompose
+    from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
 
     def strip_dashes(x):
@@ -460,7 +603,7 @@ Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
 want to remove ``CDATA`` occurrences. Here's an example of how to do it::
 
-    from scrapy.contrib.loader.processor import MapCompose
+    from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
     from myproject.utils.xml import remove_cdata
 
@@ -485,7 +628,7 @@ needs.
 Available built-in processors
 =============================
 
-.. module:: scrapy.contrib.loader.processor
+.. module:: scrapy.loader.processors
    :synopsis: A collection of processors to use with Item Loaders
 
 Even though you can use any callable function as input and output processors,
@@ -499,25 +642,25 @@ Here is a list of all built-in processors:
 .. class:: Identity
 
     The simplest processor, which doesn't do anything. It returns the original
-    values unchanged. It doesn't receive any constructor arguments nor accepts
-    Loader contexts.
+    values unchanged. It doesn't receive any constructor arguments, nor does it
+    accept Loader contexts.
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import Identity
+        >>> from scrapy.loader.processors import Identity
         >>> proc = Identity()
         >>> proc(['one', 'two', 'three'])
         ['one', 'two', 'three']
 
 .. class:: TakeFirst
 
-    Return the first non-null/non-empty value from the values received,
+    Returns the first non-null/non-empty value from the values received,
     so it's typically used as an output processor to single-valued fields.
-    It doesn't receive any constructor arguments, nor accept Loader contexts.
+    It doesn't receive any constructor arguments, nor does it accept Loader contexts.
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import TakeFirst
+        >>> from scrapy.loader.processors import TakeFirst
         >>> proc = TakeFirst()
         >>> proc(['', 'one', 'two', 'three'])
         'one'
@@ -532,7 +675,7 @@ Here is a list of all built-in processors:
 
     Examples::
 
-        >>> from scrapy.contrib.loader.processor import Join
+        >>> from scrapy.loader.processors import Join
         >>> proc = Join()
         >>> proc(['one', 'two', 'three'])
         u'one two three'
@@ -548,12 +691,12 @@ Here is a list of all built-in processors:
     function, and so on, until the last function returns the output value of
     this processor.
 
-    By default, stop process on None value. This behaviour can be changed by
-    passing keyword argument stop_on_none=False.
+    By default, stop process on ``None`` value. This behaviour can be changed by
+    passing keyword argument ``stop_on_none=False``.
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import Compose
+        >>> from scrapy.loader.processors import Compose
         >>> proc = Compose(lambda v: v[0], str.upper)
         >>> proc(['hello', 'world'])
         'HELLO'
@@ -575,10 +718,10 @@ Here is a list of all built-in processors:
     this processor is the way internal results are passed among functions,
     which is as follows:
 
-    The input value of this processor is *iterated* and each element is passed
-    to the first function, and the result of that function (for each element)
-    is concatenated to construct a new iterable, which is then passed to the
-    second function, and so on, until the last function is applied for each
+    The input value of this processor is *iterated* and the first function is
+    applied to each element. The results of these function calls (one for each element)
+    are concatenated to construct a new iterable, which is then used to apply the
+    second function, and so on, until the last function is applied to each
     value of the list of values collected so far. The output values of the last
     function are concatenated together to produce the output of this processor.
 
@@ -592,7 +735,7 @@ Here is a list of all built-in processors:
     work with single values (instead of iterables). For this reason the
     :class:`MapCompose` processor is typically used as input processor, since
     data is often extracted using the
-    :meth:`~scrapy.selector.XPathSelector.extract` method of :ref:`selectors
+    :meth:`~scrapy.selector.Selector.extract` method of :ref:`selectors
     <topics-selectors>`, which returns a list of unicode strings.
 
     The example below should clarify how it works::
@@ -600,7 +743,7 @@ Here is a list of all built-in processors:
         >>> def filter_world(x):
         ...     return None if x == 'world' else x
         ...
-        >>> from scrapy.contrib.loader.processor import MapCompose
+        >>> from scrapy.loader.processors import MapCompose
         >>> proc = MapCompose(filter_world, unicode.upper)
         >>> proc([u'hello', u'world', u'this', u'is', u'scrapy'])
         [u'HELLO, u'THIS', u'IS', u'SCRAPY']
@@ -609,3 +752,27 @@ Here is a list of all built-in processors:
     constructor keyword arguments are used as default context values. See
     :class:`Compose` processor for more info.
 
+.. class:: SelectJmes(json_path)
+
+    Queries the value using the json path provided to the constructor and returns the output.
+    Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
+    This processor takes only one input at a time.
+
+    Example::
+
+        >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
+        >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
+        >>> proc({'foo': 'bar'})
+        'bar'
+        >>> proc({'foo': {'bar': 'baz'}})
+        {'bar': 'baz'}
+
+    Working with Json::
+
+        >>> import json
+        >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
+        >>> proc_single_json_str('{"foo": "bar"}')
+        u'bar'
+        >>> proc_json_list = Compose(json.loads, MapCompose(SelectJmes('foo')))
+        >>> proc_json_list('[{"foo":"bar"}, {"baz":"tar"}]')
+        [u'bar']

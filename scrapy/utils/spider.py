@@ -1,12 +1,17 @@
+import logging
 import inspect
 
-from scrapy import log
-from scrapy.item import BaseItem
+import six
+
+from scrapy.spiders import Spider
 from scrapy.utils.misc import  arg_to_iter
+
+logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):
-    return [result] if isinstance(result, BaseItem) else arg_to_iter(result)
+    return arg_to_iter(result)
+
 
 def iter_spider_classes(module):
     """Return an iterator over all spider classes defined in the given module
@@ -14,34 +19,41 @@ def iter_spider_classes(module):
     """
     # this needs to be imported here until get rid of the spider manager
     # singleton in scrapy.spider.spiders
-    from scrapy.spider import BaseSpider
+    from scrapy.spiders import Spider
 
-    for obj in vars(module).itervalues():
+    for obj in six.itervalues(vars(module)):
         if inspect.isclass(obj) and \
-           issubclass(obj, BaseSpider) and \
+           issubclass(obj, Spider) and \
            obj.__module__ == module.__name__ and \
            getattr(obj, 'name', None):
             yield obj
 
-def create_spider_for_request(spidermanager, request, default_spider=None, \
-        log_none=False, log_multiple=False, **spider_kwargs):
-    """Create a spider to handle the given Request.
+def spidercls_for_request(spider_loader, request, default_spidercls=None,
+                          log_none=False, log_multiple=False):
+    """Return a spider class that handles the given Request.
 
     This will look for the spiders that can handle the given request (using
-    the spider manager) and return a (new) Spider if (and only if) there is
+    the spider loader) and return a Spider class if (and only if) there is
     only one Spider able to handle the Request.
 
     If multiple spiders (or no spider) are found, it will return the
-    default_spider passed. It can optionally log if multiple or no spiders
+    default_spidercls passed. It can optionally log if multiple or no spiders
     are found.
     """
-    snames = spidermanager.find_by_request(request)
+    snames = spider_loader.find_by_request(request)
     if len(snames) == 1:
-        return spidermanager.create(snames[0], **spider_kwargs)
-    if len(snames) > 1 and log_multiple:
-        log.msg('More than one spider can handle: %s - %s' % \
-            (request, ", ".join(snames)), log.ERROR)
-    if len(snames) == 0 and log_none:
-        log.msg('Unable to find spider that handles: %s' % request, log.ERROR)
-    return default_spider
+        return spider_loader.load(snames[0])
 
+    if len(snames) > 1 and log_multiple:
+        logger.error('More than one spider can handle: %(request)s - %(snames)s',
+                     {'request': request, 'snames': ', '.join(snames)})
+
+    if len(snames) == 0 and log_none:
+        logger.error('Unable to find spider that handles: %(request)s',
+                     {'request': request})
+
+    return default_spidercls
+
+
+class DefaultSpider(Spider):
+    name = 'default'

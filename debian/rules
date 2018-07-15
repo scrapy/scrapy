@@ -3,6 +3,3 @@
 
 %:
 	dh $@
-
-override_dh_installinit:
-	dh_installinit --name scrapyd

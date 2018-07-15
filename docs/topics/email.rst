@@ -12,30 +12,38 @@ library, Scrapy provides its own facility for sending e-mails which is very
 easy to use and it's implemented using `Twisted non-blocking IO`_, to avoid
 interfering with the non-blocking IO of the crawler. It also provides a
 simple API for sending attachments and it's very easy to configure, with a few
-:ref:`settings <topics-email-settings`.
+:ref:`settings <topics-email-settings>`.
 
-.. _smtplib: http://docs.python.org/library/smtplib.html
-.. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
+.. _smtplib: https://docs.python.org/2/library/smtplib.html
+.. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 
 Quick example
 =============
 
-Here's a quick example of how to send an e-mail (without attachments)::
+There are two ways to instantiate the mail sender. You can instantiate it using
+the standard constructor::
 
     from scrapy.mail import MailSender
-
     mailer = MailSender()
+
+Or you can instantiate it passing a Scrapy settings object, which will respect
+the :ref:`settings <topics-email-settings>`::
+
+    mailer = MailSender.from_settings(settings)
+
+And here is how to use it to send an e-mail (without attachments)::
+
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
 MailSender class reference
 ==========================
 
 MailSender is the preferred class to use for sending emails from Scrapy, as it
-uses `Twisted non-blocking IO`_, like the rest of the framework. 
+uses `Twisted non-blocking IO`_, like the rest of the framework.
 
-.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None):
+.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
 
-    :param smtphost: the SMTP host to use for sending the emails. If omitted, the 
+    :param smtphost: the SMTP host to use for sending the emails. If omitted, the
       :setting:`MAIL_HOST` setting will be used.
     :type smtphost: str
 
@@ -46,26 +54,40 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
       setting will be used. If not given, no SMTP authentication will be
       performed.
-    :type smtphost: str
+    :type smtphost: str or bytes
 
-    :param smtppass: the SMTP pass for authetnication.
-    :type smtppass: str
+    :param smtppass: the SMTP pass for authentication.
+    :type smtppass: str or bytes
 
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
 
-    .. method:: send(to, subject, body, cc=None, attachs=())
+    :param smtptls: enforce using SMTP STARTTLS
+    :type smtptls: boolean
 
-        Send email to the given recipients. Emits the :signal:`mail_sent` signal.
+    :param smtpssl: enforce using a secure SSL connection
+    :type smtpssl: boolean
+
+    .. classmethod:: from_settings(settings)
+
+        Instantiate using a Scrapy settings object, which will respect
+        :ref:`these Scrapy settings <topics-email-settings>`.
+
+        :param settings: the e-mail recipients
+        :type settings: :class:`scrapy.settings.Settings` object
+
+    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
+
+        Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: list
+        :type to: str or list of str
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: list
+        :type cc: str or list of str
 
         :param body: the e-mail body
         :type body: str
@@ -76,6 +98,12 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
           attachment and ``file_object`` is a readable file object with the
           contents of the attachment
         :type attachs: iterable
+
+        :param mimetype: the MIME type of the e-mail
+        :type mimetype: str
+
+        :param charset: the character encoding to use for the e-mail contents
+        :type charset: str
 
 
 .. _topics-email-settings:
@@ -133,33 +161,20 @@ Default: ``None``
 
 Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
 
+.. setting:: MAIL_TLS
 
-Mail signals
-============
+MAIL_TLS
+--------
 
-.. signal:: mail_sent
-.. function:: mail_sent(to, subject, body, cc, attachs, msg)
+Default: ``False``
 
-  Emitted by :meth:`MailSender.send` after an email has been sent.
+Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connection, and upgrade it to a secure connection using SSL/TLS.
 
-  :param to: the e-mail recipients
-  :type to: list
+.. setting:: MAIL_SSL
 
-  :param subject: the subject of the e-mail
-  :type subject: str
+MAIL_SSL
+--------
 
-  :param cc: the e-mails to CC
-  :type cc: list
+Default: ``False``
 
-  :param body: the e-mail body
-  :type body: str
-
-  :param attachs: an iterable of tuples ``(attach_name, mimetype,
-    file_object)`` where  ``attach_name`` is a string with the name that will
-    appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
-    attachment and ``file_object`` is a readable file object with the
-    contents of the attachment
-  :type attachs: iterable
-
-  :param msg: the generated message
-  :type msg: ``MIMEMultipart`` or ``MIMENonMultipart``
+Enforce connecting using an SSL encrypted connection

@@ -2,23 +2,24 @@
 references to live object instances.
 
 If you want live objects for a particular class to be tracked, you only have to
-subclass form object_ref (instead of object). Also, remember to turn on
-tracking by enabling the TRACK_REFS setting.
+subclass from object_ref (instead of object).
 
 About performance: This library has a minimal performance impact when enabled,
 and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
-import weakref, os
-from collections import defaultdict
+from __future__ import print_function
+import weakref
 from time import time
 from operator import itemgetter
-from types import NoneType
+from collections import defaultdict
+import six
 
-from scrapy.conf import settings
 
+NoneType = type(None)
 live_refs = defaultdict(weakref.WeakKeyDictionary)
+
 
 class object_ref(object):
     """Inherit from this class (instead of object) to a keep a record of live
@@ -31,34 +32,40 @@ class object_ref(object):
         live_refs[cls][obj] = time()
         return obj
 
-if not settings.getbool('TRACK_REFS'):
-    object_ref = object
 
 def format_live_refs(ignore=NoneType):
-    if object_ref is object:
-        return "The trackref module is disabled. Use TRACK_REFS setting to enable it."
-    s = "Live References" + os.linesep + os.linesep
+    """Return a tabular representation of tracked objects"""
+    s = "Live References\n\n"
     now = time()
-    for cls, wdict in live_refs.iteritems():
+    for cls, wdict in sorted(six.iteritems(live_refs),
+                             key=lambda x: x[0].__name__):
         if not wdict:
             continue
         if issubclass(cls, ignore):
             continue
-        oldest = min(wdict.itervalues())
-        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
-            now-oldest) + os.linesep
+        oldest = min(six.itervalues(wdict))
+        s += "%-30s %6d   oldest: %ds ago\n" % (
+            cls.__name__, len(wdict), now - oldest
+        )
     return s
 
+
 def print_live_refs(*a, **kw):
-    print format_live_refs(*a, **kw)
+    """Print tracked objects"""
+    print(format_live_refs(*a, **kw))
+
 
 def get_oldest(class_name):
-    for cls, wdict in live_refs.iteritems():
+    """Get the oldest object for a specific class name"""
+    for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
-            if wdict:
-                return min(wdict.iteritems(), key=itemgetter(1))[0]
+            if not wdict:
+                break
+            return min(six.iteritems(wdict), key=itemgetter(1))[0]
+
 
 def iter_all(class_name):
-    for cls, wdict in live_refs.iteritems():
+    """Iterate over all objects of the same class by its class name"""
+    for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
-            return wdict.iterkeys()
+            return six.iterkeys(wdict)

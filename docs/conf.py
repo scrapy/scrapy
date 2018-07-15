@@ -18,7 +18,7 @@ from os import path
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 sys.path.append(path.join(path.dirname(__file__), "_ext"))
-sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
+sys.path.insert(0, path.dirname(path.dirname(__file__)))
 
 
 # General configuration
@@ -26,7 +26,10 @@ sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['scrapydocs']
+extensions = [
+    'scrapydocs',
+    'sphinx.ext.autodoc'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -42,7 +45,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scrapy'
-copyright = u'2008-2011, Insophia'
+copyright = u'2008-2016, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -95,10 +98,26 @@ pygments_style = 'sphinx'
 # Options for HTML output
 # -----------------------
 
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+html_theme = 'sphinx_rtd_theme'
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+#html_theme_options = {}
+
+# Add any paths that contain custom themes here, relative to this directory.
+# Add path to the RTD explicitly to robustify builds (otherwise might
+# fail in a clean Debian build env)
+import sphinx_rtd_theme
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'scrapydoc.css'
+# html_style = 'scrapydoc.css'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -124,10 +143,6 @@ html_static_path = ['_static']
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 html_last_updated_fmt = '%b %d, %Y'
-
-# If true, SmartyPants will be used to convert quotes and dashes to
-# typographically correct entities.
-html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
@@ -172,8 +187,8 @@ htmlhelp_basename = 'Scrapydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Scrapy.tex', ur'Scrapy Documentation',
-   ur'Insophia', 'manual'),
+  ('index', 'Scrapy.tex', u'Scrapy Documentation',
+   u'Scrapy developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -192,3 +207,14 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+
+# Options for the linkcheck builder
+# ---------------------------------
+
+# A list of regular expressions that match URIs that should not be checked when
+# doing a linkcheck build.
+linkcheck_ignore = [
+    'http://localhost:\d+', 'http://hg.scrapy.org',
+    'http://directory.google.com/'
+]

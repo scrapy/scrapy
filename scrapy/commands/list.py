@@ -1,8 +1,5 @@
-import os
-
-from scrapy.command import ScrapyCommand
-from scrapy.utils.misc import load_object
-from scrapy.conf import settings
+from __future__ import print_function
+from scrapy.commands import ScrapyCommand
 
 class Command(ScrapyCommand):
 
@@ -13,6 +10,5 @@ class Command(ScrapyCommand):
         return "List available spiders"
 
     def run(self, args, opts):
-        spman_cls = load_object(settings['SPIDER_MANAGER_CLASS'])
-        spiders = spman_cls.from_settings(settings)
-        print os.linesep.join(spiders.list())
+        for s in sorted(self.crawler_process.spider_loader.list()):
+            print(s)

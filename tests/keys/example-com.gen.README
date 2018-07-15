@@ -1,0 +1,24 @@
+$ openssl req -config example-com.conf \
+    -new -x509 -sha256 -newkey rsa:2048 -nodes \
+    -keyout example-com.key.pem \
+    -days 36500 \
+    -out example-com.cert.pem
+Generating a 2048 bit RSA private key
+....+++
+.....................+++
+writing new private key to 'example-com.key.pem'
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [US]:XW
+State or Province Name (full name) [NY]:XW
+Locality Name (eg, city) [New York]:The Internet
+Organization Name (eg, company) [Example, LLC]:Scrapy
+Common Name (e.g. server FQDN or YOUR name) [Example Company]:www.example.com
+Email Address [test@example.com]:
+

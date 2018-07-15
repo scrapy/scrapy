@@ -1,77 +1,208 @@
 """
-This module implements the FormRequest class which is a more covenient class
+This module implements the FormRequest class which is a more convenient class
 (than Request) to generate Requests based on form data.
 
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib
-from cStringIO import StringIO
+import six
+from six.moves.urllib.parse import urljoin, urlencode
 
-from scrapy.xlib.ClientForm import ParseFile
+import lxml.html
+from parsel.selector import create_root_node
+from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
-from scrapy.utils.python import unicode_to_str
-
-def _unicode_to_str(string, encoding):
-    if hasattr(string, '__iter__'):
-        return [unicode_to_str(k, encoding) for k in string]
-    else:
-        return unicode_to_str(string, encoding)
+from scrapy.utils.python import to_bytes, is_listlike
+from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
 
-    __slots__ = ()
-
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
+        if formdata and kwargs.get('method') is None:
+            kwargs['method'] = 'POST'
+
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.iteritems() if isinstance(formdata, dict) else formdata
-            query = [(unicode_to_str(k, self.encoding), _unicode_to_str(v, self.encoding))
-                    for k, v in items]
-            self.method = 'POST'
-            self._set_body(urllib.urlencode(query, doseq=1))
-            self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            items = formdata.items() if isinstance(formdata, dict) else formdata
+            querystr = _urlencode(items, self.encoding)
+            if self.method == 'POST':
+                self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
+                self._set_body(querystr)
+            else:
+                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formnumber=0, formdata=None, 
-                      clickdata=None, dont_click=False, **kwargs):
-        encoding = getattr(response, 'encoding', 'utf-8')
-        forms = ParseFile(StringIO(response.body), response.url,
-                          encoding=encoding, backwards_compat=False)
-        if not forms:
-            raise ValueError("No <form> element found in %s" % response)
-        
-        form = None
+    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
+                      clickdata=None, dont_click=False, formxpath=None, formcss=None, **kwargs):
 
-        if formname:
-            for f in forms:
-                if f.name == formname:
-                    form = f
+        kwargs.setdefault('encoding', response.encoding)
+
+        if formcss is not None:
+            from parsel.csstranslator import HTMLTranslator
+            formxpath = HTMLTranslator().css_to_xpath(formcss)
+
+        form = _get_form(response, formname, formid, formnumber, formxpath)
+        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+        url = _get_form_url(form, kwargs.pop('url', None))
+        method = kwargs.pop('method', form.method)
+        return cls(url=url, method=method, formdata=formdata, **kwargs)
+
+
+def _get_form_url(form, url):
+    if url is None:
+        action = form.get('action')
+        if action is None:
+            return form.base_url
+        return urljoin(form.base_url, strip_html5_whitespace(action))
+    return urljoin(form.base_url, url)
+
+
+def _urlencode(seq, enc):
+    values = [(to_bytes(k, enc), to_bytes(v, enc))
+              for k, vs in seq
+              for v in (vs if is_listlike(vs) else [vs])]
+    return urlencode(values, doseq=1)
+
+
+def _get_form(response, formname, formid, formnumber, formxpath):
+    """Find the form element """
+    root = create_root_node(response.text, lxml.html.HTMLParser,
+                            base_url=get_base_url(response))
+    forms = root.xpath('//form')
+    if not forms:
+        raise ValueError("No <form> element found in %s" % response)
+
+    if formname is not None:
+        f = root.xpath('//form[@name="%s"]' % formname)
+        if f:
+            return f[0]
+
+    if formid is not None:
+        f = root.xpath('//form[@id="%s"]' % formid)
+        if f:
+            return f[0]
+
+    # Get form element from xpath, if not found, go up
+    if formxpath is not None:
+        nodes = root.xpath(formxpath)
+        if nodes:
+            el = nodes[0]
+            while True:
+                if el.tag == 'form':
+                    return el
+                el = el.getparent()
+                if el is None:
                     break
+        encoded = formxpath if six.PY3 else formxpath.encode('unicode_escape')
+        raise ValueError('No <form> element found with %s' % encoded)
 
-        if not form:
-            try:
-                form = forms[formnumber]
-            except IndexError:
-                raise IndexError("Form number %d not found in %s" % (formnumber, response))
-        if formdata:
-            # remove all existing fields with the same name before, so that
-            # formdata fields properly can properly override existing ones,
-            # which is the desired behaviour
-            form.controls = [c for c in form.controls if c.name not in formdata]
-            for k, v in formdata.iteritems():
-                for v2 in v if hasattr(v, '__iter__') else [v]:
-                    form.new_control('text', k, {'value': v2})
-
-        if dont_click:
-            url, body, headers = form._switch_click('request_data')
+    # If we get here, it means that either formname was None
+    # or invalid
+    if formnumber is not None:
+        try:
+            form = forms[formnumber]
+        except IndexError:
+            raise IndexError("Form number %d not found in %s" %
+                             (formnumber, response))
         else:
-            url, body, headers = form.click_request_data(**(clickdata or {}))
+            return form
 
-        kwargs.setdefault('headers', {}).update(headers)
 
-        return cls(url, method=form.method, body=body, **kwargs)
+def _get_inputs(form, formdata, dont_click, clickdata, response):
+    try:
+        formdata = dict(formdata or ())
+    except (ValueError, TypeError):
+        raise ValueError('formdata should be a dict or iterable of tuples')
+
+    inputs = form.xpath('descendant::textarea'
+                        '|descendant::select'
+                        '|descendant::input[not(@type) or @type['
+                        ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
+                        ' and (../@checked or'
+                        '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
+                        namespaces={
+                            "re": "http://exslt.org/regular-expressions"})
+    values = [(k, u'' if v is None else v)
+              for k, v in (_value(e) for e in inputs)
+              if k and k not in formdata]
+
+    if not dont_click:
+        clickable = _get_clickable(clickdata, form)
+        if clickable and clickable[0] not in formdata and not clickable[0] is None:
+            values.append(clickable)
+
+    values.extend((k, v) for k, v in formdata.items() if v is not None)
+    return values
+
+
+def _value(ele):
+    n = ele.name
+    v = ele.value
+    if ele.tag == 'select':
+        return _select_value(ele, n, v)
+    return n, v
+
+
+def _select_value(ele, n, v):
+    multiple = ele.multiple
+    if v is None and not multiple:
+        # Match browser behaviour on simple select tag without options selected
+        # And for select tags wihout options
+        o = ele.value_options
+        return (n, o[0]) if o else (None, None)
+    elif v is not None and multiple:
+        # This is a workround to bug in lxml fixed 2.3.1
+        # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
+        selected_options = ele.xpath('.//option[@selected]')
+        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+    return n, v
+
+
+def _get_clickable(clickdata, form):
+    """
+    Returns the clickable element specified in clickdata,
+    if the latter is given. If not, it returns the first
+    clickable element found
+    """
+    clickables = [
+        el for el in form.xpath(
+            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+            namespaces={"re": "http://exslt.org/regular-expressions"})
+        ]
+    if not clickables:
+        return
+
+    # If we don't have clickdata, we just use the first clickable element
+    if clickdata is None:
+        el = clickables[0]
+        return (el.get('name'), el.get('value') or '')
+
+    # If clickdata is given, we compare it to the clickable elements to find a
+    # match. We first look to see if the number is specified in clickdata,
+    # because that uniquely identifies the element
+    nr = clickdata.get('nr', None)
+    if nr is not None:
+        try:
+            el = list(form.inputs)[nr]
+        except IndexError:
+            pass
+        else:
+            return (el.get('name'), el.get('value') or '')
+
+    # We didn't find it, so now we build an XPath expression out of the other
+    # arguments, because they can be used as such
+    xpath = u'.//*' + \
+            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
+    el = form.xpath(xpath)
+    if len(el) == 1:
+        return (el[0].get('name'), el[0].get('value') or '')
+    elif len(el) > 1:
+        raise ValueError("Multiple elements found (%r) matching the criteria "
+                         "in clickdata: %r" % (el, clickdata))
+    else:
+        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))

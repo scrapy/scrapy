@@ -1,22 +1,24 @@
 """Helper functions for working with templates"""
-from __future__ import with_statement
 
 import os
 import re
 import string
 
+
 def render_templatefile(path, **kwargs):
-    with open(path, 'rb') as file:
-        raw = file.read()
+    with open(path, 'rb') as fp:
+        raw = fp.read().decode('utf8')
 
     content = string.Template(raw).substitute(**kwargs)
 
-    with open(path.rstrip('.tmpl'), 'wb') as file:
-        file.write(content)
+    render_path = path[:-len('.tmpl')] if path.endswith('.tmpl') else path
+    with open(render_path, 'wb') as fp:
+        fp.write(content.encode('utf8'))
     if path.endswith('.tmpl'):
         os.remove(path)
 
-CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z]')
+
+CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z\d]')
 def string_camelcase(string):
     """ Convert a word  to its CamelCase version and remove invalid chars
 

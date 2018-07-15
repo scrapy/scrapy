@@ -22,6 +22,31 @@ DropItem
 The exception that must be raised by item pipeline stages to stop processing an
 Item. For more information see :ref:`topics-item-pipeline`.
 
+CloseSpider
+-----------
+
+.. exception:: CloseSpider(reason='cancelled')
+
+    This exception can be raised from a spider callback to request the spider to be
+    closed/stopped. Supported arguments:
+
+    :param reason: the reason for closing
+    :type reason: str
+
+For example::
+
+    def parse_page(self, response):
+        if 'Bandwidth exceeded' in response.body:
+            raise CloseSpider('bandwidth_exceeded')
+
+DontCloseSpider
+---------------
+
+.. exception:: DontCloseSpider
+
+This exception can be raised in a :signal:`spider_idle` signal handler to
+prevent the spider from being closed.
+
 IgnoreRequest
 -------------
 
@@ -40,10 +65,10 @@ remain disabled. Those components include:
 
  * Extensions
  * Item pipelines
- * Downloader middlwares
+ * Downloader middlewares
  * Spider middlewares
 
-The exception must be raised in the component constructor.
+The exception must be raised in the component's ``__init__`` method.
 
 NotSupported
 ------------

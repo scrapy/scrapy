@@ -1,133 +1,79 @@
-# Scrapy setup.py script 
-#
-# It doesn't depend on setuptools, but if setuptools is available it'll use
-# some of its features, like package dependencies.
+from os.path import dirname, join
+from pkg_resources import parse_version
+from setuptools import setup, find_packages, __version__ as setuptools_version
 
-from __future__ import with_statement
 
-from distutils.command.install_data import install_data
-from distutils.command.install import INSTALL_SCHEMES
-from subprocess import Popen, PIPE
-import os
-import sys
+with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
+    version = f.read().decode('ascii').strip()
 
-class osx_install_data(install_data):
-    # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
-    # which is wrong. Python 2.5 supplied with MacOS 10.5 has an Apple-specific fix
-    # for this in distutils.command.install_data#306. It fixes install_lib but not
-    # install_data, which is why we roll our own install_data class.
 
-    def finalize_options(self):
-        # By the time finalize_options is called, install.install_lib is set to the
-        # fixed directory, so we set the installdir to install_lib. The
-        # install_data class uses ('install_data', 'install_dir') instead.
-        self.set_undefined_options('install', ('install_lib', 'install_dir'))
-        install_data.finalize_options(self)
+def has_environment_marker_platform_impl_support():
+    """Code extracted from 'pytest/setup.py'
+    https://github.com/pytest-dev/pytest/blob/7538680c/setup.py#L31
 
-if sys.platform == "darwin":
-    cmdclasses = {'install_data': osx_install_data}
-else:
-    cmdclasses = {'install_data': install_data}
-
-def fullsplit(path, result=None):
+    The first known release to support environment marker with range operators
+    it is 18.5, see:
+    https://setuptools.readthedocs.io/en/latest/history.html#id235
     """
-    Split a pathname into components (the opposite of os.path.join) in a
-    platform-neutral way.
-    """
-    if result is None:
-        result = []
-    head, tail = os.path.split(path)
-    if head == '':
-        return [tail] + result
-    if head == path:
-        return result
-    return fullsplit(head, [tail] + result)
+    return parse_version(setuptools_version) >= parse_version('18.5')
 
-# Tell distutils to put the data_files in platform-specific installation
-# locations. See here for an explanation:
-# http://groups.google.com/group/comp.lang.python/browse_thread/thread/35ec7b2fed36eaec/2105ee4d9e8042cb
-for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = scheme['purelib']
 
-# Compile the list of packages available, because distutils doesn't have
-# an easy way to do this.
-packages, data_files = [], []
-root_dir = os.path.dirname(__file__)
-if root_dir != '':
-    os.chdir(root_dir)
+extras_require = {}
 
-def is_not_module(filename):
-    return os.path.splitext(f)[1] not in ['.py', '.pyc', '.pyo']
+if has_environment_marker_platform_impl_support():
+    extras_require[':platform_python_implementation == "PyPy"'] = [
+        'PyPyDispatcher>=2.1.0',
+    ]
 
-for scrapy_dir in ['scrapy', 'scrapyd']:
-    for dirpath, dirnames, filenames in os.walk(scrapy_dir):
-        # Ignore dirnames that start with '.'
-        for i, dirname in enumerate(dirnames):
-            if dirname.startswith('.'): del dirnames[i]
-        if '__init__.py' in filenames:
-            packages.append('.'.join(fullsplit(dirpath)))
-            data = [f for f in filenames if is_not_module(f)]
-            if data:
-                data_files.append([dirpath, [os.path.join(dirpath, f) for f in data]])
-        elif filenames:
-            data_files.append([dirpath, [os.path.join(dirpath, f) for f in filenames]])
 
-# Small hack for working with bdist_wininst.
-# See http://mail.python.org/pipermail/distutils-sig/2004-August/004134.html
-if len(sys.argv) > 1 and sys.argv[1] == 'bdist_wininst':
-    for file_info in data_files:
-        file_info[0] = '\\PURELIB\\%s' % file_info[0]
-
-scripts = ['bin/scrapy']
-if os.name == 'nt':
-    scripts.append('extras/scrapy.bat')
-
-if os.environ.get('SCRAPY_VERSION_FROM_HG'):
-    rev = Popen(["hg", "tip", "--template", "{rev}"], stdout=PIPE).communicate()[0]
-    with open('scrapy/__init__.py', 'a') as f:
-        f.write("\n__version__ = '.'.join(map(str, version_info)) + '.%s'" % rev)
-elif os.environ.get('SCRAPY_VERSION_FROM_GIT'):
-    rev = Popen("git log --oneline | wc -l", shell=True, stdout=PIPE).communicate()[0]
-    with open('scrapy/__init__.py', 'a') as f:
-        f.write("\n__version__ = '.'.join(map(str, version_info)) + '.%s'" % rev.strip())
-version = __import__('scrapy').__version__
-
-setup_args = {
-    'name': 'Scrapy',
-    'version': version,
-    'url': 'http://scrapy.org',
-    'description': 'A high-level Python Screen Scraping framework',
-    'long_description': 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
-    'author': 'Scrapy developers',
-    'maintainer': 'Pablo Hoffman',
-    'maintainer_email': 'pablo@pablohoffman.com',
-    'license': 'BSD',
-    'packages': packages,
-    'cmdclass': cmdclasses,
-    'data_files': data_files,
-    'scripts': scripts,
-    'classifiers': [
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2.5',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
+setup(
+    name='Scrapy',
+    version=version,
+    url='https://scrapy.org',
+    description='A high-level Web Crawling and Web Scraping framework',
+    long_description=open('README.rst').read(),
+    author='Scrapy developers',
+    maintainer='Pablo Hoffman',
+    maintainer_email='pablo@pablohoffman.com',
+    license='BSD',
+    packages=find_packages(exclude=('tests', 'tests.*')),
+    include_package_data=True,
+    zip_safe=False,
+    entry_points={
+        'console_scripts': ['scrapy = scrapy.cmdline:execute']
+    },
+    classifiers=[
+        'Framework :: Scrapy',
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Environment :: Console',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: Internet :: WWW/HTTP',
-    ]
-}
-
-try:
-    from setuptools import setup
-    setup_args['install_requires'] = ['Twisted>=2.5', 'lxml']
-    if sys.version_info < (2, 6):
-        setup_args['install_requires'] += ['simplejson']
-except ImportError:
-    from distutils.core import setup
- 
-setup(**setup_args)
+    ],
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    install_requires=[
+        'Twisted>=13.1.0',
+        'w3lib>=1.17.0',
+        'queuelib',
+        'lxml',
+        'pyOpenSSL',
+        'cssselect>=0.9',
+        'six>=1.5.2',
+        'parsel>=1.4',
+        'PyDispatcher>=2.0.5',
+        'service_identity',
+    ],
+    extras_require=extras_require,
+)

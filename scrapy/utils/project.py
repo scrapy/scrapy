@@ -1,23 +1,29 @@
-from os.path import join, dirname, abspath, isabs, exists
-from os import makedirs, environ
+import os
+from six.moves import cPickle as pickle
 import warnings
 
-from scrapy.utils.conf import closest_scrapy_cfg, get_config
-from scrapy.utils.python import is_writable
+from importlib import import_module
+from os.path import join, dirname, abspath, isabs, exists
+
+from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
+from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 
+ENVVAR = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'
 
+
 def inside_project():
-    scrapy_module = environ.get('SCRAPY_SETTINGS_MODULE')
+    scrapy_module = os.environ.get('SCRAPY_SETTINGS_MODULE')
     if scrapy_module is not None:
         try:
-            __import__(scrapy_module)
-        except ImportError:
-            warnings.warn("Cannot import scrapy settings module %s" % scrapy_module)
+            import_module(scrapy_module)
+        except ImportError as exc:
+            warnings.warn("Cannot import scrapy settings module %s: %s" % (scrapy_module, exc))
         else:
             return True
     return bool(closest_scrapy_cfg())
+
 
 def project_data_dir(project='default'):
     """Return the current project data dir, creating it if it doesn't exist"""
@@ -32,32 +38,44 @@ def project_data_dir(project='default'):
             raise NotConfigured("Unable to find scrapy.cfg file to infer project data dir")
         d = abspath(join(dirname(scrapy_cfg), '.scrapy'))
     if not exists(d):
-        makedirs(d)
+        os.makedirs(d)
     return d
 
-def data_path(path):
-    """If path is relative, return the given path inside the project data dir,
-    otherwise return the path unmodified
-    """
-    return path if isabs(path) else join(project_data_dir(), path)
 
-def sqlite_db(path, nonwritable_fallback=True):
-    """Get the SQLite database to use. If path is relative, returns the given
-    path inside the project data dir, otherwise returns the path unmodified. If
-    not inside a project returns :memory: to use an in-memory database.
-
-    If nonwritable_fallback is True, and the path is not writable it issues a
-    warning and returns :memory:
+def data_path(path, createdir=False):
     """
-    if not inside_project() or path == ':memory:':
-        db = ':memory:'
-    else:
-        try:
-            db = data_path(path)
-        except NotConfigured:
-            db = ':memory:'
+    Return the given path joined with the .scrapy data directory.
+    If given an absolute path, return it unmodified.
+    """
+    if not isabs(path):
+        if inside_project():
+            path = join(project_data_dir(), path)
         else:
-            if not is_writable(db) and nonwritable_fallback:
-                warnings.warn("%r is not writable - using in-memory SQLite instead" % db)
-                db = ':memory:'
-    return db
+            path = join('.scrapy', path)
+    if createdir and not exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_project_settings():
+    if ENVVAR not in os.environ:
+        project = os.environ.get('SCRAPY_PROJECT', 'default')
+        init_env(project)
+
+    settings = Settings()
+    settings_module_path = os.environ.get(ENVVAR)
+    if settings_module_path:
+        settings.setmodule(settings_module_path, priority='project')
+
+    # XXX: remove this hack
+    pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
+    if pickled_settings:
+        settings.setdict(pickle.loads(pickled_settings), priority='project')
+
+    # XXX: deprecate and remove this functionality
+    env_overrides = {k[7:]: v for k, v in os.environ.items() if
+                     k.startswith('SCRAPY_')}
+    if env_overrides:
+        settings.setdict(env_overrides, priority='project')
+
+    return settings

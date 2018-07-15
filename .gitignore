@@ -1,4 +1,19 @@
+/.vagrant
+/scrapy.iml
 *.pyc
-_trial_temp
+_trial_temp*
 dropin.cache
 docs/build
+*egg-info
+.tox
+venv
+build
+dist
+.idea
+htmlcov/
+.coverage
+.coverage.*
+.cache/
+
+# Windows
+Thumbs.db

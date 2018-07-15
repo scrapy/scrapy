@@ -4,7 +4,7 @@
 Telnet Console
 ==============
 
-.. module:: scrapy.telnet
+.. module:: scrapy.extensions.telnet
    :synopsis: The Telnet Console
 
 Scrapy comes with a built-in telnet console for inspecting and controlling a
@@ -43,17 +43,21 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | Shortcut       | Description                                                       |
 +================+===================================================================+
-| ``manager``    | the Project Crawler object (``scrapy.project.crawler``)           |
+| ``crawler``    | the Scrapy Crawler (:class:`scrapy.crawler.Crawler` object)       |
 +----------------+-------------------------------------------------------------------+
-| ``engine``     | the Scrapy engine object (``scrapy.project.crawler.engine``)      |
+| ``engine``     | Crawler.engine attribute                                          |
 +----------------+-------------------------------------------------------------------+
-| ``extensions`` | the Extension Manager (``scrapy.project.crawler.extensions``)     |
+| ``spider``     | the active spider                                                 |
 +----------------+-------------------------------------------------------------------+
-| ``stats``      | the Stats Collector (``scrapy.stats.stats``)                      |
+| ``slot``       | the engine slot                                                   |
 +----------------+-------------------------------------------------------------------+
-| ``settings``   | the Scrapy settings object (``scrapy.conf.settings``)             |
+| ``extensions`` | the Extension Manager (Crawler.extensions attribute)              |
 +----------------+-------------------------------------------------------------------+
-| ``est``        | print a report of the current engine status                       |
+| ``stats``      | the Stats Collector (Crawler.stats attribute)                     |
++----------------+-------------------------------------------------------------------+
+| ``settings``   | the Scrapy settings object (Crawler.settings attribute)           |
++----------------+-------------------------------------------------------------------+
+| ``est``        | print a report of the engine status                               |
 +----------------+-------------------------------------------------------------------+
 | ``prefs``      | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+
@@ -62,7 +66,7 @@ convenience:
 | ``hpy``        | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+
 
-.. _pprint.pprint: http://docs.python.org/library/pprint.html#pprint.pprint
+.. _pprint.pprint: https://docs.python.org/library/pprint.html#pprint.pprint
 
 Telnet console usage examples
 =============================
@@ -79,30 +83,21 @@ using the telnet console::
     >>> est()
     Execution engine status
 
-    datetime.now()-self.start_time                  : 0:00:09.051588
-    self.is_idle()                                  : False
-    self.scheduler.is_idle()                        : False
-    len(self.scheduler.pending_requests)            : 1
-    self.downloader.is_idle()                       : False
-    len(self.downloader.sites)                      : 1
-    self.downloader.has_capacity()                  : True
-    self.pipeline.is_idle()                         : False
-    len(self.pipeline.domaininfo)                   : 1
-    len(self._scraping)                             : 1
-
-    example.com
-      self.domain_is_idle(domain)                        : False
-      self.closing.get(domain)                           : None
-      self.scheduler.domain_has_pending_requests(domain) : True
-      len(self.scheduler.pending_requests[domain])       : 97
-      len(self.downloader.sites[domain].queue)           : 17
-      len(self.downloader.sites[domain].active)          : 25
-      len(self.downloader.sites[domain].transferring)    : 8
-      self.downloader.sites[domain].closing              : False
-      self.downloader.sites[domain].lastseen             : 2009-06-23 15:20:16.563675
-      self.pipeline.domain_is_idle(domain)               : True
-      len(self.pipeline.domaininfo[domain])              : 0
-      len(self._scraping[domain])                        : 0
+    time()-engine.start_time                        : 8.62972998619
+    engine.has_capacity()                           : False
+    len(engine.downloader.active)                   : 16
+    engine.scraper.is_idle()                        : False
+    engine.spider.name                              : followall
+    engine.spider_is_idle(engine.spider)            : False
+    engine.slot.closing                             : False
+    len(engine.slot.inprogress)                     : 16
+    len(engine.slot.scheduler.dqs or [])            : 0
+    len(engine.slot.scheduler.mqs)                  : 92
+    len(engine.scraper.slot.queue)                  : 0
+    len(engine.scraper.slot.active)                 : 0
+    engine.scraper.slot.active_size                 : 0
+    engine.scraper.slot.itemproc_size               : 0
+    engine.scraper.slot.needs_backout()             : False
 
 
 Pause, resume and stop the Scrapy engine
@@ -152,7 +147,7 @@ TELNETCONSOLE_PORT
 
 Default: ``[6023, 6073]``
 
-The port range to use for the etlnet console. If set to ``None`` or ``0``, a
+The port range to use for the telnet console. If set to ``None`` or ``0``, a
 dynamically assigned port is used.
 
 
@@ -161,7 +156,7 @@ dynamically assigned port is used.
 TELNETCONSOLE_HOST
 ------------------
 
-Default: ``'0.0.0.0'``
+Default: ``'127.0.0.1'``
 
 The interface the telnet console should listen on
 

@@ -1,198 +1,199 @@
-"""
-Download web pages using asynchronous IO
-"""
-
+from __future__ import absolute_import
 import random
+import warnings
 from time import time
+from datetime import datetime
+from collections import deque
 
-from twisted.internet import reactor, defer
-from twisted.python.failure import Failure
+import six
+from twisted.internet import reactor, defer, task
 
-from scrapy.exceptions import IgnoreRequest
-from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
-from scrapy.utils.signal import send_catch_log
-from scrapy.utils import deprecate
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.resolver import dnscache
 from scrapy import signals
-from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
 
 
-class SpiderInfo(object):
-    """Simple class to keep information and state for each open spider"""
+class Slot(object):
+    """Downloader slot"""
 
-    def __init__(self, spider):
-        if hasattr(spider, 'download_delay'):
-            deprecate.attribute(spider, 'download_delay', 'DOWNLOAD_DELAY')
-            self._download_delay = spider.download_delay
-        else:
-            self._download_delay = spider.settings.getfloat('DOWNLOAD_DELAY')
-        if self._download_delay:
-            self.max_concurrent_requests = 1
-        else:
-            if hasattr(spider, 'max_concurrent_requests'):
-                deprecate.attribute(spider, 'max_concurrent_requests', 'CONCURRENT_REQUESTS_PER_SPIDER')
-                self.max_concurrent_requests = spider.max_concurrent_requests
-            else:
-                self.max_concurrent_requests = spider.settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
-        if self._download_delay and spider.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'):
-            # same policy as wget --random-wait
-            self.random_delay_interval = (0.5*self._download_delay, \
-                1.5*self._download_delay)
-        else:
-            self.random_delay_interval = None
+    def __init__(self, concurrency, delay, randomize_delay):
+        self.concurrency = concurrency
+        self.delay = delay
+        self.randomize_delay = randomize_delay
 
         self.active = set()
-        self.queue = []
+        self.queue = deque()
         self.transferring = set()
-        self.closing = False
         self.lastseen = 0
-        self.next_request_calls = set()
+        self.latercall = None
 
     def free_transfer_slots(self):
-        return self.max_concurrent_requests - len(self.transferring)
-
-    def needs_backout(self):
-        # use self.active to include requests in the downloader middleware
-        return len(self.active) > 2 * self.max_concurrent_requests
+        return self.concurrency - len(self.transferring)
 
     def download_delay(self):
-        if self.random_delay_interval:
-            return random.uniform(*self.random_delay_interval)
-        else:
-            return self._download_delay
+        if self.randomize_delay:
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
+        return self.delay
 
-    def cancel_request_calls(self):
-        for call in self.next_request_calls:
-            call.cancel()
-        self.next_request_calls.clear()
+    def close(self):
+        if self.latercall and self.latercall.active():
+            self.latercall.cancel()
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return "%s(concurrency=%r, delay=%0.2f, randomize_delay=%r)" % (
+            cls_name, self.concurrency, self.delay, self.randomize_delay)
+
+    def __str__(self):
+        return (
+            "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
+            "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
+                self.concurrency, self.delay, self.randomize_delay,
+                len(self.active), len(self.queue), len(self.transferring),
+                datetime.fromtimestamp(self.lastseen).isoformat()
+            )
+        )
+
+
+def _get_concurrency_delay(concurrency, spider, settings):
+    delay = settings.getfloat('DOWNLOAD_DELAY')
+    if hasattr(spider, 'DOWNLOAD_DELAY'):
+        warnings.warn("%s.DOWNLOAD_DELAY attribute is deprecated, use %s.download_delay instead" %
+                      (type(spider).__name__, type(spider).__name__))
+        delay = spider.DOWNLOAD_DELAY
+    if hasattr(spider, 'download_delay'):
+        delay = spider.download_delay
+
+    if hasattr(spider, 'max_concurrent_requests'):
+        concurrency = spider.max_concurrent_requests
+
+    return concurrency, delay
 
 
 class Downloader(object):
-    """Mantain many concurrent downloads and provide an HTTP abstraction.
-    It supports a limited number of connections per spider and many spiders in
-    parallel.
-    """
 
-    def __init__(self):
-        self.sites = {}
-        self.handlers = DownloadHandlers()
-        self.middleware = DownloaderMiddlewareManager.from_settings(settings)
-        self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
+    def __init__(self, crawler):
+        self.settings = crawler.settings
+        self.signals = crawler.signals
+        self.slots = {}
+        self.active = set()
+        self.handlers = DownloadHandlers(crawler)
+        self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
+        self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
+        self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
+        self.randomize_delay = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
+        self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
+        self._slot_gc_loop = task.LoopingCall(self._slot_gc)
+        self._slot_gc_loop.start(60)
 
     def fetch(self, request, spider):
-        """Main method to use to request a download
-
-        This method includes middleware mangling. Middleware can returns a
-        Response object, then request never reach downloader queue, and it will
-        not be downloaded from site.
-        """
-        site = self.sites[spider]
-        if site.closing:
-            raise IgnoreRequest('Cannot fetch on a closing spider')
-
-        site.active.add(request)
         def _deactivate(response):
-            send_catch_log(signal=signals.response_received, \
-                response=response, request=request, spider=spider)
-            site.active.remove(request)
-            self._close_if_idle(spider)
+            self.active.remove(request)
             return response
 
-        dfd = self.middleware.download(self.enqueue, request, spider)
+        self.active.add(request)
+        dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def enqueue(self, request, spider):
-        """Enqueue a Request for a effective download from site"""
-        site = self.sites[spider]
-        if site.closing:
-            raise IgnoreRequest
+    def needs_backout(self):
+        return len(self.active) >= self.total_concurrency
 
-        def _downloaded(response):
-            send_catch_log(signal=signals.response_downloaded, \
-                    response=response, request=request, spider=spider)
+    def _get_slot(self, request, spider):
+        key = self._get_slot_key(request, spider)
+        if key not in self.slots:
+            conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
+            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
+            self.slots[key] = Slot(conc, delay, self.randomize_delay)
+
+        return key, self.slots[key]
+
+    def _get_slot_key(self, request, spider):
+        if 'download_slot' in request.meta:
+            return request.meta['download_slot']
+
+        key = urlparse_cached(request).hostname or ''
+        if self.ip_concurrency:
+            key = dnscache.get(key, key)
+
+        return key
+
+    def _enqueue_request(self, request, spider):
+        key, slot = self._get_slot(request, spider)
+        request.meta['download_slot'] = key
+
+        def _deactivate(response):
+            slot.active.remove(request)
             return response
 
-        deferred = defer.Deferred().addCallback(_downloaded)
-        site.queue.append((request, deferred))
-        self._process_queue(spider)
+        slot.active.add(request)
+        deferred = defer.Deferred().addBoth(_deactivate)
+        slot.queue.append((request, deferred))
+        self._process_queue(spider, slot)
         return deferred
 
-    def _process_queue(self, spider):
-        """Effective download requests from site queue"""
-        site = self.sites.get(spider)
-        if not site:
+    def _process_queue(self, spider, slot):
+        if slot.latercall and slot.latercall.active():
             return
 
         # Delay queue processing if a download_delay is configured
         now = time()
-        delay = site.download_delay()
+        delay = slot.download_delay()
         if delay:
-            penalty = delay - now + site.lastseen
+            penalty = delay - now + slot.lastseen
             if penalty > 0:
-                d = defer.Deferred()
-                d.addCallback(self._process_queue)
-                call = reactor.callLater(penalty, d.callback, spider)
-                site.next_request_calls.add(call)
-                d.addBoth(lambda x: site.next_request_calls.remove(call))
+                slot.latercall = reactor.callLater(penalty, self._process_queue, spider, slot)
                 return
-        site.lastseen = now
 
-        # Process enqueued requests if there are free slots to transfer for this site
-        while site.queue and site.free_transfer_slots() > 0:
-            request, deferred = site.queue.pop(0)
-            if site.closing:
-                dfd = defer.fail(Failure(IgnoreRequest()))
-            else:
-                dfd = self._download(site, request, spider)
+        # Process enqueued requests if there are free slots to transfer for this slot
+        while slot.queue and slot.free_transfer_slots() > 0:
+            slot.lastseen = now
+            request, deferred = slot.queue.popleft()
+            dfd = self._download(slot, request, spider)
             dfd.chainDeferred(deferred)
+            # prevent burst if inter-request delays were configured
+            if delay:
+                self._process_queue(spider, slot)
+                break
 
-        self._close_if_idle(spider)
-
-    def _close_if_idle(self, spider):
-        site = self.sites.get(spider)
-        if site and site.closing and not site.active:
-            del self.sites[spider]
-            site.closing.callback(None)
-
-    def _download(self, site, request, spider):
+    def _download(self, slot, request, spider):
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
         dfd = mustbe_deferred(self.handlers.download_request, request, spider)
 
-        # 2. After response arrives,  remove the request from transferring
+        # 2. Notify response_downloaded listeners about the recent download
+        # before querying queue for next request
+        def _downloaded(response):
+            self.signals.send_catch_log(signal=signals.response_downloaded,
+                                        response=response,
+                                        request=request,
+                                        spider=spider)
+            return response
+        dfd.addCallback(_downloaded)
+
+        # 3. After response arrives,  remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)
-        site.transferring.add(request)
+        slot.transferring.add(request)
+
         def finish_transferring(_):
-            site.transferring.remove(request)
-            self._process_queue(spider)
-            # avoid partially downloaded responses from propagating to the
-            # downloader middleware, to speed-up the closing process
-            if site.closing:
-                log.msg("Crawled while closing spider: %s" % request, \
-                    level=log.DEBUG, spider=spider)
-                raise IgnoreRequest
+            slot.transferring.remove(request)
+            self._process_queue(spider, slot)
             return _
+
         return dfd.addBoth(finish_transferring)
 
-    def open_spider(self, spider):
-        """Allocate resources to begin processing a spider"""
-        assert spider not in self.sites, "Spider already opened: %s" % spider
-        self.sites[spider] = SpiderInfo(spider)
+    def close(self):
+        self._slot_gc_loop.stop()
+        for slot in six.itervalues(self.slots):
+            slot.close()
 
-    def close_spider(self, spider):
-        """Free any resources associated with the given spider"""
-        assert spider in self.sites, "Spider not opened: %s" % spider
-        site = self.sites.get(spider)
-        site.closing = defer.Deferred()
-        site.cancel_request_calls()
-        self._process_queue(spider)
-        return site.closing
-
-    def is_idle(self):
-        return not self.sites
-
+    def _slot_gc(self, age=60):
+        mintime = time() - age
+        for key, slot in list(self.slots.items()):
+            if not slot.active and slot.lastseen + slot.delay < mintime:
+                self.slots.pop(key).close()

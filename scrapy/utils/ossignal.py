@@ -1,16 +1,17 @@
 
 from __future__ import absolute_import
+import signal
 
 from twisted.internet import reactor
 
-import signal
 
 signal_names = {}
 for signame in dir(signal):
-    if signame.startswith("SIG"):
+    if signame.startswith('SIG') and not signame.startswith('SIG_'):
         signum = getattr(signal, signame)
         if isinstance(signum, int):
             signal_names[signum] = signame
+
 
 def install_shutdown_handlers(function, override_sigint=True):
     """Install the given function as a signal handler for all common shutdown
@@ -24,5 +25,5 @@ def install_shutdown_handlers(function, override_sigint=True):
             override_sigint:
         signal.signal(signal.SIGINT, function)
     # Catch Ctrl-Break in windows
-    if hasattr(signal, "SIGBREAK"):
+    if hasattr(signal, 'SIGBREAK'):
         signal.signal(signal.SIGBREAK, function)

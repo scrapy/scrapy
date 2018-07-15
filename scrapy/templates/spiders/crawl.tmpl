@@ -1,23 +1,21 @@
-import re
+# -*- coding: utf-8 -*-
+import scrapy
+from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import CrawlSpider, Rule
 
-from scrapy.selector import HtmlXPathSelector
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-from scrapy.contrib.spiders import CrawlSpider, Rule
-from $project_name.items import ${ProjectName}Item
 
 class $classname(CrawlSpider):
     name = '$name'
     allowed_domains = ['$domain']
-    start_urls = ['http://www.$domain/']
+    start_urls = ['http://$domain/']
 
     rules = (
-        Rule(SgmlLinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
+        Rule(LinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
     )
 
     def parse_item(self, response):
-        hxs = HtmlXPathSelector(response)
-        i = ${ProjectName}Item()
-        #i['domain_id'] = hxs.select('//input[@id="sid"]/@value').extract()
-        #i['name'] = hxs.select('//div[@id="name"]').extract()
-        #i['description'] = hxs.select('//div[@id="description"]').extract()
+        i = {}
+        #i['domain_id'] = response.xpath('//input[@id="sid"]/@value').extract()
+        #i['name'] = response.xpath('//div[@id="name"]').extract()
+        #i['description'] = response.xpath('//div[@id="description"]').extract()
         return i

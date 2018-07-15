@@ -1,2 +1,0 @@
-new-package-should-close-itp-bug
-script-in-etc-init.d-not-registered-via-update-rc.d /etc/init.d/scrapyd

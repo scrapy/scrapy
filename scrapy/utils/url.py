@@ -1,181 +1,136 @@
 """
 This module contains general purpose URL functions not found in the standard
 library.
+
+Some of the functions that used to be imported from this module have been moved
+to the w3lib.url module. Always import those from there instead.
 """
-
-import os
-import re
-import urlparse
-import urllib
 import posixpath
-import cgi
+import re
+from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
 
-from scrapy.utils.python import unicode_to_str
+# scrapy.utils.url was moved to w3lib.url and import * ensures this
+# move doesn't break old code
+from w3lib.url import *
+from w3lib.url import _safe_chars, _unquotepath
+from scrapy.utils.python import to_unicode
+
 
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""
-    host = urlparse.urlparse(url).hostname
-
-    if host:
-        return any(((host == d) or (host.endswith('.%s' % d)) for d in domains))
-    else:
+    host = parse_url(url).netloc.lower()
+    if not host:
         return False
+    domains = [d.lower() for d in domains]
+    return any((host == d) or (host.endswith('.%s' % d)) for d in domains)
+
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(url, [spider.name] + \
-        getattr(spider, 'allowed_domains', []))
+    return url_is_from_any_domain(url,
+        [spider.name] + list(getattr(spider, 'allowed_domains', [])))
 
-def urljoin_rfc(base, ref, encoding='utf-8'):
-    """Same as urlparse.urljoin but supports unicode values in base and ref
-    parameters (in which case they will be converted to str using the given
-    encoding).
 
-    Always returns a str.
+def url_has_any_extension(url, extensions):
+    return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
+
+
+def parse_url(url, encoding=None):
+    """Return urlparsed url from the given argument (which could be an already
+    parsed url)
     """
-    return urlparse.urljoin(unicode_to_str(base, encoding), \
-        unicode_to_str(ref, encoding))
+    if isinstance(url, ParseResult):
+        return url
+    return urlparse(to_unicode(url, encoding))
 
-_reserved = ';/?:@&=+$|,#' # RFC 3986 (Generic Syntax)
-_unreserved_marks = "-_.!~*'()" # RFC 3986 sec 2.3
-_safe_chars = urllib.always_safe + '%' + _reserved + _unreserved_marks
 
-def safe_url_string(url, encoding='utf8'):
-    """Convert the given url into a legal URL by escaping unsafe characters
-    according to RFC-3986.
-
-    If a unicode url is given, it is first converted to str using the given
-    encoding (which defaults to 'utf-8'). When passing a encoding, you should
-    use the encoding of the original page (the page from which the url was
-    extracted from).
-
-    Calling this function on an already "safe" url will return the url
-    unmodified.
-
-    Always returns a str.
+def escape_ajax(url):
     """
-    s = unicode_to_str(url, encoding)
-    return urllib.quote(s,  _safe_chars)
+    Return the crawleable url according to:
+    https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
 
+    >>> escape_ajax("www.example.com/ajax.html#!key=value")
+    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
+    >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
+    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key%3Dvalue'
+    >>> escape_ajax("www.example.com/ajax.html?#!key=value")
+    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
+    >>> escape_ajax("www.example.com/ajax.html#!")
+    'www.example.com/ajax.html?_escaped_fragment_='
 
-_parent_dirs = re.compile(r'/?(\.\./)+')
+    URLs that are not "AJAX crawlable" (according to Google) returned as-is:
 
-def safe_download_url(url):
-    """ Make a url for download. This will call safe_url_string
-    and then strip the fragment, if one exists. The path will
-    be normalised.
-
-    If the path is outside the document root, it will be changed
-    to be within the document root.
+    >>> escape_ajax("www.example.com/ajax.html#key=value")
+    'www.example.com/ajax.html#key=value'
+    >>> escape_ajax("www.example.com/ajax.html#")
+    'www.example.com/ajax.html#'
+    >>> escape_ajax("www.example.com/ajax.html")
+    'www.example.com/ajax.html'
     """
-    safe_url = safe_url_string(url)
-    scheme, netloc, path, query, _ = urlparse.urlsplit(safe_url)
-    if path:
-        path = _parent_dirs.sub('', posixpath.normpath(path))
-        if url.endswith('/') and not path.endswith('/'):
-            path += '/'
+    defrag, frag = urldefrag(url)
+    if not frag.startswith('!'):
+        return url
+    return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
+
+
+def add_http_if_no_scheme(url):
+    """Add http as the default scheme if it is missing from the url."""
+    match = re.match(r"^\w+://", url, flags=re.I)
+    if not match:
+        parts = urlparse(url)
+        scheme = "http:" if parts.netloc else "http://"
+        url = scheme + url
+
+    return url
+
+
+def guess_scheme(url):
+    """Add an URL scheme if missing: file:// for filepath-like input or http:// otherwise."""
+    parts = urlparse(url)
+    if parts.scheme:
+        return url
+    # Note: this does not match Windows filepath
+    if re.match(r'''^                   # start with...
+                    (
+                        \.              # ...a single dot,
+                        (
+                            \. | [^/\.]+  # optionally followed by
+                        )?                # either a second dot or some characters
+                    )?      # optional match of ".", ".." or ".blabla"
+                    /       # at least one "/" for a file path,
+                    .       # and something after the "/"
+                    ''', parts.path, flags=re.VERBOSE):
+        return any_to_uri(url)
     else:
-        path = '/'
-    return urlparse.urlunsplit((scheme, netloc, path, query, ''))
+        return add_http_if_no_scheme(url)
 
-def is_url(text):
-    return text.partition("://")[0] in ('file', 'http', 'https')
 
-def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
-    """Return the value of a url parameter, given the url and parameter name"""
-    queryparams = cgi.parse_qs(urlparse.urlsplit(str(url))[3], \
-        keep_blank_values=keep_blank_values)
-    return queryparams.get(parameter, [default])[0]
+def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=False, strip_fragment=True):
 
-def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, unique=True):
-    """Clean url arguments leaving only those passed in the parameterlist keeping order
+    """Strip URL string from some of its components:
 
-    If remove is True, leave only those not in parameterlist.
-    If unique is False, do not remove duplicated keys
-    """
-    url = urlparse.urldefrag(url)[0]
-    base, _, query = url.partition('?')
-    seen = set()
-    querylist = []
-    for ksv in query.split(sep):
-        k, _, _ = ksv.partition(kvsep)
-        if unique and k in seen:
-            continue
-        elif remove and k in parameterlist:
-            continue
-        elif not remove and k not in parameterlist:
-            continue
-        else:
-            querylist.append(ksv)
-            seen.add(k)
-    return '?'.join([base, sep.join(querylist)]) if querylist else base
-
-def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
-    """Add or remove a parameter to a given url"""
-    def has_querystring(url):
-        _, _, _, query, _ = urlparse.urlsplit(url)
-        return bool(query)
-
-    parameter = url_query_parameter(url, name, keep_blank_values=1)
-    if url_is_quoted:
-        parameter = urllib.quote(parameter)
-    if parameter is None:
-        if has_querystring(url):
-            next_url = url + sep + name + '=' + new_value
-        else:
-            next_url = url + '?' + name + '=' + new_value
-    else:
-        next_url = url.replace(name+'='+parameter,
-                               name+'='+new_value)
-    return next_url
-
-def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
-        encoding=None):
-    """Canonicalize the given url by applying the following procedures:
-
-    - sort query arguments, first by key, then by value
-    - percent encode paths and query arguments. non-ASCII characters are
-      percent-encoded using UTF-8 (RFC-3986)
-    - normalize all spaces (in query arguments) '+' (plus symbol)
-    - normalize percent encodings case (%2f -> %2F)
-    - remove query arguments with blank values (unless keep_blank_values is True)
-    - remove fragments (unless keep_fragments is True)
-
-    The url passed can be a str or unicode, while the url returned is always a
-    str.
-
-    For examples see the tests in scrapy.tests.test_utils_url
+    - `strip_credentials` removes "user:password@"
+    - `strip_default_port` removes ":80" (resp. ":443", ":21")
+      from http:// (resp. https://, ftp://) URLs
+    - `origin_only` replaces path component with "/", also dropping
+      query and fragment components ; it also strips credentials
+    - `strip_fragment` drops any #fragment component
     """
 
-    url = unicode_to_str(url, encoding)
-    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
-    keyvals = cgi.parse_qsl(query, keep_blank_values)
-    keyvals.sort()
-    query = urllib.urlencode(keyvals)
-    path = safe_url_string(urllib.unquote(path))
-    fragment = '' if not keep_fragments else fragment
-    return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
-
-def path_to_file_uri(path):
-    """Convert local filesystem path to legal File URIs as described in:
-    http://en.wikipedia.org/wiki/File_URI_scheme
-    """
-    x = urllib.pathname2url(os.path.abspath(path))
-    if os.name == 'nt':
-        x = x.replace('|', ':') # http://bugs.python.org/issue5861
-    return 'file:///%s' % x.lstrip('/')
-
-def file_uri_to_path(uri):
-    """Convert File URI to local filesystem path according to:
-    http://en.wikipedia.org/wiki/File_URI_scheme
-    """
-    return urllib.url2pathname(urlparse.urlparse(uri).path)
-
-def any_to_uri(uri_or_path):
-    """If given a path name, return its File URI, otherwise return it
-    unmodified
-    """
-    if os.path.splitdrive(uri_or_path)[0]:
-        return path_to_file_uri(uri_or_path)
-    u = urlparse.urlparse(uri_or_path)
-    return uri_or_path if u.scheme else path_to_file_uri(uri_or_path)
+    parsed_url = urlparse(url)
+    netloc = parsed_url.netloc
+    if (strip_credentials or origin_only) and (parsed_url.username or parsed_url.password):
+        netloc = netloc.split('@')[-1]
+    if strip_default_port and parsed_url.port:
+        if (parsed_url.scheme, parsed_url.port) in (('http', 80),
+                                                    ('https', 443),
+                                                    ('ftp', 21)):
+            netloc = netloc.replace(':{p.port}'.format(p=parsed_url), '')
+    return urlunparse((
+        parsed_url.scheme,
+        netloc,
+        '/' if origin_only else parsed_url.path,
+        '' if origin_only else parsed_url.params,
+        '' if origin_only else parsed_url.query,
+        '' if strip_fragment else parsed_url.fragment
+    ))

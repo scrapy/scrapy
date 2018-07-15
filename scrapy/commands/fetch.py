@@ -1,11 +1,12 @@
-import pprint
+from __future__ import print_function
+import sys, six
+from w3lib.url import is_url
 
-from scrapy import log
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
-from scrapy.utils.url import is_url
 from scrapy.exceptions import UsageError
+from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 class Command(ScrapyCommand):
 
@@ -27,27 +28,43 @@ class Command(ScrapyCommand):
             help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", \
+            default=False, help="do not handle HTTP 3xx status codes and print response as-is")
+
+    def _print_headers(self, headers, prefix):
+        for key, values in headers.items():
+            for value in values:
+                self._print_bytes(prefix + b' ' + key + b': ' + value)
 
     def _print_response(self, response, opts):
         if opts.headers:
-            pprint.pprint(response.headers)
+            self._print_headers(response.request.headers, b'>')
+            print('>')
+            self._print_headers(response.headers, b'<')
         else:
-            print response.body
+            self._print_bytes(response.body)
+
+    def _print_bytes(self, bytes_):
+        bytes_writer = sys.stdout if six.PY2 else sys.stdout.buffer
+        bytes_writer.write(bytes_ + b'\n')
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         request = Request(args[0], callback=cb, dont_filter=True)
+        # by default, let the framework handle redirects,
+        # i.e. command handles all codes expect 3xx
+        if not opts.no_redirect:
+            request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+        else:
+            request.meta['handle_httpstatus_all'] = True
 
-        spider = None
+        spidercls = DefaultSpider
+        spider_loader = self.crawler_process.spider_loader
         if opts.spider:
-            try:
-                spider = self.crawler.spiders.create(opts.spider)
-            except KeyError:
-                log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
-
-        self.crawler.queue.append_request(request, spider, \
-            default_spider=BaseSpider('default'))
-        self.crawler.start()
-
+            spidercls = spider_loader.load(opts.spider)
+        else:
+            spidercls = spidercls_for_request(spider_loader, request, spidercls)
+        self.crawler_process.crawl(spidercls, start_requests=lambda: [request])
+        self.crawler_process.start()

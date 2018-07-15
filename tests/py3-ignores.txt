@@ -1,0 +1,9 @@
+tests/test_linkextractors_deprecated.py
+tests/test_proxy_connect.py
+
+scrapy/linkextractors/sgml.py
+scrapy/linkextractors/regex.py
+scrapy/linkextractors/htmlparser.py
+scrapy/downloadermiddlewares/cookies.py
+scrapy/extensions/statsmailer.py
+scrapy/extensions/memusage.py

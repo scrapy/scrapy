@@ -1,4 +1,0 @@
-var/lib/scrapyd
-var/lib/scrapyd/eggs
-var/lib/scrapyd/dbs
-var/log/scrapyd

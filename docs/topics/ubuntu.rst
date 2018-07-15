@@ -1,3 +1,5 @@
+:orphan: Ubuntu packages are obsolete
+
 .. _topics-ubuntu:
 
 ===============
@@ -6,44 +8,34 @@ Ubuntu packages
 
 .. versionadded:: 0.10
 
-`Insophia`_ publishes apt-gettable packages which are generally fresher than
-those in Ubuntu, and more stable too since they're built continously from
-`Scrapy Mercurial repositories`_ (stable & development) and so they contain the
-latest bug fixes.
+`Scrapinghub`_ publishes apt-gettable packages which are generally fresher than
+those in Ubuntu, and more stable too since they're continuously built from
+`GitHub repo`_ (master & stable branches) and so they contain the latest bug
+fixes.
 
-To use the packages, just add the following line to your
-``/etc/apt/sources.list``, and then run ``aptitude update`` and ``aptitude
-install scrapy-0.12``::
+.. caution:: These packages are currently not updated and may not work on
+   Ubuntu 16.04 and above, see :issue:`2076` and :issue:`2137`.
 
-    deb http://archive.scrapy.org/ubuntu DISTRO main
+To use the packages:
 
-Replacing ``DISTRO`` with the name of your Ubuntu release, which you can get
-with command::
+1. Import the GPG key used to sign Scrapy packages into APT keyring::
 
-    lsb_release -cs
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 627220E7
 
-Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``.
+2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command::
 
-For Ubuntu Maverick (10.10)::
+    echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
 
-    deb http://archive.scrapy.org/ubuntu maverick main
+3. Update package lists and install the scrapy package:
 
-For Ubuntu Lucid (10.04)::
+   .. parsed-literal::
 
-    deb http://archive.scrapy.org/ubuntu lucid main
+      sudo apt-get update && sudo apt-get install scrapy
 
-For Ubuntu Karmic (9.10)::
+.. note:: Repeat step 3 if you are trying to upgrade Scrapy.
 
-    deb http://archive.scrapy.org/ubuntu karmic main
+.. warning:: `python-scrapy` is a different package provided by official debian
+   repositories, it's very outdated and it isn't supported by Scrapy team.
 
-.. warning:: Please note that these packages are updated frequently, and so if
-   you find you can't download the packages, try updating your apt package
-   lists first, e.g., with ``apt-get update`` or ``aptitude update``.
-
-The public GPG key used to sign these packages can be imported into you APT
-keyring as follows::
-
-    curl -s http://archive.scrapy.org/ubuntu/archive.key | sudo apt-key add -
-
-.. _Insophia: http://insophia.com/
-.. _Scrapy Mercurial repositories: http://hg.scrapy.org/
+.. _Scrapinghub: https://scrapinghub.com/
+.. _GitHub repo: https://github.com/scrapy/scrapy

@@ -3,7 +3,7 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
-
+import six
 from twisted.python.failure import Failure
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
@@ -18,8 +18,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(settings['SPIDER_MIDDLEWARES_BASE'], \
-            settings['SPIDER_MIDDLEWARES'])
+        return build_component_list(settings.getwithbase('SPIDER_MIDDLEWARES'))
 
     def _add_middleware(self, mw):
         super(SpiderMiddlewareManager, self)._add_middleware(mw)
@@ -29,9 +28,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self.methods['process_spider_output'].insert(0, mw.process_spider_output)
         if hasattr(mw, 'process_spider_exception'):
             self.methods['process_spider_exception'].insert(0, mw.process_spider_exception)
+        if hasattr(mw, 'process_start_requests'):
+            self.methods['process_start_requests'].insert(0, mw.process_start_requests)
 
     def scrape_response(self, scrape_func, response, request, spider):
-        fname = lambda f:'%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
+        fname = lambda f:'%s.%s' % (
+                six.get_method_self(f).__class__.__name__,
+                six.get_method_function(f).__name__)
 
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:
@@ -68,3 +71,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd.addErrback(process_spider_exception)
         dfd.addCallback(process_spider_output)
         return dfd
+
+    def process_start_requests(self, start_requests, spider):
+        return self._process_chain('process_start_requests', start_requests, spider)

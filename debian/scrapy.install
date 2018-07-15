@@ -1,3 +1,2 @@
-usr/lib/python*/*-packages/scrapy
-usr/bin
 extras/scrapy_bash_completion etc/bash_completion.d/
+extras/scrapy_zsh_completion /usr/share/zsh/vendor-completions/_scrapy

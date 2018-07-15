@@ -8,14 +8,23 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. Scrapy provides the :class:`Item` class for this
-purpose.
+sources, typically, web pages. Scrapy spiders can return the extracted data
+as Python dicts. While convenient and familiar, Python dicts lack structure:
+it is easy to make a typo in a field name or return inconsistent data,
+especially in a larger project with many spiders.
 
+To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields.
+their available fields. 
 
-.. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
+Various Scrapy components use extra information provided by Items: 
+exporters look at declared fields to figure out columns to export,
+serialization can be customized using Item fields metadata, :mod:`trackref`
+tracks Item instances to help find memory leaks 
+(see :ref:`topics-leaks-trackrefs`), etc.
+
+.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -25,20 +34,20 @@ Declaring Items
 Items are declared using a simple class definition syntax and :class:`Field`
 objects. Here is an example::
 
-    from scrapy.item import Item, Field
+    import scrapy
 
-    class Product(Item):
-        name = Field()
-        price = Field()
-        stock = Field(default=0)
-        last_updated = Field()
+    class Product(scrapy.Item):
+        name = scrapy.Field()
+        price = scrapy.Field()
+        stock = scrapy.Field()
+        last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
    declared similar to `Django Models`_, except that Scrapy Items are much
    simpler as there is no concept of different field types.
 
-.. _Django: http://www.djangoproject.com/
-.. _Django Models: http://docs.djangoproject.com/en/dev/topics/db/models/
+.. _Django: https://www.djangoproject.com/
+.. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
 
 .. _topics-items-fields:
 
@@ -46,13 +55,13 @@ Item Fields
 ===========
 
 :class:`Field` objects are used to specify metadata for each field. For
-example, the default value for the ``stock`` field illustrated in the example
-above. 
+example, the serializer function for the ``last_updated`` field illustrated in
+the example above.
 
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
-reason, there isn't a reference list of all available metadata keys. Each key
-defined in :class:`Field` objects could be used by a different components, and
+reason, there is no reference list of all available metadata keys. Each key
+defined in :class:`Field` objects could be used by a different component, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
 :class:`Field` objects is to provide a way to define all field metadata in one
@@ -61,10 +70,8 @@ certain field keys to configure that behaviour. You must refer to their
 documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
-do not stay assigned as class attributes. Instead, they can be accesed through
-the :attr:`Item.fields` attribute. 
-
-And that's all you need to know about declaring items. 
+do not stay assigned as class attributes. Instead, they can be accessed through
+the :attr:`Item.fields` attribute.
 
 Working with Items
 ==================
@@ -95,10 +102,7 @@ Getting field values
     >>> product['price']
     1000
 
-    >>> product['stock'] # getting field with default value
-    0
-
-    >>> product['last_updated'] # getting field with no default value
+    >>> product['last_updated']
     Traceback (most recent call last):
         ...
     KeyError: 'last_updated'
@@ -140,8 +144,8 @@ Setting field values
         ...
     KeyError: 'Product does not support field: lala'
 
-Accesing all populated values
------------------------------
+Accessing all populated values
+------------------------------
 
 To access all populated values, just use the typical `dict API`_::
 
@@ -160,6 +164,10 @@ Copying items::
     >>> print product2
     Product(name='Desktop PC', price=1000)
 
+    >>> product3 = product2.copy()
+    >>> print product3
+    Product(name='Desktop PC', price=1000)
+
 Creating dicts from items::
 
     >>> dict(product) # create a dict from all populated values
@@ -175,28 +183,6 @@ Creating items from dicts::
         ...
     KeyError: 'Product does not support field: lala'
 
-Default values
-==============
-
-The only field metadata key supported by Items themselves is ``default``, which
-specifies the default value to return when trying to access a field which
-wasn't populated before. 
-
-So, for the ``Product`` item declared above::
-
-    >>> product = Product()
-
-    >>> product['stock'] # field with default value
-    0
-
-    >>> product['name'] # field with no default value
-    Traceback (most recent call last):
-    ...
-    KeyError: 'name'
-
-    >>> product.get('name') is None
-    True
-
 Extending Items
 ===============
 
@@ -206,16 +192,16 @@ fields) by declaring a subclass of your original Item.
 For example::
 
     class DiscountedProduct(Product):
-        discount_percent = Field(default=0)
-        discount_expiration_date = Field()
+        discount_percent = scrapy.Field(serializer=str)
+        discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
 appending more values, or changing existing values, like this::
 
     class SpecificProduct(Product):
-        name = Field(Product.fields['name'], default='product')
+        name = scrapy.Field(Product.fields['name'], serializer=my_serializer)
 
-That adds (or replaces) the ``default`` metadata key for the ``name`` field,
+That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
 
 Item objects
@@ -223,11 +209,11 @@ Item objects
 
 .. class:: Item([arg])
 
-    Return a new Item optionally initialized from the given argument. 
-    
+    Return a new Item optionally initialized from the given argument.
+
     Items replicate the standard `dict API`_, including its constructor. The
     only additional attribute provided by Items is:
-    
+
     .. attribute:: fields
 
         A dictionary containing *all declared fields* for this Item, not only
@@ -235,7 +221,7 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: http://docs.python.org/library/stdtypes.html#dict
+.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
 
 Field objects
 =============
@@ -248,6 +234,6 @@ Field objects
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
 
-.. _dict: http://docs.python.org/library/stdtypes.html#dict
+.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 

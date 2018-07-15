@@ -1,15 +1,15 @@
-include README
+include README.rst
 include AUTHORS
 include INSTALL
 include LICENSE
 include MANIFEST.in
-include scrapy/core/downloader/responsetypes/mime.types
-include scrapyd/default_scrapyd.conf
+include scrapy/VERSION
+include scrapy/mime.types
 recursive-include scrapy/templates *
-recursive-include scrapy/tests/sample_data *
+recursive-include scrapy license.txt
 recursive-include docs *
 prune docs/build
-recursive-include scripts *
-recursive-include examples *
 recursive-include extras *
 recursive-include bin *
+recursive-include tests *
+global-exclude __pycache__ *.py[cod]

@@ -1,25 +1,67 @@
-import sys
 import os
-from ConfigParser import SafeConfigParser
+import sys
+import numbers
 from operator import itemgetter
 
-def build_component_list(base, custom):
-    """Compose a component list based on a custom and base dict of components
-    (typically middlewares or extensions), unless custom is already a list, in
-    which case it's returned.
-    """
+import six
+from six.moves.configparser import SafeConfigParser
+
+from scrapy.settings import BaseSettings
+from scrapy.utils.deprecate import update_classpath
+from scrapy.utils.python import without_none_values
+
+
+def build_component_list(compdict, custom=None, convert=update_classpath):
+    """Compose a component list from a { class: order } dictionary."""
+
+    def _check_components(complist):
+        if len({convert(c) for c in complist}) != len(complist):
+            raise ValueError('Some paths in {!r} convert to the same object, '
+                             'please update your settings'.format(complist))
+
+    def _map_keys(compdict):
+        if isinstance(compdict, BaseSettings):
+            compbs = BaseSettings()
+            for k, v in six.iteritems(compdict):
+                prio = compdict.getpriority(k)
+                if compbs.getpriority(convert(k)) == prio:
+                    raise ValueError('Some paths in {!r} convert to the same '
+                                     'object, please update your settings'
+                                     ''.format(list(compdict.keys())))
+                else:
+                    compbs.set(convert(k), v, priority=prio)
+            return compbs
+        else:
+            _check_components(compdict)
+            return {convert(k): v for k, v in six.iteritems(compdict)}
+
+    def _validate_values(compdict):
+        """Fail if a value in the components dict is not a real number or None."""
+        for name, value in six.iteritems(compdict):
+            if value is not None and not isinstance(value, numbers.Real):
+                raise ValueError('Invalid value {} for component {}, please provide ' \
+                                 'a real number or None instead'.format(value, name))
+
+    # BEGIN Backwards compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
-        return custom
-    compdict = base.copy()
-    compdict.update(custom)
-    return [k for k, v in sorted(compdict.items(), key=itemgetter(1)) \
-        if v is not None]
+        _check_components(custom)
+        return type(custom)(convert(c) for c in custom)
+
+    if custom is not None:
+        compdict.update(custom)
+    # END Backwards compatibility
+
+    _validate_values(compdict)
+    compdict = without_none_values(_map_keys(compdict))
+    return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
+
 
 def arglist_to_dict(arglist):
     """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
     dict
     """
     return dict(x.split('=', 1) for x in arglist)
+
 
 def closest_scrapy_cfg(path='.', prevpath=None):
     """Return the path to the closest scrapy.cfg file by traversing the current
@@ -32,6 +74,7 @@ def closest_scrapy_cfg(path='.', prevpath=None):
     if os.path.exists(cfgfile):
         return cfgfile
     return closest_scrapy_cfg(os.path.dirname(path), path)
+
 
 def init_env(project='default', set_syspath=True):
     """Initialize environment to use command-line tool from inside a project
@@ -47,6 +90,7 @@ def init_env(project='default', set_syspath=True):
         if set_syspath and projdir not in sys.path:
             sys.path.append(projdir)
 
+
 def get_config(use_closest=True):
     """Get Scrapy config file as a SafeConfigParser"""
     sources = get_sources(use_closest)
@@ -54,9 +98,13 @@ def get_config(use_closest=True):
     cfg.read(sources)
     return cfg
 
+
 def get_sources(use_closest=True):
-    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg', \
-        os.path.expanduser('~/.scrapy.cfg')]
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
+        os.path.expanduser('~/.config')
+    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
+               xdg_config_home + '/scrapy.cfg',
+               os.path.expanduser('~/.scrapy.cfg')]
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
