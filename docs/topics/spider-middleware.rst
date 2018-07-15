@@ -213,7 +213,8 @@ DepthMiddleware
 
       * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
         crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS` - Whether to collect depth stats.
+      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
+        requests for each depth.
       * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
         their depth.
 
