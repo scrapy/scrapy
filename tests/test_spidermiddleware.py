@@ -119,8 +119,10 @@ class GeneratorOutputChainSpider(Spider):
     name = 'GeneratorOutputChainSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.GeneratorFailOutputChainMiddleware': 10,
-            __name__ + '.GeneratorRecoverOutputChainMiddleware': 5,
+            __name__ + '.GeneratorFailMiddleware': 10,
+            __name__ + '.GeneratorDoNothingAfterFailureMiddleware': 8,
+            __name__ + '.GeneratorRecoverMiddleware': 5,
+            __name__ + '.GeneratorDoNothingAfterRecoveryMiddleware': 3,
         },
     }
 
@@ -128,10 +130,23 @@ class GeneratorOutputChainSpider(Spider):
         yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
-        yield {'processed': ['parse']}
+        yield {'processed': ['parse-first-item']}
+        yield {'processed': ['parse-second-item']}
 
 
-class GeneratorFailOutputChainMiddleware:
+class _GeneratorDoNothingMiddleware:
+    def process_spider_output(self, response, result, spider):
+        for r in result:
+            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            yield r
+
+    def process_spider_exception(self, response, exception, spider):
+        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        logging.info('%s: %s caught', method, exception.__class__.__name__)
+        return None
+
+
+class GeneratorFailMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
             r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
@@ -144,7 +159,11 @@ class GeneratorFailOutputChainMiddleware:
         yield {'processed': [method]}
 
 
-class GeneratorRecoverOutputChainMiddleware:
+class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
+    pass
+
+
+class GeneratorRecoverMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
             r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
@@ -154,6 +173,9 @@ class GeneratorRecoverOutputChainMiddleware:
         method = '{}.process_spider_exception'.format(self.__class__.__name__)
         logging.info('%s: %s caught', method, exception.__class__.__name__)
         yield {'processed': [method]}
+
+class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
+    pass
 
 
 # ================================================================================
@@ -227,12 +249,26 @@ class TestSpiderMiddleware(TestCase):
         """
         (4) An exception from a middleware's process_spider_output method should be sent
         to the process_spider_exception method from the next middleware in the chain.
+        The result of the recovery by the process_spider_exception method should be handled
+        by the process_spider_output method from the next middleware.
         The final item count should be 2 (one from the spider callback and one from the
         process_spider_exception chain)
         """
         log4 = yield self.crawl_log(GeneratorOutputChainSpider)
         self.assertIn("'item_scraped_count': 2", str(log4))
-        self.assertIn("GeneratorRecoverOutputChainMiddleware.process_spider_exception: LookupError caught", str(log4))
-        self.assertNotIn("GeneratorFailOutputChainMiddleware.process_spider_exception: LookupError caught", str(log4))
-        self.assertIn("{'processed': ['parse', 'GeneratorFailOutputChainMiddleware.process_spider_output', 'GeneratorRecoverOutputChainMiddleware.process_spider_output']}", str(log4))
-        self.assertIn("{'processed': ['GeneratorRecoverOutputChainMiddleware.process_spider_exception']}", str(log4))
+        self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertIn("GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertNotIn("GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught", str(log4))
+        item_from_callback = {'processed': [
+            'parse-first-item',
+            'GeneratorFailMiddleware.process_spider_output',
+            'GeneratorDoNothingAfterFailureMiddleware.process_spider_output',
+            'GeneratorRecoverMiddleware.process_spider_output',
+            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+        item_recovered = {'processed': [
+            'GeneratorRecoverMiddleware.process_spider_exception',
+            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+        self.assertIn(str(item_from_callback), str(log4))
+        self.assertIn(str(item_recovered), str(log4))
+        self.assertNotIn('parse-second-item', str(log4))
