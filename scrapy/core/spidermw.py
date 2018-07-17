@@ -70,7 +70,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
 
-        def process_spider_exception(_failure, index):
+        def process_spider_exception(_failure, index=0):
             exception = _failure.value
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
@@ -91,7 +91,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                                          .format(fname(method), type(result)))
             return _failure
 
-        def process_spider_output(result, index):
+        def process_spider_output(result, index=0):
             # items in this iterable do not need to go through the process_spider_output
             # chain, they went through it already from the process_spider_exception method
             recovered = MutableChain()
@@ -120,8 +120,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return chain(result, recovered)
 
         dfd = mustbe_deferred(process_spider_input, response)
-        dfd.addErrback(process_spider_exception, index=0)
-        dfd.addCallback(process_spider_output, index=0)
+        dfd.addCallbacks(callback=process_spider_output, errback=process_spider_exception)
         return dfd
 
     def process_start_requests(self, start_requests, spider):
