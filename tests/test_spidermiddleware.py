@@ -34,7 +34,7 @@ class RecoverySpider(Spider):
         yield {'test': 1}
         self.logger.warn('DONT_FAIL: %s', response.meta.get('dont_fail'))
         if not response.meta.get('dont_fail'):
-            raise ModuleNotFoundError()
+            raise TabError()
 
 class RecoveryMiddleware:
     def process_spider_exception(self, response, exception, spider):
@@ -275,8 +275,8 @@ class TestSpiderMiddleware(TestCase):
         was enqueued from the recovery middleware)
         """
         log = yield self.crawl_log(RecoverySpider)
-        self.assertIn("Middleware: ModuleNotFoundError exception caught", str(log))
-        self.assertEqual(str(log).count("Middleware: ModuleNotFoundError exception caught"), 1)
+        self.assertIn("Middleware: TabError exception caught", str(log))
+        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
         self.assertIn("'item_scraped_count': 3", str(log))
 
     @defer.inlineCallbacks
