@@ -64,8 +64,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 try:
                     result = method(response=response, spider=spider)
                     if result is not None:
-                        raise _InvalidOutput('Middleware {} must return None or raise ' \
-                            'an exception, got {}'.format(fname(method), type(result)))
+                        raise _InvalidOutput('Middleware {} must return None or raise an exception, got {}' \
+                                             .format(fname(method), type(result)))
                 except:
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
@@ -78,8 +78,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_spider_exception'][index:]:
                 if method is None:
                     continue
-                result = method(response=response, exception=exception, spider=spider)
                 index += 1
+                result = method(response=response, exception=exception, spider=spider)
                 if _isiterable(result):
                     # stop exception handling by handing control over to the
                     # process_spider_output chain if an iterable has been returned
@@ -96,9 +96,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
             # chain, they went through it already from the process_spider_exception method
             recovered = MutableChain()
 
-            def evaluate_result(result_iterable, index):
+            def evaluate_iterable(iterable, index):
                 try:
-                    for r in result_iterable:
+                    for r in iterable:
                         yield r
                 except Exception as ex:
                     exception_result = process_spider_exception(Failure(ex), index+1)
@@ -109,10 +109,17 @@ class SpiderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_spider_output'][index:]:
                 if method is None:
                     continue
-                result = method(response=response, result=result, spider=spider)
                 index += 1
+                # the following might fail directly if the output value is not a generator
+                try:
+                    result = method(response=response, result=result, spider=spider)
+                except Exception as ex:
+                    exception_result = process_spider_exception(Failure(ex), index+1)
+                    if exception_result is None or isinstance(exception_result, Failure):
+                        raise
+                    return exception_result
                 if _isiterable(result):
-                    result = evaluate_result(result, index)
+                    result = evaluate_iterable(result, index)
                 else:
                     raise _InvalidOutput('Middleware {} must return an iterable, got {}' \
                                          .format(fname(method), type(result)))
