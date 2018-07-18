@@ -18,10 +18,12 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None):
+                 dont_filter=False, errback=None, flags=None, escape_url=True):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
+        self._original_url = url
+        self._set_escape_url(escape_url)
         self._set_url(url)
         self._set_body(body)
         assert isinstance(priority, int), "Request priority not an integer: %r" % priority
@@ -54,14 +56,20 @@ class Request(object_ref):
     def _set_url(self, url):
         if not isinstance(url, six.string_types):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
-
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+        self._url = escape_ajax(safe_url_string(url, self.encoding)) if self.escape_url else url
 
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
+
+    def _get_escape_url(self):
+        return self._escape_url
+
+    def _set_escape_url(self, value):
+        self._escape_url = value
+
+    escape_url = property(_get_escape_url, obsolete_setter(_set_escape_url, 'escape_url'))
 
     def _get_body(self):
         return self._body
@@ -91,8 +99,9 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
+        for x in ['method', 'headers', 'body', 'cookies', 'meta', 'encoding',
+                  'priority', 'dont_filter', 'callback', 'errback', 'escape_url']:
             kwargs.setdefault(x, getattr(self, x))
+        kwargs.setdefault('url', getattr(self, '_original_url'))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

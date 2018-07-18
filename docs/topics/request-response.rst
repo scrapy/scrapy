@@ -126,6 +126,9 @@ Request objects
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
 
+    :param escape_url: Whether the parameter ``url`` should be escaped or left as-is.
+    :type escape_url: bool
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -133,6 +136,13 @@ Request objects
         the constructor.
 
         This attribute is read-only. To change the URL of a Request use
+        :meth:`replace`.
+
+    .. attribute:: Request.escape_url
+
+        A boolean that indicates whether the url of the request has been escaped.
+
+        This attribute is read-only. To change it use
         :meth:`replace`.
 
     .. attribute:: Request.method
