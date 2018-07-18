@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class DepthMiddleware(object):
 
-    def __init__(self, maxdepth, stats=None, verbose_stats=False, prio=1):
+    def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth
         self.stats = stats
         self.verbose_stats = verbose_stats
@@ -41,7 +41,7 @@ class DepthMiddleware(object):
                         extra={'spider': spider}
                     )
                     return False
-                elif self.stats:
+                else:
                     if self.verbose_stats:
                         self.stats.inc_value('request_depth_count/%s' % depth,
                                              spider=spider)
@@ -50,7 +50,7 @@ class DepthMiddleware(object):
             return True
 
         # base case (depth=0)
-        if self.stats and 'depth' not in response.meta:
+        if 'depth' not in response.meta:
             response.meta['depth'] = 0
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)

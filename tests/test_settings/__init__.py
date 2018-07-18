@@ -3,8 +3,7 @@ import unittest
 import warnings
 
 from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
-                             CrawlerSettings, SETTINGS_PRIORITIES,
-                             get_settings_priority)
+                             SETTINGS_PRIORITIES, get_settings_priority)
 from tests import mock
 from . import default_settings
 
@@ -341,35 +340,6 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertTrue(frozencopy.frozen)
         self.assertIsNot(frozencopy, self.settings)
 
-    def test_deprecated_attribute_overrides(self):
-        self.settings.set('BAR', 'fuz', priority='cmdline')
-        with warnings.catch_warnings(record=True) as w:
-            self.settings.overrides['BAR'] = 'foo'
-            self.assertIn("Settings.overrides", str(w[0].message))
-            self.assertEqual(self.settings.get('BAR'), 'foo')
-            self.assertEqual(self.settings.overrides.get('BAR'), 'foo')
-            self.assertIn('BAR', self.settings.overrides)
-
-            self.settings.overrides.update(BAR='bus')
-            self.assertEqual(self.settings.get('BAR'), 'bus')
-            self.assertEqual(self.settings.overrides.get('BAR'), 'bus')
-
-            self.settings.overrides.setdefault('BAR', 'fez')
-            self.assertEqual(self.settings.get('BAR'), 'bus')
-
-            self.settings.overrides.setdefault('FOO', 'fez')
-            self.assertEqual(self.settings.get('FOO'), 'fez')
-            self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
-
-    def test_deprecated_attribute_defaults(self):
-        self.settings.set('BAR', 'fuz', priority='default')
-        with warnings.catch_warnings(record=True) as w:
-            self.settings.defaults['BAR'] = 'foo'
-            self.assertIn("Settings.defaults", str(w[0].message))
-            self.assertEqual(self.settings.get('BAR'), 'foo')
-            self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
-            self.assertIn('BAR', self.settings.defaults)
-
 
 class SettingsTest(unittest.TestCase):
 
@@ -420,34 +390,6 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(len(mydict), 1)
         self.assertIn('key', mydict)
         self.assertEqual(mydict['key'], 'val')
-
-
-class CrawlerSettingsTest(unittest.TestCase):
-
-    def test_deprecated_crawlersettings(self):
-        def _get_settings(settings_dict=None):
-            settings_module = type('SettingsModuleMock', (object,), settings_dict or {})
-            return CrawlerSettings(settings_module)
-
-        with warnings.catch_warnings(record=True) as w:
-            settings = _get_settings()
-            self.assertIn("CrawlerSettings is deprecated", str(w[0].message))
-
-            # test_global_defaults
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 180)
-
-            # test_defaults
-            settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 99)
-
-            # test_settings_module
-            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 3)
-
-            # test_overrides
-            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
-            settings.overrides['DOWNLOAD_TIMEOUT'] = '15'
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 15)
 
 
 if __name__ == "__main__":

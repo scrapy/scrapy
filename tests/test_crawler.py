@@ -1,5 +1,4 @@
 import logging
-import os
 import tempfile
 import warnings
 import unittest
@@ -14,8 +13,9 @@ from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
-from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
+from scrapy.extensions import telnet
+
 
 class BaseCrawlerTest(unittest.TestCase):
 
@@ -100,6 +100,8 @@ class CrawlerLoggingTestCase(unittest.TestCase):
                 custom_settings = {
                     'LOG_LEVEL': 'INFO',
                     'LOG_FILE': log_file.name,
+                    # disable telnet if not available to avoid an extra warning
+                    'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
                 }
 
             configure_logging()

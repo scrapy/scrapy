@@ -1,8 +1,8 @@
-import os
+import io
 import hashlib
 import random
 import warnings
-from tempfile import mkdtemp, TemporaryFile
+from tempfile import mkdtemp
 from shutil import rmtree
 
 from twisted.trial import unittest
@@ -401,8 +401,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
 
+
 def _create_image(format, *a, **kw):
-    buf = TemporaryFile()
+    buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
     return Image.open(buf)

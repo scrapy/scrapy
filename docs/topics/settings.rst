@@ -335,17 +335,6 @@ See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
     other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
     and :setting:`RETRY_PRIORITY_ADJUST`.
 
-.. setting:: DEPTH_STATS
-
-DEPTH_STATS
------------
-
-Default: ``True``
-
-Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
-
-Whether to collect maximum depth stats.
-
 .. setting:: DEPTH_STATS_VERBOSE
 
 DEPTH_STATS_VERBOSE
