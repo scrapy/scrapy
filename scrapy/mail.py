@@ -5,6 +5,8 @@ See documentation in docs/topics/email.rst
 """
 import logging
 
+import boto
+
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
@@ -36,7 +38,48 @@ def _to_bytes_or_none(text):
     return to_bytes(text)
 
 
-class MailSender(object):
+class BaseMailSender(object):
+
+    @classmethod
+    def from_settings(cls, settings):
+        raise NotImplementedError
+
+    def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
+        raise NotImplementedError
+
+    def _get_message(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
+        if attachs:
+            msg = MIMEMultipart('alternative')
+        else:
+            msg = MIMENonMultipart(*mimetype.split('/', 1))
+
+        to = list(arg_to_iter(to))
+        cc = list(arg_to_iter(cc))
+
+        msg['From'] = self.mailfrom
+        msg['To'] = COMMASPACE.join(to)
+        msg['Date'] = formatdate(localtime=True)
+        msg['Subject'] = subject
+
+        if charset:
+            msg.set_charset(charset)
+
+        if attachs:
+            msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
+            for attach_name, mimetype, f in attachs:
+                part = MIMEBase(*mimetype.split('/'))
+                part.set_payload(f.read())
+                Encoders.encode_base64(part)
+                part.add_header(
+                    'Content-Disposition', 'attachment; filename="%s"' % attach_name)
+                msg.attach(part)
+        else:
+            msg.set_payload(body)
+
+        return msg
+
+
+class MailSender(BaseMailSender):
 
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
@@ -56,37 +99,7 @@ class MailSender(object):
             settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
-        if attachs:
-            msg = MIMEMultipart()
-        else:
-            msg = MIMENonMultipart(*mimetype.split('/', 1))
-
-        to = list(arg_to_iter(to))
-        cc = list(arg_to_iter(cc))
-
-        msg['From'] = self.mailfrom
-        msg['To'] = COMMASPACE.join(to)
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = subject
-        rcpts = to[:]
-        if cc:
-            rcpts.extend(cc)
-            msg['Cc'] = COMMASPACE.join(cc)
-
-        if charset:
-            msg.set_charset(charset)
-
-        if attachs:
-            msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
-            for attach_name, mimetype, f in attachs:
-                part = MIMEBase(*mimetype.split('/'))
-                part.set_payload(f.read())
-                Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
-                    % attach_name)
-                msg.attach(part)
-        else:
-            msg.set_payload(body)
+        msg = self._get_message(to, subject, body, cc, attachs, mimetype, charset)
 
         if _callback:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
@@ -97,6 +110,10 @@ class MailSender(object):
                          {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
                           'mailattachs': len(attachs)})
             return
+
+        rcpts = to[:]
+        if cc:
+            rcpts.extend(cc)
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or 'utf-8'))
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
@@ -135,3 +152,37 @@ class MailSender(object):
             reactor.connectTCP(self.smtphost, self.smtpport, factory)
 
         return d
+
+
+class SESMailSender(BaseMailSender):
+
+    def __init__(self, aws_access_key, aws_secret_key, mailfrom='scrapy@localhost', debug=False):
+        self.aws_access_key = aws_access_key
+        self.aws_secret_key = aws_secret_key
+        self.mailfrom = mailfrom
+        self.debug = debug
+
+    @classmethod
+    def from_settings(cls, settings):
+        return cls(
+            settings['MAIL_SES_AWS_ACCESS_KEY'],
+            settings['MAIL_SES_AWS_SECRET_KEY'],
+            settings['MAIL_FROM']
+        )
+
+    def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
+        msg = self._get_message(to, subject, body, cc, attachs, mimetype, charset)
+
+        if _callback:
+            _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
+
+        if self.debug:
+            logger.debug('Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
+                         'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+                         {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
+                          'mailattachs': len(attachs)})
+            return
+
+        # TODO handle connection and send errors
+        session = boto.connect_ses(self.aws_access_key, self.aws_secret_key)
+        session.send_raw_email(raw_message=msg.as_string())
