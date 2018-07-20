@@ -50,8 +50,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 defer.returnValue(response)
 
             for method in self.methods['process_response']:
-                response = yield method(request=request, response=response,
-                                        spider=spider)
+                response = yield method(request=request, response=response, spider=spider)
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_response must return Response or Request, got %s' % \
                                          (six.get_method_self(method).__class__.__name__, type(response)))
@@ -63,8 +62,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         def process_exception(_failure):
             exception = _failure.value
             for method in self.methods['process_exception']:
-                response = yield method(request=request, exception=exception,
-                                        spider=spider)
+                response = yield method(request=request, exception=exception, spider=spider)
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_exception must return None, Response or Request, got %s' % \
                                          (six.get_method_self(method).__class__.__name__, type(response)))
