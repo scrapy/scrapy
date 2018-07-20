@@ -118,6 +118,7 @@ def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
     return True if rel is not None and 'nofollow' in rel.split() else False
 
+
 def create_instance(objcls, settings, crawler, *args, **kwargs):
     """Construct a class instance using its ``from_crawler`` or
     ``from_settings`` constructors, if available.

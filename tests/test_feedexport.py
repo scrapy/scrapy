@@ -173,7 +173,9 @@ class S3FeedStorageTest(unittest.TestCase):
         uri = os.environ.get('S3_TEST_FILE_URI')
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
-        storage = S3FeedStorage(uri, Settings())
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        storage = S3FeedStorage(uri, access_key, secret_key)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         expected_content = b"content: \xe2\x98\x83"
