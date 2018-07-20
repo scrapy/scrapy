@@ -11,7 +11,12 @@ from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
 
 
-class MetaSpider(Spider):
+class MockServerSpider(Spider):
+    def __init__(self, mockserver=None, *args, **kwargs):
+        super(MockServerSpider, self).__init__(*args, **kwargs)
+        self.mockserver = mockserver
+
+class MetaSpider(MockServerSpider):
 
     name = 'meta'
 
@@ -33,7 +38,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
+        url = self.mockserver.url("/follow?%s" % urlencode(qargs, doseq=1))
         self.start_urls = [url]
 
     def parse(self, response):
@@ -55,7 +60,7 @@ class DelaySpider(MetaSpider):
 
     def start_requests(self):
         self.t1 = time.time()
-        url = "http://localhost:8998/delay?n=%s&b=%s" % (self.n, self.b)
+        url = self.mockserver.url("/delay?n=%s&b=%s" % (self.n, self.b))
         yield Request(url, callback=self.parse, errback=self.errback)
 
     def parse(self, response):
@@ -121,7 +126,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
         for s in range(100):
             qargs = {'total': 10, 'seed': s}
-            url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
+            url = self.mockserver.url("/follow?%s") % urlencode(qargs, doseq=1)
             yield Request(url, meta={'seed': s})
             if self.fail_yielding:
                 2 / 0
@@ -160,7 +165,7 @@ class SingleRequestSpider(MetaSpider):
             return self.errback_func(failure)
 
 
-class DuplicateStartRequestsSpider(Spider):
+class DuplicateStartRequestsSpider(MockServerSpider):
     dont_filter = True
     name = 'duplicatestartrequests'
     distinct_urls = 2
@@ -169,7 +174,7 @@ class DuplicateStartRequestsSpider(Spider):
     def start_requests(self):
         for i in range(0, self.distinct_urls):
             for j in range(0, self.dupe_factor):
-                url = "http://localhost:8998/echo?headers=1&body=test%d" % i
+                url = self.mockserver.url("/echo?headers=1&body=test%d" % i)
                 yield Request(url, dont_filter=self.dont_filter)
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):

@@ -55,6 +55,7 @@ structure by default, similar to this::
    myproject/
        __init__.py
        items.py
+       middlewares.py
        pipelines.py
        settings.py
        spiders/
@@ -187,7 +188,7 @@ startproject
 
 Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
-If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
 
 Usage example::
 
@@ -429,6 +430,9 @@ Supported options:
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
+
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+  request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--pipelines``: process items through pipelines
 

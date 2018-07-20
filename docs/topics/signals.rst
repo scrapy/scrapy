@@ -135,6 +135,29 @@ item_dropped
         to be dropped
     :type exception: :exc:`~scrapy.exceptions.DropItem` exception
 
+item_error
+------------
+
+.. signal:: item_error
+.. function:: item_error(item, response, spider, failure)
+
+    Sent when a :ref:`topics-item-pipeline` generates an error (ie. raises
+    an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
+
+    This signal supports returning deferreds from their handlers.
+
+    :param item: the item dropped from the :ref:`topics-item-pipeline`
+    :type item: dict or :class:`~scrapy.item.Item` object
+
+    :param response: the response being processed when the exception was raised
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider which raised the exception
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+    :param failure: the exception raised as a Twisted `Failure`_ object
+    :type failure: `Failure`_ object
+
 spider_closed
 -------------
 

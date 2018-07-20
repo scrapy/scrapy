@@ -13,27 +13,34 @@ matrix:
       env: TOXENV=jessie
     - python: 2.7
       env: TOXENV=pypy
-    - python: 3.3
-      env: TOXENV=py33
+    - python: 2.7
+      env: TOXENV=pypy3
+    - python: 3.4
+      env: TOXENV=py34
     - python: 3.5
       env: TOXENV=py35
     - python: 3.6
       env: TOXENV=py36
+    - python: 3.7
+      env: TOXENV=py37
+      dist: xenial
+      sudo: true
     - python: 3.6
       env: TOXENV=docs
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
-        export PYENV_ROOT="$HOME/.pyenv"
-        if [ -f "$PYENV_ROOT/bin/pyenv" ]; then
-          pushd "$PYENV_ROOT" && git pull && popd
-        else
-          rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
-        fi
-        # get latest portable PyPy from pyenv directly (thanks to natural version sort option -V)
-        export PYPY_VERSION=`"$PYENV_ROOT/bin/pyenv" install --list |grep -o -E 'pypy-portable-[0-9][\.0-9]*$' |sort -V |tail -1`
-        "$PYENV_ROOT/bin/pyenv" install --skip-existing "$PYPY_VERSION"
-        virtualenv --python="$PYENV_ROOT/versions/$PYPY_VERSION/bin/python" "$HOME/virtualenvs/$PYPY_VERSION"
+        export PYPY_VERSION="pypy-6.0.0-linux_x86_64-portable"
+        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
+        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+      fi
+      if [ "$TOXENV" = "pypy3" ]; then
+        export PYPY_VERSION="pypy3.5-5.9-beta-linux_x86_64-portable"
+        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       fi
   - pip install -U tox twine wheel codecov

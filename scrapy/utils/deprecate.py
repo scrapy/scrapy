@@ -71,8 +71,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
-        # see http://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
-        # and http://docs.python.org/2/reference/datamodel.html#customizing-instance-and-subclass-checks
+        # see https://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
+        # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
         # for implementation details
         def __instancecheck__(cls, inst):
             return any(cls.__subclasscheck__(c)
@@ -124,26 +124,7 @@ def _clspath(cls, forced=None):
 
 
 DEPRECATION_RULES = [
-    ('scrapy.contrib_exp.downloadermiddleware.decompression.', 'scrapy.downloadermiddlewares.decompression.'),
-    ('scrapy.contrib_exp.iterators.', 'scrapy.utils.iterators.'),
-    ('scrapy.contrib.downloadermiddleware.', 'scrapy.downloadermiddlewares.'),
-    ('scrapy.contrib.exporter.', 'scrapy.exporters.'),
-    ('scrapy.contrib.linkextractors.', 'scrapy.linkextractors.'),
-    ('scrapy.contrib.loader.processor.', 'scrapy.loader.processors.'),
-    ('scrapy.contrib.loader.', 'scrapy.loader.'),
-    ('scrapy.contrib.pipeline.', 'scrapy.pipelines.'),
-    ('scrapy.contrib.spidermiddleware.', 'scrapy.spidermiddlewares.'),
-    ('scrapy.contrib.spiders.', 'scrapy.spiders.'),
-    ('scrapy.contrib.', 'scrapy.extensions.'),
-    ('scrapy.command.', 'scrapy.commands.'),
-    ('scrapy.dupefilter.', 'scrapy.dupefilters.'),
-    ('scrapy.linkextractor.', 'scrapy.linkextractors.'),
     ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-    ('scrapy.spider.', 'scrapy.spiders.'),
-    ('scrapy.squeue.', 'scrapy.squeues.'),
-    ('scrapy.statscol.', 'scrapy.statscollectors.'),
-    ('scrapy.utils.decorator.', 'scrapy.utils.decorators.'),
-    ('scrapy.spidermanager.SpiderManager', 'scrapy.spiderloader.SpiderLoader'),
 ]
 
 
@@ -159,10 +140,10 @@ def update_classpath(path):
 
 
 def method_is_overridden(subclass, base_class, method_name):
-    """ 
-    Return True if a method named ``method_name`` of a ``base_class`` 
-    is overridden in a ``subclass``. 
-    
+    """
+    Return True if a method named ``method_name`` of a ``base_class``
+    is overridden in a ``subclass``.
+
     >>> class Base(object):
     ...     def foo(self):
     ...         pass

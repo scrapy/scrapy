@@ -188,7 +188,7 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endElement(name)
         self._beautify_newline()
 
-    # Workaround for http://bugs.python.org/issue17606
+    # Workaround for https://bugs.python.org/issue17606
     # Before Python 2.7.4 xml.sax.saxutils required bytes;
     # since 2.7.4 it requires unicode. The bug is likely to be
     # fixed in 2.7.6, but 2.7.6 will still support unicode,
@@ -214,7 +214,8 @@ class CsvItemExporter(BaseItemExporter):
             file,
             line_buffering=False,
             write_through=True,
-            encoding=self.encoding
+            encoding=self.encoding,
+            newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
         ) if six.PY3 else file
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True

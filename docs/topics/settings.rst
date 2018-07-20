@@ -180,6 +180,34 @@ such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
 .. setting:: BOT_NAME
 
+AWS_ENDPOINT_URL
+----------------
+
+Default: ``None``
+
+Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
+
+.. setting:: AWS_ENDPOINT_URL
+
+AWS_USE_SSL
+-----------
+
+Default: ``None``
+
+Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
+By default SSL will be used.
+
+.. setting:: AWS_USE_SSL
+
+AWS_VERIFY
+----------
+
+Default: ``None``
+
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
+
+.. setting:: AWS_VERIFY
+
 BOT_NAME
 --------
 
@@ -306,17 +334,6 @@ See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
     This setting adjusts priority **in the opposite way** compared to
     other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
     and :setting:`RETRY_PRIORITY_ADJUST`.
-
-.. setting:: DEPTH_STATS
-
-DEPTH_STATS
------------
-
-Default: ``True``
-
-Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
-
-Whether to collect maximum depth stats.
 
 .. setting:: DEPTH_STATS_VERBOSE
 
@@ -1002,7 +1019,7 @@ The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
 If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
 
-.. _wget: http://www.gnu.org/software/wget/manual/wget.html
+.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
@@ -1317,14 +1334,14 @@ Default: ``2083``
 Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: http://www.boutell.com/newfaq/misc/urllength.html
+the default value for this setting see: https://boutell.com/newfaq/misc/urllength.html
 
 .. setting:: USER_AGENT
 
 USER_AGENT
 ----------
 
-Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
+Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden.
 

@@ -116,7 +116,7 @@ following methods:
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response`, dict or
+        iterable of :class:`~scrapy.http.Request`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -164,6 +164,17 @@ following methods:
         :param spider: the spider to whom the start requests belong
         :type spider: :class:`~scrapy.spiders.Spider` object
 
+    .. method:: from_crawler(cls, crawler)
+    
+       If present, this classmethod is called to create a middleware instance
+       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+       of the middleware. Crawler object provides access to all Scrapy core
+       components like settings and signals; it is a way for middleware to
+       access them and hook its functionality into Scrapy.
+    
+       :param crawler: crawler that uses this middleware
+       :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
@@ -188,16 +199,21 @@ DepthMiddleware
 
 .. class:: DepthMiddleware
 
-   DepthMiddleware is a scrape middleware used for tracking the depth of each
-   Request inside the site being scraped. It can be used to limit the maximum
-   depth to scrape or things like that.
+   DepthMiddleware is used for tracking the depth of each Request inside the
+   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   there is no value previously set (usually just the first Request) and
+   incrementing it by 1 otherwise.
+
+   It can be used to limit the maximum depth to scrape, control Request
+   priority based on their depth, and things like that.
 
    The :class:`DepthMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
 
       * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
         crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS` - Whether to collect depth stats.
+      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
+        requests for each depth.
       * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
         their depth.
 

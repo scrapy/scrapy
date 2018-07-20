@@ -15,6 +15,10 @@ from twisted.internet.error import TimeoutError
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
     HTTPConnectionPool, ResponseFailed
+try:
+    from twisted.web.client import URI
+except ImportError:
+    from twisted.web.client import _URI as URI
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
@@ -228,10 +232,38 @@ class TunnelingAgent(Agent):
             headers, bodyProducer, requestPath)
 
 
+class ScrapyProxyAgent(Agent):
+
+    def __init__(self, reactor, proxyURI,
+                 connectTimeout=None, bindAddress=None, pool=None):
+        super(ScrapyProxyAgent, self).__init__(reactor,
+                                               connectTimeout=connectTimeout,
+                                               bindAddress=bindAddress,
+                                               pool=pool)
+        self._proxyURI = URI.fromBytes(proxyURI)
+
+    def request(self, method, uri, headers=None, bodyProducer=None):
+        """
+        Issue a new request via the configured proxy.
+        """
+        # Cache *all* connections under the same key, since we are only
+        # connecting to a single destination, the proxy:
+        if twisted_version >= (15, 0, 0):
+            proxyEndpoint = self._getEndpoint(self._proxyURI)
+        else:
+            proxyEndpoint = self._getEndpoint(self._proxyURI.scheme,
+                                              self._proxyURI.host,
+                                              self._proxyURI.port)
+        key = ("http-proxy", self._proxyURI.host, self._proxyURI.port)
+        return self._requestWithEndpoint(key, proxyEndpoint, method,
+                                         URI.fromBytes(uri), headers,
+                                         bodyProducer, uri)
+
+
 class ScrapyAgent(object):
 
     _Agent = Agent
-    _ProxyAgent = ProxyAgent
+    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
@@ -260,9 +292,8 @@ class ScrapyAgent(object):
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
             else:
-                endpoint = TCP4ClientEndpoint(reactor, proxyHost, proxyPort,
-                    timeout=timeout, bindAddress=bindaddress)
-                return self._ProxyAgent(endpoint)
+                return self._ProxyAgent(reactor, proxyURI=to_bytes(proxy, encoding='ascii'),
+                    connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
@@ -344,11 +375,11 @@ class ScrapyAgent(object):
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s).",
-                           {'size': expected_size, 'warnsize': warnsize})
+                           "download warn size (%(warnsize)s) in request %(request)s.",
+                           {'size': expected_size, 'warnsize': warnsize, 'request': request})
 
         def _cancel(_):
-            # Abort connection inmediately.
+            # Abort connection immediately.
             txresponse._transport._producer.abortConnection()
 
         d = defer.Deferred(_cancel)
@@ -412,9 +443,10 @@ class _ResponseReader(protocol.Protocol):
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s).",
+                         "max size (%(maxsize)s) in request %(request)s.",
                          {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize})
+                          'maxsize': self._maxsize,
+                          'request': self._request})
             # Clear buffer earlier to avoid keeping data in memory for a long
             # time.
             self._bodybuf.truncate(0)

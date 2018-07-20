@@ -34,7 +34,7 @@ list of Python resources for non-programmers`_.
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
 .. _Dive Into Python 3: http://www.diveintopython3.net
 .. _Python Tutorial: https://docs.python.org/3/tutorial
-.. _Learn Python The Hard Way: http://learnpythonthehardway.org/book/
+.. _Learn Python The Hard Way: https://learnpythonthehardway.org/book/
 
 
 Creating a project
@@ -54,6 +54,8 @@ This will create a ``tutorial`` directory with the following contents::
             __init__.py
 
             items.py          # project items definition file
+            
+            middlewares.py    # project middlewares file
 
             pipelines.py      # project pipelines file
 
@@ -452,7 +454,7 @@ For historic reasons, Scrapy appends to a given file instead of overwriting
 its contents. If you run this command twice without removing the file
 before the second time, you'll end up with a broken JSON file.
 
-You can also used other formats, like `JSON Lines`_::
+You can also use other formats, like `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jl
 

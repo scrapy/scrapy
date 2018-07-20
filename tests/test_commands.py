@@ -1,3 +1,4 @@
+import inspect
 import os
 import sys
 import subprocess
@@ -17,6 +18,7 @@ from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 
 class ProjectTest(unittest.TestCase):
@@ -219,6 +221,16 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Spider opened", log)
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
+
+    def test_run_fail_spider(self):
+        proc = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
+        ret = proc.returncode
+        self.assertNotEqual(ret, 0)
+
+    def test_run_good_spider(self):
+        proc = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
+        ret = proc.returncode
+        self.assertEqual(ret, 0)
 
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider,

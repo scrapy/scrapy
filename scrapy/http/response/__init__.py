@@ -120,6 +120,8 @@ class Response(object_ref):
         """
         if isinstance(url, Link):
             url = url.url
+        elif url is None:
+            raise ValueError("url can't be None")
         url = self.urljoin(url)
         return Request(url, callback,
                        method=method,

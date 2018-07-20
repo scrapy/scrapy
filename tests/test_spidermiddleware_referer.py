@@ -45,7 +45,7 @@ class TestRefererMiddleware(TestCase):
             response = self.get_response(origin)
             request = self.get_request(target)
             out = list(self.mw.process_spider_output(response, [request], self.spider))
-            self.assertEquals(out[0].headers.get('Referer'), referrer)
+            self.assertEqual(out[0].headers.get('Referer'), referrer)
 
 
 class MixinDefault(object):
@@ -490,7 +490,7 @@ class TestSettingsPolicyByName(TestCase):
             ]:
             settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
-            self.assertEquals(mw.default_policy, p)
+            self.assertEqual(mw.default_policy, p)
 
     def test_valid_name_casevariants(self):
         for s, p in [
@@ -506,7 +506,7 @@ class TestSettingsPolicyByName(TestCase):
             ]:
             settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
-            self.assertEquals(mw.default_policy, p)
+            self.assertEqual(mw.default_policy, p)
 
     def test_invalid_name(self):
         settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
@@ -581,7 +581,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             request = self.get_request(target)
 
             out = list(self.referrermw.process_spider_output(response, [request], self.spider))
-            self.assertEquals(out[0].headers.get('Referer'), init_referrer)
+            self.assertEqual(out[0].headers.get('Referer'), init_referrer)
 
             for status, url in redirections:
                 response = Response(request.url, headers={'Location': url}, status=status)
@@ -589,7 +589,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                 self.referrermw.request_scheduled(request, self.spider)
 
             assert isinstance(request, Request)
-            self.assertEquals(request.headers.get('Referer'), final_referrer)
+            self.assertEqual(request.headers.get('Referer'), final_referrer)
 
 
 class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):

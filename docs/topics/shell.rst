@@ -39,9 +39,9 @@ variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
     [settings]
     shell = bpython
 
-.. _IPython: http://ipython.org/
-.. _IPython installation guide: http://ipython.org/install.html
-.. _bpython: http://www.bpython-interpreter.org/
+.. _IPython: https://ipython.org/
+.. _IPython installation guide: https://ipython.org/install.html
+.. _bpython: https://www.bpython-interpreter.org/
 
 Launch the shell
 ================
@@ -142,7 +142,7 @@ Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-http://scrapy.org page, and then proceed to scrape the https://reddit.com
+https://scrapy.org page, and then proceed to scrape the https://reddit.com
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.
@@ -154,7 +154,7 @@ shell works.
 
 First, we launch the shell::
 
-    scrapy shell 'http://scrapy.org' --nolog
+    scrapy shell 'https://scrapy.org' --nolog
 
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
@@ -164,7 +164,7 @@ all start with the ``[s]`` prefix)::
     [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
     [s]   crawler    <scrapy.crawler.Crawler object at 0x7f07395dd690>
     [s]   item       {}
-    [s]   request    <GET http://scrapy.org>
+    [s]   request    <GET https://scrapy.org>
     [s]   response   <200 https://scrapy.org/>
     [s]   settings   <scrapy.settings.Settings object at 0x7f07395dd710>
     [s]   spider     <DefaultSpider 'default' at 0x7f0735891690>
@@ -182,7 +182,7 @@ After that, we can start playing with the objects::
     >>> response.xpath('//title/text()').extract_first()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
-    >>> fetch("http://reddit.com")
+    >>> fetch("https://reddit.com")
 
     >>> response.xpath('//title/text()').extract()
     ['reddit: the front page of the internet']

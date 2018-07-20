@@ -155,6 +155,10 @@ class BaseResponseTest(unittest.TestCase):
         self._assert_followed_url(Link('http://example.com/foo'),
                                   'http://example.com/foo')
 
+    def test_follow_None_url(self):
+        r = self.response_class("http://example.com")
+        self.assertRaises(ValueError, r.follow, None)
+
     def test_follow_whitespace_url(self):
         self._assert_followed_url('foo ',
                                   'http://example.com/foo%20')
@@ -272,7 +276,10 @@ class TextResponseTest(BaseResponseTest):
                                  headers={"Content-type": ["text/html; charset=utf-8"]},
                                  body=b"\xef\xbb\xbfWORD\xe3\xab")
         self.assertEqual(r6.encoding, 'utf-8')
-        self.assertEqual(r6.text, u'WORD\ufffd\ufffd')
+        self.assertIn(r6.text, {
+            u'WORD\ufffd\ufffd',  # w3lib < 1.19.0
+            u'WORD\ufffd',        # w3lib >= 1.19.0
+        })
 
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,

@@ -25,9 +25,10 @@ def _serializable_queue(queue_class, serialize, deserialize):
 def _pickle_serialize(obj):
     try:
         return pickle.dumps(obj, protocol=2)
-    # Python>=3.5 raises AttributeError here while
-    # Python<=3.4 raises pickle.PicklingError
-    except (pickle.PicklingError, AttributeError) as e:
+    # Python <= 3.4 raises pickle.PicklingError here while
+    # 3.5 <= Python < 3.6 raises AttributeError and
+    # Python >= 3.6 raises TypeError
+    except (pickle.PicklingError, AttributeError, TypeError) as e:
         raise ValueError(str(e))
 
 PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \

@@ -136,6 +136,20 @@ accept one (and only one) positional argument, which will be an iterator.
    containing the collected values (for that field). The result of the output
    processors is the value that will be finally assigned to the item.
 
+If you want to use a plain function as a processor, make sure it receives
+``self`` as the first argument::
+
+    def lowercase_processor(self, values):
+        for v in values:
+            yield v.lower()
+
+    class MyItemLoader(ItemLoader):
+        name_in = lowercase_processor
+
+This is because whenever a function is assigned as a class variable, it becomes
+a method and would be passed the instance as the the first argument when being
+called. See `this answer on stackoverflow`_ for more details.
+
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
 processors to populate the fields.
@@ -143,6 +157,7 @@ processors to populate the fields.
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
 
+.. _this answer on stackoverflow: https://stackoverflow.com/a/35322635
 
 Declaring Item Loaders
 ======================
@@ -518,8 +533,8 @@ a footer of a page that looks something like:
 Example::
 
     <footer>
-        <a class="social" href="http://facebook.com/whatever">Like Us</a>
-        <a class="social" href="http://twitter.com/whatever">Follow Us</a>
+        <a class="social" href="https://facebook.com/whatever">Like Us</a>
+        <a class="social" href="https://twitter.com/whatever">Follow Us</a>
         <a class="email" href="mailto:whatever@example.com">Email Us</a>
     </footer>
 

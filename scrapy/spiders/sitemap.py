@@ -48,7 +48,7 @@ class SitemapSpider(Spider):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
-                for loc in iterloc(s):
+                for loc in iterloc(s, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
                             yield Request(loc, callback=c)

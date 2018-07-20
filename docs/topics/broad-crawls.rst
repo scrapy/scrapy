@@ -20,7 +20,7 @@ These are some common properties often found in broad crawls:
 
 * they crawl many domains (often, unbounded) instead of a specific set of sites
 
-* they don't necessarily crawl domains to completion, because it would
+* they don't necessarily crawl domains to completion, because it would be
   impractical (or impossible) to do so, and instead limit the crawl by time or
   number of pages crawled
 

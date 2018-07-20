@@ -25,20 +25,20 @@ class UtilsMiscTestCase(unittest.TestCase):
             'tests.test_utils_misc.test_walk_modules.mod.mod0',
             'tests.test_utils_misc.test_walk_modules.mod1',
         ]
-        self.assertEquals(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
 
         mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod')
         expected = [
             'tests.test_utils_misc.test_walk_modules.mod',
             'tests.test_utils_misc.test_walk_modules.mod.mod0',
         ]
-        self.assertEquals(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
 
         mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod1')
         expected = [
             'tests.test_utils_misc.test_walk_modules.mod1',
         ]
-        self.assertEquals(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
 
         self.assertRaises(ImportError, walk_modules, 'nomodule999')
 
@@ -53,7 +53,7 @@ class UtilsMiscTestCase(unittest.TestCase):
                 'testegg.spiders.b',
                 'testegg'
             ]
-            self.assertEquals(set([m.__name__ for m in mods]), set(expected))
+            self.assertEqual(set([m.__name__ for m in mods]), set(expected))
         finally:
             sys.path.remove(egg)
 

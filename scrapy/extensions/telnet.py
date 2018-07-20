@@ -6,13 +6,15 @@ See documentation in docs/topics/telnetconsole.rst
 
 import pprint
 import logging
+import traceback
 
 from twisted.internet import protocol
 try:
     from twisted.conch import manhole, telnet
     from twisted.conch.insults import insults
     TWISTED_CONCH_AVAILABLE = True
-except ImportError:
+except (ImportError, SyntaxError):
+    _TWISTED_CONCH_TRACEBACK = traceback.format_exc()
     TWISTED_CONCH_AVAILABLE = False
 
 from scrapy.exceptions import NotConfigured
@@ -40,7 +42,9 @@ class TelnetConsole(protocol.ServerFactory):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
         if not TWISTED_CONCH_AVAILABLE:
-            raise NotConfigured
+            raise NotConfigured(
+                'TELNETCONSOLE_ENABLED setting is True but required twisted '
+                'modules failed to import:\n' + _TWISTED_CONCH_TRACEBACK)
         self.crawler = crawler
         self.noisy = False
         self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
@@ -55,9 +59,9 @@ class TelnetConsole(protocol.ServerFactory):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        logger.debug("Telnet console listening on %(host)s:%(port)d",
-                     {'host': h.host, 'port': h.port},
-                     extra={'crawler': self.crawler})
+        logger.info("Telnet console listening on %(host)s:%(port)d",
+                    {'host': h.host, 'port': h.port},
+                    extra={'crawler': self.crawler})
 
     def stop_listening(self):
         self.port.stopListening()
@@ -82,7 +86,7 @@ class TelnetConsole(protocol.ServerFactory):
             'prefs': print_live_refs,
             'hpy': hpy,
             'help': "This is Scrapy telnet console. For more info see: " \
-                "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+                "https://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

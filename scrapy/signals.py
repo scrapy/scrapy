@@ -17,6 +17,7 @@ response_received = object()
 response_downloaded = object()
 item_scraped = object()
 item_dropped = object()
+item_error = object()
 
 # for backwards compatibility
 stats_spider_opened = spider_opened

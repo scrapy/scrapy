@@ -22,15 +22,15 @@ class TestDefaultHeadersMiddleware(TestCase):
         defaults, spider, mw = self.get_defaults_spider_mw()
         req = Request('http://www.scrapytest.org')
         mw.process_request(req, spider)
-        self.assertEquals(req.headers, defaults)
+        self.assertEqual(req.headers, defaults)
 
     def test_update_headers(self):
         defaults, spider, mw = self.get_defaults_spider_mw()
         headers = {'Accept-Language': ['es'], 'Test-Header': ['test']}
         bytes_headers = {b'Accept-Language': [b'es'], b'Test-Header': [b'test']}
         req = Request('http://www.scrapytest.org', headers=headers)
-        self.assertEquals(req.headers, bytes_headers)
+        self.assertEqual(req.headers, bytes_headers)
 
         mw.process_request(req, spider)
         defaults.update(bytes_headers)
-        self.assertEquals(req.headers, defaults)
+        self.assertEqual(req.headers, defaults)

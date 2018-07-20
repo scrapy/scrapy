@@ -70,8 +70,8 @@ class RFC2616Policy(object):
         return True
 
     def should_cache_response(self, response, request):
-        # What is cacheable - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
-        # Response cacheability - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
+        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
+        # Response cacheability - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
@@ -163,7 +163,7 @@ class RFC2616Policy(object):
 
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#706
         cc = self._parse_cachecontrol(response)
         maxage = self._get_max_age(cc)
         if maxage is not None:
@@ -194,7 +194,7 @@ class RFC2616Policy(object):
 
     def _compute_current_age(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeCurrentAge
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#366
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#658
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
@@ -414,7 +414,7 @@ class LeveldbCacheStorage(object):
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 
-    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
     >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
     ...                                                 b'max-age': b'3600'}
