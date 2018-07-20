@@ -5,8 +5,6 @@ See documentation in docs/topics/email.rst
 """
 import logging
 
-import boto
-
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
@@ -171,6 +169,8 @@ class SESMailSender(BaseMailSender):
         )
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
+        import boto
+
         msg = self._get_message(to, subject, body, cc, attachs, mimetype, charset)
 
         if _callback:
