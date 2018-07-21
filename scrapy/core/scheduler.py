@@ -4,7 +4,7 @@ import logging
 from os.path import join, exists
 
 from scrapy.utils.reqser import request_to_dict, request_from_dict
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
 
 logger = logging.getLogger(__name__)
@@ -26,12 +26,7 @@ class Scheduler(object):
     def from_crawler(cls, crawler):
         settings = crawler.settings
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
-        if hasattr(dupefilter_cls, 'from_crawler'):
-            dupefilter = dupefilter_cls.from_crawler(crawler)
-        elif hasattr(dupefilter_cls, 'from_settings'):
-            dupefilter = dupefilter_cls.from_settings(crawler.settings)
-        else:
-            dupefilter = dupefilter_cls()
+        dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
