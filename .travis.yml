@@ -12,6 +12,8 @@ matrix:
     - python: 2.7
       env: TOXENV=jessie
     - python: 2.7
+      env: TOXENV=scurl
+    - python: 2.7
       env: TOXENV=pypy
     - python: 2.7
       env: TOXENV=pypy3
