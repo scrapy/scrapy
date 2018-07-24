@@ -56,6 +56,10 @@ class BaseMailSender(object):
 
         msg['From'] = self.mailfrom
         msg['To'] = COMMASPACE.join(to)
+
+        if cc:
+            msg['Cc'] = COMMASPACE.join(cc)
+
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = subject
 
