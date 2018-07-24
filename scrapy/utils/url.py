@@ -13,14 +13,13 @@ from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
 from w3lib.url import *
-from w3lib.url import _safe_chars, _unquotepath
+from w3lib.url import _safe_chars, _unquotepath, canonicalize_url
 from scrapy.utils.python import to_unicode
 
 
 try:
-    from scurl import canonicalize_url, urljoin
+    from scurl import urljoin
 except ImportError as e:
-    from w3lib.url import canonicalize_url
     from six.moves.urllib.parse import urljoin
     warnings.warn("We noticed that you haven't installed our new library scurl yet. It helps\
         increase the speed of your spider!")
