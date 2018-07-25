@@ -12,7 +12,7 @@ Contributing to Scrapy
 There are many ways to contribute to Scrapy. Here are some of them:
 
 * Blog about Scrapy. Tell the world how you're using Scrapy. This will help
-  newcomers with more examples and the Scrapy project to increase its
+  newcomers with more examples and will help the Scrapy project to increase its
   visibility.
 
 * Report bugs and request features in the `issue tracker`_, trying to follow
@@ -39,7 +39,7 @@ Reporting bugs
     trusted Scrapy developers, and its archives are not public.
 
 Well-written bug reports are very helpful, so keep in mind the following
-guidelines when reporting a new bug.
+guidelines when you're going to report a new bug.
 
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
