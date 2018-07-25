@@ -174,7 +174,8 @@ class RequestTest(unittest.TestCase):
         def somecallback():
             pass
 
-        r1 = self.request_class("http://www.example.com", callback=somecallback, errback=somecallback)
+        r1 = self.request_class("http://www.example.com", flags=['f1', 'f2'],
+                                callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
         r2 = r1.copy()
 
@@ -183,6 +184,10 @@ class RequestTest(unittest.TestCase):
         assert r1.errback is somecallback
         assert r2.callback is r1.callback
         assert r2.errback is r2.errback
+
+        # make sure flags list is shallow copied
+        assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
+        self.assertEqual(r1.flags, r2.flags)
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
