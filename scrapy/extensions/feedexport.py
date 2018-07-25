@@ -21,7 +21,7 @@ from w3lib.url import file_uri_to_path
 from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
 from scrapy.utils.boto import is_botocore
@@ -93,12 +93,29 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
-        from scrapy.conf import settings
+    def __init__(self, uri, access_key=None, secret_key=None):
+        # BEGIN Backwards compatibility for initialising without keys (and
+        # without using from_crawler)
+        no_defaults = access_key is None and secret_key is None
+        if no_defaults:
+            from scrapy.conf import settings
+            if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
+                import warnings
+                from scrapy.exceptions import ScrapyDeprecationWarning
+                warnings.warn(
+                    "Initialising `scrapy.extensions.feedexport.S3FeedStorage` "
+                    "without AWS keys is deprecated. Please supply credentials or "
+                    "use the `from_crawler()` constructor.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2
+                )
+                access_key = settings['AWS_ACCESS_KEY_ID']
+                secret_key = settings['AWS_SECRET_ACCESS_KEY']
+        # END Backwards compatibility
         u = urlparse(uri)
         self.bucketname = u.hostname
-        self.access_key = u.username or settings['AWS_ACCESS_KEY_ID']
-        self.secret_key = u.password or settings['AWS_SECRET_ACCESS_KEY']
+        self.access_key = u.username or access_key
+        self.secret_key = u.password or secret_key
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
         if self.is_botocore:
@@ -110,6 +127,11 @@ class S3FeedStorage(BlockingFeedStorage):
         else:
             import boto
             self.connect_s3 = boto.connect_s3
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return cls(uri, crawler.settings['AWS_ACCESS_KEY_ID'],
+                   crawler.settings['AWS_SECRET_ACCESS_KEY'])
 
     def _store_in_thread(self, file):
         file.seek(0)
@@ -181,6 +203,7 @@ class FeedExporter(object):
     @classmethod
     def from_crawler(cls, crawler):
         o = cls(crawler.settings)
+        o.crawler = crawler
         crawler.signals.connect(o.open_spider, signals.spider_opened)
         crawler.signals.connect(o.close_spider, signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signals.item_scraped)
@@ -253,11 +276,16 @@ class FeedExporter(object):
             logger.error("Unknown feed storage scheme: %(scheme)s",
                          {'scheme': scheme})
 
+    def _get_instance(self, objcls, *args, **kwargs):
+        return create_instance(
+            objcls, self.settings, getattr(self, 'crawler', None),
+            *args, **kwargs)
+
     def _get_exporter(self, *args, **kwargs):
-        return self.exporters[self.format](*args, **kwargs)
+        return self._get_instance(self.exporters[self.format], *args, **kwargs)
 
     def _get_storage(self, uri):
-        return self.storages[urlparse(uri).scheme](uri)
+        return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
     def _get_uri_params(self, spider):
         params = {}
