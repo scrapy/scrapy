@@ -97,9 +97,15 @@ class MailSender(BaseMailSender):
 
     @classmethod
     def from_settings(cls, settings):
-        return cls(settings['MAIL_HOST'], settings['MAIL_FROM'], settings['MAIL_USER'],
-            settings['MAIL_PASS'], settings.getint('MAIL_PORT'),
-            settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
+        return cls(
+            smtphost=settings['MAIL_HOST'],
+            mailfrom=settings['MAIL_FROM'],
+            smtpuser=settings['MAIL_USER'],
+            smtppass=settings['MAIL_PASS'],
+            smtpport=settings.getint('MAIL_PORT'),
+            smtptls=settings.getbool('MAIL_TLS'),
+            smtpssl=settings.getbool('MAIL_SSL'),
+        )
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
         msg = create_email_message(self.mailfrom, to, subject, body, cc, attachs, mimetype, charset)
@@ -168,9 +174,9 @@ class SESMailSender(BaseMailSender):
     @classmethod
     def from_settings(cls, settings):
         return cls(
-            settings['MAIL_SES_AWS_ACCESS_KEY'],
-            settings['MAIL_SES_AWS_SECRET_KEY'],
-            settings['MAIL_FROM']
+            aws_access_key=settings['MAIL_SES_AWS_ACCESS_KEY'],
+            aws_secret_key=settings['MAIL_SES_AWS_SECRET_KEY'],
+            mailfrom=settings['MAIL_FROM']
         )
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
