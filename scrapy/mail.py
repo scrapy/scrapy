@@ -36,49 +36,50 @@ def _to_bytes_or_none(text):
     return to_bytes(text)
 
 
+def create_email_message(mailfrom, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
+    if attachs:
+        msg = MIMEMultipart()
+    else:
+        msg = MIMENonMultipart(*mimetype.split('/', 1))
+
+    to = list(arg_to_iter(to))
+    cc = list(arg_to_iter(cc))
+
+    msg['From'] = mailfrom
+    msg['To'] = COMMASPACE.join(to)
+
+    if cc:
+        msg['Cc'] = COMMASPACE.join(cc)
+
+    msg['Date'] = formatdate(localtime=True)
+    msg['Subject'] = subject
+
+    if charset:
+        msg.set_charset(charset)
+
+    if attachs:
+        msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
+        for attach_name, mimetype, f in attachs:
+            part = MIMEBase(*mimetype.split('/'))
+            part.set_payload(f.read())
+            Encoders.encode_base64(part)
+            part.add_header(
+                'Content-Disposition', 'attachment; filename="%s"' % attach_name)
+            msg.attach(part)
+    else:
+        msg.set_payload(body)
+
+    return msg
+
+
 class BaseMailSender(object):
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_settings(cls, **kwargs):
         raise NotImplementedError
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
         raise NotImplementedError
-
-    def _get_message(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
-        if attachs:
-            msg = MIMEMultipart('alternative')
-        else:
-            msg = MIMENonMultipart(*mimetype.split('/', 1))
-
-        to = list(arg_to_iter(to))
-        cc = list(arg_to_iter(cc))
-
-        msg['From'] = self.mailfrom
-        msg['To'] = COMMASPACE.join(to)
-
-        if cc:
-            msg['Cc'] = COMMASPACE.join(cc)
-
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = subject
-
-        if charset:
-            msg.set_charset(charset)
-
-        if attachs:
-            msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
-            for attach_name, mimetype, f in attachs:
-                part = MIMEBase(*mimetype.split('/'))
-                part.set_payload(f.read())
-                Encoders.encode_base64(part)
-                part.add_header(
-                    'Content-Disposition', 'attachment; filename="%s"' % attach_name)
-                msg.attach(part)
-        else:
-            msg.set_payload(body)
-
-        return msg
 
 
 class MailSender(BaseMailSender):
@@ -101,7 +102,7 @@ class MailSender(BaseMailSender):
             settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
-        msg = self._get_message(to, subject, body, cc, attachs, mimetype, charset)
+        msg = create_email_message(self.mailfrom, to, subject, body, cc, attachs, mimetype, charset)
 
         if _callback:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
@@ -172,13 +173,10 @@ class SESMailSender(BaseMailSender):
             settings['MAIL_FROM']
         )
 
-    def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
+    def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
         import boto
 
-        msg = self._get_message(to, subject, body, cc, attachs, mimetype, charset)
-
-        if _callback:
-            _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
+        msg = create_email_message(self.mailfrom, to, subject, body, cc, attachs, mimetype, charset)
 
         if self.debug:
             logger.debug('Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
