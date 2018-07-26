@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import re
 import json
 import marshal
+import os
 import tempfile
 import unittest
 from io import BytesIO
@@ -265,6 +266,24 @@ class CsvItemExporterTest(BaseItemExporterTest):
             ie.finish_exporting()
             self.assertCsvEqual(output.getvalue(),
                                 b'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
+
+    def test_header_on_file_with_contents(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            filepath = f.name
+            ie = CsvItemExporter(f)
+            ie.start_exporting()
+            ie.export_item(self.i)
+            ie.finish_exporting()
+        with open(filepath, 'a+b') as f:
+            ie = CsvItemExporter(f)
+            ie.start_exporting()
+            ie.export_item(self.i)
+            ie.finish_exporting()
+            f.seek(0)
+            result = f.read()
+        os.unlink(filepath)
+        self.assertCsvEqual(result,
+                            b'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
 
     def test_header_no_header_line(self):
         for item in [self.i, dict(self.i)]:
