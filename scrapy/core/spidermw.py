@@ -66,6 +66,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     if result is not None:
                         raise _InvalidOutput('Middleware {} must return None or raise an exception, got {}' \
                                              .format(fname(method), type(result)))
+                except _InvalidOutput:
+                    raise
                 except:
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
