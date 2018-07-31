@@ -7,7 +7,16 @@ from time import time
 import warnings
 from six.moves.urllib.parse import urldefrag
 
+import asyncio
+'''
+from twisted.internet import asyncioreactor
+try:
+    asyncioreactor.install(asyncio.get_event_loop())
+except Exception:
+    pass
+'''
 from zope.interface import implementer
+from twisted.internet import reactor
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH

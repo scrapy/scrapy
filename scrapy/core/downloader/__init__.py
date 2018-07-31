@@ -6,7 +6,16 @@ from datetime import datetime
 from collections import deque
 
 import six
-from twisted.internet import reactor, defer, task
+import asyncio
+'''
+from twisted.internet import asyncioreactor
+try:
+    asyncioreactor.install(asyncio.get_event_loop())
+except Exception:
+    pass
+'''
+from twisted.internet import reactor
+from twisted.internet import defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached

@@ -8,9 +8,10 @@ from twisted.python.failure import Failure
 from twisted.internet import defer
 from types import GeneratorType
 from types import AsyncGeneratorType
+from functools import partial
 
 from scrapy.utils.misc import ensure_deferred
-from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback, asynciter_errback, async_parallel
+from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback, asynciter_errback, async_parallel, asyncfut_parallel, asyncfut_iterback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
@@ -128,7 +129,6 @@ class Scraper(object):
         assert isinstance(response, (Response, Failure))
 
         dfd = self._scrape2(response, request, spider) # returns spiders processed output
-
         dfd.addErrback(self.handle_spider_error, request, response, spider)
         dfd.addCallback(self.handle_spider_output, request, response, spider)
         return dfd
@@ -144,12 +144,15 @@ class Scraper(object):
             dfd = self.call_spider(request_result, request, spider)
             return dfd.addErrback(
                 self._log_download_errors, request_result, request, spider)
-
     
     def call_spider(self, result, request, spider):
         result.request = request
+        result.spider = spider
+        result.crawler = self.crawler
+        
         dfd = defer_result(result)
-        dfd.addCallbacks(inline_requests(request.callback or spider.parse), request.errback)
+        crawler = self.crawler
+        dfd.addCallbacks(inline_requests(request.callback or spider.parse, crawler, spider), request.errback)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider):
@@ -173,7 +176,6 @@ class Scraper(object):
             spider=spider
         )
     
-    
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
@@ -182,8 +184,8 @@ class Scraper(object):
             dfd = parallel(it, self.concurrent_items,self._process_spidermw_output, request, response, spider)
             return dfd
         elif isinstance(result[0], AsyncGeneratorType):
-            it = asynciter_errback(result, self.handle_spider_error, request, response, spider)
-            dfd = async_parallel(it, self.concurrent_items,self._process_spidermw_output, request, response, spider)
+            it = asyncfut_iterback(result[0].__aiter__(), self.handle_spider_error, request, response, spider)
+            dfd = asyncfut_parallel(it, self.concurrent_items,self._process_spidermw_output, request, response, spider)
             return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):

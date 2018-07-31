@@ -32,6 +32,14 @@ import re
 from io import BytesIO
 from six.moves.urllib.parse import unquote
 
+import asyncio
+'''
+from twisted.internet import asyncioreactor
+try:
+    asyncioreactor.install(asyncio.get_event_loop())
+except Exception:
+    pass
+'''
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator

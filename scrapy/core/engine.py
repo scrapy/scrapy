@@ -4,6 +4,7 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
 For more information see docs/topics/architecture.rst
 
 """
+import asyncio
 import logging
 from time import time
 
@@ -146,9 +147,15 @@ class ExecutionEngine(object):
                              exc_info=True, extra={'spider': spider})
             else:
                 self.crawl(request, spider)
-
         if self.spider_is_idle(spider) and slot.close_if_idle:
-            self._spider_idle(spider)
+        
+            tsk = []
+            for task in asyncio.Task.all_tasks():
+                if not task.done():
+                    tsk.append(task)
+            
+            if not tsk:
+                self._spider_idle(spider)
 
     def _needs_backout(self, spider):
         slot = self.slot

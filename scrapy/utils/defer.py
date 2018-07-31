@@ -1,10 +1,17 @@
 """
 Helper functions for dealing with Twisted deferreds
 """
+import asyncio
+from asyncio.tasks import ensure_future
+from functools import partial
+from aiostream import stream, pipe
+from types import AsyncGeneratorType
 
-from twisted.internet import defer, reactor, task
+
+from twisted.internet import reactor
+from twisted.internet import defer, task
 from twisted.python import failure
-from scrapy.utils.misc import ensure_deferred
+from scrapy.utils.misc import ensure_deferred,alist
 import types
 
 from scrapy.exceptions import IgnoreRequest
@@ -65,6 +72,17 @@ def parallel(iterable, count, callable, *args, **named):
     work = (callable(elem, *args, **named) for elem in iterable)
     return defer.DeferredList([coop.coiterate(work) for _ in range(count)])
 
+
+def asyncfut_parallel(iterable, count, callable, *args, **named):
+    coop = task.Cooperator()
+    d = defer.Deferred.fromFuture(iterable)
+        
+    def cooper(iterable):
+        work = (callable(elem, *args, **named) for elem in iterable)
+        return defer.DeferredList([coop.coiterate(work) for _ in range(count)])
+    d.addCallbacks(cooper)
+    
+
 def async_parallel(iterable, count, callable, *args, **named):
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
@@ -120,21 +138,37 @@ def iter_errback(iterable, errback, *a, **kw):
         except:
             errback(failure.Failure(), *a, **kw)
 
+def asyncfut_iterback(iterable, errback, *a, **kw):
+    async def consumegen(asyncgen):
+        val = list()
+        async for i in asyncgen:
+            val.append(i)
+        return val
+    future = asyncio.ensure_future(consumegen(iterable))
+    return future
+
 def asynciter_errback(iterable, errback, *a, **kw):
     ''' Wraps an asynchrnous generator iterable, calling an errback if an
     error is caught while iterating through it
     '''
-    it = iterable[0]
+    it = iterable
+    async_iter = it.__aiter__()
     
-    while True:
-        try:
-            val = it.__anext__().send(None)
-            
-        except StopIteration as e:
-            yield e.value
-            
-        except StopAsyncIteration:
-            break
-        except:
-            errback(failure.Failure(), *a, **kw)
+    loop = asyncio.get_event_loop()
+    loop1 = asyncio.get_event_loop()
     
+    i=0
+
+    try:
+        def callback(alist):
+            return alist.result()
+        
+        task = asyncio.ensure_future(asyncio.wait_for(stream.list(async_iter),timeout=0))
+        tsk = task.result()
+        
+        return task
+        
+    except StopAsyncIteration:
+        return
+    except:
+        errback(failure.Failure(), *a, **kw)

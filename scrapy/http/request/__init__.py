@@ -16,7 +16,7 @@ from scrapy.http.common import obsolete_setter
 
 class Request(object_ref):
 
-    def __init__(self, url, callback=None, method='GET', headers=None, body=None,
+    def __init__(self, url,crawler=None,spider=None, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None, flags=None):
 
@@ -41,6 +41,8 @@ class Request(object_ref):
 
         self._meta = dict(meta) if meta else None
         self.flags = [] if flags is None else list(flags)
+        self.crawler = crawler
+        self.spider = spider
 
     @property
     def meta(self):

@@ -1,4 +1,13 @@
-from twisted.internet import reactor, error
+import asyncio
+'''
+from twisted.internet import asyncioreactor
+try:
+    asyncioreactor.install(asyncio.get_event_loop())
+except Exception:
+    pass
+'''
+from twisted.internet import reactor
+from twisted.internet import error
 
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""

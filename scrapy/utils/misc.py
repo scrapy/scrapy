@@ -127,3 +127,14 @@ def ensure_deferred(f):
         result = f(*args, **kwargs)
         return defer.ensureDeferred(result)
     return wrapper 
+
+
+async def alist(source):
+    """Generate a single list from an asynchronous sequence.
+        Taken from aiostream.stream.list"""
+
+    result = []
+    async for item in streamer:
+        result.append(item)
+
+    yield result

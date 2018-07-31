@@ -1,9 +1,13 @@
 import logging
 import warnings
+import inspect
+import asyncio
 
 from functools import partial
 from types import GeneratorType
 from types import AsyncGeneratorType
+
+from twisted.internet.defer import Deferred
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
@@ -17,7 +21,7 @@ class RequestGenerator(object):
     one by one.
     """
 
-    def __init__(self, callback, **kwargs):
+    def __init__(self, callback,crawler,spider, **kwargs):
         """Initialize RequestGenerator.
 
         Parameters
@@ -30,6 +34,8 @@ class RequestGenerator(object):
         """
         self.callback = callback
         self.kwargs = kwargs
+        self.spider = spider
+        self.crawler = crawler
 
     def __call__(self, response):
         """Main response entry point.
@@ -37,57 +43,45 @@ class RequestGenerator(object):
         This method calls the callback and wraps the returned generator.
 
         """
-       
         method = self.callback(response=response, **self.kwargs)
         if isinstance(method, GeneratorType):
             output = iterate_spider_output(method)
         else :
             output = method
-       
-        '''
-        if not isinstance(output, GeneratorType):
-            if not isinstance(output, AsyncGeneratorType):
-                raise ValueError("Callback must return a generator ")
-            if output:
-                raise ValueError("Callback must return a generator type/ async generator type")
-            else:
-                print("OUTPUT>>>>{!r}".format(output))
-                pass
-        '''
-       
+
         if isinstance(output, AsyncGeneratorType):
             return (self._asyncunwindGenerator(output))
-
+        if inspect.iscoroutine(output):
+            return(self._asyncunwindGenerator(output))
         else:
             return self._unwindGenerator(output)
 
     
     async def _asyncunwindGenerator(self, asyncgen, _prev=None):
+        if inspect.iscoroutine(asyncgen):
+            asyncgen = await asyncgen
         while True:
             if _prev:
                 ret, _prev = _prev, None
             else:
                 try:
-                    ret = asyncgen.__anext__().send(None)
+                    ret = await asyncgen.asend(None)
                 except StopIteration as e:
                     ret = e.value
                 except StopAsyncIteration:
                     break
                 except TypeError:
                     break
+                except AttributeError:
+                    break
+                
             if isinstance(ret, Request):
                 if ret.callback:
                     pass
-                    '''warnings.warn("Got a request with callback set, bypassing "
-                                  "the generator wrapper. Generator may not "
-                                  "be able to resume. %s" % ret)'''
                 elif ret.errback:
                     pass
                     # By Scrapy defaults, a request without callback defaults to
                     # self.parse spider method.
-                    '''warnings.warn("Got a request with errback set, bypassing "
-                                  "the generator wrapper. Generator may not "
-                                  "be able to resume. %s" % ret)'''
                 else:
                     yield self._wrapRequest(ret, asyncgen)
                     return
@@ -110,16 +104,10 @@ class RequestGenerator(object):
             if isinstance(ret, Request):
                 if ret.callback:
                     pass
-                    '''warnings.warn("Got a request with callback set, bypassing "
-                                  "the generator wrapper. Generator may not "
-                                  "be able to resume. %s" % ret)'''
                 elif ret.errback:
                     pass
                     # By Scrapy defaults, a request without callback defaults to
                     # self.parse spider method.
-                    '''warnings.warn("Got a request with errback set, bypassing "
-                                  "the generator wrapper. Generator may not "
-                                  "be able to resume. %s" % ret)'''
                 else:
                     yield self._wrapRequest(ret, generator)
                     return
@@ -136,17 +124,17 @@ class RequestGenerator(object):
             raise ValueError("Request with existing callback is not supported")
         if request.errback is not None:
             raise ValueError("Request with existing errback is not supported")
+
         request.callback = partial(self._handleSuccess, generator=generator)
         request.errback = partial(self._handleFailure, generator=generator)
+        
         if isinstance(generator, AsyncGeneratorType):
             request.callback = partial(self._asynchandleSuccess, generator=generator)
-
         return request
 
     def _cleanRequest(self, request):
         request.callback = None
         request.errback = None
-
 
     def _handleSuccess(self, response, generator):
         if response.request:
@@ -157,17 +145,17 @@ class RequestGenerator(object):
             return
         return self._unwindGenerator(generator, ret)
 
-
-    def _asynchandleSuccess(self, response, generator):
+    async def _asynchandleSuccess(self, response, generator):
         if response.request:
             self._cleanRequest(response.request)
         try:
-            ret =generator.asend(response).send(response)
-        except StopAsyncIteration:
+            if generator is not None:
+                ret = await generator.asend(response)
+            else:
+                ret = None
+        except StopAsyncIteration as e:
             return
-        except StopIteration as e:
-            ret = e.value
-            return self._asyncunwindGenerator(generator,ret)
+        return self._asyncunwindGenerator(generator,ret)
         
 
     def _handleFailure(self, failure, generator):

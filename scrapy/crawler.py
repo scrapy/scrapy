@@ -5,10 +5,19 @@ import warnings
 try:
     import asyncio
 except ImportError:
-    pass
+    warnings.warn("Please install asyncio to support asyncio frameworks. Without asyncio, frameworks might not be supported!")
 
 import sys
-from twisted.internet import reactor, defer
+try:
+    from twisted.internet import asyncioreactor
+    loop = asyncio.get_event_loop()
+    asyncioreactor.install(loop)
+except ImportError:
+    warnings.warn("Please install Twisted >=18.4.0 to support coroutines")
+except Exception:
+    pass
+from twisted.internet import reactor
+from twisted.internet import defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy.utils.misc import ensure_deferred
