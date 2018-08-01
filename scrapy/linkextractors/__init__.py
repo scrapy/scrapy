@@ -9,10 +9,11 @@ import re
 
 from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
+from w3lib.url import canonicalize_url
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
-    url_is_from_any_domain, url_has_any_extension, canonicalize_url
+    url_is_from_any_domain, url_has_any_extension,
 )
 
 
