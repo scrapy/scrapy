@@ -75,6 +75,10 @@ def create_email_message(mailfrom, to, subject, body, cc=None, attachs=(), mimet
 class BaseMailSender(object):
 
     @classmethod
+    def from_crawler(cls, crawler):
+        return cls.from_settings(crawler.settings)
+
+    @classmethod
     def from_settings(cls, **kwargs):
         raise NotImplementedError
 
