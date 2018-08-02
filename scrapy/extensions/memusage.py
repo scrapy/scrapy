@@ -13,8 +13,8 @@ from twisted.internet import task
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
+from scrapy.utils.misc import create_instance, load_object
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,12 @@ class MemoryUsage(object):
         self.check_interval = crawler.settings.getfloat(
             'MEMUSAGE_CHECK_INTERVAL_SECONDS'
         )
-        self.mail = MailSender.from_settings(crawler.settings)
+
+        mail_sender_class = load_object(
+            crawler.settings.get('DEFAULT_MAIL_SENDER_CLASS')
+        )
+        self.mail = create_instance(mail_sender_class, crawler.settings, crawler)
+
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
 
