@@ -174,8 +174,8 @@ class SESMailSender(BaseMailSender):
     @classmethod
     def from_settings(cls, settings):
         return cls(
-            aws_access_key=settings['MAIL_SES_AWS_ACCESS_KEY'],
-            aws_secret_key=settings['MAIL_SES_AWS_SECRET_KEY'],
+            aws_access_key=settings['AWS_ACCESS_KEY_ID'],
+            aws_secret_key=settings['AWS_SECRET_ACCESS_KEY'],
             mailfrom=settings['MAIL_FROM']
         )
 
