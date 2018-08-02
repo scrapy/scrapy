@@ -56,8 +56,18 @@ class DownloadHandlers(object):
             self._handlers[scheme] = dh
         return self._handlers[scheme]
 
+    def _get_handler_scheme(self, request, spider):
+        """Customize the download scheme for other downloadhandlers,
+        say, the rendering engine.
+        """
+        if 'download_scheme' in request.meta:
+            return request.meta['download_scheme']
+        if hasattr(spider, 'download_scheme'):
+            return spider.download_scheme
+        return urlparse_cached(request).scheme
+
     def download_request(self, request, spider):
-        scheme = urlparse_cached(request).scheme
+        scheme = self._get_handler_scheme(request, spider)
         handler = self._get_handler(scheme)
         if not handler:
             raise NotSupported("Unsupported URL scheme '%s': %s" %
