@@ -406,6 +406,29 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[u'test2'], [u'xxx µ'])
         self.assertEqual(fs[u'six'], [u'seven'])
 
+    def test_from_response_duplicate_form_key(self):
+        response = _buildresponse(
+                '<form></form>',
+                url='http://www.example.com')
+        req = self.request_class.from_response(response,
+                method='GET',
+                formdata=(('foo', 'bar'), ('foo', 'baz')))
+        self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
+        self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
+    
+    def test_from_response_override_duplicate_form_key(self):
+        response = _buildresponse(
+            """<form action="get.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            </form>""")
+        req = self.request_class.from_response(
+            response,
+            formdata=(('two', '2'), ('two', '4')))
+        fs = _qs(req)
+        self.assertEqual(fs[b'one'], [b'1'])
+        self.assertEqual(fs[b'two'], [b'2', b'4'])
+
     def test_from_response_extra_headers(self):
         response = _buildresponse(
             """<form action="post.php" method="POST">
