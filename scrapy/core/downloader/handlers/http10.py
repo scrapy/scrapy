@@ -1,13 +1,7 @@
 """Download handlers for http and https schemes
 """
 import asyncio
-'''
-from twisted.internet import asyncioreactor
-try:
-    asyncioreactor.install(asyncio.get_event_loop())
-except Exception:
-    pass
-'''
+
 from twisted.internet import reactor
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
