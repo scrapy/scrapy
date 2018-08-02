@@ -12,38 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 class Fetch():
-    def __init__(self, url,crawler=None,spider=None, callback=None, method='GET', headers=None, body=None,
-                 cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None):
-        self.url = url
-        self.crawler = crawler
-        self.spider = spider
-        self.downloader = Downloader(crawler)
-        self.logformatter = crawler.logformatter
-        self.signals = crawler.signals
-        
+    def __init__(self,Request):
+        self.Request = Request
 
-
-        self.encoding = encoding  # this one has to be set first
-        self.method = method
-        self.priority = priority
-        if callback is not None:
-            warnings.warn("Please do not use callbacks/errbacks with scrapy.Fetch. This method is an awaitable, and may not work well with a callback!")
-        self.callback = callback
-        self.errback = errback
-
-        self.cookies = cookies 
-        self.headers = headers
-        self.dont_filter = dont_filter
-        self.body = body
-        
-        self.meta = meta
-        self.flags = flags
-        self.crawler = crawler
-        self.spider = spider
+        self.crawler = Request.crawler
+        self.spider = Request.spider
+        self.downloader = Downloader(Request.crawler)
+        self.logformatter = Request.crawler.logformatter
+        self.signals = Request.crawler.signals
 
     def fetch(self):
-        request = scrapy.Request(url=self.url, callback=None, method=self.method, headers=self.headers, body=self.body,cookies=self.cookies, meta=self.meta, encoding=self.encoding,priority=self.priority, dont_filter=self.dont_filter, errback=None, flags=self.flags)
+        request = self.Request
         def _on_success(response):
             response.request = request # tie request to response received
             logkws = self.logformatter.crawled(request, response, self.spider)
