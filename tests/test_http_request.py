@@ -1096,6 +1096,22 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formcss="input[name='abc']")
 
+    def test_replace_formdata(self):
+        """Test FormRequest.replace() method with formdata param"""
+        formdata = {'one': 'value'}
+        r1 = self.request_class("http://www.example.com", formdata=formdata)
+        new_formdata = {'one': 'new_value'}
+        r2 = r1.replace(formdata=new_formdata)
+
+        self.assertEqual(r1.url, r2.url)
+        self.assertEqual(r1.method, r2.method)
+        self.assertEqual(r1.formdata, formdata)
+        self.assertEqual(r2.formdata, new_formdata)
+
+        # Test replace is saving formdata param
+        r3 = r1.replace(url='http://some_new_url.com')
+        self.assertEqual(r1.formdata, r3.formdata)
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)

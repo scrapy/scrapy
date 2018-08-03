@@ -12,6 +12,7 @@ import lxml.html
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.http.common import obsolete_setter
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
@@ -19,13 +20,21 @@ from scrapy.utils.response import get_base_url
 
 class FormRequest(Request):
 
+    replaced_attributes = Request.replaced_attributes + ['formdata']
+
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
         super(FormRequest, self).__init__(*args, **kwargs)
+        self._set_formdata(formdata)
 
+    def _get_formdata(self):
+        return self._formdata
+
+    def _set_formdata(self, formdata):
+        self._formdata = formdata
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
@@ -34,6 +43,8 @@ class FormRequest(Request):
                 self._set_body(querystr)
             else:
                 self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+
+    formdata = property(_get_formdata, obsolete_setter(_set_formdata, 'formdata'))
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
