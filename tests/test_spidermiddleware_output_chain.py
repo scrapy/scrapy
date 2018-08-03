@@ -45,8 +45,13 @@ class RecoveryMiddleware:
 
 # ================================================================================
 # (1) exceptions from a spider middleware's process_spider_input method
-class ProcessSpiderInputSpider(Spider):
-    name = 'ProcessSpiderInputSpider'
+class FailProcessSpiderInputMiddleware:
+    def process_spider_input(self, response, spider):
+        spider.logger.info('Middleware: will raise IndexError')
+        raise IndexError()
+
+class ProcessSpiderInputSpiderWithoutErrback(Spider):
+    name = 'ProcessSpiderInputSpiderWithoutErrback'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             # spider
@@ -58,21 +63,21 @@ class ProcessSpiderInputSpider(Spider):
     }
 
     def start_requests(self):
-        yield Request(url=self.mockserver.url('/status?n=200'),
-                      callback=self.parse, errback=self.errback)
+        yield Request(url=self.mockserver.url('/status?n=200'), callback=self.parse)
 
     def parse(self, response):
         return {'from': 'callback'}
 
+
+class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback):
+    name = 'ProcessSpiderInputSpiderWithErrback'
+
+    def start_requests(self):
+        yield Request(url=self.mockserver.url('/status?n=200'), callback=self.parse, errback=self.errback)
+
     def errback(self, failure):
         self.logger.info('Got a Failure on the Request errback')
         return {'from': 'errback'}
-
-
-class FailProcessSpiderInputMiddleware:
-    def process_spider_input(self, response, spider):
-        spider.logger.info('Middleware: will raise IndexError')
-        raise IndexError()
 
 
 # ================================================================================
@@ -278,12 +283,22 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("'item_scraped_count': 3", str(log))
 
     @defer.inlineCallbacks
-    def test_process_spider_input_errback(self):
+    def test_process_spider_input_without_errback(self):
         """
-        (1) An exception from the process_spider_input chain should not be caught by the
-        process_spider_exception chain, it should go directly to the Request errback
+        (1.1) An exception from the process_spider_input chain should be caught by the
+        process_spider_exception chain from the start if the Request has no errback
         """
-        log1 = yield self.crawl_log(ProcessSpiderInputSpider)
+        log1 = yield self.crawl_log(ProcessSpiderInputSpiderWithoutErrback)
+        self.assertIn("Middleware: will raise IndexError", str(log1))
+        self.assertIn("Middleware: IndexError exception caught", str(log1))
+
+    @defer.inlineCallbacks
+    def test_process_spider_input_with_errback(self):
+        """
+        (1.2) An exception from the process_spider_input chain should not be caught by the
+        process_spider_exception chain if the Request has an errback
+        """
+        log1 = yield self.crawl_log(ProcessSpiderInputSpiderWithErrback)
         self.assertNotIn("Middleware: IndexError exception caught", str(log1))
         self.assertIn("Middleware: will raise IndexError", str(log1))
         self.assertIn("Got a Failure on the Request errback", str(log1))

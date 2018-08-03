@@ -87,7 +87,7 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
 
     def test_process_spider_exception_return_none(self):
 
-        class ProcessSpiderOutputExceptionReturnNoneMiddleware:
+        class ProcessSpiderExceptionReturnNoneMiddleware:
             def process_spider_exception(self, response, exception, spider):
                 return None
 
@@ -95,7 +95,7 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
             def process_spider_output(self, response, result, spider):
                 1/0
 
-        self.mwman._add_middleware(ProcessSpiderOutputExceptionReturnNoneMiddleware())
+        self.mwman._add_middleware(ProcessSpiderExceptionReturnNoneMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
         result = self._scrape_response()
         self.assertIsInstance(result, Failure)

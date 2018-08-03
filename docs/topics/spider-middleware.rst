@@ -78,7 +78,8 @@ following methods:
 
         If it raises an exception, Scrapy won't bother calling any other spider
         middleware :meth:`process_spider_input` and will call the request
-        errback.  The output of the errback is chained back in the other
+        errback if there is one, otherwise it will start the :meth:`process_spider_exception`
+        chain. The output of the errback is chained back in the other
         direction for :meth:`process_spider_output` to process it, or
         :meth:`process_spider_exception` if it raised an exception.
 
