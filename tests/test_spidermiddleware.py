@@ -80,3 +80,23 @@ class ProcessSpiderExceptionInvalidOutput(SpiderMiddlewareTestCase):
         result = self._scrape_response()
         self.assertIsInstance(result, Failure)
         self.assertIsInstance(result.value, _InvalidOutput)
+
+
+class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
+    """Re raise the exception by returning None"""
+
+    def test_process_spider_exception_return_none(self):
+
+        class ProcessSpiderOutputExceptionReturnNoneMiddleware:
+            def process_spider_exception(self, response, exception, spider):
+                return None
+
+        class RaiseExceptionProcessSpiderOutputMiddleware:
+            def process_spider_output(self, response, result, spider):
+                1/0
+
+        self.mwman._add_middleware(ProcessSpiderOutputExceptionReturnNoneMiddleware())
+        self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
+        result = self._scrape_response()
+        self.assertIsInstance(result, Failure)
+        self.assertIsInstance(result.value, ZeroDivisionError)

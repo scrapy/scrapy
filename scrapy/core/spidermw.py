@@ -103,7 +103,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         yield r
                 except Exception as ex:
                     exception_result = process_spider_exception(Failure(ex), index+1)
-                    if exception_result is None or isinstance(exception_result, Failure):
+                    if isinstance(exception_result, Failure):
                         raise
                     recovered.extend(exception_result)
 
@@ -115,7 +115,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     result = method(response=response, result=result, spider=spider)
                 except Exception as ex:
                     exception_result = process_spider_exception(Failure(ex), method_index+1)
-                    if exception_result is None or isinstance(exception_result, Failure):
+                    if isinstance(exception_result, Failure):
                         raise
                     return exception_result
                 if _isiterable(result):
