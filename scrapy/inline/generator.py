@@ -22,16 +22,7 @@ class RequestGenerator(object):
     """
 
     def __init__(self, callback,crawler,spider, **kwargs):
-        """Initialize RequestGenerator.
-
-        Parameters
-        ----------
-        callback : callable
-            Callable callback (spider method).
-        **kwargs :
-            Extra callback keyword arguments.
-
-        """
+        
         self.callback = callback
         self.kwargs = kwargs
         self.spider = spider
@@ -48,7 +39,7 @@ class RequestGenerator(object):
             output = iterate_spider_output(method)
         else :
             output = method
-
+        
         if isinstance(output, AsyncGeneratorType):
             return (self._asyncunwindGenerator(output))
         if inspect.iscoroutine(output):
@@ -59,7 +50,7 @@ class RequestGenerator(object):
     
     async def _asyncunwindGenerator(self, asyncgen, _prev=None):
         if inspect.iscoroutine(asyncgen):
-            asyncgen = await asyncgen
+            asyncgen = await asyncgen 
         while True:
             if _prev:
                 ret, _prev = _prev, None
@@ -80,13 +71,12 @@ class RequestGenerator(object):
                     pass
                 elif ret.errback:
                     pass
-                    # By Scrapy defaults, a request without callback defaults to
-                    # self.parse spider method.
                 else:
                     yield self._wrapRequest(ret, asyncgen)
                     return
-            # A request with callbacks, item or None object.
+            
             yield ret
+
 
     def _unwindGenerator(self, generator, _prev=None):
         """Unwind (resume) generator."""
@@ -96,23 +86,21 @@ class RequestGenerator(object):
             else:
                 try:
                     ret = next(generator)
+                    if ret is None:
+                        ret = next(generator)
                 except StopIteration:
                     break
                 except TypeError:
                     break
-
             if isinstance(ret, Request):
                 if ret.callback:
                     pass
                 elif ret.errback:
                     pass
-                    # By Scrapy defaults, a request without callback defaults to
-                    # self.parse spider method.
                 else:
                     yield self._wrapRequest(ret, generator)
                     return
 
-            # A request with callbacks, item or None object.
             yield ret
 
     def _wrapRequest(self, request, generator):
@@ -124,7 +112,6 @@ class RequestGenerator(object):
             raise ValueError("Request with existing callback is not supported")
         if request.errback is not None:
             raise ValueError("Request with existing errback is not supported")
-
         request.callback = partial(self._handleSuccess, generator=generator)
         request.errback = partial(self._handleFailure, generator=generator)
         
@@ -153,10 +140,9 @@ class RequestGenerator(object):
                 ret = await generator.asend(response)
             else:
                 ret = None
-        except StopAsyncIteration as e:
+        except StopAsyncIteration:
             return
         return self._asyncunwindGenerator(generator,ret)
-        
 
     def _handleFailure(self, failure, generator):
         # Look for the request instance in the exception value.

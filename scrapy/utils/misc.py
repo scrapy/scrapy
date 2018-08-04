@@ -138,3 +138,13 @@ async def alist(source):
         result.append(item)
 
     yield result
+
+def list_to_simplevalue(result):
+    '''
+    This method helps in converting a single valued iterable 
+    to a single value result.
+    '''
+    try:
+        return result[0]
+    except TypeError:
+        return result

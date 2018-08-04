@@ -5,9 +5,11 @@ See documentation in docs/topics/spider-middleware.rst
 """
 
 import logging
+from types import AsyncGeneratorType
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,5 +35,10 @@ class UrlLengthMiddleware(object):
                 return False
             else:
                 return True
-
-        return (r for r in result or () if _filter(r))
+        if isinstance(result, AsyncGeneratorType):
+            return (r async for r in result or () if _filter(r))
+        else:
+            try:
+                return (r for r in result or () if _filter(r))
+            except Exception:
+                pass

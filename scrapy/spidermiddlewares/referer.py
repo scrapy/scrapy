@@ -4,6 +4,7 @@ originated it.
 """
 from six.moves.urllib.parse import urlparse
 import warnings
+from types import AsyncGeneratorType
 
 from w3lib.url import safe_url_string
 
@@ -336,7 +337,13 @@ class RefererMiddleware(object):
                 if referrer is not None:
                     r.headers.setdefault('Referer', referrer)
             return r
-        return (_set_referer(r) for r in result or ())
+        if isinstance(result, AsyncGeneratorType):
+            try:
+                return (_set_referer(r) async for r in result or ())
+            except Exception:
+                pass
+        else:
+            return (_set_referer(r) for r in result or ())
 
     def request_scheduled(self, request, spider):
         # check redirected request to patch "Referer" header if necessary

@@ -5,8 +5,10 @@ See documentation in docs/topics/spider-middleware.rst
 """
 
 import logging
+from types import GeneratorType,AsyncGeneratorType
 
 from scrapy.http import Request
+from scrapy.utils.misc import list_to_simplevalue
 
 logger = logging.getLogger(__name__)
 
@@ -54,5 +56,11 @@ class DepthMiddleware(object):
             response.meta['depth'] = 0
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)
-
-        return (r for r in result or () if _filter(r))
+        result = list_to_simplevalue(result)
+        if isinstance(result, GeneratorType):
+            return (r  for r in result or () if _filter(r))
+        else:
+            try:
+                return (r async for r in result or () if _filter(r))  # Applicable for Python3.7
+            except Exception:
+                pass

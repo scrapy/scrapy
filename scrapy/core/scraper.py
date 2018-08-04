@@ -10,7 +10,8 @@ from types import GeneratorType
 from types import AsyncGeneratorType
 from functools import partial
 
-from scrapy.utils.misc import ensure_deferred
+
+from scrapy.utils.misc import ensure_deferred, list_to_simplevalue
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback, asynciter_errback, async_parallel, asyncfut_parallel, asyncfut_iterback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
@@ -147,10 +148,9 @@ class Scraper(object):
     
     def call_spider(self, result, request, spider):
         result.request = request
-        result.spider = spider
-        result.crawler = self.crawler
         
         dfd = defer_result(result)
+        
         crawler = self.crawler
         dfd.addCallbacks(inline_requests(request.callback or spider.parse, crawler, spider), request.errback)
         return dfd.addCallback(iterate_spider_output)
@@ -179,12 +179,13 @@ class Scraper(object):
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
+        result = list_to_simplevalue(result)
         if isinstance(result, GeneratorType):
             it = iter_errback(result, self.handle_spider_error, request, response, spider)
             dfd = parallel(it, self.concurrent_items,self._process_spidermw_output, request, response, spider)
             return dfd
-        elif isinstance(result[0], AsyncGeneratorType):
-            it = asyncfut_iterback(result[0].__aiter__(), self.handle_spider_error, request, response, spider)
+        elif isinstance(result, AsyncGeneratorType):
+            it = asyncfut_iterback(result.__aiter__(), self.handle_spider_error, request, response, spider)
             dfd = asyncfut_parallel(it, self.concurrent_items,self._process_spidermw_output, request, response, spider)
             return dfd
 

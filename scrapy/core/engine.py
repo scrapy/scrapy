@@ -11,6 +11,7 @@ from time import time
 from twisted.internet import defer, task
 from twisted.python.failure import Failure
 
+from scrapy.core.config import conspid, concraw
 from scrapy.utils.misc import ensure_deferred
 from scrapy import signals
 from scrapy.core.scraper import Scraper
@@ -23,6 +24,8 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
+conspid
+concraw
 
 class Slot(object):
 
@@ -119,6 +122,7 @@ class ExecutionEngine(object):
 
     @ensure_deferred
     async def _next_request(self, spider):
+        
         slot = self.slot
         if not slot:
             return
@@ -147,8 +151,9 @@ class ExecutionEngine(object):
                              exc_info=True, extra={'spider': spider})
             else:
                 self.crawl(request, spider)
+
         if self.spider_is_idle(spider) and slot.close_if_idle:
-        
+            
             tsk = []
             for task in asyncio.Task.all_tasks():
                 if not task.done():
@@ -167,6 +172,7 @@ class ExecutionEngine(object):
     def _next_request_from_scheduler(self, spider):
         slot = self.slot
         request = slot.scheduler.next_request()
+
         if not request:
             return
         d = self._download(request, spider)
@@ -281,6 +287,10 @@ class ExecutionEngine(object):
         self.slot = slot
         self.spider = spider
         scheduler.open(spider)
+        global conspid
+        conspid= self.spider
+        global concraw 
+        concraw= self.crawler
         await self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
         await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)

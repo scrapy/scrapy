@@ -8,6 +8,7 @@ import re
 import logging
 import warnings
 
+from types import AsyncGeneratorType
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -25,8 +26,32 @@ class OffsiteMiddleware(object):
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
-
+    
     def process_spider_output(self, response, result, spider):
+        
+        if isinstance(result, AsyncGeneratorType):
+            return self.async_iterate_check(result, spider)
+        else:
+            return self.iterate_check(result, spider)
+    
+
+    async def async_iterate_check(self, result, spider):
+        async for x in result:
+            if isinstance(x, Request):
+                if x.dont_filter or self.should_follow(x, spider):
+                    yield x
+                else:
+                    domain = urlparse_cached(x).hostname
+                    if domain and domain not in self.domains_seen:
+                        self.domains_seen.add(domain)
+                        logger.debug("Filtered offsite request to %(domain)r: %(request)s",
+                                     {'domain': domain, 'request': x}, extra={'spider': spider})
+                        self.stats.inc_value('offsite/domains', spider=spider)
+                    self.stats.inc_value('offsite/filtered', spider=spider)
+            else:
+                yield x
+
+    def iterate_check(self, result, spider):
         for x in result:
             if isinstance(x, Request):
                 if x.dont_filter or self.should_follow(x, spider):
@@ -41,6 +66,10 @@ class OffsiteMiddleware(object):
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:
                 yield x
+
+    def check(self, x, spider):
+        pass
+
 
     def should_follow(self, request, spider):
         regex = self.host_regex

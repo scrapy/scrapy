@@ -10,7 +10,7 @@ from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 
 def _isiterable(possible_iterator):
-    return hasattr(possible_iterator, '__iter__')
+    return hasattr(possible_iterator, '__iter__') or hasattr(possible_iterator, '__aiter__')
 
 class SpiderMiddlewareManager(MiddlewareManager):
 
@@ -61,11 +61,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         def process_spider_output(result):
             
-            '''for method in self.methods['process_spider_output']:
+            for method in self.methods['process_spider_output']:
                 result = method(response=response, result=result, spider=spider)
                 assert _isiterable(result), \
-                    'Middleware %s must returns an iterable object, got %s ' % \
-                    (fname(method), type(result))'''
+                   'Middleware %s must returns an iterable object, got %s ' % \
+                  (fname(method), type(result))
+            
             return result
 
         dfd = mustbe_deferred(process_spider_input, response)

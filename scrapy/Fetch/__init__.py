@@ -1,3 +1,6 @@
+from scrapy.core import config
+from scrapy.core import engine
+
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy import signals
 from scrapy.core.downloader import Downloader 
@@ -12,14 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class Fetch():
-    def __init__(self,Request):
+    def __init__(self, Request):
         self.Request = Request
-
-        self.crawler = Request.crawler
-        self.spider = Request.spider
-        self.downloader = Downloader(Request.crawler)
-        self.logformatter = Request.crawler.logformatter
-        self.signals = Request.crawler.signals
+        self.crawler = engine.concraw
+        self.spider = engine.conspid
+        self.downloader = Downloader(self.crawler)
+        self.logformatter = engine.concraw.logformatter
+        self.signals = engine.concraw.signals
 
     def fetch(self):
         request = self.Request
@@ -32,11 +34,9 @@ class Fetch():
             return response
 
         dwld = self.downloader.fetch(request, self.spider)
-       
         return dwld.addCallbacks(_on_success)
 
     def __await__(self):
-        
         obj = self.fetch()
         future = obj.asFuture(asyncio.get_event_loop())
         return future.__await__()
