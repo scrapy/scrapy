@@ -8,7 +8,7 @@ from scrapy.link import Link
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from tests import get_testdata
 
-
+a
 # a hack to skip base class tests in pytest
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
