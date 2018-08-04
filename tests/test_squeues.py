@@ -1,8 +1,11 @@
+import pickle
+
 from queuelib.tests import test_queue as t
 from scrapy.squeues import MarshalFifoDiskQueue, MarshalLifoDiskQueue, PickleFifoDiskQueue, PickleLifoDiskQueue
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
+from scrapy.selector import Selector
 
 class TestItem(Item):
     name = Field()
@@ -14,12 +17,30 @@ class TestLoader(ItemLoader):
     default_item_class = TestItem
     name_out = staticmethod(_test_procesor)
 
+def nonserializable_object_test(self):
+    q = self.queue()
+    try:
+        pickle.dumps(lambda x: x)
+    except Exception:
+        # Trigger Twisted bug #7989
+        import twisted.persisted.styles  # NOQA
+        self.assertRaises(ValueError, q.push, lambda x: x)
+    else:
+        # Use a different unpickleable object
+        class A(object): pass
+        a = A()
+        a.__reduce__ = a.__reduce_ex__ = None
+        self.assertRaises(ValueError, q.push, a)
+    # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
+    sel = Selector(text='<html><body><p>some text</p></body></html>')
+    self.assertRaises(ValueError, q.push, sel)
+
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
 
     chunksize = 100000
 
     def queue(self):
-        return MarshalFifoDiskQueue(self.qdir, chunksize=self.chunksize)
+        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize(self):
         q = self.queue()
@@ -30,11 +51,7 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
         self.assertEqual(q.pop(), 123)
         self.assertEqual(q.pop(), {'a': 'dict'})
 
-    def test_nonserializable_object(self):
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+    test_nonserializable_object = nonserializable_object_test
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 1
@@ -54,7 +71,7 @@ class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 100000
 
     def queue(self):
-        return PickleFifoDiskQueue(self.qdir, chunksize=self.chunksize)
+        return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -99,7 +116,7 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
 
     def queue(self):
-        return MarshalLifoDiskQueue(self.path)
+        return MarshalLifoDiskQueue(self.qpath)
 
     def test_serialize(self):
         q = self.queue()
@@ -110,17 +127,13 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
         self.assertEqual(q.pop(), 123)
         self.assertEqual(q.pop(), 'a')
 
-    def test_nonserializable_object(self):
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+    test_nonserializable_object = nonserializable_object_test
 
 
 class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
 
     def queue(self):
-        return PickleLifoDiskQueue(self.path)
+        return PickleLifoDiskQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()

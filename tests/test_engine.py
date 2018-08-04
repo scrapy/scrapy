@@ -19,6 +19,7 @@ from twisted.web import server, static, util
 from twisted.trial import unittest
 
 from scrapy import signals
+from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.test import get_crawler
 from pydispatch import dispatcher
 from tests import tests_datadir
@@ -54,30 +55,38 @@ class TestSpider(Spider):
 
     def parse_item(self, response):
         item = self.item_cls()
-        m = self.name_re.search(response.body)
+        m = self.name_re.search(response.text)
         if m:
             item['name'] = m.group(1)
         item['url'] = response.url
-        m = self.price_re.search(response.body)
+        m = self.price_re.search(response.text)
         if m:
             item['price'] = m.group(1)
         return item
 
 
 class TestDupeFilterSpider(TestSpider):
-    def make_requests_from_url(self, url):
-        return Request(url)  # dont_filter=False
+    def start_requests(self):
+        return (Request(url) for url in self.start_urls)  # no dont_filter=True
 
 
 class DictItemsSpider(TestSpider):
     item_cls = dict
 
 
+class ItemZeroDivisionErrorSpider(TestSpider):
+    custom_settings = {
+        "ITEM_PIPELINES": {
+            "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
+        }
+    }
+
+
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
-    r.putChild("redirect", util.Redirect("/redirected"))
-    r.putChild("redirected", static.Data("Redirected here", "text/plain"))
+    r.putChild(b"redirect", util.Redirect(b"/redirected"))
+    r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
@@ -94,6 +103,7 @@ class CrawlerRun(object):
         self.respplug = []
         self.reqplug = []
         self.reqdropped = []
+        self.itemerror = []
         self.itemresp = []
         self.signals_catched = {}
         self.spider_class = spider_class
@@ -111,6 +121,7 @@ class CrawlerRun(object):
 
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
+        self.crawler.signals.connect(self.item_error, signals.item_error)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
@@ -134,6 +145,9 @@ class CrawlerRun(object):
     def getpath(self, url):
         u = urlparse(url)
         return u.path
+
+    def item_error(self, item, response, spider, failure):
+        self.itemerror.append((item, response, spider, failure))
 
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
@@ -174,6 +188,10 @@ class EngineTest(unittest.TestCase):
         self._assert_scheduled_requests(urls_to_visit=7)
         self._assert_dropped_requests()
 
+        self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
+        yield self.run.run()
+        self._assert_items_error()
+
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
@@ -208,6 +226,20 @@ class EngineTest(unittest.TestCase):
             if self.run.getpath(response.url) == '/redirect':
                 self.assertEqual(302, response.status)
 
+    def _assert_items_error(self):
+        self.assertEqual(2, len(self.run.itemerror))
+        for item, response, spider, failure in self.run.itemerror:
+            self.assertEqual(failure.value.__class__, ZeroDivisionError)
+            self.assertEqual(spider, self.run.spider)
+
+            self.assertEqual(item['url'], response.url)
+            if 'item1.html' in item['url']:
+                self.assertEqual('Item 1 name', item['name'])
+                self.assertEqual('100', item['price'])
+            if 'item2.html' in item['url']:
+                self.assertEqual('Item 2 name', item['name'])
+                self.assertEqual('200', item['price'])
+
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))
         for item, response in self.run.itemresp:
@@ -233,6 +265,29 @@ class EngineTest(unittest.TestCase):
         self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
+
+    @defer.inlineCallbacks
+    def test_close_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        yield e.close()
+
+    @defer.inlineCallbacks
+    def test_close_spiders_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        yield e.open_spider(TestSpider(), [])
+        self.assertEqual(len(e.open_spiders), 1)
+        yield e.close()
+        self.assertEqual(len(e.open_spiders), 0)
+
+    @defer.inlineCallbacks
+    def test_close_engine_spiders_downloader(self):
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        yield e.open_spider(TestSpider(), [])
+        e.start()
+        self.assertTrue(e.running)
+        yield e.close()
+        self.assertFalse(e.running)
+        self.assertEqual(len(e.open_spiders), 0)
 
 
 if __name__ == "__main__":

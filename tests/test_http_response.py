@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 
 import six
@@ -7,6 +8,9 @@ from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
 from scrapy.utils.python import to_native_str
+from scrapy.exceptions import NotSupported
+from scrapy.link import Link
+from tests import get_testdata
 
 
 class BaseResponseTest(unittest.TestCase):
@@ -17,6 +21,8 @@ class BaseResponseTest(unittest.TestCase):
         # Response requires url in the consturctor
         self.assertRaises(Exception, self.response_class)
         self.assertTrue(isinstance(self.response_class('http://example.com/'), self.response_class))
+        if not six.PY2:
+            self.assertRaises(TypeError, self.response_class, b"http://example.com")
         # body can be str or None
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b''), self.response_class))
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'body'), self.response_class))
@@ -105,9 +111,11 @@ class BaseResponseTest(unittest.TestCase):
             body_bytes = body
 
         assert isinstance(response.body, bytes)
+        assert isinstance(response.text, six.text_type)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
         self.assertEqual(response.body_as_unicode(), body_unicode)
+        self.assertEqual(response.text, body_unicode)
 
     def _assert_response_encoding(self, response, encoding):
         self.assertEqual(response.encoding, resolve_encoding(encoding))
@@ -122,6 +130,53 @@ class BaseResponseTest(unittest.TestCase):
         joined = self.response_class('http://www.example.com').urljoin('/test')
         absolute = 'http://www.example.com/test'
         self.assertEqual(joined, absolute)
+
+    def test_shortcut_attributes(self):
+        r = self.response_class("http://example.com", body=b'hello')
+        if self.response_class == Response:
+            msg = "Response content isn't text"
+            self.assertRaisesRegexp(AttributeError, msg, getattr, r, 'text')
+            self.assertRaisesRegexp(NotSupported, msg, r.css, 'body')
+            self.assertRaisesRegexp(NotSupported, msg, r.xpath, '//body')
+        else:
+            r.text
+            r.css('body')
+            r.xpath('//body')
+
+    def test_follow_url_absolute(self):
+        self._assert_followed_url('http://foo.example.com',
+                                  'http://foo.example.com')
+
+    def test_follow_url_relative(self):
+        self._assert_followed_url('foo',
+                                  'http://example.com/foo')
+
+    def test_follow_link(self):
+        self._assert_followed_url(Link('http://example.com/foo'),
+                                  'http://example.com/foo')
+
+    def test_follow_None_url(self):
+        r = self.response_class("http://example.com")
+        self.assertRaises(ValueError, r.follow, None)
+
+    def test_follow_whitespace_url(self):
+        self._assert_followed_url('foo ',
+                                  'http://example.com/foo%20')
+
+    def test_follow_whitespace_link(self):
+        self._assert_followed_url(Link('http://example.com/foo '),
+                                  'http://example.com/foo%20')
+    def _assert_followed_url(self, follow_obj, target_url, response=None):
+        if response is None:
+            response = self._links_response()
+        req = response.follow(follow_obj)
+        self.assertEqual(req.url, target_url)
+        return req
+
+    def _links_response(self):
+        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        resp = self.response_class('http://example.com/index', body=body)
+        return resp
 
 
 class TextResponseTest(BaseResponseTest):
@@ -168,6 +223,10 @@ class TextResponseTest(BaseResponseTest):
         # check body_as_unicode
         self.assertTrue(isinstance(r1.body_as_unicode(), six.text_type))
         self.assertEqual(r1.body_as_unicode(), unicode_string)
+
+        # check response.text
+        self.assertTrue(isinstance(r1.text, six.text_type))
+        self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):
         r1 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body=b"\xc2\xa3")
@@ -217,12 +276,15 @@ class TextResponseTest(BaseResponseTest):
                                  headers={"Content-type": ["text/html; charset=utf-8"]},
                                  body=b"\xef\xbb\xbfWORD\xe3\xab")
         self.assertEqual(r6.encoding, 'utf-8')
-        self.assertEqual(r6.body_as_unicode(), u'WORD\ufffd\ufffd')
+        self.assertIn(r6.text, {
+            u'WORD\ufffd\ufffd',  # w3lib < 1.19.0
+            u'WORD\ufffd',        # w3lib >= 1.19.0
+        })
 
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
-        # response.body_as_unicode() in indistint order doesn't affect final
+        # response.text in indistint order doesn't affect final
         # values for encoding and decoded body.
         url = 'http://example.com'
         body = b"\xef\xbb\xbfWORD"
@@ -231,9 +293,9 @@ class TextResponseTest(BaseResponseTest):
         # Test response without content-type and BOM encoding
         response = self.response_class(url, body=body)
         self.assertEqual(response.encoding, 'utf-8')
-        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.text, u'WORD')
         response = self.response_class(url, body=body)
-        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.text, u'WORD')
         self.assertEqual(response.encoding, 'utf-8')
 
         # Body caching sideeffect isn't triggered when encoding is declared in
@@ -241,9 +303,9 @@ class TextResponseTest(BaseResponseTest):
         # body
         response = self.response_class(url, headers=headers, body=body)
         self.assertEqual(response.encoding, 'utf-8')
-        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.text, u'WORD')
         response = self.response_class(url, headers=headers, body=body)
-        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.text, u'WORD')
         self.assertEqual(response.encoding, 'utf-8')
 
     def test_replace_wrong_encoding(self):
@@ -251,18 +313,18 @@ class TextResponseTest(BaseResponseTest):
         r = self.response_class("http://www.example.com", encoding='utf-8', body=b'PREFIX\xe3\xabSUFFIX')
         # XXX: Policy for replacing invalid chars may suffer minor variations
         # but it should always contain the unicode replacement char (u'\ufffd')
-        assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
-        assert u'PREFIX' in r.body_as_unicode(), repr(r.body_as_unicode())
-        assert u'SUFFIX' in r.body_as_unicode(), repr(r.body_as_unicode())
+        assert u'\ufffd' in r.text, repr(r.text)
+        assert u'PREFIX' in r.text, repr(r.text)
+        assert u'SUFFIX' in r.text, repr(r.text)
 
         # Do not destroy html tags due to encoding bugs
         r = self.response_class("http://example.com", encoding='utf-8', \
                 body=b'\xf0<span>value</span>')
-        assert u'<span>value</span>' in r.body_as_unicode(), repr(r.body_as_unicode())
+        assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        #r = self.response_class("http://www.example.com", body='PREFIX\xe3\xabSUFFIX')
-        #assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
+        #r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
+        #assert u'\ufffd' in r.text, repr(r.text)
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
@@ -299,6 +361,20 @@ class TextResponseTest(BaseResponseTest):
             response.selector.css("title::text").extract(),
         )
 
+    def test_selector_shortcuts_kwargs(self):
+        body = b"<html><head><title>Some page</title><body><p class=\"content\">A nice paragraph.</p></body></html>"
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").extract(),
+            response.xpath("normalize-space(//p[@class=\"content\"])").extract(),
+        )
+        self.assertEqual(
+            response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
+                pclass="content", pcount=1).extract(),
+            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").extract(),
+        )
+
     def test_urljoin_with_base_url(self):
         """Test urljoin shortcut which also evaluates base-url through get_base_url()."""
         body = b'<html><body><base href="https://example.net"></body></html>'
@@ -315,6 +391,97 @@ class TextResponseTest(BaseResponseTest):
         joined = self.response_class('http://www.example.com', body=body).urljoin('test')
         absolute = 'http://www.example.com/elsewhere/test'
         self.assertEqual(joined, absolute)
+
+    def test_follow_selector(self):
+        resp = self._links_response()
+        urls = [
+            'http://example.com/sample2.html',
+            'http://example.com/sample3.html',
+            'http://example.com/sample3.html',
+            'http://example.com/sample3.html#foo',
+            'http://www.google.com/something',
+            'http://example.com/innertag.html'
+        ]
+
+        # select <a> elements
+        for sellist in [resp.css('a'), resp.xpath('//a')]:
+            for sel, url in zip(sellist, urls):
+                self._assert_followed_url(sel, url, response=resp)
+
+        # select <link> elements
+        self._assert_followed_url(
+            Selector(text='<link href="foo"></link>').css('link')[0],
+            'http://example.com/foo',
+            response=resp
+        )
+
+        # href attributes should work
+        for sellist in [resp.css('a::attr(href)'), resp.xpath('//a/@href')]:
+            for sel, url in zip(sellist, urls):
+                self._assert_followed_url(sel, url, response=resp)
+
+        # non-a elements are not supported
+        self.assertRaises(ValueError, resp.follow, resp.css('div')[0])
+
+    def test_follow_selector_list(self):
+        resp = self._links_response()
+        self.assertRaisesRegexp(ValueError, 'SelectorList',
+                                resp.follow, resp.css('a'))
+
+    def test_follow_selector_invalid(self):
+        resp = self._links_response()
+        self.assertRaisesRegexp(ValueError, 'Unsupported',
+                                resp.follow, resp.xpath('count(//div)')[0])
+
+    def test_follow_selector_attribute(self):
+        resp = self._links_response()
+        for src in resp.css('img::attr(src)'):
+            self._assert_followed_url(src, 'http://example.com/sample2.jpg')
+
+    def test_follow_selector_no_href(self):
+        resp = self.response_class(
+            url='http://example.com',
+            body=b'<html><body><a name=123>click me</a></body></html>',
+        )
+        self.assertRaisesRegexp(ValueError, 'no href',
+                                resp.follow, resp.css('a')[0])
+
+    def test_follow_whitespace_selector(self):
+        resp = self.response_class(
+            'http://example.com',
+            body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
+        )
+        self._assert_followed_url(resp.css('a')[0],
+                                 'http://example.com/foo',
+                                  response=resp)
+        self._assert_followed_url(resp.css('a::attr(href)')[0],
+                                 'http://example.com/foo',
+                                  response=resp)
+
+    def test_follow_encoding(self):
+        resp1 = self.response_class(
+            'http://example.com',
+            encoding='utf8',
+            body=u'<html><body><a href="foo?привет">click me</a></body></html>'.encode('utf8')
+        )
+        req = self._assert_followed_url(
+            resp1.css('a')[0],
+            'http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82',
+            response=resp1,
+        )
+        self.assertEqual(req.encoding, 'utf8')
+
+        resp2 = self.response_class(
+            'http://example.com',
+            encoding='cp1251',
+            body=u'<html><body><a href="foo?привет">click me</a></body></html>'.encode('cp1251')
+        )
+        req = self._assert_followed_url(
+            resp2.css('a')[0],
+            'http://example.com/foo?%EF%F0%E8%E2%E5%F2',
+            response=resp2,
+        )
+        self.assertEqual(req.encoding, 'cp1251')
 
 
 class HtmlResponseTest(TextResponseTest):
@@ -406,4 +573,22 @@ class XmlResponseTest(TextResponseTest):
         self.assertEqual(
             response.xpath("//elem/text()").extract(),
             response.selector.xpath("//elem/text()").extract(),
+        )
+
+    def test_selector_shortcuts_kwargs(self):
+        body = b'''<?xml version="1.0" encoding="utf-8"?>
+        <xml xmlns:somens="http://scrapy.org">
+        <somens:elem>value</somens:elem>
+        </xml>'''
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+        )
+
+        response.selector.register_namespace('s2', 'http://scrapy.org')
+        self.assertEqual(
+            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).extract(),
+            response.selector.xpath("//s2:elem/text()").extract(),
         )

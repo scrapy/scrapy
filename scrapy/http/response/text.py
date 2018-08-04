@@ -8,8 +8,12 @@ See documentation in docs/topics/request-response.rst
 import six
 from six.moves.urllib.parse import urljoin
 
+import parsel
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
+from w3lib.html import strip_html5_whitespace
+
+from scrapy.http.request import Request
 from scrapy.http.response import Response
 from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs, to_native_str
@@ -59,7 +63,12 @@ class TextResponse(Response):
 
     def body_as_unicode(self):
         """Return body as unicode"""
-        # check for self.encoding before _cached_ubody just in
+        return self.text
+
+    @property
+    def text(self):
+        """ Body as unicode """
+        # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
         benc = self.encoding
         if self._cached_ubody is None:
@@ -106,8 +115,61 @@ class TextResponse(Response):
             self._cached_selector = Selector(self)
         return self._cached_selector
 
-    def xpath(self, query):
-        return self.selector.xpath(query)
+    def xpath(self, query, **kwargs):
+        return self.selector.xpath(query, **kwargs)
 
     def css(self, query):
         return self.selector.css(query)
+
+    def follow(self, url, callback=None, method='GET', headers=None, body=None,
+               cookies=None, meta=None, encoding=None, priority=0,
+               dont_filter=False, errback=None):
+        # type: (...) -> Request
+        """
+        Return a :class:`~.Request` instance to follow a link ``url``.
+        It accepts the same arguments as ``Request.__init__`` method,
+        but ``url`` can be not only an absolute URL, but also
+        
+        * a relative URL;
+        * a scrapy.link.Link object (e.g. a link extractor result);
+        * an attribute Selector (not SelectorList) - e.g.
+          ``response.css('a::attr(href)')[0]`` or
+          ``response.xpath('//img/@src')[0]``.
+        * a Selector for ``<a>`` or ``<link>`` element, e.g.
+          ``response.css('a.my_link')[0]``.
+          
+        See :ref:`response-follow-example` for usage examples.
+        """
+        if isinstance(url, parsel.Selector):
+            url = _url_from_selector(url)
+        elif isinstance(url, parsel.SelectorList):
+            raise ValueError("SelectorList is not supported")
+        encoding = self.encoding if encoding is None else encoding
+        return super(TextResponse, self).follow(url, callback,
+            method=method,
+            headers=headers,
+            body=body,
+            cookies=cookies,
+            meta=meta,
+            encoding=encoding,
+            priority=priority,
+            dont_filter=dont_filter,
+            errback=errback
+        )
+
+
+def _url_from_selector(sel):
+    # type: (parsel.Selector) -> str
+    if isinstance(sel.root, six.string_types):
+        # e.g. ::attr(href) result
+        return strip_html5_whitespace(sel.root)
+    if not hasattr(sel.root, 'tag'):
+        raise ValueError("Unsupported selector: %s" % sel)
+    if sel.root.tag not in ('a', 'link'):
+        raise ValueError("Only <a> and <link> elements are supported; got <%s>" %
+                         sel.root.tag)
+    href = sel.root.get('href')
+    if href is None:
+        raise ValueError("<%s> element has no href attribute: %s" %
+                         (sel.root.tag, sel))
+    return strip_html5_whitespace(href)

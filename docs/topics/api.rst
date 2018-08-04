@@ -140,170 +140,14 @@ Settings API
     For a detailed explanation on each settings sources, see:
     :ref:`topics-settings`.
 
-.. class:: Settings(values={}, priority='project')
+.. autofunction:: get_settings_priority
 
-    This object stores Scrapy settings for the configuration of internal
-    components, and can be used for any further customization.
+.. autoclass:: Settings
+   :show-inheritance:
+   :members:
 
-    After instantiation of this class, the new object will have the global
-    default settings described on :ref:`topics-settings-ref` already
-    populated.
-
-    Additional values can be passed on initialization with the ``values``
-    argument, and they would take the ``priority`` level.  If the latter
-    argument is a string, the priority name will be looked up in
-    :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a expecific
-    integer should be provided.
-
-    Once the object is created, new settings can be loaded or updated with the
-    :meth:`~scrapy.settings.Settings.set` method, and can be accessed with the
-    square bracket notation of dictionaries, or with the
-    :meth:`~scrapy.settings.Settings.get` method of the instance and its value
-    conversion variants.  When requesting a stored key, the value with the
-    highest priority will be retrieved.
-
-    .. method:: set(name, value, priority='project')
-
-       Store a key/value attribute with a given priority.
-
-       Settings should be populated *before* configuring the Crawler object
-       (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-       otherwise they won't have any effect.
-
-       :param name: the setting name
-       :type name: string
-
-       :param value: the value to associate with the setting
-       :type value: any
-
-       :param priority: the priority of the setting. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
-
-    .. method:: setdict(values, priority='project')
-
-       Store key/value pairs with a given priority.
-
-       This is a helper function that calls
-       :meth:`~scrapy.settings.Settings.set` for every item of ``values``
-       with the provided ``priority``.
-
-       :param values: the settings names and values
-       :type values: dict
-
-       :param priority: the priority of the settings. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
-
-    .. method:: setmodule(module, priority='project')
-
-       Store settings from a module with a given priority.
-
-       This is a helper function that calls
-       :meth:`~scrapy.settings.Settings.set` for every globally declared
-       uppercase variable of ``module`` with the provided ``priority``.
-
-       :param module: the module or the path of the module
-       :type module: module object or string
-
-       :param priority: the priority of the settings. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
-
-    .. method:: get(name, default=None)
-
-       Get a setting value without affecting its original type.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getbool(name, default=False)
-
-       Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
-       ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
-       return ``False````
-
-       For example, settings populated through environment variables set to ``'0'``
-       will return ``False`` when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getint(name, default=0)
-
-       Get a setting value as an int
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getfloat(name, default=0.0)
-
-       Get a setting value as a float
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getlist(name, default=None)
-
-       Get a setting value as a list. If the setting original type is a list, a
-       copy of it will be returned. If it's a string it will be split by ",".
-
-       For example, settings populated through environment variables set to
-       ``'one,two'`` will return a list ['one', 'two'] when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getdict(name, default=None)
-
-       Get a setting value as a dictionary. If the setting original type is a
-       dictionary, a copy of it will be returned. If it's a string it will
-       evaluated as a json dictionary.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: copy()
-
-       Make a deep copy of current settings.
-
-       This method returns a new instance of the :class:`Settings` class,
-       populated with the same values and their priorities.
-
-       Modifications to the new object won't be reflected on the original
-       settings.
-
-    .. method:: freeze()
-
-       Disable further changes to the current settings.
-
-       After calling this method, the present state of the settings will become
-       immutable. Trying to change values through the :meth:`~set` method and
-       its variants won't be possible and will be alerted.
-
-    .. method:: frozencopy()
-
-       Return an immutable copy of the current settings.
-
-       Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`
+.. autoclass:: BaseSettings
+   :members:
 
 .. _topics-api-spiderloader:
 
@@ -327,7 +171,8 @@ SpiderLoader API
 
        This class method is used by Scrapy to create an instance of the class.
        It's called with the current project settings, and it loads the spiders
-       found in the modules of the :setting:`SPIDER_MODULES` setting.
+       found recursively in the modules of the :setting:`SPIDER_MODULES`
+       setting.
 
        :param settings: project settings
        :type settings: :class:`~scrapy.settings.Settings` instance
@@ -427,4 +272,4 @@ class (which they all inherit from).
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
 
-.. _reactor: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
+.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

@@ -1,8 +1,9 @@
-import logging
 from collections import defaultdict
+import logging
+import pprint
 
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
 
 logger = logging.getLogger(__name__)
@@ -27,16 +28,13 @@ class MiddlewareManager(object):
     def from_settings(cls, settings, crawler=None):
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
+        enabled = []
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
-                if crawler and hasattr(mwcls, 'from_crawler'):
-                    mw = mwcls.from_crawler(crawler)
-                elif hasattr(mwcls, 'from_settings'):
-                    mw = mwcls.from_settings(settings)
-                else:
-                    mw = mwcls()
+                mw = create_instance(mwcls, settings, crawler)
                 middlewares.append(mw)
+                enabled.append(clspath)
             except NotConfigured as e:
                 if e.args:
                     clsname = clspath.split('.')[-1]
@@ -44,10 +42,9 @@ class MiddlewareManager(object):
                                    {'clsname': clsname, 'eargs': e.args[0]},
                                    extra={'crawler': crawler})
 
-        enabled = [x.__class__.__name__ for x in middlewares]
-        logger.info("Enabled %(componentname)ss: %(enabledlist)s",
+        logger.info("Enabled %(componentname)ss:\n%(enabledlist)s",
                     {'componentname': cls.component_name,
-                     'enabledlist': ', '.join(enabled)},
+                     'enabledlist': pprint.pformat(enabled)},
                     extra={'crawler': crawler})
         return cls(*middlewares)
 

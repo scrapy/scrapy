@@ -1,10 +1,6 @@
-from scrapy import optional_features
+from __future__ import absolute_import
 from .http10 import HTTP10DownloadHandler
-
-if 'http11' in optional_features:
-    from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
-else:
-    HTTPDownloadHandler = HTTP10DownloadHandler
+from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
 
 
 # backwards compatibility

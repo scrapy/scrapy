@@ -21,7 +21,7 @@ their available fields.
 Various Scrapy components use extra information provided by Items: 
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help finding memory leaks 
+tracks Item instances to help find memory leaks 
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -61,7 +61,7 @@ the example above.
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
 reason, there is no reference list of all available metadata keys. Each key
-defined in :class:`Field` objects could be used by a different components, and
+defined in :class:`Field` objects could be used by a different component, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
 :class:`Field` objects is to provide a way to define all field metadata in one

@@ -8,11 +8,10 @@ import hashlib
 import weakref
 from six.moves.urllib.parse import urlunparse
 
-from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 from scrapy.utils.python import to_bytes, to_native_str
 
-from scrapy.utils.url import canonicalize_url
+from w3lib.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
 
 
@@ -45,8 +44,8 @@ def request_fingerprint(request, include_headers=None):
 
     """
     if include_headers:
-        include_headers = tuple([to_bytes(h.lower())
-                                 for h in sorted(include_headers)])
+        include_headers = tuple(to_bytes(h.lower())
+                                 for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
     if include_headers not in cache:
         fp = hashlib.sha1()
@@ -86,3 +85,10 @@ def request_httprepr(request):
     s += request.body
     return s
 
+
+def referer_str(request):
+    """ Return Referer HTTP header suitable for logging. """
+    referrer = request.headers.get('Referer')
+    if referrer is None:
+        return referrer
+    return to_native_str(referrer, errors='replace')

@@ -1,5 +1,11 @@
-pytest>=2.6.0
+pytest==3.6.3
 pytest-twisted
-pytest-cov
+pytest-cov==2.5.1
 testfixtures
 jmespath
+leveldb
+botocore
+# optional for shell wrapper tests
+bpython
+ipython
+brotlipy

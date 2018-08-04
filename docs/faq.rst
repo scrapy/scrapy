@@ -3,6 +3,8 @@
 Frequently Asked Questions
 ==========================
 
+.. _faq-scrapy-bs-cmp:
+
 How does Scrapy compare to BeautifulSoup or lxml?
 -------------------------------------------------
 
@@ -19,33 +21,70 @@ Python code.
 In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
-.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
+.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _jinja2: http://jinja.pocoo.org/
 .. _Django: https://www.djangoproject.com/
+
+Can I use Scrapy with BeautifulSoup?
+------------------------------------
+
+Yes, you can.
+As mentioned :ref:`above <faq-scrapy-bs-cmp>`, `BeautifulSoup`_ can be used
+for parsing HTML responses in Scrapy callbacks.
+You just have to feed the response's body into a ``BeautifulSoup`` object
+and extract whatever data you need from it.
+
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
+
+
+    from bs4 import BeautifulSoup
+    import scrapy
+
+
+    class ExampleSpider(scrapy.Spider):
+        name = "example"
+        allowed_domains = ["example.com"]
+        start_urls = (
+            'http://www.example.com/',
+        )
+
+        def parse(self, response):
+            # use lxml to get decent HTML parsing speed
+            soup = BeautifulSoup(response.text, 'lxml')
+            yield {
+                "url": response.url,
+                "title": soup.h1.string
+            }
+
+.. note::
+
+    ``BeautifulSoup`` supports several HTML/XML parsers.
+    See `BeautifulSoup's official documentation`_ on which ones are available.
+
+.. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
 .. _faq-python-versions:
 
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 only.
+Scrapy is supported under Python 2.7 and Python 3.4+
+under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 Python 2.6 support was dropped starting at Scrapy 0.20.
+Python 3 support was added in Scrapy 1.1.
+PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
 
-Does Scrapy work with Python 3?
----------------------------------
-
-No, but there are plans to support Python 3.3+.
-At the moment, Scrapy works with Python 2.7.
-
-.. seealso:: :ref:`faq-python-versions`.
+.. note::
+    For Python 3 support on Windows, it is recommended to use
+    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
 
 Probably, but we don't like that word. We think Django_ is a great open source
 project and an example to follow, so we've used it as an inspiration for
-Scrapy. 
+Scrapy.
 
 We believe that, if something is already done well, there's no need to reinvent
 it. This concept, besides being one of the foundations for open source and free
@@ -56,8 +95,6 @@ focus on the real problems we need to solve.
 
 We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
 to steal from us!
-
-.. _Django: https://www.djangoproject.com/
 
 Does Scrapy work with HTTP proxies?
 -----------------------------------
@@ -77,13 +114,15 @@ Scrapy crashes with: ImportError: No module named win32api
 
 You need to install `pywin32`_ because of `this Twisted bug`_.
 
-.. _pywin32: http://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
+.. _pywin32: https://sourceforge.net/projects/pywin32/
+.. _this Twisted bug: https://twistedmatrix.com/trac/ticket/3707
 
 How can I simulate a user login in my spider?
 ---------------------------------------------
 
 See :ref:`topics-request-response-ref-request-userlogin`.
+
+.. _faq-bfo-dfo:
 
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------
@@ -121,7 +160,7 @@ Why does Scrapy download pages in English instead of my native language?
 Try changing the default `Accept-Language`_ request header by overriding the
 :setting:`DEFAULT_REQUEST_HEADERS` setting.
 
-.. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
+.. _Accept-Language: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
 
 Where can I find some example Scrapy projects?
 ----------------------------------------------
@@ -144,7 +183,7 @@ I get "Filtered offsite request" messages. How can I fix them?
 Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
-Those message are thrown by the Offsite Spider Middleware, which is a spider
+Those messages are thrown by the Offsite Spider Middleware, which is a spider
 middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 
@@ -280,7 +319,7 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
-.. _user agents: http://en.wikipedia.org/wiki/User_agent
-.. _LIFO: http://en.wikipedia.org/wiki/LIFO
-.. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search
-.. _BFO order: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _user agents: https://en.wikipedia.org/wiki/User_agent
+.. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+.. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

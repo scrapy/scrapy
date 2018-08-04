@@ -12,3 +12,4 @@ prune docs/build
 recursive-include extras *
 recursive-include bin *
 recursive-include tests *
+global-exclude __pycache__ *.py[cod]

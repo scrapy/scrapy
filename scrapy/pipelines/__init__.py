@@ -13,15 +13,7 @@ class ItemPipelineManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        item_pipelines = settings['ITEM_PIPELINES']
-        if isinstance(item_pipelines, (tuple, list, set, frozenset)):
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('ITEM_PIPELINES defined as a list or a set is deprecated, switch to a dict',
-                category=ScrapyDeprecationWarning, stacklevel=1)
-            # convert old ITEM_PIPELINE list to a dict with order 500
-            item_pipelines = dict(zip(item_pipelines, range(500, 500+len(item_pipelines))))
-        return build_component_list(settings['ITEM_PIPELINES_BASE'], item_pipelines)
+        return build_component_list(settings.getwithbase('ITEM_PIPELINES'))
 
     def _add_middleware(self, pipe):
         super(ItemPipelineManager, self)._add_middleware(pipe)

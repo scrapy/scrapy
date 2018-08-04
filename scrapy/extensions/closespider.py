@@ -9,6 +9,7 @@ from collections import defaultdict
 from twisted.internet import reactor
 
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 
 
 class CloseSpider(object):
@@ -22,6 +23,9 @@ class CloseSpider(object):
             'pagecount': crawler.settings.getint('CLOSESPIDER_PAGECOUNT'),
             'errorcount': crawler.settings.getint('CLOSESPIDER_ERRORCOUNT'),
             }
+
+        if not any(self.close_on.values()):
+            raise NotConfigured
 
         self.counter = defaultdict(int)
 

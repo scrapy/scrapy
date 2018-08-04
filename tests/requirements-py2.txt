@@ -1,0 +1,13 @@
+# Tests requirements
+mock
+mitmproxy==0.10.1
+netlib==0.10.1
+pytest==2.9.2
+pytest-twisted
+pytest-cov==2.2.1
+jmespath
+brotlipy
+testfixtures
+# optional for shell wrapper tests
+bpython
+ipython<6.0

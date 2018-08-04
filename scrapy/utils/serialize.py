@@ -14,7 +14,9 @@ class ScrapyJSONEncoder(json.JSONEncoder):
     TIME_FORMAT = "%H:%M:%S"
 
     def default(self, o):
-        if isinstance(o, datetime.datetime):
+        if isinstance(o, set):
+            return list(o)
+        elif isinstance(o, datetime.datetime):
             return o.strftime("%s %s" % (self.DATE_FORMAT, self.TIME_FORMAT))
         elif isinstance(o, datetime.date):
             return o.strftime(self.DATE_FORMAT)

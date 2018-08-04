@@ -1,4 +1,5 @@
 import unittest
+import six
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response
@@ -35,6 +36,14 @@ class LoggingContribTest(unittest.TestCase):
         self.assertEqual(logline,
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
+    def test_flags_in_request(self):
+        req = Request("http://www.example.com", flags=['test','flag'])
+        res = Response("http://www.example.com")
+        logkws = self.formatter.crawled(req, res, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline,
+        "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
+
     def test_dropped(self):
         item = {}
         exception = Exception(u"\u2018")
@@ -42,7 +51,7 @@ class LoggingContribTest(unittest.TestCase):
         logkws = self.formatter.dropped(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, unicode) for x in lines)
+        assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
 
     def test_scraped(self):
@@ -52,8 +61,33 @@ class LoggingContribTest(unittest.TestCase):
         logkws = self.formatter.scraped(item, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, unicode) for x in lines)
+        assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
+
+
+class LogFormatterSubclass(LogFormatter):
+    def crawled(self, request, response, spider):
+        kwargs = super(LogFormatterSubclass, self).crawled(
+        request, response, spider)
+        CRAWLEDMSG = (
+            u"Crawled (%(status)s) %(request)s (referer: "
+            u"%(referer)s)%(flags)s"
+        )
+        return {
+            'level': kwargs['level'],
+            'msg': CRAWLEDMSG,
+            'args': kwargs['args']
+        }
+
+
+class LogformatterSubclassTest(LoggingContribTest):
+    def setUp(self):
+        self.formatter = LogFormatterSubclass()
+        self.spider = Spider('default')
+
+    def test_flags_in_request(self):
+        pass
+
 
 if __name__ == "__main__":
     unittest.main()

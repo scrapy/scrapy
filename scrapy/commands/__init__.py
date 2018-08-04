@@ -65,8 +65,6 @@ class ScrapyCommand(object):
             help="disable logging completely")
         group.add_option("--profile", metavar="FILE", default=None,
             help="write python cProfile stats to FILE")
-        group.add_option("--lsprof", metavar="FILE", default=None,
-            help="write lsprof profiling stats to FILE")
         group.add_option("--pidfile", metavar="FILE",
             help="write process ID to FILE")
         group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE",

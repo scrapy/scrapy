@@ -16,6 +16,8 @@ accepts a different set of arguments and options.
 (The ``scrapy deploy`` command has been removed in 1.0 in favor of the
 standalone ``scrapyd-deploy``. See `Deploying your project`_.)
 
+.. _topics-config-settings:
+
 Configuration settings
 ======================
 
@@ -34,8 +36,9 @@ and project-wide settings will override all others, when defined.
 Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
 
-* ``SCRAPY_SETTINGS_MODULE`` (See :ref:`topics-settings-module-envvar`)
+* ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
 * ``SCRAPY_PROJECT``
+* ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
 
 .. _topics-project-structure:
 
@@ -52,6 +55,7 @@ structure by default, similar to this::
    myproject/
        __init__.py
        items.py
+       middlewares.py
        pipelines.py
        settings.py
        spiders/
@@ -100,13 +104,14 @@ Creating projects
 The first thing you typically do with the ``scrapy`` tool is create your Scrapy
 project::
 
-    scrapy startproject myproject
+    scrapy startproject myproject [project_dir]
 
-That will create a Scrapy project under the ``myproject`` directory.
+That will create a Scrapy project under the ``project_dir`` directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
 Next, you go inside the new project directory::
 
-    cd myproject
+    cd project_dir
 
 And you're ready to use the ``scrapy`` command to manage and control your
 project from there.
@@ -156,6 +161,7 @@ settings).
 Global commands:
 
 * :command:`startproject`
+* :command:`genspider`
 * :command:`settings`
 * :command:`runspider`
 * :command:`shell`
@@ -170,7 +176,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`genspider`
 * :command:`bench`
 
 .. command:: startproject
@@ -178,11 +183,12 @@ Project-only commands:
 startproject
 ------------
 
-* Syntax: ``scrapy startproject <project_name>``
+* Syntax: ``scrapy startproject <project_name> [project_dir]``
 * Requires project: *no*
 
-Creates a new Scrapy project named ``project_name``, under the ``project_name``
+Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
 
 Usage example::
 
@@ -194,14 +200,9 @@ genspider
 ---------
 
 * Syntax: ``scrapy genspider [-t template] <name> <domain>``
-* Requires project: *yes*
+* Requires project: *no*
 
-Create a new spider in the current project.
-
-This is just a convenience shortcut command for creating spiders based on
-pre-defined templates, but certainly not the only way to create spiders. You
-can just create the spider source code files yourself, instead of using this
-command.
+Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -212,22 +213,16 @@ Usage example::
       csvfeed
       xmlfeed
 
-    $ scrapy genspider -d basic
-    import scrapy
+    $ scrapy genspider example example.com
+    Created spider 'example' using template 'basic'
 
-    class $classname(scrapy.Spider):
-        name = "$name"
-        allowed_domains = ["$domain"]
-        start_urls = (
-            'http://www.$domain/',
-            )
+    $ scrapy genspider -t crawl scrapyorg scrapy.org
+    Created spider 'scrapyorg' using template 'crawl'
 
-        def parse(self, response):
-            pass
-
-    $ scrapy genspider -t basic example example.com
-    Created spider 'example' using template 'basic' in module:
-      mybot.spiders.example
+This is just a convenience shortcut command for creating spiders based on
+pre-defined templates, but certainly not the only way to create spiders. You
+can just create the spider source code files yourself, instead of using this
+command.
 
 .. command:: crawl
 
@@ -297,12 +292,12 @@ edit
 * Syntax: ``scrapy edit <spider>``
 * Requires project: *yes*
 
-Edit the given spider using the editor defined in the :setting:`EDITOR`
-setting.
+Edit the given spider using the editor defined in the ``EDITOR`` environment
+variable or (if unset) the :setting:`EDITOR` setting.
 
 This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
-debug his spiders.
+debug spiders.
 
 Usage example::
 
@@ -327,6 +322,14 @@ So this command can be used to "see" how your spider would fetch a certain page.
 
 If used outside a project, no particular per-spider behaviour would be applied
 and it will just use the default Scrapy downloader settings.
+
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``--headers``: print the response's HTTP headers instead of the response's body
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
 Usage examples::
 
@@ -356,6 +359,12 @@ Opens the given URL in a browser, as your Scrapy spider would "see" it.
 Sometimes spiders see pages differently from regular users, so this can be used
 to check what the spider "sees" and confirm it's what you expect.
 
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
+
 Usage example::
 
     $ scrapy view http://www.example.com/some/page.html
@@ -370,12 +379,37 @@ shell
 * Requires project: *no*
 
 Starts the Scrapy shell for the given URL (if given) or empty if no URL is
-given. See :ref:`topics-shell` for more info.
+given. Also supports UNIX-style local file paths, either relative with
+``./`` or ``../`` prefixes or absolute file paths.
+See :ref:`topics-shell` for more info.
+
+Supported options:
+
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``-c code``: evaluate the code in the shell, print the result and exit
+
+* ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them);
+  this only affects the URL you may pass as argument on the command line;
+  once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
 
 Usage example::
 
     $ scrapy shell http://www.example.com/some/page.html
     [ ... scrapy shell starts ... ]
+
+    $ scrapy shell --nolog http://www.example.com/ -c '(response.status, response.url)'
+    (200, 'http://www.example.com/')
+
+    # shell follows HTTP redirects by default
+    $ scrapy shell --nolog http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F -c '(response.status, response.url)'
+    (200, 'http://example.com/')
+
+    # you can disable this with --no-redirect
+    # (only for the URL passed as command line argument)
+    $ scrapy shell --no-redirect --nolog http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F -c '(response.status, response.url)'
+    (302, 'http://httpbin.org/redirect-to?url=http%3A%2F%2Fexample.com%2F')
+
 
 .. command:: parse
 
@@ -396,6 +430,9 @@ Supported options:
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
+
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+  request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--pipelines``: process items through pipelines
 
@@ -510,7 +547,7 @@ Example::
 
     COMMANDS_MODULE = 'mybot.commands'
 
-.. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/deploy.html
+.. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
 Register commands via setup.py entry points
 -------------------------------------------
