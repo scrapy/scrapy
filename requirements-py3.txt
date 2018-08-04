@@ -5,4 +5,3 @@ cssselect>=0.9
 queuelib>=1.1.1
 w3lib>=1.8.0
 service_identity
-https://github.com/dangra/txtulip/archive/0a30192.zip#egg=txtulip

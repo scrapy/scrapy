@@ -17,8 +17,8 @@ if sys.version_info[0] == 2:
 
 # Enable asyncio reactor
 if six.PY3:
-    from txtulip.reactor import install
-    install()
+    from twisted.internet import asyncioreactor
+    asyncioreactor.install()
 
 # Undo what Twisted's perspective broker adds to pickle register
 # to prevent bugs like Twisted#7989 while serializing requests
