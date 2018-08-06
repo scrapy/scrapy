@@ -25,7 +25,8 @@ class HTTPDownloadHandler(object):
                      for k, vs in request.headers.items()
                      for v in vs)
 
-        async with aiohttp.ClientSession(auto_decompress=False) as session:
+        jar = aiohttp.DummyCookieJar()
+        async with aiohttp.ClientSession(auto_decompress=False, cookie_jar=jar) as session:
             aioresponse = await session.request(
                 method=request.method,
                 url=request.url,
