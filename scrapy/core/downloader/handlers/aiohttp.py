@@ -25,13 +25,14 @@ class HTTPDownloadHandler(object):
                      for k, vs in request.headers.items()
                      for v in vs)
 
-        async with aiohttp.request(
-            method=request.method,
-            url=request.url,
-            data=request.body,
-            allow_redirects=False,
-            headers=headers,
-        ) as aioresponse:
+        async with aiohttp.ClientSession(auto_decompress=False) as session:
+            aioresponse = await session.request(
+                method=request.method,
+                url=request.url,
+                data=request.body,
+                allow_redirects=False,
+                headers=headers,
+            )
             body = await aioresponse.read()
             status = aioresponse.status
             headers = Headers(aioresponse.raw_headers)
