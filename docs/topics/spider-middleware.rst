@@ -28,7 +28,12 @@ The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
 :setting:`SPIDER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
 be overridden) and then sorted by order to get the final sorted list of enabled
 middlewares: the first middleware is the one closer to the engine and the last
-is the one closer to the spider.
+is the one closer to the spider. In other words,
+the :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_input`
+method of each middleware will be invoked in increasing
+middleware order (100, 200, 300, ...), and the
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method
+of each middleware will be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`SPIDER_MIDDLEWARES_BASE` setting and pick a value according to where
@@ -90,7 +95,7 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item` 
+        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
         objects.
 
         :param response: the response which generated this output from the
@@ -107,11 +112,11 @@ following methods:
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when when a spider or :meth:`process_spider_input`
+        This method is called when a spider or :meth:`process_spider_input`
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response`, dict or
+        iterable of :class:`~scrapy.http.Request`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -159,6 +164,17 @@ following methods:
         :param spider: the spider to whom the start requests belong
         :type spider: :class:`~scrapy.spiders.Spider` object
 
+    .. method:: from_crawler(cls, crawler)
+    
+       If present, this classmethod is called to create a middleware instance
+       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+       of the middleware. Crawler object provides access to all Scrapy core
+       components like settings and signals; it is a way for middleware to
+       access them and hook its functionality into Scrapy.
+    
+       :param crawler: crawler that uses this middleware
+       :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
@@ -183,16 +199,21 @@ DepthMiddleware
 
 .. class:: DepthMiddleware
 
-   DepthMiddleware is a scrape middleware used for tracking the depth of each
-   Request inside the site being scraped. It can be used to limit the maximum
-   depth to scrape or things like that.
+   DepthMiddleware is used for tracking the depth of each Request inside the
+   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   there is no value previously set (usually just the first Request) and
+   incrementing it by 1 otherwise.
+
+   It can be used to limit the maximum depth to scrape, control Request
+   priority based on their depth, and things like that.
 
    The :class:`DepthMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
 
       * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
         crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS` - Whether to collect depth stats.
+      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
+        requests for each depth.
       * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
         their depth.
 
@@ -211,7 +232,7 @@ HttpErrorMiddleware
 According to the `HTTP standard`_, successful responses are those whose
 status codes are in the 200-300 range.
 
-.. _HTTP standard: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+.. _HTTP standard: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
 If you still want to process response codes outside that range, you can
 specify which response codes the spider is able to handle using the
@@ -238,7 +259,7 @@ responses, unless you really know what you're doing.
 
 For more information see: `HTTP Status Code Definitions`_.
 
-.. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+.. _HTTP Status Code Definitions: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
 HttpErrorMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -273,6 +294,9 @@ OffsiteMiddleware
 
    This middleware filters out every request whose host names aren't in the
    spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
+   All subdomains of any domain in the list are also allowed.
+   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
+   but not ``www2.example.com`` nor ``example.com``.
 
    When your spider returns a request for a domain not belonging to those
    covered by the spider, this middleware will log a debug message similar to
@@ -319,6 +343,90 @@ REFERER_ENABLED
 Default: ``True``
 
 Whether to enable referer middleware.
+
+.. setting:: REFERRER_POLICY
+
+REFERRER_POLICY
+^^^^^^^^^^^^^^^
+
+.. versionadded:: 1.4
+
+Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
+
+.. reqmeta:: referrer_policy
+
+`Referrer Policy`_ to apply when populating Request "Referer" header.
+
+.. note::
+    You can also set the Referrer Policy per request,
+    using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
+    with the same acceptable values as for the ``REFERRER_POLICY`` setting.
+
+Acceptable values for REFERRER_POLICY
+*************************************
+
+- either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+  subclass — a custom policy or one of the built-in ones (see classes below),
+- or one of the standard W3C-defined string values,
+- or the special ``"scrapy-default"``.
+
+=======================================  ========================================================================
+String value                             Class name (as a string)
+=======================================  ========================================================================
+``"scrapy-default"`` (default)           :class:`scrapy.spidermiddlewares.referer.DefaultReferrerPolicy`
+`"no-referrer"`_                         :class:`scrapy.spidermiddlewares.referer.NoReferrerPolicy`
+`"no-referrer-when-downgrade"`_          :class:`scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy`
+`"same-origin"`_                         :class:`scrapy.spidermiddlewares.referer.SameOriginPolicy`
+`"origin"`_                              :class:`scrapy.spidermiddlewares.referer.OriginPolicy`
+`"strict-origin"`_                       :class:`scrapy.spidermiddlewares.referer.StrictOriginPolicy`
+`"origin-when-cross-origin"`_            :class:`scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy`
+`"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
+`"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
+=======================================  ========================================================================
+
+.. autoclass:: DefaultReferrerPolicy
+.. warning::
+    Scrapy's default referrer policy — just like `"no-referrer-when-downgrade"`_,
+    the W3C-recommended value for browsers — will send a non-empty
+    "Referer" header from any ``http(s)://`` to any ``https://`` URL,
+    even if the domain is different.
+
+    `"same-origin"`_ may be a better choice if you want to remove referrer
+    information for cross-domain requests.
+
+.. autoclass:: NoReferrerPolicy
+
+.. autoclass:: NoReferrerWhenDowngradePolicy
+.. note::
+    "no-referrer-when-downgrade" policy is the W3C-recommended default,
+    and is used by major web browsers.
+
+    However, it is NOT Scrapy's default referrer policy (see :class:`DefaultReferrerPolicy`).
+
+.. autoclass:: SameOriginPolicy
+
+.. autoclass:: OriginPolicy
+
+.. autoclass:: StrictOriginPolicy
+
+.. autoclass:: OriginWhenCrossOriginPolicy
+
+.. autoclass:: StrictOriginWhenCrossOriginPolicy
+
+.. autoclass:: UnsafeUrlPolicy
+.. warning::
+    "unsafe-url" policy is NOT recommended.
+
+.. _Referrer Policy: https://www.w3.org/TR/referrer-policy
+.. _"no-referrer": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer
+.. _"no-referrer-when-downgrade": https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
+.. _"same-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-same-origin
+.. _"origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin
+.. _"strict-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin
+.. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
+.. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
+.. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
 
 UrlLengthMiddleware
 -------------------

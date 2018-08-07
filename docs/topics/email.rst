@@ -15,7 +15,7 @@ simple API for sending attachments and it's very easy to configure, with a few
 :ref:`settings <topics-email-settings>`.
 
 .. _smtplib: https://docs.python.org/2/library/smtplib.html
-.. _Twisted non-blocking IO: http://twistedmatrix.com/documents/current/core/howto/defer-intro.html
+.. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 
 Quick example
 =============
@@ -54,10 +54,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
       setting will be used. If not given, no SMTP authentication will be
       performed.
-    :type smtphost: str
+    :type smtphost: str or bytes
 
     :param smtppass: the SMTP pass for authentication.
-    :type smtppass: str
+    :type smtppass: str or bytes
 
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
@@ -76,18 +76,18 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         :param settings: the e-mail recipients
         :type settings: :class:`scrapy.settings.Settings` object
 
-    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain')
+    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
 
         Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: list
+        :type to: str or list of str
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: list
+        :type cc: str or list of str
 
         :param body: the e-mail body
         :type body: str
@@ -101,6 +101,9 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
         :param mimetype: the MIME type of the e-mail
         :type mimetype: str
+
+        :param charset: the character encoding to use for the e-mail contents
+        :type charset: str
 
 
 .. _topics-email-settings:
@@ -161,7 +164,7 @@ Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
 .. setting:: MAIL_TLS
 
 MAIL_TLS
----------
+--------
 
 Default: ``False``
 
@@ -170,7 +173,7 @@ Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connectio
 .. setting:: MAIL_SSL
 
 MAIL_SSL
----------
+--------
 
 Default: ``False``
 

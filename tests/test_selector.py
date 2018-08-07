@@ -84,7 +84,7 @@ class SelectorTestCase(unittest.TestCase):
         headers = {'Content-Type': ['text/html; charset=utf-8']}
         response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
         x = Selector(response)
-        self.assertEquals(x.xpath("//span[@id='blank']/text()").extract(),
+        self.assertEqual(x.xpath("//span[@id='blank']/text()").extract(),
                           [u'\xa3'])
 
     def test_badly_encoded_body(self):
@@ -122,6 +122,10 @@ class SelectorTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             sel.xpath('//p').extract_unquoted()
             self.assertSubstring('Use .extract() instead', str(w[-1].message))
+
+    def test_selector_bad_args(self):
+        with self.assertRaisesRegexp(ValueError, 'received both response and text'):
+            Selector(TextResponse(url='http://example.com', body=b''), text=u'')
 
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):

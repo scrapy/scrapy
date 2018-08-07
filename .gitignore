@@ -10,6 +10,10 @@ venv
 build
 dist
 .idea
+htmlcov/
+.coverage
+.coverage.*
+.cache/
 
 # Windows
 Thumbs.db

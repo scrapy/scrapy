@@ -1,6 +1,6 @@
 from docutils.parsers.rst.roles import set_classes
 from docutils import nodes
-from sphinx.util.compat import Directive
+from docutils.parsers.rst import Directive
 from sphinx.util.nodes import make_refnode
 from operator import itemgetter
 
@@ -18,7 +18,7 @@ def is_setting_index(node):
     if node.tagname == 'index':
         # index entries for setting directives look like:
         # [(u'pair', u'SETTING_NAME; setting', u'std:setting-SETTING_NAME', '')]
-        entry_type, info, refid, _ = node['entries'][0]
+        entry_type, info, refid = node['entries'][0][:3]
         return entry_type == 'pair' and info.endswith('; setting')
     return False
 
@@ -30,7 +30,7 @@ def get_setting_target(node):
 
 def get_setting_name_and_refid(node):
     """Extract setting name from directive index node"""
-    entry_type, info, refid, _ = node['entries'][0]
+    entry_type, info, refid = node['entries'][0][:3]
     return info.replace('; setting', ''), refid
 
 
@@ -110,11 +110,13 @@ def setup(app):
     app.connect('doctree-read', collect_scrapy_settings_refs)
     app.connect('doctree-resolved', replace_settingslist_nodes)
 
+
 def source_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ref = 'https://github.com/scrapy/scrapy/blob/master/' + text
     set_classes(options)
     node = nodes.reference(rawtext, text, refuri=ref, **options)
     return [node], []
+
 
 def issue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ref = 'https://github.com/scrapy/scrapy/issues/' + text
@@ -122,11 +124,13 @@ def issue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     node = nodes.reference(rawtext, 'issue ' + text, refuri=ref, **options)
     return [node], []
 
+
 def commit_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ref = 'https://github.com/scrapy/scrapy/commit/' + text
     set_classes(options)
     node = nodes.reference(rawtext, 'commit ' + text, refuri=ref, **options)
     return [node], []
+
 
 def rev_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ref = 'http://hg.scrapy.org/scrapy/changeset/' + text

@@ -89,7 +89,7 @@ class IterErrbackTest(unittest.TestCase):
         errors = []
         out = list(iter_errback(itergood(), errors.append))
         self.assertEqual(out, list(range(10)))
-        self.failIf(errors)
+        self.assertFalse(errors)
 
     def test_iter_errback_bad(self):
         def iterbad():

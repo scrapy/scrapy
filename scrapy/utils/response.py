@@ -3,14 +3,12 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
-import re
 import weakref
 import webbrowser
 import tempfile
 
 from twisted.web import http
-from twisted.web.http import RESPONSES
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
 
 from scrapy.utils.decorators import deprecated
@@ -26,36 +24,27 @@ _baseurl_cache = weakref.WeakKeyDictionary()
 def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
-        text = response.body_as_unicode()[0:4096]
+        text = response.text[0:4096]
         _baseurl_cache[response] = html.get_base_url(text, response.url,
             response.encoding)
     return _baseurl_cache[response]
 
 
-_noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
-_script_re = re.compile(u'<script.*?>.*?</script>', re.IGNORECASE | re.DOTALL)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
-        text = response.body_as_unicode()[0:4096]
-        text = _noscript_re.sub(u'', text)
-        text = _script_re.sub(u'', text)
+        text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(text, response.url,
-            response.encoding)
+            response.encoding, ignore_tags=('script', 'noscript'))
     return _metaref_cache[response]
 
 
 def response_status_message(status):
     """Return status code plus status text descriptive message
-
-    >>> response_status_message(200)
-    '200 OK'
-
-    >>> response_status_message(404)
-    '404 Not Found'
     """
-    return '%s %s' % (status, http.responses.get(int(status)))
+    message = http.RESPONSES.get(int(status), "Unknown Status")
+    return '%s %s' % (status, to_native_str(message))
 
 
 def response_httprepr(response):
@@ -64,7 +53,7 @@ def response_httprepr(response):
     that was received (that's not exposed by Twisted).
     """
     s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
-        to_bytes(RESPONSES.get(response.status, b'')) + b"\r\n"
+        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
     if response.headers:
         s += response.headers.to_string() + b"\r\n"
     s += b"\r\n"

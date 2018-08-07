@@ -23,7 +23,7 @@ In this example, we'll show how to use `Firebug`_ to scrape data from the
 Project`_ used in the :ref:`tutorial <intro-tutorial>` but with a different
 face.
 
-.. _Firebug: http://getfirebug.com
+.. _Firebug: https://getfirebug.com/
 .. _Google Directory: http://directory.google.com/
 .. _Open Directory Project: http://www.dmoz.org
 
@@ -118,7 +118,7 @@ they work as we expect.
 
 As you can see, the page markup is not very descriptive: the elements don't
 contain ``id``, ``class`` or any attribute that clearly identifies them, so
-we''ll use the ranking bars as a reference point to select the data to extract
+we'll use the ranking bars as a reference point to select the data to extract
 when we construct our XPaths.
 
 After using FireBug, we can see that each link is inside a ``td`` tag, which is
@@ -164,4 +164,4 @@ elements.
 or tags which Therefer   in page HTML
 sources may on Firebug inspects the live DOM
 
-.. _has been shut down by Google: http://searchenginewatch.com/sew/news/2096661/google-directory-shut
+.. _has been shut down by Google: https://searchenginewatch.com/sew/news/2096661/google-directory-shut

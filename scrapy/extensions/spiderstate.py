@@ -2,6 +2,7 @@ import os
 from six.moves import cPickle as pickle
 
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
 
 class SpiderState(object):
@@ -12,7 +13,11 @@ class SpiderState(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        obj = cls(job_dir(crawler.settings))
+        jobdir = job_dir(crawler.settings)
+        if not jobdir:
+            raise NotConfigured
+
+        obj = cls(jobdir)
         crawler.signals.connect(obj.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj

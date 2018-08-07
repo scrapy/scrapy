@@ -13,18 +13,18 @@ class Root(Resource):
         return self
 
     def render(self, request):
-        total = _getarg(request, 'total', 100, int)
-        show = _getarg(request, 'show', 10, int)
+        total = _getarg(request, b'total', 100, int)
+        show = _getarg(request, b'show', 10, int)
         nlist = [random.randint(1, total) for _ in range(show)]
-        request.write("<html><head></head><body>")
+        request.write(b"<html><head></head><body>")
         args = request.args.copy()
         for nl in nlist:
             args['n'] = nl
             argstr = urlencode(args, doseq=True)
             request.write("<a href='/follow?{0}'>follow {1}</a><br>"
-                          .format(argstr, nl))
-        request.write("</body></html>")
-        return ''
+                          .format(argstr, nl).encode('utf8'))
+        request.write(b"</body></html>")
+        return b''
 
 
 def _getarg(request, name, default=None, type=str):

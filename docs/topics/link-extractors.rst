@@ -8,7 +8,7 @@ Link extractors are objects whose only purpose is to extract links from web
 pages (:class:`scrapy.http.Response` objects) which will be eventually
 followed.
 
-There is ``scrapy.linkextractors import LinkExtractor`` available
+There is ``scrapy.linkextractors.LinkExtractor`` available
 in Scrapy, but you can create your own custom Link Extractors to suit your
 needs by implementing a simple interface.
 
@@ -51,7 +51,7 @@ LxmlLinkExtractor
    :synopsis: lxml's HTMLParser-based link extractors
 
 
-.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
+.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=False, unique=True, process_value=None, strip=True)
 
     LxmlLinkExtractor is the recommended link extractor with handy filtering
     options. It is implemented using lxml's robust HTMLParser.
@@ -103,7 +103,12 @@ LxmlLinkExtractor
     :type attrs: list
 
     :param canonicalize: canonicalize each extracted url (using
-        scrapy.utils.url.canonicalize_url). Defaults to ``True``.
+        w3lib.url.canonicalize_url). Defaults to ``False``.
+        Note that canonicalize_url is meant for duplicate checking;
+        it can change the URL visible at server side, so the response can be
+        different for requests with canonicalized and raw URLs. If you're
+        using LinkExtractor to follow links it is more robust to
+        keep the default ``canonicalize=False``.
     :type canonicalize: boolean
 
     :param unique: whether duplicate filtering should be applied to extracted
@@ -131,5 +136,14 @@ LxmlLinkExtractor
                     return m.group(1)
 
     :type process_value: callable
+
+    :param strip: whether to strip whitespaces from extracted attributes.
+        According to HTML5 standard, leading and trailing whitespaces
+        must be stripped from ``href`` attributes of ``<a>``, ``<area>``
+        and many other elements, ``src`` attribute of ``<img>``, ``<iframe>``
+        elements, etc., so LinkExtractor strips space chars by default.
+        Set ``strip=False`` to turn it off (e.g. if you're extracting urls
+        from elements or attributes which allow leading/trailing whitespaces).
+    :type strip: boolean
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

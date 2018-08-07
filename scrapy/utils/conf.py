@@ -1,36 +1,59 @@
 import os
 import sys
+import numbers
 from operator import itemgetter
 
 import six
 from six.moves.configparser import SafeConfigParser
 
+from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
+from scrapy.utils.python import without_none_values
 
 
-def build_component_list(base, custom, convert=update_classpath):
-    """Compose a component list based on a custom and base dict of components
-    (typically middlewares or extensions), unless custom is already a list, in
-    which case it's returned.
-    """
+def build_component_list(compdict, custom=None, convert=update_classpath):
+    """Compose a component list from a { class: order } dictionary."""
 
     def _check_components(complist):
         if len({convert(c) for c in complist}) != len(complist):
             raise ValueError('Some paths in {!r} convert to the same object, '
                              'please update your settings'.format(complist))
 
+    def _map_keys(compdict):
+        if isinstance(compdict, BaseSettings):
+            compbs = BaseSettings()
+            for k, v in six.iteritems(compdict):
+                prio = compdict.getpriority(k)
+                if compbs.getpriority(convert(k)) == prio:
+                    raise ValueError('Some paths in {!r} convert to the same '
+                                     'object, please update your settings'
+                                     ''.format(list(compdict.keys())))
+                else:
+                    compbs.set(convert(k), v, priority=prio)
+            return compbs
+        else:
+            _check_components(compdict)
+            return {convert(k): v for k, v in six.iteritems(compdict)}
+
+    def _validate_values(compdict):
+        """Fail if a value in the components dict is not a real number or None."""
+        for name, value in six.iteritems(compdict):
+            if value is not None and not isinstance(value, numbers.Real):
+                raise ValueError('Invalid value {} for component {}, please provide ' \
+                                 'a real number or None instead'.format(value, name))
+
+    # BEGIN Backwards compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
         _check_components(custom)
         return type(custom)(convert(c) for c in custom)
 
-    def _map_keys(compdict):
-        _check_components(compdict)
-        return {convert(k): v for k, v in six.iteritems(compdict)}
+    if custom is not None:
+        compdict.update(custom)
+    # END Backwards compatibility
 
-    compdict = _map_keys(base)
-    compdict.update(_map_keys(custom))
-    items = (x for x in six.iteritems(compdict) if x[1] is not None)
-    return [x[0] for x in sorted(items, key=itemgetter(1))]
+    _validate_values(compdict)
+    compdict = without_none_values(_map_keys(compdict))
+    return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
 
 
 def arglist_to_dict(arglist):

@@ -88,6 +88,7 @@ The settings used to control the AutoThrottle extension are:
 * :setting:`AUTOTHROTTLE_ENABLED`
 * :setting:`AUTOTHROTTLE_START_DELAY`
 * :setting:`AUTOTHROTTLE_MAX_DELAY`
+* :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
 * :setting:`AUTOTHROTTLE_DEBUG`
 * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
 * :setting:`CONCURRENT_REQUESTS_PER_IP`
@@ -126,6 +127,8 @@ The maximum download delay (in seconds) to be set in case of high latencies.
 
 AUTOTHROTTLE_TARGET_CONCURRENCY
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 1.1
 
 Default: ``1.0``
 

@@ -7,21 +7,31 @@ from twisted.internet import defer
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes
 from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
+    # Assume parsed is urlparse-d from Request.url,
+    # which was passed via safe_url_string and is ascii-only.
+    b = lambda s: to_bytes(s, encoding='ascii')
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    host = parsed.hostname
+    path = b(path)
+    host = b(parsed.hostname)
     port = parsed.port
-    scheme = parsed.scheme
-    netloc = parsed.netloc
+    scheme = b(parsed.scheme)
+    netloc = b(parsed.netloc)
     if port is None:
-        port = 443 if scheme == 'https' else 80
+        port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
 
 
 def _parse(url):
+    """ Return tuple of (scheme, netloc, host, port, path),
+    all in bytes except for port which is int.
+    Assume url is from Request.url, which was passed via safe_url_string
+    and is ascii-only.
+    """
     url = url.strip()
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
@@ -29,7 +39,7 @@ def _parse(url):
 
 class ScrapyHTTPPageGetter(HTTPClient):
 
-    delimiter = '\n'
+    delimiter = b'\n'
 
     def connectionMade(self):
         self.headers = Headers() # bucket for response headers
@@ -63,8 +73,8 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.factory.noPage(reason)
 
     def handleResponse(self, response):
-        if self.factory.method.upper() == 'HEAD':
-            self.factory.page('')
+        if self.factory.method.upper() == b'HEAD':
+            self.factory.page(b'')
         elif self.length is not None and self.length > 0:
             self.factory.noPage(self._connection_lost_reason)
         else:
@@ -73,6 +83,11 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def timeout(self):
         self.transport.loseConnection()
+
+        # transport cleanup needed for HTTPS connections
+        if self.factory.url.startswith(b'https'):
+            self.transport.stopProducing()
+
         self.factory.noPage(\
                 defer.TimeoutError("Getting %s took longer than %s seconds." % \
                 (self.factory.url, self.factory.timeout)))
@@ -91,8 +106,10 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     afterFoundGet = False
 
     def __init__(self, request, timeout=180):
-        self.url = urldefrag(request.url)[0]
-        self.method = request.method
+        self._url = urldefrag(request.url)[0]
+        # converting to bytes to comply to Twisted interface
+        self.url = to_bytes(self._url, encoding='ascii')
+        self.method = to_bytes(request.method, encoding='ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
         self.response_headers = None
@@ -119,15 +136,15 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
         # Content-Length must be specified in POST method even with no body
-        elif self.method == 'POST':
+        elif self.method == b'POST':
             self.headers['Content-Length'] = 0
 
     def _build_response(self, body, request):
         request.meta['download_latency'] = self.headers_time-self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self.url)
-        return respcls(url=self.url, status=status, headers=headers, body=body)
+        respcls = responsetypes.from_args(headers=headers, url=self._url)
+        return respcls(url=self._url, status=status, headers=headers, body=body)
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)

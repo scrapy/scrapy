@@ -194,6 +194,6 @@ class Downloader(object):
 
     def _slot_gc(self, age=60):
         mintime = time() - age
-        for key, slot in self.slots.items():
+        for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
                 self.slots.pop(key).close()

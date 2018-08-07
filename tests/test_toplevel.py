@@ -11,10 +11,6 @@ class ToplevelTestCase(TestCase):
     def test_version_info(self):
         self.assertIs(type(scrapy.version_info), tuple)
 
-    def test_optional_features(self):
-        self.assertIs(type(scrapy.optional_features), set)
-        self.assertIn('ssl', scrapy.optional_features)
-
     def test_request_shortcut(self):
         from scrapy.http import Request, FormRequest
         self.assertIs(scrapy.Request, Request)

@@ -20,7 +20,7 @@ _filename = None
 _contents = None
 
 # A regex that matches standard linkcheck output lines
-line_re = re.compile(ur'(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))')
+line_re = re.compile(u'(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))')
 
 # Read lines from the linkcheck output file
 try:

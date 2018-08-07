@@ -4,6 +4,8 @@ DefaultHeaders downloader middleware
 See documentation in docs/topics/downloader-middleware.rst
 """
 
+from scrapy.utils.python import without_none_values
+
 
 class DefaultHeadersMiddleware(object):
 
@@ -12,7 +14,8 @@ class DefaultHeadersMiddleware(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings.get('DEFAULT_REQUEST_HEADERS').items())
+        headers = without_none_values(crawler.settings['DEFAULT_REQUEST_HEADERS'])
+        return cls(headers.items())
 
     def process_request(self, request, spider):
         for k, v in self._headers:

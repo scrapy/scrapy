@@ -5,6 +5,8 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
+from scrapy.utils.python import to_bytes
+from tests import mock
 
 
 class ManagerTestCase(TestCase):
@@ -67,7 +69,7 @@ class DefaultsTest(ManagerTestCase):
 
         """
         req = Request('http://example.com')
-        body = '<p>You are being redirected</p>'
+        body = b'<p>You are being redirected</p>'
         resp = Response(req.url, status=302, body=body, headers={
             'Content-Length': str(len(body)),
             'Content-Type': 'text/html',
@@ -77,12 +79,12 @@ class DefaultsTest(ManagerTestCase):
         ret = self._download(request=req, response=resp)
         self.assertTrue(isinstance(ret, Request),
                         "Not redirected: {0!r}".format(ret))
-        self.assertEqual(ret.url, resp.headers['Location'],
+        self.assertEqual(to_bytes(ret.url), resp.headers['Location'],
                          "Not redirected to location header")
 
     def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request('http://example.com')
-        body = '<p>You are being redirected</p>'
+        body = b'<p>You are being redirected</p>'
         resp = Response(req.url, status=200, body=body, headers={
             'Content-Length': str(len(body)),
             'Content-Type': 'text/html',
@@ -90,3 +92,26 @@ class DefaultsTest(ManagerTestCase):
             'Location': 'http://example.com/login',
         })
         self.assertRaises(IOError, self._download, request=req, response=resp)
+
+
+class ResponseFromProcessRequestTest(ManagerTestCase):
+    """Tests middleware returning a response from process_request."""
+
+    def test_download_func_not_called(self):
+        resp = Response('http://example.com/index.html')
+
+        class ResponseMiddleware(object):
+            def process_request(self, request, spider):
+                return resp
+
+        self.mwman._add_middleware(ResponseMiddleware())
+
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)

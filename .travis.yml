@@ -1,17 +1,53 @@
 language: python
-python: 2.7
 sudo: false
-env:
- - TOXENV=py27
- - TOXENV=precise
- - TOXENV=py33
- - TOXENV=docs
+branches:
+  only:
+    - master
+    - /^\d\.\d+$/
+    - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
+matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=py27
+    - python: 2.7
+      env: TOXENV=jessie
+    - python: 2.7
+      env: TOXENV=pypy
+    - python: 2.7
+      env: TOXENV=pypy3
+    - python: 3.4
+      env: TOXENV=py34
+    - python: 3.5
+      env: TOXENV=py35
+    - python: 3.6
+      env: TOXENV=py36
+    - python: 3.7
+      env: TOXENV=py37
+      dist: xenial
+      sudo: true
+    - python: 3.6
+      env: TOXENV=docs
 install:
- - pip install -U tox twine wheel codecov coveralls
+  - |
+      if [ "$TOXENV" = "pypy" ]; then
+        export PYPY_VERSION="pypy-6.0.0-linux_x86_64-portable"
+        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
+        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+      fi
+      if [ "$TOXENV" = "pypy3" ]; then
+        export PYPY_VERSION="pypy3.5-5.9-beta-linux_x86_64-portable"
+        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
+        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+      fi
+  - pip install -U tox twine wheel codecov
+
 script: tox
 after_success:
   - codecov
-  - coveralls
 notifications:
   irc:
     use_notice: true
@@ -29,6 +65,5 @@ deploy:
     secure: JaAKcy1AXWXDK3LXdjOtKyaVPCSFoCGCnW15g4f65E/8Fsi9ZzDfmBa4Equs3IQb/vs/if2SVrzJSr7arN7r9Z38Iv1mUXHkFAyA3Ym8mThfABBzzcUWEQhIHrCX0Tdlx9wQkkhs+PZhorlmRS4gg5s6DzPaeA2g8SCgmlRmFfA=
   on:
     tags: true
-    all_branches: true
     repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+)?$"
+    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"

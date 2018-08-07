@@ -2,6 +2,7 @@
 """
 from twisted.internet import reactor
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_unicode
 
 
 class HTTP10DownloadHandler(object):
@@ -17,8 +18,8 @@ class HTTP10DownloadHandler(object):
         return factory.deferred
 
     def _connect(self, factory):
-        host, port = factory.host, factory.port
-        if factory.scheme == 'https':
+        host, port = to_unicode(factory.host), factory.port
+        if factory.scheme == b'https':
             return reactor.connectSSL(host, port, factory,
                                       self.ClientContextFactory())
         else:

@@ -6,13 +6,16 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+import six
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spiders import Spider
 
+
 def identity(x):
     return x
+
 
 class Rule(object):
 
@@ -26,6 +29,7 @@ class Rule(object):
             self.follow = False if callback else True
         else:
             self.follow = follow
+
 
 class CrawlSpider(Spider):
 
@@ -44,18 +48,23 @@ class CrawlSpider(Spider):
     def process_results(self, response, results):
         return results
 
+    def _build_request(self, rule, link):
+        r = Request(url=link.url, callback=self._response_downloaded)
+        r.meta.update(rule=rule, link_text=link.text)
+        return r
+
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
             return
         seen = set()
         for n, rule in enumerate(self._rules):
-            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
+            links = [lnk for lnk in rule.link_extractor.extract_links(response)
+                     if lnk not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
             for link in links:
                 seen.add(link)
-                r = Request(url=link.url, callback=self._response_downloaded)
-                r.meta.update(rule=n, link_text=link.text)
+                r = self._build_request(n, link)
                 yield rule.process_request(r)
 
     def _response_downloaded(self, response):
@@ -77,7 +86,7 @@ class CrawlSpider(Spider):
         def get_method(method):
             if callable(method):
                 return method
-            elif isinstance(method, basestring):
+            elif isinstance(method, six.string_types):
                 return getattr(self, method, None)
 
         self._rules = [copy.copy(r) for r in self.rules]

@@ -11,9 +11,8 @@ class Command(fetch.Command):
             "contents in a browser"
 
     def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider",
-            help="use this spider")
+        super(Command, self).add_options(parser)
+        parser.remove_option("--headers")
 
     def _print_response(self, response, opts):
         open_in_browser(response)

@@ -1,6 +1,7 @@
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
 
+
 class InitSpider(Spider):
     """Base Spider with initialization facilities"""
 
