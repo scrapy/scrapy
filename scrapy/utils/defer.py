@@ -4,7 +4,6 @@ Helper functions for dealing with Twisted deferreds
 import asyncio
 from asyncio.tasks import ensure_future
 from functools import partial
-from aiostream import stream, pipe
 from types import AsyncGeneratorType
 
 

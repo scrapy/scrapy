@@ -6,14 +6,7 @@ from datetime import datetime
 from collections import deque
 
 import six
-import asyncio
-'''
-from twisted.internet import asyncioreactor
-try:
-    asyncioreactor.install(asyncio.get_event_loop())
-except Exception:
-    pass
-'''
+
 from twisted.internet import reactor
 from twisted.internet import defer, task
 

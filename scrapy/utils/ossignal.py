@@ -1,15 +1,6 @@
-
 from __future__ import absolute_import
 import signal
 
-import asyncio
-'''
-from twisted.internet import asyncioreactor
-try:
-    asyncioreactor.install(asyncio.get_event_loop())
-except Exception:
-    pass
-'''
 from twisted.internet import reactor
 
 

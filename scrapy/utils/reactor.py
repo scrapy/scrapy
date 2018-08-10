@@ -1,11 +1,4 @@
-import asyncio
-'''
-from twisted.internet import asyncioreactor
-try:
-    asyncioreactor.install(asyncio.get_event_loop())
-except Exception:
-    pass
-'''
+
 from twisted.internet import reactor
 from twisted.internet import error
 

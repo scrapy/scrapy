@@ -8,11 +8,6 @@ from six import create_bound_method
 from .generator import RequestGenerator
 from .utils import get_args
 
-
-__author__ = 'Rolando Espinoza'
-__email__ = 'rolando at rmax.io'
-__version__ = '0.3.1'
-
 __all__ = ['inline_requests']
 
 

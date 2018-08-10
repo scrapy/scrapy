@@ -32,8 +32,6 @@ import re
 from io import BytesIO
 from six.moves.urllib.parse import unquote
 
-import asyncio
-
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator

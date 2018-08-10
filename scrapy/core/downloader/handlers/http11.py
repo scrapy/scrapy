@@ -7,8 +7,6 @@ from time import time
 import warnings
 from six.moves.urllib.parse import urldefrag
 
-import asyncio
-
 from zope.interface import implementer
 from twisted.internet import reactor
 from twisted.internet import defer, reactor, protocol
