@@ -2,14 +2,15 @@
 extracts information from them"""
 
 import logging
-from collections import deque
 import asyncio
-from twisted.python.failure import Failure
-from twisted.internet import defer
+
+from collections import deque
 from types import GeneratorType
 from types import AsyncGeneratorType
 from functools import partial
 
+from twisted.python.failure import Failure
+from twisted.internet import defer
 
 from scrapy.utils.misc import ensure_deferred, list_to_simplevalue
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback, asynciter_errback, async_parallel, asyncfut_parallel, asyncfut_iterback

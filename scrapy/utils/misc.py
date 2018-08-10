@@ -1,14 +1,15 @@
 """Helper functions which don't fit anywhere else"""
 import re
 import hashlib
+import functools
+import six
+
 from importlib import import_module
 from pkgutil import iter_modules
+from w3lib.html import replace_entities
 
-import functools
 from twisted.internet import defer
 from twisted.internet.defer import ensureDeferred
-import six
-from w3lib.html import replace_entities
 
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem

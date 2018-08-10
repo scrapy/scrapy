@@ -2,6 +2,8 @@
 Helper functions for dealing with Twisted deferreds
 """
 import asyncio
+import types
+
 from asyncio.tasks import ensure_future
 from functools import partial
 from types import AsyncGeneratorType
@@ -11,7 +13,7 @@ from twisted.internet import reactor
 from twisted.internet import defer, task
 from twisted.python import failure
 from scrapy.utils.misc import ensure_deferred,alist
-import types
+
 
 from scrapy.exceptions import IgnoreRequest
 

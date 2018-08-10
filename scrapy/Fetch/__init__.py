@@ -1,14 +1,17 @@
-from scrapy.core import config
-from scrapy.core import engine
-
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy import signals
-from scrapy.core.downloader import Downloader 
-from twisted.internet.defer import Deferred
 import asyncio
 import logging
 import scrapy
 import warnings
+
+from twisted.internet.defer import Deferred
+
+from scrapy.core import config
+from scrapy.core import engine
+from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+from scrapy import signals
+from scrapy.core.downloader import Downloader 
+
+
 
 logger = logging.getLogger(__name__)
 
