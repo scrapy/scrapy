@@ -1,7 +1,9 @@
 from unittest import TextTestResult
 
+from twisted.python import failure
 from twisted.trial import unittest
 
+from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field
@@ -185,3 +187,18 @@ class ContractsManagerTest(unittest.TestCase):
                 self.results)
         request.callback(response)
         self.should_fail()
+
+    def test_errback(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        try:
+            raise HttpError(response, 'Ignoring non-200 response')
+        except HttpError:
+            failure_mock = failure.Failure()
+
+        request = self.conman.from_method(spider.returns_request, self.results)
+        request.errback(failure_mock)
+
+        self.assertFalse(self.results.failures)
+        self.assertTrue(self.results.errors)
