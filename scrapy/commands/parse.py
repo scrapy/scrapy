@@ -191,6 +191,7 @@ class Command(ScrapyCommand):
 
             # parse items and requests
             depth = response.meta['_depth']
+            response.request.callback = response.meta['_callback']
 
             items, requests = self.run_callback(response, cb)
             if opts.pipelines:

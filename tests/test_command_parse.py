@@ -59,6 +59,25 @@ class MyGoodCrawlSpider(CrawlSpider):
     def parse(self, response):
         return [scrapy.Item(), dict(nomatch='default')]
 
+class MyRetryRequestsSpider(CrawlSpider):
+    name = 'retryRequests{0}'
+    start_urls = ['https://httpbin.org/'] 
+
+    def parse(self, response):
+        self.logger.info('In parse()')
+        
+        return scrapy.Request(
+            'https://httpbin.org/ip', callback=self.second_parse)
+
+    def second_parse(self, response):
+        self.logger.info('In second_parse()')
+        if response.meta.get('retried'):
+            self.logger.info("done")
+            self.logger.info("All Good!")
+            yield scrapy.Item()
+        else:
+            response.meta['retried'] = True
+            yield response.request.replace(dont_filter=True)
 
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
@@ -193,3 +212,10 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         )
         self.assertRegexpMatches(to_native_str(out), """# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", to_native_str(stderr))
+    
+    @defer.inlineCallbacks
+    def test_retry_requests_in_callbacks(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'retryRequests'+self.spider_name, '-d', '3', self.url('/html')]
+        )
+        self.assertIn("""All Good!""", to_native_str(stderr))
