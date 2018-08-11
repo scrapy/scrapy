@@ -50,7 +50,12 @@ class ContractsManager(object):
         if contracts:
             # calculate request args
             args, kwargs = get_spec(Request.__init__)
+
+            # Don't filter requests to allow
+            # testing different callbacks on the same URL.
+            kwargs['dont_filter'] = True
             kwargs['callback'] = method
+
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
