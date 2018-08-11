@@ -3,6 +3,7 @@ import re
 from functools import wraps
 from unittest import TestCase
 
+from scrapy import FormRequest
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
@@ -57,7 +58,11 @@ class ContractsManager(object):
             # create and prepare request
             args.remove('self')
             if set(args).issubset(set(kwargs)):
-                request = Request(**kwargs)
+                if 'formdata' in kwargs:
+                    kwargs['method'] = 'POST'
+                    request = FormRequest(**kwargs)
+                else:
+                    request = Request(**kwargs)
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):

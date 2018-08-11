@@ -3,11 +3,12 @@ from unittest import TextTestResult
 from twisted.python import failure
 from twisted.trial import unittest
 
+from scrapy import FormRequest
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field
-from scrapy.contracts import ContractsManager
+from scrapy.contracts import ContractsManager, Contract
 from scrapy.contracts.default import (
     UrlContract,
     ReturnsContract,
@@ -22,6 +23,14 @@ class TestItem(Item):
 
 class ResponseMock(object):
     url = 'http://scrapy.org'
+
+
+class CustomFormContract(Contract):
+    name = 'custom_form'
+
+    def adjust_request_args(self, args):
+        args['formdata'] = {'name': 'scrapy'}
+        return args
 
 
 class TestSpider(Spider):
@@ -100,9 +109,16 @@ class TestSpider(Spider):
         """
         pass
 
+    def custom_form(self, response):
+        """
+        @url http://scrapy.org
+        @custom_form
+        """
+        pass
+
 
 class ContractsManagerTest(unittest.TestCase):
-    contracts = [UrlContract, ReturnsContract, ScrapesContract]
+    contracts = [UrlContract, ReturnsContract, ScrapesContract, CustomFormContract]
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
@@ -202,3 +218,9 @@ class ContractsManagerTest(unittest.TestCase):
 
         self.assertFalse(self.results.failures)
         self.assertTrue(self.results.errors)
+
+    def test_form_contract(self):
+        spider = TestSpider()
+        request = self.conman.from_method(spider.custom_form, self.results)
+        self.assertEqual(request.method, 'POST')
+        self.assertIsInstance(request, FormRequest)
