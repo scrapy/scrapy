@@ -33,10 +33,11 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                query = dict(parse_qsl(urlparse(self.url).query))
+                query = parse_qsl(urlparse(self.url).query)
                 if query:
-                    query.update(dict(items))
-                    querystr = _urlencode(query.items(), self.encoding)
+                    items_dict = dict(items)
+                    items += [(k, v) for k, v in query if k not in items_dict]
+                    querystr = _urlencode(items, self.encoding)
                 self._set_url(urljoin(self.url, '?' + querystr))
 
     @classmethod

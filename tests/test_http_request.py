@@ -270,11 +270,18 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r1.body, b'')
 
     def test_formdata_overrides_querystring(self):
-        data = {'one': 'one', 'two': 'two'}
-        req = self.request_class('http://www.example.com?one=1', method='GET', formdata=data)
+        data = {'one': '1', 'two': '2'}
+        req = self.request_class('http://www.example.com?one=one&one=2', method='GET', formdata=data)
         fs = _qs(req)
-        self.assertEqual(fs[b'one'], [b'one'])
-        self.assertEqual(fs[b'two'], [b'two'])
+        self.assertEqual(fs[b'one'], [b'1'])
+        self.assertEqual(fs[b'two'], [b'2'])
+
+    def test_formdata_overrides_querystring_same_key_multiple_values(self):
+        data = [('one', 'a'), ('one', 'b'), ('two', '2'), ('two', 'two')]
+        req = self.request_class('http://www.example.com?one=one&one=2', method='GET', formdata=data)
+        fs = _qs(req)
+        six.assertCountEqual(self, fs[b'one'], [b'a', b'b'])
+        six.assertCountEqual(self, fs[b'two'], [b'2', b'two'])
 
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
