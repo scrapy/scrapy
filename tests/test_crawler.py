@@ -1,10 +1,9 @@
 import logging
 import tempfile
 import warnings
-import unittest
 
 from twisted.internet import defer
-import twisted.trial.unittest
+from twisted.trial import unittest
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
@@ -94,26 +93,29 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
-        with tempfile.NamedTemporaryFile() as log_file:
-            class MySpider(scrapy.Spider):
-                name = 'spider'
-                custom_settings = {
-                    'LOG_LEVEL': 'INFO',
-                    'LOG_FILE': log_file.name,
-                    # disable telnet if not available to avoid an extra warning
-                    'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
-                }
+        log_file = self.mktemp()
+        class MySpider(scrapy.Spider):
+            name = 'spider'
+            custom_settings = {
+                'LOG_LEVEL': 'INFO',
+                'LOG_FILE': log_file,
+                # disable telnet if not available to avoid an extra warning
+                'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
+            }
 
-            configure_logging()
-            self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
-            crawler = Crawler(MySpider, {})
-            self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
-            info_count = crawler.stats.get_value('log_count/INFO')
-            logging.debug('debug message')
-            logging.info('info message')
-            logging.warning('warning message')
-            logging.error('error message')
-            logged = log_file.read().decode('utf8')
+        configure_logging()
+        self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
+        crawler = Crawler(MySpider, {})
+        self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
+        info_count = crawler.stats.get_value('log_count/INFO')
+        logging.debug('debug message')
+        logging.info('info message')
+        logging.warning('warning message')
+        logging.error('error message')
+
+        with open(log_file, 'rb') as fo:
+            logged = fo.read().decode('utf8')
+
         self.assertNotIn('debug message', logged)
         self.assertIn('info message', logged)
         self.assertIn('warning message', logged)
@@ -203,7 +205,7 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-class CrawlerRunnerHasSpider(twisted.trial.unittest.TestCase):
+class CrawlerRunnerHasSpider(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
