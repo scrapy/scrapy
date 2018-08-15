@@ -15,6 +15,7 @@ from scrapy.contracts.default import (
     ReturnsContract,
     ScrapesContract,
 )
+from tests.mockserver import MockServer
 
 
 class TestItem(Item):
@@ -213,6 +214,9 @@ class ContractsManagerTest(unittest.TestCase):
                 super(TestSameUrlSpider, self).__init__(*args, **kwargs)
                 self.visited = 0
 
+            def start_requests(s):
+                return self.conman.from_spider(s, self.results)
+
             def parse_first(self, response):
                 """first callback
                 @url http://scrapy.org
@@ -227,9 +231,8 @@ class ContractsManagerTest(unittest.TestCase):
                 self.visited += 1
                 return TestItem()
 
-        TestSameUrlSpider.start_requests = lambda s: self.conman.from_spider(s, self.results)
-
         crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
-        yield crawler.crawl()
+        with MockServer() as mockserver:
+            yield crawler.crawl(mockserver=mockserver)
 
         self.assertEqual(crawler.spider.visited, 2)
