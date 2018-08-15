@@ -241,10 +241,18 @@ class FeedExportTest(unittest.TestCase):
                 yield runner.crawl(spider_cls)
 
             with open(res_path, 'rb') as f:
-                defer.returnValue(f.read())
+                content = f.read()
 
         finally:
-            shutil.rmtree(tmpdir)
+            # FIXME: Windows fails to remove the file because FeedExporter 
+            # keeps a reference to the temporal file even after
+            # the spider finished.
+            try:
+                shutil.rmtree(tmpdir)
+            except OSError:
+                pass
+
+        defer.returnValue(content)
 
     @defer.inlineCallbacks
     def exported_data(self, items, settings):
