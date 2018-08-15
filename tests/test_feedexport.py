@@ -244,13 +244,7 @@ class FeedExportTest(unittest.TestCase):
                 content = f.read()
 
         finally:
-            # FIXME: Windows fails to remove the file because FeedExporter 
-            # keeps a reference to the temporal file even after
-            # the spider finished.
-            try:
-                shutil.rmtree(tmpdir)
-            except OSError:
-                pass
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
         defer.returnValue(content)
 
