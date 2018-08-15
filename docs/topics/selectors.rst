@@ -235,17 +235,17 @@ Here's an example used to extract image names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
-    [u'My image 1',
-     u'My image 2',
-     u'My image 3',
-     u'My image 4',
-     u'My image 5']
+    ['My image 1',
+     'My image 2',
+     'My image 3',
+     'My image 4',
+     'My image 5']
 
 There's an additional helper reciprocating ``.extract_first()`` for ``.re()``,
 named ``.re_first()``. Use it to extract just the first matching string::
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
-    u'My image 1'
+    'My image 1'
 
 .. _topics-selectors-relative-xpaths:
 
@@ -431,26 +431,26 @@ with groups of itemscopes and corresponding itemprops::
     ...     print "    properties:", props.extract()
     ...     print
 
-    current scope: [u'http://schema.org/Product']
-        properties: [u'name', u'aggregateRating', u'offers', u'description', u'review', u'review']
+    current scope: ['http://schema.org/Product']
+        properties: ['name', 'aggregateRating', 'offers', 'description', 'review', 'review']
 
-    current scope: [u'http://schema.org/AggregateRating']
-        properties: [u'ratingValue', u'reviewCount']
+    current scope: ['http://schema.org/AggregateRating']
+        properties: ['ratingValue', 'reviewCount']
 
-    current scope: [u'http://schema.org/Offer']
-        properties: [u'price', u'availability']
+    current scope: ['http://schema.org/Offer']
+        properties: ['price', 'availability']
 
-    current scope: [u'http://schema.org/Review']
-        properties: [u'name', u'author', u'datePublished', u'reviewRating', u'description']
+    current scope: ['http://schema.org/Review']
+        properties: ['name', 'author', 'datePublished', 'reviewRating', 'description']
 
-    current scope: [u'http://schema.org/Rating']
-        properties: [u'worstRating', u'ratingValue', u'bestRating']
+    current scope: ['http://schema.org/Rating']
+        properties: ['worstRating', 'ratingValue', 'bestRating']
 
-    current scope: [u'http://schema.org/Review']
-        properties: [u'name', u'author', u'datePublished', u'reviewRating', u'description']
+    current scope: ['http://schema.org/Review']
+        properties: ['name', 'author', 'datePublished', 'reviewRating', 'description']
 
-    current scope: [u'http://schema.org/Rating']
-        properties: [u'worstRating', u'ratingValue', u'bestRating']
+    current scope: ['http://schema.org/Rating']
+        properties: ['worstRating', 'ratingValue', 'bestRating']
 
     >>>
 
@@ -543,22 +543,22 @@ Example::
 This gets all first ``<li>``  elements under whatever it is its parent::
 
     >>> xp("//li[1]")
-    [u'<li>1</li>', u'<li>4</li>']
+    ['<li>1</li>', '<li>4</li>']
 
 And this gets the first ``<li>``  element in the whole document::
 
     >>> xp("(//li)[1]")
-    [u'<li>1</li>']
+    ['<li>1</li>']
 
 This gets all first ``<li>``  elements under an ``<ul>``  parent::
 
     >>> xp("//ul/li[1]")
-    [u'<li>1</li>', u'<li>4</li>']
+    ['<li>1</li>', '<li>4</li>']
 
 And this gets the first ``<li>``  element under an ``<ul>``  parent in the whole document::
 
     >>> xp("(//ul/li)[1]")
-    [u'<li>1</li>']
+    ['<li>1</li>']
 
 When querying by class, consider using CSS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
