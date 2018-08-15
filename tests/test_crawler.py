@@ -143,9 +143,8 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
         settings = Settings({
             'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
         })
-        with warnings.catch_warnings(record=True) as w, \
-                self.assertRaises(AttributeError):
-            CrawlerRunner(settings)
+        with warnings.catch_warnings(record=True) as w:
+            self.assertRaises(AttributeError, CrawlerRunner, settings)
             self.assertEqual(len(w), 1)
             self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
             self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
