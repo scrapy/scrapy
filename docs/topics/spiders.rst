@@ -434,8 +434,8 @@ Let's now take a look at an example CrawlSpider with rules::
             self.logger.info('Hi, this is an item page! %s', response.url)
             item = scrapy.Item()
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-            item['name'] = response.xpath('//td[@id="item_name"]/text()').extract()
-            item['description'] = response.xpath('//td[@id="item_description"]/text()').extract()
+            item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
+            item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
             return item
 
 
@@ -548,9 +548,9 @@ These spiders are pretty easy to use, let's have a look at one example::
             self.logger.info('Hi, this is a <%s> node!: %s', self.itertag, ''.join(node.extract()))
 
             item = TestItem()
-            item['id'] = node.xpath('@id').extract()
-            item['name'] = node.xpath('name').extract()
-            item['description'] = node.xpath('description').extract()
+            item['id'] = node.xpath('@id').get()
+            item['name'] = node.xpath('name').get()
+            item['description'] = node.xpath('description').get()
             return item
 
 Basically what we did up there was to create a spider that downloads a feed from
