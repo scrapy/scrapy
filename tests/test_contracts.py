@@ -103,29 +103,6 @@ class TestSpider(Spider):
         pass
 
 
-class TestSameUrlSpider(Spider):
-
-    name = 'test_same_url'
-
-    def __init__(self, *args, **kwargs):
-        super(TestSameUrlSpider, self).__init__(*args, **kwargs)
-        self.visited = 0
-
-    def parse_first(self, response):
-        """first callback
-        @url http://scrapy.org
-        """
-        self.visited += 1
-        return TestItem()
-
-    def parse_second(self, response):
-        """second callback
-        @url http://scrapy.org
-        """
-        self.visited += 1
-        return TestItem()
-
-
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract]
 
@@ -228,6 +205,28 @@ class ContractsManagerTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_same_url(self):
+
+        class TestSameUrlSpider(Spider):
+            name = 'test_same_url'
+
+            def __init__(self, *args, **kwargs):
+                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                self.visited = 0
+
+            def parse_first(self, response):
+                """first callback
+                @url http://scrapy.org
+                """
+                self.visited += 1
+                return TestItem()
+
+            def parse_second(self, response):
+                """second callback
+                @url http://scrapy.org
+                """
+                self.visited += 1
+                return TestItem()
+
         TestSameUrlSpider.start_requests = lambda s: self.conman.from_spider(s, self.results)
 
         crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
