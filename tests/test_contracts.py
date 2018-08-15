@@ -1,8 +1,10 @@
 from unittest import TextTestResult
 
+from twisted.internet import defer
 from twisted.python import failure
 from twisted.trial import unittest
 
+from scrapy.crawler import CrawlerRunner
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
@@ -101,6 +103,29 @@ class TestSpider(Spider):
         pass
 
 
+class TestSameUrlSpider(Spider):
+
+    name = 'test_same_url'
+
+    def __init__(self, *args, **kwargs):
+        super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+        self.visited = 0
+
+    def parse_first(self, response):
+        """first callback
+        @url http://scrapy.org
+        """
+        self.visited += 1
+        return TestItem()
+
+    def parse_second(self, response):
+        """second callback
+        @url http://scrapy.org
+        """
+        self.visited += 1
+        return TestItem()
+
+
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract]
 
@@ -177,14 +202,12 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_succeed()
 
         # scrapes_item_fail
-        request = self.conman.from_method(spider.scrapes_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_item_fail, self.results)
         request.callback(response)
         self.should_fail()
 
         # scrapes_dict_item_fail
-        request = self.conman.from_method(spider.scrapes_dict_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_dict_item_fail, self.results)
         request.callback(response)
         self.should_fail()
 
@@ -202,3 +225,12 @@ class ContractsManagerTest(unittest.TestCase):
 
         self.assertFalse(self.results.failures)
         self.assertTrue(self.results.errors)
+
+    @defer.inlineCallbacks
+    def test_same_url(self):
+        TestSameUrlSpider.start_requests = lambda s: self.conman.from_spider(s, self.results)
+
+        crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
+        yield crawler.crawl()
+
+        self.assertEqual(crawler.spider.visited, 2)
