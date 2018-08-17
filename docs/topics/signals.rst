@@ -279,6 +279,22 @@ request_dropped
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+request_reached_downloader
+---------------------------
+
+.. signal:: request_reached_downloader
+.. function:: request_reached_downloader(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request`, reached downloader.
+
+    The signal does not support returning deferreds from their handlers.
+
+    :param request: the request that reached downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
 response_received
 -----------------
 
