@@ -101,6 +101,10 @@ class TestSpider(Spider):
         pass
 
 
+class InheritsTestSpider(TestSpider):
+    name = 'inherits_demo_spider'
+
+
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract]
 
@@ -202,3 +206,9 @@ class ContractsManagerTest(unittest.TestCase):
 
         self.assertFalse(self.results.failures)
         self.assertTrue(self.results.errors)
+
+    def test_inherited_contracts(self):
+        spider = InheritsTestSpider()
+
+        requests = self.conman.from_spider(spider, self.results)
+        self.assertTrue(requests)
