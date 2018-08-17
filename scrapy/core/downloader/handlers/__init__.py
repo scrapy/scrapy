@@ -24,6 +24,13 @@ class DownloadHandlers(object):
             crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
         for scheme, clspath in six.iteritems(handlers):
             self._schemes[scheme] = clspath
+        for scheme in self._schemes:
+            path = self._schemes[scheme]
+            dhcls = load_object(path)
+            lazy = getattr(dhcls, 'lazy', False)
+            if lazy:
+                continue
+            self._load_handler(scheme, dhcls)
 
         crawler.signals.connect(self._close, signals.engine_stopped)
 
@@ -40,8 +47,12 @@ class DownloadHandlers(object):
             return None
 
         path = self._schemes[scheme]
+        dhcls = load_object(path)
+        self._load_handler(scheme, dhcls)
+        return self._handlers[scheme]
+
+    def _load_handler(self, scheme, dhcls):
         try:
-            dhcls = load_object(path)
             dh = dhcls(self._crawler.settings)
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
@@ -54,7 +65,6 @@ class DownloadHandlers(object):
             return None
         else:
             self._handlers[scheme] = dh
-        return self._handlers[scheme]
 
     def download_request(self, request, spider):
         scheme = urlparse_cached(request).scheme

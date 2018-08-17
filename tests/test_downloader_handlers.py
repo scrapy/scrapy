@@ -41,7 +41,15 @@ from scrapy.exceptions import NotConfigured
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
+
 class DummyDH(object):
+
+    def __init__(self, crawler):
+        pass
+
+
+class DummyLazyDH(object):
+    lazy = True
 
     def __init__(self, crawler):
         pass
@@ -60,8 +68,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
@@ -70,8 +76,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
@@ -80,10 +84,21 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
+
+    def test_lazy_handlers(self):
+        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        self.assertNotIn('scheme', dh._handlers)
+        for scheme in handlers:  # force load lazy handler
+            dh._get_handler(scheme)
+        self.assertIn('scheme', dh._handlers)
+        self.assertNotIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
