@@ -44,7 +44,7 @@ class ContractsManager(object):
             bound_method = spider.__getattribute__(method)
             try:
                 requests.append(self.from_method(bound_method, results))
-            except:
+            except Exception:
                 case = _create_testcase(bound_method, 'contract')
                 results.addError(case, sys.exc_info())
 
