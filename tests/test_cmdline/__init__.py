@@ -52,7 +52,8 @@ class CmdlineTest(unittest.TestCase):
             stats.print_stats()
             out.seek(0)
             stats = out.read()
-            self.assertIn('scrapy/commands/version.py', stats)
+            self.assertIn(os.path.join('scrapy', 'commands', 'version.py'),
+                          stats)
             self.assertIn('tottime', stats)
         finally:
             shutil.rmtree(path)
