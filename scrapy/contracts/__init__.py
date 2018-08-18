@@ -1,6 +1,7 @@
 import sys
 import re
 from functools import wraps
+from inspect import getmembers
 from unittest import TestCase
 
 from scrapy.http import Request
@@ -17,7 +18,7 @@ class ContractsManager(object):
 
     def tested_methods_from_spidercls(self, spidercls):
         methods = []
-        for key, value in vars(spidercls).items():
+        for key, value in getmembers(spidercls):
             if (callable(value) and value.__doc__ and
                     re.search(r'^\s*@', value.__doc__, re.MULTILINE)):
                 methods.append(key)

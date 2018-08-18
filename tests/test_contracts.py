@@ -104,6 +104,10 @@ class TestSpider(Spider):
         pass
 
 
+class InheritsTestSpider(TestSpider):
+    name = 'inherits_demo_spider'
+
+
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract]
 
@@ -219,15 +223,15 @@ class ContractsManagerTest(unittest.TestCase):
 
             def parse_first(self, response):
                 """first callback
-                @url http://scrapy.org
-                """
+                @url {}
+                """.format(self.mockserver.url('/status?n=200'))
                 self.visited += 1
                 return TestItem()
 
             def parse_second(self, response):
                 """second callback
-                @url http://scrapy.org
-                """
+                @url {}
+                """.format(self.mockserver.url('/status?n=200'))
                 self.visited += 1
                 return TestItem()
 
@@ -236,3 +240,9 @@ class ContractsManagerTest(unittest.TestCase):
             yield crawler.crawl(mockserver=mockserver)
 
         self.assertEqual(crawler.spider.visited, 2)
+
+    def test_inherited_contracts(self):
+        spider = InheritsTestSpider()
+
+        requests = self.conman.from_spider(spider, self.results)
+        self.assertTrue(requests)
