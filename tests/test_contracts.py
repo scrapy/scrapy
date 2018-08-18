@@ -222,22 +222,20 @@ class ContractsManagerTest(unittest.TestCase):
                 return self.conman.from_spider(s, self.results)
 
             def parse_first(self, response):
-                """first callback
-                @url {}
-                """.format(self.mockserver.url('/status?n=200'))
                 self.visited += 1
                 return TestItem()
 
             def parse_second(self, response):
-                """second callback
-                @url {}
-                """.format(self.mockserver.url('/status?n=200'))
                 self.visited += 1
                 return TestItem()
 
-        crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
         with MockServer() as mockserver:
-            yield crawler.crawl(mockserver=mockserver)
+            mock_endpoint = mockserver.url('/status?n=200')
+            TestSameUrlSpider.parse_first.__func__.__doc__ = '@url {}'.format(mock_endpoint)
+            TestSameUrlSpider.parse_second.__func__.__doc__ = '@url {}'.format(mock_endpoint)
+
+            crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
+            yield crawler.crawl()
 
         self.assertEqual(crawler.spider.visited, 2)
 
