@@ -29,6 +29,7 @@ class CustomFormContract(Contract):
     name = 'custom_form'
 
     def adjust_request_args(self, args):
+        args['request_cls'] = FormRequest
         args['formdata'] = {'name': 'scrapy'}
         return args
 
@@ -115,6 +116,10 @@ class TestSpider(Spider):
         @custom_form
         """
         pass
+
+
+class InheritsTestSpider(TestSpider):
+    name = 'inherits_demo_spider'
 
 
 class ContractsManagerTest(unittest.TestCase):
@@ -224,3 +229,9 @@ class ContractsManagerTest(unittest.TestCase):
         request = self.conman.from_method(spider.custom_form, self.results)
         self.assertEqual(request.method, 'POST')
         self.assertIsInstance(request, FormRequest)
+
+    def test_inherited_contracts(self):
+        spider = InheritsTestSpider()
+
+        requests = self.conman.from_spider(spider, self.results)
+        self.assertTrue(requests)

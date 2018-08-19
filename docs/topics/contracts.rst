@@ -86,9 +86,8 @@ override three methods:
     .. method:: Contract.adjust_request_args(args)
 
         This receives a ``dict`` as an argument containing default arguments
-        for request object. If ``formdata`` is in ``args``, then
-        :class:`~scrapy.http.FormRequest` object is created,
-        otherwise :class:`~scrapy.http.Request` is used.
+        for request object. :class:`~scrapy.http.Request` is used
+        if ``request_cls`` is not set on ``args``.
 
         Must return the same or a modified version of it.
 

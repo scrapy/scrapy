@@ -1,6 +1,7 @@
 import sys
 import re
 from functools import wraps
+from inspect import getmembers
 from unittest import TestCase
 
 from scrapy import FormRequest
@@ -18,7 +19,7 @@ class ContractsManager(object):
 
     def tested_methods_from_spidercls(self, spidercls):
         methods = []
-        for key, value in vars(spidercls).items():
+        for key, value in getmembers(spidercls):
             if (callable(value) and value.__doc__ and
                     re.search(r'^\s*@', value.__doc__, re.MULTILINE)):
                 methods.append(key)
@@ -49,20 +50,19 @@ class ContractsManager(object):
     def from_method(self, method, results):
         contracts = self.extract_contracts(method)
         if contracts:
-            # calculate request args
-            args, kwargs = get_spec(Request.__init__)
-            kwargs['callback'] = method
+            # prepare request arguments
+            kwargs = {'callback': method}
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
-            # create and prepare request
+            request_cls = kwargs.pop('request_cls', Request)
+
+            args, _ = get_spec(request_cls.__init__)
             args.remove('self')
+
+            # check if all positional arguments are defined in kwargs
             if set(args).issubset(set(kwargs)):
-                if 'formdata' in kwargs:
-                    kwargs['method'] = 'POST'
-                    request = FormRequest(**kwargs)
-                else:
-                    request = Request(**kwargs)
+                request = request_cls(**kwargs)
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
