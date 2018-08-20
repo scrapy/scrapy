@@ -24,13 +24,7 @@ class DownloadHandlers(object):
             crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
         for scheme, clspath in six.iteritems(handlers):
             self._schemes[scheme] = clspath
-        for scheme in self._schemes:
-            path = self._schemes[scheme]
-            dhcls = load_object(path)
-            lazy = getattr(dhcls, 'lazy', False)
-            if lazy:
-                continue
-            self._load_handler(scheme, dhcls)
+            self._load_handler(scheme, skip_lazy=True)
 
         crawler.signals.connect(self._close, signals.engine_stopped)
 
@@ -46,13 +40,14 @@ class DownloadHandlers(object):
             self._notconfigured[scheme] = 'no handler available for that scheme'
             return None
 
-        path = self._schemes[scheme]
-        dhcls = load_object(path)
-        self._load_handler(scheme, dhcls)
-        return self._handlers[scheme]
+        return self._load_handler(scheme)
 
-    def _load_handler(self, scheme, dhcls):
+    def _load_handler(self, scheme, skip_lazy=False):
+        path = self._schemes[scheme]
         try:
+            dhcls = load_object(path)
+            if skip_lazy and getattr(dhcls, 'lazy', True):
+                return None
             dh = dhcls(self._crawler.settings)
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
@@ -60,11 +55,12 @@ class DownloadHandlers(object):
         except Exception as ex:
             logger.error('Loading "%(clspath)s" for scheme "%(scheme)s"',
                          {"clspath": path, "scheme": scheme},
-                         exc_info=True,  extra={'crawler': self._crawler})
+                         exc_info=True, extra={'crawler': self._crawler})
             self._notconfigured[scheme] = str(ex)
             return None
         else:
             self._handlers[scheme] = dh
+            return dh
 
     def download_request(self, request, spider):
         scheme = urlparse_cached(request).scheme

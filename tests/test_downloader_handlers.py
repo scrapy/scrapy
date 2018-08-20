@@ -43,19 +43,21 @@ from tests.spiders import SingleRequestSpider
 
 
 class DummyDH(object):
+    lazy = False
 
     def __init__(self, crawler):
         pass
 
 
 class DummyLazyDH(object):
-    lazy = True
+    # Default is lazy for backwards compatibility
 
     def __init__(self, crawler):
         pass
 
 
 class OffDH(object):
+    lazy = False
 
     def __init__(self, crawler):
         raise NotConfigured

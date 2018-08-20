@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class HTTP11DownloadHandler(object):
+    lazy = False
 
     def __init__(self, settings):
         self._pool = HTTPConnectionPool(reactor, persistent=True)

@@ -31,7 +31,6 @@ def _get_boto_connection():
 
 
 class S3DownloadHandler(object):
-    lazy = True
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
             httpdownloadhandler=HTTPDownloadHandler, **kw):
