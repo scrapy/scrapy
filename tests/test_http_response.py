@@ -336,11 +336,11 @@ class TextResponseTest(BaseResponseTest):
         self.assertIs(response.selector.response, response)
 
         self.assertEqual(
-            response.selector.xpath("//title/text()").extract(),
+            response.selector.xpath("//title/text()").getall(),
             [u'Some page']
         )
         self.assertEqual(
-            response.selector.css("title::text").extract(),
+            response.selector.css("title::text").getall(),
             [u'Some page']
         )
         self.assertEqual(
@@ -353,12 +353,12 @@ class TextResponseTest(BaseResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//title/text()").extract(),
-            response.selector.xpath("//title/text()").extract(),
+            response.xpath("//title/text()").getall(),
+            response.selector.xpath("//title/text()").getall(),
         )
         self.assertEqual(
-            response.css("title::text").extract(),
-            response.selector.css("title::text").extract(),
+            response.css("title::text").getall(),
+            response.selector.css("title::text").getall(),
         )
 
     def test_selector_shortcuts_kwargs(self):
@@ -366,13 +366,13 @@ class TextResponseTest(BaseResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").extract(),
-            response.xpath("normalize-space(//p[@class=\"content\"])").extract(),
+            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").getall(),
+            response.xpath("normalize-space(//p[@class=\"content\"])").getall(),
         )
         self.assertEqual(
             response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
-                pclass="content", pcount=1).extract(),
-            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").extract(),
+                pclass="content", pcount=1).getall(),
+            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
         )
 
     def test_urljoin_with_base_url(self):
@@ -562,7 +562,7 @@ class XmlResponseTest(TextResponseTest):
         self.assertIs(response.selector.response, response)
 
         self.assertEqual(
-            response.selector.xpath("//elem/text()").extract(),
+            response.selector.xpath("//elem/text()").getall(),
             [u'value']
         )
 
@@ -571,8 +571,8 @@ class XmlResponseTest(TextResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//elem/text()").extract(),
-            response.selector.xpath("//elem/text()").extract(),
+            response.xpath("//elem/text()").getall(),
+            response.selector.xpath("//elem/text()").getall(),
         )
 
     def test_selector_shortcuts_kwargs(self):
@@ -583,12 +583,12 @@ class XmlResponseTest(TextResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
-            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).getall(),
+            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).getall(),
         )
 
         response.selector.register_namespace('s2', 'http://scrapy.org')
         self.assertEqual(
-            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).extract(),
-            response.selector.xpath("//s2:elem/text()").extract(),
+            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).getall(),
+            response.selector.xpath("//s2:elem/text()").getall(),
         )
