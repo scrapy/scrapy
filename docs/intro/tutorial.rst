@@ -520,6 +520,12 @@ like this::
     >>> response.css('li.next a::attr(href)').get()
     '/page/2/'
 
+There is also an ``attrib`` property available
+(see :ref:`selecting-attributes` for more)::
+
+    >>> response.css('li.next a').attrib['href']
+    '/page/2'
+
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::
 
