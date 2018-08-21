@@ -184,8 +184,8 @@ After that, we can start playing with the objects::
 
     >>> fetch("https://reddit.com")
 
-    >>> response.xpath('//title/text()').extract()
-    ['reddit: the front page of the internet']
+    >>> response.xpath('//title/text()').get()
+    'reddit: the front page of the internet'
 
     >>> request = request.replace(method="POST")
 

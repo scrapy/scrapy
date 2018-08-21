@@ -229,11 +229,11 @@ Return multiple Requests and items from a single callback::
         ]
 
         def parse(self, response):
-            for h3 in response.xpath('//h3').extract():
+            for h3 in response.xpath('//h3').getall():
                 yield {"title": h3}
 
-            for url in response.xpath('//a/@href').extract():
-                yield scrapy.Request(url, callback=self.parse)
+            for href in response.xpath('//a/@href').getall():
+                yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
 to give data more structure you can use :ref:`topics-items`::
@@ -251,11 +251,11 @@ to give data more structure you can use :ref:`topics-items`::
             yield scrapy.Request('http://www.example.com/3.html', self.parse)
 
         def parse(self, response):
-            for h3 in response.xpath('//h3').extract():
+            for h3 in response.xpath('//h3').getall():
                 yield MyItem(title=h3)
 
-            for url in response.xpath('//a/@href').extract():
-                yield scrapy.Request(url, callback=self.parse)
+            for href in response.xpath('//a/@href').getall():
+                yield scrapy.Request(response.urljoin(href), self.parse)
 
 .. _spiderargs:
 
@@ -545,7 +545,7 @@ These spiders are pretty easy to use, let's have a look at one example::
         itertag = 'item'
 
         def parse_node(self, response, node):
-            self.logger.info('Hi, this is a <%s> node!: %s', self.itertag, ''.join(node.extract()))
+            self.logger.info('Hi, this is a <%s> node!: %s', self.itertag, ''.join(node.getall()))
 
             item = TestItem()
             item['id'] = node.xpath('@id').get()

@@ -254,7 +254,7 @@ data.
 
 To extract the text from the title above, you can do::
 
-    >>> response.css('title::text').extract()
+    >>> response.css('title::text').getall()
     ['Quotes to Scrape']
 
 There are two things to note here: one is that we've added ``::text`` to the
@@ -262,12 +262,12 @@ CSS query, to mean we want to select only the text elements directly inside
 ``<title>`` element.  If we don't specify ``::text``, we'd get the full title
 element, including its tags::
 
-    >>> response.css('title').extract()
+    >>> response.css('title').getall()
     ['<title>Quotes to Scrape</title>']
 
-The other thing is that the result of calling ``.extract()`` is a list, because
-we're dealing with an instance of :class:`~scrapy.selector.SelectorList`.  When
-you know you just want the first result, as in this case, you can do::
+The other thing is that the result of calling ``.getall()`` is a list: it is
+possible that a selector returns more than one result, so we extract them all.
+When you know you just want the first result, as in this case, you can do::
 
     >>> response.css('title::text').get()
     'Quotes to Scrape'
@@ -392,10 +392,10 @@ using the ``quote`` object we just created::
     >>> author
     'Albert Einstein'
 
-Given that the tags are a list of strings, we can use the ``.extract()`` method
+Given that the tags are a list of strings, we can use the ``.getall()`` method
 to get all of them::
 
-    >>> tags = quote.css("div.tags a.tag::text").extract()
+    >>> tags = quote.css("div.tags a.tag::text").getall()
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
@@ -405,7 +405,7 @@ quotes elements and put them together into a Python dictionary::
     >>> for quote in response.css("div.quote"):
     ...     text = quote.css("span.text::text").get()
     ...     author = quote.css("small.author::text").get()
-    ...     tags = quote.css("div.tags a.tag::text").extract()
+    ...     tags = quote.css("div.tags a.tag::text").getall()
     ...     print(dict(text=text, author=author, tags=tags))
     {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
     {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
@@ -438,7 +438,7 @@ in the callback, as you can see below::
                 yield {
                     'text': quote.css('span.text::text').get(),
                     'author': quote.css('small.author::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
 If you run this spider, it will output the extracted data with the log::
@@ -543,7 +543,7 @@ page, extracting data from it::
                 yield {
                     'text': quote.css('span.text::text').get(),
                     'author': quote.css('small.author::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
             next_page = response.css('li.next a::attr(href)').get()
@@ -594,7 +594,7 @@ As a shortcut for creating Request objects you can use
                 yield {
                     'text': quote.css('span.text::text').get(),
                     'author': quote.css('span small::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
             next_page = response.css('li.next a::attr(href)').get()
