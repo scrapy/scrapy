@@ -299,7 +299,8 @@ expressions`::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools (see section about :ref:`topics-developer-tools`).
+You can use your browser developer tools to inspect the HTML and come up
+with a selector (see section about :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
