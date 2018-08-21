@@ -251,7 +251,7 @@ that Scrapy (parsel) implements a couple of **non-standard pseudo-elements**:
 .. warning::
     These pseudo-elements are Scrapy-/Parsel-specific.
     They will most probably not work with other libraries like
-   `lxml`_ or `PyQuery`_.
+    `lxml`_ or `PyQuery`_.
 
 .. _PyQuery: https://pypi.python.org/pypi/pyquery
 

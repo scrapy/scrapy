@@ -288,7 +288,7 @@ to be scraped, you can at least get **some** data.
 Besides the :meth:`~scrapy.selector.Selector.extract` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
 the :meth:`~scrapy.selector.Selector.re` method to extract using `regular
-expressions`::
+expressions`_::
 
     >>> response.css('title::text').re(r'Quotes.*')
     ['Quotes to Scrape']
@@ -740,4 +740,3 @@ modeling the scraped data. If you prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
-.. _dirbot: https://github.com/scrapy/dirbot
