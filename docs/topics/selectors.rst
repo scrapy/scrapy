@@ -25,17 +25,14 @@ either by `XPath`_ or `CSS`_ expressions.
 used with HTML. `CSS`_ is a language for applying styles to HTML documents. It
 defines selectors to associate those styles with specific HTML elements.
 
-Scrapy selectors are powered by `parsel`_ library, which uses `lxml`_ library
-under the hood. It means Scrapy selectors are very similar in speed and
-parsing accuracy to lxml.
+.. note::
+    Scrapy Selectors is a thin wrapper around `parsel`_ library; the purpose of
+    this wrapper is to provide better integration with Scrapy Response objects.
 
-This page explains how selectors work and describes their API which is very
-small and simple, unlike the `lxml`_ API which is much bigger because the
-`lxml`_ library can be used for many other tasks, besides selecting markup
-documents.
-
-For a complete reference of the selectors API see
-:ref:`Selector reference <topics-selectors-ref>`
+    `parsel`_ is a stand-alone web scraping library which can be used without
+    Scrapy. It uses `lxml`_ library under the hood, and implements an
+    easy API on top of lxml API. It means Scrapy selectors are very similar
+    in speed and parsing accuracy to lxml.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
@@ -73,9 +70,8 @@ Constructing from response::
     >>> Selector(response=response).xpath('//span/text()').get()
     'good'
 
-For convenience, response objects expose a selector on `.selector` attribute,
-it's totally OK to use this shortcut when possible. By using it you can
-ensure the response body is parsed only once::
+For convenience, response objects expose a selector on `.selector` attribute.
+By using it you can ensure the response body is parsed only once::
 
     >>> response.selector.xpath('//span/text()').get()
     'good'
@@ -88,8 +84,10 @@ more shortcuts: ``response.xpath()`` and ``response.css()``::
     >>> response.css('span::text').get()
     'good'
 
-Usually there is no need to construct Scrapy selectors manually because of
-these shortcuts.
+Usually there is no need to construct Scrapy selectors manually:
+``response`` object is available in Spider callbacks, so in most cases
+it is more convenient to use ``response.css()`` and ``response.xpath()``
+shortcuts.
 
 Using selectors
 ---------------
@@ -392,6 +390,71 @@ Use it to extract just the first matching string::
     >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
     'My image 1'
 
+.. _old-extraction-api:
+
+extract() and extract_first()
+-----------------------------
+
+If you're a long-time Scrapy user, you're probably familiar
+with ``.extract()`` and ``.extract_first()`` selector methods. Many blog posts
+and tutorials are using them as well. These methods are still supported
+by Scrapy, there are **no plans** to deprecate them.
+
+However, Scrapy usage docs are now written using ``.get()`` and
+``.getall()`` methods. We feel that these new methods result in a more concise
+and readable code.
+
+The following examples show how these methods map to each other.
+
+1. ``SelectorList.get()`` is the same as ``SelectorList.extract_first()``::
+
+     >>> response.css('a::attr(href)').get()
+     'image1.html'
+     >>> response.css('a::attr(href)').extract_first()
+     'image1.html'
+
+2. ``SelectorList.getall()`` is the same as ``SelectorList.extract()``::
+
+     >>> response.css('a::attr(href)').getall()
+     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
+     >>> response.css('a::attr(href)').extract()
+     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
+
+2. ``Selector.get()`` is the same as ``Selector.extract()``::
+
+     >>> response.css('a::attr(href)')[0].get()
+     'image1.html'
+     >>> response.css('a::attr(href)')[0].extract()
+     'image1.html'
+
+4. For consistency, there is also ``Selector.getall()``, which returns a list::
+
+    >>> response.css('a::attr(href)')[0].getall()
+    ['image1.html']
+
+So, the main difference is that output of ``.get()`` and ``.getall()`` methods
+is more predictable: ``.get()`` always returns a single result, ``.getall()``
+always returns a list of all extracted results. With ``.extract()`` method
+it was not always obvious if a result is a list or not; to get a single
+result either ``.extract()`` or ``.extract_first()`` should be called.
+
+
+.. _topics-selectors-xpaths:
+
+Working with XPaths
+===================
+
+Here are some tips which may help you to use XPath with Scrapy selectors
+effectively. If you are not much familiar with XPath yet,
+you may want to take a look first at this `XPath tutorial`_.
+
+.. note::
+    Some of the tips are based on `this post from ScrapingHub's blog`_.
+
+.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
+.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+
+
 .. _topics-selectors-relative-xpaths:
 
 Working with relative XPaths
@@ -428,6 +491,114 @@ XPath specification.
 
 .. _Location Paths: https://www.w3.org/TR/xpath#location-paths
 
+When querying by class, consider using CSS
+------------------------------------------
+
+Because an element can contain multiple CSS classes, the XPath way to select elements
+by class is the rather verbose::
+
+    *[contains(concat(' ', normalize-space(@class), ' '), ' someclass ')]
+
+If you use ``@class='someclass'`` you may end up missing elements that have
+other classes, and if you just use ``contains(@class, 'someclass')`` to make up
+for that you may end up with more elements that you want, if they have a different
+class name that shares the string ``someclass``.
+
+As it turns out, Scrapy selectors allow you to chain selectors, so most of the time
+you can just select by class using CSS and then switch to XPath when needed::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>')
+    >>> sel.css('.shout').xpath('./time/@datetime').getall()
+    ['2014-07-23 19:00']
+
+This is cleaner than using the verbose XPath trick shown above. Just remember
+to use the ``.`` in the XPath expressions that will follow.
+
+Beware of the difference between //node[1] and (//node)[1]
+----------------------------------------------------------
+
+``//node[1]`` selects all the nodes occurring first under their respective parents.
+
+``(//node)[1]`` selects all the nodes in the document, and then gets only the first of them.
+
+Example::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text="""
+    ....:     <ul class="list">
+    ....:         <li>1</li>
+    ....:         <li>2</li>
+    ....:         <li>3</li>
+    ....:     </ul>
+    ....:     <ul class="list">
+    ....:         <li>4</li>
+    ....:         <li>5</li>
+    ....:         <li>6</li>
+    ....:     </ul>""")
+    >>> xp = lambda x: sel.xpath(x).getall()
+
+This gets all first ``<li>``  elements under whatever it is its parent::
+
+    >>> xp("//li[1]")
+    ['<li>1</li>', '<li>4</li>']
+
+And this gets the first ``<li>``  element in the whole document::
+
+    >>> xp("(//li)[1]")
+    ['<li>1</li>']
+
+This gets all first ``<li>``  elements under an ``<ul>``  parent::
+
+    >>> xp("//ul/li[1]")
+    ['<li>1</li>', '<li>4</li>']
+
+And this gets the first ``<li>``  element under an ``<ul>``  parent in the whole document::
+
+    >>> xp("(//ul/li)[1]")
+    ['<li>1</li>']
+
+Using text nodes in a condition
+-------------------------------
+
+When you need to use the text content as argument to an `XPath string function`_,
+avoid using ``.//text()`` and use just ``.`` instead.
+
+This is because the expression ``.//text()`` yields a collection of text elements -- a *node-set*.
+And when a node-set is converted to a string, which happens when it is passed as argument to
+a string function like ``contains()`` or ``starts-with()``, it results in the text for the first element only.
+
+Example::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text='<a href="#">Click here to go to the <strong>Next Page</strong></a>')
+
+Converting a *node-set* to string::
+
+    >>> sel.xpath('//a//text()').getall() # take a peek at the node-set
+    ['Click here to go to the ', 'Next Page']
+    >>> sel.xpath("string(//a[1]//text())").getall() # convert it to string
+    ['Click here to go to the ']
+
+A *node* converted to a string, however, puts together the text of itself plus of all its descendants::
+
+    >>> sel.xpath("//a[1]").getall() # select the first node
+    ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+    >>> sel.xpath("string(//a[1])").getall() # convert it to string
+    ['Click here to go to the Next Page']
+
+So, using the ``.//text()`` node-set won't select anything in this case::
+
+    >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").getall()
+    []
+
+But using the ``.`` to mean the node, works::
+
+    >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
+    ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+
+.. _`XPath string function`: https://www.w3.org/TR/xpath/#section-String-Functions
+
 .. _topics-selectors-xpath-variables:
 
 Variables in XPath expressions
@@ -460,6 +631,69 @@ This is done by passing as many named arguments as necessary.
 on `XPath variables`_.
 
 .. _XPath variables: https://parsel.readthedocs.io/en/latest/usage.html#variables-in-xpath-expressions
+
+
+.. _removing-namespaces:
+
+Removing namespaces
+-------------------
+
+When dealing with scraping projects, it is often quite convenient to get rid of
+namespaces altogether and just work with element names, to write more
+simple/convenient XPaths. You can use the
+:meth:`Selector.remove_namespaces` method for that.
+
+Let's show an example that illustrates this with GitHub blog atom feed.
+
+.. highlight:: sh
+
+First, we open the shell with the url we want to scrape::
+
+    $ scrapy shell https://github.com/blog.atom
+
+.. highlight:: xml
+
+This is how the file starts::
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <feed xml:lang="en-US"
+          xmlns="http://www.w3.org/2005/Atom"
+          xmlns:media="http://search.yahoo.com/mrss/">
+      <id>tag:github.com,2008:/blog</id>
+      ...
+
+You can see two namespace declarations: a default "http://www.w3.org/2005/Atom"
+and another one using the "media:" prefix for "http://search.yahoo.com/mrss/".
+
+.. highlight:: python
+
+Once in the shell we can try selecting all ``<link>`` objects and see that it
+doesn't work (because the Atom XML namespace is obfuscating those nodes)::
+
+    >>> response.xpath("//link")
+    []
+
+But once we call the :meth:`Selector.remove_namespaces` method, all
+nodes can be accessed directly by their names::
+
+    >>> response.selector.remove_namespaces()
+    >>> response.xpath("//link")
+    [<Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
+     <Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
+     ...
+
+If you wonder why the namespace removal procedure isn't always called by default
+instead of having to call it manually, this is because of two reasons, which, in order
+of relevance, are:
+
+1. Removing namespaces requires to iterate and modify all nodes in the
+   document, which is a reasonably expensive operation to perform by default
+   for all documents crawled by Scrapy
+
+2. There could be some cases where using namespaces is actually required, in
+   case some element names clash between namespaces. These cases are very rare
+   though.
+
 
 Using EXSLT extensions
 ----------------------
@@ -606,174 +840,44 @@ inside another ``itemscope``.
 .. _regular expressions: http://exslt.org/regexp/index.html
 .. _set manipulation: http://exslt.org/set/index.html
 
+Other XPath extensions
+----------------------
 
-Some XPath tips
----------------
+Scrapy selectors also provide a sorely missed XPath extension function
+``has-class`` that returns ``True`` for nodes that have all of the specified
+HTML classes.
 
-Here are some tips that you may find useful when using XPath
-with Scrapy selectors, based on `this post from ScrapingHub's blog`_.
-If you are not much familiar with XPath yet,
-you may want to take a look first at this `XPath tutorial`_.
+.. highlight:: html
 
+For the following HTML::
 
-.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+    <p class="foo bar-baz">First</p>
+    <p class="foo">Second</p>
+    <p class="bar">Third</p>
+    <p>Fourth</p>
 
+.. highlight:: python
 
-Using text nodes in a condition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can use it like this::
 
-When you need to use the text content as argument to an `XPath string function`_,
-avoid using ``.//text()`` and use just ``.`` instead.
-
-This is because the expression ``.//text()`` yields a collection of text elements -- a *node-set*.
-And when a node-set is converted to a string, which happens when it is passed as argument to
-a string function like ``contains()`` or ``starts-with()``, it results in the text for the first element only.
-
-Example::
-
-    >>> from scrapy import Selector
-    >>> sel = Selector(text='<a href="#">Click here to go to the <strong>Next Page</strong></a>')
-
-Converting a *node-set* to string::
-
-    >>> sel.xpath('//a//text()').getall() # take a peek at the node-set
-    ['Click here to go to the ', 'Next Page']
-    >>> sel.xpath("string(//a[1]//text())").getall() # convert it to string
-    ['Click here to go to the ']
-
-A *node* converted to a string, however, puts together the text of itself plus of all its descendants::
-
-    >>> sel.xpath("//a[1]").getall() # select the first node
-    ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
-    >>> sel.xpath("string(//a[1])").getall() # convert it to string
-    ['Click here to go to the Next Page']
-
-So, using the ``.//text()`` node-set won't select anything in this case::
-
-    >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").getall()
+    >>> response.xpath('//p[has-class("foo")]')
+    [<Selector xpath='//p[has-class("foo")]' data='<p class="foo bar-baz">First</p>'>,
+     <Selector xpath='//p[has-class("foo")]' data='<p class="foo">Second</p>'>]
+    >>> response.xpath('//p[has-class("foo", "bar-baz")]')
+    [<Selector xpath='//p[has-class("foo", "bar-baz")]' data='<p class="foo bar-baz">First</p>'>]
+    >>> response.xpath('//p[has-class("foo", "bar")]')
     []
 
-But using the ``.`` to mean the node, works::
+So XPath ``//p[has-class("foo", "bar-baz")]`` is roughly equivalent to CSS
+``p.foo.bar-baz``.  Please note, that it is slower in most of the cases,
+because it's a pure-Python function that's invoked for every node in question
+whereas the CSS lookup is translated into XPath and thus runs more efficiently,
+so performance-wise its uses are limited to situations that are not easily
+described with CSS selectors.
 
-    >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
-    ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+Parsel also simplifies adding your own XPath extensions.
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath/#section-String-Functions
-
-Beware of the difference between //node[1] and (//node)[1]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-``//node[1]`` selects all the nodes occurring first under their respective parents.
-
-``(//node)[1]`` selects all the nodes in the document, and then gets only the first of them.
-
-Example::
-
-    >>> from scrapy import Selector
-    >>> sel = Selector(text="""
-    ....:     <ul class="list">
-    ....:         <li>1</li>
-    ....:         <li>2</li>
-    ....:         <li>3</li>
-    ....:     </ul>
-    ....:     <ul class="list">
-    ....:         <li>4</li>
-    ....:         <li>5</li>
-    ....:         <li>6</li>
-    ....:     </ul>""")
-    >>> xp = lambda x: sel.xpath(x).getall()
-
-This gets all first ``<li>``  elements under whatever it is its parent::
-
-    >>> xp("//li[1]")
-    ['<li>1</li>', '<li>4</li>']
-
-And this gets the first ``<li>``  element in the whole document::
-
-    >>> xp("(//li)[1]")
-    ['<li>1</li>']
-
-This gets all first ``<li>``  elements under an ``<ul>``  parent::
-
-    >>> xp("//ul/li[1]")
-    ['<li>1</li>', '<li>4</li>']
-
-And this gets the first ``<li>``  element under an ``<ul>``  parent in the whole document::
-
-    >>> xp("(//ul/li)[1]")
-    ['<li>1</li>']
-
-When querying by class, consider using CSS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Because an element can contain multiple CSS classes, the XPath way to select elements
-by class is the rather verbose::
-
-    *[contains(concat(' ', normalize-space(@class), ' '), ' someclass ')]
-
-If you use ``@class='someclass'`` you may end up missing elements that have
-other classes, and if you just use ``contains(@class, 'someclass')`` to make up
-for that you may end up with more elements that you want, if they have a different
-class name that shares the string ``someclass``.
-
-As it turns out, Scrapy selectors allow you to chain selectors, so most of the time
-you can just select by class using CSS and then switch to XPath when needed::
-
-    >>> from scrapy import Selector
-    >>> sel = Selector(text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>')
-    >>> sel.css('.shout').xpath('./time/@datetime').getall()
-    ['2014-07-23 19:00']
-
-This is cleaner than using the verbose XPath trick shown above. Just remember
-to use the ``.`` in the XPath expressions that will follow.
-
-.. _old-extraction-api:
-
-extract() and extract_first()
------------------------------
-
-If you're a long-time Scrapy user, you're probably familiar
-with ``.extract()`` and ``.extract_first()`` selector methods. These methods
-are still supported by Scrapy, there are no plans to deprecate them.
-
-However, Scrapy usage docs are now written using ``.get()`` and
-``.getall()`` methods. We feel that these new methods result in a more concise
-and readable code.
-
-The following examples show how these methods map to each other.
-
-1. ``SelectorList.get()`` is the same as ``SelectorList.extract_first()``::
-
-     >>> response.css('a::attr(href)').get()
-     'image1.html'
-     >>> response.css('a::attr(href)').extract_first()
-     'image1.html'
-
-2. ``SelectorList.getall()`` is the same as ``SelectorList.extract()``::
-
-     >>> response.css('a::attr(href)').getall()
-     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
-     >>> response.css('a::attr(href)').extract()
-     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
-
-2. ``Selector.get()`` is the same as ``Selector.extract()``::
-
-     >>> response.css('a::attr(href)')[0].get()
-     'image1.html'
-     >>> response.css('a::attr(href)')[0].extract()
-     'image1.html'
-
-4. For consistency, there is also ``Selector.getall()``, which returns a list::
-
-    >>> response.css('a::attr(href)')[0].getall()
-    ['image1.html']
-
-So, the main difference is that output of ``.get()`` and ``.getall()`` methods
-is more predictable: ``.get()`` always returns a single result, ``.getall()``
-always returns a list of all extracted results. With ``.extract()`` method
-it was not always obvious if a result is a list or not; to get a single
-result either ``.extract()`` or ``.extract_first()`` should be called.
+.. autofunction:: parsel.xpathfuncs.set_xpathfunc
 
 
 .. _topics-selectors-ref:
@@ -909,6 +1013,11 @@ SelectorList objects
        their results flattened, as a list of unicode strings.
 
 
+.. _selector-examples:
+
+Examples
+========
+
 .. _selector-examples-html:
 
 Selector examples on HTML response
@@ -957,66 +1066,5 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object::
 
       sel.register_namespace("g", "http://base.google.com/ns/1.0")
       sel.xpath("//g:price").getall()
-
-.. _removing-namespaces:
-
-Removing namespaces
--------------------
-
-When dealing with scraping projects, it is often quite convenient to get rid of
-namespaces altogether and just work with element names, to write more
-simple/convenient XPaths. You can use the
-:meth:`Selector.remove_namespaces` method for that.
-
-Let's show an example that illustrates this with GitHub blog atom feed.
-
-.. highlight:: sh
-
-First, we open the shell with the url we want to scrape::
-
-    $ scrapy shell https://github.com/blog.atom
-
-.. highlight:: xml
-
-This is how the file starts::
-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <feed xml:lang="en-US"
-          xmlns="http://www.w3.org/2005/Atom"
-          xmlns:media="http://search.yahoo.com/mrss/">
-      <id>tag:github.com,2008:/blog</id>
-      ...
-
-You can see two namespace declarations: a default "http://www.w3.org/2005/Atom"
-and another one using the "media:" prefix for "http://search.yahoo.com/mrss/".
-
-.. highlight:: python
-
-Once in the shell we can try selecting all ``<link>`` objects and see that it
-doesn't work (because the Atom XML namespace is obfuscating those nodes)::
-
-    >>> response.xpath("//link")
-    []
-
-But once we call the :meth:`Selector.remove_namespaces` method, all
-nodes can be accessed directly by their names::
-
-    >>> response.selector.remove_namespaces()
-    >>> response.xpath("//link")
-    [<Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
-     <Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
-     ...
-
-If you wonder why the namespace removal procedure isn't always called by default
-instead of having to call it manually, this is because of two reasons, which, in order
-of relevance, are:
-
-1. Removing namespaces requires to iterate and modify all nodes in the
-   document, which is a reasonably expensive operation to perform by default
-   for all documents crawled by Scrapy
-
-2. There could be some cases where using namespaces is actually required, in
-   case some element names clash between namespaces. These cases are very rare
-   though.
 
 .. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799
