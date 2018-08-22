@@ -18,6 +18,27 @@ def identity(x):
 
 
 class Rule(object):
+    """
+       A rule for crawling, which receives the following constructor arguments:	    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
+        link_extractor (required)
+          A LinkExtractor which defines the policy for extracting links
+       callback (optional)
+          A function to use to process the page once it has been downloaded. If
+          callback is omitted the page is not procesed, just crawled. If callback
+          is a string (instead of callable) a method of the spider class with that
+          name is used as the callback function
+       cb_kwargs (optional)
+          A dict specifying keyword arguments to pass to the callback function
+       follow (optional)
+          If True, links will be followed from the pages crawled by this rule.
+          It defaults to True when no callback is specified or False when a
+          callback is specified
+       process_links (optional)
+          Can be either a callable, or a string with the name of a method defined
+          in the spider's class.
+          This method will be called with the list of extracted links matching
+          this rule (if any) and must return another list of links.
+       """
 
     def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
         self.link_extractor = link_extractor
@@ -32,6 +53,15 @@ class Rule(object):
 
 
 class CrawlSpider(Spider):
+    """
+       Class for spiders that crawl over web pages and extract/parse their links
+       given some crawling rules.
+        These crawling rules are established by setting the 'rules' class attribute,
+       which is a tuple of Rule objects.
+       When the spider is running, it iterates over these rules with each response
+       and do what it has to (extract links if follow=True, and return items/requests if
+       there's a parsing method defined in the rule).
+       """
 
     rules = ()
 
@@ -40,6 +70,9 @@ class CrawlSpider(Spider):
         self._compile_rules()
 
     def parse(self, response):
+        """This function is called by the framework core for all the
+        start_urls. Do not override this function, override parse_start_url
+        instead."""
         return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
 
     def parse_start_url(self, response):
