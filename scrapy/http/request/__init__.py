@@ -54,9 +54,14 @@ class Request(object_ref):
     def _set_url(self, url):
         if not isinstance(url, six.string_types):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+        if(self.encoding=='None'):
 
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+            s=url
+            self._url= escape_ajax(s)
+        else:
+
+            s = safe_url_string(url, self.encoding)
+            self._url = escape_ajax(s)
 
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
