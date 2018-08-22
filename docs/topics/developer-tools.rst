@@ -1,8 +1,8 @@
 .. _topics-developer-tools:
 
-==========================
+=================================================
 Using your browser's Developer Tools for scraping
-==========================
+=================================================
 
 Here is a general guide on how to use your browser's Developer Tools
 to ease the scraping process. Today almost all browsers come with 
