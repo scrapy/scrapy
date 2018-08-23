@@ -238,7 +238,7 @@ also request each page to get every quote on the site::
         def parse(self, response):
             data = json.loads(response.text)
             for quote in data["quotes"]:
-                yield {"quote": quote["text"]
+                yield {"quote": quote["text"]}
             if data["has_next"]:
                 self.page += 1
                 url = "http://quotes.toscrape.com/api/quotes?page={}".format(self.page)            
