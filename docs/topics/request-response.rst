@@ -100,7 +100,7 @@ Request objects
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
-       body to ``str`` (if given as ``unicode``).
+       body to ``str`` (if given as ``unicode``).To use the url in raw form use ``encoding='None'`` in the param list.
     :type encoding: string
 
     :param priority: the priority of this request (defaults to ``0``).
