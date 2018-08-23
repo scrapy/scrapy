@@ -27,7 +27,7 @@ extract any data if you use ``<tbody>`` in your XPath expressions.
 Therefore, you should keep in mind the following things:
 
 * Disable Javascript while inspecting the DOM looking for XPaths to be
-  used in Scrapy
+  used in Scrapy (in the Developer Tools settings click `Disable JavaScript`)
 
 * Never use full XPath paths, use relative and clever ones based on attributes
   (such as ``id``, ``class``, ``width``, etc) or any identifying features like
@@ -43,8 +43,8 @@ Inspecting a website
 
 By far the most handy feature of the Developer Tools is the `Inspector` 
 feature, which allows you to inspect the underlying HTML code of 
-any webpage. To demonstrate the Inspector, let's take a 
-look at the `quotes.toscrape.com`_-site.
+any webpage. To demonstrate the Inspector, let's look at the 
+`quotes.toscrape.com`_-site.
 
 On the site we have a total of ten quotes from various authors with specific
 tags, as well as the Top Ten Tags. Let's say we want to extract all the quotes 
@@ -69,7 +69,7 @@ The interesting part for us is this:
       <div class="tags">(...)</div>
     </div>
 
-If you hover over the first ``div`` directly above the ``span``-tag highlighted
+If you hover over the first ``div`` directly above the ``span`` tag highlighted
 in the screenshot, you'll see that the corresponding section of the webpage gets
 highlighted as well. So now we have a section, but we can't find our quote text
 anywhere.
@@ -77,14 +77,14 @@ anywhere.
 The advantage of the `Inspector` is that it automatically expands and collapses
 sections and tags of a webpage, which greatly improves readability. You can
 expand and collapse a tag by clicking on the arrow in front of it or by double
-clicking directly on the tag. If we expand the ``span``-tag with the ``class=
+clicking directly on the tag. If we expand the ``span`` tag with the ``class=
 "text"`` we will see the quote-text we clicked on. The `Inspector` lets you
-copy XPaths to selected elements. Let's try it out: Right-click on the ``span``-
+copy XPaths to selected elements. Let's try it out: Right-click on the ``span`` 
 tag, select ``Copy > XPath`` and paste it in the scrapy shell like so::
 
-    >>> scrapy shell "http://quotes.toscrape.com/"
+    $ scrapy shell "http://quotes.toscrape.com/"
     (...)
-    >>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').extract()
+    >>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
     ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”]
 
 Adding ``text()`` at the end we are able to extract the first quote with this 
@@ -93,14 +93,28 @@ go down a desired path in the source code starting from ``html``. So let's
 see if we can refine our XPath a bit: 
 
 If we check the `Inspector` again we'll see that directly beneath our 
-expanded ``div``-tag we have eight identical ``div``-tags, each with the 
+expanded ``div`` tag we have nine identical ``div`` tags, each with the 
 same attributes as our first. If we expand any of them, we'll see the same 
-structure as with our first quote: Two ``span``-tags and one ``div``-tag. We can
-expand each ``span``-tag with the ``class="text"`` inside our ``div``-tags and 
-see each quote. With this knowledge we can refine our XPath: Instead of a path
-to follow, we'll simply select all ``span``-tags with the ``class="text"``:: 
+structure as with our first quote: Two ``span`` tags and one ``div`` tag. We can
+expand each ``span`` tag with the ``class="text"`` inside our ``div`` tags and 
+see each quote:
 
-    >>> response.xpath('//span[@class="text"]/text()').extract()
+.. code-block:: html
+
+    <div class="quote" itemscope="" itemtype="http://schema.org/CreativeWork">
+      <span class="text" itemprop="text">
+        “The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”
+      </span>
+      <span>(...)</span>
+      <div class="tags">(...)</div>
+    </div>
+
+
+With this knowledge we can refine our XPath: Instead of a path to follow,
+we'll simply select all ``span`` tags with the ``class="text"`` by using 
+the `has-class-extension`_:: 
+
+    >>> response.xpath('//span[has-class("text")]/text()').getall()
    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
     '“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
     '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
@@ -109,40 +123,45 @@ to follow, we'll simply select all ``span``-tags with the ``class="text"``::
 And with one simple, cleverer XPath we are able to extract all quotes from 
 the page. We could have constructed a loop over our first XPath to increase 
 the number of the last ``div``, but this would have been unnecessarily 
-complex and by simply constructing an XPath with the ``class="text"`` we 
-were able to extract all quotes in one line. 
+complex and by simply constructing an XPath with ``has-class("text")``
+we were able to extract all quotes in one line. 
 
 The `Inspector` has a lot of other helpful features, such as searching in the 
 source code or directly scrolling to an element you selected. Let's demonstrate
 a use case: 
 
-Say you want to find the ``Next``-button on the page. Type ``Next`` into the 
+Say you want to find the ``Next`` button on the page. Type ``Next`` into the 
 search bar on the top right of the `Inspector`. You should get two results. 
-The first is a ``li``-tag with the ``class="text"``, the second the text 
-of an ``a``-tag. Right click on the ``a``-tag and select ``Scroll into View``.
+The first is a ``li`` tag with the ``class="text"``, the second the text 
+of an ``a`` tag. Right click on the ``a`` tag and select ``Scroll into View``.
 If you hover over the tag, you'll see the button highlighted. From here
-we could easily create a :ref:`Link Extract <topics-link-extractors>` to 
+we could easily create a :ref:`Link Extractor <topics-link-extractors>` to 
 follow the pagination. On a simple site such as this, there may not be 
 the need to find an element visually but the ``Scroll into View`` function
 can be quite useful on complex sites. 
+
+Note that the search bar can also be used to search for and test CSS
+selectors. For example, you could search for ``span.text`` to find 
+all quote texts. Instead of a full text search, this searches for 
+exactly the ``span`` tag with the ``class="text"`` in the page. 
 
 .. _topics-network-tool:
 
 The Network-tool
 ================
 While scraping you may come across dynamic webpages where some parts
-of the page is loaded dynamically through multiple requests. While 
+of the page are loaded dynamically through multiple requests. While 
 this can be quite tricky, the `Network`-tool in the Developer Tools 
 greatly facilitates this task. To demonstrate the Network-tool, let's
 take a look at the page `quotes.toscrape.com/scroll`_. 
 
 The page is quite similar to the basic `quotes.toscrape.com`_-page, 
-but instead of the above-mentioned ``Next``-button, the page 
+but instead of the above-mentioned ``Next`` button, the page 
 automatically loads new quotes when you scroll to the bottom. We 
 could go ahead and try out different XPaths directly, but instead 
 we'll check another quite useful command from the scrapy shell::
 
-  >>> scrapy shell "quotes.toscrape.com/scroll"
+  $ scrapy shell "quotes.toscrape.com/scroll"
   (...)
   >>> view(response)
 
@@ -155,14 +174,14 @@ bar with the word ``Loading...``.
    :height: 296
    :alt: Response from quotes.toscrape.com/scroll
 
-The ``view(response)``-command let's us view the response our
+The ``view(response)`` command let's us view the response our
 shell or later our spider receives from the server. Here we see 
 that some basic template is loaded which includes the title, 
 the login-button and the footer, but the quotes are missing. This
 tells us that the quotes are being loaded from a different request
 than ``quotes.toscrape/scroll``. 
 
-If you click on the ``Network``-tab, you will probably only see 
+If you click on the ``Network`` tab, you will probably only see 
 two entries. The first thing we do is enable persistent logs by 
 clicking on ``Persist Logs``. If this option is disabled, the 
 log is automatically cleared each time you navigate to a different
@@ -186,8 +205,8 @@ you can now inspect the request. In ``Headers`` you'll find details
 about the request headers, such as the URL, the method, the IP-address,
 and so on. We'll ignore the other tabs and click directly on ``Reponse``.
 
-What you should see in the ``Preview``-pane is the rendered HTML-code, 
-that is exactly what we saw when we called ``view(response`` in the 
+What you should see in the ``Preview`` pane is the rendered HTML-code, 
+that is exactly what we saw when we called ``view(response)`` in the 
 shell. Accordingly the ``type`` of the request in the log is ``html``. 
 The other requests have types like ``css`` or ``js``, but what 
 interests us is the one request called ``quotes?page=1`` with the 
@@ -219,8 +238,7 @@ also request each page to get every quote on the site::
         def parse(self, response):
             data = json.loads(response.text)
             for quote in data["quotes"]:
-                quote = quote["text"]
-                print(quote)
+                yield {"quote": quote["text"]
             if data["has_next"]:
                 self.page += 1
                 url = "http://quotes.toscrape.com/api/quotes?page={}".format(self.page)            
@@ -230,9 +248,9 @@ This spider starts at the first page of the quotes-API. With each
 response, we parse the ``response.text`` and assign it to ``data``. 
 This lets us operate on the JSON-object like on a Python dictionary. 
 We iterate through the ``quotes`` and print out the ``quote["text"]``.
-If the handy ``has_next``-element is ``true`` (try loading 
-`http://quotes.toscrape.com/api/quotes?page=10`_ in your browser or a
-page-number greater than 10), we increment the ``page``-attribute 
+If the handy ``has_next`` element is ``true`` (try loading 
+`quotes.toscrape.com/api/quotes?page=10`_ in your browser or a
+page-number greater than 10), we increment the ``page`` attribute 
 and ``yield`` a new request, inserting the incremented page-number 
 into our ``url``. 
 
@@ -245,4 +263,6 @@ to identifying the correct request and replicating it in your spider.
 .. _Developer Tools: https://en.wikipedia.org/wiki/Web_development_tools
 .. _quotes.toscrape.com: http://quotes.toscrape.com
 .. _quotes.toscrape.com/scroll: quotes.toscrape.com/scroll/
+.. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
+.. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
 
