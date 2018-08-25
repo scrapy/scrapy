@@ -1097,11 +1097,12 @@ SCHEDULER
 
 Default: ``'scrapy.core.scheduler.DefaultScheduler'``
 
-The scheduler to use for crawling.
+The scheduler to use for crawling.  Can also be set to a domain-aware that round
+robin cycles through the domains as it outputs requests to reduce the load on
+servers and accelerate scraping: ``'scrapy.core.scheduler.DomainScheduler'``.
 
 .. setting:: SCHEDULER_DEBUG
 
-Can also be set to a domain-aware that round robin cycles through the domains as it outputs requests to reduce the load on servers and accelerate scraping: ``'scrapy.core.scheduler.DomainScheduler'``.
 
 SCHEDULER_DEBUG
 ---------------
