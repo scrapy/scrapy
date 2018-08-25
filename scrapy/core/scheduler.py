@@ -1,28 +1,31 @@
-import os
+from abc import ABC
+
+import hashlib
 import json
 import logging
+import os
 from os.path import join, exists
+
+from queuelib import RoundRobinQueue
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.reqser import request_to_dict, request_from_dict
-from queuelib import RoundRobinQueue
 
 logger = logging.getLogger(__name__)
 
+
 def _make_file_safe(string):
     """
-    Make key file safe.
-
-    Warning: not a general function.  Works for all numbers and the vast majority of domains.
-    Collisions in file names will only degrade (midly) performance,
-    not lead to incorrect results.
+    Make string file safe but readable.
     """
-    return "".join([c if c.isalnum() or c in {'-._'} else '_' for c in string])
+    clean_string = "".join([c if c.isalnum() or c in '-._' else '_' for c in string])
+    hash_string = hashlib.md5(string).hexdigest()
+    return "{}-{}".format(clean_string[:40], hash_string[:10])
 
 
-class BaseScheduler(object):
+class BaseScheduler(ABC):
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None):
@@ -82,7 +85,6 @@ class BaseScheduler(object):
             self._mqpush(request)
             self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
-        self.stats.inc_value('scheduler/enqueued/key/{}'.format(self.request_key(request)))
         return True
 
     def next_request(self):
@@ -157,7 +159,7 @@ class BaseScheduler(object):
             return dqdir
 
 
-class DefaultScheduler(BaseScheduler):
+class Scheduler(BaseScheduler):
     """
     Key is the priority of the request (an integer)
     """
@@ -166,16 +168,22 @@ class DefaultScheduler(BaseScheduler):
         return -request.priority
 
 
-class DomainScheduler(BaseScheduler):
+class RoundRobinScheduler(BaseScheduler):
     """
-    Key is the domain and we round robin.  The pqclass parameter is ignored.
+    Key is the domain and we round robin, choosing the new request to be from
+    the domain that was requested last.  The default Scheduler sends multiple
+    consecutive requests to a domain if multiple links were discovered and
+    added consecutively.  This scheduler spreads those out that workload.
+
+    Uses `RoundRobinQueue`.  The pqclass parameter and SCHEDULER_PRIORITY_QUEUE
+    are ignored.
     """
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None):
-        super(DomainScheduler, self).__init__(dupefilter, jobdir=jobdir, dqclass=dqclass,
-                                              mqclass=mqclass, logunser=logunser,
-                                              stats=stats, pqclass=RoundRobinQueue)
+        super(RoundRobinScheduler, self).__init__(dupefilter, jobdir=jobdir, dqclass=dqclass,
+                                                  mqclass=mqclass, logunser=logunser,
+                                                  stats=stats, pqclass=RoundRobinQueue)
 
     def _request_key(cls, request):
         return urlparse_cached(request).hostname or ''
