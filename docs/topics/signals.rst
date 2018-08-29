@@ -285,7 +285,7 @@ request_reached_downloader
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.http.Request`, reached downloader.
+    Sent when a :class:`~scrapy.http.Request` reached downloader.
 
     The signal does not support returning deferreds from their handlers.
 
