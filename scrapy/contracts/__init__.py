@@ -4,7 +4,6 @@ from functools import wraps
 from inspect import getmembers
 from unittest import TestCase
 
-from scrapy import FormRequest
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
@@ -50,14 +49,17 @@ class ContractsManager(object):
     def from_method(self, method, results):
         contracts = self.extract_contracts(method)
         if contracts:
-            # prepare request arguments
-            kwargs = {'callback': method}
+            request_cls = Request
+            for contract in contracts:
+                if contract.request_cls is not None:
+                    request_cls = contract.request_cls
+
+            # calculate request args
+            args, kwargs = get_spec(request_cls.__init__)
+            kwargs['callback'] = method
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
-            request_cls = kwargs.pop('request_cls', Request)
-
-            args, _ = get_spec(request_cls.__init__)
             args.remove('self')
 
             # check if all positional arguments are defined in kwargs
@@ -98,6 +100,7 @@ class ContractsManager(object):
 
 class Contract(object):
     """ Abstract class for contracts """
+    request_cls = None
 
     def __init__(self, method, *args):
         self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)

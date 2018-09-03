@@ -27,9 +27,9 @@ class ResponseMock(object):
 
 class CustomFormContract(Contract):
     name = 'custom_form'
+    request_cls = FormRequest
 
     def adjust_request_args(self, args):
-        args['request_cls'] = FormRequest
         args['formdata'] = {'name': 'scrapy'}
         return args
 
