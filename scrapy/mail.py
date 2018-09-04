@@ -195,6 +195,5 @@ class SESMailSender(BaseMailSender):
                           'mailattachs': len(attachs)})
             return
 
-        # TODO handle connection and send errors
         session = boto.connect_ses(self.aws_access_key, self.aws_secret_key)
         session.send_raw_email(raw_message=msg.as_string())

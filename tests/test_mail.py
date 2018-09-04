@@ -1,9 +1,40 @@
 # coding=utf-8
 import unittest
-from io import BytesIO
 from email.charset import Charset
+from io import BytesIO
 
-from scrapy.mail import create_email_message
+from scrapy.mail import create_email_message, SESMailSender
+from tests import mock
+
+
+class SESMailSenderTest(unittest.TestCase):
+    def test_raise_error_if_aws_credentials_are_not_provided(self):
+        with self.assertRaises(TypeError):
+            sender = SESMailSender()
+        with self.assertRaises(TypeError):
+            sender = SESMailSender('JUST_ONE_CREDENTIAL')
+
+        # This should work
+        sender = SESMailSender('aws_access_key', 'aws_secret_key')
+
+    @mock.patch('boto.connect_ses')
+    def test_if_debug_do_not_send_message(self, boto_connect_mock):
+        sender = SESMailSender('aws_access_key', 'aws_secret_key', debug=True)
+        sender.send('to@scrapy.org', 'subject', 'body')
+        boto_connect_mock.assert_not_called()
+
+    @mock.patch('boto.connect_ses')
+    def test_send_message_if_not_debug(self, boto_connect_mock):
+        ses_connection_mock = mock.MagicMock()
+        # Just need to have this method available in mock
+        ses_connection_mock.send_raw_email.return_value = lambda x: x
+
+        boto_connect_mock.return_value = ses_connection_mock
+
+        sender = SESMailSender('aws_access_key', 'aws_secret_key')
+        sender.send('to@scrapy.org', 'subject', 'body')
+
+        ses_connection_mock.send_raw_email.assert_called_once()
 
 
 class CreateMessageTestCase(unittest.TestCase):
@@ -82,12 +113,16 @@ class CreateMessageTestCase(unittest.TestCase):
         attachs = [('attachment', 'text/plain', attach)]
 
         msg = create_email_message(
-            'from@scrapy.org', 'to@scrapy.org', subject, body, attachs=attachs, charset='utf-8'
+            'from@scrapy.org',
+            'to@scrapy.org',
+            subject,
+            body,
+            attachs=attachs,
+            charset='utf-8',
         )
         self.assertEqual(msg['Subject'], subject)
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
-        self.assertEqual(msg.get('Content-Type'),
-                         'multipart/mixed; charset="utf-8"')
+        self.assertEqual(msg.get('Content-Type'), 'multipart/mixed; charset="utf-8"')
 
         payload = msg.get_payload()
         assert isinstance(payload, list)
