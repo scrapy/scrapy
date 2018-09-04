@@ -4,6 +4,7 @@ from email.charset import Charset
 from io import BytesIO
 
 from scrapy.mail import create_email_message, SESMailSender
+from scrapy.utils.test import skip_if_no_boto
 from tests import mock
 
 
@@ -19,12 +20,14 @@ class SESMailSenderTest(unittest.TestCase):
 
     @mock.patch('boto.connect_ses')
     def test_if_debug_do_not_send_message(self, boto_connect_mock):
+        skip_if_no_boto()
         sender = SESMailSender('aws_access_key', 'aws_secret_key', debug=True)
         sender.send('to@scrapy.org', 'subject', 'body')
         boto_connect_mock.assert_not_called()
 
     @mock.patch('boto.connect_ses')
     def test_send_message_if_not_debug(self, boto_connect_mock):
+        skip_if_no_boto()
         ses_connection_mock = mock.MagicMock()
         # Just need to have this method available in mock
         ses_connection_mock.send_raw_email.return_value = lambda x: x
