@@ -22,6 +22,7 @@ from scrapy import signals
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
+from scrapy.utils.decorators import defers
 
 try:
     import guppy
@@ -49,6 +50,8 @@ class TelnetConsole(protocol.ServerFactory):
         self.noisy = False
         self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
         self.host = crawler.settings['TELNETCONSOLE_HOST']
+        self.username = crawler.settings.get('TELNETCONSOLE_USERNAME', 'scrapy')
+        self.password = crawler.settings.get('TELNETCONSOLE_PASSWORD', 'scrapy')
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
@@ -67,9 +70,25 @@ class TelnetConsole(protocol.ServerFactory):
         self.port.stopListening()
 
     def protocol(self):
-        telnet_vars = self._get_telnet_vars()
-        return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-            insults.ServerProtocol, manhole.Manhole, telnet_vars)
+        class Portal:
+            """An implementation of IPortal"""
+            @defers
+            def login(self_, credentials, mind, *interfaces):
+                if not (credentials.username == self.username
+                        and credentials.checkPassword(self.password)):
+                    raise ValueError("Invalid credentials")
+
+                protocol = telnet.TelnetBootstrapProtocol(
+                    insults.ServerProtocol,
+                    manhole.Manhole,
+                    self._get_telnet_vars()
+                )
+                return (interfaces[0], protocol, lambda: None)
+
+        return telnet.TelnetTransport(
+            telnet.AuthenticatingTelnetProtocol,
+            Portal()
+        )
 
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst
