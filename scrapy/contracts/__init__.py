@@ -49,8 +49,13 @@ class ContractsManager(object):
     def from_method(self, method, results):
         contracts = self.extract_contracts(method)
         if contracts:
+            request_cls = Request
+            for contract in contracts:
+                if contract.request_cls is not None:
+                    request_cls = contract.request_cls
+
             # calculate request args
-            args, kwargs = get_spec(Request.__init__)
+            args, kwargs = get_spec(request_cls.__init__)
 
             # Don't filter requests to allow
             # testing different callbacks on the same URL.
@@ -60,10 +65,11 @@ class ContractsManager(object):
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
-            # create and prepare request
             args.remove('self')
+
+            # check if all positional arguments are defined in kwargs
             if set(args).issubset(set(kwargs)):
-                request = Request(**kwargs)
+                request = request_cls(**kwargs)
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
@@ -99,6 +105,7 @@ class ContractsManager(object):
 
 class Contract(object):
     """ Abstract class for contracts """
+    request_cls = None
 
     def __init__(self, method, *args):
         self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)

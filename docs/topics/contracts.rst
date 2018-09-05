@@ -86,8 +86,11 @@ override three methods:
     .. method:: Contract.adjust_request_args(args)
 
         This receives a ``dict`` as an argument containing default arguments
-        for :class:`~scrapy.http.Request` object. Must return the same or a
-        modified version of it.
+        for request object. :class:`~scrapy.http.Request` is used by default,
+        but this can be changed with the ``request_cls`` attribute.
+        If multiple contracts in chain have this attribute defined, the last one is used.
+
+        Must return the same or a modified version of it.
 
     .. method:: Contract.pre_process(response)
 
