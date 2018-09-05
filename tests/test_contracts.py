@@ -25,6 +25,21 @@ class ResponseMock(object):
     url = 'http://scrapy.org'
 
 
+class CustomSuccessContract(Contract):
+    name = 'custom_success_contract'
+
+    def adjust_request_args(self, args):
+        args['url'] = 'http://scrapy.org'
+        return args
+
+
+class CustomFailContract(Contract):
+    name = 'custom_fail_contract'
+
+    def adjust_request_args(self, args):
+        raise TypeError('Error in adjust_request_args')
+
+
 class CustomFormContract(Contract):
     name = 'custom_form'
     request_cls = FormRequest
@@ -118,12 +133,39 @@ class TestSpider(Spider):
         pass
 
 
+class CustomContractSuccessSpider(Spider):
+    name = 'custom_contract_success_spider'
+
+    def parse(self, response):
+        """
+        @custom_success_contract
+        """
+        pass
+
+
+class CustomContractFailSpider(Spider):
+    name = 'custom_contract_fail_spider'
+
+    def parse(self, response):
+        """
+        @custom_fail_contract
+        """
+        pass
+
+
 class InheritsTestSpider(TestSpider):
     name = 'inherits_demo_spider'
 
 
 class ContractsManagerTest(unittest.TestCase):
-    contracts = [UrlContract, ReturnsContract, ScrapesContract, CustomFormContract]
+    contracts = [
+        UrlContract,
+        ReturnsContract,
+        ScrapesContract,
+        CustomFormContract,
+        CustomSuccessContract,
+        CustomFailContract,
+    ]
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
@@ -136,6 +178,9 @@ class ContractsManagerTest(unittest.TestCase):
     def should_fail(self):
         self.assertTrue(self.results.failures)
         self.assertFalse(self.results.errors)
+
+    def should_error(self):
+        self.assertTrue(self.results.errors)
 
     def test_contracts(self):
         spider = TestSpider()
@@ -208,6 +253,13 @@ class ContractsManagerTest(unittest.TestCase):
                 self.results)
         request.callback(response)
         self.should_fail()
+
+    def test_custom_contracts(self):
+        self.conman.from_spider(CustomContractSuccessSpider(), self.results)
+        self.should_succeed()
+
+        self.conman.from_spider(CustomContractFailSpider(), self.results)
+        self.should_error()
 
     def test_errback(self):
         spider = TestSpider()
