@@ -3,7 +3,6 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-
 import re
 import logging
 import warnings
@@ -35,8 +34,9 @@ class OffsiteMiddleware(object):
                     domain = urlparse_cached(x).hostname
                     if domain and domain not in self.domains_seen:
                         self.domains_seen.add(domain)
-                        logger.debug("Filtered offsite request to %(domain)r: %(request)s",
-                                     {'domain': domain, 'request': x}, extra={'spider': spider})
+                        logger.debug(
+                            "Filtered offsite request to %(domain)r: %(request)s",
+                            {'domain': domain, 'request': x}, extra={'spider': spider})
                         self.stats.inc_value('offsite/domains', spider=spider)
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:
@@ -52,13 +52,15 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
+            return re.compile('')  # allow all by default
         url_pattern = re.compile("^https?://.*$")
         for domain in allowed_domains:
             if url_pattern.match(domain):
-                warnings.warn("allowed_domains accepts only domains, not URLs. Ignoring URL entry %s in allowed_domains." % domain, URLWarning)
-                
-        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
+                message = ("allowed_domains accepts only domains, not URLs. "
+                           "Ignoring URL entry %s in allowed_domains." % domain)
+                warnings.warn(message, URLWarning)
+        domains = [re.escape(d) for d in allowed_domains if d is not None]
+        regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):

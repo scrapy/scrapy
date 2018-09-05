@@ -3,6 +3,7 @@ from unittest import TextTestResult
 from twisted.python import failure
 from twisted.trial import unittest
 
+from scrapy import FormRequest
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
@@ -37,6 +38,15 @@ class CustomFailContract(Contract):
 
     def adjust_request_args(self, args):
         raise TypeError('Error in adjust_request_args')
+
+
+class CustomFormContract(Contract):
+    name = 'custom_form'
+    request_cls = FormRequest
+
+    def adjust_request_args(self, args):
+        args['formdata'] = {'name': 'scrapy'}
+        return args
 
 
 class TestSpider(Spider):
@@ -115,6 +125,13 @@ class TestSpider(Spider):
         """
         pass
 
+    def custom_form(self, response):
+        """
+        @url http://scrapy.org
+        @custom_form
+        """
+        pass
+
 
 class CustomContractSuccessSpider(Spider):
     name = 'custom_contract_success_spider'
@@ -145,8 +162,9 @@ class ContractsManagerTest(unittest.TestCase):
         UrlContract,
         ReturnsContract,
         ScrapesContract,
+        CustomFormContract,
         CustomSuccessContract,
-        CustomFailContract
+        CustomFailContract,
     ]
 
     def setUp(self):
@@ -257,6 +275,12 @@ class ContractsManagerTest(unittest.TestCase):
 
         self.assertFalse(self.results.failures)
         self.assertTrue(self.results.errors)
+
+    def test_form_contract(self):
+        spider = TestSpider()
+        request = self.conman.from_method(spider.custom_form, self.results)
+        self.assertEqual(request.method, 'POST')
+        self.assertIsInstance(request, FormRequest)
 
     def test_inherited_contracts(self):
         spider = InheritsTestSpider()
