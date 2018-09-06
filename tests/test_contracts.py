@@ -1,9 +1,12 @@
 from unittest import TextTestResult
 
+from six import get_unbound_function
+from twisted.internet import defer
 from twisted.python import failure
 from twisted.trial import unittest
 
 from scrapy import FormRequest
+from scrapy.crawler import CrawlerRunner
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
@@ -14,6 +17,7 @@ from scrapy.contracts.default import (
     ReturnsContract,
     ScrapesContract,
 )
+from tests.mockserver import MockServer
 
 
 class TestItem(Item):
@@ -243,14 +247,12 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_succeed()
 
         # scrapes_item_fail
-        request = self.conman.from_method(spider.scrapes_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_item_fail, self.results)
         request.callback(response)
         self.should_fail()
 
         # scrapes_dict_item_fail
-        request = self.conman.from_method(spider.scrapes_dict_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_dict_item_fail, self.results)
         request.callback(response)
         self.should_fail()
 
@@ -275,6 +277,38 @@ class ContractsManagerTest(unittest.TestCase):
 
         self.assertFalse(self.results.failures)
         self.assertTrue(self.results.errors)
+
+    @defer.inlineCallbacks
+    def test_same_url(self):
+
+        class TestSameUrlSpider(Spider):
+            name = 'test_same_url'
+
+            def __init__(self, *args, **kwargs):
+                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                self.visited = 0
+
+            def start_requests(s):
+                return self.conman.from_spider(s, self.results)
+
+            def parse_first(self, response):
+                self.visited += 1
+                return TestItem()
+
+            def parse_second(self, response):
+                self.visited += 1
+                return TestItem()
+
+        with MockServer() as mockserver:
+            contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
+
+            get_unbound_function(TestSameUrlSpider.parse_first).__doc__ = contract_doc
+            get_unbound_function(TestSameUrlSpider.parse_second).__doc__ = contract_doc
+
+            crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.spider.visited, 2)
 
     def test_form_contract(self):
         spider = TestSpider()
