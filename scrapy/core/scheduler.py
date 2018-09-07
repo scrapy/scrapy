@@ -1,4 +1,3 @@
-from abc import ABC
 import hashlib
 import json
 import logging
@@ -24,7 +23,7 @@ def _make_file_safe(string):
     return "{}-{}".format(clean_string[:40], hash_string[:10])
 
 
-class BaseScheduler(ABC):
+class BaseScheduler(object):
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None):
