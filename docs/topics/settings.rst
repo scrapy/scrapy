@@ -1095,11 +1095,11 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
 SCHEDULER
 ---------
 
-Default: ``'scrapy.core.scheduler.DefaultScheduler'``
+Default: ``'scrapy.core.scheduler.Scheduler'``
 
-The scheduler to use for crawling.  Can also be set to a domain-aware that round
-robin cycles through the domains as it outputs requests to reduce the load on
-servers and accelerate scraping: ``'scrapy.core.scheduler.DomainScheduler'``.
+The scheduler to use for crawling.  Can also be set to a domain-aware scheduler
+that round-robin cycles through the domains as it outputs requests to reduce
+the load on servers and accelerate scraping: ``'scrapy.core.scheduler.RoundRobinScheduler'``.
 
 .. setting:: SCHEDULER_DEBUG
 

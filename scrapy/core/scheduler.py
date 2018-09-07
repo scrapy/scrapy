@@ -1,5 +1,4 @@
 from abc import ABC
-
 import hashlib
 import json
 import logging
@@ -21,7 +20,7 @@ def _make_file_safe(string):
     Make string file safe but readable.
     """
     clean_string = "".join([c if c.isalnum() or c in '-._' else '_' for c in string])
-    hash_string = hashlib.md5(string).hexdigest()
+    hash_string = hashlib.md5(string.encode('utf8')).hexdigest()
     return "{}-{}".format(clean_string[:40], hash_string[:10])
 
 
@@ -97,7 +96,6 @@ class BaseScheduler(ABC):
                 self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
-            self.stats.inc_value('scheduler/dequeued/key/{}'.format(self.request_key(request)))
         return request
 
     def __len__(self):
@@ -136,7 +134,7 @@ class BaseScheduler(ABC):
         return self.mqclass()
 
     def _newdq(self, key):
-        return self.dqclass(join(self.dqdir, _make_file_safe('k%s' % key)))
+        raise NotImplementedError
 
     def _dq(self):
         statef = join(self.dqdir, 'active.json')
@@ -167,6 +165,9 @@ class Scheduler(BaseScheduler):
     def _request_key(cls, request):
         return -request.priority
 
+    def _newdq(self, key):
+        return self.dqclass(join(self.dqdir, 'p%s' % priority))
+
 
 class RoundRobinScheduler(BaseScheduler):
     """
@@ -180,10 +181,13 @@ class RoundRobinScheduler(BaseScheduler):
     """
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None):
+                 logunser=False, stats=None):
         super(RoundRobinScheduler, self).__init__(dupefilter, jobdir=jobdir, dqclass=dqclass,
                                                   mqclass=mqclass, logunser=logunser,
                                                   stats=stats, pqclass=RoundRobinQueue)
 
     def _request_key(cls, request):
         return urlparse_cached(request).hostname or ''
+
+    def _newdq(self, key):
+        return self.dqclass(join(self.dqdir, _make_file_safe('k%s' % key)))
