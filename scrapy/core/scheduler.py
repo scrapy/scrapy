@@ -175,8 +175,8 @@ class RoundRobinScheduler(BaseScheduler):
     consecutive requests to a domain if multiple links were discovered and
     added consecutively.  This scheduler spreads those out that workload.
 
-    Uses `RoundRobinQueue`.  The pqclass parameter and SCHEDULER_PRIORITY_QUEUE
-    are ignored.
+    Uses `RoundRobinQueue`.  Does not take a pqclass parameter
+    `SCHEDULER_PRIORITY_QUEUE` is ignored, and does not use priorities.
     """
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
