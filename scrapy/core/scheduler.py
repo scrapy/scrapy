@@ -1,3 +1,4 @@
+import abc
 import hashlib
 import json
 import logging
@@ -24,6 +25,7 @@ def _make_file_safe(string):
 
 
 class BaseScheduler(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None):
@@ -53,6 +55,7 @@ class BaseScheduler(object):
 
         return self._request_key(request)
 
+    @abc.abstractmethod
     def _request_key(self, request):
         raise NotImplementedError
 
@@ -132,6 +135,7 @@ class BaseScheduler(object):
     def _newmq(self, key):
         return self.mqclass()
 
+    @abc.abstractmethod
     def _newdq(self, key):
         raise NotImplementedError
 
@@ -161,11 +165,11 @@ class Scheduler(BaseScheduler):
     Key is the priority of the request (an integer)
     """
 
-    def _request_key(cls, request):
+    def _request_key(self, request):
         return -request.priority
 
     def _newdq(self, key):
-        return self.dqclass(join(self.dqdir, 'p%s' % priority))
+        return self.dqclass(join(self.dqdir, 'p%s' % key))
 
 
 class RoundRobinScheduler(BaseScheduler):
@@ -185,7 +189,7 @@ class RoundRobinScheduler(BaseScheduler):
                                                   mqclass=mqclass, logunser=logunser,
                                                   stats=stats, pqclass=RoundRobinQueue)
 
-    def _request_key(cls, request):
+    def _request_key(self, request):
         return urlparse_cached(request).hostname or ''
 
     def _newdq(self, key):
