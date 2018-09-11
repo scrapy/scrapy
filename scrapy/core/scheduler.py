@@ -50,10 +50,7 @@ class BaseScheduler(object):
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass, mqclass=mqclass)
 
     def request_key(self, request):
-        if 'scheduler_slot' in request.meta:
-            return request.meta['scheduler_slot']
-
-        return self._request_key(request)
+        return request.meta.get('scheduler_slot', self._request_key(request))
 
     @abc.abstractmethod
     def _request_key(self, request):
