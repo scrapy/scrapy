@@ -891,127 +891,67 @@ Built-in Selectors reference
 Selector objects
 ----------------
 
-.. class:: Selector(response=None, text=None, type=None)
+.. autoclass:: Selector
 
-  An instance of :class:`Selector` is a wrapper over response to select
-  certain parts of its content.
-
-  ``response`` is an :class:`~scrapy.http.HtmlResponse` or an
-  :class:`~scrapy.http.XmlResponse` object that will be used for selecting and
-  extracting data.
-
-  ``text`` is a unicode string or utf-8 encoded text for cases when a
-  ``response`` isn't available. Using ``text`` and ``response`` together is
-  undefined behavior.
-
-  ``type`` defines the selector type, it can be ``"html"``, ``"xml"`` or ``None`` (default).
-
-    If ``type`` is ``None``, the selector automatically chooses the best type
-    based on ``response`` type (see below), or defaults to ``"html"`` in case it
-    is used together with ``text``.
-
-    If ``type`` is ``None`` and a ``response`` is passed, the selector type is
-    inferred from the response type as follows:
-
-        * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
-        * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
-        * ``"html"`` for anything else
-
-   Otherwise, if ``type`` is set, the selector type will be forced and no
-   detection will occur.
-
-  .. method:: xpath(query)
-
-      Find nodes matching the xpath ``query`` and return the result as a
-      :class:`SelectorList` instance with all elements flattened. List
-      elements implement :class:`Selector` interface too.
-
-      ``query`` is a string containing the XPATH query to apply.
+  .. automethod:: xpath
 
       .. note::
 
           For convenience, this method can be called as ``response.xpath()``
 
-  .. method:: css(query)
-
-      Apply the given CSS selector and return a :class:`SelectorList` instance.
-
-      ``query`` is a string containing the CSS selector to apply.
-
-      In the background, CSS queries are translated into XPath queries using
-      `cssselect`_ library and run ``.xpath()`` method.
+  .. automethod:: css
 
       .. note::
 
-          For convenience this method can be called as ``response.css()``
+          For convenience, this method can be called as ``response.css()``
 
-  .. method:: extract()
+  .. automethod:: get
 
-     Serialize and return the matched nodes as a list of unicode strings.
-     Percent encoded content is unquoted.
+     See also: :ref:`old-extraction-api`
 
-  .. method:: re(regex)
+  .. autoattribute:: attrib
 
-     Apply the given regex and return a list of unicode strings with the
-     matches.
+     See also: :ref:`selecting-attributes`.
 
-     ``regex`` can be either a compiled regular expression or a string which
-     will be compiled to a regular expression using ``re.compile(regex)``
+  .. automethod:: re
 
-    .. note::
+  .. automethod:: re_first
 
-        Note that ``re()`` and ``re_first()`` both decode HTML entities (except ``&lt;`` and ``&amp;``).
+  .. automethod:: register_namespace
 
-  .. method:: register_namespace(prefix, uri)
+  .. automethod:: remove_namespaces
 
-     Register the given namespace to be used in this :class:`Selector`.
-     Without registering namespaces you can't select or extract data from
-     non-standard namespaces. See examples below.
+  .. automethod:: __bool__
 
-  .. method:: remove_namespaces()
+  .. automethod:: getall
 
-     Remove all namespaces, allowing to traverse the document using
-     namespace-less xpaths. See example below.
-
-  .. method:: __nonzero__()
-
-     Returns ``True`` if there is any real content selected or ``False``
-     otherwise.  In other words, the boolean value of a :class:`Selector` is
-     given by the contents it selects.
-
+     This method is added to Selector for consistency; it is more useful
+     with SelectorList. See also: :ref:`old-extraction-api`
 
 SelectorList objects
 --------------------
 
-.. class:: SelectorList
+.. autoclass:: SelectorList
 
-   The :class:`SelectorList` class is a subclass of the builtin ``list``
-   class, which provides a few additional methods.
+   .. automethod:: xpath
 
-   .. method:: xpath(query)
+   .. automethod:: css
 
-       Call the ``.xpath()`` method for each element in this list and return
-       their results flattened as another :class:`SelectorList`.
+   .. automethod:: getall
 
-       ``query`` is the same argument as the one in :meth:`Selector.xpath`
+      See also: :ref:`old-extraction-api`
 
-   .. method:: css(query)
+   .. automethod:: get
 
-       Call the ``.css()`` method for each element in this list and return
-       their results flattened as another :class:`SelectorList`.
+      See also: :ref:`old-extraction-api`
 
-       ``query`` is the same argument as the one in :meth:`Selector.css`
+   .. automethod:: re
 
-   .. method:: extract()
+   .. automethod:: re_first
 
-       Call the ``.extract()`` method for each element in this list and return
-       their results flattened, as a list of unicode strings.
+   .. autoattribute:: attrib
 
-   .. method:: re()
-
-       Call the ``.re()`` method for each element in this list and return
-       their results flattened, as a list of unicode strings.
-
+      See also: :ref:`selecting-attributes`.
 
 .. _selector-examples:
 
