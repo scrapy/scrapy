@@ -9,7 +9,7 @@ Sending e-mail
 
 Although Python makes sending e-mails relatively easy via the `smtplib`_
 library, Scrapy provides two methods for sending e-mails which are very
-easy to use: SMTP (:class:`scrapy.mail.MailSender`) and Amazon SES
+easy to use: SMTP (:class:`scrapy.mail.MailSender`) and `Amazon Simple Email Service`_
 (:class:`scrapy.mail.SESMailSender`)
 
 It also provides a simple API for sending attachments and it's very easy to
@@ -23,7 +23,7 @@ Mail Sender Classes
 MailSender
 ----------
 
-MailSender is the default class to use for sending emails from Scrapy, as it
+MailSender is the default class to use for sending emails from Scrapy. It
 uses `Twisted non-blocking IO`_, to avoid interfering with the non-blocking IO
 of the crawler.
 
@@ -56,6 +56,14 @@ of the crawler.
     :param smtpssl: enforce using a secure SSL connection
     :type smtpssl: boolean
 
+    .. classmethod:: from_crawler(cls, crawler)
+
+        If present, this classmethod is called to create a mail sender instance
+        from a :class:`scrapy.crawler.Crawler`.
+
+        :param crawler: crawler that uses this class
+        :type crawler: :class:`scrapy.crawler.Crawler` object
+
     .. classmethod:: from_settings(settings)
 
         Instantiate using a Scrapy settings object, which will respect
@@ -68,7 +76,7 @@ of the crawler.
 
         Send email to the given recipients.
 
-        :param to: the e-mail recipients
+        :param to: list of e-mail recipients or comma separated list of e-mail recipients
         :type to: str or list of str
 
         :param subject: the subject of the e-mail
@@ -97,15 +105,19 @@ of the crawler.
 SESMailSender
 -------------
 
-SESMailSender provides an easy API for sending emails from Scrapy using `Amazon Simple Email Service`_.
-
-The AWS credentials can be passed in the class constructor, or they can be
+SESMailSender provides an easy API for sending emails from Scrapy using `Amazon Simple Email Service`_. The AWS credentials can be passed in the class constructor, or they can be
 passed through the following settings (if initialized using `from_crawler` method):
 
  * :setting:`AWS_ACCESS_KEY_ID`
  * :setting:`AWS_SECRET_ACCESS_KEY`
+ * :setting:`AWS_REGION`
 
-.. class:: SESMailSender(aws_access_key, aws_secret_key, mailfrom='scrapy@localhost')
+`boto3`_ external library must be installed to use this class.
+
+.. _Amazon Simple Email Service: https://aws.amazon.com/pt/ses/
+.. _boto3: https://pypi.org/project/boto3/
+
+.. class:: SESMailSender(aws_access_key, aws_secret_key, aws_region, mailfrom='scrapy@localhost')
 
     :param aws_access_key: AWS Access Key
     :type aws_access_key: str
@@ -113,16 +125,20 @@ passed through the following settings (if initialized using `from_crawler` metho
     :param aws_secret_key: AWS Secret Key
     :type aws_secret_key: str
 
+    :param aws_region: AWS Region
+    :type aws_region: str
+
     :param mailfrom: the address used to send emails (in the ``From:`` header).
+      If omitted, the :setting:`MAIL_FROM` setting will be used.
     :type mailfrom: str
 
     .. classmethod:: from_crawler(cls, crawler)
 
         If present, this classmethod is called to create a mail sender instance
-        from a :class:`~scrapy.crawler.Crawler`.
+        from a :class:`scrapy.crawler.Crawler`.
 
         :param crawler: crawler that uses this class
-        :type crawler: :class:`~scrapy.crawler.Crawler` object
+        :type crawler: :class:`scrapy.crawler.Crawler` object
 
     .. classmethod:: from_settings(settings)
 
@@ -136,7 +152,7 @@ passed through the following settings (if initialized using `from_crawler` metho
 
         Send email to the given recipients.
 
-        :param to: the e-mail recipients
+        :param to: list of e-mail recipients or comma separated list of e-mail recipients
         :type to: str or list of str
 
         :param subject: the subject of the e-mail
@@ -161,8 +177,6 @@ passed through the following settings (if initialized using `from_crawler` metho
         :param charset: the character encoding to use for the e-mail contents
         :type charset: str
 
-.. _Amazon Simple Email Service: https://aws.amazon.com/pt/ses/
-
 .. _topics-email-settings:
 
 Mail settings
@@ -176,7 +190,7 @@ DEFAULT_MAIL_SENDER_CLASS
 Default: ``'scrapy.mail.MailSender'``
 
 Default class for email sending (it can be used by extensions and code that needs
-email functionality like :class:`~scrapy.extensions.memusage.MemoryUsage`)
+email functionality like :class:`scrapy.extensions.memusage.MemoryUsage`)
 
 The following settings define the default constructor values of the :class:`MailSender`
 class, and can be used to configure email notifications in your project without
