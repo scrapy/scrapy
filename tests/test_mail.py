@@ -4,7 +4,7 @@ from email.charset import Charset
 from io import BytesIO
 
 from scrapy.mail import create_email_message, SESMailSender
-from scrapy.utils.test import skip_if_no_boto
+from scrapy.utils.test import is_module_installed
 from tests import mock
 
 
@@ -14,30 +14,31 @@ class SESMailSenderTest(unittest.TestCase):
             sender = SESMailSender()
         with self.assertRaises(TypeError):
             sender = SESMailSender('JUST_ONE_CREDENTIAL')
+        with self.assertRaises(TypeError):
+            sender = SESMailSender('ONE_CREDENTIAL', 'OTHER_CREDENTIAL')
 
-        # This should work
-        sender = SESMailSender('aws_access_key', 'aws_secret_key')
+        # This must work
+        sender = SESMailSender('aws_access_key', 'aws_secret_key', 'aws_region')
 
-    @mock.patch('boto.connect_ses')
-    def test_if_debug_do_not_send_message(self, boto_connect_mock):
-        skip_if_no_boto()
-        sender = SESMailSender('aws_access_key', 'aws_secret_key', debug=True)
+    @unittest.skipUnless(is_module_installed('boto3'), 'boto3 is not installed')
+    @mock.patch('boto3.client')
+    def test_if_debug_do_not_send_message(self, boto3_client):
+        sender = SESMailSender('aws_access_key', 'aws_secret_key', 'aws_region', debug=True)
         sender.send('to@scrapy.org', 'subject', 'body')
-        boto_connect_mock.assert_not_called()
+        boto3_client.assert_not_called()
 
-    @mock.patch('boto.connect_ses')
-    def test_send_message_if_not_debug(self, boto_connect_mock):
-        skip_if_no_boto()
-        ses_connection_mock = mock.MagicMock()
+    @unittest.skipUnless(is_module_installed('boto3'), 'boto3 is not installed')
+    @mock.patch('boto3.client')
+    def test_send_message_if_not_debug(self, boto3_client):
+        ses_client_mock = mock.MagicMock()
         # Just need to have this method available in mock
-        ses_connection_mock.send_raw_email.return_value = lambda x: x
+        ses_client_mock.send_raw_email.return_value = lambda x: x
+        boto3_client.return_value = ses_client_mock
 
-        boto_connect_mock.return_value = ses_connection_mock
-
-        sender = SESMailSender('aws_access_key', 'aws_secret_key')
+        sender = SESMailSender('aws_access_key', 'aws_secret_key', 'aws_region')
         sender.send('to@scrapy.org', 'subject', 'body')
 
-        ses_connection_mock.send_raw_email.assert_called_once()
+        ses_client_mock.send_raw_email.assert_called_once()
 
 
 class CreateMessageTestCase(unittest.TestCase):
