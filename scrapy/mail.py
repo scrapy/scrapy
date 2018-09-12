@@ -169,9 +169,10 @@ class MailSender(BaseMailSender):
 
 class SESMailSender(BaseMailSender):
 
-    def __init__(self, aws_access_key, aws_secret_key, mailfrom='scrapy@localhost', debug=False):
+    def __init__(self, aws_access_key, aws_secret_key, aws_region, mailfrom='scrapy@localhost', debug=False):
         self.aws_access_key = aws_access_key
         self.aws_secret_key = aws_secret_key
+        self.aws_region = aws_region
         self.mailfrom = mailfrom
         self.debug = debug
 
@@ -180,13 +181,15 @@ class SESMailSender(BaseMailSender):
         return cls(
             aws_access_key=settings['AWS_ACCESS_KEY_ID'],
             aws_secret_key=settings['AWS_SECRET_ACCESS_KEY'],
+            aws_region=settings['AWS_REGION'],
             mailfrom=settings['MAIL_FROM']
         )
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None):
-        import boto
+        import boto3
 
-        msg = create_email_message(self.mailfrom, to, subject, body, cc, attachs, mimetype, charset)
+        msg = create_email_message(
+            self.mailfrom, to, subject, body, cc, attachs, mimetype, charset)
 
         if self.debug:
             logger.debug('Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
@@ -195,5 +198,14 @@ class SESMailSender(BaseMailSender):
                           'mailattachs': len(attachs)})
             return
 
-        session = boto.connect_ses(self.aws_access_key, self.aws_secret_key)
-        session.send_raw_email(raw_message=msg.as_string())
+        ses_client = boto3.client(
+            'ses',
+            aws_access_key_id=self.aws_access_key,
+            aws_secret_access_key=self.aws_secret_key,
+            region_name=self.aws_region
+        )
+        ses_client.send_raw_email(
+            RawMessage={
+                'Data': msg.as_string()
+            }
+        )
