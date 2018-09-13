@@ -267,7 +267,7 @@ class DbmCacheStorage(object):
         return pickle.loads(db['%s_data' % key])
 
     def _request_key(self, request):
-        return request_fingerprint(request)
+        return request_fingerprint(request, as_string=True)
 
 
 class FilesystemCacheStorage(object):
@@ -328,7 +328,7 @@ class FilesystemCacheStorage(object):
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
-        key = request_fingerprint(request)
+        key = request_fingerprint(request, as_string=True)
         return os.path.join(self.cachedir, spider.name, key[0:2], key)
 
     def _read_meta(self, spider, request):

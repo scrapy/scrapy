@@ -82,6 +82,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_dupefilter_path(self):
         r1 = Request('http://scrapytest.org/1')
         r2 = Request('http://scrapytest.org/2')
+        r3 = Request('http://scrapytest.org/3')
 
         path = tempfile.mkdtemp()
         try:
@@ -90,6 +91,8 @@ class RFPDupeFilterTest(unittest.TestCase):
                 df.open()
                 assert not df.request_seen(r1)
                 assert df.request_seen(r1)
+                assert not df.request_seen(r2)
+                assert df.request_seen(r2)
             finally:
                 df.close('finished')
 
@@ -97,8 +100,9 @@ class RFPDupeFilterTest(unittest.TestCase):
             try:
                 df2.open()
                 assert df2.request_seen(r1)
-                assert not df2.request_seen(r2)
                 assert df2.request_seen(r2)
+                assert not df2.request_seen(r3)
+                assert df2.request_seen(r3)
             finally:
                 df2.close('finished')
         finally:

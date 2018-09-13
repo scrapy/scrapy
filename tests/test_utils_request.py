@@ -11,6 +11,8 @@ class UtilsRequestTest(unittest.TestCase):
         r2 = Request("http://www.example.com/query?cat=222&id=111")
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r1))
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2))
+        self.assertEqual(request_fingerprint(r1, as_string=True), request_fingerprint(r2, as_string=True))
+        self.assertNotEqual(request_fingerprint(r1, as_string=True), request_fingerprint(r2, as_string=False))
 
         r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78132,199')
         r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
@@ -18,6 +20,7 @@ class UtilsRequestTest(unittest.TestCase):
 
         # make sure caching is working
         self.assertEqual(request_fingerprint(r1), _fingerprint_cache[r1][(None, False)])
+        self.assertNotEqual(request_fingerprint(r1, as_string=True), _fingerprint_cache[r1][(None, False)])
 
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")

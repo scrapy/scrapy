@@ -1,5 +1,6 @@
 import os
 import logging
+from binascii import hexlify
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
@@ -36,7 +37,8 @@ class RFPDupeFilter(BaseDupeFilter):
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.file.seek(0)
-            self.fingerprints.update(x.rstrip() for x in self.file)
+            self.fingerprints.update(bytes(bytearray.fromhex(x.rstrip()))
+                                     for x in self.file)
 
     @classmethod
     def from_settings(cls, settings):
@@ -49,7 +51,7 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + '\n')
+            self.file.write(hexlify(fp).decode('ascii') + '\n')
 
     def request_fingerprint(self, request):
         return request_fingerprint(request)

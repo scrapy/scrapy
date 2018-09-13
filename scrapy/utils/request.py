@@ -17,7 +17,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 _fingerprint_cache = weakref.WeakKeyDictionary()
 
 
-def request_fingerprint(request, include_headers=None, keep_fragments=False):
+def request_fingerprint(request, include_headers=None, keep_fragments=False,
+                        as_string=False):
     """
     Return the request fingerprint.
 
@@ -40,13 +41,17 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
     the fingerprint.
 
     For this reason, request headers are ignored by default when calculating
-    the fingeprint. If you want to include specific headers use the
+    the fingerprint. If you want to include specific headers use the
     include_headers argument, which is a list of Request headers to include.
 
     Also, servers usually ignore fragments in urls when handling requests,
     so they are also ignored by default when calculating the fingerprint.
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
+
+    With the as_string argument set tot True, a hex representation of the
+    fingerprint will be returned (legacy behaviour) instead of the raw bytes
+    value.
 
     """
     if include_headers:
@@ -65,7 +70,9 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
                     fp.update(hdr)
                     for v in request.headers.getlist(hdr):
                         fp.update(v)
-        cache[cache_key] = fp.hexdigest()
+        cache[cache_key] = fp.digest()
+    if as_string:
+        return cache[cache_key].hex()
     return cache[cache_key]
 
 
