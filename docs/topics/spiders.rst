@@ -213,7 +213,7 @@ Let's see an example::
         ]
 
         def parse(self, response):
-            self.logger.info('A response from %s just arrived!', response.url)
+            self.logger.info('A response from %s just arrived!' % response.url)
 
 Return multiple Requests and items from a single callback::
 
@@ -431,7 +431,7 @@ Let's now take a look at an example CrawlSpider with rules::
         )
 
         def parse_item(self, response):
-            self.logger.info('Hi, this is an item page! %s', response.url)
+            self.logger.info('Hi, this is an item page! %s' % response.url)
             item = scrapy.Item()
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').extract()
@@ -545,7 +545,7 @@ These spiders are pretty easy to use, let's have a look at one example::
         itertag = 'item'
 
         def parse_node(self, response, node):
-            self.logger.info('Hi, this is a <%s> node!: %s', self.itertag, ''.join(node.extract()))
+            self.logger.info('Hi, this is a <%s> node!: %r' % (self.itertag, node.extract()))
 
             item = TestItem()
             item['id'] = node.xpath('@id').extract()
@@ -605,7 +605,7 @@ Let's see an example similar to the previous one, but using a
         headers = ['id', 'name', 'description']
 
         def parse_row(self, response, row):
-            self.logger.info('Hi, this is a row!: %r', row)
+            self.logger.info('Hi, this is a row!: %r' % row)
 
             item = TestItem()
             item['id'] = row['id']

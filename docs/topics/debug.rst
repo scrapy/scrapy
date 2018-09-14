@@ -138,7 +138,7 @@ available in all future runs should they be necessary again::
             # populate more `item` fields
             return item
         else:
-            self.logger.warning('No item received for %s', response.url)
+            self.logger.warning('No item received for %s' % response.url)
 
 For more information, check the :ref:`topics-logging` section.
 

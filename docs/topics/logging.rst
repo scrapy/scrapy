@@ -105,7 +105,7 @@ instance, which can be accessed and used like this::
         start_urls = ['https://scrapinghub.com']
 
         def parse(self, response):
-            self.logger.info('Parse function called on %s', response.url)
+            self.logger.info('Parse function called on %s' % response.url)
 
 That logger is created using the Spider's name, but you can use any custom
 Python logger you want. For example::
@@ -121,7 +121,7 @@ Python logger you want. For example::
         start_urls = ['https://scrapinghub.com']
 
         def parse(self, response):
-            logger.info('Parse function called on %s', response.url)
+            logger.info('Parse function called on %s' % response.url)
 
 .. _topics-logging-configuration:
 

@@ -197,7 +197,7 @@ Example::
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
-        self.logger.info("Visited %s", response.url)
+        self.logger.info("Visited %s" % response.url)
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback. You

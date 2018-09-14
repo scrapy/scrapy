@@ -135,15 +135,15 @@ Here is the code of such extension::
             return ext
 
         def spider_opened(self, spider):
-            logger.info("opened spider %s", spider.name)
+            logger.info("opened spider %s" % spider.name)
 
         def spider_closed(self, spider):
-            logger.info("closed spider %s", spider.name)
+            logger.info("closed spider %s" % spider.name)
 
         def item_scraped(self, item, spider):
             self.items_scraped += 1
             if self.items_scraped % self.item_count == 0:
-                logger.info("scraped %d items", self.items_scraped)
+                logger.info("scraped %d items" % self.items_scraped)
 
 
 .. _topics-extensions-ref:
