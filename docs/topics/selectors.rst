@@ -643,27 +643,30 @@ namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
 :meth:`Selector.remove_namespaces` method for that.
 
-Let's show an example that illustrates this with GitHub blog atom feed.
+Let's show an example that illustrates this with the Python Insider blog atom feed.
 
 .. highlight:: sh
 
 First, we open the shell with the url we want to scrape::
 
-    $ scrapy shell https://github.com/blog.atom
-
-.. highlight:: xml
+    $ scrapy shell https://feeds.feedburner.com/PythonInsider
 
 This is how the file starts::
 
     <?xml version="1.0" encoding="UTF-8"?>
-    <feed xml:lang="en-US"
-          xmlns="http://www.w3.org/2005/Atom"
-          xmlns:media="http://search.yahoo.com/mrss/">
-      <id>tag:github.com,2008:/blog</id>
+    <?xml-stylesheet ...
+    <feed xmlns="http://www.w3.org/2005/Atom"
+          xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+          xmlns:blogger="http://schemas.google.com/blogger/2008"
+          xmlns:georss="http://www.georss.org/georss"
+          xmlns:gd="http://schemas.google.com/g/2005"
+          xmlns:thr="http://purl.org/syndication/thread/1.0"
+          xmlns:feedburner="http://rssnamespace.org/feedburner/ext/1.0">
       ...
 
-You can see two namespace declarations: a default "http://www.w3.org/2005/Atom"
-and another one using the "media:" prefix for "http://search.yahoo.com/mrss/".
+You can see several namespace declarations including a default
+"http://www.w3.org/2005/Atom" and another one using the "gd:" prefix for
+"http://schemas.google.com/g/2005".
 
 .. highlight:: python
 
@@ -678,8 +681,8 @@ nodes can be accessed directly by their names::
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
-    [<Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
-     <Selector xpath='//link' data='<link xmlns="http://www.w3.org/2005/Atom'>,
+    [<Selector xpath='//link' data='<link rel="alternate" type="text/html" h'>,
+     <Selector xpath='//link' data='<link rel="next" type="application/atom+'>,
      ...
 
 If you wonder why the namespace removal procedure isn't always called by default
