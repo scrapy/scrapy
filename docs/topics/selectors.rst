@@ -50,28 +50,8 @@ Constructing selectors
 
 .. highlight:: python
 
-Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
-constructed by passing **text** or :class:`~scrapy.http.TextResponse`
-object. It automatically chooses the best parsing rules (XML vs HTML) based on
-input type::
-
-    >>> from scrapy.selector import Selector
-    >>> from scrapy.http import HtmlResponse
-
-Constructing from text::
-
-    >>> body = '<html><body><span>good</span></body></html>'
-    >>> Selector(text=body).xpath('//span/text()').get()
-    'good'
-
-Constructing from response::
-
-    >>> response = HtmlResponse(url='http://example.com', body=body)
-    >>> Selector(response=response).xpath('//span/text()').get()
-    'good'
-
-For convenience, response objects expose a selector on `.selector` attribute.
-By using it you can ensure the response body is parsed only once::
+Response objects expose a :class:`~scrapy.selector.Selector` instance
+on ``.selector`` attribute::
 
     >>> response.selector.xpath('//span/text()').get()
     'good'
@@ -84,10 +64,34 @@ more shortcuts: ``response.xpath()`` and ``response.css()``::
     >>> response.css('span::text').get()
     'good'
 
+Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
+constructed by passing either :class:`~scrapy.http.TextResponse` object or
+markup as an unicode string (in ``text`` argument).
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
 it is more convenient to use ``response.css()`` and ``response.xpath()``
-shortcuts.
+shortcuts. By using ``response.selector`` or one of these shortcuts
+you can also ensure the response body is parsed only once.
+
+But if required, it is possible to use ``Selector`` directly.
+Constructing from text::
+
+    >>> from scrapy.selector import Selector
+    >>> body = '<html><body><span>good</span></body></html>'
+    >>> Selector(text=body).xpath('//span/text()').get()
+    'good'
+
+Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
+:class:`~scrapy.http.TextResponse` subclasses::
+
+    >>> from scrapy.selector import Selector
+    >>> from scrapy.http import HtmlResponse
+    >>> response = HtmlResponse(url='http://example.com', body=body)
+    >>> Selector(response=response).xpath('//span/text()').get()
+    'good'
+
+``Selector`` automatically chooses the best parsing rules
+(XML vs HTML) based on input type.
 
 Using selectors
 ---------------
@@ -139,7 +143,7 @@ is returned. ``.getall()`` returns a list with all results.
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
-    >>> selector.css('title::text').get()
+    >>> response.css('title::text').get()
     'Example website'
 
 As you can see, ``.xpath()`` and ``.css()`` methods return a

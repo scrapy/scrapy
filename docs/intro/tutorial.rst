@@ -285,9 +285,9 @@ There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
 to be scraped, you can at least get **some** data.
 
-Besides the :meth:`~scrapy.selector.Selector.extract` and
+Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
-the :meth:`~scrapy.selector.Selector.re` method to extract using `regular
+the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
 expressions`_::
 
     >>> response.css('title::text').re(r'Quotes.*')
@@ -649,7 +649,7 @@ this time for scraping author information::
 
         def parse_author(self, response):
             def extract_with_css(query):
-                return response.css(query).get().strip()
+                return response.css(query).get(default='').strip()
 
             yield {
                 'name': extract_with_css('h3.author-title::text'),

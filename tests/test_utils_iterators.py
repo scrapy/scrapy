@@ -32,8 +32,8 @@ class XmliterTestCase(unittest.TestCase):
         for x in self.xmliter(response, 'product'):
             attrs.append((
                 x.attrib['id'],
-                x.xpath("name/text()").extract(),
-                x.xpath("./type/text()").extract()))
+                x.xpath("name/text()").getall(),
+                x.xpath("./type/text()").getall()))
 
         self.assertEqual(attrs,
                          [('001', ['Name 1'], ['Type 1']), ('002', ['Name 2'], ['Type 2'])])
