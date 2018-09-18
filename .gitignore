@@ -15,6 +15,7 @@ htmlcov/
 .pytest_cache/
 .coverage.*
 .cache/
+.pytest_cache/
 
 # Windows
 Thumbs.db

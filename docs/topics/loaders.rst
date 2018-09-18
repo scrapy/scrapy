@@ -678,10 +678,10 @@ Here is a list of all built-in processors:
         >>> from scrapy.loader.processors import Join
         >>> proc = Join()
         >>> proc(['one', 'two', 'three'])
-        u'one two three'
+        'one two three'
         >>> proc = Join('<br>')
         >>> proc(['one', 'two', 'three'])
-        u'one<br>two<br>three'
+        'one<br>two<br>three'
 
 .. class:: Compose(\*functions, \**default_loader_context)
 
@@ -744,9 +744,9 @@ Here is a list of all built-in processors:
         ...     return None if x == 'world' else x
         ...
         >>> from scrapy.loader.processors import MapCompose
-        >>> proc = MapCompose(filter_world, unicode.upper)
-        >>> proc([u'hello', u'world', u'this', u'is', u'scrapy'])
-        [u'HELLO, u'THIS', u'IS', u'SCRAPY']
+        >>> proc = MapCompose(filter_world, str.upper)
+        >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
+        ['HELLO, 'THIS', 'IS', 'SCRAPY']
 
     As with the Compose processor, functions can receive Loader contexts, and
     constructor keyword arguments are used as default context values. See
@@ -772,7 +772,7 @@ Here is a list of all built-in processors:
         >>> import json
         >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
         >>> proc_single_json_str('{"foo": "bar"}')
-        u'bar'
+        'bar'
         >>> proc_json_list = Compose(json.loads, MapCompose(SelectJmes('foo')))
         >>> proc_json_list('[{"foo":"bar"}, {"baz":"tar"}]')
-        [u'bar']
+        ['bar']

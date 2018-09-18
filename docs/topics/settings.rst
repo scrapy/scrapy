@@ -871,7 +871,7 @@ LOG_STDOUT
 Default: ``False``
 
 If ``True``, all standard output (and error) of your process will be redirected
-to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
+to the log. For example if you ``print('hello')`` it will appear in the Scrapy
 log.
 
 .. setting:: LOG_SHORT_NAMES

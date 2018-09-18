@@ -20,17 +20,17 @@ class SelectorTestCase(unittest.TestCase):
         for x in xl:
             assert isinstance(x, Selector)
 
-        self.assertEqual(sel.xpath('//input').extract(),
-                         [x.extract() for x in sel.xpath('//input')])
+        self.assertEqual(sel.xpath('//input').getall(),
+                         [x.get() for x in sel.xpath('//input')])
 
-        self.assertEqual([x.extract() for x in sel.xpath("//input[@name='a']/@name")],
+        self.assertEqual([x.get() for x in sel.xpath("//input[@name='a']/@name")],
                          [u'a'])
-        self.assertEqual([x.extract() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
+        self.assertEqual([x.get() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
                          [u'12.0'])
 
-        self.assertEqual(sel.xpath("concat('xpath', 'rules')").extract(),
+        self.assertEqual(sel.xpath("concat('xpath', 'rules')").getall(),
                          [u'xpathrules'])
-        self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
+        self.assertEqual([x.get() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
     def test_root_base_url(self):
@@ -60,12 +60,12 @@ class SelectorTestCase(unittest.TestCase):
         text = b'<div><img src="a.jpg"><p>Hello</div>'
         sel = Selector(XmlResponse('http://example.com', body=text, encoding='utf-8'))
         self.assertEqual(sel.type, 'xml')
-        self.assertEqual(sel.xpath("//div").extract(),
+        self.assertEqual(sel.xpath("//div").getall(),
                          [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
 
         sel = Selector(HtmlResponse('http://example.com', body=text, encoding='utf-8'))
         self.assertEqual(sel.type, 'html')
-        self.assertEqual(sel.xpath("//div").extract(),
+        self.assertEqual(sel.xpath("//div").getall(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
     def test_http_header_encoding_precedence(self):
@@ -84,15 +84,15 @@ class SelectorTestCase(unittest.TestCase):
         headers = {'Content-Type': ['text/html; charset=utf-8']}
         response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
         x = Selector(response)
-        self.assertEqual(x.xpath("//span[@id='blank']/text()").extract(),
+        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(),
                           [u'\xa3'])
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
-        r1 = TextResponse('http://www.example.com', \
-                          body=b'<html><p>an Jos\xe9 de</p><html>', \
+        r1 = TextResponse('http://www.example.com',
+                          body=b'<html><p>an Jos\xe9 de</p><html>',
                           encoding='utf-8')
-        Selector(r1).xpath('//text()').extract()
+        Selector(r1).xpath('//text()').getall()
 
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""

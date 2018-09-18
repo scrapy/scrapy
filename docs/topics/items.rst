@@ -86,7 +86,7 @@ Creating items
 ::
 
     >>> product = Product(name='Desktop PC', price=1000)
-    >>> print product
+    >>> print(product)
     Product(name='Desktop PC', price=1000)
 
 Getting field values
@@ -161,11 +161,11 @@ Other common tasks
 Copying items::
 
     >>> product2 = Product(product)
-    >>> print product2
+    >>> print(product2)
     Product(name='Desktop PC', price=1000)
 
     >>> product3 = product2.copy()
-    >>> print product3
+    >>> print(product3)
     Product(name='Desktop PC', price=1000)
 
 Creating dicts from items::

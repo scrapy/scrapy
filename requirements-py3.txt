@@ -6,5 +6,5 @@ queuelib>=1.1.1
 w3lib>=1.17.0
 six>=1.5.2
 PyDispatcher>=2.0.5
-parsel>=1.4
+parsel>=1.5
 service_identity
