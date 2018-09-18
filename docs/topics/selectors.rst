@@ -279,6 +279,19 @@ Examples:
      'Name: My image 5 ',
      '\n  ']
 
+* ``foo::text`` returns no results if ``foo`` element exists, but contains
+  no text (i.e. text is empty)::
+
+    >>> response.css('img::text').getall()
+    []
+
+  This means ``.css('foo::text').get()`` could return None even if an element
+  exists. Use ``default=''`` if you always want a string::
+
+    >>> response.css('img::text').get()
+    >>> response.css('img::text').get(default='')
+    ''
+
 * ``a::attr(href)`` selects the *href* attribute value of descendant links::
 
     >>> response.css('a::attr(href)').getall()
@@ -289,13 +302,12 @@ Examples:
      'image5.html']
 
 .. note::
+    See also: :ref:`selecting-attributes`.
+
+.. note::
     You cannot chain these pseudo-elements. But in practice it would not
     make much sense: text nodes do not have attributes, and attribute values
     are string values already and do not have children nodes.
-
-.. note::
-    See also: :ref:`selecting-attributes`.
-
 
 .. _CSS Selectors: https://www.w3.org/TR/css3-selectors/#selectors
 
