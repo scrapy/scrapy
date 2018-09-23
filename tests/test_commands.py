@@ -8,6 +8,7 @@ from shutil import rmtree, copytree
 from tempfile import mkdtemp
 from contextlib import contextmanager
 from threading import Timer
+from io import StringIO
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -17,7 +18,10 @@ from scrapy.utils.python import to_native_str
 from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
+from scrapy.settings import Settings
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+
+from tests import mock
 
 
 class ProjectTest(unittest.TestCase):
@@ -179,6 +183,26 @@ class MiscCommandsTest(CommandTest):
 
     def test_list(self):
         self.assertEqual(0, self.call('list'))
+
+    def test_command_not_found(self):
+        from scrapy.cmdline import _print_unknown_command_msg
+
+        na_msg = """
+list command is not available from this location.
+These commands can only be triggered from within a project: check, crawl, edit, list, parse
+"""
+        not_found_msg = """
+Unknown command: abc
+"""
+        params = [
+            ('list', 0, na_msg),
+            ('abc', 0, not_found_msg),
+            ('abc', 1, not_found_msg),
+        ]
+        for cmdname, inproject, message in params:
+            with mock.patch('sys.stdout', new=StringIO()) as out:
+                _print_unknown_command_msg(Settings(), cmdname, inproject)
+                self.assertEqual(out.getvalue().strip(), message.strip())
 
 
 class RunSpiderCommandTest(CommandTest):
