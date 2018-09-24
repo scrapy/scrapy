@@ -18,6 +18,8 @@ from scrapy.commands import ScrapyCommand
 from scrapy.utils.project import get_project_settings
 
 
+# eigen modified
+# dump_info 是为了拿到爬虫的信息，在多project的架构下是必要的，但是在单project的架构下，后续可以直接从server端获取
 class Command(ScrapyCommand):
 
     requires_project = True
