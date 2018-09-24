@@ -150,7 +150,6 @@ def execute(argv=None, settings=None):
     # 支持debug_settings.py配置
     try:
         if not settings['PRODUCTION']:
-            import os
             ENVVAR = 'SCRAPY_SETTINGS_MODULE'
             settings_module_path = os.environ.get(ENVVAR)
             settings.setmodule(settings_module_path.replace('settings', 'debug_settings'), priority='debug')
