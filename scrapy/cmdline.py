@@ -146,6 +146,17 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
+    # eigen_modified
+    # 支持debug_settings.py配置
+    try:
+        if not settings['PRODUCTION']:
+            import os
+            ENVVAR = 'SCRAPY_SETTINGS_MODULE'
+            settings_module_path = os.environ.get(ENVVAR)
+            settings.setmodule(settings_module_path.replace('settings', 'debug_settings'), priority='debug')
+    except Exception as e:
+        pass
+
     cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
