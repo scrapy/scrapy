@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os
 import logging
 import warnings
 from logging.config import dictConfig
+from logging.handlers import TimedRotatingFileHandler
 
+from scrapy.utils.conf import closest_scrapy_cfg
 from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
 
@@ -119,12 +122,43 @@ def get_scrapy_root_handler():
 _scrapy_root_handler = None
 
 
+# def _get_handler(settings):
+#     """ Return a log handler object according to settings """
+#     filename = settings.get('LOG_FILE')
+#     if filename:
+#         encoding = settings.get('LOG_ENCODING')
+#         handler = logging.FileHandler(filename, encoding=encoding)
+#     elif settings.getbool('LOG_ENABLED'):
+#         handler = logging.StreamHandler()
+#     else:
+#         handler = logging.NullHandler()
+#
+#     formatter = logging.Formatter(
+#         fmt=settings.get('LOG_FORMAT'),
+#         datefmt=settings.get('LOG_DATEFORMAT')
+#     )
+#     handler.setFormatter(formatter)
+#     handler.setLevel(settings.get('LOG_LEVEL'))
+#     if settings.getbool('LOG_SHORT_NAMES'):
+#         handler.addFilter(TopLevelFormatter(['scrapy']))
+#     return handler
+
+# eigen modified
+# log修改
 def _get_handler(settings):
     """ Return a log handler object according to settings """
-    filename = settings.get('LOG_FILE')
+    filename = get_log_filename_with_path(settings)
+    filename = settings.get('LOG_FILE', filename)
+    if filename and filename.split('/')[-1].split('.')[0] == 'None':
+        filename = None
     if filename:
+        make_sub_dirs(filename)
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        rotate = settings.get('LOG_ROTATE')
+        if rotate:
+            handler = TimedRotatingFileHandler(filename, 'midnight', encoding=encoding)
+        else:
+            handler = logging.FileHandler(filename, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
@@ -136,9 +170,32 @@ def _get_handler(settings):
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
-    if settings.getbool('LOG_SHORT_NAMES'):
-        handler.addFilter(TopLevelFormatter(['scrapy']))
+    handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
+
+
+def make_sub_dirs(filename):
+    path = os.path.dirname(filename)
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def get_log_filename_with_path(settings):
+    pattern = settings.get('LOG_FILE_PATTERN')
+    log_root = '%(root)s/logs'%{'root':os.path.dirname(closest_scrapy_cfg())}
+    rendered_dict = {
+        'job_id' : settings.get('JOB_ID'),
+        'instance_id' : settings.get('INSTANCE_ID'),
+        'spider' : settings.get('SPIDER'),
+        'project' : settings.get('PROJECT'),
+        'log_root': log_root
+    }
+    filename = None
+    if pattern:
+        filename = pattern%rendered_dict
+    return filename
+# end
+# ---------------------------------------
 
 
 def log_scrapy_info(settings):
