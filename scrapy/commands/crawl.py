@@ -1,4 +1,6 @@
 import os
+import uuid
+
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
@@ -9,6 +11,15 @@ class Command(ScrapyCommand):
 
     requires_project = True
 
+    # eigen modified
+    # 这里添加了PROJECT， JOB_ID， INSTANCE_ID的默认值
+    # ---------------
+    def __init__(self):
+        super(Command, self).__init__()
+        self.default_settings['PROJECT'] = 'default'
+        self.default_settings['JOB_ID'] = uuid.uuid1().hex
+        self.default_settings['INSTANCE_ID'] = uuid.uuid1().hex
+    # ---------------
     def syntax(self):
         return "[options] <spider>"
 
@@ -46,6 +57,10 @@ class Command(ScrapyCommand):
                                  " from the supported list %s" % (opts.output_format,
                                                                   tuple(valid_output_formats)))
             self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
+
+        # eigen modified
+        # 这里设置了SPIDER的值
+        self.settings.set('SPIDER', args[0])
 
     def run(self, args, opts):
         if len(args) < 1:
