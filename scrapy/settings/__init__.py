@@ -16,6 +16,13 @@ SETTINGS_PRIORITIES = {
     'default': 0,
     'command': 10,
     'project': 20,
+    # eigen modified
+    # 加入了debug和user_project两个级别，但是配置的级别不应该设置这么多，容易让人迷惑。
+    # 对于用户而言，用户只想要关注他们最后生效的配置，那么在界面上对配置进行控制是最友好的行为。
+    # 对用户可见的应该是default(默认), dev(开发时配置)，方便用户的本地调试，在生产上的配置也同样是可见的。
+    'debug': 22,
+    'user_project': 25,
+    # -----------------
     'spider': 30,
     'cmdline': 40,
 }
@@ -47,6 +54,10 @@ class SettingsAttribute(object):
             self.priority = max(self.value.maxpriority(), priority)
         else:
             self.priority = priority
+        # eigen modified
+        # 增加record属性
+        self.record = {}
+        self.record[self.priority] = self.value
 
     def set(self, value, priority):
         """Sets value if priority is higher or equal than current priority."""
@@ -55,6 +66,19 @@ class SettingsAttribute(object):
                 value = BaseSettings(value, priority=priority)
             self.value = value
             self.priority = priority
+
+    # eigen modified
+    # 增加record getter
+    def get_record(self):
+        return self.record
+
+    # eigen modified
+    # 增加方法
+    def get_priority_value(self, priority):
+        value = self.record[priority]
+        if isinstance(value, BaseSettings):
+            value = value.copy_to_dict()
+        return value
 
     def __str__(self):
         return "<SettingsAttribute value={self.value!r} " \
@@ -225,6 +249,31 @@ class BaseSettings(MutableMapping):
         if name not in self:
             return None
         return self.attributes[name].priority
+
+    # eigen modified
+    # 增加方法
+    def get_record(self, name):
+        """[For Dcrawl API]: Return the changing ``record`` of given setting
+
+        : param name: the name of setting whose record is requested
+        : type name: string
+        """
+        return self.attributes[name].get_record()
+
+    # eigen modified
+    # 增加方法
+    def get_priority_settings(self, priority):
+        """[For Dcrawl API]: Return the settings of a given priority
+
+        :param priority: the priority of settings to return
+        :type priority: string or int (string from ``SETTINGS_PRIORITIES``)
+        """
+        settings = {}
+        priority = get_settings_priority(priority)
+        for key in self:
+            if priority in self.get_record(key):
+                settings[key] = self.attributes[key].get_priority_value(priority)
+        return settings
 
     def maxpriority(self):
         """
