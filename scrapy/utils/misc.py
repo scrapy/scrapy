@@ -1,4 +1,6 @@
 """Helper functions which don't fit anywhere else"""
+import traceback
+
 import re
 import hashlib
 from importlib import import_module
@@ -51,6 +53,29 @@ def load_object(path):
     return obj
 
 
+# def walk_modules(path):
+#     """Loads a module and all its submodules from the given module path and
+#     returns them. If *any* module throws an exception while importing, that
+#     exception is thrown back.
+#
+#     For example: walk_modules('scrapy.utils')
+#     """
+#
+#     mods = []
+#     mod = import_module(path)
+#     mods.append(mod)
+#     if hasattr(mod, '__path__'):
+#         for _, subpath, ispkg in iter_modules(mod.__path__):
+#             fullpath = path + '.' + subpath
+#             if ispkg:
+#                 mods += walk_modules(fullpath)
+#             else:
+#                 submod = import_module(fullpath)
+#                 mods.append(submod)
+#     return mods
+
+# eigen modified
+# walk_modules
 def walk_modules(path):
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
@@ -58,19 +83,38 @@ def walk_modules(path):
 
     For example: walk_modules('scrapy.utils')
     """
+    mods, failure = walk_modules_with_message(path)
+    if failure:
+        for path, excpt in failure:
+            raise excpt
+    return mods
 
+
+def walk_modules_with_message(path):
     mods = []
+    failed_modules = {}
     mod = import_module(path)
     mods.append(mod)
     if hasattr(mod, '__path__'):
         for _, subpath, ispkg in iter_modules(mod.__path__):
             fullpath = path + '.' + subpath
             if ispkg:
-                mods += walk_modules(fullpath)
+                mod, failed = walk_modules_with_message(fullpath)
+                mods += mod
+                failed_modules.update(failed)
             else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
+                try:
+                    submod = import_module(fullpath)
+                    mods.append(submod)
+                except Exception as e:
+                    msg = ("\n{tb}Could not load module '{modname}'. "
+                           "See above traceback for details.".format(
+                               modname=fullpath, tb=traceback.format_exc()))
+                    e.message = msg
+                    failed_modules[fullpath] = e
+    return mods, failed_modules
+# end
+# ----------------------------------------------
 
 
 def extract_regex(regex, text, encoding='utf-8'):

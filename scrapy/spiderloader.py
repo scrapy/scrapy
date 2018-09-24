@@ -7,7 +7,7 @@ import warnings
 from zope.interface import implementer
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import walk_modules, walk_modules_with_message
 from scrapy.utils.spider import iter_spider_classes
 
 
@@ -21,6 +21,10 @@ class SpiderLoader(object):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
         self._spiders = {}
+        # eigen modified
+        self.failed_modules = {}
+        # end
+        # ------------
         self._found = defaultdict(list)
         self._load_all_spiders()
 
@@ -41,10 +45,28 @@ class SpiderLoader(object):
             self._found[spcls.name].append((module.__name__, spcls.__name__))
             self._spiders[spcls.name] = spcls
 
+    # def _load_all_spiders(self):
+    #     for name in self.spider_modules:
+    #         try:
+    #             for module in walk_modules(name):
+    #                 self._load_spiders(module)
+    #         except ImportError as e:
+    #             if self.warn_only:
+    #                 msg = ("\n{tb}Could not load spiders from module '{modname}'. "
+    #                        "See above traceback for details.".format(
+    #                             modname=name, tb=traceback.format_exc()))
+    #                 warnings.warn(msg, RuntimeWarning)
+    #             else:
+    #                 raise
+    #     self._check_name_duplicates()
+    # eigen modified
+    # 加载爬虫时不会crash
     def _load_all_spiders(self):
         for name in self.spider_modules:
             try:
-                for module in walk_modules(name):
+                modules, failed_modules = walk_modules_with_message(name)
+                self.failed_modules.update(failed_modules)
+                for module in modules:
                     self._load_spiders(module)
             except ImportError as e:
                 if self.warn_only:
@@ -68,6 +90,16 @@ class SpiderLoader(object):
         try:
             return self._spiders[spider_name]
         except KeyError:
+            # eigen modified
+            # 爬虫启动时候提示报错信息
+            # issue: https://github.com/EigenLab/Dcrawl_engine/issues/188
+            if self.failed_modules:
+                for module in self.failed_modules:
+                    msg = self.failed_modules[module].message
+                    warnings.warn(msg, RuntimeWarning)
+                    print (msg)
+            # end
+            # ------------------------------------------
             raise KeyError("Spider not found: {}".format(spider_name))
 
     def find_by_request(self, request):
