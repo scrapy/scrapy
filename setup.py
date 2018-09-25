@@ -27,7 +27,7 @@ if has_environment_marker_platform_impl_support():
 
 
 setup(
-    name='Scrapy',
+    name='EigenScrapy',
     version=version,
     url='https://scrapy.org',
     description='A high-level Web Crawling and Web Scraping framework',

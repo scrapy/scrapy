@@ -137,6 +137,14 @@ class CrawlerRunner(object):
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
+        # eigen modified
+        # 输出加载失败的spider信息
+        failed_modules = self.spider_loader.failed_modules
+        if failed_modules:
+            for path in failed_modules:
+                logger.info('ERROR loading spider: %s\n%s', path, repr(failed_modules[path]))
+        # end
+        # ------------------------------------
 
     @property
     def spiders(self):

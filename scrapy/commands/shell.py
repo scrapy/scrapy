@@ -65,6 +65,11 @@ class Command(ScrapyCommand):
         crawler = self.crawler_process._create_crawler(spidercls)
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
+        # eigen modified
+        # 在项目执行scrapy shell 有可能失败
+        # 创建spider来修复中间件绑定爬虫方法的bug
+        # 注意： 使用scrapy-redis的组件同样会使scrapy shell失效
+        crawler.spider = crawler._create_spider()
         crawler.engine.start()
 
         self._start_crawler_thread()

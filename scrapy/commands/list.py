@@ -12,3 +12,12 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         for s in sorted(self.crawler_process.spider_loader.list()):
             print(s)
+        # eigen modified
+        # 输出加载失败的模块报错信息
+        failed_modules = self.crawler_process.spider_loader.failed_modules
+        if failed_modules:
+            for path in failed_modules:
+                spider = path.split('.')[-1]
+                print('%s: %s'%(spider, failed_modules[path].message))
+        # end
+        # ------------------------------------------------------------

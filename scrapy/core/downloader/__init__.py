@@ -57,8 +57,9 @@ class Slot(object):
             )
         )
 
-
-def _get_concurrency_delay(concurrency, spider, settings):
+# eigen modified
+# 增加了参数 key, 定义图片下载中间件的并发和delay
+def _get_concurrency_delay(concurrency, spider, settings, key):
     delay = settings.getfloat('DOWNLOAD_DELAY')
     if hasattr(spider, 'DOWNLOAD_DELAY'):
         warnings.warn("%s.DOWNLOAD_DELAY attribute is deprecated, use %s.download_delay instead" %
@@ -69,6 +70,11 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
     if hasattr(spider, 'max_concurrent_requests'):
         concurrency = spider.max_concurrent_requests
+
+    # eigen modified
+    if key.lower() == 'images':
+        delay = settings.getfloat('IMAGES_DOWNLOAD_DELAY')
+        concurrency = settings.getint('IMAGES_CONCURRENT_REQUESTS')
 
     return concurrency, delay
 
@@ -105,7 +111,7 @@ class Downloader(object):
         key = self._get_slot_key(request, spider)
         if key not in self.slots:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
-            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
+            conc, delay = _get_concurrency_delay(conc, spider, self.settings, key)
             self.slots[key] = Slot(conc, delay, self.randomize_delay)
 
         return key, self.slots[key]
