@@ -52,7 +52,6 @@ class TelnetConsole(protocol.ServerFactory):
         self.noisy = False
         self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
         self.host = crawler.settings['TELNETCONSOLE_HOST']
-
         self.username = crawler.settings['TELNETCONSOLE_USERNAME']
         self.password = crawler.settings['TELNETCONSOLE_PASSWORD']
 
@@ -113,7 +112,7 @@ class TelnetConsole(protocol.ServerFactory):
             'prefs': print_live_refs,
             'hpy': hpy,
             'help': "This is Scrapy telnet console. For more info see: "
-                "https://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+                    "https://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

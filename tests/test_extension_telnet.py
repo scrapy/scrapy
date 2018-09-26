@@ -12,17 +12,15 @@ from scrapy.extensions.telnet import TelnetConsole, logger
 from scrapy.utils.test import get_crawler
 
 
-class TelnetExtensionTest(unittest.TestCase):    
+class TelnetExtensionTest(unittest.TestCase):
     def _get_console_and_portal(self, settings=None):
         crawler = get_crawler(settings_dict=settings)
         console = TelnetConsole(crawler)
         username = console.username
         password = console.password
 
-        def _get_telnet_vars():
-            # This function has some side effects we don't need for this test
-            return {}
-        console._get_telnet_vars = _get_telnet_vars
+        # This function has some side effects we don't need for this test
+        console._get_telnet_vars = lambda: {}
 
         console.start_listening()
         protocol = console.protocol()
