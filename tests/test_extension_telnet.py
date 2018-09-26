@@ -41,7 +41,10 @@ class TelnetExtensionTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_good_credentials(self):
         console, portal = self._get_console_and_portal()
-        creds = credentials.UsernamePassword(console.username, console.password)
+        creds = credentials.UsernamePassword(
+            console.username.encode('utf8'),
+            console.password.encode('utf8')
+        )
         d = portal.login(creds, None, ITelnetProtocol)
         yield d
         console.stop_listening()

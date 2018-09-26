@@ -53,20 +53,14 @@ class TelnetConsole(protocol.ServerFactory):
         self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
         self.host = crawler.settings['TELNETCONSOLE_HOST']
 
-        username = crawler.settings.get('TELNETCONSOLE_USERNAME', None)
-        if username:
-            self.username = username.encode('utf8')
-        else:
-            self.username = binascii.hexlify(os.urandom(8))
+        self.username = crawler.settings['TELNETCONSOLE_USERNAME']
+        self.password = crawler.settings['TELNETCONSOLE_PASSWORD']
 
-        password = crawler.settings.get('TELNETCONSOLE_PASSWORD', None)
-        if password:
-            self.password = password.encode('utf8')
-        else:
-            self.password = binascii.hexlify(os.urandom(8))
+        if not self.password:
+            self.password = binascii.hexlify(os.urandom(8)).decode('utf8')
+            logger.info('Telnet Username: %s', self.username)
+            logger.info('Telnet Password: %s', self.password)
 
-        logger.info('Telnet Username: %s' % self.username)
-        logger.info('Telnet Password: %s' % self.password)
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
@@ -89,8 +83,8 @@ class TelnetConsole(protocol.ServerFactory):
             """An implementation of IPortal"""
             @defers
             def login(self_, credentials, mind, *interfaces):
-                if not (credentials.username == self.username and
-                        credentials.checkPassword(self.password)):
+                if not (credentials.username == self.username.encode('utf8') and
+                        credentials.checkPassword(self.password.encode('utf8'))):
                     raise ValueError("Invalid credentials")
 
                 protocol = telnet.TelnetBootstrapProtocol(
