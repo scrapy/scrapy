@@ -7,6 +7,8 @@ See documentation in docs/topics/telnetconsole.rst
 import pprint
 import logging
 import traceback
+import binascii
+import os
 
 from twisted.internet import protocol
 try:
@@ -52,6 +54,11 @@ class TelnetConsole(protocol.ServerFactory):
         self.host = crawler.settings['TELNETCONSOLE_HOST']
         self.username = crawler.settings['TELNETCONSOLE_USERNAME']
         self.password = crawler.settings['TELNETCONSOLE_PASSWORD']
+
+        if not self.password:
+            self.password = binascii.hexlify(os.urandom(8)).decode('utf8')
+            logger.info('Telnet Password: %s', self.password)
+
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
@@ -74,8 +81,8 @@ class TelnetConsole(protocol.ServerFactory):
             """An implementation of IPortal"""
             @defers
             def login(self_, credentials, mind, *interfaces):
-                if not (credentials.username == self.username
-                        and credentials.checkPassword(self.password)):
+                if not (credentials.username == self.username.encode('utf8') and
+                        credentials.checkPassword(self.password.encode('utf8'))):
                     raise ValueError("Invalid credentials")
 
                 protocol = telnet.TelnetBootstrapProtocol(
@@ -104,8 +111,8 @@ class TelnetConsole(protocol.ServerFactory):
             'p': pprint.pprint,
             'prefs': print_live_refs,
             'hpy': hpy,
-            'help': "This is Scrapy telnet console. For more info see: " \
-                "https://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+            'help': "This is Scrapy telnet console. For more info see: "
+                    "https://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars
