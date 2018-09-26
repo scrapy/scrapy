@@ -58,7 +58,6 @@ class TelnetConsole(protocol.ServerFactory):
 
         if not self.password:
             self.password = binascii.hexlify(os.urandom(8)).decode('utf8')
-            logger.info('Telnet Username: %s', self.username)
             logger.info('Telnet Password: %s', self.password)
 
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
