@@ -1,5 +1,5 @@
 from OpenSSL import SSL
-from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust
+from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust, AcceptableCiphers
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
@@ -19,15 +19,20 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
      understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols.'
     """
 
-    def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, *args, **kwargs):
+    def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
         super(ScrapyClientContextFactory, self).__init__(*args, **kwargs)
         self._ssl_method = method
         self.tls_verbose_logging = tls_verbose_logging
+        if tls_ciphers:
+            self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
+        else:
+            self.tls_ciphers = DEFAULT_CIPHERS
 
     @classmethod
     def from_settings(cls, settings, method=SSL.SSLv23_METHOD, *args, **kwargs):
         tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
-        return cls(method=method, tls_verbose_logging=tls_verbose_logging, *args, **kwargs)
+        tls_ciphers = settings['DOWNLOADER_CLIENT_TLS_CIPHERS']
+        return cls(method=method, tls_verbose_logging=tls_verbose_logging, tls_ciphers=tls_ciphers, *args, **kwargs)
 
     def getCertificateOptions(self):
         # setting verify=True will require you to provide CAs
@@ -45,7 +50,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                     method=getattr(self, 'method',
                                    getattr(self, '_ssl_method', None)),
                     fixBrokenPeers=True,
-                    acceptableCiphers=DEFAULT_CIPHERS)
+                    acceptableCiphers=self.tls_ciphers)
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
