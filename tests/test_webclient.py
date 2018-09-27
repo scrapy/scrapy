@@ -8,15 +8,18 @@ import shutil
 
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, ssl
 from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import webclient as client
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Request, Headers
+from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes, to_unicode
+from tests.mockserver import ssl_context_factory, broken_ssl_context_factory
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -363,3 +366,48 @@ class WebClientTestCase(unittest.TestCase):
         self.assertEqual(content_encoding, EncodingResource.out_encoding)
         self.assertEqual(
             response.body.decode(content_encoding), to_unicode(original_body))
+
+
+class WebClientSSLTestCase(unittest.TestCase):
+    context_factory = None
+
+    def _listen(self, site):
+        return reactor.listenSSL(
+            0, site,
+            contextFactory=self.context_factory or ssl_context_factory(),
+            interface="127.0.0.1")
+
+    def getURL(self, path):
+        return "https://127.0.0.1:%d/%s" % (self.portno, path)
+
+    def setUp(self):
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
+        r.putChild(b"payload", PayloadResource())
+        self.site = server.Site(r, timeout=None)
+        self.wrapper = WrappingFactory(self.site)
+        self.port = self._listen(self.wrapper)
+        self.portno = self.port.getHost().port
+
+    @inlineCallbacks
+    def tearDown(self):
+        yield self.port.stopListening()
+        shutil.rmtree(self.tmpname)
+
+    def testPayload(self):
+        s = "0123456789" * 10
+        return getPage(self.getURL("payload"), body=s).addCallback(
+            self.assertEqual, to_bytes(s))
+
+
+class WebClientBrokenSSLTestCase(WebClientSSLTestCase):
+    context_factory = broken_ssl_context_factory(cipher_string='CAMELLIA256-SHA')
+
+    def testPayload(self):
+        s = "0123456789" * 10
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        return getPage(self.getURL("payload"), body=s,
+                       contextFactory=ScrapyClientContextFactory(settings=settings)).addCallback(self.assertEqual,
+                                                                                                 to_bytes(s))

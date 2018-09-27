@@ -3,6 +3,8 @@ import sys, time, random, os, json
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 
+from OpenSSL import SSL
+
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -220,6 +222,14 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
          os.path.join(os.path.dirname(__file__), keyfile),
          os.path.join(os.path.dirname(__file__), certfile),
          )
+
+
+def broken_ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string='DEFAULT'):
+    factory = ssl_context_factory(keyfile, certfile)
+    ctx = factory.getContext()
+    ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2)
+    ctx.set_cipher_list(cipher_string)
+    return factory
 
 
 if __name__ == "__main__":
