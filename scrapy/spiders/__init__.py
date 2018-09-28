@@ -80,11 +80,11 @@ class Spider(object_ref):
                 yield self.make_requests_from_url(url)
         else:
             for url in self.start_urls:
-                yield Request(url, dont_filter=True)
+                yield Request(url, self.parse, dont_filter=True)
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
-        return Request(url, dont_filter=True)
+        return Request(url, self.parse, dont_filter=True)
 
     def parse(self, response):
         raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
