@@ -178,7 +178,7 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
-.. setting:: BOT_NAME
+.. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
 ----------------
@@ -187,7 +187,7 @@ Default: ``None``
 
 Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
 
-.. setting:: AWS_ENDPOINT_URL
+.. setting:: AWS_USE_SSL
 
 AWS_USE_SSL
 -----------
@@ -197,7 +197,7 @@ Default: ``None``
 Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
 By default SSL will be used.
 
-.. setting:: AWS_USE_SSL
+.. setting:: AWS_VERIFY
 
 AWS_VERIFY
 ----------
@@ -206,7 +206,7 @@ Default: ``None``
 
 Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
 
-.. setting:: AWS_VERIFY
+.. setting:: BOT_NAME
 
 BOT_NAME
 --------
@@ -219,6 +219,20 @@ also for logging.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
+
+.. setting:: CLOSESPIDER_CALLING_ORDER
+
+CLOSESPIDER_CALLING_ORDER
+--------
+
+Default: ``'default'``
+
+This setting determines in which order `close_spider` methods in the pipelines
+are run. The default behaviour calls `close_spider` methods in the reverse
+order of the :setting:`ITEM_PIPELINES` setting.
+
+By changing this to `'numerical'`, all the `close_spider` methods will be
+called in the same order as specified in the :setting:`ITEM_PIPELINES` setting.
 
 .. setting:: CONCURRENT_ITEMS
 

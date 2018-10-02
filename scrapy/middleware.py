@@ -2,7 +2,7 @@ from collections import defaultdict
 import logging
 import pprint
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
 
@@ -14,9 +14,10 @@ class MiddlewareManager(object):
 
     component_name = 'foo middleware'
 
-    def __init__(self, *middlewares):
+    def __init__(self, *middlewares, close_spider_order=None):
         self.middlewares = middlewares
         self.methods = defaultdict(list)
+        self.close_spider_order = close_spider_order
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -26,6 +27,8 @@ class MiddlewareManager(object):
 
     @classmethod
     def from_settings(cls, settings, crawler=None):
+        close_spider_order = settings.get('CLOSESPIDER_CALLING_ORDER')
+
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
@@ -46,7 +49,7 @@ class MiddlewareManager(object):
                     {'componentname': cls.component_name,
                      'enabledlist': pprint.pformat(enabled)},
                     extra={'crawler': crawler})
-        return cls(*middlewares)
+        return cls(*middlewares, close_spider_order=close_spider_order)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -56,7 +59,12 @@ class MiddlewareManager(object):
         if hasattr(mw, 'open_spider'):
             self.methods['open_spider'].append(mw.open_spider)
         if hasattr(mw, 'close_spider'):
-            self.methods['close_spider'].append(mw.close_spider)
+            if self.close_spider_order == 'numerical':
+                self.methods['close_spider'].append(mw.close_spider)
+            elif self.close_spider_order == 'default':
+                self.methods['close_spider'].insert(0, mw.close_spider)
+            else:
+                raise NotSupported('CLOSESPIDER_CALLING_ORDER setting has to be either "default" or "numerical"')
 
     def _process_parallel(self, methodname, obj, *args):
         return process_parallel(self.methods[methodname], obj, *args)

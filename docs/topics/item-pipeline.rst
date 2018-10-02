@@ -52,6 +52,11 @@ Additionally, they may also implement the following methods:
 
    This method is called when the spider is closed.
 
+   NB! Please note that while `open_spider` and `process_item` methods are called
+   in the order specified in `ITEM_PIPELINES` setting, then the `close_spider`
+   methods are by default called in the reverse order of the setting.
+   This is modifiable with the :setting:`CLOSESPIDER_CALLING_ORDER` setting.
+
    :param spider: the spider which was closed
    :type spider: :class:`~scrapy.spiders.Spider` object
 
