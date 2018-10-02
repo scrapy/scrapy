@@ -223,7 +223,7 @@ project with the :command:`startproject` command.
 .. setting:: CLOSESPIDER_CALLING_ORDER
 
 CLOSESPIDER_CALLING_ORDER
---------
+-------------------------
 
 Default: ``'default'``
 

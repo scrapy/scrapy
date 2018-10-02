@@ -14,10 +14,10 @@ class MiddlewareManager(object):
 
     component_name = 'foo middleware'
 
-    def __init__(self, *middlewares, close_spider_order='default'):
+    def __init__(self, *middlewares, **kwargs):
         self.middlewares = middlewares
         self.methods = defaultdict(list)
-        self.close_spider_order = close_spider_order
+        self.close_spider_order = kwargs.get('close_spider_order', 'default')
         for mw in middlewares:
             self._add_middleware(mw)
 
