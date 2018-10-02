@@ -14,7 +14,7 @@ class MiddlewareManager(object):
 
     component_name = 'foo middleware'
 
-    def __init__(self, *middlewares, close_spider_order=None):
+    def __init__(self, *middlewares, close_spider_order='default'):
         self.middlewares = middlewares
         self.methods = defaultdict(list)
         self.close_spider_order = close_spider_order
