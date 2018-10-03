@@ -451,6 +451,17 @@ class Base:
                 Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
             ])
 
+        def test_ftp_links(self):
+            body = b"""
+            <html><body>
+            <div><a href="ftp://www.external.com/">An Item</a></div>
+            </body></html>"""
+            response = HtmlResponse("http://www.example.com/index.html", body=body, encoding='utf8')
+            lx = self.extractor_cls()
+            self.assertEqual(lx.extract_links(response), [
+                Link(url='ftp://www.external.com/', text=u'An Item', fragment='', nofollow=False),
+            ])
+
 
 class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     extractor_cls = LxmlLinkExtractor
@@ -471,4 +482,3 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
-

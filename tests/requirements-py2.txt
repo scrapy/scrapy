@@ -10,4 +10,4 @@ brotlipy
 testfixtures
 # optional for shell wrapper tests
 bpython
-ipython
+ipython<6.0

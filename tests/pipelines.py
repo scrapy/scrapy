@@ -9,3 +9,9 @@ class ZeroDivisionErrorPipeline(object):
 
     def process_item(self, item, spider):
         return item
+
+
+class ProcessWithZeroDivisionErrorPipiline(object):
+
+    def process_item(self, item, spider):
+        1/0

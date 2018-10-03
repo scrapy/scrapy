@@ -1,8 +1,9 @@
 import logging
-import os
 import tempfile
 import warnings
-import unittest
+
+from twisted.internet import defer
+from twisted.trial import unittest
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
@@ -12,6 +13,7 @@ from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
+from scrapy.extensions import telnet
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -91,24 +93,29 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
-        with tempfile.NamedTemporaryFile() as log_file:
-            class MySpider(scrapy.Spider):
-                name = 'spider'
-                custom_settings = {
-                    'LOG_LEVEL': 'INFO',
-                    'LOG_FILE': log_file.name,
-                }
+        log_file = self.mktemp()
+        class MySpider(scrapy.Spider):
+            name = 'spider'
+            custom_settings = {
+                'LOG_LEVEL': 'INFO',
+                'LOG_FILE': log_file,
+                # disable telnet if not available to avoid an extra warning
+                'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
+            }
 
-            configure_logging()
-            self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
-            crawler = Crawler(MySpider, {})
-            self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
-            info_count = crawler.stats.get_value('log_count/INFO')
-            logging.debug('debug message')
-            logging.info('info message')
-            logging.warning('warning message')
-            logging.error('error message')
-            logged = log_file.read().decode('utf8')
+        configure_logging()
+        self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
+        crawler = Crawler(MySpider, {})
+        self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
+        info_count = crawler.stats.get_value('log_count/INFO')
+        logging.debug('debug message')
+        logging.info('info message')
+        logging.warning('warning message')
+        logging.error('error message')
+
+        with open(log_file, 'rb') as fo:
+            logged = fo.read().decode('utf8')
+
         self.assertNotIn('debug message', logged)
         self.assertIn('info message', logged)
         self.assertIn('warning message', logged)
@@ -136,9 +143,8 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
         settings = Settings({
             'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
         })
-        with warnings.catch_warnings(record=True) as w, \
-                self.assertRaises(AttributeError):
-            CrawlerRunner(settings)
+        with warnings.catch_warnings(record=True) as w:
+            self.assertRaises(AttributeError, CrawlerRunner, settings)
             self.assertEqual(len(w), 1)
             self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
             self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
@@ -181,3 +187,62 @@ class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_None(self):
         runner = CrawlerProcess()
         self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
+
+
+class ExceptionSpider(scrapy.Spider):
+    name = 'exception'
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError('Exception in from_crawler method')
+
+
+class NoRequestsSpider(scrapy.Spider):
+    name = 'no_request'
+
+    def start_requests(self):
+        return []
+
+
+class CrawlerRunnerHasSpider(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_successful(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(NoRequestsSpider)
+        self.assertEqual(runner.bootstrap_failed, False)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_successful_for_several(self):
+        runner = CrawlerRunner()
+        yield runner.crawl(NoRequestsSpider)
+        yield runner.crawl(NoRequestsSpider)
+        self.assertEqual(runner.bootstrap_failed, False)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_failed(self):
+        runner = CrawlerRunner()
+
+        try:
+            yield runner.crawl(ExceptionSpider)
+        except ValueError:
+            pass
+        else:
+            self.fail('Exception should be raised from spider')
+
+        self.assertEqual(runner.bootstrap_failed, True)
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_bootstrap_failed_for_several(self):
+        runner = CrawlerRunner()
+
+        try:
+            yield runner.crawl(ExceptionSpider)
+        except ValueError:
+            pass
+        else:
+            self.fail('Exception should be raised from spider')
+
+        yield runner.crawl(NoRequestsSpider)
+
+        self.assertEqual(runner.bootstrap_failed, True)

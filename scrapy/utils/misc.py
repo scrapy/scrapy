@@ -127,7 +127,7 @@ def ensure_deferred(f):
     def wrapper(*args, **kwargs):
         result = f(*args, **kwargs)
         return defer.ensureDeferred(result)
-    return wrapper 
+    return wrapper
 
 
 async def alist(source):
@@ -142,10 +142,34 @@ async def alist(source):
 
 def list_to_simplevalue(result):
     '''
-    This method helps in converting a single valued iterable 
+    This method helps in converting a single valued iterable
     to a single value result.
     '''
     try:
         return result[0]
     except TypeError:
         return result
+
+def create_instance(objcls, settings, crawler, *args, **kwargs):
+    """Construct a class instance using its ``from_crawler`` or
+    ``from_settings`` constructors, if available.
+
+    At least one of ``settings`` and ``crawler`` needs to be different from
+    ``None``. If ``settings `` is ``None``, ``crawler.settings`` will be used.
+    If ``crawler`` is ``None``, only the ``from_settings`` constructor will be
+    tried.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructors.
+
+    Raises ``ValueError`` if both ``settings`` and ``crawler`` are ``None``.
+    """
+    if settings is None:
+        if crawler is None:
+            raise ValueError("Specifiy at least one of settings and crawler.")
+        settings = crawler.settings
+    if crawler and hasattr(objcls, 'from_crawler'):
+        return objcls.from_crawler(crawler, *args, **kwargs)
+    elif hasattr(objcls, 'from_settings'):
+        return objcls.from_settings(settings, *args, **kwargs)
+    else:
+        return objcls(*args, **kwargs)

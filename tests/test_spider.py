@@ -147,10 +147,10 @@ class XMLFeedSpiderTest(SpiderTest):
 
             def parse_node(self, response, selector):
                 yield {
-                    'loc': selector.xpath('a:loc/text()').extract(),
-                    'updated': selector.xpath('b:updated/text()').extract(),
-                    'other': selector.xpath('other/@value').extract(),
-                    'custom': selector.xpath('other/@b:custom').extract(),
+                    'loc': selector.xpath('a:loc/text()').getall(),
+                    'updated': selector.xpath('b:updated/text()').getall(),
+                    'other': selector.xpath('other/@value').getall(),
+                    'custom': selector.xpath('other/@b:custom').getall(),
                 }
 
         for iterator in ('iternodes', 'xml'):
