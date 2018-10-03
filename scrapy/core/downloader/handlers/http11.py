@@ -8,7 +8,6 @@ import warnings
 from six.moves.urllib.parse import urldefrag
 
 from zope.interface import implementer
-from twisted.internet import reactor
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
