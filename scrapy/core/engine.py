@@ -24,8 +24,6 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
-conspid
-concraw
 
 class Slot(object):
 
@@ -122,7 +120,7 @@ class ExecutionEngine(object):
 
     @ensure_deferred
     async def _next_request(self, spider):
-        
+
         slot = self.slot
         if not slot:
             return
@@ -153,12 +151,12 @@ class ExecutionEngine(object):
                 self.crawl(request, spider)
 
         if self.spider_is_idle(spider) and slot.close_if_idle:
-            
+
             tsk = []
             for task in asyncio.Task.all_tasks():
                 if not task.done():
                     tsk.append(task)
-            
+
             if not tsk:
                 self._spider_idle(spider)
 
@@ -289,7 +287,7 @@ class ExecutionEngine(object):
         scheduler.open(spider)
         global conspid
         conspid= self.spider
-        global concraw 
+        global concraw
         concraw= self.crawler
         await self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
