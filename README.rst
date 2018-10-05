@@ -37,7 +37,7 @@ a wide range of purposes, from data mining to monitoring and automated testing.
 For more information including a list of features check the Scrapy homepage at:
 https://scrapy.org
 
-Requirements
+Requirement
 ============
 
 * Python 2.7 or Python 3.4+
@@ -59,7 +59,7 @@ Documentation
 Documentation is available online at https://doc.scrapy.org/ and in the ``docs``
 directory.
 
-Releases
+Release
 ========
 
 You can find release notes at https://doc.scrapy.org/en/latest/news.html
