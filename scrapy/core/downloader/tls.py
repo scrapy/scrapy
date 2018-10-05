@@ -2,6 +2,7 @@ import logging
 from OpenSSL import SSL
 
 from scrapy import twisted_version
+from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ openssl_methods = {
     METHOD_TLSv11: getattr(SSL, 'TLSv1_1_METHOD', 5),   # TLS 1.1 only
     METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
 }
+
 
 if twisted_version >= (14, 0, 0):
     # ClientTLSOptions requires a recent-enough version of Twisted.
@@ -65,13 +67,27 @@ if twisted_version >= (14, 0, 0):
         Same as Twisted's private _sslverify.ClientTLSOptions,
         except that VerificationError, CertificateError and ValueError
         exceptions are caught, so that the connection is not closed, only
-        logging warnings.
+        logging warnings. Also, HTTPS connection parameters logging is added.
         """
 
         def _identityVerifyingInfoCallback(self, connection, where, ret):
             if where & SSL_CB_HANDSHAKE_START:
                 set_tlsext_host_name(connection, self._hostnameBytes)
             elif where & SSL_CB_HANDSHAKE_DONE:
+                logger.debug('SSL connection to %s using protocol %s, cipher %s',
+                             self._hostnameASCII,
+                             connection.get_protocol_version_name(),
+                             connection.get_cipher_name(),
+                             )
+                server_cert = connection.get_peer_certificate()
+                logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
+                             x509name_to_string(server_cert.get_issuer()),
+                             x509name_to_string(server_cert.get_subject()),
+                             )
+                key_info = get_temp_key_info(connection._ssl)
+                if key_info:
+                    logger.debug('SSL temp key: %s', key_info)
+
                 try:
                     verifyHostname(connection, self._hostnameASCII)
                 except verification_errors as e:
