@@ -11,7 +11,7 @@ from scrapy.utils.python import to_bytes
 
 
 class Link(object):
-    """Link objects represent an extracted link by the LinkExtractor."""
+    """Link objects represent an extracted link by the LinkExtractor.Linking is  useful when you want to include information that is maintained independently."""
 
     __slots__ = ['url', 'text', 'fragment', 'nofollow']
 
