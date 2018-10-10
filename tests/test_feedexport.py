@@ -2,20 +2,24 @@ from __future__ import absolute_import
 import os
 import csv
 import json
+import warnings
 from io import BytesIO
 import tempfile
 import shutil
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urljoin, urlparse
+from six.moves.urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.settings import Settings
+from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
 import scrapy
+from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage,
@@ -130,13 +134,49 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
+    @mock.patch('scrapy.conf.settings', new={'AWS_ACCESS_KEY_ID': 'conf_key',
+                'AWS_SECRET_ACCESS_KEY': 'conf_secret'}, create=True)
+    def test_parse_credentials(self):
+        try:
+            import boto
+        except ImportError:
+            raise unittest.SkipTest("S3FeedStorage requires boto")
+        aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
+                           'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
+        crawler = get_crawler(settings_dict=aws_credentials)
+        # Instantiate with crawler
+        storage = S3FeedStorage.from_crawler(crawler,
+                                             's3://mybucket/export.csv')
+        self.assertEqual(storage.access_key, 'settings_key')
+        self.assertEqual(storage.secret_key, 'settings_secret')
+        # Instantiate directly
+        storage = S3FeedStorage('s3://mybucket/export.csv',
+                                aws_credentials['AWS_ACCESS_KEY_ID'],
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        self.assertEqual(storage.access_key, 'settings_key')
+        self.assertEqual(storage.secret_key, 'settings_secret')
+        # URI priority > settings priority
+        storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
+                                aws_credentials['AWS_ACCESS_KEY_ID'],
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        self.assertEqual(storage.access_key, 'uri_key')
+        self.assertEqual(storage.secret_key, 'uri_secret')
+        # Backwards compatibility for initialising without settings
+        with warnings.catch_warnings(record=True) as w:
+            storage = S3FeedStorage('s3://mybucket/export.csv')
+            self.assertEqual(storage.access_key, 'conf_key')
+            self.assertEqual(storage.secret_key, 'conf_secret')
+            self.assertTrue('without AWS keys' in str(w[-1].message))
+
     @defer.inlineCallbacks
     def test_store(self):
         assert_aws_environ()
         uri = os.environ.get('S3_TEST_FILE_URI')
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
-        storage = S3FeedStorage(uri)
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        storage = S3FeedStorage(uri, access_key, secret_key)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         expected_content = b"content: \xe2\x98\x83"
@@ -159,6 +199,23 @@ class StdoutFeedStorageTest(unittest.TestCase):
         self.assertEqual(out.getvalue(), b"content")
 
 
+class FromCrawlerMixin(object):
+    init_with_crawler = False
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        cls.init_with_crawler = True
+        return cls(*args, **kwargs)
+
+
+class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
+    pass
+
+
+class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
+    pass
+
+
 class FeedExportTest(unittest.TestCase):
 
     class MyItem(scrapy.Item):
@@ -170,9 +227,10 @@ class FeedExportTest(unittest.TestCase):
     def run_and_export(self, spider_cls, settings=None):
         """ Run spider with specified settings; return exported data. """
         tmpdir = tempfile.mkdtemp()
-        res_name = tmpdir + '/res'
+        res_path = os.path.join(tmpdir, 'res')
+        res_uri = urljoin('file:', pathname2url(res_path))
         defaults = {
-            'FEED_URI': 'file://' + res_name,
+            'FEED_URI': res_uri,
             'FEED_FORMAT': 'csv',
         }
         defaults.update(settings or {})
@@ -182,11 +240,13 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(res_name, 'rb') as f:
-                defer.returnValue(f.read())
+            with open(res_path, 'rb') as f:
+                content = f.read()
 
         finally:
-            shutil.rmtree(tmpdir)
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+        defer.returnValue(content)
 
     @defer.inlineCallbacks
     def exported_data(self, items, settings):
@@ -598,3 +658,15 @@ class FeedExportTest(unittest.TestCase):
             data = yield self.exported_data(items, settings)
             print(row['format'], row['indent'])
             self.assertEqual(row['expected'], data)
+
+    @defer.inlineCallbacks
+    def test_init_exporters_storages_with_crawler(self):
+        settings = {
+            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.'
+                                      'FromCrawlerCsvItemExporter'},
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.'
+                                      'FromCrawlerFileFeedStorage'},
+        }
+        yield self.exported_data({}, settings)
+        self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
+        self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)

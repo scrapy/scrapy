@@ -35,7 +35,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_response_selector_html(self):
-        xpath = 'response.xpath("//p[@class=\'one\']/text()").extract()[0]'
+        xpath = 'response.xpath("//p[@class=\'one\']/text()").get()'
         _, out, _ = yield self.execute([self.url('/html'), '-c', xpath])
         self.assertEqual(out.strip(), b'Works')
 

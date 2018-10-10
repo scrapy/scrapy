@@ -209,7 +209,7 @@ class MockServer():
         time.sleep(0.2)
 
     def url(self, path, is_secure=False):
-        host = self.http_address
+        host = self.http_address.replace('0.0.0.0', '127.0.0.1')
         if is_secure:
             host = self.https_address
         return host + path
