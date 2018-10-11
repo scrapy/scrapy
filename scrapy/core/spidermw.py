@@ -58,7 +58,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
                 return _failure
-            for method_index, method in enumerate(self.methods['process_spider_exception'][start_index:], start=start_index):
+            method_list = self.methods['process_spider_exception'][start_index:]
+            for method_index, method in enumerate(method_list, start=start_index):
                 if method is None:
                     continue
                 result = method(response=response, exception=exception, spider=spider)
@@ -88,7 +89,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         raise
                     recovered.extend(exception_result)
 
-            for method_index, method in enumerate(self.methods['process_spider_output'][start_index:], start=start_index):
+            method_list = self.methods['process_spider_output'][start_index:]
+            for method_index, method in enumerate(method_list, start=start_index):
                 if method is None:
                     continue
                 # the following might fail directly if the output value is not a generator
