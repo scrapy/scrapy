@@ -11,30 +11,11 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.python import MutableChain
 
 
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
-
-
-class MutableChain:
-    """
-    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
-    """
-    def __init__(self, *args):
-        self.data = chain(*args)
-
-    def extend(self, *iterables):
-        self.data = chain(self.data, *iterables)
-
-    def __iter__(self):
-        return self.data.__iter__()
-
-    def __next__(self):  # py3
-        return self.data.__next__()
-
-    def next(self):  # py2
-        return self.data.next()
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
