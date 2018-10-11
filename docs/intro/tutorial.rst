@@ -26,15 +26,26 @@ If you're already familiar with other languages, and want to learn Python
 quickly, we recommend reading through `Dive Into Python 3`_.  Alternatively,
 you can follow the `Python Tutorial`_.
 
-If you're new to programming and want to start with Python, you may find useful
-the online book `Learn Python The Hard Way`_. You can also take a look at `this
-list of Python resources for non-programmers`_.
+If you're new to programming and want to start with Python, the following books
+may be useful to you: 
+
+* `Automate the Boring Stuff With Python`_
+
+* `How To Think Like a Computer Scientist`_ 
+
+* `Learn Python 3 The Hard Way`_ 
+
+You can also take a look at `this list of Python resources for non-programmers`_,
+as well as the `suggested resources in the learnpython-subreddit`_. 
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
 .. _Dive Into Python 3: http://www.diveintopython3.net
 .. _Python Tutorial: https://docs.python.org/3/tutorial
-.. _Learn Python The Hard Way: https://learnpythonthehardway.org/book/
+.. _Automate the Boring Stuff With Python: https://automatetheboringstuff.com/
+.. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
+.. _Learn Python 3 The Hard Way: https://learnpythonthehardway.org/python3/
+.. _suggested resources in the learnpython-subreddit: https://www.reddit.com/r/learnpython/wiki/index#wiki_new_to_python.3F
 
 
 Creating a project
@@ -243,7 +254,7 @@ data.
 
 To extract the text from the title above, you can do::
 
-    >>> response.css('title::text').extract()
+    >>> response.css('title::text').getall()
     ['Quotes to Scrape']
 
 There are two things to note here: one is that we've added ``::text`` to the
@@ -251,32 +262,33 @@ CSS query, to mean we want to select only the text elements directly inside
 ``<title>`` element.  If we don't specify ``::text``, we'd get the full title
 element, including its tags::
 
-    >>> response.css('title').extract()
+    >>> response.css('title').getall()
     ['<title>Quotes to Scrape</title>']
 
-The other thing is that the result of calling ``.extract()`` is a list, because
-we're dealing with an instance of :class:`~scrapy.selector.SelectorList`.  When
-you know you just want the first result, as in this case, you can do::
+The other thing is that the result of calling ``.getall()`` is a list: it is
+possible that a selector returns more than one result, so we extract them all.
+When you know you just want the first result, as in this case, you can do::
 
-    >>> response.css('title::text').extract_first()
+    >>> response.css('title::text').get()
     'Quotes to Scrape'
 
 As an alternative, you could've written::
 
-    >>> response.css('title::text')[0].extract()
+    >>> response.css('title::text')[0].get()
     'Quotes to Scrape'
 
-However, using ``.extract_first()`` avoids an ``IndexError`` and returns
-``None`` when it doesn't find any element matching the selection.
+However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList`
+instance avoids an ``IndexError`` and returns ``None`` when it doesn't
+find any element matching the selection.
 
 There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
 to be scraped, you can at least get **some** data.
 
-Besides the :meth:`~scrapy.selector.Selector.extract` and
-:meth:`~scrapy.selector.SelectorList.extract_first` methods, you can also use
-the :meth:`~scrapy.selector.Selector.re` method to extract using `regular
-expressions`::
+Besides the :meth:`~scrapy.selector.SelectorList.getall` and
+:meth:`~scrapy.selector.SelectorList.get` methods, you can also use
+the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
+expressions`_::
 
     >>> response.css('title::text').re(r'Quotes.*')
     ['Quotes to Scrape']
@@ -287,8 +299,8 @@ expressions`::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools or extensions like Firebug (see
-sections about :ref:`topics-firebug` and :ref:`topics-firefox`).
+You can use your browser developer tools to inspect the HTML and come up
+with a selector (see section about :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
@@ -304,7 +316,7 @@ Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
 
     >>> response.xpath('//title')
     [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
-    >>> response.xpath('//title/text()').extract_first()
+    >>> response.xpath('//title/text()').get()
     'Quotes to Scrape'
 
 XPath expressions are very powerful, and are the foundation of Scrapy
@@ -373,17 +385,17 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text::text").extract_first()
+    >>> title = quote.css("span.text::text").get()
     >>> title
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
-    >>> author = quote.css("small.author::text").extract_first()
+    >>> author = quote.css("small.author::text").get()
     >>> author
     'Albert Einstein'
 
-Given that the tags are a list of strings, we can use the ``.extract()`` method
+Given that the tags are a list of strings, we can use the ``.getall()`` method
 to get all of them::
 
-    >>> tags = quote.css("div.tags a.tag::text").extract()
+    >>> tags = quote.css("div.tags a.tag::text").getall()
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
@@ -391,9 +403,9 @@ Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary::
 
     >>> for quote in response.css("div.quote"):
-    ...     text = quote.css("span.text::text").extract_first()
-    ...     author = quote.css("small.author::text").extract_first()
-    ...     tags = quote.css("div.tags a.tag::text").extract()
+    ...     text = quote.css("span.text::text").get()
+    ...     author = quote.css("small.author::text").get()
+    ...     tags = quote.css("div.tags a.tag::text").getall()
     ...     print(dict(text=text, author=author, tags=tags))
     {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
     {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
@@ -424,9 +436,9 @@ in the callback, as you can see below::
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('small.author::text').extract_first(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.css('small.author::text').get(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
 If you run this spider, it will output the extracted data with the log::
@@ -498,15 +510,21 @@ markup:
 
 We can try extracting it in the shell::
 
-    >>> response.css('li.next a').extract_first()
+    >>> response.css('li.next a').get()
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
 Scrapy supports a CSS extension that let's you select the attribute contents,
 like this::
 
-    >>> response.css('li.next a::attr(href)').extract_first()
+    >>> response.css('li.next a::attr(href)').get()
     '/page/2/'
+
+There is also an ``attrib`` property available
+(see :ref:`selecting-attributes` for more)::
+
+    >>> response.css('li.next a').attrib['href']
+    '/page/2'
 
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::
@@ -523,12 +541,12 @@ page, extracting data from it::
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('small.author::text').extract_first(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.css('small.author::text').get(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').extract_first()
+            next_page = response.css('li.next a::attr(href)').get()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
@@ -574,12 +592,12 @@ As a shortcut for creating Request objects you can use
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('span small::text').extract_first(),
-                    'tags': quote.css('div.tags a.tag::text').extract(),
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.css('span small::text').get(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').extract_first()
+            next_page = response.css('li.next a::attr(href)').get()
             if next_page is not None:
                 yield response.follow(next_page, callback=self.parse)
 
@@ -631,7 +649,7 @@ this time for scraping author information::
 
         def parse_author(self, response):
             def extract_with_css(query):
-                return response.css(query).extract_first().strip()
+                return response.css(query).get(default='').strip()
 
             yield {
                 'name': extract_with_css('h3.author-title::text'),
@@ -700,11 +718,11 @@ with a specific tag, building the URL based on the argument::
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.css('small.author::text').extract_first(),
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.css('small.author::text').get(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').extract_first()
+            next_page = response.css('li.next a::attr(href)').get()
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
 
@@ -728,4 +746,3 @@ modeling the scraped data. If you prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
-.. _dirbot: https://github.com/scrapy/dirbot

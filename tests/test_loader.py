@@ -634,7 +634,7 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl = l.nested_xpath("//header")
         nl.add_xpath('name', 'div/text()')
         nl.add_css('name_div', '#id')
-        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').extract())
+        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
@@ -649,7 +649,7 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl = l.nested_css("header")
         nl.add_xpath('name', 'div/text()')
         nl.add_css('name_div', '#id')
-        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').extract())
+        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])

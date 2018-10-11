@@ -179,13 +179,13 @@ all start with the ``[s]`` prefix)::
 
 After that, we can start playing with the objects::
 
-    >>> response.xpath('//title/text()').extract_first()
+    >>> response.xpath('//title/text()').get()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
     >>> fetch("https://reddit.com")
 
-    >>> response.xpath('//title/text()').extract()
-    ['reddit: the front page of the internet']
+    >>> response.xpath('//title/text()').get()
+    'reddit: the front page of the internet'
 
     >>> request = request.replace(method="POST")
 

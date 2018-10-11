@@ -74,6 +74,14 @@ class DictItemsSpider(TestSpider):
     item_cls = dict
 
 
+class ItemZeroDivisionErrorSpider(TestSpider):
+    custom_settings = {
+        "ITEM_PIPELINES": {
+            "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
+        }
+    }
+
+
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
@@ -95,6 +103,8 @@ class CrawlerRun(object):
         self.respplug = []
         self.reqplug = []
         self.reqdropped = []
+        self.reqreached = []
+        self.itemerror = []
         self.itemresp = []
         self.signals_catched = {}
         self.spider_class = spider_class
@@ -112,8 +122,10 @@ class CrawlerRun(object):
 
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
+        self.crawler.signals.connect(self.item_error, signals.item_error)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
+        self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(start_urls=start_urls)
         self.spider = self.crawler.spider
@@ -136,11 +148,17 @@ class CrawlerRun(object):
         u = urlparse(url)
         return u.path
 
+    def item_error(self, item, response, spider, failure):
+        self.itemerror.append((item, response, spider, failure))
+
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
+
+    def request_reached(self, request, spider):
+        self.reqreached.append((request, spider))
 
     def request_dropped(self, request, spider):
         self.reqdropped.append((request, spider))
@@ -175,6 +193,10 @@ class EngineTest(unittest.TestCase):
         self._assert_scheduled_requests(urls_to_visit=7)
         self._assert_dropped_requests()
 
+        self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
+        yield self.run.run()
+        self._assert_items_error()
+
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
@@ -195,6 +217,8 @@ class EngineTest(unittest.TestCase):
         responses_count = len(self.run.respplug)
         self.assertEqual(scheduled_requests_count,
                          dropped_requests_count + responses_count)
+        self.assertEqual(len(self.run.reqreached),
+                         responses_count)
 
     def _assert_dropped_requests(self):
         self.assertEqual(len(self.run.reqdropped), 1)
@@ -202,12 +226,27 @@ class EngineTest(unittest.TestCase):
     def _assert_downloaded_responses(self):
         # response tests
         self.assertEqual(8, len(self.run.respplug))
+        self.assertEqual(8, len(self.run.reqreached))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
                 self.assertEqual(404, response.status)
             if self.run.getpath(response.url) == '/redirect':
                 self.assertEqual(302, response.status)
+
+    def _assert_items_error(self):
+        self.assertEqual(2, len(self.run.itemerror))
+        for item, response, spider, failure in self.run.itemerror:
+            self.assertEqual(failure.value.__class__, ZeroDivisionError)
+            self.assertEqual(spider, self.run.spider)
+
+            self.assertEqual(item['url'], response.url)
+            if 'item1.html' in item['url']:
+                self.assertEqual('Item 1 name', item['name'])
+                self.assertEqual('100', item['price'])
+            if 'item2.html' in item['url']:
+                self.assertEqual('Item 2 name', item['name'])
+                self.assertEqual('200', item['price'])
 
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))

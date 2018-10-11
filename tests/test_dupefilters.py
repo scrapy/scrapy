@@ -5,10 +5,59 @@ import shutil
 
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
+from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.job import job_dir
+from scrapy.utils.test import get_crawler
+
+
+class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(crawler.settings), debug)
+        df.method = 'from_crawler'
+        return df
+
+
+class FromSettingsRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_settings(cls, settings):
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(settings), debug)
+        df.method = 'from_settings'
+        return df
+
+
+class DirectDupeFilter(object):
+    method = 'n/a'
 
 
 class RFPDupeFilterTest(unittest.TestCase):
+
+    def test_df_from_crawler_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
+                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_crawler')
+
+    def test_df_from_settings_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
+                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_settings')
+
+    def test_df_direct_scheduler(self):
+        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertEqual(scheduler.df.method, 'n/a')
 
     def test_filter(self):
         dupefilter = RFPDupeFilter()

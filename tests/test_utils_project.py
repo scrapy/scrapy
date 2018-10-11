@@ -25,8 +25,12 @@ def inside_a_project():
 
 class ProjectUtilsTest(unittest.TestCase):
     def test_data_path_outside_project(self):
-        self.assertEqual('.scrapy/somepath', data_path('somepath'))
-        self.assertEqual('/absolute/path', data_path('/absolute/path'))
+        self.assertEqual(
+            os.path.join('.scrapy', 'somepath'),
+            data_path('somepath')
+        )
+        abspath = os.path.join(os.path.sep, 'absolute', 'path')
+        self.assertEqual(abspath, data_path(abspath))
 
     def test_data_path_inside_project(self):
         with inside_a_project() as proj_path:
@@ -35,4 +39,5 @@ class ProjectUtilsTest(unittest.TestCase):
                 os.path.realpath(expected),
                 os.path.realpath(data_path('somepath'))
             )
-            self.assertEqual('/absolute/path', data_path('/absolute/path'))
+            abspath = os.path.join(os.path.sep, 'absolute', 'path')
+            self.assertEqual(abspath, data_path(abspath))
