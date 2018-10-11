@@ -403,8 +403,7 @@ class MutableChain(object):
     def __iter__(self):
         return self.data.__iter__()
 
-    def __next__(self):  # py3
-        return self.data.__next__()
+    def __next__(self):
+        return next(self.data)
 
-    def next(self):  # py2
-        return self.data.next()
+    next = __next__
