@@ -177,7 +177,7 @@ The interface the telnet console should listen on
 .. setting:: TELNETCONSOLE_USERNAME
 
 TELNETCONSOLE_USERNAME
-------------------
+----------------------
 
 Default: ``'scrapy'``
 
@@ -187,7 +187,7 @@ The username used for the telnet console
 .. setting:: TELNETCONSOLE_PASSWORD
 
 TELNETCONSOLE_PASSWORD
-------------------
+----------------------
 
 Default: ``None``
 
