@@ -25,10 +25,13 @@ class FormRequest(Request):
             kwargs['method'] = 'POST'
 
         super(FormRequest, self).__init__(*args, **kwargs)
-
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
-            querystr = _urlencode(items, self.encoding)
+            
+            if isinstance(formdata, str):
+                querystr = _urlencode(formdata, self.encoding)
+            else:
+                querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
@@ -62,6 +65,8 @@ def _get_form_url(form, url):
 
 
 def _urlencode(seq, enc):
+    if isinstance(seq, str):
+        return bytes(seq, enc)
     values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
               for v in (vs if is_listlike(vs) else [vs])]
@@ -114,12 +119,10 @@ def _get_form(response, formname, formid, formnumber, formxpath):
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
-        formdata_keys = dict(formdata or ()).keys()
+        formdata = dict(formdata or ())
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
-    if not formdata:
-        formdata = ()
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
@@ -130,17 +133,14 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                             "re": "http://exslt.org/regular-expressions"})
     values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata_keys]
+              if k and k not in formdata]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    if isinstance(formdata, dict):
-        formdata = formdata.items()
-
-    values.extend((k, v) for k, v in formdata if v is not None)
+    values.extend((k, v) for k, v in formdata.items() if v is not None)
     return values
 
 
@@ -175,8 +175,9 @@ def _get_clickable(clickdata, form):
     """
     clickables = [
         el for el in form.xpath(
-            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
-            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+            'descendant::*[(self::input or self::button)'
+            ' and re:test(@type, "^submit$", "i")]'
+            '|descendant::button[not(@type)]',
             namespaces={"re": "http://exslt.org/regular-expressions"})
         ]
     if not clickables:
