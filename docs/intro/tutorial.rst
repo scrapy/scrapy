@@ -22,9 +22,7 @@ Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
 Scrapy.
 
-If you're already familiar with other languages, and want to learn Python
-quickly, we recommend reading through `Dive Into Python 3`_.  Alternatively,
-you can follow the `Python Tutorial`_.
+If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
 may be useful to you: 
@@ -40,7 +38,6 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
-.. _Dive Into Python 3: http://www.diveintopython3.net
 .. _Python Tutorial: https://docs.python.org/3/tutorial
 .. _Automate the Boring Stuff With Python: https://automatetheboringstuff.com/
 .. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
