@@ -1,6 +1,7 @@
 import json
 import logging
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -26,6 +27,16 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_follow_all(self):
         crawler = self.runner.create_crawler(FollowAllSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
+
+    @defer.inlineCallbacks
+    def test_aio_follow_all(self):
+        try:
+            from tests.aio_spiders import AioFollowAllSpider
+        except SyntaxError:
+            raise pytest.skip('async def syntax not supported')
+        crawler = self.runner.create_crawler(AioFollowAllSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
 
