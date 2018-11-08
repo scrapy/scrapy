@@ -23,6 +23,14 @@ import warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
 del warnings
 
+# Install twisted asyncio loop
+try:
+    import asyncio
+    from twisted.internet import asyncioreactor
+    asyncioreactor.install(asyncio.get_event_loop())
+except ImportError:
+    raise  # TODO pass
+
 # Apply monkey patches to fix issues in external libraries
 from . import _monkeypatches
 del _monkeypatches
