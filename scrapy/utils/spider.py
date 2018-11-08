@@ -9,7 +9,19 @@ from scrapy.utils.misc import  arg_to_iter
 logger = logging.getLogger(__name__)
 
 
+# TODO try except
+import asyncio
+from asyncio import coroutines
+from twisted.internet.defer import Deferred
+def as_deferred(f):
+    return Deferred.fromFuture(asyncio.ensure_future(f))
+
+
 def iterate_spider_output(result):
+    if coroutines.iscoroutine(result):  # TODO probably other clauses from ensure_future
+        d = as_deferred(result)
+        d.addCallback(iterate_spider_output)
+        return d
     return arg_to_iter(result)
 
 
