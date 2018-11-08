@@ -29,9 +29,9 @@ def _install_asyncio_reactor():
         import asyncio
         from twisted.internet import asyncioreactor
     except ImportError:
-        raise  # TODO pass, del stuff
+        pass
     else:
-        # FIXME maybe we don't need this. Adapted from pytest_twisted
+        # FIXME maybe we don't need this? Adapted from pytest_twisted
         from twisted.internet.error import ReactorAlreadyInstalledError
         try:
             asyncioreactor.install(asyncio.get_event_loop())
@@ -39,11 +39,7 @@ def _install_asyncio_reactor():
             import twisted.internet.reactor
             if not isinstance(twisted.internet.reactor,
                               asyncioreactor.AsyncioSelectorReactor):
-                raise Exception(  # FIXME type?
-                    'expected {} but found {}'.format(
-                        asyncioreactor.AsyncioSelectorReactor,
-                        type(twisted.internet.reactor),
-                    ))
+                raise
 _install_asyncio_reactor()
 del _install_asyncio_reactor
 
