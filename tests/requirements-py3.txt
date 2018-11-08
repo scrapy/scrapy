@@ -1,5 +1,5 @@
 pytest==3.6.3
-pytest-twisted
+# pytest-twisted  # FIXME do we need it? If yes, install asyncio reactor
 pytest-cov==2.5.1
 testfixtures
 jmespath

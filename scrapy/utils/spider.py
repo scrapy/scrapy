@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 def iterate_spider_output(result):
     # FIXME check if changes need to be made here or just when calling from  scrapy.core.scraper
     # TODO probably add other cases from ensure_future here
-    if asyncio is not None and asyncio.coroutines.iscoroutine(result):
+    # FIXME hmm which is the proper check for async def coroutines?
+    if asyncio is not None and hasattr(result, '__await__') and asyncio.coroutines.iscoroutine(result):
         d = _aio_as_deferred(result)
         d.addCallback(iterate_spider_output)
         return d
