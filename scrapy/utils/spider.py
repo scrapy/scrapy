@@ -1,44 +1,40 @@
 import logging
 import inspect
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
 
 import six
+from twisted.internet.defer import Deferred
 
 from scrapy.spiders import Spider
 from scrapy.utils.misc import  arg_to_iter
+try:
+    from scrapy.utils.aio_py36 import collect_asyncgen
+except SyntaxError:
+    pass
 
 logger = logging.getLogger(__name__)
 
 
-# TODO try except
-import inspect
-import asyncio
-from asyncio import coroutines
-from twisted.internet.defer import Deferred
-def as_deferred(f):
-    return Deferred.fromFuture(asyncio.ensure_future(f))
-
-# TODO no async def
-async def handle_asyncgen(result):
-    results = []
-    async for x in result:
-        results.append(x)
-    # FIXME uhhh that's definitely not enough
-    # TODO what do we do with requests
-    return results
-
-
 def iterate_spider_output(result):
-    # FIXME check if changes need to be made here or just in scrapy.core.scraper
-    print('iterate_spider_output', result)
-    if coroutines.iscoroutine(result):  # TODO probably other clauses from ensure_future
-        d = as_deferred(result)
+    # FIXME check if changes need to be made here or just when calling from  scrapy.core.scraper
+    # TODO probably add other cases from ensure_future here
+    if asyncio is not None and asyncio.coroutines.iscoroutine(result):
+        d = _aio_as_deferred(result)
         d.addCallback(iterate_spider_output)
         return d
-    elif inspect.isasyncgen(result):
-        d = as_deferred(handle_asyncgen(result))
+    elif hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(result):
+        d = _aio_as_deferred(collect_asyncgen(result))
         d.addCallback(iterate_spider_output)
         return d
-    return arg_to_iter(result)
+    else:
+        return arg_to_iter(result)
+
+
+def _aio_as_deferred(f):
+    return Deferred.fromFuture(asyncio.ensure_future(f))
 
 
 def iter_spider_classes(module):
