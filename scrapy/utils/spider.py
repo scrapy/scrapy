@@ -10,16 +10,32 @@ logger = logging.getLogger(__name__)
 
 
 # TODO try except
+import inspect
 import asyncio
 from asyncio import coroutines
 from twisted.internet.defer import Deferred
 def as_deferred(f):
     return Deferred.fromFuture(asyncio.ensure_future(f))
 
+# TODO no async def
+async def handle_asyncgen(result):
+    results = []
+    async for x in result:
+        results.append(x)
+    # FIXME uhhh that's definitely not enough
+    # TODO what do we do with requests
+    return results
+
 
 def iterate_spider_output(result):
+    # FIXME check if changes need to be made here or just in scrapy.core.scraper
+    print('iterate_spider_output', result)
     if coroutines.iscoroutine(result):  # TODO probably other clauses from ensure_future
         d = as_deferred(result)
+        d.addCallback(iterate_spider_output)
+        return d
+    elif inspect.isasyncgen(result):
+        d = as_deferred(handle_asyncgen(result))
         d.addCallback(iterate_spider_output)
         return d
     return arg_to_iter(result)
