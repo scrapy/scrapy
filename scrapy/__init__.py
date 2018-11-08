@@ -24,12 +24,28 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
 del warnings
 
 # Install twisted asyncio loop
-try:
-    import asyncio
-    from twisted.internet import asyncioreactor
-    asyncioreactor.install(asyncio.get_event_loop())
-except ImportError:
-    raise  # TODO pass
+def _install_asyncio_reactor():
+    try:
+        import asyncio
+        from twisted.internet import asyncioreactor
+    except ImportError:
+        raise  # TODO pass, del stuff
+    else:
+        # FIXME maybe we don't need this. Adapted from pytest_twisted
+        from twisted.internet.error import ReactorAlreadyInstalledError
+        try:
+            asyncioreactor.install(asyncio.get_event_loop())
+        except ReactorAlreadyInstalledError:
+            import twisted.internet.reactor
+            if not isinstance(twisted.internet.reactor,
+                              asyncioreactor.AsyncioSelectorReactor):
+                raise Exception(  # FIXME type?
+                    'expected {} but found {}'.format(
+                        asyncioreactor.AsyncioSelectorReactor,
+                        type(twisted.internet.reactor),
+                    ))
+_install_asyncio_reactor()
+del _install_asyncio_reactor
 
 # Apply monkey patches to fix issues in external libraries
 from . import _monkeypatches
