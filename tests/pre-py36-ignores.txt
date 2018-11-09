@@ -1,0 +1,2 @@
+tests/aio_spiders.py
+scrapy/utils/aio_py36.py

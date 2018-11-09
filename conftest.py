@@ -1,4 +1,6 @@
 import glob
+import sys
+
 import six
 import pytest
 from twisted import version as twisted_version
@@ -6,6 +8,14 @@ from twisted import version as twisted_version
 
 def _py_files(folder):
     return glob.glob(folder + "/*.py") + glob.glob(folder + "/*/*.py")
+
+
+def _parse_ignores(path):
+    with open(path, 'rt') as f:
+        for line in f:
+            file_path = line.strip()
+            if file_path and file_path[0] != '#':
+                yield file_path
 
 
 collect_ignore = [
@@ -23,10 +33,10 @@ if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15,
 
 
 if six.PY3:
-    for line in open('tests/py3-ignores.txt'):
-        file_path = line.strip()
-        if file_path and file_path[0] != '#':
-            collect_ignore.append(file_path)
+    collect_ignore.extend(_parse_ignores('tests/py3-ignores.txt'))
+
+if sys.version_info[:2] < (3, 6):
+    collect_ignore.extend(_parse_ignores('tests/pre-py36-ignores.txt'))
 
 
 @pytest.fixture()
