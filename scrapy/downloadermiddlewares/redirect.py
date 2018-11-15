@@ -1,7 +1,7 @@
 import logging
 from six.moves.urllib.parse import urljoin
 
-from w3lib.url import safe_url_string
+from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
@@ -68,7 +68,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
-        location = safe_url_string(response.headers['location'])
+        location = canonicalize_url(safe_url_string(response.headers['location']))
 
         redirected_url = urljoin(request.url, location)
 
