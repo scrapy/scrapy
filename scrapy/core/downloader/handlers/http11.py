@@ -345,7 +345,7 @@ class ScrapyAgent(object):
         return d
 
     def _cb_timedout(self):
-        self._txresponse._transport.loseConnection()
+        self._txresponse._transport.stopProducing()
 
     def _cb_timeout(self, result, request, url, timeout):
         if self._timeout_cl.active():
