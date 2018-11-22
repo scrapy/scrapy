@@ -7,7 +7,6 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 import six
-import scrapy
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spiders import Spider
