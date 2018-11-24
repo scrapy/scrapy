@@ -2,6 +2,7 @@
 import cgi
 import unittest
 import re
+import json
 
 import six
 from six.moves import xmlrpc_client as xmlrpclib
@@ -9,7 +10,7 @@ from six.moves.urllib.parse import urlparse, parse_qs, unquote
 if six.PY3:
     from urllib.parse import unquote_to_bytes
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
+from scrapy.http import Request, FormRequest, XmlRpcRequest, JSONRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_native_str
 
 
@@ -1145,6 +1146,58 @@ class XmlRpcRequestTest(RequestTest):
 
     def test_latin1(self):
         self._test_request(params=(u'pas£',), encoding='latin1')
+
+
+class JSONRequestTest(RequestTest):
+    request_class = JSONRequest
+    default_method = 'POST'
+    default_headers = {b'Content-Type': [b'application/json']}
+
+    def test_body(self):
+        r1 = self.request_class(url="http://www.example.com/")
+        self.assertEqual(r1.body, '{}')
+
+        r2 = self.request_class(url="http://www.example.com/", body=b"")
+        self.assertEqual(r2.body, '{}')
+
+        data = {
+            'name': 'value',
+        }
+        r3 = self.request_class(url="http://www.example.com/", data=data)
+        self.assertEqual(r3.body, json.dumps(data))
+
+        r4 = self.request_class(url="http://www.example.com/", body='body1', data=data)
+        self.assertEqual(r3.body, json.dumps(data))
+
+    def test_replace(self):
+        """Test Request.replace() method"""
+        r1 = self.request_class("http://www.example.com")
+        hdrs = Headers(r1.headers)
+        hdrs[b'key'] = b'value'
+        r2 = r1.replace(body="New body", headers=hdrs)
+
+        # body will not be replaced
+        self.assertEqual(r1.body, r2.body)
+        self.assertEqual(r1.url, r2.url)
+        self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
+
+        # Empty attributes (which may fail if not compared properly)
+        r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
+        r4 = r3.replace(url="http://www.example.com/2", meta={}, dont_filter=False)
+        self.assertEqual(r4.url, "http://www.example.com/2")
+        self.assertEqual(r4.meta, {})
+        assert r4.dont_filter is False
+
+        data1 = {
+            'name': 'value1',
+        }
+        data2 = {
+            'name': 'value2',
+        }
+        r5 = self.request_class("http://www.example.com", data=data1)
+        r6 = r5.replace(url="http://www.example.com/2", data=data2)
+        self.assertNotEqual(r5.body, r6.body)
+        self.assertEqual((r5.body, r6.body), (json.dumps(data1), json.dumps(data2)))
 
 
 if __name__ == "__main__":
