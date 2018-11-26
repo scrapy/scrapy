@@ -7,8 +7,8 @@ class Command(fetch.Command):
         return "Open URL in browser, as seen by Scrapy"
 
     def long_desc(self):
-        return "Fetch a URL using the Scrapy downloader and show its " \
-            "contents in a browser"
+        return "Fetch a URL using the Scrapy downloader and show its contents in a browser. " \
+               "For local file, concatenate 'file:///' with the full path of local file and type this string in place of <url> in 'scrapy view <url>'"
 
     def add_options(self, parser):
         super(Command, self).add_options(parser)
