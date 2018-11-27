@@ -1155,19 +1155,19 @@ class JSONRequestTest(RequestTest):
 
     def test_body(self):
         r1 = self.request_class(url="http://www.example.com/")
-        self.assertEqual(r1.body, '{}')
+        self.assertEqual(r1.body, b'{}')
 
         r2 = self.request_class(url="http://www.example.com/", body=b"")
-        self.assertEqual(r2.body, '{}')
+        self.assertEqual(r2.body, b'{}')
 
         data = {
             'name': 'value',
         }
         r3 = self.request_class(url="http://www.example.com/", data=data)
-        self.assertEqual(r3.body, json.dumps(data))
+        self.assertEqual(r3.body, to_bytes(json.dumps(data)))
 
         r4 = self.request_class(url="http://www.example.com/", body='body1', data=data)
-        self.assertEqual(r3.body, json.dumps(data))
+        self.assertEqual(r3.body, to_bytes(json.dumps(data)))
 
     def test_replace(self):
         """Test Request.replace() method"""
@@ -1197,7 +1197,7 @@ class JSONRequestTest(RequestTest):
         r5 = self.request_class("http://www.example.com", data=data1)
         r6 = r5.replace(url="http://www.example.com/2", data=data2)
         self.assertNotEqual(r5.body, r6.body)
-        self.assertEqual((r5.body, r6.body), (json.dumps(data1), json.dumps(data2)))
+        self.assertEqual((r5.body, r6.body), (to_bytes(json.dumps(data1)), to_bytes(json.dumps(data2))))
 
 
 if __name__ == "__main__":
