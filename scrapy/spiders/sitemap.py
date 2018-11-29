@@ -17,6 +17,7 @@ class SitemapSpider(Spider):
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
     sitemap_alternate_links = False
+    sitemap_filter = None
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
@@ -43,12 +44,17 @@ class SitemapSpider(Spider):
                 return
 
             s = Sitemap(body)
+            if callable(self.sitemap_filter):
+                it = self.sitemap_filter(s)
+            else:
+                it = s
+
             if s.type == 'sitemapindex':
-                for loc in iterloc(s, self.sitemap_alternate_links):
+                for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
-                for loc in iterloc(s, self.sitemap_alternate_links):
+                for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
                             yield Request(loc, callback=c)
