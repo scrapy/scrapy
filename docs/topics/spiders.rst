@@ -680,7 +680,7 @@ SitemapSpider
 
         Default is ``sitemap_alternate_links`` disabled.
 
-    .. attribute:: sitemap_filter
+    .. method:: sitemap_filter(urls)
 
         Specifies a function to filter sitemap entries and their attributes.
 
@@ -703,7 +703,7 @@ SitemapSpider
         This would retrieve only ``urls`` modified on 2005 and the following
         years.
 
-        If you omit this attribute, all urls found in sitemaps will be
+        If you omit this method, all urls found in sitemaps will be
         processed, observing other attributes and their settings.
 
 

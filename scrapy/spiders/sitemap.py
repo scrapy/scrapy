@@ -17,7 +17,6 @@ class SitemapSpider(Spider):
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
     sitemap_alternate_links = False
-    sitemap_filter = None
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
@@ -32,6 +31,14 @@ class SitemapSpider(Spider):
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
 
+    def sitemap_filter(self, urls):
+        """This method can be used to filter sitemap entries by their
+        attributes, for example, you can filter locs with lastmod greater
+        than a given date (see docs).
+        """
+        for url in urls:
+            yield url
+
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
@@ -44,10 +51,7 @@ class SitemapSpider(Spider):
                 return
 
             s = Sitemap(body)
-            if callable(self.sitemap_filter):
-                it = self.sitemap_filter(s)
-            else:
-                it = s
+            it = self.sitemap_filter(s)
 
             if s.type == 'sitemapindex':
                 for loc in iterloc(it, self.sitemap_alternate_links):
