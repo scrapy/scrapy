@@ -30,7 +30,8 @@ dependencies depending on your operating system, so be sure to check the
 We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`,
 to avoid conflicting with your system packages.
 
-For more detailed and platform specifics instructions, read on.
+For more detailed and platform specifics instructions, as well as
+troubleshooting information, read on.
 
 
 Things that are good to know
@@ -246,6 +247,34 @@ If this command gives errors such as
 that setuptools was unable to pick up one PyPy-specific dependency.
 To fix this issue, run ``pip install 'PyPyDispatcher>=2.1.0'``.
 
+
+.. _intro-install-troubleshooting:
+
+Troubleshooting
+===============
+
+AttributeError: 'module' object has no attribute 'OP_NO_TLSv1_1'
+----------------------------------------------------------------
+
+After you install or upgrade Scrapy, Twisted or pyOpenSSL, you may get an
+exception with the following traceback::
+
+    […]
+      File "[…]/site-packages/twisted/protocols/tls.py", line 63, in <module>
+        from twisted.internet._sslverify import _setAcceptableProtocols
+      File "[…]/site-packages/twisted/internet/_sslverify.py", line 38, in <module>
+        TLSVersion.TLSv1_1: SSL.OP_NO_TLSv1_1,
+    AttributeError: 'module' object has no attribute 'OP_NO_TLSv1_1'
+
+The reason you get this exception is that your system or virtual environment
+has a version of pyOpenSSL that your version of Twisted does not support.
+
+To install a version of pyOpenSSL that your version of Twisted supports,
+reinstall Twisted with the :code:`tls` extra option::
+
+    pip install twisted[tls]
+
+For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
