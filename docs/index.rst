@@ -208,7 +208,6 @@ Extending Scrapy
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
-   topics/api
    topics/signals
    topics/exporters
 
@@ -225,14 +224,42 @@ Extending Scrapy
 :doc:`topics/extensions`
     Extend Scrapy with your custom functionality
 
-:doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+
+    .. _topics-api:
+
+API reference
+=============
+
+.. toctree::
+   :caption: API reference
+   :hidden:
+
+   api/crawler
+   api/settings
+   api/signalmanager
+   api/loader
+   api/statscollectors
+
+:doc:`api/crawler`
+    The main entry point to Scrapy API.
+
+:doc:`api/settings`
+    Configuration of projects and spiders.
+
+:doc:`api/signalmanager`
+    Handling of spider signals.
+
+:doc:`api/loader`
+    Retrieval and handling of spiders.
+
+:doc:`api/statscollectors`
+    Collection of statistics.
 
 
 All the rest
