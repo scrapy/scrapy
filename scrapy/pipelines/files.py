@@ -9,6 +9,7 @@ import os
 import os.path
 import time
 import logging
+import warnings
 from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
@@ -127,7 +128,22 @@ class S3FilesStore(object):
         return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
+        # If using botocore, it is safe to use defaults.
+        if self.is_botocore():
+            c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
+        else:
+            # If the bucket name does not contain a dot,
+            # it is okay to use secure connections in boto.
+            if '.' not in self.bucket:
+                c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
+            # boto cannot handle secure connections properly if the bucket name contains dots
+            # https://github.com/boto/boto/issues/2836
+            # https://github.com/boto/boto/issues/443
+            else:
+                c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
+                message = 'Insecure connection to S3 is used. Consider using botocore instead of boto.'
+                warnings.warn(message)
+
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
@@ -459,7 +475,6 @@ class FilesPipeline(MediaPipeline):
         ## start of deprecation warning block (can be removed in the future)
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
             warnings.warn('FilesPipeline.file_key(url) method is deprecated, please use '
                           'file_path(request, response=None, info=None) instead',
                           category=ScrapyDeprecationWarning, stacklevel=1)
