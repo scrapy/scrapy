@@ -1,4 +1,3 @@
-import contextlib
 import shutil
 import tempfile
 import unittest
@@ -10,15 +9,18 @@ from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
 
+
 class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir):
 
-        settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                       SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
-                       SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
-                       SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
-                       JOBDIR=jobdir,
-                       DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+        settings = dict(
+                LOG_UNSERIALIZABLE_REQUESTS=False,
+                SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+                SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
+                JOBDIR=jobdir,
+                DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter'
+                )
         super(MockCrawler, self).__init__(Spider, settings)
 
 
@@ -82,7 +84,8 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities,
+                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
@@ -134,7 +137,8 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities,
+                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
@@ -153,75 +157,15 @@ _SLOTS = [("http://foo.com/a", 'a'),
           ("http://foo.com/f", 'c')]
 
 
-class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
+class TestMigration(unittest.TestCase):
 
-    def test_round_robin(self):
-        for url, slot in _SLOTS:
-            request = Request(url)
-            _scheduler_slot_write(request, slot)
-            self.scheduler.enqueue_request(request)
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
 
-        slots = list()
-        while self.scheduler.has_pending_requests():
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
 
-        for i in range(0, len(_SLOTS), 2):
-            self.assertNotEqual(slots[i], slots[i+1])
-
-    def test_is_meta_set(self):
-        url = "http://foo.com/a"
-        request = Request(url)
-        if _scheduler_slot_read(request):
-            _scheduler_slot_write(request, None)
-        self.scheduler.enqueue_request(request)
-        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
-
-
-class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
-
-    def test_round_robin(self):
-        for url, slot in _SLOTS:
-            request = Request(url)
-            _scheduler_slot_write(request, slot)
-            self.scheduler.enqueue_request(request)
-
-        self.close_scheduler()
-        self.create_scheduler()
-
-        slots = list()
-        while self.scheduler.has_pending_requests():
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
-
-        for i in range(0, len(_SLOTS), 2):
-            self.assertNotEqual(slots[i], slots[i+1])
-
-    def test_is_meta_set(self):
-        url = "http://foo.com/a"
-        request = Request(url)
-        if _scheduler_slot_read(request):
-            _scheduler_slot_write(request, None)
-        self.scheduler.enqueue_request(request)
-
-        self.close_scheduler()
-        self.create_scheduler()
-
-        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
-
-
-@contextlib.contextmanager
-def mkdtemp():
-    dir = tempfile.mkdtemp()
-    try:
-        yield dir
-    finally:
-        shutil.rmtree(dir)
-
-
-def _migration():
-
-    with mkdtemp() as tmp_dir:
+    def _migration(self, tmp_dir):
         prev_scheduler_handler = SchedulerHandler()
         prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
         prev_scheduler_handler.jobdir = tmp_dir
@@ -232,18 +176,18 @@ def _migration():
         prev_scheduler_handler.close_scheduler()
 
         next_scheduler_handler = SchedulerHandler()
-        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
+        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
         next_scheduler_handler.jobdir = tmp_dir
 
         next_scheduler_handler.create_scheduler()
 
-
-class TestMigration(unittest.TestCase):
     def test_migration(self):
-        self.assertRaises(ValueError, _migration)
+        with self.assertRaises(ValueError):
+            self._migration(self.tmpdir)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
+class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
+                                               unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
     def test_logic(self):
@@ -266,10 +210,12 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
-                                                     request=request,
-                                                     response=None,
-                                                     spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=response_downloaded,
+                    request=request,
+                    response=None,
+                    spider=self.spider
+                    )
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
@@ -277,8 +223,10 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
             self.assertEqual(len(part), len(set(part)))
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
+class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
+                                             unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
     def test_logic(self):
         for url, slot in _SLOTS:
             request = Request(url)
@@ -304,10 +252,12 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
-                                                     request=request,
-                                                     response=None,
-                                                     spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=response_downloaded,
+                    request=request,
+                    response=None,
+                    spider=self.spider
+                    )
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):

@@ -1,4 +1,3 @@
-from collections import deque
 import hashlib
 import logging
 from six import text_type
@@ -71,16 +70,17 @@ class PrioritySlot:
         self.slot = slot
 
     def __hash__(self):
-       return hash((self.priority, self.slot))
+        return hash((self.priority, self.slot))
 
     def __eq__(self, other):
-       return (self.priority, self.slot) == (other.priority, other.slot)
+        return (self.priority, self.slot) == (other.priority, other.slot)
 
     def __lt__(self, other):
-       return (self.priority, self.slot) < (other.priority, other.slot)
+        return (self.priority, self.slot) < (other.priority, other.slot)
 
     def __str__(self):
-       return '_'.join([text_type(self.priority), _pathable(text_type(self.slot))])
+        return '_'.join([text_type(self.priority),
+                         _pathable(text_type(self.slot))])
 
 
 class PriorityAsTupleQueue(PriorityQueue):
@@ -135,9 +135,10 @@ class SlotBasedPriorityQueue(object):
         slot = _scheduler_slot(request)
         is_new = False
         if slot not in self.pqueues:
-            is_new = True
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
-        self.pqueues[slot].push(request, PrioritySlot(priority=priority, slot=slot))
+        queue = self.pqueues[slot]
+        is_new = queue.is_empty()
+        queue.push(request, PrioritySlot(priority=priority, slot=slot))
         return slot, is_new
 
     def close(self):
@@ -152,36 +153,6 @@ class SlotBasedPriorityQueue(object):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
 
 
-class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
-
-    def __init__(self, qfactory, startprios={}):
-        super(RoundRobinPriorityQueue, self).__init__(qfactory, startprios)
-        self._slots = deque()
-        for slot in self.pqueues:
-            self._slots.append(slot)
-
-    def push(self, request, priority):
-        slot, is_new = self.push_slot(request, priority)
-        if is_new:
-            self._slots.append(slot)
-
-    def pop(self):
-        if not self._slots:
-            return
-
-        slot = self._slots.popleft()
-        request, is_empty = self.pop_slot(slot)
-
-        if not is_empty:
-            self._slots.append(slot)
-
-        return request
-
-    def close(self):
-        self._slots.clear()
-        return super(RoundRobinPriorityQueue, self).close()
-
-
 class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
     _DOWNLOADER_AWARE_PQ_ID = 'DOWNLOADER_AWARE_PQ_ID'
@@ -191,7 +162,8 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return cls(crawler, qfactory, startprios)
 
     def __init__(self, crawler, qfactory, startprios={}):
-        super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
+        super(DownloaderAwarePriorityQueue, self).__init__(qfactory,
+                                                           startprios)
         self._slots = {slot: 0 for slot in self.pqueues}
         crawler.signals.connect(self.on_response_download,
                                 signal=response_downloaded)
@@ -208,7 +180,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
-        slots = [(d, s) for s,d in self._slots.items() if s in self.pqueues]
+        slots = [(d, s) for s, d in self._slots.items() if s in self.pqueues]
 
         if not slots:
             return
