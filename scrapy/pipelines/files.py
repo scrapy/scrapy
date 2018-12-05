@@ -24,7 +24,7 @@ from twisted.internet import defer, threads
 
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, IgnoreRequest
+from scrapy.exceptions import NotConfigured, IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
@@ -128,21 +128,19 @@ class S3FilesStore(object):
         return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
-        # If using botocore, it is safe to use defaults.
-        if self.is_botocore():
-            c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
+        # boto cannot handle secure connections properly if the bucket name contains dots
+        # https://github.com/boto/boto/issues/2836
+        # https://github.com/boto/boto/issues/443
+        if not self.is_botocore() and '.' in self.bucket:
+            is_secure = False
+            warnings.warn(
+                'Using insecure connection to S3. Consider using botocore instead of boto',
+                category=ScrapyDeprecationWarning, stacklevel=1
+            )
         else:
-            # If the bucket name does not contain a dot,
-            # it is okay to use secure connections in boto.
-            if '.' not in self.bucket:
-                c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
-            # boto cannot handle secure connections properly if the bucket name contains dots
-            # https://github.com/boto/boto/issues/2836
-            # https://github.com/boto/boto/issues/443
-            else:
-                c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
-                message = 'Insecure connection to S3 is used. Consider using botocore instead of boto.'
-                warnings.warn(message)
+            is_secure = True
+
+        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=is_secure)
 
         return c.get_bucket(self.bucket, validate=False)
 
