@@ -26,7 +26,7 @@ class Command(ScrapyCommand):
     first_response = None
 
     def syntax(self):
-        return "[options] <url>"
+        return "<url> [options]"
 
     def short_desc(self):
         return "Parse URL (using its spider) and print the results"
