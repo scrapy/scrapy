@@ -12,17 +12,13 @@ from scrapy.http.request import Request
 
 class JSONRequest(Request):
     def __init__(self, *args, **kwargs):
-        if 'method' not in kwargs:
-            kwargs['method'] = 'POST'
+        data = kwargs.pop('data', None)
+        if data:
+            kwargs['body'] = json.dumps(data)
 
-        data = kwargs.pop('data', {})
-        kwargs['body'] = json.dumps(data)
+            if 'method' not in kwargs:
+                kwargs['method'] = 'POST'
+
         super(JSONRequest, self).__init__(*args, **kwargs)
-        self.headers.setdefault(b'Content-Type', b'application/json')
-
-    def replace(self, *args, **kwargs):
-        """ Create a new Request with the same attributes except for those
-            given new values. """
-
-        kwargs.pop('body', None)
-        return super(JSONRequest, self).replace(*args, **kwargs)
+        self.headers.setdefault('Content-Type', 'application/json')
+        self.headers.setdefault('Accept', 'application/json, text/javascript, */*; q=0.01')
