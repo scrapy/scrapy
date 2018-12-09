@@ -6,14 +6,19 @@ See documentation in docs/topics/request-response.rst
 """
 
 import json
+import warnings
 
 from scrapy.http.request import Request
 
 
 class JSONRequest(Request):
     def __init__(self, *args, **kwargs):
+        body_passed = 'body' in kwargs
         data = kwargs.pop('data', None)
-        if data:
+        if body_passed and data:
+            warnings.warn('Both body and data passed. data will be ignored')
+
+        elif not body_passed and data:
             kwargs['body'] = json.dumps(data)
 
             if 'method' not in kwargs:

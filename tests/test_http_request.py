@@ -3,6 +3,7 @@ import cgi
 import unittest
 import re
 import json
+import warnings
 
 import six
 from six.moves import xmlrpc_client as xmlrpclib
@@ -1153,6 +1154,10 @@ class JSONRequestTest(RequestTest):
     default_method = 'GET'
     default_headers = {b'Content-Type': [b'application/json'], b'Accept': [b'application/json, text/javascript, */*; q=0.01']}
 
+    def setUp(self):
+        warnings.simplefilter("always")
+        super(JSONRequestTest, self).setUp()
+
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")
         self.assertEqual(r1.body, b'')
@@ -1170,9 +1175,23 @@ class JSONRequestTest(RequestTest):
         self.assertEqual(r3.body, to_bytes(json.dumps(data)))
         self.assertEqual(r3.method, 'POST')
 
-        r4 = self.request_class(url="http://www.example.com/", body=body, data=data)
-        self.assertEqual(r4.body, to_bytes(json.dumps(data)))
-        self.assertEqual(r4.method, 'POST')
+        with warnings.catch_warnings(record=True) as _warnings:
+            r4 = self.request_class(url="http://www.example.com/", body=body, data=data)
+            self.assertEqual(r4.body, body)
+            self.assertEqual(r4.method, 'GET')
+            self.assertEqual(len(_warnings), 1)
+            self.assertIn('data will be ignored', str(_warnings[0].message))
+
+        with warnings.catch_warnings(record=True) as _warnings:
+            r5 = self.request_class(url="http://www.example.com/", body=b'', data=data)
+            self.assertEqual(r5.body, b'')
+            self.assertEqual(r5.method, 'GET')
+            self.assertEqual(len(_warnings), 1)
+            self.assertIn('data will be ignored', str(_warnings[0].message))
+
+    def tearDown(self):
+        warnings.resetwarnings()
+        super(JSONRequestTest, self).tearDown()
 
 
 if __name__ == "__main__":
