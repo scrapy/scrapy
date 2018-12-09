@@ -508,6 +508,38 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
+JSONRequest
+-----------
+
+The JSONRequest class extends the base :class:`Request` class with functionality for
+dealing with JSON requests.
+
+.. class:: JSONRequest(url, [data, ...])
+
+   The :class:`JSONRequest` class adds a new argument to the constructor called data. The
+   remaining arguments are the same as for the :class:`Request` class and are
+   not documented here.
+
+   Using the :class:`JSONRequest` will set the `Content-Type` header to `application/json`
+   and `Accept` header to `application/json, text/javascript, */*; q=0.01` 
+
+   :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
+      if :attr:`Request.body` argument is provided this parameter will be ignored.
+      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
+      set to POST automatically.
+   :type data: JSON serializable object
+
+JSONRequest usage example
+-------------------------
+
+Sending a JSON POST request with a JSON payload::
+
+   data = {
+       'name1': 'value1',
+       'name2': 'value2',
+   }
+   yield JSONRequest(url='http://www.example.com/post/action', data=data)
+
 
 Response objects
 ================
