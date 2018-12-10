@@ -520,13 +520,13 @@ dealing with JSON requests.
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
-   Using the :class:`JSONRequest` will set the `Content-Type` header to `application/json`
-   and `Accept` header to `application/json, text/javascript, */*; q=0.01` 
+   Using the :class:`JSONRequest` will set the ``Content-Type`` header to ``application/json``
+   and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
       if :attr:`Request.body` argument is provided this parameter will be ignored.
       if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
-      set to POST automatically.
+      set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
 JSONRequest usage example

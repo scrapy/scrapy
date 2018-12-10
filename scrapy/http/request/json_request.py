@@ -13,12 +13,14 @@ from scrapy.http.request import Request
 
 class JSONRequest(Request):
     def __init__(self, *args, **kwargs):
-        body_passed = 'body' in kwargs
+        body_passed = kwargs.get('body', None) is not None
         data = kwargs.pop('data', None)
-        if body_passed and data:
+        data_passed = data is not None
+
+        if body_passed and data_passed:
             warnings.warn('Both body and data passed. data will be ignored')
 
-        elif not body_passed and data:
+        elif not body_passed and data_passed:
             kwargs['body'] = json.dumps(data)
 
             if 'method' not in kwargs:

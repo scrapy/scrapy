@@ -1175,19 +1175,34 @@ class JSONRequestTest(RequestTest):
         self.assertEqual(r3.body, to_bytes(json.dumps(data)))
         self.assertEqual(r3.method, 'POST')
 
+        r4 = self.request_class(url="http://www.example.com/", data=[])
+        self.assertEqual(r4.body, to_bytes(json.dumps([])))
+        self.assertEqual(r4.method, 'POST')
+
         with warnings.catch_warnings(record=True) as _warnings:
-            r4 = self.request_class(url="http://www.example.com/", body=body, data=data)
-            self.assertEqual(r4.body, body)
-            self.assertEqual(r4.method, 'GET')
+            r5 = self.request_class(url="http://www.example.com/", body=body, data=data)
+            self.assertEqual(r5.body, body)
+            self.assertEqual(r5.method, 'GET')
             self.assertEqual(len(_warnings), 1)
             self.assertIn('data will be ignored', str(_warnings[0].message))
 
         with warnings.catch_warnings(record=True) as _warnings:
-            r5 = self.request_class(url="http://www.example.com/", body=b'', data=data)
-            self.assertEqual(r5.body, b'')
-            self.assertEqual(r5.method, 'GET')
+            r6 = self.request_class(url="http://www.example.com/", body=b'', data=data)
+            self.assertEqual(r6.body, b'')
+            self.assertEqual(r6.method, 'GET')
             self.assertEqual(len(_warnings), 1)
             self.assertIn('data will be ignored', str(_warnings[0].message))
+
+        with warnings.catch_warnings(record=True) as _warnings:
+            r7 = self.request_class(url="http://www.example.com/", body=None, data=data)
+            self.assertEqual(r7.body, to_bytes(json.dumps(data)))
+            self.assertEqual(r7.method, 'POST')
+            self.assertEqual(len(_warnings), 0)
+
+        with warnings.catch_warnings(record=True) as _warnings:
+            r8 = self.request_class(url="http://www.example.com/", body=None, data=None)
+            self.assertEqual(r8.method, 'GET')
+            self.assertEqual(len(_warnings), 0)
 
     def tearDown(self):
         warnings.resetwarnings()
