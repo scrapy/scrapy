@@ -21,7 +21,7 @@ class JSONRequest(Request):
             warnings.warn('Both body and data passed. data will be ignored')
 
         elif not body_passed and data_passed:
-            kwargs['body'] = json.dumps(data)
+            kwargs['body'] = json.dumps(data, sort_keys=True)
 
             if 'method' not in kwargs:
                 kwargs['method'] = 'POST'
