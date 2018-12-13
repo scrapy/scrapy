@@ -247,6 +247,7 @@ API reference
    api/mail
    api/middleware
    api/scheduler
+   api/selector
    api/settings
    api/signals
    api/spiders
@@ -284,6 +285,9 @@ API reference
 
 :doc:`api/scheduler`
     Crawl scheduling.
+
+:doc:`api/selector`
+    Selection of specific response content.
 
 :doc:`api/settings`
     Project and spider configuration.

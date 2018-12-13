@@ -196,68 +196,12 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
 CrawlSpider
 -----------
 
-.. class:: CrawlSpider
-
-   This is the most commonly used spider for crawling regular websites, as it
-   provides a convenient mechanism for following links by defining a set of rules.
-   It may not be the best suited for your particular web sites or project, but
-   it's generic enough for several cases, so you can start from it and override it
-   as needed for more custom functionality, or just implement your own spider.
-
-   Apart from the attributes inherited from Spider (that you must
-   specify), this class supports a new attribute:
-
-   .. attribute:: rules
-
-       Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
-       defines a certain behaviour for crawling the site. Rules objects are
-       described below. If multiple rules match the same link, the first one
-       will be used, according to the order they're defined in this attribute.
-
-   This spider also exposes an overrideable method:
-
-   .. method:: parse_start_url(response)
-
-      This method is called for the start_urls responses. It allows to parse
-      the initial responses and must return either an
-      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
-      object, or an iterable containing any of them.
+…
 
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
-
-   ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
-
-   ``callback`` is a callable or a string (in which case a method from the spider
-   object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
-
-   .. warning:: When writing crawl spider rules, avoid using ``parse`` as
-       callback, since the :class:`CrawlSpider` uses the ``parse`` method
-       itself to implement its logic. So if you override the ``parse`` method,
-       the crawl spider will no longer work.
-
-   ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
-   callback function.
-
-   ``follow`` is a boolean which specifies if links should be followed from each
-   response extracted with this rule. If ``callback`` is None ``follow`` defaults
-   to ``True``, otherwise it defaults to ``False``.
-
-   ``process_links`` is a callable, or a string (in which case a method from the
-   spider object with that name will be used) which will be called for each list
-   of links extracted from each response using the specified ``link_extractor``.
-   This is mainly used for filtering purposes.
-
-   ``process_request`` is a callable, or a string (in which case a method from
-   the spider object with that name will be used) which will be called with
-   every request extracted by this rule, and must return a request or None (to
-   filter out the request).
+…
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
@@ -299,86 +243,7 @@ an :class:`~scrapy.item.Item` will be filled with it.
 XMLFeedSpider
 -------------
 
-.. class:: XMLFeedSpider
-
-    XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
-    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
-    and ``html``.  It's recommended to use the ``iternodes`` iterator for
-    performance reasons, since the ``xml`` and ``html`` iterators generate the
-    whole DOM at once in order to parse it.  However, using ``html`` as the
-    iterator may be useful when parsing XML with bad markup.
-
-    To set the iterator and the tag name, you must define the following class
-    attributes:
-
-    .. attribute:: iterator
-
-        A string which defines the iterator to use. It can be either:
-
-           - ``'iternodes'`` - a fast iterator based on regular expressions
-
-           - ``'html'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
-
-           - ``'xml'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
-
-        It defaults to: ``'iternodes'``.
-
-    .. attribute:: itertag
-
-        A string with the name of the node (or element) to iterate in. Example::
-
-            itertag = 'product'
-
-    .. attribute:: namespaces
-
-        A list of ``(prefix, uri)`` tuples which define the namespaces
-        available in that document that will be processed with this spider. The
-        ``prefix`` and ``uri`` will be used to automatically register
-        namespaces using the
-        :meth:`~scrapy.selector.Selector.register_namespace` method.
-
-        You can then specify nodes with namespaces in the :attr:`itertag`
-        attribute.
-
-        Example::
-
-            class YourSpider(XMLFeedSpider):
-
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
-                # ...
-
-    Apart from these new attributes, this spider has the following overrideable
-    methods too:
-
-    .. method:: adapt_response(response)
-
-        A method that receives the response as soon as it arrives from the spider
-        middleware, before the spider starts parsing it. It can be used to modify
-        the response body before parsing it. This method receives a response and
-        also returns a response (it could be the same or another one).
-
-    .. method:: parse_node(response, selector)
-
-        This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an
-        :class:`~scrapy.selector.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, you spider won't work.  This method
-        must return either a :class:`~scrapy.item.Item` object, a
-        :class:`~scrapy.http.Request` object, or an iterable containing any of
-        them.
-
-    .. method:: process_results(response, results)
-
-        This method is called for each result (item or request) returned by the
-        spider, and it's intended to perform any last time processing required
-        before returning the results to the framework core, for example setting the
-        item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (Items or Requests).
+…
 
 
 XMLFeedSpider example
@@ -412,32 +277,7 @@ prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
 CSVFeedSpider
 -------------
 
-.. class:: CSVFeedSpider
-
-   This spider is very similar to the XMLFeedSpider, except that it iterates
-   over rows, instead of nodes. The method that gets called in each iteration
-   is :meth:`parse_row`.
-
-   .. attribute:: delimiter
-
-       A string with the separator character for each field in the CSV file
-       Defaults to ``','`` (comma).
-
-   .. attribute:: quotechar
-
-       A string with the enclosure character for each field in the CSV file
-       Defaults to ``'"'`` (quotation mark).
-
-   .. attribute:: headers
-
-       A list of the column names in the CSV file.
-
-   .. method:: parse_row(response, row)
-
-       Receives a response and a dict (representing each row) with a key for each
-       provided (or detected) header of the CSV file.  This spider also gives the
-       opportunity to override ``adapt_response`` and ``process_results`` methods
-       for pre- and post-processing purposes.
+…
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
@@ -469,68 +309,7 @@ Let's see an example similar to the previous one, but using a
 SitemapSpider
 -------------
 
-.. class:: SitemapSpider
-
-    SitemapSpider allows you to crawl a site by discovering the URLs using
-    `Sitemaps`_.
-
-    It supports nested sitemaps and discovering sitemap urls from
-    `robots.txt`_.
-
-    .. attribute:: sitemap_urls
-
-        A list of urls pointing to the sitemaps whose urls you want to crawl.
-
-        You can also point to a `robots.txt`_ and it will be parsed to extract
-        sitemap urls from it.
-
-    .. attribute:: sitemap_rules
-
-        A list of tuples ``(regex, callback)`` where:
-
-        * ``regex`` is a regular expression to match urls extracted from sitemaps.
-          ``regex`` can be either a str or a compiled regex object.
-
-        * callback is the callback to use for processing the urls that match
-          the regular expression. ``callback`` can be a string (indicating the
-          name of a spider method) or a callable.
-
-        For example::
-
-            sitemap_rules = [('/product/', 'parse_product')]
-
-        Rules are applied in order, and only the first one that matches will be
-        used.
-
-        If you omit this attribute, all urls found in sitemaps will be
-        processed with the ``parse`` callback.
-
-    .. attribute:: sitemap_follow
-
-        A list of regexes of sitemap that should be followed. This is is only
-        for sites that use `Sitemap index files`_ that point to other sitemap
-        files.
-
-        By default, all sitemaps are followed.
-
-    .. attribute:: sitemap_alternate_links
-
-        Specifies if alternate links for one ``url`` should be followed. These
-        are links for the same website in another language passed within
-        the same ``url`` block.
-
-        For example::
-
-            <url>
-                <loc>http://example.com/</loc>
-                <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
-            </url>
-
-        With ``sitemap_alternate_links`` set, this would retrieve both URLs. With
-        ``sitemap_alternate_links`` disabled, only ``http://example.com/`` would be
-        retrieved.
-
-        Default is ``sitemap_alternate_links`` disabled.
+…
 
     .. method:: sitemap_filter(entries)
 
@@ -647,7 +426,6 @@ Combine SitemapSpider with other sources of urls::
         def parse_other(self, response):
             pass # ... scrape other here ...
 
-.. _Sitemaps: https://www.sitemaps.org/index.html
-.. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
+.. _Sitemaps: https://www.sitemaps.org/index.html

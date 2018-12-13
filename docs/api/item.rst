@@ -5,7 +5,7 @@ Item API
 Items
 =====
 
-.. class:: Item([arg])
+.. class:: scrapy.Item([arg])
 
     Return a new Item optionally initialized from the given argument.
 
@@ -24,7 +24,7 @@ Items
 Fields
 ======
 
-.. class:: Field([arg])
+.. class:: scrapy.Field([arg])
 
     The :class:`Field` class is just an alias to the built-in `dict`_ class and
     doesn't provide any extra functionality or attributes. In other words,

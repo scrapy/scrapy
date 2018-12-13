@@ -8,9 +8,7 @@ HTTP API
 Requests
 ========
 
-.. module:: scrapy.http.request
-
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. class:: scrapy.Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -166,9 +164,7 @@ Requests
        is given in the ``meta`` argument). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-.. module:: scrapy.http.request.form
-
-.. class:: FormRequest(url, [formdata, ...])
+.. class:: scrapy.FormRequest(url, [formdata, ...])
 
     The :class:`FormRequest` class adds a new argument to the constructor. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -257,16 +253,14 @@ Requests
        .. versionadded:: 1.1.0
           The ``formid`` parameter.
 
-.. automodule:: scrapy.http.request.rpc
+.. autoclass:: scrapy.http.XmlRpcRequest
    :members:
 
 
 Responses
 =========
 
-.. module:: scrapy.http.response
-
-.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
+.. class:: scrapy.http.Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -386,13 +380,7 @@ Responses
 
     .. automethod:: Response.follow
 
-
-HTML responses
---------------
-
-.. module:: scrapy.http.response.html
-
-.. class:: HtmlResponse(url[, ...])
+.. class:: scrapy.http.HtmlResponse(url[, ...])
 
     The :class:`HtmlResponse` class is a subclass of :class:`TextResponse`
     which adds encoding auto-discovering support by looking into the HTML `meta
@@ -400,13 +388,7 @@ HTML responses
 
 .. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
-
-Text responses
---------------
-
-.. module:: scrapy.http.response.text
-
-.. class:: TextResponse(url, [encoding[, ...]])
+.. class:: scrapy.http.TextResponse(url, [encoding[, ...]])
 
     :class:`TextResponse` objects adds encoding capabilities to the base
     :class:`Response` class, which is meant to be used only for binary data,
@@ -486,37 +468,22 @@ Text responses
         The same as :attr:`text`, but available as a method. This method is
         kept for backwards compatibility; please prefer ``response.text``.
 
-
-XML responses
--------------
-
-.. module:: scrapy.http.response.xml
-
-.. class:: XmlResponse(url[, ...])
+.. class:: scrapy.http.XmlResponse(url[, ...])
 
     The :class:`XmlResponse` class is a subclass of :class:`TextResponse` which
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
 
 
-HTML and XML selectors
-----------------------
-
-.. automodule:: scrapy.selector
-    :members:
-
-.. automodule:: scrapy.selector.lxmlsel
-    :members:
-
-.. automodule:: scrapy.selector.unified
-    :members:
-
-
 Headers
 =======
 
 .. automodule:: scrapy.http.headers
-   :members:
+    :members:
+    :exclude-members: Headers
+
+.. autoclass:: scrapy.http.Headers
+    :members:
 
 
 Cookies
