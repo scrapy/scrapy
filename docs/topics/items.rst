@@ -78,7 +78,7 @@ Working with Items
 
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
-notice the API is very similar to the `dict API`_.
+notice the API is very similar to the `dict`_ API.
 
 Creating items
 --------------
@@ -147,7 +147,7 @@ Setting field values
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_::
+To access all populated values, just use the typical `dict`_ API::
 
     >>> product.keys()
     ['price', 'name']
@@ -204,36 +204,4 @@ appending more values, or changing existing values, like this::
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
 
-Item objects
-============
-
-.. class:: Item([arg])
-
-    Return a new Item optionally initialized from the given argument.
-
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
-
-.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
-
-Field objects
-=============
-
-.. class:: Field([arg])
-
-    The :class:`Field` class is just an alias to the built-in `dict`_ class and
-    doesn't provide any extra functionality or attributes. In other words,
-    :class:`Field` objects are plain-old Python dicts. A separate class is used
-    to support the :ref:`item declaration syntax <topics-items-declaring>`
-    based on class attributes.
-
-.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
-
-
+.. _dict: https://docs.python.org/library/stdtypes.html#dict

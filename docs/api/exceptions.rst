@@ -1,8 +1,8 @@
 .. _topics-exceptions:
 
-==========
-Exceptions
-==========
+==============
+Exceptions API
+==============
 
 .. module:: scrapy.exceptions
    :synopsis: Scrapy exceptions

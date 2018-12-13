@@ -1,8 +1,8 @@
 .. _topics-api-stats:
 
-===================
-Stats Collector API
-===================
+==============
+Statistics API
+==============
 
 There are several Stats Collectors available under the
 :mod:`scrapy.statscollectors` module and they all implement the Stats

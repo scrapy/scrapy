@@ -70,7 +70,6 @@ Basic concepts
    topics/request-response
    topics/link-extractors
    topics/settings
-   topics/exceptions
 
 
 :doc:`topics/commands`
@@ -105,9 +104,6 @@ Basic concepts
 
 :doc:`topics/settings`
     Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
-
-:doc:`topics/exceptions`
-    See all available exceptions and their meaning.
 
 
 Built-in services
@@ -240,26 +236,66 @@ API reference
    :caption: API reference
    :hidden:
 
-   api/crawler
+   api/core
+   api/crawling
+   api/downloader-middleware
+   api/duplicate-filtering
+   api/exceptions
+   api/http
+   api/item
+   api/link-extraction
+   api/mail
+   api/middleware
+   api/scheduler
    api/settings
-   api/signalmanager
-   api/loader
-   api/statscollectors
+   api/signals
+   api/spiders
+   api/statistics
 
-:doc:`api/crawler`
-    The main entry point to Scrapy API.
+:doc:`api/core`
+    Scrapy core.
+
+:doc:`api/crawling`
+    Spider execution.
+
+:doc:`api/downloader-middleware`
+    Downloader middleware.
+
+:doc:`api/duplicate-filtering`
+    Duplicate request filtering.
+
+:doc:`api/exceptions`
+    Built-in exceptions.
+
+:doc:`api/http`
+    Requests and responses.
+
+:doc:`api/item`
+    Item definition.
+
+:doc:`api/link-extraction`
+    Link extraction.
+
+:doc:`api/mail`
+    Mail delivery.
+
+:doc:`api/middleware`
+    Middleware development.
+
+:doc:`api/scheduler`
+    Crawl scheduling.
 
 :doc:`api/settings`
-    Configuration of projects and spiders.
+    Project and spider configuration.
 
-:doc:`api/signalmanager`
-    Handling of spider signals.
+:doc:`api/signals`
+    Spider signal handling.
 
-:doc:`api/loader`
-    Retrieval and handling of spiders.
+:doc:`api/spiders`
+    Spider development.
 
-:doc:`api/statscollectors`
-    Collection of statistics.
+:doc:`api/statistics`
+    Statistics collection.
 
 
 All the rest
