@@ -28,16 +28,11 @@ def _get_from_request(request, key, default=None):
 
 
 def _scheduler_slot_read(request, default=None):
-    meta = _get_from_request(request, 'meta', dict())
-    slot = meta.get(SCHEDULER_SLOT_META_KEY, default)
-    return slot
+    return request.meta.get(SCHEDULER_SLOT_META_KEY, default)
 
 
 def _scheduler_slot_write(request, slot):
-    meta = _get_from_request(request, 'meta', None)
-    if not isinstance(meta, dict):
-        raise ValueError('No meta attribute in %s' % (request, ))
-    meta[SCHEDULER_SLOT_META_KEY] = slot
+    request.meta[SCHEDULER_SLOT_META_KEY] = slot
 
 
 def _scheduler_slot(request):
