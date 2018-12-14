@@ -64,10 +64,8 @@ def _scheduler_slot(request):
 def _pathable(x):
     pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in x])
 
-    """
-        as we replace some letters we can get collision for different slots
-        add we add unique part
-    """
+    # as we replace some letters we can get collision for different slots
+    # add we add unique part
     unique_slot = hashlib.md5(x.encode('utf8')).hexdigest()
 
     return '-'.join([pathable_slot, unique_slot])
