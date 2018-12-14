@@ -8,6 +8,7 @@ from queuelib import PriorityQueue
 from scrapy.core.downloader import Downloader
 from scrapy.http import Request
 from scrapy.signals import request_reached_downloader, response_downloaded
+from scrapy.utils.httpobj import urlparse_cached
 
 
 logger = logging.getLogger(__name__)
@@ -41,11 +42,26 @@ def _scheduler_slot_write(request, slot):
 
 def _scheduler_slot(request):
 
-    slot = _scheduler_slot_read(request, None)
-    if slot is None:
-        url = _get_from_request(request, 'url')
+    if isinstance(request, dict):
+        meta = request.get('meta', dict())
+    elif isinstance(request, Request):
+        meta = request.meta
+    else:
+        raise ValueError('Bad type of request "%s"' % (request.__class__, ))
+
+    slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
+
+    if slot is not None:
+        return slot
+
+    if isinstance(request, dict):
+        url = request.get('url', None)
         slot = urlparse(url).hostname or ''
-        _scheduler_slot_write(request, slot)
+    elif isinstance(request, Request):
+        url = request.url
+        slot = urlparse_cached(request).hostname or ''
+
+    meta[SCHEDULER_SLOT_META_KEY] = slot
 
     return slot
 
