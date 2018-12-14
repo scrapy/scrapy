@@ -136,6 +136,22 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value(None, u'Jim', lambda x: {'name': x})
         self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
 
+    def test_remove_value(self):
+        il = TestItemLoader()
+        il.add_value('name', 'Pepe')
+        self.assertEqual(il.get_collected_values('name'), [u'Pepe'])
+        self.assertEqual(il.get_output_value('name'), [u'Pepe'])
+        il.remove_value('name')
+        self.assertEqual(il.get_collected_values('name'), [])
+
+    def test_remove_value_in_item(self):
+        item = TestItem()
+        item['name'] = ['Marta']
+        il = TestItemLoader(item)
+        self.assertEqual(il.load_item().get('name'), ['Marta'])
+        il.remove_value('name')
+        self.assertEqual(il.load_item().get('name'), None)
+
     def test_add_zero(self):
         il = NameItemLoader()
         il.add_value('name', 0)

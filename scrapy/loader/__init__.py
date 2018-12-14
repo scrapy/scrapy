@@ -109,6 +109,15 @@ class ItemLoader(object):
             value = proc(value)
         return value
 
+    def remove_value(self, field_name):
+        """Remove value of field_name from loader and from underlying item.
+
+        :param field_name: string with field name
+        :return:
+        """
+        self._values.pop(field_name, None)
+        self.item.pop(field_name, None)
+
     def load_item(self):
         item = self.item
         for field_name in tuple(self._values):
