@@ -96,9 +96,9 @@ class PrioritySlot:
 
 class PriorityAsTupleQueue(PriorityQueue):
     """
-        Python structures is not directly (de)serialized (to)from json.
-        We need this modified queue to transform custom structure (from)to
-        json serializable structures
+    Python structures is not directly (de)serialized (to)from json.
+    We need this modified queue to transform custom structure (from)to
+    json serializable structures
     """
     def __init__(self, qfactory, startprios=()):
 
