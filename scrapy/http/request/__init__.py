@@ -4,6 +4,7 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+import re
 import six
 from w3lib.url import safe_url_string
 
@@ -57,8 +58,10 @@ class Request(object_ref):
 
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
-
-        if ':' not in self._url:
+        # add better url scheme verification @stephenhay
+        pattern = "https://[^\s/$.?#].[^\s]*|^http://[^\s/$.?#].[^\s]*"
+        regex_check = re.search(pattern, url)
+        if regex_check is not None:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
