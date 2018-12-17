@@ -514,9 +514,9 @@ JSONRequest
 The JSONRequest class extends the base :class:`Request` class with functionality for
 dealing with JSON requests.
 
-.. class:: JSONRequest(url, [data, ...])
+.. class:: JSONRequest(url, [... data])
 
-   The :class:`JSONRequest` class adds a new argument to the constructor called data. The
+   The :class:`JSONRequest` class adds two new argument to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
@@ -528,6 +528,12 @@ dealing with JSON requests.
       if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
+
+   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize data
+       into JSON format.
+   :type dumps_kwargs: dict
+
+.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
 JSONRequest usage example
 -------------------------
