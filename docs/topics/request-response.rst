@@ -529,8 +529,8 @@ dealing with JSON requests.
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
-   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize data
-       into JSON format.
+   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+       data into JSON format.
    :type dumps_kwargs: dict
 
 .. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
