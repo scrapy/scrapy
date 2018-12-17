@@ -2,12 +2,17 @@ import shutil
 import tempfile
 import unittest
 
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase
+
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer
 
 
 class MockCrawler(Crawler):
@@ -223,6 +228,13 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
             self.assertEqual(len(part), len(set(part)))
 
 
+def _is_slots_unique(base_slots, result_slots):
+    unique_slots = len(set(s for _, s in base_slots))
+    for i in range(0, len(result_slots), unique_slots):
+        part = result_slots[i:i + unique_slots]
+        assert len(part) == len(set(part))
+
+
 class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                                              unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
@@ -259,7 +271,33 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                     spider=self.spider
                     )
 
-        unique_slots = len(set(s for _, s in _SLOTS))
-        for i in range(0, len(_SLOTS), unique_slots):
-            part = slots[i:i + unique_slots]
-            self.assertEqual(len(part), len(set(part)))
+        _is_slots_unique(_SLOTS, slots)
+
+
+class StartUrlsSpider(Spider):
+
+    def __init__(self, start_urls):
+        self.start_urls = start_urls
+
+
+class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
+    def setUp(self):
+        self.crawler = get_crawler(
+                    StartUrlsSpider,
+                    {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
+                     'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
+                    )
+
+    @defer.inlineCallbacks
+    def tearDown(self):
+        yield self.crawler.stop()
+
+    @defer.inlineCallbacks
+    def test_integration_downloader_aware_priority_queue(self):
+        with MockServer() as mockserver:
+
+            url = mockserver.url("/status?n=200", is_secure=False)
+            slots = [url] * 6
+            yield self.crawler.crawl(slots)
+            self.assertEqual(self.crawler.stats.get_value('downloader/response_count'),
+                             len(slots))
