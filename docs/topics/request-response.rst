@@ -514,7 +514,7 @@ JSONRequest
 The JSONRequest class extends the base :class:`Request` class with functionality for
 dealing with JSON requests.
 
-.. class:: JSONRequest(url, [... data])
+.. class:: JSONRequest(url, [... data, dumps_kwargs])
 
    The :class:`JSONRequest` class adds two new argument to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
