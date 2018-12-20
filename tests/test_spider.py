@@ -390,12 +390,12 @@ Sitemap: /sitemap-relative-url.xml
     </urlset>"""
 
         class FilteredSitemapSpider(self.spider_class):
-            def sitemap_filter(self, urls):
+            def sitemap_filter(self, entries):
                 from datetime import datetime
-                for url in urls:
-                    date_time = datetime.strptime(url['lastmod'], '%Y-%m-%d')
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
                     if date_time.year > 2008:
-                        yield url
+                        yield entry
 
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
         spider = self.spider_class("example.com")

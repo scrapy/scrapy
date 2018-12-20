@@ -31,13 +31,13 @@ class SitemapSpider(Spider):
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
 
-    def sitemap_filter(self, urls):
+    def sitemap_filter(self, entries):
         """This method can be used to filter sitemap entries by their
         attributes, for example, you can filter locs with lastmod greater
         than a given date (see docs).
         """
-        for url in urls:
-            yield url
+        for entry in entries:
+            yield entry
 
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):

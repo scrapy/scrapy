@@ -680,7 +680,7 @@ SitemapSpider
 
         Default is ``sitemap_alternate_links`` disabled.
 
-    .. method:: sitemap_filter(urls)
+    .. method:: sitemap_filter(entries)
 
         Specifies a function to filter sitemap entries and their attributes.
 
@@ -691,19 +691,19 @@ SitemapSpider
                 <lastmod>2005-01-01</lastmod>
             </url>
 
-        We can define a ``sitemap_filter`` function to filter ``urls`` by date::
+        We can define a ``sitemap_filter`` function to filter ``entries`` by date::
 
-            def sitemap_filter(urls):
+            def sitemap_filter(entries):
                 from datetime import datetime
-                for url in urls:
-                    date_time = datetime.strptime(url['lastmod'], '%Y-%m-%d')
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
                     if date_time.year >= 2005:
-                        yield url
+                        yield entry
 
-        This would retrieve only ``urls`` modified on 2005 and the following
+        This would retrieve only ``entries`` modified on 2005 and the following
         years.
 
-        If you omit this method, all urls found in sitemaps will be
+        If you omit this method, all entries found in sitemaps will be
         processed, observing other attributes and their settings.
 
 
