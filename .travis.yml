@@ -42,11 +42,6 @@ install:
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       fi
-      if [ "$TOXENV" = "jessie" ]; then
-        # Not used directly but allows boto GCE plugins to load.
-        # https://github.com/GoogleCloudPlatform/compute-image-packages/issues/262
-        pip install google-compute-engine
-      fi
   - pip install -U tox twine wheel codecov
 
 script: tox
