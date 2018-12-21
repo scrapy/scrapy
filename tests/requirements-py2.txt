@@ -11,4 +11,3 @@ testfixtures
 # optional for shell wrapper tests
 bpython
 ipython<6.0
-google-compute-engine
