@@ -405,6 +405,9 @@ Sitemap: /sitemap-relative-url.xml
        <sitemap>
           <loc>http://www.example.com/sitemap2.xml.gz</loc>
        </sitemap>
+        <sitemap>
+          <loc>http://www.example.com/sitemap3.xml.gz</loc>
+       </sitemap>
     </sitemapindex>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
         spider = self.spider_class("example.com")
