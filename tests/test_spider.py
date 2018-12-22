@@ -12,6 +12,7 @@ from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlRespon
 from scrapy.spiders.init import InitSpider
 from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
+from scrapy.spiders.sitemap import regex
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
@@ -374,6 +375,47 @@ Sitemap: /sitemap-relative-url.xml
                           'http://www.example.com/deutsch/',
                           'http://www.example.com/schweiz-deutsch/',
                           'http://www.example.com/italiano/'])
+
+    def test_get_sitemap_urls_from_sitemapindex(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+       <sitemap>
+          <loc>http://www.example.com/sitemap1.xml.gz</loc>
+       </sitemap>
+       <sitemap>
+          <loc>http://www.example.com/sitemap2.xml.gz</loc>
+       </sitemap>
+        <sitemap>
+          <loc>http://www.example.com/sitemap3.xml.gz</loc>
+       </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap1.xml.gz',
+                          'http://www.example.com/sitemap2.xml.gz',
+                          'http://www.example.com/sitemap3.xml.gz'])
+
+    def test_sitemap_follow(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+       <sitemap>
+          <loc>http://www.example.com/sitemap1.xml.gz</loc>
+       </sitemap>
+       <sitemap>
+          <loc>http://www.example.com/sitemap2.xml.gz</loc>
+       </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+
+        spider._follow = []
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)], [])
+
+        spider._follow = [regex('sitemap[12]')]
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap1.xml.gz',
+                          'http://www.example.com/sitemap2.xml.gz'])
 
 
 class DeprecationTest(unittest.TestCase):
