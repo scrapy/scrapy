@@ -9,6 +9,7 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.utils.test import get_crawler
+from scrapy.exceptions import RetryRequest
 
 
 class RetryTest(unittest.TestCase):
@@ -73,6 +74,15 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/max_reached') == 1
         assert self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable') == 2
         assert self.crawler.stats.get_value('retry/count') == 2
+
+    def test_retry_request_exception(self):
+        req = Request('http://www.scrapytest.org')
+        self._test_retry_exception(req, RetryRequest('missing title'))
+        stats = self.crawler.stats
+        retry_times = self.crawler.settings['RETRY_TIMES']
+        assert stats.get_value('retry/max_reached') == 1
+        assert stats.get_value('retry/count') == retry_times
+        assert stats.get_value('retry/reason_count/scrapy.exceptions.RetryRequest') == retry_times
 
     def test_twistederrors(self):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
