@@ -87,8 +87,8 @@ contain a price::
         vat_factor = 1.15
 
         def process_item(self, item, spider):
-            if item['price']:
-                if item['price_excludes_vat']:
+            if 'price' in item and item['price']:
+                if 'price_excludes_vat' in item and item['price_excludes_vat']:
                     item['price'] = item['price'] * self.vat_factor
                 return item
             else:
