@@ -39,6 +39,17 @@ you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
+Use proper :setting:`SCHEDULER_PRIORITY_QUEUE`
+==============================================
+
+Default scrapy's scheduler priority queue is ``'queuelib.PriorityQueue'``.
+It works best during single domain crawl. And it does not work well with crawling
+many different domains in parallel
+
+To apply recommended priority queue use::
+
+    SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
 Increase concurrency
 ====================
 
