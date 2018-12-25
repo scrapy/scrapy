@@ -42,23 +42,38 @@ class ContractsManager(object):
         requests = []
         for method in self.tested_methods_from_spidercls(type(spider)):
             bound_method = spider.__getattribute__(method)
-            requests.append(self.from_method(bound_method, results))
+            try:
+                requests.append(self.from_method(bound_method, results))
+            except Exception:
+                case = _create_testcase(bound_method, 'contract')
+                results.addError(case, sys.exc_info())
 
         return requests
 
     def from_method(self, method, results):
         contracts = self.extract_contracts(method)
         if contracts:
+            request_cls = Request
+            for contract in contracts:
+                if contract.request_cls is not None:
+                    request_cls = contract.request_cls
+
             # calculate request args
-            args, kwargs = get_spec(Request.__init__)
+            args, kwargs = get_spec(request_cls.__init__)
+
+            # Don't filter requests to allow
+            # testing different callbacks on the same URL.
+            kwargs['dont_filter'] = True
             kwargs['callback'] = method
+
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
-            # create and prepare request
             args.remove('self')
+
+            # check if all positional arguments are defined in kwargs
             if set(args).issubset(set(kwargs)):
-                request = Request(**kwargs)
+                request = request_cls(**kwargs)
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
@@ -94,6 +109,7 @@ class ContractsManager(object):
 
 class Contract(object):
     """ Abstract class for contracts """
+    request_cls = None
 
     def __init__(self, method, *args):
         self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)

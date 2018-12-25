@@ -37,7 +37,7 @@ Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
 
 * ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
-* ``SCRAPY_PROJECT``
+* ``SCRAPY_PROJECT`` (see :ref:`topics-project-envvar`)
 * ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
 
 .. _topics-project-structure:
@@ -70,6 +70,33 @@ the project settings. Here is an example::
 
     [settings]
     default = myproject.settings
+
+.. _topics-project-envvar:
+
+Sharing the root directory between projects
+===========================================
+
+A project root directory, the one that contains the ``scrapy.cfg``, may be
+shared by multiple Scrapy projects, each with its own settings module.
+
+In that case, you must define one or more aliases for those settings modules
+under ``[settings]`` in your ``scrapy.cfg`` file::
+
+    [settings]
+    default = myproject1.settings
+    project1 = myproject1.settings
+    project2 = myproject2.settings
+
+By default, the ``scrapy`` command-line tool will use the ``default`` settings.
+Use the ``SCRAPY_PROJECT`` environment variable to specify a different project
+for ``scrapy`` to use::
+
+    $ scrapy settings --get BOT_NAME
+    Project 1 Bot
+    $ export SCRAPY_PROJECT=project2
+    $ scrapy settings --get BOT_NAME
+    Project 2 Bot
+
 
 Using the ``scrapy`` tool
 =========================
@@ -458,9 +485,9 @@ Usage example::
 
     >>> STATUS DEPTH LEVEL 1 <<<
     # Scraped Items  ------------------------------------------------------------
-    [{'name': u'Example item',
-     'category': u'Furniture',
-     'length': u'12 cm'}]
+    [{'name': 'Example item',
+     'category': 'Furniture',
+     'length': '12 cm'}]
 
     # Requests  -----------------------------------------------------------------
     []
