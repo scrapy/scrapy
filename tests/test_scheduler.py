@@ -301,3 +301,20 @@ class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
             yield self.crawler.crawl(slots)
             self.assertEqual(self.crawler.stats.get_value('downloader/response_count'),
                              len(slots))
+
+
+class TestIncompatibility(unittest.TestCase):
+
+    def _incompatible(self):
+        settings = dict(
+                SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue',
+                CONCURRENT_REQUESTS_PER_IP=1
+                )
+        crawler = Crawler(Spider, settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        spider = Spider(name='spider')
+        scheduler.open(spider)
+
+    def test_incompatibility(self):
+        with self.assertRaises(ValueError):
+            self._incompatible()
