@@ -171,6 +171,14 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return cls(crawler, qfactory, startprios)
 
     def __init__(self, crawler, qfactory, startprios={}):
+        ip_concurrency_key = 'CONCURRENT_REQUESTS_PER_IP'
+        ip_concurrency = crawler.settings.getint(ip_concurrency_key, 0)
+
+        if ip_concurrency > 0:
+            raise ValueError('"%s" does not support %s=%d' % (self.__class__,
+                                                              ip_concurrency_key,
+                                                              ip_concurrency))
+
         super(DownloaderAwarePriorityQueue, self).__init__(qfactory,
                                                            startprios)
         self._slots = {slot: 0 for slot in self.pqueues}
