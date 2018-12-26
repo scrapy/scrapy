@@ -407,6 +407,41 @@ Sitemap: /sitemap-relative-url.xml
         self.assertEqual([req.url for req in spider._parse_sitemap(r)],
                          ['http://www.example.com/english/'])
 
+    def test_sitemap_filter_with_alternate_links(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/article_1/</loc>
+            <lastmod>2010-01-01</lastmod>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/article_1/"/>
+        </url>
+        <url>
+            <loc>http://www.example.com/english/article_2/</loc>
+            <lastmod>2015-01-01</lastmod>
+        </url>
+    </urlset>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                for entry in entries:
+                    alternate_links = entry.get('alternate', tuple())
+                    for link in alternate_links:
+                        if '/deutsch/' in link:
+                            entry['loc'] = link
+                            yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/article_1/',
+                          'http://www.example.com/english/article_2/'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/deutsch/article_1/'])
+
     def test_sitemapindex_filter(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
