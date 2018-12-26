@@ -703,6 +703,16 @@ SitemapSpider
         This would retrieve only ``entries`` modified on 2005 and the following
         years.
 
+        Entries are dict objects extracted from the sitemap document.
+        Usually, the key is the tag name and the value is the text inside it.
+
+        It's important to notice that:
+
+        - as the loc attribute is required, entries without this tag are discarded
+        - alternate links are stored in a list with the key ``alternate``
+          (see ``sitemap_alternate_links``)
+        - namespaces are removed, so lxml tags named as ``{foo}bar`` become only ``bar``
+
         If you omit this method, all entries found in sitemaps will be
         processed, observing other attributes and their settings.
 
