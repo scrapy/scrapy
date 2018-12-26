@@ -6,41 +6,83 @@ Release notes
 Scrapy 1.6.0 (unreleased)
 -------------------------
 
-Highlights for this release:
+Highlights:
 
-* better Windows compatibility;
+* better Windows support;
 * Python 3.7 compatibility;
 * big documentation improvements, including a switch
-  from ``.extract() / .extract_first()`` API to ``.get() / .getall()`` API;
-* Feed exports, FilePipeline and MediaPipeline improvements;
+  from ``.extract()`` + ``.extract_first()`` API to ``.get()`` + ``.getall()``
+  API;
+* feed exports, FilePipeline and MediaPipeline improvements;
+* better extensibility: :signal:`item_error` and
+  :signal:`request_reached_downloader` signals; ``from_crawler`` support
+  for feed exporters, feed storages and dupefilters.
 * ``scrapy.contracts`` fixes and new features;
-* large clean-up of deprecated code
-* TODO
+* telnet console security improvements;
+* clean-up of the deprecated code;
+* various bug fixes, small new features and usability improvements across
+  the codebase.
 
-parsel 1.5
-~~~~~~~~~~
+Selector API changes
+~~~~~~~~~~~~~~~~~~~~
 
-TODO
-While this is not a change in Scrapy itself, a new version of ``parsel``
-is released; Scrapy now depends on ``parsel >= 1.5``.
+While these are not changes in Scrapy itself, but rather in the parsel_
+library which Scrapy uses for xpath/css selectors, these changes are
+worth mentioning here. Scrapy now depends on parsel >= 1.5, and
+Scrapy documentation is updated to follow recent ``parsel`` API conventions.
 
-Feed export improvements
-~~~~~~~~~~~~~~~~~~~~~~~~
+Most visible change is that ``.get()`` and ``.getall()`` selector
+methods are now preferred over ``.extract()`` and ``.extract_first()``.
+We feel that these new methods result in a more concise and readable code.
+See :ref:`old-extraction-api` for more details.
+
+.. note::
+    There are currently **no plans** to deprecate ``.extract()``
+    and ``.extract_first()`` methods.
+
+Another useful new feature is the introduction of ``Selector.attrib`` and
+``SelectorList.attrib`` properties, which make it easier to get
+attributes of HTML elements. See :ref:`selecting-attributes`.
+
+CSS selectors are cached in parsel >= 1.5, which makes them faster
+when the same CSS path is used many times. This is very common in
+case of Scrapy spiders: callbacks are usually called several times,
+on different pages.
+
+If you're using custom ``Selector`` or ``SelectorList`` subclasses,
+a **backwards incompatible** change in parsel may affect your code.
+See `parsel changelog`_ for a detailed description, as well as for the
+full list of improvements.
+
+.. _parsel changelog: https://parsel.readthedocs.io/en/latest/history.html
+
+Telnet console
+~~~~~~~~~~~~~~
+
+**Backwards incompatible**: Scrapy's telnet console now requires username
+and password. See :ref:`topics-telnetconsole` for more details.
+
+New extensibility features
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * ``from_crawler`` support is added to feed exporters and feed storages. This,
-  among other things, allow to access Scrapy settings from custom storages
-  and exporters (:issue:`1605`, :issue:`3348`).
-* fixed issue with extra blank lines in .csv exports under Windows
-  (:issue:`3039`);
-* better error message when an exporter is disabled (:issue:`3358`);
+  among other things, allows to access Scrapy settings from custom feed
+  storages and exporters (:issue:`1605`, :issue:`3348`).
+* ``from_crawler`` support is added to dupefilters (:issue:`2956`); this allows
+  to access e.g. settings or a spider from a dupefilter.
+* :signal:`item_error` is fired when an error happens in a pipeline
+  (:issue:`3256`);
+* :signal:`request_reached_downloader` is fired when Downloader gets
+  a new Request; this signal can be useful e.g. for custom Schedulers
+  (:issue:`3393`).
 
-FilePipeline and MediaPipeline improvements
+New FilePipeline and MediaPipeline features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Expose more options for S3FilesStore: :setting:`AWS_ENDPOINT_URL`,
   :setting:`AWS_USE_SSL`, :setting:`AWS_VERIFY`, :setting:`AWS_REGION_NAME`.
   For example, this allows to use alternative or self-hosted
-  AWS-compatible providers (:issue:`2609`).
+  AWS-compatible providers (:issue:`2609`, :issue:`3548`).
 * ACL support for Google Cloud Storage: :setting:`FILES_STORE_GCS_ACL` and
   :setting:`IMAGES_STORE_GCS_ACL` (:issue:`3199`).
 
@@ -54,6 +96,47 @@ FilePipeline and MediaPipeline improvements
   Request classes in contracts, for example FormRequest (:issue:`3383`).
 * Fixed errback handling in contracts, e.g. for cases where a contract
   is executed for URL which returns non-200 response (:issue:`3371`).
+
+Usability and other improvements, cleanups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
+  in a Windows environment on CI (:issue:`3315`).
+* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`).
+* Lazy loading of Downloader Handlers is now optional; this enables better
+  initialization error handling in custom Downloader Handlers (:issue:`3394`).
+* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
+  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
+* better error message when an exporter is disabled (:issue:`3358`);
+* ``scrapy.http.cookies.CookieJar.clear`` accepts "domain", "path" and "name"
+  optional arguments (:issue:`3231`).
+* more stats for RobotsTxtMiddleware (:issue:`3100`)
+* INFO log level is used to show telnet host/port (:issue:`3115`)
+* a message is added to IgnoreRequest in RobotsTxtMiddleware (:issue:`3113`)
+* better validation of ``url`` argument in ``Response.follow`` (:issue:`3131`)
+* non-zero exit code is returned from Scrapy commands when error happens
+  on spider inititalization (:issue:`3226`);
+* link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
+  "flv" is added to common video extensions (:issue:`3165`)
+* `scrapy shell --help` mentions syntax required for local files
+  (``./file.html``) - :issue:`3496`.
+* additional files are included to sdist (:issue:`3495`);
+* code style fixes (:issue:`3405`, :issue:`3304`);
+* unneeded .strip() call is removed (:issue:`3519`);
+* collections.deque is used to store MiddlewareManager methods instead
+  of a list (:issue:`3476`)
+
+Bug fixes
+~~~~~~~~~
+
+* fixed issue with extra blank lines in .csv exports under Windows
+  (:issue:`3039`);
+* proper handling of pickling errors in Python 3 when serializing objects
+  for disk queues (:issue:`3082`)
+* flags are now preserved when copying Requests (:issue:`3342`);
+* FormRequest.from_response clickdata shouldn't ignore elements with
+  ``input[type=image]`` (:issue:`3153`).
+* FormRequest.from_response should preserve duplicate keys (:issue:`3247`)
 
 Documentation improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,21 +155,6 @@ Documentation improvements
 * fixed :setting:`RETRY_HTTP_CODES` default values in docs (:issue:`3335`);
 * remove unused `DEPTH_STATS` option from docs (:issue:`3245`);
 * other cleanups (:issue:`3347`, :issue:`3350`, :issue:`3445`).
-
-Better Windows support
-~~~~~~~~~~~~~~~~~~~~~~
-
-* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
-  in a Windows environment on CI (:issue:`3315`).
-* Scrapy used to produce unnecessary blank lines in .csv exports on Windows,
-  this is fixed (:issue:`3039`).
-
-Testing fixes
-~~~~~~~~~~~~~
-
-* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`)
-* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
-  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -107,7 +175,7 @@ Compatibility shims for pre-1.0 Scrapy module names are removed
 * ``scrapy.statscol``
 * ``scrapy.utils.decorator``
 
-See :ref:`module_relocations` for more information, or use suggestions
+See :ref:`module-relocations` for more information, or use suggestions
 from Scrapy 1.5.x deprecation warnings to update your code.
 
 Other deprecation removals:
@@ -1225,7 +1293,7 @@ until it reaches a stable status.
 
 See more examples for scripts running Scrapy: :ref:`topics-practices`
 
-.. _module_relocations:
+.. _module-relocations:
 
 Module Relocations
 ~~~~~~~~~~~~~~~~~~
