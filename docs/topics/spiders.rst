@@ -711,7 +711,7 @@ SitemapSpider
         - as the loc attribute is required, entries without this tag are discarded
         - alternate links are stored in a list with the key ``alternate``
           (see ``sitemap_alternate_links``)
-        - namespaces are removed, so lxml tags named as ``{foo}bar`` become only ``bar``
+        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
 
         If you omit this method, all entries found in sitemaps will be
         processed, observing other attributes and their settings.
