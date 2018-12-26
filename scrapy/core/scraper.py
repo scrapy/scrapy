@@ -78,7 +78,7 @@ class Scraper(object):
     @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot()
+        self.slot = Slot(self.crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE'))
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
