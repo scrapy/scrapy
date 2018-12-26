@@ -178,35 +178,48 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
-.. setting:: BOT_NAME
+.. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
 ----------------
 
 Default: ``None``
 
-Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
+Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+Only supported with ``botocore`` library.
 
-.. setting:: AWS_ENDPOINT_URL
+.. setting:: AWS_USE_SSL
 
 AWS_USE_SSL
 -----------
 
 Default: ``None``
 
-Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
-By default SSL will be used.
+Use this option if you want to disable SSL connection for communication with
+S3 or S3-like storage. By default SSL will be used.
+Only supported with ``botocore`` library.
 
-.. setting:: AWS_USE_SSL
+.. setting:: AWS_VERIFY
 
 AWS_VERIFY
 ----------
 
 Default: ``None``
 
-Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default
+SSL verification will occur. Only supported with ``botocore`` library.
 
-.. setting:: AWS_VERIFY
+.. setting:: AWS_REGION_NAME
+
+AWS_REGION_NAME
+---------------
+
+Default: ``None``
+
+The name of the region associated with the AWS client.
+Only supported with ``botocore`` library.
+
+.. setting:: BOT_NAME
 
 BOT_NAME
 --------
