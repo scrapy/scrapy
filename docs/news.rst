@@ -6,11 +6,156 @@ Release notes
 Scrapy 1.6.0 (unreleased)
 -------------------------
 
+Highlights for this release:
+
+* better Windows compatibility;
+* Python 3.7 compatibility;
+* big documentation improvements, including a switch
+  from ``.extract() / .extract_first()`` API to ``.get() / .getall()`` API;
+* Feed exports, FilePipeline and MediaPipeline improvements;
+* ``scrapy.contracts`` fixes and new features;
+* large clean-up of deprecated code
+* TODO
+
+parsel 1.5
+~~~~~~~~~~
+
+TODO
+While this is not a change in Scrapy itself, a new version of ``parsel``
+is released; Scrapy now depends on ``parsel >= 1.5``.
+
+Feed export improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ``from_crawler`` support is added to feed exporters and feed storages. This,
+  among other things, allow to access Scrapy settings from custom storages
+  and exporters (:issue:`1605`, :issue:`3348`).
+* fixed issue with extra blank lines in .csv exports under Windows
+  (:issue:`3039`);
+* better error message when an exporter is disabled (:issue:`3358`);
+
+FilePipeline and MediaPipeline improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Expose more options for S3FilesStore: :setting:`AWS_ENDPOINT_URL`,
+  :setting:`AWS_USE_SSL`, :setting:`AWS_VERIFY`, :setting:`AWS_REGION_NAME`.
+  For example, this allows to use alternative or self-hosted
+  AWS-compatible providers (:issue:`2609`).
+* ACL support for Google Cloud Storage: :setting:`FILES_STORE_GCS_ACL` and
+  :setting:`IMAGES_STORE_GCS_ACL` (:issue:`3199`).
+
+``scrapy.contracts`` improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Exceptions in contracts code are handled better (:issue:`3377`);
+* ``dont_filter=True`` is used for contract requests, which allows to test
+  different callbacks with the same URL (:issue:`3381`);
+* ``request_cls`` attribute in Contract subclasses allow to use different
+  Request classes in contracts, for example FormRequest (:issue:`3383`).
+* Fixed errback handling in contracts, e.g. for cases where a contract
+  is executed for URL which returns non-200 response (:issue:`3371`).
+
+Documentation improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Docs are re-written to suggest .get/.getall API instead of
+  .extract/.extract_first. Also, :ref:`topics-selectors` docs are updated
+  and re-structured to match latest parsel docs; they now contain more topics,
+  such as :ref:`selecting-attributes` or :ref:`topics-selectors-css-extensions`
+  (:issue:`3390`).
+* :ref:`topics-developer-tools` is a new tutorial which replaces
+  old Firefox and Firebug tutorials (:issue:`3400`).
+* SCRAPY_PROJECT environment variable is documented (:issue:`3518`);
+* troubleshooting section is added to install instructions (:issue:`3517`);
+* improved links to beginner resources in the tutorial
+  (:issue:`3367`, :issue:`3468`);
+* fixed :setting:`RETRY_HTTP_CODES` default values in docs (:issue:`3335`);
+* remove unused `DEPTH_STATS` option from docs (:issue:`3245`);
+* other cleanups (:issue:`3347`, :issue:`3350`, :issue:`3445`).
+
+Better Windows support
+~~~~~~~~~~~~~~~~~~~~~~
+
+* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
+  in a Windows environment on CI (:issue:`3315`).
+* Scrapy used to produce unnecessary blank lines in .csv exports on Windows,
+  this is fixed (:issue:`3039`).
+
+Testing fixes
+~~~~~~~~~~~~~
+
+* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`)
+* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
+  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+Compatibility shims for pre-1.0 Scrapy module names are removed
+(:issue:`3318`):
+
+* ``scrapy.command``
+* ``scrapy.contrib`` (with all submodules)
+* ``scrapy.contrib_exp`` (with all submodules)
+* ``scrapy.dupefilter``
+* ``scrapy.linkextractor``
+* ``scrapy.project``
+* ``scrapy.spider``
+* ``scrapy.spidermanager``
+* ``scrapy.squeue``
+* ``scrapy.stats``
+* ``scrapy.statscol``
+* ``scrapy.utils.decorator``
+
+See :ref:`module_relocations` for more information, or use suggestions
+from Scrapy 1.5.x deprecation warnings to update your code.
+
+Other deprecation removals:
+
+* Deprecated scrapy.interfaces.ISpiderManager is removed; please use
+  scrapy.interfaces.ISpiderLoader.
+* Deprecated ``CrawlerSettings`` class is removed (:issue:`3327`).
+* Deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes
+  are removed (:issue:`3327`, :issue:`3359`).
+
+Internal improvements
+~~~~~~~~~~~~~~~~~~~~~
+
+* ``from_crawler`` support is added to dupefilters (:issue:`2956`); this allows
+  to access e.g. settings or a spider from a dupefilter.
+* :signal:`item_error` is fired when an error happens in a pipeline
+  (:issue:`3256`);
+* :signal:`request_reached_downloader` is fired when Downloader gets
+  a new Request; this signal can be useful e.g. for custom Schedulers
+  (:issue:`3393`).
+* ``scrapy.http.cookies.CookieJar.clear`` accepts "domain", "path" and "name"
+  optional arguments (:issue:`3231`).
+
+Usability improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+* more stats for RobotsTxtMiddleware (:issue:`3100`)
+* INFO log level is used to show telnet host/port (:issue:`3115`)
+* a message is added to IgnoreRequest in RobotsTxtMiddleware (:issue:`3113`)
+* better validation of ``url`` argument in ``Response.follow`` (:issue:`3131`)
+* non-zero exit code is returned from Scrapy commands when error happens
+  on spider inititalization (:issue:`3226`)
+* Link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
+  "flv" is added to common video extensions (:issue:`3165`)
+
+Bug fixes
+~~~~~~~~~
+* proper handling of pickling errors in Python 3 when serializing objects
+  for disk queues (:issue:`3082`)
+* flags are now preserved when copying Requests (:issue:`3342`);
+* FormRequest.from_response clickdata shouldn't ignore elements with
+  ``input[type=image]`` (:issue:`3153`).
+* FormRequest.from_response should preserve duplicate keys (:issue:`3247`)
+
 Cleanups
 ~~~~~~~~
-
-* Remove deprecated ``CrawlerSettings`` class.
-* Remove deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes.
+* additional files are included to sdist (:issue:`3495`);
+* code style fixes (:issue:`3405`, :issue:`3304`)
 
 Scrapy 1.5.2 (2019-01-22)
 -------------------------
@@ -1079,6 +1224,8 @@ Bear in mind this feature is still under development and its API may change
 until it reaches a stable status.
 
 See more examples for scripts running Scrapy: :ref:`topics-practices`
+
+.. _module_relocations:
 
 Module Relocations
 ~~~~~~~~~~~~~~~~~~
