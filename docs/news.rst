@@ -11,7 +11,7 @@ Highlights:
 * better Windows support;
 * Python 3.7 compatibility;
 * big documentation improvements, including a switch
-  from ``.extract()`` + ``.extract_first()`` API to ``.get()`` + ``.getall()``
+  from ``.extract_first()`` + ``.extract()`` API to ``.get()`` + ``.getall()``
   API;
 * feed exports, FilePipeline and MediaPipeline improvements;
 * better extensibility: :signal:`item_error` and
@@ -32,7 +32,7 @@ worth mentioning here. Scrapy now depends on parsel >= 1.5, and
 Scrapy documentation is updated to follow recent ``parsel`` API conventions.
 
 Most visible change is that ``.get()`` and ``.getall()`` selector
-methods are now preferred over ``.extract()`` and ``.extract_first()``.
+methods are now preferred over ``.extract_first()`` and ``.extract()``.
 We feel that these new methods result in a more concise and readable code.
 See :ref:`old-extraction-api` for more details.
 
