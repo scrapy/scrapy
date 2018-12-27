@@ -260,7 +260,7 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                     )
             requests.append(request)
 
-        self.assertEqual(self.scheduler.mqs._slots, {})
+        self.assertEqual(self.scheduler.mqs._active_downloads, {})
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
