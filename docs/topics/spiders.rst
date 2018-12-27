@@ -682,7 +682,8 @@ SitemapSpider
 
     .. method:: sitemap_filter(entries)
 
-        Specifies a function to filter sitemap entries and their attributes.
+        This is a filter funtion that could be overridden to select sitemap entries
+        based on their attributes.
 
         For example::
 
@@ -693,12 +694,17 @@ SitemapSpider
 
         We can define a ``sitemap_filter`` function to filter ``entries`` by date::
 
-            def sitemap_filter(entries):
-                from datetime import datetime
-                for entry in entries:
-                    date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
-                    if date_time.year >= 2005:
-                        yield entry
+            class FilteredSitemapSpider(scrapy.SitemapSpider):
+                name = 'filtered_sitemap_spider'
+                allowed_domains = ['example.com']
+                sitemap_urls = ['http://example.com/sitemap.xml']
+
+                def sitemap_filter(self, entries):
+                    from datetime import datetime
+                    for entry in entries:
+                        date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
+                        if date_time.year >= 2005:
+                            yield entry
 
         This would retrieve only ``entries`` modified on 2005 and the following
         years.
