@@ -694,7 +694,9 @@ SitemapSpider
 
         We can define a ``sitemap_filter`` function to filter ``entries`` by date::
 
-            class FilteredSitemapSpider(scrapy.SitemapSpider):
+            from scrapy.spiders.sitemap import SitemapSpider
+
+            class FilteredSitemapSpider(SitemapSpider):
                 name = 'filtered_sitemap_spider'
                 allowed_domains = ['example.com']
                 sitemap_urls = ['http://example.com/sitemap.xml']
