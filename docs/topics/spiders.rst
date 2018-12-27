@@ -694,7 +694,8 @@ SitemapSpider
 
         We can define a ``sitemap_filter`` function to filter ``entries`` by date::
 
-            from scrapy.spiders.sitemap import SitemapSpider
+            from datetime import datetime
+            from scrapy.spiders import SitemapSpider
 
             class FilteredSitemapSpider(SitemapSpider):
                 name = 'filtered_sitemap_spider'
@@ -702,7 +703,6 @@ SitemapSpider
                 sitemap_urls = ['http://example.com/sitemap.xml']
 
                 def sitemap_filter(self, entries):
-                    from datetime import datetime
                     for entry in entries:
                         date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
                         if date_time.year >= 2005:
