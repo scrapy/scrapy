@@ -27,9 +27,9 @@ def normalize_domain(domain):
     '/' at the start and end respectively, if they are not present in domain.
     """
     if 'http' not in domain:
-        domain = f'http://{domain}'
+        domain = 'http://' + domain
     if '/' not in domain[-1]:
-        domain = f'{domain}/'
+        domain = domain + '/'
     return domain
 
 
