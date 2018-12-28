@@ -22,6 +22,16 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
+def normalize_domain(domain):
+    """Normalize the given domain, by prepending and appending 'http' and
+    '/' at the start and end respectively, if they are not present in domain.
+    """
+    if 'http' not in domain:
+        domain = f'http://{domain}'
+    if '/' not in domain[-1]:
+        domain = f'{domain}/'
+    return domain
+
 
 class Command(ScrapyCommand):
 
@@ -62,6 +72,7 @@ class Command(ScrapyCommand):
 
         name, domain = args[0:2]
         module = sanitize_module_name(name)
+        domain = normalize_domain(domain)
 
         if self.settings.get('BOT_NAME') == module:
             print("Cannot create a spider with the same name as your project")
