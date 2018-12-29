@@ -43,6 +43,18 @@ Requirements
 * Python 2.7 or Python 3.4+
 * Works on Linux, Windows, Mac OSX, BSD
 
+Install Dependencies
+====================
+Go to this directory and run the following command
+
+For Python 2.7::
+
+    pip install -r requirements-py2.txt
+
+For Python 3.4+::
+
+    pip install -r requirements-py3.txt
+
 Install
 =======
 
