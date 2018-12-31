@@ -9,6 +9,7 @@ from os.path import join, dirname, abspath, exists, splitext
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils.url import add_http_if_no_scheme
 from scrapy.exceptions import UsageError
 
 
@@ -62,6 +63,7 @@ class Command(ScrapyCommand):
 
         name, domain = args[0:2]
         module = sanitize_module_name(name)
+        domain = add_http_if_no_scheme(domain)
 
         if self.settings.get('BOT_NAME') == module:
             print("Cannot create a spider with the same name as your project")
