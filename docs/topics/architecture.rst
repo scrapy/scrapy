@@ -89,6 +89,7 @@ Scheduler
 
 The Scheduler receives requests from the engine and enqueues them for feeding
 them later (also to the engine) when the engine requests them.
+For more information see :ref:`topics-scheduler`.
 
 .. _component-downloader:
 
