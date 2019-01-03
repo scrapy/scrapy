@@ -86,14 +86,13 @@ class Command(ScrapyCommand):
 
     def _genspider(self, module, name, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
-        start_url = domain if re.search('https?://', domain) else 'http://' + domain
+        domain = re.split('^https*://', domain)[-1]
         tvars = {
             'project_name': self.settings.get('BOT_NAME'),
             'ProjectName': string_camelcase(self.settings.get('BOT_NAME')),
             'module': module,
             'name': name,
             'domain': domain,
-            'start_url': start_url,
             'classname': '%sSpider' % ''.join(s.capitalize() \
                 for s in module.split('_'))
         }
