@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import shutil
 import string
+import re
 
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
@@ -23,6 +24,15 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
+def normalize_domain_name(domain):
+    start_url = domain
+    if 'http' in domain:
+        domain = re.findall(r'http.?://(.*)/?', domain)[0]
+    else:
+        start_url = add_http_if_no_scheme(domain)
+    if not start_url.endswith('/'):
+        start_url = start_url + '/'
+    return start_url, domain
 
 class Command(ScrapyCommand):
 
@@ -63,7 +73,7 @@ class Command(ScrapyCommand):
 
         name, domain = args[0:2]
         module = sanitize_module_name(name)
-        domain = add_http_if_no_scheme(domain)
+        start_url, domain = normalize_domain_name(domain)
 
         if self.settings.get('BOT_NAME') == module:
             print("Cannot create a spider with the same name as your project")
@@ -81,11 +91,11 @@ class Command(ScrapyCommand):
                 return
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, domain, opts.template, template_file)
+            self._genspider(module, name, start_url, domain, opts.template, template_file)
             if opts.edit:
                 self.exitcode = os.system('scrapy edit "%s"' % name)
 
-    def _genspider(self, module, name, domain, template_name, template_file):
+    def _genspider(self, module, name, start_url, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
             'project_name': self.settings.get('BOT_NAME'),
@@ -93,6 +103,7 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
+            'start_url': start_url,
             'classname': '%sSpider' % ''.join(s.capitalize() \
                 for s in module.split('_'))
         }
