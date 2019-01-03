@@ -3,7 +3,7 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
-from itertools import chain
+from itertools import chain, islice
 
 import six
 from twisted.python.failure import Failure
@@ -58,7 +58,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
                 return _failure
-            method_list = self.methods['process_spider_exception'][start_index:]
+            method_list = islice(self.methods['process_spider_exception'], start_index, None)
             for method_index, method in enumerate(method_list, start=start_index):
                 if method is None:
                     continue
@@ -89,7 +89,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         raise
                     recovered.extend(exception_result)
 
-            method_list = self.methods['process_spider_output'][start_index:]
+            method_list = islice(self.methods['process_spider_output'], start_index, None)
             for method_index, method in enumerate(method_list, start=start_index):
                 if method is None:
                     continue
