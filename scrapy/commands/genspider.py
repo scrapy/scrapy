@@ -30,9 +30,12 @@ def normalize_domain_name(domain):
         domain = re.findall(r'http.?://(.*)/?', domain)[0]
     else:
         start_url = add_http_if_no_scheme(domain)
+        
     if not start_url.endswith('/'):
         start_url = start_url + '/'
+
     return start_url, domain
+
 
 class Command(ScrapyCommand):
 
