@@ -30,7 +30,7 @@ class HttpProxyMiddleware(object):
         user_pass = to_bytes(
             '%s:%s' % (unquote(username), unquote(password)),
             encoding=self.auth_encoding)
-        return base64.b64encode(user_pass).strip()
+        return base64.b64encode(user_pass)
 
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)

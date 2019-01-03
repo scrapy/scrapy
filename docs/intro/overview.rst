@@ -26,7 +26,7 @@ http://quotes.toscrape.com, following the pagination::
 
 
     class QuotesSpider(scrapy.Spider):
-        name = "quotes"
+        name = 'quotes'
         start_urls = [
             'http://quotes.toscrape.com/tag/humor/',
         ]

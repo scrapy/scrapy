@@ -6,6 +6,8 @@ from scrapy.utils.decorators import defers
 
 
 class DataURIDownloadHandler(object):
+    lazy = False
+
     def __init__(self, settings):
         super(DataURIDownloadHandler, self).__init__()
 

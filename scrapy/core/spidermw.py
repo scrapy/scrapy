@@ -31,9 +31,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, 'process_spider_input'):
             self.methods['process_spider_input'].append(mw.process_spider_input)
         if hasattr(mw, 'process_start_requests'):
-            self.methods['process_start_requests'].insert(0, mw.process_start_requests)
-        self.methods['process_spider_output'].insert(0, getattr(mw, 'process_spider_output', None))
-        self.methods['process_spider_exception'].insert(0, getattr(mw, 'process_spider_exception', None))
+            self.methods['process_start_requests'].appendleft(mw.process_start_requests)
+        self.methods['process_spider_output'].appendleft(getattr(mw, 'process_spider_output', None))
+        self.methods['process_spider_exception'].appendleft(getattr(mw, 'process_spider_exception', None))
 
     def scrape_response(self, scrape_func, response, request, spider):
         fname = lambda f:'%s.%s' % (

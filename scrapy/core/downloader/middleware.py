@@ -27,9 +27,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, 'process_request'):
             self.methods['process_request'].append(mw.process_request)
         if hasattr(mw, 'process_response'):
-            self.methods['process_response'].insert(0, mw.process_response)
+            self.methods['process_response'].appendleft(mw.process_response)
         if hasattr(mw, 'process_exception'):
-            self.methods['process_exception'].insert(0, mw.process_exception)
+            self.methods['process_exception'].appendleft(mw.process_exception)
 
     def download(self, download_func, request, spider):
         @defer.inlineCallbacks
