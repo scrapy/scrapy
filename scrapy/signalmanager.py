@@ -4,7 +4,7 @@ from scrapy.utils import signal as _signal
 
 
 class SignalManager(object):
-    """…
+    """Handles connections between signals and receiver functions.
 
     For an introduction on signals see :ref:`topics-signals`.
     """

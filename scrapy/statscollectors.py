@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class StatsCollector(object):
-    """…
+    """Base class for :ref:`stats collectors <topics-stats>`, extensions that
+    collect statistics.
 
     The :meth:`open_spider` and :meth:`open_spider` methods are not part of the
     stats collection API but instead used when implementing custom stats

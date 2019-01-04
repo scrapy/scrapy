@@ -259,33 +259,15 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
-
-Response objects
-================
-
 .. _topics-request-response-ref-response-subclasses:
 
 Response subclasses
 ===================
 
-Here is the list of available built-in Response subclasses. You can also
-subclass the Response class to implement your own functionality.
+Scrapy provides the following built-in Response subclasses:
+:class:`~scrapy.http.TextResponse`, :class:`~scrapy.http.HtmlResponse`,
+:class:`~scrapy.http.XmlResponse`. You can also subclass the
+:class:`~scrapy.http.Response` class to implement your own functionality.
 
-TextResponse
-------------
-
-…
-
-
-HtmlResponse
-------------
-
-…
-
-
-XmlResponse
------------
-
-…
 
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

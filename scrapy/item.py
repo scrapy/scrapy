@@ -50,7 +50,8 @@ class ItemMeta(ABCMeta):
 
 
 class DictItem(MutableMapping, BaseItem):
-    """…"""
+    """Base class for :class:`scrapy.Item`, also used for the :ref:`dynamic
+    creation of item classes <dynamic-item-classes>`."""
 
     #: A dictionary containing *all declared fields* for this Item, not only
     #: those populated. The keys are the field names and the values are the

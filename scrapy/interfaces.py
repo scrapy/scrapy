@@ -2,7 +2,8 @@ from zope.interface import Interface
 
 
 class IDownloaderMiddleware(Interface):
-    """…
+    """Interface that any :ref:`downloader middleware
+    <topics-downloader-middleware>` class must implement.
 
     .. note::  Any of the downloader middleware methods may also return a
                deferred.
@@ -105,7 +106,8 @@ class IDownloaderMiddleware(Interface):
 
 
 class IPipeline(Interface):
-    """…"""
+    """Interface that any :ref:`item pipeline <topics-item-pipeline>` class
+    must implement."""
 
     def process_item(self, item, spider):
         """This method is called for every item pipeline component. :meth:`process_item`

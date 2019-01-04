@@ -45,10 +45,10 @@ We will talk about those types here.
 The simplest spider is :class:`~scrapy.http.Spider`, and the one from which
 every other spider must inherit (including spiders that come bundled with
 Scrapy, as well as spiders that you write yourself). It doesn't provide any
-special functionality. It just provides a default :meth:`start_requests`
-implementation which sends requests from the :attr:`start_urls` spider
-attribute and calls the spider's method ``parse`` for each of the resulting
-responses.
+special functionality. It just provides a default
+:meth:`~scrapy.spiders.Spider.start_requests` implementation which sends
+requests from the :attr:`start_urls` spider attribute and calls the spider's
+method ``parse`` for each of the resulting responses.
 
 Let's see an example::
 
@@ -87,8 +87,9 @@ Return multiple Requests and items from a single callback::
             for href in response.xpath('//a/@href').getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
-to give data more structure you can use :ref:`topics-items`::
+Instead of :attr:`~Spider.start_urls` you can use
+:meth:`~Spider.start_requests` directly; to give data more structure you can
+use :ref:`topics-items`::
 
     import scrapy
     from myproject.items import MyItem
@@ -196,17 +197,7 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
 CrawlSpider
 -----------
 
-…
-
-Crawling rules
-~~~~~~~~~~~~~~
-
-…
-
-CrawlSpider example
-~~~~~~~~~~~~~~~~~~~
-
-Let's now take a look at an example CrawlSpider with rules::
+Let's now take a look at an example :class:`CrawlSpider` with rules::
 
     import scrapy
     from scrapy.spiders import CrawlSpider, Rule
@@ -243,13 +234,8 @@ an :class:`~scrapy.item.Item` will be filled with it.
 XMLFeedSpider
 -------------
 
-…
-
-
-XMLFeedSpider example
-~~~~~~~~~~~~~~~~~~~~~
-
-These spiders are pretty easy to use, let's have a look at one example::
+Spiders based on :class:`XMLFeedSpider` are pretty easy to use, let's have a
+look at one example::
 
     from scrapy.spiders import XMLFeedSpider
     from myproject.items import TestItem
@@ -276,11 +262,6 @@ prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
 
 CSVFeedSpider
 -------------
-
-…
-
-CSVFeedSpider example
-~~~~~~~~~~~~~~~~~~~~~
 
 Let's see an example similar to the previous one, but using a
 :class:`CSVFeedSpider`::
@@ -309,58 +290,8 @@ Let's see an example similar to the previous one, but using a
 SitemapSpider
 -------------
 
-…
-
-    .. method:: sitemap_filter(entries)
-
-        This is a filter funtion that could be overridden to select sitemap entries
-        based on their attributes.
-
-        For example::
-
-            <url>
-                <loc>http://example.com/</loc>
-                <lastmod>2005-01-01</lastmod>
-            </url>
-
-        We can define a ``sitemap_filter`` function to filter ``entries`` by date::
-
-            from datetime import datetime
-            from scrapy.spiders import SitemapSpider
-
-            class FilteredSitemapSpider(SitemapSpider):
-                name = 'filtered_sitemap_spider'
-                allowed_domains = ['example.com']
-                sitemap_urls = ['http://example.com/sitemap.xml']
-
-                def sitemap_filter(self, entries):
-                    for entry in entries:
-                        date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
-                        if date_time.year >= 2005:
-                            yield entry
-
-        This would retrieve only ``entries`` modified on 2005 and the following
-        years.
-
-        Entries are dict objects extracted from the sitemap document.
-        Usually, the key is the tag name and the value is the text inside it.
-
-        It's important to notice that:
-
-        - as the loc attribute is required, entries without this tag are discarded
-        - alternate links are stored in a list with the key ``alternate``
-          (see ``sitemap_alternate_links``)
-        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
-
-        If you omit this method, all entries found in sitemaps will be
-        processed, observing other attributes and their settings.
-
-
-SitemapSpider examples
-~~~~~~~~~~~~~~~~~~~~~~
-
-Simplest example: process all urls discovered through sitemaps using the
-``parse`` callback::
+Simplest example of :class:`SitemapSpider`: process all urls discovered through
+sitemaps using the ``parse`` callback::
 
     from scrapy.spiders import SitemapSpider
 
