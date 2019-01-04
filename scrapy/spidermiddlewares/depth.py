@@ -12,6 +12,24 @@ logger = logging.getLogger(__name__)
 
 
 class DepthMiddleware(object):
+    """DepthMiddleware is used for tracking the depth of each Request inside the
+   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   there is no value previously set (usually just the first Request) and
+   incrementing it by 1 otherwise.
+
+   It can be used to limit the maximum depth to scrape, control Request
+   priority based on their depth, and things like that.
+
+   The :class:`DepthMiddleware` can be configured through the following
+   settings (see the settings documentation for more info):
+
+      * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
+        crawl for any site. If zero, no limit will be imposed.
+      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
+        requests for each depth.
+      * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
+        their depth.
+    """
 
     def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth

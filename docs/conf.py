@@ -29,6 +29,7 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinxcontrib.zopeext.autointerface',
 ]
 
@@ -219,3 +220,11 @@ linkcheck_ignore = [
     'http://localhost:\d+', 'http://hg.scrapy.org',
     'http://directory.google.com/'
 ]
+
+
+# Options for the Intersphinx extension
+# -------------------------------------
+intersphinx_mapping = {
+    'parsel': ('https://parsel.readthedocs.io/en/latest', None),
+    'python': ('https://docs.python.org/3', None),
+}

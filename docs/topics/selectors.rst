@@ -894,83 +894,8 @@ whereas the CSS lookup is translated into XPath and thus runs more efficiently,
 so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
-Parsel also simplifies adding your own XPath extensions.
-
-.. autofunction:: parsel.xpathfuncs.set_xpathfunc
-
-
-.. _topics-selectors-ref:
-
-Built-in Selectors reference
-============================
-
-.. module:: scrapy.selector
-   :synopsis: Selector class
-
-Selector objects
-----------------
-
-.. autoclass:: Selector
-
-  .. automethod:: xpath
-
-      .. note::
-
-          For convenience, this method can be called as ``response.xpath()``
-
-  .. automethod:: css
-
-      .. note::
-
-          For convenience, this method can be called as ``response.css()``
-
-  .. automethod:: get
-
-     See also: :ref:`old-extraction-api`
-
-  .. autoattribute:: attrib
-
-     See also: :ref:`selecting-attributes`.
-
-  .. automethod:: re
-
-  .. automethod:: re_first
-
-  .. automethod:: register_namespace
-
-  .. automethod:: remove_namespaces
-
-  .. automethod:: __bool__
-
-  .. automethod:: getall
-
-     This method is added to Selector for consistency; it is more useful
-     with SelectorList. See also: :ref:`old-extraction-api`
-
-SelectorList objects
---------------------
-
-.. autoclass:: SelectorList
-
-   .. automethod:: xpath
-
-   .. automethod:: css
-
-   .. automethod:: getall
-
-      See also: :ref:`old-extraction-api`
-
-   .. automethod:: get
-
-      See also: :ref:`old-extraction-api`
-
-   .. automethod:: re
-
-   .. automethod:: re_first
-
-   .. autoattribute:: attrib
-
-      See also: :ref:`selecting-attributes`.
+Parsel also simplifies adding your own XPath extensions with
+:func:`~parsel.xpathfuncs.set_xpathfunc`.
 
 .. _selector-examples:
 

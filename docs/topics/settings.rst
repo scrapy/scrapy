@@ -673,14 +673,14 @@ The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function. In order to change
 the way duplicates are checked you could subclass ``RFPDupeFilter`` and
 override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.http.Request` object and return its fingerprint
+scrapy :class:`Request <scrapy.Request>` object and return its fingerprint
 (a string).
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
 Be very careful about this however, because you can get into crawling loops.
 It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.http.Request` that should not be
+``True`` on the specific :class:`Request <scrapy.Request>` that should not be
 filtered.
 
 .. setting:: DUPEFILTER_DEBUG

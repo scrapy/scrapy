@@ -20,6 +20,24 @@ from scrapy.utils.python import memoizemethod_noargs, to_native_str
 
 
 class TextResponse(Response):
+    """:class:`TextResponse` objects adds encoding capabilities to the base
+    :class:`Response` class, which is meant to be used only for binary data,
+    such as images, sounds or any media file.
+
+    :class:`TextResponse` objects support a new constructor argument, in
+    addition to the base :class:`Response` objects. The remaining functionality
+    is the same as for the :class:`Response` class and is not documented here.
+
+    :param encoding: is a string which contains the encoding to use for this
+       response. If you create a :class:`TextResponse` object with a unicode
+       body, it will be encoded using this encoding (remember the body attribute
+       is always a string). If ``encoding`` is ``None`` (default value), the
+       encoding will be looked up in the response headers and body instead.
+    :type encoding: string
+
+    :class:`TextResponse` objects support the following attributes and methods
+    in addition to the standard :class:`Response` ones:
+    """
 
     _DEFAULT_ENCODING = 'ascii'
 
@@ -55,6 +73,22 @@ class TextResponse(Response):
 
     @property
     def encoding(self):
+        """A string with the encoding of this response. The encoding is resolved by
+        trying the following mechanisms, in order:
+
+        1. the encoding passed in the constructor `encoding` argument
+
+        2. the encoding declared in the Content-Type HTTP header. If this
+            encoding is not valid (ie. unknown), it is ignored and the next
+            resolution mechanism is tried.
+
+        3. the encoding declared in the response body. The TextResponse class
+            doesn't provide any special functionality for this. However, the
+            :class:`HtmlResponse` and :class:`XmlResponse` classes do.
+
+        4. the encoding inferred by looking at the response body. This is the more
+            fragile method but also the last one tried.
+        """
         return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
@@ -62,12 +96,24 @@ class TextResponse(Response):
             or self._body_declared_encoding()
 
     def body_as_unicode(self):
-        """Return body as unicode"""
+        """The same as :attr:`text`, but available as a method. This method is
+        kept for backwards compatibility; please prefer ``response.text``."""
         return self.text
 
     @property
     def text(self):
-        """ Body as unicode """
+        """Response body, as unicode.
+
+        The same as ``response.body.decode(response.encoding)``, but the
+        result is cached after the first call, so you can access
+        ``response.text`` multiple times without extra overhead.
+
+        .. note::
+
+                ``unicode(response.body)`` is not a correct way to convert response
+                body to unicode: you would be using the system default encoding
+                (typically `ascii`) instead of the response encoding.
+        """
         # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
         benc = self.encoding
@@ -110,15 +156,29 @@ class TextResponse(Response):
 
     @property
     def selector(self):
+        """A :class:`~scrapy.selector.Selector` instance using the response as
+        target. The selector is lazily instantiated on first access."""
         from scrapy.selector import Selector
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
         return self._cached_selector
 
     def xpath(self, query, **kwargs):
+        """A shortcut to ``TextResponse.selector.xpath(query)``.
+
+        For example::
+
+            response.xpath('//p')
+        """
         return self.selector.xpath(query, **kwargs)
 
     def css(self, query):
+        """A shortcut to ``TextResponse.selector.css(query)``.
+
+        For example::
+
+            response.css('p')
+        """
         return self.selector.css(query)
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,

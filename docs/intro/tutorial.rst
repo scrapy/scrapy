@@ -126,7 +126,7 @@ and defines some attributes and methods:
 
   The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+  follow and creating new requests (:class:`Request <scrapy.Request>`) from them.
 
 How to run our spider
 ---------------------
@@ -164,7 +164,7 @@ What just happened under the hood?
 
 Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
-response for each one, it instantiates :class:`~scrapy.http.Response` objects
+response for each one, it instantiates :class:`Response <scrapy.Response>` objects
 and calls the callback method associated with the request (in this case, the
 ``parse`` method) passing the response as argument.
 

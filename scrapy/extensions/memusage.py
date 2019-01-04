@@ -20,6 +20,26 @@ logger = logging.getLogger(__name__)
 
 
 class MemoryUsage(object):
+    """Monitors the memory used by the Scrapy process that runs the spider and:
+
+    1. sends a notification e-mail when it exceeds a certain value
+    2. closes the spider when it exceeds a certain value
+
+    .. note:: This extension does not work in Windows.
+
+    The notification e-mails can be triggered when a certain warning value is
+    reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
+    (:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
+    and the Scrapy process to be terminated.
+
+    This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
+    can be configured with the following settings:
+
+    * :setting:`MEMUSAGE_LIMIT_MB`
+    * :setting:`MEMUSAGE_WARNING_MB`
+    * :setting:`MEMUSAGE_NOTIFY_MAIL`
+    * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
+    """
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):

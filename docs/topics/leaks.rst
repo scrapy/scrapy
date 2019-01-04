@@ -47,7 +47,7 @@ Too Many Requests?
 ------------------
 
 By default Scrapy keeps the request queue in memory; it includes
-:class:`~scrapy.http.Request` objects and all objects
+:class:`Request <scrapy.Request>` objects and all objects
 referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
@@ -58,7 +58,7 @@ in control.
 Debugging memory leaks with ``trackref``
 ========================================
 
-:mod:`trackref` is a module provided by Scrapy to debug the most common cases of
+:mod:`~scrapy.utils.trackref` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Requests,
 Responses, Item and Selector objects.
 
@@ -158,38 +158,6 @@ example, this won't show any live references to spiders::
     >>> from scrapy.spiders import Spider
     >>> prefs(ignore=Spider)
 
-.. module:: scrapy.utils.trackref
-   :synopsis: Track references of live objects
-
-scrapy.utils.trackref module
-----------------------------
-
-Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
-
-.. class:: object_ref
-
-    Inherit from this class (instead of object) if you want to track live
-    instances with the ``trackref`` module.
-
-.. function:: print_live_refs(class_name, ignore=NoneType)
-
-    Print a report of live references, grouped by class name.
-
-    :param ignore: if given, all objects from the specified class (or tuple of
-        classes) will be ignored.
-    :type ignore: class or classes tuple
-
-.. function:: get_oldest(class_name)
-
-    Return the oldest object alive with the given class name, or ``None`` if
-    none is found. Use :func:`print_live_refs` first to get a list of all
-    tracked live objects per class name.
-
-.. function:: iter_all(class_name)
-
-    Return an iterator over all objects alive with the given class name, or
-    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
-    of all tracked live objects per class name.
 
 .. _topics-leaks-guppy:
 

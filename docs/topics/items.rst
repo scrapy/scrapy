@@ -1,11 +1,10 @@
+.. currentmodule:: scrapy.item
+
 .. _topics-items:
 
 =====
 Items
 =====
-
-.. module:: scrapy.item
-   :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
 sources, typically, web pages. Scrapy spiders can return the extracted data

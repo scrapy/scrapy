@@ -32,9 +32,9 @@ class ImageException(FileException):
 
 
 class ImagesPipeline(FilesPipeline):
-    """Abstract pipeline that implement the image thumbnail generation logic
-
-    """
+    """The :class:`ImagesPipeline` is an extension of the
+    :class:`FilesPipeline`, customizing the field names and adding custom
+    behavior for images, such as image thumbnail generation."""
 
     MEDIA_NAME = 'image'
 
@@ -153,9 +153,23 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
+        """Works the same way as :meth:`FilesPipeline.get_media_requests` method,
+        but using a different field name for image urls.
+
+        Must return a Request for each image URL.
+        """
         return [Request(x) for x in item.get(self.images_urls_field, [])]
 
     def item_completed(self, results, item, info):
+        """The :meth:`ImagesPipeline.item_completed` method is called when all image
+        requests for a single item have completed (either finished downloading, or
+        failed for some reason).
+
+        Works the same way as :meth:`FilesPipeline.item_completed` method,
+        but using a different field names for storing image downloading results.
+
+        By default, the :meth:`item_completed` method returns the item.
+        """
         if isinstance(item, dict) or self.images_result_field in item.fields:
             item[self.images_result_field] = [x for ok, x in results if ok]
         return item

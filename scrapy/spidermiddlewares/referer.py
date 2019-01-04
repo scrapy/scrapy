@@ -108,6 +108,12 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
     A Referer HTTP header will not be sent.
 
     This is a user agent's default behavior, if no policy is otherwise specified.
+
+    .. note::
+        "no-referrer-when-downgrade" policy is the W3C-recommended default,
+        and is used by major web browsers.
+
+        However, it is NOT Scrapy's default referrer policy (see :class:`DefaultReferrerPolicy`).
     """
     name = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
@@ -232,6 +238,9 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     This policy will leak origins and paths from TLS-protected resources
     to insecure origins.
     Carefully consider the impact of setting such a policy for potentially sensitive documents.
+
+    .. warning::
+        "unsafe-url" policy is NOT recommended.
     """
     name = POLICY_UNSAFE_URL
 
@@ -244,6 +253,15 @@ class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
     A variant of "no-referrer-when-downgrade",
     with the addition that "Referer" is not sent if the parent request was
     using ``file://`` or ``s3://`` scheme.
+
+    .. warning::
+        Scrapy's default referrer policy — just like `"no-referrer-when-downgrade"`_,
+        the W3C-recommended value for browsers — will send a non-empty
+        "Referer" header from any ``http(s)://`` to any ``https://`` URL,
+        even if the domain is different.
+
+        `"same-origin"`_ may be a better choice if you want to remove referrer
+        information for cross-domain requests.
     """
     NOREFERRER_SCHEMES = LOCAL_SCHEMES + ('file', 's3')
     name = POLICY_SCRAPY_DEFAULT
@@ -286,6 +304,59 @@ def _load_policy_class(policy, warning_only=False):
 
 
 class RefererMiddleware(object):
+    """Populates Request ``Referer`` header, based on the URL of the Response which
+    generated it.
+
+    This spider middleware has the following settings:
+
+    .. setting:: REFERER_ENABLED
+
+    .. rubric:: REFERER_ENABLED
+
+    .. versionadded:: 0.15
+
+    Default: ``True``
+
+    Whether to enable referer middleware.
+
+    .. setting:: REFERRER_POLICY
+
+    .. rubric:: REFERRER_POLICY
+
+    .. versionadded:: 1.4
+
+    Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
+
+    .. reqmeta:: referrer_policy
+
+    `Referrer Policy`_ to apply when populating Request "Referer" header.
+
+    .. note::
+        You can also set the Referrer Policy per request,
+        using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
+        with the same acceptable values as for the ``REFERRER_POLICY`` setting.
+
+    Acceptable values for :setting:`REFERRER_POLICY` are:
+
+    - either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+      subclass — a custom policy or one of the built-in ones (see classes below),
+    - or one of the standard W3C-defined string values,
+    - or the special ``"scrapy-default"``.
+
+    =======================================  ========================================================================
+    String value                             Class name (as a string)
+    =======================================  ========================================================================
+    ``"scrapy-default"`` (default)           :class:`scrapy.spidermiddlewares.referer.DefaultReferrerPolicy`
+    `"no-referrer"`_                         :class:`scrapy.spidermiddlewares.referer.NoReferrerPolicy`
+    `"no-referrer-when-downgrade"`_          :class:`scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy`
+    `"same-origin"`_                         :class:`scrapy.spidermiddlewares.referer.SameOriginPolicy`
+    `"origin"`_                              :class:`scrapy.spidermiddlewares.referer.OriginPolicy`
+    `"strict-origin"`_                       :class:`scrapy.spidermiddlewares.referer.StrictOriginPolicy`
+    `"origin-when-cross-origin"`_            :class:`scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy`
+    `"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
+    `"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
+    =======================================  ========================================================================
+    """
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy

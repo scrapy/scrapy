@@ -256,15 +256,14 @@ class FilesPipeline(MediaPipeline):
     expired.
 
     `new` files are those that pipeline never processed and needs to be
-        downloaded from supplier site the first time.
+    downloaded from supplier site the first time.
 
     `uptodate` files are the ones that the pipeline processed and are still
-        valid files.
+    valid files.
 
     `expired` files are those that pipeline already processed but the last
-        modification was made long time ago, so a reprocessing is recommended to
-        refresh it in case of change.
-
+    modification was made long time ago, so a reprocessing is recommended to
+    refresh it in case of change.
     """
 
     MEDIA_NAME = "file"
@@ -442,6 +441,51 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
+        """As seen on the workflow, the pipeline will get the URLs of the images to
+        download from the item. In order to do this, you can override the
+        :meth:`~get_media_requests` method and return a Request for each
+        file URL::
+
+            def get_media_requests(self, item, info):
+                for file_url in item['file_urls']:
+                    yield scrapy.Request(file_url)
+
+        Those requests will be processed by the pipeline and, when they have finished
+        downloading, the results will be sent to the
+        :meth:`~item_completed` method, as a list of 2-element tuples.
+        Each tuple will contain ``(success, file_info_or_error)`` where:
+
+        *   ``success`` is a boolean which is ``True`` if the image was downloaded
+            successfully or ``False`` if it failed for some reason
+
+        *   ``file_info_or_error`` is a dict containing the following keys (if success
+            is ``True``) or a `Twisted Failure`_ if there was a problem.
+
+            *   ``url`` - the url where the file was downloaded from. This is the url of
+                the request returned from the :meth:`~get_media_requests`
+                method.
+
+            *   ``path`` - the path (relative to :setting:`FILES_STORE`) where the file
+                was stored
+
+            *   ``checksum`` - a `MD5 hash`_ of the image contents
+
+        The list of tuples received by :meth:`~item_completed` is
+        guaranteed to retain the same order of the requests returned from the
+        :meth:`~get_media_requests` method.
+
+        Here's a typical value of the ``results`` argument::
+
+            [(True,
+                {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
+                'path': 'full/0a79c461a4062ac383dc4fade7bc09f1384a3910.jpg',
+                'url': 'http://www.example.com/files/product1.pdf'}),
+            (False,
+                Failure(...))]
+
+        By default the :meth:`get_media_requests` method returns ``None`` which
+        means there are no files to download for the item.
+        """
         return [Request(x) for x in item.get(self.files_urls_field, [])]
 
     def file_downloaded(self, response, request, info):
@@ -453,6 +497,29 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
+        """The :meth:`FilesPipeline.item_completed` method called when all file
+        requests for a single item have completed (either finished downloading, or
+        failed for some reason).
+
+        The :meth:`~item_completed` method must return the
+        output that will be sent to subsequent item pipeline stages, so you must
+        return (or drop) the item, as you would in any pipeline.
+
+        Here is an example of the :meth:`~item_completed` method where we
+        store the downloaded file paths (passed in results) in the ``file_paths``
+        item field, and we drop the item if it doesn't contain any files::
+
+            from scrapy.exceptions import DropItem
+
+            def item_completed(self, results, item, info):
+                file_paths = [x['path'] for ok, x in results if ok]
+                if not file_paths:
+                    raise DropItem("Item contains no files")
+                item['file_paths'] = file_paths
+                return item
+
+        By default, the :meth:`item_completed` method returns the item.
+        """
         if isinstance(item, dict) or self.files_result_field in item.fields:
             item[self.files_result_field] = [x for ok, x in results if ok]
         return item

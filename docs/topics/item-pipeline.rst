@@ -23,51 +23,8 @@ Typical uses of item pipelines are:
 Writing your own item pipeline
 ==============================
 
-Each item pipeline component is a Python class that must implement the following method:
-
-.. method:: process_item(self, item, spider)
-
-   This method is called for every item pipeline component. :meth:`process_item`
-   must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a `Twisted Deferred`_ or raise
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-   processed by further pipeline components.
-
-   :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object or a dict
-
-   :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spiders.Spider` object
-
-Additionally, they may also implement the following methods:
-
-.. method:: open_spider(self, spider)
-
-   This method is called when the spider is opened.
-
-   :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spiders.Spider` object
-
-.. method:: close_spider(self, spider)
-
-   This method is called when the spider is closed.
-
-   :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spiders.Spider` object
-
-.. method:: from_crawler(cls, crawler)
-
-   If present, this classmethod is called to create a pipeline instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the pipeline. Crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for pipeline to
-   access them and hook its functionality into Scrapy.
-
-   :param crawler: crawler that uses this pipeline
-   :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-
-.. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
+Each item pipeline component is a Python class that must implement the
+:interface:`scrapy.interfaces.IPipeline` interface.
 
 Item pipeline example
 =====================

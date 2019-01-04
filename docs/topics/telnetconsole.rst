@@ -4,9 +4,6 @@
 Telnet Console
 ==============
 
-.. module:: scrapy.extensions.telnet
-   :synopsis: The Telnet Console
-
 Scrapy comes with a built-in telnet console for inspecting and controlling a
 Scrapy running process. The telnet console is just a regular python shell
 running inside the Scrapy process, so you can do literally anything from it.
@@ -150,19 +147,6 @@ To stop::
     >>> engine.stop()
     Connection closed by foreign host.
 
-Telnet Console signals
-======================
-
-.. signal:: update_telnet_vars
-.. function:: update_telnet_vars(telnet_vars)
-
-    Sent just before the telnet console is opened. You can hook up to this
-    signal to add, remove or update the variables that will be available in the
-    telnet local namespace. In order to do that, you need to update the
-    ``telnet_vars`` dict in your handler.
-
-    :param telnet_vars: the dict of telnet variables
-    :type telnet_vars: dict
 
 Telnet settings
 ===============

@@ -2,17 +2,14 @@
 Link Extraction API
 ===================
 
+.. _topics-link-extractors-ref:
+
 Link Extractors
 ===============
 
-.. automodule:: scrapy.linkextractors
-   :members:
+.. autoclass:: scrapy.linkextractors.LinkExtractor
 
-.. automodule:: scrapy.linkextractors.htmlparser
-   :members:
-
-.. automodule:: scrapy.linkextractors.lxmlhtml
-   :members:
+.. autoclass:: scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor
 
 
 Links
@@ -20,3 +17,4 @@ Links
 
 .. automodule:: scrapy.link
    :members:
+

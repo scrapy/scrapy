@@ -25,19 +25,52 @@ logger = logging.getLogger(__name__)
 
 
 class Crawler(object):
+    """Manages one or more crawling sessions with the specified parameters,
+    providing :ref:`downloader middlewares <topics-downloader-middleware>`,
+    :ref:`spider middlewares <topics-spider-middleware>` and
+    :ref:`extensions <topics-extensions>` access to all Scrapy core components
+    at run time:
+    :class:`engine <Crawler.engine>`,
+    :class:`extensions <Crawler.extensions>`,
+    :class:`settings <Crawler.settings>`,
+    :class:`signals <Crawler.signals>`,
+    :class:`spider <Crawler.spider>`,
+    :class:`spiders <Crawler.spider>`,
+    :class:`stats <Crawler.stats>`.
+
+    *spidercls* must be a :class:`Spider <scrapy.Spider>` subclass. *settings*,
+    if specified, should be either a :class:`dict` or an instance of
+    :class:`Settings <scrapy.settings.Settings>`.
+    """
 
     def __init__(self, spidercls, settings=None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         self.spidercls = spidercls
+
+        #: :class:`Settings <scrapy.settings.Settings>` object that handles the
+        #: :ref:`settings <topics-settings>` of this crawler.
         self.settings = settings.copy()
+
         self.spidercls.update_settings(self.settings)
 
         d = dict(overridden_settings(self.settings))
         logger.info("Overridden settings: %(settings)r", {'settings': d})
 
+        #: :class:`SignalManager <scrapy.signalmanager.SignalManager>` object
+        #: that allows handling :ref:`signals <topics-signals>` related to this
+        #: crawler.
         self.signals = SignalManager(self)
+
+        #: Object responsible for :ref:`collecting statistics <topics-stats>`
+        #: about this crawler.
+        #:
+        #: Implements the
+        #: :class:`StatsCollector <scrapy.statscollectors.StatsCollector>` API.
+        #:
+        #: The :setting:`STATS_CLASS` setting determines the class of this
+        #: object.
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
@@ -52,11 +85,31 @@ class Crawler(object):
 
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
+
+        #: :class:`ExtensionManager <scrapy.extension.ExtensionManager>` object
+        #: that handles the :ref:`extensions <topics-extensions>` that the
+        #: crawler uses.
         self.extensions = ExtensionManager.from_crawler(self)
 
         self.settings.freeze()
         self.crawling = False
+
+        #: Spider object being crawled.
+        #:
+        #: This is an instance of :class:`spidercls <Crawler.spidercls>`, and
+        #: it is created after the arguments given in the :meth:`crawl` method.
         self.spider = None
+
+        #: :class:`ExecutionEngine <scrapy.core.engine.ExecutionEngine>` object
+        #: that coordinates the :class:`spider <Crawler.spider>` of the crawler
+        #: with the
+        #: :class:`scheduler <scrapy.core.engine.ExecutionEngine.scheduler>`
+        #: and the
+        #: :class:`downloader <scrapy.core.engine.ExecutionEngine.downloader>`.
+        #:
+        #: Some extensions may want to access the Scrapy engine, to inspect  or
+        #: modify the downloader and scheduler behaviour, although this is an
+        #: advanced use and this API is not yet stable.
         self.engine = None
 
     @property
@@ -72,6 +125,15 @@ class Crawler(object):
 
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
+        """Starts the crawler by instantiating its spider class with the given
+        `args` and `kwargs` arguments, while setting the execution engine in
+        motion.
+
+        Returns a deferred that is fired when the crawl is finished.
+
+        When using Scrapy, usually an instance of :class:`Crawler` is
+        object, passed to extensions through the ``from_crawler`` class method.
+        """
         assert not self.crawling, "Crawling already taking place"
         self.crawling = True
 
@@ -134,6 +196,16 @@ class CrawlerRunner(object):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
+
+        #: Implementation of
+        #: :interface:`ISpiderLoader <scrapy.interfaces.ISpiderLoader>` that
+        #: the crawler runner uses to resolve spider names to :class:`Spider
+        #: <scrapy.Spider>` subclasses.
+        #:
+        #: Use the :setting:`SPIDER_LOADER_CLASS` setting to define a custom
+        #: spider loader class. The default implementation,
+        #: :class:`SpiderLoader <scrapy.spiderloader.SpiderLoader>`, is used
+        #: otherwise.
         self.spider_loader = _get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()

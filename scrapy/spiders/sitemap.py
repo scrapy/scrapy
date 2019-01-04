@@ -12,10 +12,62 @@ logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
+    """SitemapSpider allows you to crawl a site by discovering the URLs using
+    `Sitemaps`_.
 
+    It supports nested sitemaps and discovering sitemap urls from
+    `robots.txt`_.
+    """
+
+    #: A list of urls pointing to the sitemaps whose urls you want to crawl.
+    #:
+    #: You can also point to a `robots.txt`_ and it will be parsed to extract
+    #: sitemap urls from it.
     sitemap_urls = ()
+
+    #: A list of tuples ``(regex, callback)`` where:
+    #:
+    #: * ``regex`` is a regular expression to match urls extracted from sitemaps.
+    #:   ``regex`` can be either a str or a compiled regex object.
+    #:
+    #: * callback is the callback to use for processing the urls that match
+    #:   the regular expression. ``callback`` can be a string (indicating the
+    #:   name of a spider method) or a callable.
+    #:
+    #: For example::
+    #:
+    #:     sitemap_rules = [('/product/', 'parse_product')]
+    #:
+    #: Rules are applied in order, and only the first one that matches will be
+    #: used.
+    #:
+    #: If you omit this attribute, all urls found in sitemaps will be
+    #: processed with the ``parse`` callback.
     sitemap_rules = [('', 'parse')]
+
+    #: A list of regexes of sitemap that should be followed. This is is only
+    #: for sites that use `Sitemap index files`_ that point to other sitemap
+    #: files.
+    #:
+    #: By default, all sitemaps are followed.
     sitemap_follow = ['']
+
+    #: Specifies if alternate links for one ``url`` should be followed. These
+    #: are links for the same website in another language passed within
+    #: the same ``url`` block.
+    #:
+    #: For example::
+    #:
+    #:     <url>
+    #:         <loc>http://example.com/</loc>
+    #:         <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
+    #:     </url>
+    #:
+    #: With ``sitemap_alternate_links`` set, this would retrieve both URLs. With
+    #: ``sitemap_alternate_links`` disabled, only ``http://example.com/`` would be
+    #: retrieved.
+    #:
+    #: Default is ``sitemap_alternate_links`` disabled.
     sitemap_alternate_links = False
 
     def __init__(self, *a, **kw):

@@ -1,5 +1,11 @@
-"""
-Item Exporters are used to export/serialize items into different formats.
+""":ref:`Item exporters <topics-exporters>` are used to export/serialize items
+into different formats.
+
+The item exporters below are bundled with Scrapy. Some of them contain output
+examples, which assume you're exporting these two items::
+
+    Item(name='Color TV', price='1200')
+    Item(name='DVD player', price='200')
 """
 
 import csv
@@ -24,6 +30,15 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
 
 
 class BaseItemExporter(object):
+    """This is the (abstract) base class for all Item Exporters. It provides
+   support for common features used by all (concrete) Item Exporters, such as
+   defining what fields to export, whether to export empty fields, or which
+   encoding to use.
+
+   These features can be configured through the constructor arguments which
+   populate their respective instance attributes: :attr:`fields_to_export`,
+   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
+   """
 
     def __init__(self, **kwargs):
         self._configure(kwargs)
@@ -33,24 +48,86 @@ class BaseItemExporter(object):
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses constructors)
         """
+        #: The encoding that will be used to encode unicode values. This only
+        #: affects unicode values (which are always serialized to str using
+        #: this encoding). Other value types are passed unchanged to the
+        #: specific serialization library.
         self.encoding = options.pop('encoding', None)
+
+        #: A list with the name of the fields that will be exported, or None if
+        #: you want to export all fields. Defaults to None.
+        #:
+        #: Some exporters (like :class:`CsvItemExporter`) respect the order of
+        #: the fields defined in this attribute.
+        #:
+        #: Some exporters may require fields_to_export list in order to export
+        #: the data properly when spiders return dicts (not :class:`~Item`
+        #: instances).
         self.fields_to_export = options.pop('fields_to_export', None)
+
+        #: Whether to include empty/unpopulated item fields in the exported
+        #: data.
+        #:
+        #: Defaults to ``False``. Some exporters (like
+        #: :class:`CsvItemExporter`) ignore this attribute and always export
+        #: all empty fields.
+        #:
+        #: This option is ignored for dict items.
         self.export_empty_fields = options.pop('export_empty_fields', False)
+
+        #: Amount of spaces used to indent the output on each level. Defaults
+        #: to ``0``.
+        #:
+        #: * ``indent=None`` selects the most compact representation,
+        #:   all items in the same line with no indentation
+        #: * ``indent<=0`` each item on its own line, no indentation
+        #: * ``indent>0`` each item on its own line, indented with the provided
+        #:   ``numeric value
         self.indent = options.pop('indent', None)
         if not dont_fail and options:
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
     def export_item(self, item):
+        """Exports the given item. This method must be implemented in
+        subclasses."""
         raise NotImplementedError
 
     def serialize_field(self, field, name, value):
+        """Return the serialized value for the given field. You can override this
+        method (in your custom Item Exporters) if you want to control how a
+        particular field or value will be serialized/exported.
+
+        By default, this method looks for a serializer :ref:`declared in the item
+        field <topics-exporters-serializers>` and returns the result of applying
+        that serializer to the value. If no serializer is found, it returns the
+        value unchanged except for ``unicode`` values which are encoded to
+        ``str`` using the encoding declared in the :attr:`encoding` attribute.
+
+        :param field: the field being serialized. If a raw dict is being
+                      exported (not :class:`~.Item`) *field* value is an empty
+                      dict.
+        :type field: :class:`~scrapy.item.Field` object or an empty dict
+
+        :param name: the name of the field being serialized
+        :type name: str
+
+        :param value: the value being serialized
+        """
         serializer = field.get('serializer', lambda x: x)
         return serializer(value)
 
     def start_exporting(self):
+        """Signal the beginning of the exporting process. Some exporters may use
+        this to generate some required header (for example, the
+        :class:`XmlItemExporter`). You must call this method before exporting any
+        items."""
         pass
 
     def finish_exporting(self):
+        """Signal the end of the exporting process. Some exporters may use this to
+        generate some required footer (for example, the
+        :class:`XmlItemExporter`). You must always call this method after you
+        have no more items to export."""
         pass
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
@@ -81,6 +158,27 @@ class BaseItemExporter(object):
 
 
 class JsonLinesItemExporter(BaseItemExporter):
+    """Exports Items in JSON format to the specified file-like object, writing one
+    JSON-encoded item per line. The additional constructor arguments are passed
+    to the :class:`BaseItemExporter` constructor, and the leftover arguments to
+    the `JSONEncoder`_ constructor, so you can use any `JSONEncoder`_
+    constructor argument to customize this exporter.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    A typical output of this exporter would be:
+
+    .. code-block:: javascript
+
+        {"name": "Color TV", "price": "1200"}
+        {"name": "DVD player", "price": "200"}
+
+    Unlike the one produced by :class:`JsonItemExporter`, the format produced by
+    this exporter is well suited for serializing large amounts of data.
+
+    .. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
+    """
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
@@ -95,6 +193,34 @@ class JsonLinesItemExporter(BaseItemExporter):
 
 
 class JsonItemExporter(BaseItemExporter):
+    """Exports Items in JSON format to the specified file-like object, writing all
+    objects as a list of objects. The additional constructor arguments are
+    passed to the :class:`BaseItemExporter` constructor, and the leftover
+    arguments to the `JSONEncoder`_ constructor, so you can use any
+    `JSONEncoder`_ constructor argument to customize this exporter.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    A typical output of this exporter would be:
+
+    .. code-block:: javascript
+
+        [{"name": "Color TV", "price": "1200"},
+        {"name": "DVD player", "price": "200"}]
+
+    .. _json-with-large-data:
+
+    .. warning:: JSON is very simple and flexible serialization format, but it
+        doesn't scale well for large amounts of data since incremental (aka.
+        stream-mode) parsing is not well supported (if at all) among JSON parsers
+        (on any language), and most of them just parse the entire object in
+        memory. If you want the power and simplicity of JSON with a more
+        stream-friendly format, consider using :class:`JsonLinesItemExporter`
+        instead, or splitting the output in multiple chunks.
+
+    .. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
+    """
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs, dont_fail=True)
@@ -132,6 +258,60 @@ class JsonItemExporter(BaseItemExporter):
 
 
 class XmlItemExporter(BaseItemExporter):
+    """Exports Items in XML format to the specified file object.
+
+    :param file: the file-like object to use for exporting the data. Its
+                 ``write`` method should accept ``bytes`` (a disk file opened
+                 in binary mode, a ``io.BytesIO`` object, etc)
+
+    :param root_element: The name of root element in the exported XML.
+    :type root_element: str
+
+    :param item_element: The name of each item element in the exported XML.
+    :type item_element: str
+
+    The additional keyword arguments of this constructor are passed to the
+    :class:`BaseItemExporter` constructor.
+
+    A typical output of this exporter would be:
+
+    .. code-block:: xml
+
+        <?xml version="1.0" encoding="utf-8"?>
+        <items>
+            <item>
+                <name>Color TV</name>
+                <price>1200</price>
+            </item>
+            <item>
+                <name>DVD player</name>
+                <price>200</price>
+            </item>
+        </items>
+
+    Unless overridden in the :meth:`serialize_field` method, multi-valued fields are
+    exported by serializing each value inside a ``<value>`` element. This is for
+    convenience, as multi-valued fields are very common.
+
+    For example, the item::
+
+        Item(name=['John', 'Doe'], age='23')
+
+    Would be serialized as:
+
+    .. code-block:: xml
+
+        <?xml version="1.0" encoding="utf-8"?>
+        <items>
+            <item>
+                <name>
+                    <value>John</value>
+                    <value>Doe</value>
+                </name>
+                <age>23</age>
+            </item>
+        </items>
+    """
 
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
@@ -204,6 +384,36 @@ class XmlItemExporter(BaseItemExporter):
 
 
 class CsvItemExporter(BaseItemExporter):
+    """Exports Items in CSV format to the given file-like object. If the
+    :attr:`fields_to_export` attribute is set, it will be used to define the
+    CSV columns and their order. The :attr:`export_empty_fields` attribute has
+    no effect on this exporter.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    :param include_headers_line: If enabled, makes the exporter output a header
+        line with the field names taken from
+        :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
+    :type include_headers_line: boolean
+
+    :param join_multivalued: The char (or chars) that will be used for joining
+        multi-valued fields, if found.
+    :type include_headers_line: str
+
+    The additional keyword arguments of this constructor are passed to the
+    :class:`BaseItemExporter` constructor, and the leftover arguments to the
+    `csv.writer`_ constructor, so you can use any `csv.writer` constructor
+    argument to customize this exporter.
+
+    A typical output of this exporter would be::
+
+        product,price
+        Color TV,1200
+        DVD player,200
+
+    .. _csv.writer: https://docs.python.org/2/library/csv.html#csv.writer
+    """
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
@@ -264,6 +474,23 @@ class CsvItemExporter(BaseItemExporter):
 
 
 class PickleItemExporter(BaseItemExporter):
+    """Exports Items in pickle format to the given file-like object.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    :param protocol: The pickle protocol to use.
+    :type protocol: int
+
+    For more information, refer to the `pickle module documentation`_.
+
+    The additional keyword arguments of this constructor are passed to the
+    :class:`BaseItemExporter` constructor.
+
+    Pickle isn't a human readable format, so no output examples are provided.
+
+    .. _pickle module documentation: https://docs.python.org/2/library/pickle.html
+    """
 
     def __init__(self, file, protocol=2, **kwargs):
         self._configure(kwargs)
@@ -286,6 +513,23 @@ class MarshalItemExporter(BaseItemExporter):
 
 
 class PprintItemExporter(BaseItemExporter):
+    """Exports Items in pretty print format to the specified file object.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                    accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    The additional keyword arguments of this constructor are passed to the
+    :class:`BaseItemExporter` constructor.
+
+    A typical output of this exporter would be:
+
+    .. code-block:: javascript
+
+        {'name': 'Color TV', 'price': '1200'}
+        {'name': 'DVD player', 'price': '200'}
+
+    Longer lines (when present) are pretty-formatted.
+    """
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs)

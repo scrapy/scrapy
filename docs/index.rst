@@ -241,16 +241,19 @@ API reference
    api/downloader-middleware
    api/duplicate-filtering
    api/exceptions
+   api/extension
    api/http
    api/item
    api/link-extraction
+   api/logging
    api/mail
-   api/middleware
+   api/reference-tracking
    api/scheduler
    api/selector
    api/settings
    api/signals
    api/spiders
+   api/spider-middleware
    api/statistics
 
 :doc:`api/core`
@@ -268,6 +271,9 @@ API reference
 :doc:`api/exceptions`
     Built-in exceptions.
 
+:doc:`api/extension`
+    Extension API and built-in extensions.
+
 :doc:`api/http`
     Requests and responses.
 
@@ -277,11 +283,14 @@ API reference
 :doc:`api/link-extraction`
     Link extraction.
 
+:doc:`api/logging`
+    Logging.
+
 :doc:`api/mail`
     Mail delivery.
 
-:doc:`api/middleware`
-    Middleware development.
+:doc:`api/reference-tracking`
+    Reference tracking.
 
 :doc:`api/scheduler`
     Crawl scheduling.
@@ -297,6 +306,9 @@ API reference
 
 :doc:`api/spiders`
     Spider development.
+
+:doc:`api/spider-middleware`
+    Spider middleware development.
 
 :doc:`api/statistics`
     Statistics collection.

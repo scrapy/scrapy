@@ -2,5 +2,5 @@
 Mail API
 ========
 
-.. automodule:: scrapy.mail
-   :members:
+.. autoclass:: scrapy.mail.MailSender
+    :members:
