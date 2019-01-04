@@ -25,6 +25,11 @@ def sanitize_module_name(module_name):
     return module_name
 
 def normalize_domain_name(domain):
+    """
+    Normalize Domain. if http is added, remove for the domain name,
+    But keep for the start_urls, else make start_urls equals to 
+    domain by adding http.
+    """
     start_url = domain
     if 'http' in domain:
         domain = re.findall(r'http.?://(.*)/?', domain)[0]
@@ -94,7 +99,8 @@ class Command(ScrapyCommand):
                 return
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, start_url, domain, opts.template, template_file)
+            self._genspider(module, name, start_url, \
+                domain, opts.template, template_file)
             if opts.edit:
                 self.exitcode = os.system('scrapy edit "%s"' % name)
 
