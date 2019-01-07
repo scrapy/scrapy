@@ -657,7 +657,8 @@ Removing namespaces
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
-:meth:`Selector.remove_namespaces` method for that.
+:meth:`Selector.remove_namespaces <scrapy.Selector.remove_namespaces>` method
+for that.
 
 Let's show an example that illustrates this with the Python Insider blog atom feed.
 
@@ -692,7 +693,7 @@ doesn't work (because the Atom XML namespace is obfuscating those nodes)::
     >>> response.xpath("//link")
     []
 
-But once we call the :meth:`Selector.remove_namespaces` method, all
+But once we call the :meth:`~scrapy.Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names::
 
     >>> response.selector.remove_namespaces()

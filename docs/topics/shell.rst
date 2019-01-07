@@ -116,7 +116,7 @@ Available Scrapy objects
 ------------------------
 
 The Scrapy shell automatically creates some convenient objects from the
-downloaded page, like the :class:`Response <scrapy.Response>` object and the
+downloaded page, like the :class:`~scrapy.http.Response` object and the
 :class:`~scrapy.selector.Selector` objects (for both HTML and XML
 content).
 
@@ -128,12 +128,12 @@ Those objects are:
    :class:`~scrapy.spiders.Spider` object if there is no spider found for
    the current URL
 
- * ``request`` - a :class:`Request <scrapy.Request>` object of the last fetched
+ * ``request`` - a :class:`~scrapy.Request` object of the last fetched
    page. You can modify this request using :meth:`~scrapy.http.Request.replace`
    or fetch a new request (without leaving the shell) using the ``fetch``
    shortcut.
 
- * ``response`` - a :class:`Response <scrapy.Response>` object containing the last
+ * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
 
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`

@@ -18,14 +18,14 @@ For spiders, the scraping cycle goes through something like this:
 
    The first requests to perform are obtained by calling the
    :meth:`~scrapy.spiders.Spider.start_requests` method which (by default)
-   generates :class:`Request <scrapy.Request>` for the URLs specified in the
+   generates :class:`~scrapy.Request` for the URLs specified in the
    :attr:`~scrapy.spiders.Spider.start_urls` and the
    :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
    dicts with extracted data, :class:`~scrapy.item.Item` objects,
-   :class:`Request <scrapy.Request>` objects, or an iterable of these objects.
+   :class:`~scrapy.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
    response handled by the specified callback.

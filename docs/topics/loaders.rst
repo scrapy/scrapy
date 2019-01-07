@@ -26,7 +26,7 @@ Using Item Loaders to populate items
 To use an Item Loader, you must first instantiate it. You can either
 instantiate it with a dict-like object (e.g. Item or dict) or without one, in
 which case an Item is automatically instantiated in the Item Loader constructor
-using the Item class specified in the :attr:`ItemLoader.default_item_class`
+using the Item class specified in the :attr:`~ItemLoader.default_item_class`
 attribute.
 
 Then, you start collecting values into the Item Loader, typically using
@@ -65,7 +65,7 @@ Afterwards, similar calls are used for ``price`` and ``stock`` fields
 and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
-Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
+Finally, when all data is collected, the :meth:`~ItemLoader.load_item` method is
 called which actually returns the item populated with the data
 previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
@@ -80,7 +80,7 @@ An Item Loader contains one input processor and one output processor for each
 received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
-:meth:`ItemLoader.load_item` method is called to populate and get the populated
+:meth:`~ItemLoader.load_item` method is called to populate and get the populated
 :class:`~scrapy.item.Item` object.  That's when the output processor is
 called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets
@@ -181,8 +181,8 @@ is an example::
 As you can see, input processors are declared using the ``_in`` suffix while
 output processors are declared using the ``_out`` suffix. And you can also
 declare a default input/output processors using the
-:attr:`ItemLoader.default_input_processor` and
-:attr:`ItemLoader.default_output_processor` attributes.
+:attr:`~ItemLoader.default_input_processor` and
+:attr:`~ItemLoader.default_output_processor` attributes.
 
 .. _topics-loaders-processors-declaring:
 
@@ -227,8 +227,8 @@ The precedence order, for both input and output processors, is as follows:
 1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most
    precedence)
 2. Field metadata (``input_processor`` and ``output_processor`` key)
-3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and
-   :meth:`ItemLoader.default_output_processor` (least precedence)
+3. Item Loader defaults: :meth:`~ItemLoader.default_input_processor` and
+   :meth:`~ItemLoader.default_output_processor` (least precedence)
 
 See also: :ref:`topics-loaders-extending`.
 

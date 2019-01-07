@@ -118,9 +118,9 @@ In a spider, the settings are available through ``self.settings``::
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
     :meth:`~scrapy.spiders.Spider.from_crawler` method.
 
-Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
-attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions, middlewares and item pipelines::
+Settings can be accessed through the :attr:`Crawler.settings
+<scrapy.crawler.Crawler.settings>` attribute of the Crawler that is passed to
+``from_crawler`` method in extensions, middlewares and item pipelines::
 
     class MyExtension(object):
         def __init__(self, log_is_enabled=False):
@@ -673,14 +673,14 @@ The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function. In order to change
 the way duplicates are checked you could subclass ``RFPDupeFilter`` and
 override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`Request <scrapy.Request>` object and return its fingerprint
+scrapy :class:`~scrapy.Request` object and return its fingerprint
 (a string).
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
 Be very careful about this however, because you can get into crawling loops.
 It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`Request <scrapy.Request>` that should not be
+``True`` on the specific :class:`~scrapy.Request` that should not be
 filtered.
 
 .. setting:: DUPEFILTER_DEBUG

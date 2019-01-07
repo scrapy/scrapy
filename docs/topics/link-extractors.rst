@@ -5,7 +5,7 @@ Link Extractors
 ===============
 
 Link extractors are objects whose only purpose is to extract links from web
-pages (:class:`scrapy.http.Response` objects) which will be eventually
+pages (:class:`~scrapy.http.Response` objects) which will be eventually
 followed.
 
 There is ``scrapy.linkextractors.LinkExtractor`` available
@@ -13,8 +13,8 @@ in Scrapy, but you can create your own custom Link Extractors to suit your
 needs by implementing a simple interface.
 
 The only public method that every link extractor has is ``extract_links``,
-which receives a :class:`Response <scrapy.Response>` object and returns a list
-of :class:`scrapy.link.Link` objects. Link extractors are meant to be
+which receives a :class:`~scrapy.http.Response` object and returns a list
+of :class:`~scrapy.link.Link` objects. Link extractors are meant to be
 instantiated once and their ``extract_links`` method called several times
 with different responses to extract links to follow.
 

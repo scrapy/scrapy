@@ -37,7 +37,7 @@ Consider the following scrapy spider below::
 
 Basically this is a simple spider which parses two pages of items (the
 start_urls). Items also have a details page with additional information, so we
-use the ``meta`` functionality of :class:`Request <scrapy.Request>` to pass a
+use the ``meta`` functionality of :class:`~scrapy.Request` to pass a
 partially populated item.
 
 

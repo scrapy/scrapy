@@ -68,5 +68,5 @@ Writing your own downloader middleware
 
 Each middleware component is a Python class that defines one or
 more of the methods of the
-:class:`scrapy.downloadermiddlewares.DownloaderMiddleware` class.
+:class:`~scrapy.downloadermiddlewares.DownloaderMiddleware` class.
 

@@ -167,7 +167,7 @@ password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
 And if you're using Twisted version 17.1.0 or above, FTP is now available
 with Python 3.
 
-There's a new :meth:`response.follow <scrapy.http.TextResponse.follow>` method
+There's a new :meth:`response.follow <scrapy.http.Response.follow>` method
 for creating requests; **it is now a recommended way to create Requests
 in Scrapy spiders**. This method makes it easier to write correct
 spiders; ``response.follow`` has several advantages over creating
@@ -223,7 +223,7 @@ Enjoy! (Or read on for the rest of changes in this release.)
 Deprecations and Backwards Incompatible Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
+- Default to ``canonicalize=False`` in :class:`~scrapy.linkextractors.LinkExtractor`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
   **warning, this is technically backwards-incompatible**
 - Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
@@ -244,17 +244,17 @@ New Features
   (:issue:`2535`)
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
-- Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
+- Added ``flags`` argument and attribute to :class:`~scrapy.Request`
   objects (:issue:`2047`)
 - Support Anonymous FTP (:issue:`2342`)
 - Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
-  stats to :class:`RetryMiddleware <scrapy.downloadermiddlewares.retry.RetryMiddleware>`
+  stats to :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
   (:issue:`2543`)
 - Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/<status>``
-  stats to :class:`HttpErrorMiddleware <scrapy.spidermiddlewares.httperror.HttpErrorMiddleware>`
+  stats to :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware`
   (:issue:`2566`)
 - Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
-  :class:`RefererMiddleware <scrapy.spidermiddlewares.referer.RefererMiddleware>`
+  :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
   (:issue:`2306`)
 - New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
 - Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
@@ -1759,7 +1759,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - Add scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
-- Added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- Added :meth:`Selector.remove_namespaces <scrapy.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`removing-namespaces`.
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62

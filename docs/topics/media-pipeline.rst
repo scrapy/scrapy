@@ -261,8 +261,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
     IMAGES_RESULT_FIELD = 'field_name_for_your_processed_images'
 
 If you need something more complex, consider subclassing
-:class:`FilesPipeline <scrapy.pipelines.files.FilesPipeline>` or
-:class:`ImagesPipeline <scrapy.pipelines.images.ImagesPipeline>`.
+:class:`~scrapy.pipelines.files.FilesPipeline` or
+:class:`~scrapy.pipelines.images.ImagesPipeline`.
 
 If you have multiple image pipelines inheriting from ImagePipeline and you want
 to have different settings in different pipelines you can set setting keys

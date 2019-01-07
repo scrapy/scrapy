@@ -30,9 +30,9 @@ following example::
         """
 
 This callback is tested using three built-in contracts:
-:class:`scrapy.contracts.default.UrlContract`,
-:class:`scrapy.contracts.default.ReturnsContract`,
-:class:`scrapy.contracts.default.ScrapesContract`.
+:class:`~scrapy.contracts.default.UrlContract`,
+:class:`~scrapy.contracts.default.ReturnsContract`,
+:class:`~scrapy.contracts.default.ScrapesContract`.
 
 Use the :command:`check` command to run the contract checks.
 
@@ -48,11 +48,11 @@ create and load your own contracts in the project by using the
         'myproject.contracts.ItemValidate': 10,
     }
 
-Each contract must inherit from :class:`scrapy.contracts.Contract` and can
+Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override its three methods.
 
 Here is a demo contract which checks the presence of a custom header in the
-response received. Raise :class:`scrapy.exceptions.ContractFail` in order to
+response received. Raise :class:`~scrapy.exceptions.ContractFail` in order to
 get the failures pretty printed::
 
     from scrapy.contracts import Contract

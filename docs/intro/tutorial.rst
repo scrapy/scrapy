@@ -78,7 +78,7 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`scrapy.Spider` and define the initial requests to make, optionally how
+:class:`~scrapy.Spider` and define the initial requests to make, optionally how
 to follow links in the pages, and how to parse the downloaded page content to
 extract data.
 
@@ -107,8 +107,8 @@ This is the code for our first Spider. Save it in a file named
             self.log('Saved file %s' % filename)
 
 
-As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
-and defines some attributes and methods:
+As you can see, our Spider subclasses :class:`~scrapy.Spider` and defines some
+attributes and methods:
 
 * :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
@@ -126,7 +126,7 @@ and defines some attributes and methods:
 
   The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`Request <scrapy.Request>`) from them.
+  follow and creating new requests (:class:`~scrapy.Request`) from them.
 
 How to run our spider
 ---------------------
@@ -162,9 +162,9 @@ for the respective URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
+Scrapy schedules the :class:`~scrapy.Request` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
-response for each one, it instantiates :class:`Response <scrapy.Response>` objects
+response for each one, it instantiates :class:`~scrapy.http.Response` objects
 and calls the callback method associated with the request (in this case, the
 ``parse`` method) passing the response as argument.
 
@@ -172,7 +172,7 @@ and calls the callback method associated with the request (in this case, the
 A shortcut to the start_requests method
 ---------------------------------------
 Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
-that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
+that generates :class:`~scrapy.Request` objects from URLs,
 you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
 of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
@@ -575,7 +575,7 @@ A shortcut for creating Requests
 --------------------------------
 
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.TextResponse.follow>`::
+:meth:`response.follow <scrapy.http.Response.follow>`::
 
     import scrapy
 
