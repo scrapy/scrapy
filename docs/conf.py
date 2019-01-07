@@ -30,6 +30,7 @@ extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
     'sphinxcontrib.zopeext.autointerface',
 ]
 
