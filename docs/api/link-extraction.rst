@@ -18,6 +18,8 @@ Link Extractors
 .. class:: scrapy.linkextractors.LinkExtractor
 .. autoclass:: scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor
 
+.. autodata:: scrapy.linkextractors.IGNORED_EXTENSIONS
+
 
 Links
 =====

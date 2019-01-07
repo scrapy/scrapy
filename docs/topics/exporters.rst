@@ -87,7 +87,7 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~.Item` you can declare a serializer in the 
+If you use :class:`~scrapy.Item` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be 
 a callable which receives a value and returns its serialized form.
 

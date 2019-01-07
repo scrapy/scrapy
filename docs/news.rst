@@ -259,10 +259,13 @@ New Features
 - New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
 - Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
 - Warn users when project contains duplicate spider names (fixes :issue:`2181`)
-- :class:`CaselessDict` now accepts ``Mapping`` instances and not only dicts (:issue:`2646`)
-- :ref:`Media downloads <topics-media-pipeline>`, with :class:`FilesPipelines`
-  or :class:`ImagesPipelines`, can now optionally handle HTTP redirects
-  using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting (:issue:`2616`, fixes :issue:`2004`)
+- ``CaselessDict`` now accepts ``Mapping`` instances and not only dicts
+  (:issue:`2646`)
+- :ref:`Media downloads <topics-media-pipeline>`, with
+  :class:`~scrapy.pipelines.files.FilesPipeline` or
+  :class:`~scrapy.pipelines.images.ImagesPipeline`, can now optionally handle
+  HTTP redirects using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting
+  (:issue:`2616`, fixes :issue:`2004`)
 - Accept non-complete responses from websites using a new
   :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
 - Optional pretty-printing of JSON and XML items via
@@ -282,8 +285,8 @@ Bug fixes
 
 - LinkExtractor now strips leading and trailing whitespaces from attributes
   (:issue:`2547`, fixes :issue:`1614`)
-- Properly handle whitespaces in action attribute in :class:`FormRequest`
-  (:issue:`2548`)
+- Properly handle whitespaces in action attribute in
+  :class:`~scrapy.FormRequest` (:issue:`2548`)
 - Buffer CONNECT response bytes from proxy until all HTTP headers are received
   (:issue:`2495`, fixes :issue:`2491`)
 - FTP downloader now works on Python 3, provided you use Twisted>=17.1
@@ -316,7 +319,7 @@ Cleanups & Refactoring
   fixes :issue:`2560`)
 - Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
 - Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
-- Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
+- Catch more specific ``os.error`` exception in ``FSFilesStore`` (:issue:`2644`)
 - Change "localhost" test server certificate (:issue:`2720`)
 - Remove unused ``MEMUSAGE_REPORT`` setting (:issue:`2576`)
 
@@ -325,7 +328,7 @@ Documentation
 
 - Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
 - Mention issue with :meth:`FormRequest.from_response
-  <scrapy.http.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+  <scrapy.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
 - Use single quotes uniformly in templates (:issue:`2596`)
 - Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
 - Removed section on deprecated ``contrib/`` (:issue:`2636`)
@@ -333,7 +336,8 @@ Documentation
   (:issue:`2477`, fixes :issue:`2475`)
 - FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
 - Rearrange selector sections (:issue:`2705`)
-- Remove ``__nonzero__`` from :class:`SelectorList` docs (:issue:`2683`)
+- Remove ``__nonzero__`` from :class:`~scrapy.selector.SelectorList` docs
+  (:issue:`2683`)
 - Mention how to disable request filtering in documentation of
   :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
 - Add sphinx_rtd_theme to docs setup readme (:issue:`2668`)
@@ -1008,7 +1012,7 @@ override any given setting. As an extension of that goal, we included a new
 level of priority for settings that act exclusively for a single spider,
 allowing them to redefine project settings.
 
-Start using it by defining a :attr:`~scrapy.spiders.Spider.custom_settings`
+Start using it by defining a :attr:`~scrapy.Spider.custom_settings`
 class variable in your spider::
 
     class MySpider(scrapy.Spider):
@@ -1042,8 +1046,8 @@ warnings to switch to the Python logging API entirely.
     logging.info('MESSAGE')
 
 Logging with spiders remains the same, but on top of the
-:meth:`~scrapy.spiders.Spider.log` method you’ll have access to a custom
-:attr:`~scrapy.spiders.Spider.logger` created for the spider to issue log
+:meth:`~scrapy.Spider.log` method you’ll have access to a custom
+:attr:`~scrapy.Spider.logger` created for the spider to issue log
 events:
 
 ::
@@ -1759,7 +1763,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - Add scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
-- Added :meth:`Selector.remove_namespaces <scrapy.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`removing-namespaces`.
+- Added :meth:`Selector.remove_namespaces <parsel.selector.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`removing-namespaces`.
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
@@ -1880,7 +1884,7 @@ Scrapy changes:
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backwards compatibility is kept on the Stats Collector API and signals.
-- added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
+- added :meth:`~scrapy.interfaces.ISpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
@@ -2014,8 +2018,8 @@ Code rearranged and removed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Merged item passed and item scraped concepts, as they have often proved confusing in the past. This means: (:rev:`2630`)
-   - original item_scraped signal was removed
-   - original item_passed signal was renamed to item_scraped
+   - original ``item_scraped`` signal was removed
+   - original ``item_passed`` signal was renamed to ``item_scraped``
    - old log lines ``Scraped Item...`` were removed
    - old log lines ``Passed Item...`` were renamed to ``Scraped Item...`` lines and downgraded to ``DEBUG`` level
 - Reduced Scrapy codebase by striping part of Scrapy code into two new libraries:
@@ -2041,7 +2045,7 @@ The numbers like #NNN reference tickets in the old issue tracker (Trac) which is
 New features and improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Passed item is now sent in the ``item`` argument of the :signal:`item_passed` (#273)
+- Passed item is now sent in the ``item`` argument of the ``item_passed`` signal (#273)
 - Added verbose option to ``scrapy version`` command, useful for bug reports (#298)
 - HTTP cache now stored by default in the project data dir (#279)
 - Added project data storage directory (#276, #277)

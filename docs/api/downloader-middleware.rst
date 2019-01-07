@@ -40,8 +40,8 @@ DownloadTimeoutMiddleware
 .. class:: DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
-    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
-    spider attribute.
+    :setting:`DOWNLOAD_TIMEOUT` setting or
+    :attr:`~scrapy.Spider.download_timeout` spider attribute.
 
 .. note::
 
@@ -462,6 +462,26 @@ HttpProxyMiddleware
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
 
+HttpProxyMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPPROXY_ENABLED
+.. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_ENABLED
+^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+HTTPPROXY_AUTH_ENCODING
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``"latin-1"``
+
+The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
+
 .. _urllib: https://docs.python.org/2/library/urllib.html
 .. _urllib2: https://docs.python.org/2/library/urllib2.html
 
@@ -478,7 +498,7 @@ RedirectMiddleware
 .. reqmeta:: redirect_urls
 
 The urls which the request goes through (while being redirected) can be found
-in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
+in the ``redirect_urls`` :attr:`Request.meta <scrapy.Request.meta>` key.
 
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -488,7 +508,7 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_redirect
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_redirect``
+If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_redirect``
 key set to True, the request will be ignored by this middleware.
 
 If you want to handle some redirect status codes in your spider, you can
@@ -501,7 +521,7 @@ responses (and pass them through to your spider) you can do this::
         handle_httpstatus_list = [301, 302]
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.http.Request.meta>` can also be used to specify which response codes to
+<scrapy.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key
 ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
 for a request.
@@ -597,7 +617,7 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_retry
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
+If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
 
 RetryMiddleware Settings
@@ -624,7 +644,7 @@ Default: ``2``
 Maximum number of times to retry, in addition to the first download.
 
 Maximum number of retries can also be specified per-request using
-:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.Request.meta>`.
 When initialized, the :reqmeta:`max_retry_times` meta key takes higher
 precedence over the :setting:`RETRY_TIMES` setting.
 
@@ -661,7 +681,7 @@ RobotsTxtMiddleware
 
 .. reqmeta:: dont_obey_robotstxt
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has
+If :attr:`Request.meta <scrapy.Request.meta>` has
 ``dont_obey_robotstxt`` key set to True
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
@@ -729,26 +749,6 @@ Default: ``False``
 
 Whether the AjaxCrawlMiddleware will be enabled. You may want to
 enable it for :ref:`broad crawls <topics-broad-crawls>`.
-
-HttpProxyMiddleware settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
-
-HTTPPROXY_ENABLED
-^^^^^^^^^^^^^^^^^
-
-Default: ``True``
-
-Whether or not to enable the :class:`HttpProxyMiddleware`.
-
-HTTPPROXY_AUTH_ENCODING
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``"latin-1"``
-
-The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm

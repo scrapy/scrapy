@@ -17,22 +17,19 @@ from scrapy.http.common import obsolete_setter
 class Request(object_ref):
     """A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
+    a :class:`~scrapy.http.Response`.
 
-    :param url: the URL of this request
-    :type url: string
+    :param url: the URL of this request as a string
 
     :param callback: the function that will be called with the response of this
        request (once its downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spiders.Spider.parse` method will be used.
+       :meth:`~scrapy.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
-    :type callback: callable
-
-    :param method: the HTTP method of this request. Defaults to ``'GET'``.
-    :type method: string
+    :param method: the HTTP method of this request as a string. Defaults to
+        ``'GET'``.
 
     :param meta: the initial values for the :attr:`Request.meta` attribute. If
        given, the dict passed in this parameter will be shallow copied.
@@ -43,7 +40,7 @@ class Request(object_ref):
       ``body`` is not given, an empty string is stored. Regardless of the
       type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
-    :type body: str or unicode
+    :type body: str
 
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
@@ -87,10 +84,9 @@ class Request(object_ref):
         For more info see :ref:`cookies-mw`.
     :type cookies: dict or list
 
-    :param encoding: the encoding of this request (defaults to ``'utf-8'``).
-       This encoding will be used to percent-encode the URL and to convert the
-       body to ``str`` (if given as ``unicode``).
-    :type encoding: string
+    :param encoding: the encoding of this request as a string (defaults to
+        ``'utf-8'``). This encoding will be used to percent-encode the URL and
+        to convert the body to ``str`` (if given as ``unicode``).
 
     :param priority: the priority of this request (defaults to ``0``).
        The priority is used by the scheduler to define the order used to process
@@ -102,7 +98,7 @@ class Request(object_ref):
        the scheduler. This is used when you want to perform an identical
        request multiple times, to ignore the duplicates filter. Use it with
        care, or you will get into crawling loops. Default to ``False``.
-    :type dont_filter: boolean
+    :type dont_filter: bool
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
@@ -110,7 +106,6 @@ class Request(object_ref):
        as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
-    :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
@@ -145,6 +140,8 @@ class Request(object_ref):
         #: A dictionary-like object which contains the request headers.
         self.headers = Headers(headers or {}, encoding=encoding)
 
+        #: If true, the request will be schedule even if it is a duplicate of a
+        #: request already scheduled during the current crawl.
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None

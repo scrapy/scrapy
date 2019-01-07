@@ -97,6 +97,15 @@ exclude_trees = ['.build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
+nitpicky = True
+nitpick_ignore = [
+    # This exception in necessary to suppress a warning triggered on the
+    # declaration of scrapy.selector.unified.Selector.selectorlist_cls
+    ('py:class', 'SelectorList'),
+]
+
+
 
 # Options for HTML output
 # -----------------------
@@ -221,6 +230,11 @@ linkcheck_ignore = [
     'http://localhost:\d+', 'http://hg.scrapy.org',
     'http://directory.google.com/'
 ]
+
+
+# Options for the autodoc extension
+# ---------------------------------
+autodoc_inherit_docstrings = False
 
 
 # Options for the Intersphinx extension

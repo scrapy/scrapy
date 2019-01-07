@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.exporters
+
 .. _topics-feed-exports:
 
 ============
@@ -37,7 +39,7 @@ JSON
 ----
 
  * :setting:`FEED_FORMAT`: ``json``
- * Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
+ * Exporter used: :class:`JsonItemExporter`
  * See :ref:`this warning <json-with-large-data>` if you're using JSON with
    large feeds.
 
@@ -47,7 +49,7 @@ JSON lines
 ----------
 
  * :setting:`FEED_FORMAT`: ``jsonlines``
- * Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
+ * Exporter used: :class:`JsonLinesItemExporter`
 
 .. _topics-feed-format-csv:
 
@@ -55,7 +57,7 @@ CSV
 ---
 
  * :setting:`FEED_FORMAT`: ``csv``
- * Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
+ * Exporter used: :class:`CsvItemExporter`
  * To specify columns to export and their order use
    :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
    option, but it is important for CSV because unlike many other export
@@ -67,7 +69,7 @@ XML
 ---
 
  * :setting:`FEED_FORMAT`: ``xml``
- * Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
+ * Exporter used: :class:`XmlItemExporter`
 
 .. _topics-feed-format-pickle:
 
@@ -75,7 +77,7 @@ Pickle
 ------
 
  * :setting:`FEED_FORMAT`: ``pickle``
- * Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
+ * Exporter used: :class:`PickleItemExporter`
 
 .. _topics-feed-format-marshal:
 
@@ -83,7 +85,7 @@ Marshal
 -------
 
  * :setting:`FEED_FORMAT`: ``marshal``
- * Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
+ * Exporter used: :class:`MarshalItemExporter`
 
 
 .. _topics-feed-storage:
@@ -211,8 +213,6 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_EXPORT_FIELDS`
  * :setting:`FEED_EXPORT_INDENT`
 
-.. currentmodule:: scrapy.extensions.feedexport
-
 .. setting:: FEED_URI
 
 FEED_URI
@@ -260,7 +260,7 @@ Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
 Use FEED_EXPORT_FIELDS option to define fields to export and their order.
 
 When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses fields
-defined in dicts or :class:`~.Item` subclasses a spider is yielding.
+defined in dicts or :class:`~scrapy.Item` subclasses a spider is yielding.
 
 If an exporter requires a fixed set of fields (this is the case for
 :ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS
@@ -279,8 +279,8 @@ is a non-negative integer, then array elements and object members will be pretty
 with that indent level. An indent level of ``0`` (the default), or negative,
 will put each item on a new line. ``None`` selects the most compact representation.
 
-Currently implemented only by :class:`~scrapy.exporters.JsonItemExporter`
-and :class:`~scrapy.exporters.XmlItemExporter`, i.e. when you are exporting
+Currently implemented only by :class:`JsonItemExporter`
+and :class:`XmlItemExporter`, i.e. when you are exporting
 to ``.json`` or ``.xml``.
 
 .. setting:: FEED_STORE_EMPTY

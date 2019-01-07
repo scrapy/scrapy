@@ -41,18 +41,11 @@ class BaseItemExporter(object):
    """
 
     def __init__(self, **kwargs):
-        self._configure(kwargs)
-
-    def _configure(self, options, dont_fail=False):
-        """Configure the exporter by poping options from the ``options`` dict.
-        If dont_fail is set, it won't raise an exception on unexpected options
-        (useful for using with keyword arguments in subclasses constructors)
-        """
         #: The encoding that will be used to encode unicode values. This only
         #: affects unicode values (which are always serialized to str using
         #: this encoding). Other value types are passed unchanged to the
         #: specific serialization library.
-        self.encoding = options.pop('encoding', None)
+        self.encoding = None
 
         #: A list with the name of the fields that will be exported, or None if
         #: you want to export all fields. Defaults to None.
@@ -61,9 +54,9 @@ class BaseItemExporter(object):
         #: the fields defined in this attribute.
         #:
         #: Some exporters may require fields_to_export list in order to export
-        #: the data properly when spiders return dicts (not :class:`~Item`
-        #: instances).
-        self.fields_to_export = options.pop('fields_to_export', None)
+        #: the data properly when spiders return dicts (not
+        #: :class:`~scrapy.Item` instances).
+        self.fields_to_export = None
 
         #: Whether to include empty/unpopulated item fields in the exported
         #: data.
@@ -73,7 +66,7 @@ class BaseItemExporter(object):
         #: all empty fields.
         #:
         #: This option is ignored for dict items.
-        self.export_empty_fields = options.pop('export_empty_fields', False)
+        self.export_empty_fields = None
 
         #: Amount of spaces used to indent the output on each level. Defaults
         #: to ``0``.
@@ -82,7 +75,19 @@ class BaseItemExporter(object):
         #:   all items in the same line with no indentation
         #: * ``indent<=0`` each item on its own line, no indentation
         #: * ``indent>0`` each item on its own line, indented with the provided
-        #:   ``numeric value
+        #:   numeric value
+        self.indent = None
+
+        self._configure(kwargs)
+
+    def _configure(self, options, dont_fail=False):
+        """Configure the exporter by poping options from the ``options`` dict.
+        If dont_fail is set, it won't raise an exception on unexpected options
+        (useful for using with keyword arguments in subclasses constructors)
+        """
+        self.encoding = options.pop('encoding', None)
+        self.fields_to_export = options.pop('fields_to_export', None)
+        self.export_empty_fields = options.pop('export_empty_fields', False)
         self.indent = options.pop('indent', None)
         if not dont_fail and options:
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
@@ -104,8 +109,8 @@ class BaseItemExporter(object):
         ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
         :param field: the field being serialized. If a raw dict is being
-                      exported (not :class:`~.Item`) *field* value is an empty
-                      dict.
+                      exported (not :class:`~scrapy.Item`) *field* value is an
+                      empty dict.
         :type field: :class:`~scrapy.item.Field` object or an empty dict
 
         :param name: the name of the field being serialized
@@ -289,9 +294,10 @@ class XmlItemExporter(BaseItemExporter):
             </item>
         </items>
 
-    Unless overridden in the :meth:`serialize_field` method, multi-valued fields are
-    exported by serializing each value inside a ``<value>`` element. This is for
-    convenience, as multi-valued fields are very common.
+    Unless overridden in the :meth:`~BaseItemExporter.serialize_field` method,
+    multi-valued fields are exported by serializing each value inside a
+    ``<value>`` element. This is for convenience, as multi-valued fields are
+    very common.
 
     For example, the item::
 
@@ -385,16 +391,17 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
     """Exports Items in CSV format to the given file-like object. If the
-    :attr:`fields_to_export` attribute is set, it will be used to define the
-    CSV columns and their order. The :attr:`export_empty_fields` attribute has
-    no effect on this exporter.
+    :attr:`~BaseItemExporter.fields_to_export` attribute is set, it will be
+    used to define the CSV columns and their order. The
+    :attr:`~BaseItemExporter.export_empty_fields` attribute has no effect on
+    this exporter.
 
     :param file: the file-like object to use for exporting the data. Its ``write`` method should
                  accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
     :param include_headers_line: If enabled, makes the exporter output a header
         line with the field names taken from
-        :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
+        :attr:`~BaseItemExporter.fields_to_export` or the first exported item fields.
     :type include_headers_line: boolean
 
     :param join_multivalued: The char (or chars) that will be used for joining
@@ -503,6 +510,14 @@ class PickleItemExporter(BaseItemExporter):
 
 
 class MarshalItemExporter(BaseItemExporter):
+    """Exports Items in :mod:`marshal` format to the specified file object.
+
+    :param file: the file-like object to use for exporting the data. Its ``write`` method should
+                    accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+
+    The additional keyword arguments of this constructor are passed to the
+    :class:`BaseItemExporter` constructor.
+    """
 
     def __init__(self, file, **kwargs):
         self._configure(kwargs)

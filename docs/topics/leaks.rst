@@ -27,7 +27,7 @@ Common causes of memory leaks
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
 Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.http.Request.meta` attribute or the request callback function)
+:attr:`~scrapy.Request.meta` attribute or the request callback function)
 and that effectively bounds the lifetime of those referenced objects to the
 lifetime of the Request. This is, by far, the most common cause of memory leaks
 in Scrapy projects, and a quite difficult one to debug for newcomers.
@@ -48,7 +48,7 @@ Too Many Requests?
 
 By default Scrapy keeps the request queue in memory; it includes
 :class:`~scrapy.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.meta`).
+referenced in Request attributes (e.g. in :attr:`~scrapy.Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
@@ -150,7 +150,8 @@ Too many spiders?
 -----------------
 
 If your project has too many spiders executed in parallel,
-the output of :func:`prefs()` can be difficult to read.
+the output of ``prefs()`` can be difficult to read.
+
 For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclases). For
 example, this won't show any live references to spiders::

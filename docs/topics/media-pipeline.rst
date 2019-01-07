@@ -1,10 +1,10 @@
+.. currentmodule:: scrapy.pipelines
+
 .. _topics-media-pipeline:
 
 ===========================================
 Downloading and processing files and images
 ===========================================
-
-.. currentmodule:: scrapy.pipelines.images
 
 Scrapy provides reusable :doc:`item pipelines </topics/item-pipeline>` for
 downloading files attached to a particular item (for example, when you scrape
@@ -32,7 +32,7 @@ once when it's shared by several items.
 Using the Files Pipeline
 ========================
 
-The typical workflow, when using the :class:`FilesPipeline` goes like
+The typical workflow, when using the :class:`~files.FilesPipeline` goes like
 this:
 
 1. In a Spider, you scrape an item and put the URLs of the desired into a
@@ -40,7 +40,7 @@ this:
 
 2. The item is returned from the spider and goes to the item pipeline.
 
-3. When the item reaches the :class:`FilesPipeline`, the URLs in the
+3. When the item reaches the :class:`~files.FilesPipeline`, the URLs in the
    ``file_urls`` field are scheduled for download using the standard
    Scrapy scheduler and downloader (which means the scheduler and downloader
    middlewares are reused), but with a higher priority, processing them before other
@@ -59,14 +59,14 @@ this:
 Using the Images Pipeline
 =========================
 
-Using the :class:`ImagesPipeline` is a lot like using the :class:`FilesPipeline`,
-except the default field names used are different: you use ``image_urls`` for
-the image URLs of an item and it will populate an ``images`` field for the information
-about the downloaded images.
+Using the :class:`~images.ImagesPipeline` is a lot like using the
+:class:`~files.FilesPipeline`, except the default field names used are
+different: you use ``image_urls`` for the image URLs of an item and it will
+populate an ``images`` field for the information about the downloaded images.
 
-The advantage of using the :class:`ImagesPipeline` for image files is that you
-can configure some extra functions like generating thumbnails and filtering
-the images based on their size.
+The advantage of using the :class:`~images.ImagesPipeline` for image files is
+that you can configure some extra functions like generating thumbnails and
+filtering the images based on their size.
 
 The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to
 JPEG/RGB format, so you need to install this library in order to use it.
@@ -234,7 +234,7 @@ Then, if a spider returns a dict with the URLs key (``file_urls`` or
 ``image_urls``, for the Files or Images Pipeline respectively), the pipeline will
 put the results under respective key (``files`` or ``images``).
 
-If you prefer to use :class:`~.Item`, then define a custom item with the
+If you prefer to use :class:`~scrapy.Item`, then define a custom item with the
 necessary fields, like in this example for Images Pipeline::
 
     import scrapy
@@ -261,8 +261,7 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
     IMAGES_RESULT_FIELD = 'field_name_for_your_processed_images'
 
 If you need something more complex, consider subclassing
-:class:`~scrapy.pipelines.files.FilesPipeline` or
-:class:`~scrapy.pipelines.images.ImagesPipeline`.
+:class:`~files.FilesPipeline` or :class:`~images.ImagesPipeline`.
 
 If you have multiple image pipelines inheriting from ImagePipeline and you want
 to have different settings in different pipelines you can set setting keys

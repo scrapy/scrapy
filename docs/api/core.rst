@@ -10,6 +10,7 @@ Execution Engine
 
 .. automodule:: scrapy.core.engine
    :members:
+   :undoc-members:
 
 
 Downloader

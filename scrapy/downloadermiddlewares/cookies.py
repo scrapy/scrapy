@@ -59,7 +59,7 @@ class CookiesMiddleware(object):
     Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
     ``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
     evaluates to ``True`` the request cookies will **not** be sent to the
-    web server and received cookies in :class:`Response <scrapy.Response>` will
+    web server and received cookies in :class:`~scrapy.http.Response` will
     **not** be merged with the existing cookies.
 
     For more detailed information see the ``cookies`` parameter in

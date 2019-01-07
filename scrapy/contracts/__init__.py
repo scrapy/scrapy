@@ -111,7 +111,6 @@ class Contract(object):
     """Abstract class for contracts
 
     :param method: callback function to which the contract is associated
-    :type method: function
 
     :param args: list of arguments passed into the docstring (whitespace
         separated)

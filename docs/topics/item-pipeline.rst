@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.interfaces
+
 .. _topics-item-pipeline:
 
 =============
@@ -24,7 +26,7 @@ Writing your own item pipeline
 ==============================
 
 Each item pipeline component is a Python class that must implement the
-:interface:`scrapy.interfaces.IPipeline` interface.
+:interface:`IPipeline` interface.
 
 Item pipeline example
 =====================
@@ -85,8 +87,9 @@ In this example we'll write items to MongoDB_ using pymongo_.
 MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
-The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.::
+The main point of this example is to show how to use
+:meth:`~IPipeline.from_crawler` method and how to clean up the resources
+properly.::
 
     import pymongo
 
@@ -123,10 +126,11 @@ method and how to clean up the resources properly.::
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return Deferred_ from :meth:`process_item` method.
-It uses Splash_ to render screenshot of item url. Pipeline
-makes request to locally running instance of Splash_. After request is downloaded
-and Deferred callback fires, it saves item to a file and adds filename to an item.
+This example demonstrates how to return Deferred_ from
+:meth:`~IPipeline.process_item` method. It uses Splash_ to render screenshot of
+item url. Pipeline makes request to locally running instance of Splash_. After
+request is downloaded and Deferred callback fires, it saves item to a file and
+adds filename to an item.
 
 ::
 

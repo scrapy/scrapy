@@ -93,7 +93,7 @@ spider_closed = object()
 #: :type failure: `Failure`_ object
 #:
 #: :param response: the response being processed when the exception was raised
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 #:
 #: :param spider: the spider which raised the exception
 #: :type spider: :class:`~scrapy.spiders.Spider` object
@@ -142,13 +142,13 @@ request_reached_downloader = object()
 
 #: .. signal:: response_received
 #:
-#: Sent when the engine receives a new :class:`Response <scrapy.Response>` from the
+#: Sent when the engine receives a new :class:`~scrapy.http.Response` from the
 #: downloader.
 #:
 #: This signal does not support returning deferreds from their handlers.
 #:
 #: :param response: the response received
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 #:
 #: :param request: the request that generated the response
 #: :type request: :class:`Request <scrapy.Request>` object
@@ -164,7 +164,7 @@ response_received = object()
 #: This signal does not support returning deferreds from their handlers.
 #:
 #: :param response: the response downloaded
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 #:
 #: :param request: the request that generated the response
 #: :type request: :class:`Request <scrapy.Request>` object
@@ -187,7 +187,7 @@ response_downloaded = object()
 #: :type spider: :class:`~scrapy.spiders.Spider` object
 #:
 #: :param response: the response from where the item was scraped
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 item_scraped = object()
 
 #: .. signal:: item_dropped
@@ -204,7 +204,7 @@ item_scraped = object()
 #: :type spider: :class:`~scrapy.spiders.Spider` object
 #:
 #: :param response: the response from where the item was dropped
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 #:
 #: :param exception: the exception (which must be a
 #:     :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
@@ -223,7 +223,7 @@ item_dropped = object()
 #: :type item: dict or :class:`~scrapy.item.Item` object
 #:
 #: :param response: the response being processed when the exception was raised
-#: :type response: :class:`Response <scrapy.Response>` object
+#: :type response: :class:`~scrapy.http.Response` object
 #:
 #: :param spider: the spider which raised the exception
 #: :type spider: :class:`~scrapy.spiders.Spider` object

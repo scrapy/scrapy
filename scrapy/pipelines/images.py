@@ -33,8 +33,9 @@ class ImageException(FileException):
 
 class ImagesPipeline(FilesPipeline):
     """The :class:`ImagesPipeline` is an extension of the
-    :class:`FilesPipeline`, customizing the field names and adding custom
-    behavior for images, such as image thumbnail generation."""
+    :class:`~scrapy.pipelines.files.FilesPipeline`, customizing the field names
+    and adding custom behavior for images, such as image thumbnail
+    generation."""
 
     MEDIA_NAME = 'image'
 
@@ -153,7 +154,8 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        """Works the same way as :meth:`FilesPipeline.get_media_requests` method,
+        """Works the same way as :meth:`FilesPipeline.get_media_requests
+        <scrapy.pipelines.files.FilesPipeline.get_media_requests>` method,
         but using a different field name for image urls.
 
         Must return a Request for each image URL.
@@ -165,7 +167,8 @@ class ImagesPipeline(FilesPipeline):
         requests for a single item have completed (either finished downloading, or
         failed for some reason).
 
-        Works the same way as :meth:`FilesPipeline.item_completed` method,
+        Works the same way as :meth:`FilesPipeline.item_completed
+        <scrapy.pipelines.files.FilesPipeline.item_completed>` method,
         but using a different field names for storing image downloading results.
 
         By default, the :meth:`item_completed` method returns the item.

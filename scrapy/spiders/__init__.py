@@ -21,7 +21,26 @@ class Spider(object_ref):
     that you write yourself). It doesn't provide any special functionality. It just
     provides a default :meth:`start_requests` implementation which sends requests from
     the :attr:`start_urls` spider attribute and calls the spider's method ``parse``
-    for each of the resulting responses."""
+    for each of the resulting responses.
+
+    .. attribute:: allowed_domains
+
+        List of domain names. If defined, any :class:`~scrapy.Request` that the
+        spider yields that has a :class:`~scrapy.Request.url` outside the
+        specified domains is filtered out.
+
+    .. attribute:: download_maxsize
+
+        Overrides :setting:`DOWNLOAD_MAXSIZE`
+
+    .. attribute:: download_timeout
+
+        Overrides :setting:`DOWNLOAD_TIMEOUT`
+
+    .. attribute:: download_warnsize
+
+        Overrides :setting:`DOWNLOAD_WARNSIZE`
+    """
 
     #: A string which defines the name for this spider. The spider name is how
     #: the spider is located (and instantiated) by Scrapy, so it must be
@@ -83,7 +102,7 @@ class Spider(object_ref):
         """This is the class method used by Scrapy to create your spiders.
 
         You probably won't need to override this directly because the default
-        implementation acts as a proxy to the :meth:`__init__` method, calling
+        implementation acts as a proxy to the class constructor, calling
         it with the given arguments `args` and named arguments `kwargs`.
 
         Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
@@ -93,10 +112,10 @@ class Spider(object_ref):
         :param crawler: crawler to which the spider will be bound
         :type crawler: :class:`~scrapy.crawler.Crawler` instance
 
-        :param args: arguments passed to the :meth:`__init__` method
+        :param args: arguments passed to the class constructor
         :type args: list
 
-        :param kwargs: keyword arguments passed to the :meth:`__init__` method
+        :param kwargs: keyword arguments passed to the class constructor
         :type kwargs: dict
         """
         spider = cls(*args, **kwargs)
@@ -137,7 +156,7 @@ class Spider(object_ref):
         :meth:`start_requests` as a generator.
 
         The default implementation generates ``Request(url, dont_filter=True)``
-        for each url in :attr:`start_urls`.
+        for each url in :attr:`~scrapy.Spider.start_urls`.
 
         If you want to change the Requests used to start scraping a domain, this is
         the method to override. For example, if you need to start by logging in using
@@ -188,7 +207,7 @@ class Spider(object_ref):
         dicts or :class:`~scrapy.item.Item` objects.
 
         :param response: the response to parse
-        :type response: :class:`Response <scrapy.Response>`
+        :type response: :class:`Response <scrapy.http.Response>`
         """
         raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
 

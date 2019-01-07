@@ -17,7 +17,7 @@ from scrapy.utils.url import (
 )
 
 
-# common file extensions that are not followed if they occur in links
+#: common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
     # images
     'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif',

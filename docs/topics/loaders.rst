@@ -269,8 +269,8 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit='cm')
 
 3. On Item Loader declaration, for those input/output processors that support
-   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them::
+   instantiating them with an Item Loader context.
+   :class:`~processors.MapCompose` is one of them::
 
        class ProductLoader(ItemLoader):
            length_out = MapCompose(parse_length, unit='cm')

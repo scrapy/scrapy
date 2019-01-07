@@ -247,6 +247,7 @@ API reference
    api/link-extraction
    api/logging
    api/mail
+   api/re
    api/reference-tracking
    api/scheduler
    api/selector
@@ -288,6 +289,9 @@ API reference
 
 :doc:`api/mail`
     Mail delivery.
+
+:doc:`api/re`
+    Regular expression utilities.
 
 :doc:`api/reference-tracking`
     Reference tracking.

@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _topics-selectors:
 
 =========
@@ -50,7 +52,7 @@ Constructing selectors
 
 .. highlight:: python
 
-Response objects expose a :class:`~scrapy.selector.Selector` instance
+Response objects expose a :class:`~Selector` instance
 on ``.selector`` attribute::
 
     >>> response.selector.xpath('//span/text()').get()
@@ -64,7 +66,7 @@ more shortcuts: ``response.xpath()`` and ``response.css()``::
     >>> response.css('span::text').get()
     'good'
 
-Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
+Scrapy selectors are instances of :class:`~Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
 markup as an unicode string (in ``text`` argument).
 Usually there is no need to construct Scrapy selectors manually:
@@ -176,7 +178,7 @@ of ``None``:
     'not-found'
 
 Instead of using e.g. ``'@src'`` XPath it is possible to query for attributes
-using ``.attrib`` property of a :class:`~scrapy.selector.Selector`::
+using ``.attrib`` property of a :class:`~Selector`::
 
     >>> [img.attrib['src'] for img in response.css('img')]
     ['image1_thumb.jpg',
@@ -384,7 +386,7 @@ ID, or when selecting an unique element on a page)::
 Using selectors with regular expressions
 ----------------------------------------
 
-:class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
+:class:`~Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
 ``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
 can't construct nested ``.re()`` calls.
@@ -657,8 +659,8 @@ Removing namespaces
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
-:meth:`Selector.remove_namespaces <scrapy.Selector.remove_namespaces>` method
-for that.
+:meth:`Selector.remove_namespaces <parsel.selector.Selector.remove_namespaces>`
+method for that.
 
 Let's show an example that illustrates this with the Python Insider blog atom feed.
 
@@ -693,8 +695,8 @@ doesn't work (because the Atom XML namespace is obfuscating those nodes)::
     >>> response.xpath("//link")
     []
 
-But once we call the :meth:`~scrapy.Selector.remove_namespaces` method, all
-nodes can be accessed directly by their names::
+But once we call the :meth:`~parsel.selector.Selector.remove_namespaces`
+method, all nodes can be accessed directly by their names::
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
@@ -915,7 +917,8 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   :class:`Selector` objects (ie. a :class:`~scrapy.selector.SelectorList`
+   object)::
 
       sel.xpath("//h1")
 
@@ -942,7 +945,8 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object::
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   of :class:`Selector` objects (ie. a :class:`~scrapy.selector.SelectorList`
+   object)::
 
       sel.xpath("//product")
 

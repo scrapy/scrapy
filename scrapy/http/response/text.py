@@ -33,7 +33,7 @@ class TextResponse(Response):
        body, it will be encoded using this encoding (remember the body attribute
        is always a string). If ``encoding`` is ``None`` (default value), the
        encoding will be looked up in the response headers and body instead.
-    :type encoding: string
+    :type encoding: str
 
     :class:`TextResponse` objects support the following attributes and methods
     in addition to the standard :class:`Response` ones:
@@ -156,7 +156,7 @@ class TextResponse(Response):
 
     @property
     def selector(self):
-        """A :class:`~scrapy.selector.Selector` instance using the response as
+        """A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access."""
         from scrapy.selector import Selector
         if self._cached_selector is None:

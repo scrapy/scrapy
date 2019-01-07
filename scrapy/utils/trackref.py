@@ -55,7 +55,6 @@ def print_live_refs(*a, **kw):
 
     :param ignore: if given, all objects from the specified class (or tuple of
         classes) will be ignored.
-    :type ignore: class or classes tuple
     """
     print(format_live_refs(*a, **kw))
 

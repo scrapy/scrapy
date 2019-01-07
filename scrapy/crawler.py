@@ -47,6 +47,7 @@ class Crawler(object):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
+        #:
         self.spidercls = spidercls
 
         #: :class:`Settings <scrapy.settings.Settings>` object that handles the
@@ -103,7 +104,7 @@ class Crawler(object):
         #: :class:`ExecutionEngine <scrapy.core.engine.ExecutionEngine>` object
         #: that coordinates the :class:`spider <Crawler.spider>` of the crawler
         #: with the
-        #: :class:`scheduler <scrapy.core.engine.ExecutionEngine.scheduler>`
+        #: :class:`scheduler <scrapy.core.engine.ExecutionEngine.scheduler_cls>`
         #: and the
         #: :class:`downloader <scrapy.core.engine.ExecutionEngine.downloader>`.
         #:
@@ -348,8 +349,8 @@ class CrawlerProcess(CrawlerRunner):
         If `stop_after_crawl` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
 
-        :param boolean stop_after_crawl: stop or not the reactor when all
-            crawlers have finished
+        :param stop_after_crawl: stop the reactor when all crawlers have
+            finished (`True`) or not (`False`)
         """
         if stop_after_crawl:
             d = self.join()

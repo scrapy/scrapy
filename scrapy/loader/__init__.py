@@ -34,12 +34,12 @@ class ItemLoader(object):
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
         (resp. :meth:`replace_css`) method.
-    :type selector: :class:`~scrapy.selector.Selector` object
+    :type selector: :class:`~scrapy.Selector` object
 
     :param response: The response used to construct the selector using the
         :attr:`default_selector_class`, unless the selector argument is given,
         in which case this argument is ignored.
-    :type response: :class:`Response <scrapy.Response>` object
+    :type response: :class:`~scrapy.http.Response` object
 
     The item, selector, response and the remaining keyword arguments are
     assigned to the Loader context (accessible through the :attr:`context` attribute).
@@ -67,7 +67,7 @@ class ItemLoader(object):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
 
-        #: The :class:`~scrapy.selector.Selector` object to extract data from.
+        #: The :class:`~scrapy.Selector` object to extract data from.
         #: It's either the selector given in the constructor or one created from
         #: the response given in the constructor using the
         #: :attr:`default_selector_class`. This attribute is meant to be
@@ -104,9 +104,10 @@ class ItemLoader(object):
     def nested_xpath(self, xpath, **context):
         """Create a nested loader with an xpath selector.
         The supplied selector is applied relative to selector associated
-        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
-        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
-        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected."""
+        with this :class:`ItemLoader`. The nested loader shares the
+        :class:`~scrapy.item.Item` with the parent :class:`ItemLoader` so calls
+        to :meth:`add_xpath`, :meth:`add_value`, :meth:`replace_value`, etc.
+        will behave as expected."""
         selector = self.selector.xpath(xpath)
         context.update(selector=selector)
         subloader = self.__class__(
@@ -117,9 +118,10 @@ class ItemLoader(object):
     def nested_css(self, css, **context):
         """Create a nested loader with a css selector.
         The supplied selector is applied relative to selector associated
-        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
-        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
-        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected."""
+        with this :class:`ItemLoader`. The nested loader shares the
+        :class:`~scrapy.item.Item` with the parent :class:`ItemLoader` so calls
+        to :meth:`add_xpath`, :meth:`add_value`, :meth:`replace_value`, etc.
+        will behave as expected."""
         selector = self.selector.css(css)
         context.update(selector=selector)
         subloader = self.__class__(
@@ -185,10 +187,11 @@ class ItemLoader(object):
 
         Available keyword arguments:
 
-        :param re: a regular expression to use for extracting data from the
-            given value using :meth:`~scrapy.utils.misc.extract_regex` method,
-            applied before processors
-        :type re: str or compiled regex
+        :param re: a :mod:`regular expression <re>`, as a string or a
+            :ref:`compiled pattern <python:re-objects>`, to use for extracting
+            data from the given value using
+            :meth:`~scrapy.utils.misc.extract_regex` method, applied before
+            processors
 
         Examples::
 
@@ -304,9 +307,9 @@ class ItemLoader(object):
         :param xpath: the XPath to extract data from
         :type xpath: str
 
-        :param re: a regular expression to use for extracting data from the
-            selected XPath region
-        :type re: str or compiled regex
+        :param re: a :mod:`regular expression <re>`, as a string or a
+            :ref:`compiled pattern <python:re-objects>`, to use for extracting
+            data from the selected XPath region
 
         Examples::
 
@@ -361,9 +364,9 @@ class ItemLoader(object):
         :param css: the CSS selector to extract data from
         :type css: str
 
-        :param re: a regular expression to use for extracting data from the
-            selected CSS region
-        :type re: str or compiled regex
+        :param re: a :mod:`regular expression <re>`, as a string or a
+            :ref:`compiled pattern <python:re-objects>`, to use for extracting
+            data from the selected CSS region
 
         Examples::
 

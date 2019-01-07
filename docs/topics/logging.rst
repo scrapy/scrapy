@@ -5,7 +5,7 @@ Logging
 =======
 
 .. note::
-    :mod:`scrapy.log` has been deprecated alongside its functions in favor of
+    ``scrapy.log`` has been deprecated alongside its functions in favor of
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
@@ -94,7 +94,7 @@ path::
 Logging from Spiders
 ====================
 
-Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider
+Scrapy provides a :data:`~scrapy.Spider.logger` within each Spider
 instance, which can be accessed and used like this::
 
     import scrapy

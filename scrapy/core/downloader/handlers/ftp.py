@@ -3,11 +3,19 @@ An asynchronous FTP file download handler for scrapy which somehow emulates an h
 
 FTP connection parameters are passed using the request meta field:
 
+.. reqmeta:: ftp_user
+
 -   ftp_user (required)
+
+.. reqmeta:: ftp_password
 
 -   ftp_password (required)
 
+.. reqmeta:: ftp_passive
+
 -   ftp_passive (by default, enabled) sets FTP connection passive mode
+
+.. reqmeta:: ftp_local_filename
 
 -   ftp_local_filename
 

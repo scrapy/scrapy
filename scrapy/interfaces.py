@@ -11,29 +11,29 @@ class IDownloaderMiddleware(Interface):
 
     def from_crawler(cls, crawler):
         """Optional classmethod that creates an instance of the middleware
-        based on the specified :class:`Crawler <scrapy.crawler.Crawler>`."""
+        based on the specified :class:`~scrapy.crawler.Crawler`."""
 
     def process_request(request, spider):
         """This method is called for each request that goes through the
         download middleware.
 
-        It receives a :class:`Request <scrapy.Request>` and a :class:`Spider
-        <scrapy.Spider>`, and it returns ``None``, a :class:`Response
-        <scrapy.Response>` or a :class:`Request <scrapy.Request>`, or it raises
-        :exc:`IgnoreRequest <scrapy.exceptions.IgnoreRequest>`.
+        It receives a :class:`~scrapy.Request` and a :class:`~scrapy.Spider`,
+        and it returns ``None``, a
+        :class:`~scrapy.http.Response` or a :class:`~scrapy.Request`,
+        or it raises :exc:`~scrapy.exceptions.IgnoreRequest`.
 
         If it returns ``None``, Scrapy will continue processing *request*,
         executing all other middlewares until, finally, the appropriate
         downloader handler is called, the request performed and its response
         downloaded.
 
-        If it returns a :class:`Response <scrapy.Response>`, Scrapy won't
+        If it returns a :class:`~scrapy.http.Response`, Scrapy won't
         bother calling any other :meth:`process_request` or
         :meth:`process_exception` method, or the appropriate download function;
         it'll return that response. The :meth:`process_response` methods of
         installed middleware are always called on every response.
 
-        If it returns a :class:`Request <scrapy.Request>`, Scrapy will stop
+        If it returns a :class:`~scrapy.Request`, Scrapy will stop
         calling :meth:`process_request` methods and reschedule the returned
         request. Once the newly returned request is performed, the appropriate
         middleware chain will be called on the downloaded response.
@@ -47,15 +47,15 @@ class IDownloaderMiddleware(Interface):
         """
 
     def process_response(request, response, spider):
-        """:meth:`process_response` should either: return a :class:`Response <scrapy.Response>`
-        object, return a :class:`Request <scrapy.Request>` object or
+        """:meth:`process_response` should either: return a :class:`~scrapy.http.Response`
+        object, return a :class:`~scrapy.Request` object or
         raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
-        If it returns a :class:`Response <scrapy.Response>` (it could be the same given
+        If it returns a :class:`~scrapy.http.Response` (it could be the same given
         response, or a brand-new one), that response will continue to be processed
         with the :meth:`process_response` of the next middleware in the chain.
 
-        If it returns a :class:`Request <scrapy.Request>` object, the middleware chain is
+        If it returns a :class:`~scrapy.Request` object, the middleware chain is
         halted and the returned request is rescheduled to be downloaded in the future.
         This is the same behavior as if a request is returned from :meth:`process_request`.
 
@@ -64,10 +64,10 @@ class IDownloaderMiddleware(Interface):
         exception, it is ignored and not logged (unlike other exceptions).
 
         :param request: the request that originated the response
-        :type request: is a :class:`Request <scrapy.Request>` object
+        :type request: is a :class:`~scrapy.Request` object
 
         :param response: the response being processed
-        :type response: :class:`Response <scrapy.Response>` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -79,23 +79,23 @@ class IDownloaderMiddleware(Interface):
         exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
 
         :meth:`process_exception` should return: either ``None``,
-        a :class:`Response <scrapy.Response>` object, or a :class:`Request <scrapy.Request>` object.
+        a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_exception` methods of installed middleware,
         until no middleware is left and the default exception handling kicks in.
 
-        If it returns a :class:`Response <scrapy.Response>` object, the :meth:`process_response`
+        If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
         method chain of installed middleware is started, and Scrapy won't bother calling
         any other :meth:`process_exception` methods of middleware.
 
-        If it returns a :class:`Request <scrapy.Request>` object, the returned request is
+        If it returns a :class:`~scrapy.Request` object, the returned request is
         rescheduled to be downloaded in the future. This stops the execution of
         :meth:`process_exception` methods of the middleware the same as returning a
         response would.
 
         :param request: the request that generated the exception
-        :type request: is a :class:`Request <scrapy.Request>` object
+        :type request: is a :class:`~scrapy.Request` object
 
         :param exception: the raised exception
         :type exception: an ``Exception`` object
@@ -157,10 +157,10 @@ class ISpiderLoader(Interface):
 
     def from_settings(settings):
         """Return an instance of the class based on the given instance of
-        :class:`Settings <scrapy.settings.Settings>`."""
+        :class:`~scrapy.settings.Settings`."""
 
     def load(spider_name):
-        """Return the :class:`Spider <scrapy.Spider>` class for the given
+        """Return the :class:`~scrapy.Spider` class for the given
         spider name string.
 
         If no match is found for *spider_name*, raise a :class:`KeyError`.
@@ -172,7 +172,7 @@ class ISpiderLoader(Interface):
 
     def find_by_request(request):
         """Return the list of spiders names that can handle the given
-        :class:`Request <scrapy.Request>` instance."""
+        :class:`~scrapy.Request` instance."""
 
 
 class ISpiderMiddleware(Interface):
@@ -196,7 +196,7 @@ class ISpiderMiddleware(Interface):
         :meth:`process_spider_exception` if it raised an exception.
 
         :param response: the response being processed
-        :type response: :class:`Response <scrapy.Response>` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -207,15 +207,15 @@ class ISpiderMiddleware(Interface):
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`Request <scrapy.Request>`, dict or :class:`~scrapy.item.Item`
+        :class:`~scrapy.Request`, dict or :class:`~scrapy.item.Item`
         objects.
 
         :param response: the response which generated this output from the
           spider
-        :type response: :class:`Response <scrapy.Response>` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`Request <scrapy.Request>`, dict
+        :type result: an iterable of :class:`~scrapy.Request`, dict
           or :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
@@ -227,7 +227,7 @@ class ISpiderMiddleware(Interface):
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`Request <scrapy.Request>`, dict or
+        iterable of :class:`~scrapy.Request`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -240,7 +240,7 @@ class ISpiderMiddleware(Interface):
 
         :param response: the response being processed when the exception was
           raised
-        :type response: :class:`Response <scrapy.Response>` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
         :type exception: `Exception`_ object
@@ -258,7 +258,7 @@ class ISpiderMiddleware(Interface):
         items).
 
         It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`Request <scrapy.Request>` objects.
+        return another iterable of :class:`~scrapy.Request` objects.
 
         .. note:: When implementing this method in your spider middleware, you
            should always return an iterable (that follows the input one) and
@@ -270,7 +270,7 @@ class ISpiderMiddleware(Interface):
            (like a time limit or item/page count).
 
         :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`Request <scrapy.Request>`
+        :type start_requests: an iterable of :class:`~scrapy.Request`
 
         :param spider: the spider to whom the start requests belong
         :type spider: :class:`~scrapy.spiders.Spider` object

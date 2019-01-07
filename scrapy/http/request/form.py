@@ -22,10 +22,9 @@ class FormRequest(Request):
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
-    :param formdata: is a dictionary (or iterable of (key, value) tuples)
-       containing HTML Form data which will be url-encoded and assigned to the
-       body of the request.
-    :type formdata: dict or iterable of tuples
+    :param formdata: is a :class:`dict` (or iterable of (key, value)
+        :class:`tuples <tuple>`) containing HTML Form data which will be
+        url-encoded and assigned to the body of the request.
 
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
@@ -72,23 +71,23 @@ class FormRequest(Request):
 
         :param response: the response containing a HTML form which will be used
             to pre-populate the form fields
-        :type response: :class:`Response` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param formname: if given, the form with name attribute set to this value will be used.
-        :type formname: string
+        :type formname: str
 
         :param formid: if given, the form with id attribute set to this value will be used.
-        :type formid: string
+        :type formid: str
 
         :param formxpath: if given, the first form that matches the xpath will be used.
-        :type formxpath: string
+        :type formxpath: str
 
         :param formcss: if given, the first form that matches the css selector will be used.
-        :type formcss: string
+        :type formcss: str
 
         :param formnumber: the number of form to use, when the response contains
             multiple forms. The first one (and also the default) is ``0``.
-        :type formnumber: integer
+        :type formnumber: int
 
         :param formdata: fields to override in the form data. If a field was
             already present in the response ``<form>`` element, its value is
@@ -106,7 +105,7 @@ class FormRequest(Request):
 
         :param dont_click: If True, the form data will be submitted without
             clicking in any element.
-        :type dont_click: boolean
+        :type dont_click: bool
 
         The other parameters of this class method are passed directly to the
         :class:`FormRequest` constructor.

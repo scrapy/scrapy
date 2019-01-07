@@ -60,10 +60,10 @@ class MailSender(object):
     :type smtpport: int
 
     :param smtptls: enforce using SMTP STARTTLS
-    :type smtptls: boolean
+    :type smtptls: bool
 
     :param smtpssl: enforce using a secure SSL connection
-    :type smtpssl: boolean
+    :type smtpssl: bool
 
     .. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
     """
@@ -94,14 +94,12 @@ class MailSender(object):
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
         """Send email to the given recipients.
 
-        :param to: the e-mail recipients
-        :type to: str or list of str
+        :param to: the e-mail recipients as a string or a list of strings
 
         :param subject: the subject of the e-mail
         :type subject: str
 
-        :param cc: the e-mails to CC
-        :type cc: str or list of str
+        :param cc: the e-mails to CC as a string or a list of strings
 
         :param body: the e-mail body
         :type body: str
@@ -112,7 +110,6 @@ class MailSender(object):
                         ``mimetype`` is the mimetype of the attachment and
                         ``file_object`` is a readable file object with the
                         contents of the attachment
-        :type attachs: iterable
 
         :param mimetype: the MIME type of the e-mail
         :type mimetype: str

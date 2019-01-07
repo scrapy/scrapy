@@ -19,10 +19,10 @@ class Response(object_ref):
     downloaded (by the Downloader) and fed to the Spiders for processing.
 
     :param url: the URL of this response
-    :type url: string
+    :type url: str
 
     :param status: the HTTP status of the response. Defaults to ``200``.
-    :type status: integer
+    :type status: int
 
     :param headers: the headers of this response. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers).
@@ -46,10 +46,11 @@ class Response(object_ref):
 
     def __init__(self, url, status=200, headers=None, body=b'', flags=None, request=None):
         #: A dictionary-like object which contains the response headers. Values
-        #: can be accessed using :meth:`get` to return the first header value
-        #: with the specified name or :meth:`getlist` to return all header
-        #: values with the specified name. For example, this call will give you
-        #: all cookies in the headers::
+        #: can be accessed using :meth:`~scrapy.http.Headers.get` to return the
+        #: first header value with the specified name or
+        #: :meth:`~scrapy.http.Headers.getlist` to return all header values
+        #: with the specified name. For example, this call will give you all
+        #: cookies in the headers::
         #:
         #:     response.headers.getlist('Set-Cookie')
         self.headers = Headers(headers or {})
@@ -86,14 +87,16 @@ class Response(object_ref):
 
     @property
     def meta(self):
-        """A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        """A shortcut to the :attr:`Request.meta <scrapy.Request.meta>`
+        attribute of the :attr:`Response.request` object (i.e.
+        ``self.request.meta``).
 
-        Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
-        attribute is propagated along redirects and retries, so you will get
-        the original :attr:`Request.meta` sent from your spider.
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.meta` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.meta
+        <scrapy.Request.meta>` sent from your spider.
 
-        .. seealso:: :attr:`Request.meta` attribute
+        .. seealso:: :attr:`Request.meta <scrapy.Request.meta>` attribute
         """
         try:
             return self.request.meta

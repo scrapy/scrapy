@@ -47,9 +47,11 @@ Headers
    :members:
    :exclude-members: Headers
 
-.. class:: scrapy.http.Headers
-.. autoclass:: scrapy.http.headers.Headers
+.. class:: scrapy.http.headers.Headers
+.. autoclass:: scrapy.http.Headers
    :members:
+   :inherited-members:
+   :undoc-members:
 
 
 Cookies

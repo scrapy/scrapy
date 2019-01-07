@@ -99,13 +99,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
     :param allow: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be extracted. If not
         given (or empty), it will match all links.
-    :type allow: a regular expression (or list of)
 
     :param deny: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be excluded (ie. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
-    :type deny: a regular expression (or list of)
 
     :param allow_domains: a single value or a list of string containing
         domains which will be considered for extracting the links
@@ -148,11 +146,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         different for requests with canonicalized and raw URLs. If you're
         using LinkExtractor to follow links it is more robust to
         keep the default ``canonicalize=False``.
-    :type canonicalize: boolean
+    :type canonicalize: bool
 
     :param unique: whether duplicate filtering should be applied to extracted
         links.
-    :type unique: boolean
+    :type unique: bool
 
     :param process_value: a function which receives each value extracted from
         the tag and attributes scanned and can modify the value and return a
@@ -174,8 +172,6 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
                 if m:
                     return m.group(1)
 
-    :type process_value: callable
-
     :param strip: whether to strip whitespaces from extracted attributes.
         According to HTML5 standard, leading and trailing whitespaces
         must be stripped from ``href`` attributes of ``<a>``, ``<area>``
@@ -183,7 +179,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         elements, etc., so LinkExtractor strips space chars by default.
         Set ``strip=False`` to turn it off (e.g. if you're extracting urls
         from elements or attributes which allow leading/trailing whitespaces).
-    :type strip: boolean
+    :type strip: bool
     """
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),

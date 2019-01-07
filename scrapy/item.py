@@ -113,6 +113,6 @@ class Item(DictItem):
 
     Items replicate the standard `dict`_ class, including its constructor. The
     only additional attribute provided by Items is
-    :func:`~scrapy.item.Item.fields`.
+    :func:`~scrapy.Item.fields`.
     """
     pass

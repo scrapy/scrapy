@@ -110,21 +110,21 @@ This is the code for our first Spider. Save it in a file named
 As you can see, our Spider subclasses :class:`~scrapy.Spider` and defines some
 attributes and methods:
 
-* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
+* :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
+* :meth:`~scrapy.Spider.start_requests`: must return an iterable of
   Requests (you can return a list of requests or write a generator function)
   which the Spider will begin to crawl from. Subsequent requests will be
   generated successively from these initial requests.
 
-* :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
+* :meth:`~scrapy.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
   is an instance of :class:`~scrapy.http.TextResponse` that holds
   the page content and has further helpful methods to handle it.
 
-  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
+  The :meth:`~scrapy.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.Request`) from them.
 
@@ -171,11 +171,11 @@ and calls the callback method associated with the request (in this case, the
 
 A shortcut to the start_requests method
 ---------------------------------------
-Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
+Instead of implementing a :meth:`~scrapy.Spider.start_requests` method
 that generates :class:`~scrapy.Request` objects from URLs,
-you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
+you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
-of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
+of :meth:`~scrapy.Spider.start_requests` to create the initial requests
 for your spider::
 
     import scrapy
@@ -194,9 +194,9 @@ for your spider::
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
+The :meth:`~scrapy.Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy
-to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
+to do so. This happens because :meth:`~scrapy.Spider.parse` is Scrapy's
 default callback method, which is called for requests without an explicitly
 assigned callback.
 
@@ -245,7 +245,7 @@ object::
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
-:class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements
+:class:`~scrapy.Selector` objects that wrap around XML/HTML elements
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
@@ -282,9 +282,9 @@ There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
 to be scraped, you can at least get **some** data.
 
-Besides the :meth:`~scrapy.selector.SelectorList.getall` and
-:meth:`~scrapy.selector.SelectorList.get` methods, you can also use
-the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
+Besides the :meth:`~parsel.selector.SelectorList.getall` and
+:meth:`~parsel.selector.SelectorList.get` methods, you can also use
+the :meth:`~parsel.selector.SelectorList.re` method to extract using `regular
 expressions`_::
 
     >>> response.css('title::text').re(r'Quotes.*')

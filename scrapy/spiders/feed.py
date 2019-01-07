@@ -27,11 +27,11 @@ class XMLFeedSpider(Spider):
     #:
     #: - ``'iternodes'`` - a fast iterator based on regular expressions
     #:
-    #: - ``'html'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+    #: - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
     #:   Keep in mind this uses DOM parsing and must load all DOM in memory
     #:   which could be a problem for big feeds
     #:
-    #: - ``'xml'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+    #: - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
     #:   Keep in mind this uses DOM parsing and must load all DOM in memory
     #:   which could be a problem for big feeds
     #:
@@ -49,7 +49,7 @@ class XMLFeedSpider(Spider):
     #: available in that document that will be processed with this spider. The
     #: ``prefix`` and ``uri`` will be used to automatically register
     #: namespaces using the
-    #: :meth:`~scrapy.selector.Selector.register_namespace` method.
+    #: :meth:`~parsel.selector.Selector.register_namespace` method.
     #:
     #: You can then specify nodes with namespaces in the :attr:`itertag`
     #: attribute.
@@ -81,7 +81,7 @@ class XMLFeedSpider(Spider):
     def parse_node(self, response, selector):
         """This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an
-        :class:`~scrapy.selector.Selector` for each node.  Overriding this
+        :class:`~scrapy.Selector` for each node.  Overriding this
         method is mandatory. Otherwise, you spider won't work.  This method
         must return either a :class:`~scrapy.item.Item` object, a
         :class:`Request <scrapy.Request>` object, or an iterable containing any of

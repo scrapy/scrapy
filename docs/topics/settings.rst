@@ -67,7 +67,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute::
+do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -116,7 +116,7 @@ In a spider, the settings are available through ``self.settings``::
     The ``settings`` attribute is set in the base Spider class after the spider
     is initialized.  If you want to use the settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
-    :meth:`~scrapy.spiders.Spider.from_crawler` method.
+    :meth:`~scrapy.Spider.from_crawler` method.
 
 Settings can be accessed through the :attr:`Crawler.settings
 <scrapy.crawler.Crawler.settings>` attribute of the Crawler that is passed to
@@ -590,9 +590,9 @@ The amount of time (in secs) that the downloader will wait before timing out.
 
 .. note::
 
-    This timeout can be set per spider using :attr:`download_timeout`
-    spider attribute and per-request using :reqmeta:`download_timeout`
-    Request.meta key.
+    This timeout can be set per spider using
+    :attr:`~scrapy.Spider.download_timeout` spider attribute and per-request
+    using :reqmeta:`download_timeout` Request.meta key.
 
 .. setting:: DOWNLOAD_MAXSIZE
 
@@ -609,9 +609,9 @@ If you want to disable it set to 0.
 
 .. note::
 
-    This size can be set per spider using :attr:`download_maxsize`
-    spider attribute and per-request using :reqmeta:`download_maxsize`
-    Request.meta key.
+    This size can be set per spider using
+    :attr:`~scrapy.Spider.download_maxsize` spider attribute and per-request
+    using :reqmeta:`download_maxsize` Request.meta key.
 
     This feature needs Twisted >= 11.1.
 
@@ -626,11 +626,13 @@ The response size (in bytes) that downloader will start to warn.
 
 If you want to disable it set to 0.
 
+.. reqmeta:: download_warnsize
+
 .. note::
 
-    This size can be set per spider using :attr:`download_warnsize`
-    spider attribute and per-request using :reqmeta:`download_warnsize`
-    Request.meta key.
+    This size can be set per spider using
+    :attr:`~scrapy.Spider.download_warnsize` spider attribute and per-request
+    using :reqmeta:`download_warnsize` Request.meta key.
 
     This feature needs Twisted >= 11.1.
 

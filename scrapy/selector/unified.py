@@ -27,13 +27,14 @@ def _response_from_text(text, st):
 
 
 class SelectorList(_ParselSelector.selectorlist_cls, object_ref):
-    """The :class:`SelectorList` class is a subclass of the builtin ``list``
-    class, which provides a few additional methods.
+    """Subclass of the builtin :class:`list` class, which provides a few
+    additional methods.
 
-    For information about selecting attributes using :data:`attrib`, see
-    :ref:`selecting-attributes`.
+    For information about selecting attributes using
+    :attr:`~parsel.selector.Selector.attrib`, see :ref:`selecting-attributes`.
 
-    For extraction, :func:`get` and :func:`getall` are recommended. See also
+    For extraction, :meth:`~parsel.selector.SelectorList.get` and
+    :meth:`~parsel.selector.SelectorList.getall` are recommended. See also
     :ref:`old-extraction-api`.
     """
     @deprecated(use_instead='.extract()')
@@ -79,20 +80,23 @@ class Selector(_ParselSelector, object_ref):
     Otherwise, if ``type`` is set, the selector type will be forced and no
     detection will occur.
 
-    For information about selecting attributes using :data:`attrib`, see
-    :ref:`selecting-attributes`.
+    For information about selecting attributes using
+    :attr:`~parsel.selector.Selector.attrib`, see :ref:`selecting-attributes`.
 
-    The :func:`css` and :func:`xpath` methods of :class:`Selector` can be used
-    directly on :func:`Response <scrapy.http.Response>`:
-    :func:`Response.css <scrapy.http.Response.css>`,
-    :func:`Response.xpath <scrapy.http.Response.xpath>`.
+    The :meth:`~parsel.selector.Selector.css` and
+    :meth:`~parsel.selector.Selector.xpath` methods of :class:`Selector` can be
+    used directly on :class:`~scrapy.http.Response`:
+    :meth:`Response.css <scrapy.http.Response.css>`,
+    :meth:`Response.xpath <scrapy.http.Response.xpath>`.
 
-    For extraction, :func:`get` is recommended. :func:`getall` exists only for
-    consistency, it is more useful with :class:`~scrapy.selector.SelectorList`.
+    For extraction, :meth:`~parsel.selector.Selector.get` is recommended.
+    :meth:`~parsel.selector.Selector.getall` exists only for consistency, it is
+    more useful with :class:`~scrapy.selector.SelectorList`.
     See also :ref:`old-extraction-api`.
     """
 
     __slots__ = ['response']
+
     selectorlist_cls = SelectorList
 
     def __init__(self, response=None, text=None, type=None, root=None, _root=None, **kwargs):

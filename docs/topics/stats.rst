@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.statscollectors
+
 .. _topics-stats:
 
 ================

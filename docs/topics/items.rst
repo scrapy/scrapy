@@ -1,4 +1,4 @@
-.. currentmodule:: scrapy.item
+.. currentmodule:: scrapy
 
 .. _topics-items:
 
@@ -19,8 +19,8 @@ their available fields.
 
 Various Scrapy components use extra information provided by Items: 
 exporters look at declared fields to figure out columns to export,
-serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help find memory leaks 
+serialization can be customized using Item fields metadata,
+:mod:`~scrapy.utils.trackref` tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict

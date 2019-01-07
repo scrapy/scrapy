@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _topics-spiders:
 
 =======
@@ -17,15 +19,15 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by calling the
-   :meth:`~scrapy.spiders.Spider.start_requests` method which (by default)
-   generates :class:`~scrapy.Request` for the URLs specified in the
-   :attr:`~scrapy.spiders.Spider.start_urls` and the
-   :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
+   :meth:`~Spider.start_requests` method which (by default)
+   generates :class:`~Request` for the URLs specified in the
+   :attr:`~Spider.start_urls` and the
+   :attr:`~Spider.parse` method as callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
-   dicts with extracted data, :class:`~scrapy.item.Item` objects,
-   :class:`~scrapy.Request` objects, or an iterable of these objects.
+   dicts with extracted data, :class:`~Item` objects,
+   :class:`~Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
    response handled by the specified callback.
@@ -42,13 +44,13 @@ Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
-The simplest spider is :class:`~scrapy.http.Spider`, and the one from which
+The simplest spider is :class:`~Spider`, and the one from which
 every other spider must inherit (including spiders that come bundled with
 Scrapy, as well as spiders that you write yourself). It doesn't provide any
 special functionality. It just provides a default
-:meth:`~scrapy.spiders.Spider.start_requests` implementation which sends
-requests from the :attr:`start_urls` spider attribute and calls the spider's
-method ``parse`` for each of the resulting responses.
+:meth:`~Spider.start_requests` implementation which sends
+requests from the :attr:`~Spider.start_urls` spider attribute
+and calls the spider's method ``parse`` for each of the resulting responses.
 
 Let's see an example::
 
@@ -88,8 +90,8 @@ Return multiple Requests and items from a single callback::
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~Spider.start_urls` you can use
-:meth:`~Spider.start_requests` directly; to give data more structure you can
-use :ref:`topics-items`::
+:meth:`~Spider.start_requests` directly; to give data more structure you
+can use :ref:`topics-items`::
 
     import scrapy
     from myproject.items import MyItem
@@ -229,7 +231,7 @@ Let's now take a look at an example :class:`CrawlSpider` with rules::
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.item.Item` will be filled with it.
+an :class:`~scrapy.Item` will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -258,7 +260,7 @@ look at one example::
 
 Basically what we did up there was to create a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
-prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
+prints them out, and stores some random data in an :class:`~scrapy.Item`.
 
 CSVFeedSpider
 -------------
