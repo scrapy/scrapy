@@ -6,10 +6,10 @@ Requests
 ========
 
 .. autoclass:: scrapy.Request
-    :members:
+   :members:
 
 .. autoclass:: scrapy.FormRequest
-    :members:
+   :members:
 
 .. autoclass:: scrapy.http.XmlRpcRequest
    :members:
@@ -19,26 +19,27 @@ Responses
 =========
 
 .. autoclass:: scrapy.http.Response
-    :members:
+   :members:
 
 .. autoclass:: scrapy.http.TextResponse
-    :members:
+   :members:
 
 .. autoclass:: scrapy.http.HtmlResponse
-    :members:
+   :members:
 
 .. autoclass:: scrapy.http.XmlResponse
+   :members:
 
 
 Headers
 =======
 
 .. automodule:: scrapy.http.headers
-    :members:
-    :exclude-members: Headers
+   :members:
+   :exclude-members: Headers
 
 .. autoclass:: scrapy.http.Headers
-    :members:
+   :members:
 
 
 Cookies

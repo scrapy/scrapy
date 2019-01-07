@@ -5,9 +5,9 @@ Selection API
 =============
 
 .. autoclass:: scrapy.Selector
-    :members:
-    :inherited-members:
+   :members:
+   :inherited-members:
 
 .. autoclass:: scrapy.selector.SelectorList
-    :members:
-    :inherited-members:
+   :members:
+   :inherited-members:

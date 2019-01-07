@@ -3,7 +3,7 @@ Downloader Middleware API
 =========================
 
 .. autointerface:: scrapy.interfaces.IDownloaderMiddleware
-    :members:
+   :members:
 
 
 .. _topics-downloader-middleware-ref:

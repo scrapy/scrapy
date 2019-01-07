@@ -46,7 +46,7 @@ Spider Contracts
         converted listified before being passed to this hook.
 
 .. automodule:: scrapy.contracts.default
-    :members:
+   :members:
 
 
 .. _robots.txt: http://www.robotstxt.org/

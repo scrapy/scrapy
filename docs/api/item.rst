@@ -6,17 +6,17 @@ Items
 =====
 
 .. autoclass:: scrapy.Field
-    :members:
+   :members:
 
 .. autoclass:: scrapy.Item
-    :inherited-members:
+   :inherited-members:
 
-    ..
-       The fields attribute documentation below is copy-pasted from the source
-       code because a Sphinx bug prevents it from being displayed otherwise:
-       https://github.com/sphinx-doc/sphinx/issues/741
+   ..
+        The fields attribute documentation below is copy-pasted from the source
+        code because a Sphinx bug prevents it from being displayed otherwise:
+        https://github.com/sphinx-doc/sphinx/issues/741
 
-    .. attribute:: fields
+   .. attribute:: fields
 
         A dictionary containing *all declared fields* for this Item, not only
         those populated. The keys are the field names and the values are the
@@ -45,7 +45,7 @@ Item Pipelines
 ==============
 
 .. autointerface:: scrapy.interfaces.IPipeline
-    :members:
+   :members:
 
 .. automodule:: scrapy.pipelines
    :members:

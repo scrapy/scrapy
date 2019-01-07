@@ -44,9 +44,9 @@ Signal Manager
 ==============
 
 .. automodule:: scrapy.signalmanager
-    :synopsis: The signal manager
-    :members:
-    :undoc-members:
+   :synopsis: The signal manager
+   :members:
+   :undoc-members:
 
 
 .. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
