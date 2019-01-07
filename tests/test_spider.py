@@ -12,6 +12,7 @@ from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlRespon
 from scrapy.spiders.init import InitSpider
 from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
+from scrapy.spiders.sitemap import iterloc_text_sitemap
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
@@ -332,6 +333,10 @@ class SitemapSpiderTest(SpiderTest):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
+    def test_get_text_sitemap_body(self):
+        r = TextResponse(url="http://www.example.com/urllist.txt", body=self.BODY)
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_urls_from_robotstxt(self):
         robots = b"""# Sitemap files
 Sitemap: http://example.com/sitemap.xml
@@ -347,6 +352,25 @@ Sitemap: /sitemap-relative-url.xml
                           'http://example.com/sitemap-product-index.xml',
                           'http://example.com/sitemap-uppercase.xml',
                           'http://www.example.com/sitemap-relative-url.xml'])
+
+    def test_iterloc_text_sitemap(self):
+        text = b"""http://example.com/1
+http://example.com/2
+"""
+        self.assertEqual(list(iterloc_text_sitemap(text)),
+                         ['http://example.com/1',
+                          'http://example.com/2'])
+
+    def test_get_urls_from_text_sitemap(self):
+        text = b"""http://example.com/1
+http://example.com/2
+"""
+
+        r = TextResponse(url="http://www.example.com/urllist.txt", body=text)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://example.com/1',
+                          'http://example.com/2'])
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
