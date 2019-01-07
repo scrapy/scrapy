@@ -354,7 +354,7 @@ Sitemap: /sitemap-relative-url.xml
                           'http://www.example.com/sitemap-relative-url.xml'])
 
     def test_iterloc_text_sitemap(self):
-        text = b"""http://example.com/1
+        text = """http://example.com/1
 http://example.com/2
 """
         self.assertEqual(list(iterloc_text_sitemap(text)),
