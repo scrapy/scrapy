@@ -7,6 +7,7 @@ Spiders API
 Spiders
 =======
 
+.. class:: scrapy.spiders.Spider
 .. autoclass:: scrapy.Spider
    :members:
 

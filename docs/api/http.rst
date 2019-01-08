@@ -5,12 +5,17 @@ HTTP API
 Requests
 ========
 
+.. class:: scrapy.http.request.Request
+.. class:: scrapy.http.Request
 .. autoclass:: scrapy.Request
    :members:
 
+.. class:: scrapy.http.request.form.FormRequest
+.. class:: scrapy.http.FormRequest
 .. autoclass:: scrapy.FormRequest
    :members:
 
+.. class:: scrapy.http.request.rpc.XmlRpcRequest
 .. autoclass:: scrapy.http.XmlRpcRequest
    :members:
 
@@ -18,15 +23,19 @@ Requests
 Responses
 =========
 
+.. class:: scrapy.http.response.Response
 .. autoclass:: scrapy.http.Response
    :members:
 
+.. class:: scrapy.http.response.text.TextResponse
 .. autoclass:: scrapy.http.TextResponse
    :members:
 
+.. class:: scrapy.http.response.html.HtmlResponse
 .. autoclass:: scrapy.http.HtmlResponse
    :members:
 
+.. class:: scrapy.http.response.xml.XmlResponse
 .. autoclass:: scrapy.http.XmlResponse
    :members:
 
@@ -38,7 +47,8 @@ Headers
    :members:
    :exclude-members: Headers
 
-.. autoclass:: scrapy.http.Headers
+.. class:: scrapy.http.Headers
+.. autoclass:: scrapy.http.headers.Headers
    :members:
 
 

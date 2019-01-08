@@ -5,9 +5,11 @@ Item API
 Items
 =====
 
+.. class:: scrapy.item.Field
 .. autoclass:: scrapy.Field
    :members:
 
+.. class:: scrapy.item.Item
 .. autoclass:: scrapy.Item
    :inherited-members:
 
