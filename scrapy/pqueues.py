@@ -7,7 +7,7 @@ from queuelib import PriorityQueue
 
 from scrapy.core.downloader import Downloader
 from scrapy.http import Request
-from scrapy.signals import request_reached_downloader, response_downloaded
+from scrapy.signals import request_reached_downloader, request_left_downloader
 from scrapy.utils.httpobj import urlparse_cached
 
 
@@ -163,7 +163,7 @@ class DownloaderAwarePriorityQueue(object):
 
         self._active_downloads = {slot: 0 for slot in self._slot_pqueues.pqueues}
         crawler.signals.connect(self.on_response_download,
-                                signal=response_downloaded)
+                                signal=request_left_downloader)
         crawler.signals.connect(self.on_request_reached_downloader,
                                 signal=request_reached_downloader)
 
@@ -199,7 +199,7 @@ class DownloaderAwarePriorityQueue(object):
         if slot not in self._active_downloads:
             self._active_downloads[slot] = 0
 
-    def on_response_download(self, response, request, spider):
+    def on_response_download(self, request, spider):
         if not self.check_mark(request):
             return
         self.unmark(request)

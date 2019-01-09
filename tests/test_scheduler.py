@@ -9,7 +9,7 @@ from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
-from scrapy.signals import request_reached_downloader, response_downloaded
+from scrapy.signals import request_reached_downloader, request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -216,9 +216,8 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
 
         for request in requests:
             self.mock_crawler.signals.send_catch_log(
-                    signal=response_downloaded,
+                    signal=request_left_downloader,
                     request=request,
-                    response=None,
                     spider=self.spider
                     )
 
@@ -265,9 +264,8 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
 
         for request in requests:
             self.mock_crawler.signals.send_catch_log(
-                    signal=response_downloaded,
+                    signal=request_left_downloader,
                     request=request,
-                    response=None,
                     spider=self.spider
                     )
 
