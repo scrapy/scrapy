@@ -155,6 +155,10 @@ class BaseResponseTest(unittest.TestCase):
         self._assert_followed_url(Link('http://example.com/foo'),
                                   'http://example.com/foo')
 
+    def test_follow_None_url(self):
+        r = self.response_class("http://example.com")
+        self.assertRaises(ValueError, r.follow, None)
+
     def test_follow_whitespace_url(self):
         self._assert_followed_url('foo ',
                                   'http://example.com/foo%20')
@@ -162,7 +166,6 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
-
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
@@ -273,7 +276,10 @@ class TextResponseTest(BaseResponseTest):
                                  headers={"Content-type": ["text/html; charset=utf-8"]},
                                  body=b"\xef\xbb\xbfWORD\xe3\xab")
         self.assertEqual(r6.encoding, 'utf-8')
-        self.assertEqual(r6.text, u'WORD\ufffd\ufffd')
+        self.assertIn(r6.text, {
+            u'WORD\ufffd\ufffd',  # w3lib < 1.19.0
+            u'WORD\ufffd',        # w3lib >= 1.19.0
+        })
 
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
@@ -330,11 +336,11 @@ class TextResponseTest(BaseResponseTest):
         self.assertIs(response.selector.response, response)
 
         self.assertEqual(
-            response.selector.xpath("//title/text()").extract(),
+            response.selector.xpath("//title/text()").getall(),
             [u'Some page']
         )
         self.assertEqual(
-            response.selector.css("title::text").extract(),
+            response.selector.css("title::text").getall(),
             [u'Some page']
         )
         self.assertEqual(
@@ -347,12 +353,12 @@ class TextResponseTest(BaseResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//title/text()").extract(),
-            response.selector.xpath("//title/text()").extract(),
+            response.xpath("//title/text()").getall(),
+            response.selector.xpath("//title/text()").getall(),
         )
         self.assertEqual(
-            response.css("title::text").extract(),
-            response.selector.css("title::text").extract(),
+            response.css("title::text").getall(),
+            response.selector.css("title::text").getall(),
         )
 
     def test_selector_shortcuts_kwargs(self):
@@ -360,13 +366,13 @@ class TextResponseTest(BaseResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").extract(),
-            response.xpath("normalize-space(//p[@class=\"content\"])").extract(),
+            response.xpath("normalize-space(//p[@class=$pclass])", pclass="content").getall(),
+            response.xpath("normalize-space(//p[@class=\"content\"])").getall(),
         )
         self.assertEqual(
             response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
-                pclass="content", pcount=1).extract(),
-            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").extract(),
+                pclass="content", pcount=1).getall(),
+            response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
         )
 
     def test_urljoin_with_base_url(self):
@@ -401,6 +407,13 @@ class TextResponseTest(BaseResponseTest):
         for sellist in [resp.css('a'), resp.xpath('//a')]:
             for sel, url in zip(sellist, urls):
                 self._assert_followed_url(sel, url, response=resp)
+
+        # select <link> elements
+        self._assert_followed_url(
+            Selector(text='<link href="foo"></link>').css('link')[0],
+            'http://example.com/foo',
+            response=resp
+        )
 
         # href attributes should work
         for sellist in [resp.css('a::attr(href)'), resp.xpath('//a/@href')]:
@@ -549,7 +562,7 @@ class XmlResponseTest(TextResponseTest):
         self.assertIs(response.selector.response, response)
 
         self.assertEqual(
-            response.selector.xpath("//elem/text()").extract(),
+            response.selector.xpath("//elem/text()").getall(),
             [u'value']
         )
 
@@ -558,8 +571,8 @@ class XmlResponseTest(TextResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//elem/text()").extract(),
-            response.selector.xpath("//elem/text()").extract(),
+            response.xpath("//elem/text()").getall(),
+            response.selector.xpath("//elem/text()").getall(),
         )
 
     def test_selector_shortcuts_kwargs(self):
@@ -570,12 +583,12 @@ class XmlResponseTest(TextResponseTest):
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
-            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
-            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).extract(),
+            response.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).getall(),
+            response.selector.xpath("//s:elem/text()", namespaces={'s': 'http://scrapy.org'}).getall(),
         )
 
         response.selector.register_namespace('s2', 'http://scrapy.org')
         self.assertEqual(
-            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).extract(),
-            response.selector.xpath("//s2:elem/text()").extract(),
+            response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).getall(),
+            response.selector.xpath("//s2:elem/text()").getall(),
         )

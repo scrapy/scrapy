@@ -147,10 +147,10 @@ class XMLFeedSpiderTest(SpiderTest):
 
             def parse_node(self, response, selector):
                 yield {
-                    'loc': selector.xpath('a:loc/text()').extract(),
-                    'updated': selector.xpath('b:updated/text()').extract(),
-                    'other': selector.xpath('other/@value').extract(),
-                    'custom': selector.xpath('other/@b:custom').extract(),
+                    'loc': selector.xpath('a:loc/text()').getall(),
+                    'updated': selector.xpath('b:updated/text()').getall(),
+                    'other': selector.xpath('other/@value').getall(),
+                    'custom': selector.xpath('other/@b:custom').getall(),
                 }
 
         for iterator in ('iternodes', 'xml'):
@@ -207,7 +207,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
@@ -234,7 +234,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 2)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html'])
 
@@ -258,7 +258,7 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEquals([r.url for r in output],
+        self.assertEqual([r.url for r in output],
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
@@ -348,6 +348,131 @@ Sitemap: /sitemap-relative-url.xml
                           'http://example.com/sitemap-uppercase.xml',
                           'http://www.example.com/sitemap-relative-url.xml'])
 
+    def test_alternate_url_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="de-ch"
+                href="http://www.example.com/schweiz-deutsch/"/>
+            <xhtml:link rel="alternate" hreflang="it"
+                href="http://www.example.com/italiano/"/>
+            <xhtml:link rel="alternate" hreflang="it"/><!-- wrong tag without href -->
+        </url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/'])
+
+        spider.sitemap_alternate_links = True
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/',
+                          'http://www.example.com/deutsch/',
+                          'http://www.example.com/schweiz-deutsch/',
+                          'http://www.example.com/italiano/'])
+
+    def test_sitemap_filter(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <lastmod>2010-01-01</lastmod>
+        </url>
+        <url>
+            <loc>http://www.example.com/portuguese/</loc>
+            <lastmod>2005-01-01</lastmod>
+        </url>
+    </urlset>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                from datetime import datetime
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
+                    if date_time.year > 2008:
+                        yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/',
+                          'http://www.example.com/portuguese/'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/'])
+
+    def test_sitemap_filter_with_alternate_links(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/article_1/</loc>
+            <lastmod>2010-01-01</lastmod>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/article_1/"/>
+        </url>
+        <url>
+            <loc>http://www.example.com/english/article_2/</loc>
+            <lastmod>2015-01-01</lastmod>
+        </url>
+    </urlset>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                for entry in entries:
+                    alternate_links = entry.get('alternate', tuple())
+                    for link in alternate_links:
+                        if '/deutsch/' in link:
+                            entry['loc'] = link
+                            yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/article_1/',
+                          'http://www.example.com/english/article_2/'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/deutsch/article_1/'])
+
+    def test_sitemapindex_filter(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+            <lastmod>2004-01-01T20:00:00+00:00</lastmod>
+        </sitemap>
+        <sitemap>
+            <loc>http://www.example.com/sitemap2.xml</loc>
+            <lastmod>2005-01-01</lastmod>
+        </sitemap>
+    </sitemapindex>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                from datetime import datetime
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'].split('T')[0], '%Y-%m-%d')
+                    if date_time.year > 2004:
+                        yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap1.xml',
+                          'http://www.example.com/sitemap2.xml'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap2.xml'])
+
 
 class DeprecationTest(unittest.TestCase):
 
@@ -429,3 +554,17 @@ class DeprecationTest(unittest.TestCase):
             self.assertEqual(len(requests), 1)
             self.assertEqual(requests[0].url, 'http://example.com/foo')
             self.assertEqual(len(w), 1)
+
+
+class NoParseMethodSpiderTest(unittest.TestCase):
+
+    spider_class = Spider
+
+    def test_undefined_parse_method(self):
+        spider = self.spider_class('example.com')
+        text = b'Random text'
+        resp = TextResponse(url="http://www.example.com/random_url", body=text)
+
+        exc_msg = 'Spider.parse callback is not defined'
+        with self.assertRaisesRegexp(NotImplementedError, exc_msg):
+            spider.parse(resp)

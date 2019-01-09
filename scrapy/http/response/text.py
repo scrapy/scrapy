@@ -135,7 +135,7 @@ class TextResponse(Response):
         * an attribute Selector (not SelectorList) - e.g.
           ``response.css('a::attr(href)')[0]`` or
           ``response.xpath('//img/@src')[0]``.
-        * a Selector for ``<a>`` element, e.g.
+        * a Selector for ``<a>`` or ``<link>`` element, e.g.
           ``response.css('a.my_link')[0]``.
           
         See :ref:`response-follow-example` for usage examples.
@@ -165,10 +165,11 @@ def _url_from_selector(sel):
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
         raise ValueError("Unsupported selector: %s" % sel)
-    if sel.root.tag != 'a':
-        raise ValueError("Only <a> elements are supported; got <%s>" %
+    if sel.root.tag not in ('a', 'link'):
+        raise ValueError("Only <a> and <link> elements are supported; got <%s>" %
                          sel.root.tag)
     href = sel.root.get('href')
     if href is None:
-        raise ValueError("<a> element has no href attribute: %s" % sel)
+        raise ValueError("<%s> element has no href attribute: %s" %
+                         (sel.root.tag, sel))
     return strip_html5_whitespace(href)

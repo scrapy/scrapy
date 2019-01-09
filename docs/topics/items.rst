@@ -21,7 +21,7 @@ their available fields.
 Various Scrapy components use extra information provided by Items: 
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help finding memory leaks 
+tracks Item instances to help find memory leaks 
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -86,7 +86,7 @@ Creating items
 ::
 
     >>> product = Product(name='Desktop PC', price=1000)
-    >>> print product
+    >>> print(product)
     Product(name='Desktop PC', price=1000)
 
 Getting field values
@@ -161,11 +161,11 @@ Other common tasks
 Copying items::
 
     >>> product2 = Product(product)
-    >>> print product2
+    >>> print(product2)
     Product(name='Desktop PC', price=1000)
 
     >>> product3 = product2.copy()
-    >>> print product3
+    >>> print(product3)
     Product(name='Desktop PC', price=1000)
 
 Creating dicts from items::

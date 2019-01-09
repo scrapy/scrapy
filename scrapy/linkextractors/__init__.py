@@ -28,7 +28,7 @@ IGNORED_EXTENSIONS = [
 
     # video
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a',
+    'm4a', 'm4v', 'flv',
 
     # office suites
     'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
@@ -41,7 +41,8 @@ IGNORED_EXTENSIONS = [
 
 _re_type = type(re.compile("", 0))
 _matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file'}
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', \
+                                                       'file', 'ftp'}
 
 
 class FilteringLinkExtractor(object):

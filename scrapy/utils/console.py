@@ -31,6 +31,15 @@ def _embed_bpython_shell(namespace={}, banner=''):
         bpython.embed(locals_=namespace, banner=banner)
     return wrapper
 
+def _embed_ptpython_shell(namespace={}, banner=''):
+    """Start a ptpython shell"""
+    import ptpython.repl
+    @wraps(_embed_ptpython_shell)
+    def wrapper(namespace=namespace, banner=''):
+        print(banner)
+        ptpython.repl.embed(locals=namespace)
+    return wrapper
+
 def _embed_standard_shell(namespace={}, banner=''):
     """Start a standard python shell"""
     import code
@@ -47,9 +56,10 @@ def _embed_standard_shell(namespace={}, banner=''):
     return wrapper
 
 DEFAULT_PYTHON_SHELLS = OrderedDict([
+    ('ptpython', _embed_ptpython_shell),
     ('ipython', _embed_ipython_shell),
     ('bpython', _embed_bpython_shell),
-    ( 'python', _embed_standard_shell),
+    ('python', _embed_standard_shell),
 ])
 
 def get_shell_embed_func(shells=None, known_shells=None):

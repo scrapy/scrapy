@@ -322,6 +322,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
             (True, 203, {'Last-Modified': self.yesterday}),
             (True, 300, {'Last-Modified': self.yesterday}),
             (True, 301, {'Last-Modified': self.yesterday}),
+            (True, 308, {'Last-Modified': self.yesterday}),
             (True, 401, {'Last-Modified': self.yesterday}),
             (True, 404, {'Cache-Control': 'public, max-age=600'}),
             (True, 302, {'Expires': self.tomorrow}),

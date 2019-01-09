@@ -80,6 +80,8 @@ Request objects
         attributes of the cookie. This is only useful if the cookies are saved
         for later requests.
 
+        .. reqmeta:: dont_merge_cookies
+
         When some site returns cookies (in a response) those are stored in the
         cookies for that domain and will be sent again in future requests. That's
         the typical behaviour of any regular web browser. However, if, for some
@@ -294,7 +296,7 @@ Those are:
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`handle_httpstatus_all`
-* ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
+* :reqmeta:`dont_merge_cookies`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
 * :reqmeta:`redirect_urls`
@@ -525,11 +527,11 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. It must be str, not unicode, unless you're
-       using a encoding-aware :ref:`Response subclass
-       <topics-request-response-ref-response-subclasses>`, such as
-       :class:`TextResponse`.
-    :type body: str
+    :param body: the response body. To access the decoded text as str (unicode
+       in Python 2) you can use ``response.text`` from an encoding-aware
+       :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
+       such as :class:`TextResponse`.
+    :type body: bytes
 
     :param flags: is a list containing the initial values for the
        :attr:`Response.flags` attribute. If given, the list will be shallow
@@ -734,7 +736,7 @@ HtmlResponse objects
     which adds encoding auto-discovering support by looking into the HTML `meta
     http-equiv`_ attribute.  See :attr:`TextResponse.encoding`.
 
-.. _meta http-equiv: http://www.w3schools.com/TAGS/att_meta_http_equiv.asp
+.. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
 XmlResponse objects
 -------------------

@@ -141,7 +141,7 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
             base_url = get_base_url(response)
             body = u''.join(f
                             for x in self.restrict_xpaths
-                            for f in response.xpath(x).extract()
+                            for f in response.xpath(x).getall()
                             ).encode(response.encoding, errors='xmlcharrefreplace')
         else:
             body = response.body

@@ -25,18 +25,18 @@ class TestDepthMiddleware(TestCase):
         result = [Request('http://scrapytest.org')]
 
         out = list(self.mw.process_spider_output(resp, result, self.spider))
-        self.assertEquals(out, result)
+        self.assertEqual(out, result)
 
         rdc = self.stats.get_value('request_depth_count/1', spider=self.spider)
-        self.assertEquals(rdc, 1)
+        self.assertEqual(rdc, 1)
 
         req.meta['depth'] = 1
 
         out2 = list(self.mw.process_spider_output(resp, result, self.spider))
-        self.assertEquals(out2, [])
+        self.assertEqual(out2, [])
 
         rdm = self.stats.get_value('request_depth_max', spider=self.spider)
-        self.assertEquals(rdm, 1)
+        self.assertEqual(rdm, 1)
 
     def tearDown(self):
         self.stats.close_spider(self.spider, '')

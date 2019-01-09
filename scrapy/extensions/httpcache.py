@@ -13,7 +13,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
 
 
 logger = logging.getLogger(__name__)
@@ -70,8 +70,8 @@ class RFC2616Policy(object):
         return True
 
     def should_cache_response(self, response, request):
-        # What is cacheable - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
-        # Response cacheability - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
+        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
+        # Response cacheability - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
@@ -163,7 +163,7 @@ class RFC2616Policy(object):
 
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#706
         cc = self._parse_cachecontrol(response)
         maxage = self._get_max_age(cc)
         if maxage is not None:
@@ -194,7 +194,7 @@ class RFC2616Policy(object):
 
     def _compute_current_age(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeCurrentAge
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#366
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#658
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
@@ -362,6 +362,7 @@ class LeveldbCacheStorage(object):
         # avoid them being removed in storages with timestamp-based autoremoval.
         self.db.CompactRange()
         del self.db
+        garbage_collect()
 
     def retrieve_response(self, spider, request):
         data = self._read_data(spider, request)
@@ -413,7 +414,7 @@ class LeveldbCacheStorage(object):
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 
-    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
     >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
     ...                                                 b'max-age': b'3600'}

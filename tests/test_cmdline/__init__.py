@@ -52,7 +52,8 @@ class CmdlineTest(unittest.TestCase):
             stats.print_stats()
             out.seek(0)
             stats = out.read()
-            self.assertIn('scrapy/commands/version.py', stats)
+            self.assertIn(os.path.join('scrapy', 'commands', 'version.py'),
+                          stats)
             self.assertIn('tottime', stats)
         finally:
             shutil.rmtree(path)
@@ -68,4 +69,4 @@ class CmdlineTest(unittest.TestCase):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
         six.assertCountEqual(self, settingsdict.keys(), EXTENSIONS.keys())
-        self.assertEquals(200, settingsdict[EXT_PATH])
+        self.assertEqual(200, settingsdict[EXT_PATH])

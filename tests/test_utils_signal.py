@@ -29,7 +29,7 @@ class SendCatchLogTest(unittest.TestCase):
         self.assertIn('error_handler', record.getMessage())
         self.assertEqual(record.levelname, 'ERROR')
         self.assertEqual(result[0][0], self.error_handler)
-        self.assert_(isinstance(result[0][1], Failure))
+        self.assertIsInstance(result[0][1], Failure)
         self.assertEqual(result[1], (self.ok_handler, "OK"))
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)

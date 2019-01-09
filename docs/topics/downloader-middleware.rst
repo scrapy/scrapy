@@ -157,6 +157,17 @@ more of the following methods:
       :param spider: the spider for which this request is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
 
+   .. method:: from_crawler(cls, crawler)
+
+      If present, this classmethod is called to create a middleware instance
+      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+      of the middleware. Crawler object provides access to all Scrapy core
+      components like settings and signals; it is a way for middleware to
+      access them and hook its functionality into Scrapy.
+
+      :param crawler: crawler that uses this middleware
+      :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -225,6 +236,15 @@ Default: ``True``
 
 Whether to enable the cookies middleware. If disabled, no cookies will be sent
 to web servers.
+
+Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
+``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
+evaluates to ``True`` the request cookies will **not** be sent to the
+web server and received cookies in :class:`~scrapy.http.Response` will
+**not** be merged with the existing cookies.
+
+For more detailed information see the ``cookies`` parameter in
+:class:`~scrapy.http.Request`.
 
 .. setting:: COOKIES_DEBUG
 
@@ -862,7 +882,7 @@ precedence over the :setting:`RETRY_TIMES` setting.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 408]``
+Default: ``[500, 502, 503, 504, 522, 524, 408]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.

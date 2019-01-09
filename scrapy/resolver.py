@@ -22,7 +22,8 @@ class CachingThreadedResolver(ThreadedResolver):
         # to enforce Scrapy's DNS_TIMEOUT setting's value
         timeout = (self.timeout,)
         d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
-        d.addCallback(self._cache_result, name)
+        if dnscache.limit:
+            d.addCallback(self._cache_result, name)
         return d
 
     def _cache_result(self, result, name):

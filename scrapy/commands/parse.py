@@ -1,4 +1,5 @@
 from __future__ import print_function
+import json
 import logging
 
 from w3lib.url import is_url
@@ -48,6 +49,8 @@ class Command(ScrapyCommand):
             help="use CrawlSpider rules to discover the callback")
         parser.add_option("-c", "--callback", dest="callback",
             help="use this callback for parsing, instead looking for a callback")
+        parser.add_option("-m", "--meta", dest="meta",
+            help="inject extra meta into the Request, it must be a valid raw json string")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
@@ -142,7 +145,8 @@ class Command(ScrapyCommand):
                 logger.error('Unable to find spider for: %(url)s',
                              {'url': url})
 
-        request = Request(url, opts.callback)
+        # Request requires callback argument as callable or None, not string
+        request = Request(url, None)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
         self.spidercls.start_requests = _start_requests
 
@@ -164,7 +168,9 @@ class Command(ScrapyCommand):
             # determine real callback
             cb = response.meta['_callback']
             if not cb:
-                if opts.rules and self.first_response == response:
+                if opts.callback:
+                    cb = opts.callback
+                elif opts.rules and self.first_response == response:
                     cb = self.get_callback_from_rules(spider, response)
 
                     if not cb:
@@ -201,6 +207,10 @@ class Command(ScrapyCommand):
                     req.callback = callback
                 return requests
 
+        #update request meta if any extra meta was passed through the --meta/-m opts.
+        if opts.meta:
+            request.meta.update(opts.meta)
+
         request.meta['_depth'] = 1
         request.meta['_callback'] = request.callback
         request.callback = callback
@@ -208,10 +218,26 @@ class Command(ScrapyCommand):
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
+
+        self.process_spider_arguments(opts)
+        self.process_request_meta(opts)
+
+    def process_spider_arguments(self, opts):
+
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+
+    def process_request_meta(self, opts):
+
+        if opts.meta:
+            try:
+                opts.meta = json.loads(opts.meta)
+            except ValueError:
+                raise UsageError("Invalid -m/--meta value, pass a valid json string to -m or --meta. " \
+                                "Example: --meta='{\"foo\" : \"bar\"}'", print_help=False)
+
 
     def run(self, args, opts):
         # parse arguments

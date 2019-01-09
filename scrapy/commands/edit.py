@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError

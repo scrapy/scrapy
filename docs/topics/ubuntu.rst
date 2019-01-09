@@ -37,5 +37,5 @@ To use the packages:
 .. warning:: `python-scrapy` is a different package provided by official debian
    repositories, it's very outdated and it isn't supported by Scrapy team.
 
-.. _Scrapinghub: http://scrapinghub.com/
+.. _Scrapinghub: https://scrapinghub.com/
 .. _GitHub repo: https://github.com/scrapy/scrapy

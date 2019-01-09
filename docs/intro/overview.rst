@@ -26,7 +26,7 @@ http://quotes.toscrape.com, following the pagination::
 
 
     class QuotesSpider(scrapy.Spider):
-        name = "quotes"
+        name = 'quotes'
         start_urls = [
             'http://quotes.toscrape.com/tag/humor/',
         ]
@@ -34,11 +34,11 @@ http://quotes.toscrape.com, following the pagination::
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.xpath('span/small/text()').extract_first(),
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.xpath('span/small/text()').get(),
                 }
 
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr("href")').get()
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
 
@@ -160,8 +160,8 @@ The next steps for you are to :ref:`install Scrapy <intro-install>`,
 a full-blown Scrapy project and `join the community`_. Thanks for your
 interest!
 
-.. _join the community: http://scrapy.org/community/
+.. _join the community: https://scrapy.org/community/
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _Sitemaps: http://www.sitemaps.org
+.. _Sitemaps: https://www.sitemaps.org/index.html

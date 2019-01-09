@@ -178,6 +178,47 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+.. setting:: AWS_ENDPOINT_URL
+
+AWS_ENDPOINT_URL
+----------------
+
+Default: ``None``
+
+Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+Only supported with ``botocore`` library.
+
+.. setting:: AWS_USE_SSL
+
+AWS_USE_SSL
+-----------
+
+Default: ``None``
+
+Use this option if you want to disable SSL connection for communication with
+S3 or S3-like storage. By default SSL will be used.
+Only supported with ``botocore`` library.
+
+.. setting:: AWS_VERIFY
+
+AWS_VERIFY
+----------
+
+Default: ``None``
+
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default
+SSL verification will occur. Only supported with ``botocore`` library.
+
+.. setting:: AWS_REGION_NAME
+
+AWS_REGION_NAME
+---------------
+
+Default: ``None``
+
+The name of the region associated with the AWS client.
+Only supported with ``botocore`` library.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -306,17 +347,6 @@ See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
     This setting adjusts priority **in the opposite way** compared to
     other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
     and :setting:`RETRY_PRIORITY_ADJUST`.
-
-.. setting:: DEPTH_STATS
-
-DEPTH_STATS
------------
-
-Default: ``True``
-
-Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
-
-Whether to collect maximum depth stats.
 
 .. setting:: DEPTH_STATS_VERBOSE
 
@@ -627,7 +657,7 @@ Optionally, this can be set per-request basis by using the
   circumstances, from server misconfiguration to network errors to data
   corruption. It is up to the user to decide if it makes sense to process
   broken responses considering they may contain partial or incomplete content.
-  If setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
+  If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
 
 .. setting:: DUPEFILTER_CLASS
@@ -854,7 +884,7 @@ LOG_STDOUT
 Default: ``False``
 
 If ``True``, all standard output (and error) of your process will be redirected
-to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
+to the log. For example if you ``print('hello')`` it will appear in the Scrapy
 log.
 
 .. setting:: LOG_SHORT_NAMES
@@ -1002,7 +1032,7 @@ The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
 If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
 
-.. _wget: http://www.gnu.org/software/wget/manual/wget.html
+.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
@@ -1317,14 +1347,14 @@ Default: ``2083``
 Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: http://www.boutell.com/newfaq/misc/urllength.html
+the default value for this setting see: https://boutell.com/newfaq/misc/urllength.html
 
 .. setting:: USER_AGENT
 
 USER_AGENT
 ----------
 
-Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
+Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden.
 
