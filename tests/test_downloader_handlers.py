@@ -24,7 +24,7 @@ from w3lib.url import path_to_file_uri
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -360,11 +360,6 @@ class HttpTestCase(unittest.TestCase):
         return d
 
 
-class DeprecatedHttpTestCase(HttpTestCase):
-    """HTTP 1.0 test case"""
-    download_handler_cls = HttpDownloadHandler
-
-
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls = HTTP10DownloadHandler
@@ -654,11 +649,6 @@ class HttpProxyTestCase(unittest.TestCase):
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
-
-
-class DeprecatedHttpProxyTestCase(unittest.TestCase):
-    """Old deprecated reference to http10 downloader handler"""
-    download_handler_cls = HttpDownloadHandler
 
 
 class Http10ProxyTestCase(HttpProxyTestCase):

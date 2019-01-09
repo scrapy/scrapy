@@ -11,14 +11,6 @@ from twisted.web import http
 from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
 
-from scrapy.utils.decorators import deprecated
-
-
-@deprecated
-def body_or_str(*a, **kw):
-    from scrapy.utils.iterators import _body_or_str
-    return _body_or_str(*a, **kw)
-
 
 _baseurl_cache = weakref.WeakKeyDictionary()
 def get_base_url(response):

@@ -99,13 +99,6 @@ def execute(argv=None, settings=None):
     if argv is None:
         argv = sys.argv
 
-    # --- backward compatibility for scrapy.conf.settings singleton ---
-    if settings is None and 'scrapy.conf' in sys.modules:
-        from scrapy import conf
-        if hasattr(conf, 'settings'):
-            settings = conf.settings
-    # ------------------------------------------------------------------
-
     if settings is None:
         settings = get_project_settings()
         # set EDITOR from environment if available
@@ -115,15 +108,6 @@ def execute(argv=None, settings=None):
         else:
             settings['EDITOR'] = editor
     check_deprecated_settings(settings)
-
-    # --- backward compatibility for scrapy.conf.settings singleton ---
-    import warnings
-    from scrapy.exceptions import ScrapyDeprecationWarning
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-        from scrapy import conf
-        conf.settings = settings
-    # ------------------------------------------------------------------
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
