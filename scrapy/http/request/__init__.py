@@ -16,13 +16,13 @@ from scrapy.http.common import obsolete_setter
 
 class Request(object_ref):
 
-    def __init__(self, url, escape_URL=None, callback=None, method='GET', headers=None, body=None,
+    def __init__(self, url, quote_path=True, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None, flags=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
-        self.escape_URL = escape_URL
+        self.quote_path = quote_path
         self._set_url(url)
         self._set_body(body)
         assert isinstance(priority, int), "Request priority not an integer: %r" % priority
@@ -56,7 +56,7 @@ class Request(object_ref):
         if not isinstance(url, six.string_types):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
-        s = safe_url_string(url, self.encoding, self.escape_URL)
+        s = safe_url_string(url, self.encoding, self.quote_path)
         self._url = escape_ajax(s)
 
         if ':' not in self._url:
