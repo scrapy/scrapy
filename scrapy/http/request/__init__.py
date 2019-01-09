@@ -40,8 +40,14 @@ class Request(object_ref):
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None
+        self._kwargs = dict(kwargs) if kwargs else None
         self.flags = [] if flags is None else list(flags)
-        self.kwargs = dict(kwargs) if kwargs else None
+
+    @property
+    def kwargs(self):
+        if self._kwargs is None:
+            self._kwargs = {}
+        return self._kwargs
 
     @property
     def meta(self):
