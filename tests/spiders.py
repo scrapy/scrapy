@@ -28,6 +28,40 @@ class MetaSpider(MockServerSpider):
         self.meta['close_reason'] = reason
 
 
+class KeywordArgumentsSpider(MockServerSpider):
+
+    name = 'kwargs'
+    checks = set()
+
+    def start_requests(self):
+        data = {'key': 'value', 'number': 123}
+        yield Request(self.mockserver.url('/first'), self.parse_first, kwargs=data)
+        yield Request(self.mockserver.url('/general_with'), self.parse_general, kwargs=data)
+        yield Request(self.mockserver.url('/general_without'), self.parse_general)
+        yield Request(self.mockserver.url('/no_kwargs'), self.parse_no_kwargs)
+
+    def parse_first(self, response, key, number):
+        self.checks.add(key == 'value')
+        self.checks.add(number == 123)
+        yield response.follow(
+            self.mockserver.url('/two'),
+            self.parse_second,
+            kwargs={'new_key': 'new_value'})
+
+    def parse_second(self, response, new_key):
+        self.checks.add(new_key == 'new_value')
+
+    def parse_general(self, response, **kwargs):
+        if response.url.endswith('/general_with'):
+            self.checks.add(kwargs['key'] == 'value')
+            self.checks.add(kwargs['number'] == 123)
+        elif response.url.endswith('/general_without'):
+            self.checks.add(kwargs == {})
+
+    def parse_no_kwargs(self, response):
+        pass
+
+
 class FollowAllSpider(MetaSpider):
 
     name = 'follow'

@@ -8,7 +8,7 @@ from twisted.trial.unittest import TestCase
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.python import to_unicode
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
+from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, KeywordArgumentsSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
 
@@ -22,6 +22,12 @@ class CrawlTestCase(TestCase):
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_callback_kwargs(self):
+        crawler = self.runner.create_crawler(KeywordArgumentsSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(crawler.spider.checks, set([True]))
 
     @defer.inlineCallbacks
     def test_follow_all(self):
