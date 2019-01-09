@@ -248,8 +248,8 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
         self.close_scheduler()
         self.create_scheduler()
 
-        slots = list()
-        requests = list()
+        slots = []
+        requests = []
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             slots.append(_scheduler_slot_read(request))
