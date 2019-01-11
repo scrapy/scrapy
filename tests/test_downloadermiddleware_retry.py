@@ -9,7 +9,6 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.utils.test import get_crawler
-from scrapy.exceptions import RetryRequest
 
 
 class RetryTest(unittest.TestCase):
@@ -17,7 +16,6 @@ class RetryTest(unittest.TestCase):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('foo')
         self.mw = RetryMiddleware.from_crawler(self.crawler)
-        self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):
         req = Request('http://www.scrapytest.org/503')
@@ -75,15 +73,6 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable') == 2
         assert self.crawler.stats.get_value('retry/count') == 2
 
-    def test_retry_request_exception(self):
-        req = Request('http://www.scrapytest.org')
-        self._test_retry_exception(req, RetryRequest('missing title'))
-        stats = self.crawler.stats
-        retry_times = self.crawler.settings['RETRY_TIMES']
-        assert stats.get_value('retry/max_reached') == 1
-        assert stats.get_value('retry/count') == retry_times
-        assert stats.get_value('retry/reason_count/scrapy.exceptions.RetryRequest') == retry_times
-
     def test_twistederrors(self):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
                 DNSLookupError, ConnectionRefusedError, ConnectionDone,
@@ -116,19 +105,21 @@ class RetryTest(unittest.TestCase):
 
 class MaxRetryTimesTest(unittest.TestCase):
     def setUp(self):
-        self.crawler = get_crawler(Spider)
+        self.init()
+        self.invalid_url = 'http://www.scrapytest.org/invalid_url'
+
+    def init(self, settings_dict=None):
+        self.crawler = get_crawler(Spider, settings_dict)
         self.spider = self.crawler._create_spider('foo')
         self.mw = RetryMiddleware.from_crawler(self.crawler)
-        self.mw.max_retry_times = 2
-        self.invalid_url = 'http://www.scrapytest.org/invalid_url'
 
     def test_with_settings_zero(self):
 
         # SETTINGS: RETRY_TIMES = 0
-        self.mw.max_retry_times = 0
+        self.init({'RETRY_TIMES': 0})
 
         req = Request(self.invalid_url)
-        self._test_retry(req, DNSLookupError('foo'), self.mw.max_retry_times)
+        self._test_retry(req, DNSLookupError('foo'), 0)
 
     def test_with_metakey_zero(self):
 
@@ -141,15 +132,15 @@ class MaxRetryTimesTest(unittest.TestCase):
     def test_without_metakey(self):
 
         # SETTINGS: RETRY_TIMES is NON-ZERO
-        self.mw.max_retry_times = 5
+        self.init({'RETRY_TIMES': 5})
 
         req = Request(self.invalid_url)
-        self._test_retry(req, DNSLookupError('foo'), self.mw.max_retry_times)
+        self._test_retry(req, DNSLookupError('foo'), 5)
 
     def test_with_metakey_greater(self):
         
         # SETINGS: RETRY_TIMES < meta(max_retry_times)
-        self.mw.max_retry_times = 2
+        self.init({'RETRY_TIMES': 2})
         meta_max_retry_times = 3
 
         req1 = Request(self.invalid_url, meta={'max_retry_times': meta_max_retry_times})
@@ -161,14 +152,14 @@ class MaxRetryTimesTest(unittest.TestCase):
     def test_with_metakey_lesser(self):
         
         # SETINGS: RETRY_TIMES > meta(max_retry_times)
-        self.mw.max_retry_times = 5
+        self.init({'RETRY_TIMES': 5})
         meta_max_retry_times = 4
 
         req1 = Request(self.invalid_url, meta={'max_retry_times': meta_max_retry_times})
         req2 = Request(self.invalid_url)
 
         self._test_retry(req1, DNSLookupError('foo'), meta_max_retry_times)
-        self._test_retry(req2, DNSLookupError('foo'), self.mw.max_retry_times)
+        self._test_retry(req2, DNSLookupError('foo'), 5)
 
     def test_with_dont_retry(self):
 
