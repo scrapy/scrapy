@@ -6,6 +6,7 @@ from scrapy.utils.python import to_unicode
 
 
 class HTTP10DownloadHandler(object):
+    lazy = False
 
     def __init__(self, settings):
         self.HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
