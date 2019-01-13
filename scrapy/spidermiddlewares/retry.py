@@ -11,8 +11,18 @@ from scrapy.utils.retry import RetryHandler
 
 class RetryMiddleware(object):
 
+    def __init__(self, settings):
+        self.enabled = settings.getbool('RETRY_ENABLED')
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
+
     def process_spider_output(self, response, result, spider):
         # work around until this is fixed https://github.com/scrapy/scrapy/issues/220
+        if not self.enabled:
+            return
+
         try:
             for x in result:
                 yield x
@@ -24,6 +34,9 @@ class RetryMiddleware(object):
 
     def process_spider_exception(self, response, exception, spider):
         if isinstance(exception, RetryRequest):
+            if not self.enabled:
+                return []
+
             request = response.request
             retry_handler = RetryHandler(spider, request)
             if retry_handler.is_exhausted():
