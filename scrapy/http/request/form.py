@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import six
-from six.moves.urllib.parse import urljoin, urlencode
+from six.moves.urllib.parse import urljoin, urlencode, urlsplit
 
 import lxml.html
 from parsel.selector import create_root_node
@@ -33,7 +33,30 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                if urlsplit(self.url).query:
+                    queries = (urlsplit(self.url).query + '&' + querystr).split('&')
+                else:
+                    queries = querystr.split('&')
+                query_dict = {}
+                for i in range(len(queries)):
+                    query_list = queries[i].split('=')
+                    query_dict[query_list[0]] = query_list[1]
+                querystr = ''
+                query_key = list(query_dict.keys())
+                for i in range(len(query_dict)):
+                    querystr += (query_key[i] + '=' + query_dict[query_key[i]])
+                    if i!=len(query_dict)-1:
+                        querystr += '&'
+                if urlsplit(self.url).fragment:
+                    if urlsplit(self.url).query:
+                        self._set_url(self.url[:self.url.index('?')+1]+querystr+'#'+urlsplit(self.url).fragment)
+                    else:
+                        self._set_url(self.url+'?'+querystr+'#'+urlsplit(self.url).fragment)
+                else:
+                    if urlsplit(self.url).query:
+                        self._set_url(self.url[:self.url.index('?')+1]+querystr)
+                    else:
+                        self._set_url(self.url+'?'+querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
