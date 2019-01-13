@@ -273,6 +273,19 @@ class FormRequestTest(RequestTest):
     def test_empty_formdata(self):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, b'')
+        
+    def test_formdata_overrides_querystring_duplicates(self):
+        data1 = {'a' : '1', 'b' : '2'}
+        data2 = [('a','one'), ('a','two'), ('c','three')]
+    
+        fs1 = _qs(self.request_class('http://www.example.com?a=0&a=2&b=1', method='GET', formdata=data1))
+        self.assertEqual(fs1[b'a'], [b'1'])
+        self.assertEqual(fs1[b'b'], [b'2'])
+
+        fs2 = _qs(self.request_class('http://www.example.com?a=1&b=2&c=3', method='GET', formdata=data2))
+        self.assertEqual(fs2[b'a'], [b'two'])
+        self.assertEqual(fs2[b'b'], [b'2'])
+        self.assertEqual(fs2[b'c'], [b'three'])
 
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
