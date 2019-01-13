@@ -44,7 +44,7 @@ class FormRequest(Request):
                     duplicate_key_passed.append(query_list[0])
                 for i in range(len(queries)):
                     query_list = queries[i].split('=')
-                    if duplicate_key_passed.count(query_list[0])<=1:
+                    if duplicate_key_passed.count(query_list[0])==0:
                         query_dict[query_list[0]] = query_list[1]  
                 query_str = ''
                 query_key = list(query_dict.keys())
