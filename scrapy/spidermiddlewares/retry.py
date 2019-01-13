@@ -2,11 +2,15 @@
 RetryMiddleware is used to retry temporary issues or bans where the response has to be
 processed by spider before been retried.
 
-You can issue a retry request by raising a `scrapy.exceptions.RetryRequest` exception inside a spider callback
+You can return a `scrapy.http.request.retry.RetryRequest` from a spider callback to retry a request
 """
+import logging
 
-from scrapy.exceptions import RetryRequest
 from scrapy.utils.retry import RetryHandler
+from scrapy.http import RetryRequest
+
+
+logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):
@@ -19,32 +23,25 @@ class RetryMiddleware(object):
         return cls(crawler.settings)
 
     def process_spider_output(self, response, result, spider):
-        # work around until this is fixed https://github.com/scrapy/scrapy/issues/220
-        if not self.enabled:
-            return
+        for x in result:
+            if isinstance(x, RetryRequest):
+                original_request = x.request
+                if not self.enabled:
+                    logger.debug(
+                        "Found a retry request but request retrying is disabled: %(request)s",
+                        {'request': original_request},
+                        extra={'spider': spider}
+                    )
+                    continue
 
-        try:
-            for x in result:
-                yield x
-        except RetryRequest as e:
-            res = self.process_spider_exception(response, e, spider)
-            if res:
-                for r in res:
-                    yield r
-
-    def process_spider_exception(self, response, exception, spider):
-        if isinstance(exception, RetryRequest):
-            if not self.enabled:
-                return []
-
-            request = response.request
-            retry_handler = RetryHandler(spider, request)
-            if retry_handler.is_exhausted():
-                retry_handler.record_retry_failure(exception)
-                return None
+                reason = x.reason or 'Retry Request'
+                retry_handler = RetryHandler(spider, original_request)
+                if retry_handler.is_exhausted():
+                    retry_handler.record_retry_failure(reason)
+                    continue
+                else:
+                    new_req = retry_handler.make_retry_request()
+                    retry_handler.record_retry(new_req, reason)
+                    yield new_req
             else:
-                new_req = retry_handler.make_retry_request()
-                retry_handler.record_retry(new_req, exception)
-                return [new_req]
-
-        return None
+                yield x
