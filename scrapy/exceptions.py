@@ -54,8 +54,3 @@ class ScrapyDeprecationWarning(Warning):
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
     pass
-
-
-class RetryRequest(Exception):
-    """Exception to indicate a retry"""
-    pass

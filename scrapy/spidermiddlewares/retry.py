@@ -6,8 +6,8 @@ You can return a `scrapy.http.request.retry.RetryRequest` from a spider callback
 """
 import logging
 
-from scrapy.utils.retry import RetryHandler
 from scrapy.http import RetryRequest
+from scrapy.utils.retry import RetryHandler, is_retrying_enabled_on_request
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,14 @@ class RetryMiddleware(object):
                 if not self.enabled:
                     logger.debug(
                         "Found a retry request but request retrying is disabled: %(request)s",
+                        {'request': original_request},
+                        extra={'spider': spider}
+                    )
+                    continue
+
+                if not is_retrying_enabled_on_request(original_request):
+                    logger.debug(
+                        "Found a retry request on a request that has retrying disabled: %(request)s",
                         {'request': original_request},
                         extra={'spider': spider}
                     )
