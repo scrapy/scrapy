@@ -1,6 +1,10 @@
 from scrapy.utils.python import global_object_name
 
 
+def is_retrying_enabled_on_request(request):
+    return not bool(request.meta.get('dont_retry', False))
+
+
 class RetryHandler(object):
     """utilities to handle retries"""
 
