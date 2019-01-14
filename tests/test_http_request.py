@@ -1292,7 +1292,7 @@ class JSONRequestTest(RequestTest):
             self.assertEqual(kwargs['sort_keys'], True)
 
     def test_replace_dumps_kwargs(self):
-        """ Test that dumps_kwargs are provided json.dumps when replace is called """
+        """ Test that dumps_kwargs are provided to json.dumps when replace is called """
         data1 = {
             'name1': 'value1',
         }

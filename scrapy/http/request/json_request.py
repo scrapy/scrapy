@@ -5,6 +5,7 @@ This module implements the JSONRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
+import copy
 import json
 import warnings
 
@@ -13,7 +14,10 @@ from scrapy.http.request import Request
 
 class JSONRequest(Request):
     def __init__(self, *args, **kwargs):
-        dumps_kwargs = kwargs.pop('dumps_kwargs', {})
+        dumps_kwargs = copy.deepcopy(kwargs.pop('dumps_kwargs', {}))
+        dumps_kwargs['sort_keys'] = True
+        self._dumps_kwargs = dumps_kwargs
+
         body_passed = kwargs.get('body', None) is not None
         data = kwargs.pop('data', None)
         data_passed = data is not None
@@ -22,7 +26,7 @@ class JSONRequest(Request):
             warnings.warn('Both body and data passed. data will be ignored')
 
         elif not body_passed and data_passed:
-            kwargs['body'] = self.dump(data, **dumps_kwargs)
+            kwargs['body'] = self._dumps(data)
 
             if 'method' not in kwargs:
                 kwargs['method'] = 'POST'
@@ -30,7 +34,6 @@ class JSONRequest(Request):
         super(JSONRequest, self).__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'application/json')
         self.headers.setdefault('Accept', 'application/json, text/javascript, */*; q=0.01')
-        self._dumps_kwargs = dumps_kwargs
 
     def replace(self, *args, **kwargs):
         body_passed = kwargs.get('body', None) is not None
@@ -41,10 +44,10 @@ class JSONRequest(Request):
             warnings.warn('Both body and data passed. data will be ignored')
 
         elif not body_passed and data_passed:
-            kwargs['body'] = self.dump(data, **self._dumps_kwargs)
+            kwargs['body'] = self._dumps(data)
 
         return super(JSONRequest, self).replace(*args, **kwargs)
 
-    def dump(self, data, **kwargs):
+    def _dumps(self, data):
         """Convert to JSON """
-        return json.dumps(data, sort_keys=True, **kwargs)
+        return json.dumps(data, **self._dumps_kwargs)
