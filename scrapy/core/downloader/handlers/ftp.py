@@ -60,7 +60,10 @@ class ReceivedDataProtocol(Protocol):
         self.body.close() if self.filename else self.body.seek(0)
 
 _CODE_RE = re.compile("\d+")
+
+
 class FTPDownloadHandler(object):
+    lazy = False
 
     CODE_MAPPING = {
         "550": 404,
