@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, kwargs])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -126,6 +126,9 @@ Request objects
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
 
+    :param kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
+    :type kwargs: dict
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -165,6 +168,17 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
+    .. attribute:: Request.kwargs
+
+        A dictionary that contains arbitrary metadata for this request. Its contents
+        will be passed to the Request's callback as keyword arguments. It is empty
+        for new Requests, which means by default callbacks only get a :class:`Response`
+        object as argument.
+
+        This dict is `shallow copied`_ when the request is cloned using the
+        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
+        spider, from the ``response.kwargs`` attribute.
+
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
@@ -200,11 +214,9 @@ Example::
         self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
-functions so you can receive the arguments later, in the second callback. You
-can use the :attr:`Request.meta` attribute for that.
-
-Here's an example of how to pass an item using this mechanism, to populate
-different fields from different pages::
+functions so you can receive the arguments later, in the second callback.
+The following two examples show how to achieve this by using the 
+:attr:`Request.meta` and :attr:`Request.kwargs` attributes respectively::
 
     def parse_page1(self, response):
         item = MyItem()
@@ -217,6 +229,22 @@ different fields from different pages::
     def parse_page2(self, response):
         item = response.meta['item']
         item['other_url'] = response.url
+        yield item
+
+::
+
+    def parse_page1(self, response):
+        item = MyItem()
+        item['main_url'] = response.url
+        request = scrapy.Request("http://www.example.com/some_page.html",
+                                 callback=self.parse_page2)
+        request.kwargs['item'] = item
+        request.kwargs['foo'] = 'bar'
+        yield request
+
+    def parse_page2(self, response, item, foo):
+        item['other_url'] = response.url
+        item['foo'] = foo
         yield item
 
 
