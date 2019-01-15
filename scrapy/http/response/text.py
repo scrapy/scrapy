@@ -24,7 +24,7 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = 'ascii'
 
     def __init__(self, *args, **kwargs):
-        self._encoding = kwargs.pop('encoding', None)
+        self._encoding = kwargs.pop('encoding', 'utf-8')
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
