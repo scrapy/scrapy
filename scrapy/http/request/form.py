@@ -33,33 +33,26 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                if urlsplit(self.url).query:
-                    queries = (urlsplit(self.url).query).split('&')
+                url_split = urlsplit(self.url)
+                formdata_key_list = []
+                for k in querystr.split('&'):
+                    formdata_key_list.append(k.split('=')[0])
+
+                if url_split.query:
+                    queries = (url_split.query).split('&')
+                    query_dict = {}
+
+                    for x in queries:
+                        query = x.split('=')
+                        if formdata_key_list.count(query[0])==0:
+                            query_dict[query[0]] = query[1]
+                        query_str = ''
+                        for k, v in query_dict:
+                            query_str += (k + '=' + v + '&')
+
+                    self._set_url(self.url[:self.url.index('?')+1] + query_str + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
                 else:
-                    queries = querystr.split('&')
-                query_dict = {}
-                duplicate_key_passed=[]
-                for i in range(len(querystr.split('&'))):
-                    query_list = querystr.split('&')[i].split('=')
-                    duplicate_key_passed.append(query_list[0])
-                for i in range(len(queries)):
-                    query_list = queries[i].split('=')
-                    if duplicate_key_passed.count(query_list[0])==0:
-                        query_dict[query_list[0]] = query_list[1]  
-                query_str = ''
-                query_key = list(query_dict.keys())
-                for i in range(len(query_dict)):
-                    query_str += (query_key[i] + '=' + query_dict[query_key[i]] + '&')       
-                if urlsplit(self.url).fragment:
-                    if urlsplit(self.url).query:
-                        self._set_url(self.url[:self.url.index('?')+1] + query_str + querystr + '#' + urlsplit(self.url).fragment)
-                    else:
-                        self._set_url(self.url + '?' + querystr + '#' + urlsplit(self.url).fragment)
-                else:
-                    if urlsplit(self.url).query:
-                        self._set_url(self.url[:self.url.index('?')+1] + query_str + querystr)
-                    else:
-                        self._set_url(self.url + '?' + querystr)
+                    self._set_url(self.url + '?' + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
