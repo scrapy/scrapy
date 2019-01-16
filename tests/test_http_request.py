@@ -275,20 +275,27 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r1.body, b'')
         
     def test_formdata_overrides_querystring_duplicates(self):
-        #Without fragment
-        data = {'a' : '1', 'b' : '2'}
-        fs = _qs(self.request_class('http://www.example.com/?a=0&a=2&b=1', method='GET', formdata=data))
-        self.assertEqual(fs[b'a'], [b'1'])
-        self.assertEqual(fs[b'b'], [b'2'])
-
-        #With fragment
+        #Both fragment and query in url
         data = (('a', '1'), ('b', '2'))
         url = self.request_class('http://www.example.com/?a=0&a=2&b=1#fragment', method='GET', formdata=data).url.split('#')[0]
         fs = _qs(self.request_class(url, method='GET', formdata=data))
         self.assertEqual(fs[b'a'], [b'1'])
         self.assertEqual(fs[b'b'], [b'2'])
 
-        #Witout query
+        #only query in url
+        data = {'a' : '1', 'b' : '2'}
+        fs = _qs(self.request_class('http://www.example.com/?a=0&a=2&b=1', method='GET', formdata=data))
+        self.assertEqual(fs[b'a'], [b'1'])
+        self.assertEqual(fs[b'b'], [b'2'])
+
+        #only fragment in url
+        data = (('a', '1'), ('b', '2'))
+        url = self.request_class('http://www.example.com/#fragment', method='GET', formdata=data).url.split('#')[0]
+        fs = _qs(self.request_class(url, method='GET', formdata=data))
+        self.assertEqual(fs[b'a'], [b'1'])
+        self.assertEqual(fs[b'b'], [b'2'])
+
+        #None of both in url
         data = {'a' : '1', 'b' : '2'}
         fs = _qs(self.request_class('http://www.example.com/', method='GET', formdata=data))
         self.assertEqual(fs[b'a'], [b'1'])
