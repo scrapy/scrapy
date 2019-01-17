@@ -41,15 +41,14 @@ class FormRequest(Request):
                 if url_split.query:
                     queries = (url_split.query).split('&')
                     query_dict = {}
-
                     for x in queries:
-                        query = x.split('=')
-                        if formdata_key_list.count(query[0])==0:
-                            query_dict[query[0]] = query[1]
+                        k = x.split('=')[0]
+                        v = x.split('=')[1]
+                        if formdata_key_list.count(k)==0:
+                            query_dict[k] = v
                         query_str = ''
-                        for k, v in query_dict:
+                        for k, v in query_dict.items():
                             query_str += (k + '=' + v + '&')
-
                     self._set_url(self.url[:self.url.index('?')+1] + query_str + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
                 else:
                     self._set_url(self.url + '?' + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
