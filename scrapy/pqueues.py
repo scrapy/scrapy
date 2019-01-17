@@ -1,10 +1,10 @@
 import hashlib
 import logging
 from collections import namedtuple
-from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
 
+from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.core.downloader import Downloader
 from scrapy.http import Request
 from scrapy.signals import request_reached_downloader, request_left_downloader
@@ -17,16 +17,6 @@ logger = logging.getLogger(__name__)
 SCHEDULER_SLOT_META_KEY = Downloader.DOWNLOAD_SLOT
 
 
-def _get_request_meta(request):
-    if isinstance(request, dict):
-        return request.setdefault('meta', {})
-
-    if isinstance(request, Request):
-        return request.meta
-
-    raise ValueError('Bad type of request "%s"' % (request.__class__, ))
-
-
 def _scheduler_slot_read(request, default=None):
     return request.meta.get(SCHEDULER_SLOT_META_KEY, default)
 
@@ -37,24 +27,17 @@ def _scheduler_slot_write(request, slot):
 
 def _set_scheduler_slot(request):
     """
-        >>> _set_scheduler_slot({'url':'http://foo.com'}) == _set_scheduler_slot({'url':'http://bar.com'})
-        False
-        >>> _set_scheduler_slot({'url':'http://foo.com'}) == _set_scheduler_slot({'url':'http://foo.com'})
-        True
+    >>> request = Request('http://example.com')
+    >>> _set_scheduler_slot(request)
+    'example.com'
+    >>> _scheduler_slot_read(request)
+    'example.com'
     """
-    meta = _get_request_meta(request)
-    slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
-
+    slot = _scheduler_slot_read(request, None)
     if slot is not None:
         return slot
-
-    if isinstance(request, dict):
-        url = request.get('url', None)
-        slot = urlparse(url).hostname or ''
-    elif isinstance(request, Request):
-        slot = urlparse_cached(request).hostname or ''
-
-    meta[SCHEDULER_SLOT_META_KEY] = slot
+    slot = urlparse_cached(request).hostname or ''
+    _scheduler_slot_write(request, slot)
     return slot
 
 
@@ -68,30 +51,25 @@ def _path_safe(text):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class PrioritySlot(namedtuple("PrioritySlot", ["priority", "slot"])):
-    """ ``(priority, slot)`` tuple which uses a path-safe slot name
-    when converting to str """
+class _Priority(namedtuple("_Priority", ["priority", "slot"])):
+    """ Slot-specific priority. It is a hack - ``(priority, slot)`` tuple
+    which can be used instead of int priorities in queues:
+
+    * they are ordered in the same way - order is still by priority value,
+      min(prios) works;
+    * str(p) representation is guaranteed to be different when slots
+      are different - this is important because str(p) is used to create
+      queue files on disk;
+    * they have readable str(p) representation which is safe
+      to use as a file name.
+    """
     __slots__ = ()
 
     def __str__(self):
         return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
 
 
-class PriorityAsTupleQueue(PriorityQueue):
-    """
-    Python structures is not directly (de)serialized (to)from json.
-    We need this modified queue to transform custom structure (from)to
-    json serializable structures
-    """
-    def __init__(self, qfactory, startprios=()):
-        startprios = [PrioritySlot(priority=p[0], slot=p[1])
-                      for p in startprios]
-        super(PriorityAsTupleQueue, self).__init__(
-            qfactory=qfactory,
-            startprios=startprios)
-
-
-class SlotPriorityQueues(object):
+class _SlotPriorityQueues(object):
     """ Container for multiple priority queues. """
     def __init__(self, pqfactory, slot_startprios=None):
         """
@@ -134,44 +112,78 @@ class SlotPriorityQueues(object):
         return slot in self.pqueues
 
 
-class DownloaderAwarePriorityQueue(object):
-
-    _DOWNLOADER_AWARE_PQ_ID = 'DOWNLOADER_AWARE_PQ_ID'
+class ScrapyPriorityQueue(PriorityQueue):
+    """
+    PriorityQueue which works with scrapy.Request instances and
+    can optionally convert them to/from dicts before/after putting to a queue.
+    """
+    def __init__(self, crawler, qfactory, startprios=(), serialize=False):
+        super(ScrapyPriorityQueue, self).__init__(qfactory, startprios)
+        self.serialize = serialize
+        self.spider = crawler.spider
 
     @classmethod
-    def from_crawler(cls, crawler, qfactory, startprios=None):
-        return cls(crawler, qfactory, startprios)
+    def from_crawler(cls, crawler, qfactory, startprios=(), serialize=False):
+        return cls(crawler, qfactory, startprios, serialize)
 
-    def __init__(self, crawler, qfactory, startprios=None):
-        ip_concurrency_key = 'CONCURRENT_REQUESTS_PER_IP'
-        ip_concurrency = crawler.settings.getint(ip_concurrency_key, 0)
+    def push(self, request, priority=0):
+        if self.serialize:
+            request = request_to_dict(request, self.spider)
+        super(ScrapyPriorityQueue, self).push(request, priority)
 
-        if ip_concurrency > 0:
-            raise ValueError('"%s" does not support setting %s' % (self.__class__,
-                                                                   ip_concurrency_key))
+    def pop(self):
+        request = super(ScrapyPriorityQueue, self).pop()
+        if request and self.serialize:
+            request = request_from_dict(request, self.spider)
+        return request
+
+
+class DownloaderAwarePriorityQueue(object):
+    """ PriorityQueue which takes Downlaoder activity in account:
+    domains (slots) with the least amount of active downloads are dequeued
+    first.
+    """
+    _DOWNLOADER_AWARE_PQ_ID = '_DOWNLOADER_AWARE_PQ_ID'
+
+    @classmethod
+    def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):
+        return cls(crawler, qfactory, slot_startprios, serialize)
+
+    def __init__(self, crawler, qfactory, slot_startprios=None, serialize=False):
+        if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
+            raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
+                             % (self.__class__,))
+
+        if slot_startprios and not isinstance(slot_startprios, dict):
+            raise ValueError("DownloaderAwarePriorityQueue accepts "
+                             "``slot_startprios`` as a dict; %r instance "
+                             "is passed. Most likely, it means the state is"
+                             "created by an incompatible priority queue. "
+                             "Only a crawl started with the same priority "
+                             "queue class can be resumed." %
+                             slot_startprios.__class__)
+
+        slot_startprios = {
+            slot: [_Priority(p, slot) for p in startprios]
+            for slot, startprios in (slot_startprios or {}).items()}
 
         def pqfactory(startprios=()):
-            return PriorityAsTupleQueue(qfactory, startprios)
-
-        if startprios and not isinstance(startprios, dict):
-            raise ValueError("DownloaderAwarePriorityQueue accepts "
-                             "``startprios`` as a dict; %r instance is passed."
-                             " Only a crawl started with the same priority "
-                             "queue class can be resumed." % startprios.__class__)
-        self._slot_pqueues = SlotPriorityQueues(pqfactory,
-                                                slot_startprios=startprios)
+            return ScrapyPriorityQueue(crawler, qfactory, startprios, serialize)
+        self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
 
         self._active_downloads = {slot: 0 for slot in self._slot_pqueues.pqueues}
         crawler.signals.connect(self.on_response_download,
                                 signal=request_left_downloader)
         crawler.signals.connect(self.on_request_reached_downloader,
                                 signal=request_reached_downloader)
+        self.serialize = serialize
 
+    # There are two PriorityQueues at the same time (memory and disk-based),
+    # and they both listen to Downloader signals. To filter out signals
+    # coming from the other queue, each queue keeps track of its own
+    # requests using mark / unmark / check_mark methods.
     def mark(self, request):
-        meta = _get_request_meta(request)
-        if not isinstance(meta, dict):
-            raise ValueError('No meta attribute in %s' % (request, ))
-        meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
+        request.meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
 
     def check_mark(self, request):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
@@ -194,7 +206,7 @@ class DownloaderAwarePriorityQueue(object):
 
     def push(self, request, priority):
         slot = _set_scheduler_slot(request)
-        priority_slot = PrioritySlot(priority=priority, slot=slot)
+        priority_slot = _Priority(priority=priority, slot=slot)
         self._slot_pqueues.push_slot(slot, request, priority_slot)
         if slot not in self._active_downloads:
             self._active_downloads[slot] = 0
@@ -206,8 +218,8 @@ class DownloaderAwarePriorityQueue(object):
 
         slot = _scheduler_slot_read(request)
         if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
-            raise ValueError('Get response for wrong slot "%s"' % (slot, ))
-        self._active_downloads[slot] = self._active_downloads[slot] - 1
+            raise ValueError('Got response for a wrong slot "%s"' % (slot, ))
+        self._active_downloads[slot] -= 1
         if self._active_downloads[slot] == 0 and slot not in self._slot_pqueues:
             del self._active_downloads[slot]
 
@@ -220,7 +232,9 @@ class DownloaderAwarePriorityQueue(object):
 
     def close(self):
         self._active_downloads.clear()
-        return self._slot_pqueues.close()
+        active = self._slot_pqueues.close()
+        return {slot: [p.priority for p in startprios]
+                for slot, startprios in active.items()}
 
     def __len__(self):
         return len(self._slot_pqueues)
