@@ -71,8 +71,9 @@ on cookies.
 Request serialization
 ---------------------
 
-Requests must be serializable by the `pickle` module, in order for persistence
-to work, so you should make sure that your requests are serializable.
+Requests must be serializable by the :mod:`pickle` module, in order for
+persistence to work, so you should make sure that your requests are
+serializable.
 
 The most common issue here is to use ``lambda`` functions on request callbacks that
 can't be persisted.
@@ -99,5 +100,3 @@ But this will::
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
-
-.. _pickle: https://docs.python.org/library/pickle.html

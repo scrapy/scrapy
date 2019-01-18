@@ -98,7 +98,7 @@ class IDownloaderMiddleware(Interface):
         :type request: is a :class:`~scrapy.Request` object
 
         :param exception: the raised exception
-        :type exception: an ``Exception`` object
+        :type exception: Exception
 
         :param spider: the spider for which this request is intended
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -243,7 +243,7 @@ class ISpiderMiddleware(Interface):
         :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
-        :type exception: `Exception`_ object
+        :type exception: Exception
 
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.spiders.Spider` object

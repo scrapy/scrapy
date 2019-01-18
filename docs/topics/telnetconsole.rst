@@ -87,12 +87,10 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | ``prefs``      | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+
-| ``p``          | a shortcut to the `pprint.pprint`_ function                       |
+| ``p``          | a shortcut to the :func:`pprint.pprint` function                  |
 +----------------+-------------------------------------------------------------------+
 | ``hpy``        | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+
-
-.. _pprint.pprint: https://docs.python.org/library/pprint.html#pprint.pprint
 
 Telnet console usage examples
 =============================

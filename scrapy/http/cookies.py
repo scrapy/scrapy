@@ -110,9 +110,8 @@ class _DummyLock(object):
 
 
 class WrappedRequest(object):
-    """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
-
-    see http://docs.python.org/library/urllib2.html#urllib2.Request
+    """Wraps a scrapy Request class with methods defined by
+    :class:`urllib.request.Request` class to interact with CookieJar class
     """
 
     def __init__(self, request):

@@ -168,8 +168,8 @@ class JsonLinesItemExporter(BaseItemExporter):
     """Exports Items in JSON format to the specified file-like object, writing one
     JSON-encoded item per line. The additional constructor arguments are passed
     to the :class:`BaseItemExporter` constructor, and the leftover arguments to
-    the `JSONEncoder`_ constructor, so you can use any `JSONEncoder`_
-    constructor argument to customize this exporter.
+    the :class:`~json.JSONEncoder` constructor, so you can use any
+    :class:`~json.JSONEncoder` constructor argument to customize this exporter.
 
     :param file: the file-like object to use for exporting the data. Its ``write`` method should
                  accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -183,8 +183,6 @@ class JsonLinesItemExporter(BaseItemExporter):
 
     Unlike the one produced by :class:`JsonItemExporter`, the format produced by
     this exporter is well suited for serializing large amounts of data.
-
-    .. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
     """
 
     def __init__(self, file, **kwargs):
@@ -203,8 +201,8 @@ class JsonItemExporter(BaseItemExporter):
     """Exports Items in JSON format to the specified file-like object, writing all
     objects as a list of objects. The additional constructor arguments are
     passed to the :class:`BaseItemExporter` constructor, and the leftover
-    arguments to the `JSONEncoder`_ constructor, so you can use any
-    `JSONEncoder`_ constructor argument to customize this exporter.
+    arguments to the :class:`~json.JSONEncoder` constructor, so you can use any
+    :class:`~json.JSONEncoder` constructor argument to customize this exporter.
 
     :param file: the file-like object to use for exporting the data. Its ``write`` method should
                  accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -225,8 +223,6 @@ class JsonItemExporter(BaseItemExporter):
         memory. If you want the power and simplicity of JSON with a more
         stream-friendly format, consider using :class:`JsonLinesItemExporter`
         instead, or splitting the output in multiple chunks.
-
-    .. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
     """
 
     def __init__(self, file, **kwargs):
@@ -411,8 +407,8 @@ class CsvItemExporter(BaseItemExporter):
     :type include_headers_line: str
 
     The additional keyword arguments of this constructor are passed to the
-    :class:`BaseItemExporter` constructor, and the leftover arguments to the
-    `csv.writer`_ constructor, so you can use any `csv.writer` constructor
+    :class:`BaseItemExporter` constructor, and the leftover arguments to
+    :func:`csv.writer` constructor, so you can use any :func:`csv.writer`
     argument to customize this exporter.
 
     A typical output of this exporter would be::
@@ -420,8 +416,6 @@ class CsvItemExporter(BaseItemExporter):
         product,price
         Color TV,1200
         DVD player,200
-
-    .. _csv.writer: https://docs.python.org/2/library/csv.html#csv.writer
     """
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
@@ -491,14 +485,12 @@ class PickleItemExporter(BaseItemExporter):
     :param protocol: The pickle protocol to use.
     :type protocol: int
 
-    For more information, refer to the `pickle module documentation`_.
+    For more information, refer to the :mod:`pickle` module documentation.
 
     The additional keyword arguments of this constructor are passed to the
     :class:`BaseItemExporter` constructor.
 
     Pickle isn't a human readable format, so no output examples are provided.
-
-    .. _pickle module documentation: https://docs.python.org/2/library/pickle.html
     """
 
     def __init__(self, file, protocol=2, **kwargs):

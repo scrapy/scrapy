@@ -19,11 +19,11 @@ class BaseItem(object_ref):
 
 
 class Field(dict):
-    """The :class:`Field` class is just an alias to the built-in `dict`_ class and
-    doesn't provide any extra functionality or attributes. In other words,
-    :class:`Field` objects are plain-old Python dicts. A separate class is used
-    to support the :ref:`item declaration syntax <topics-items-declaring>`
-    based on class attributes."""
+    """The :class:`Field` class is just an alias to the built-in :class:`dict`
+    class and doesn't provide any extra functionality or attributes. In other
+    words, :class:`Field` objects are plain-old Python dicts. A separate class
+    is used to support the :ref:`item declaration syntax
+    <topics-items-declaring>` based on class attributes."""
 
 
 class ItemMeta(ABCMeta):
@@ -111,8 +111,8 @@ class DictItem(MutableMapping, BaseItem):
 class Item(DictItem):
     """Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict`_ class, including its constructor. The
-    only additional attribute provided by Items is
+    Items replicate the standard :class:`dict` class, including its
+    constructor. The only additional attribute provided by Items is
     :func:`~scrapy.Item.fields`.
     """
     pass

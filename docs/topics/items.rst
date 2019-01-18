@@ -14,7 +14,7 @@ especially in a larger project with many spiders.
 
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
-They provide a `dictionary-like`_ API with a convenient syntax for declaring
+They provide a :class:`dict`-like API with a convenient syntax for declaring
 their available fields. 
 
 Various Scrapy components use extra information provided by Items: 
@@ -22,8 +22,6 @@ exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata,
 :mod:`~scrapy.utils.trackref` tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
-
-.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -77,7 +75,7 @@ Working with Items
 
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
-notice the API is very similar to the `dict`_ API.
+notice the API is very similar to the :class:`dict` API.
 
 Creating items
 --------------
@@ -146,7 +144,7 @@ Setting field values
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict`_ API::
+To access all populated values, just use the typical :class:`dict` API::
 
     >>> product.keys()
     ['price', 'name']
@@ -202,5 +200,3 @@ appending more values, or changing existing values, like this::
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
-
-.. _dict: https://docs.python.org/library/stdtypes.html#dict

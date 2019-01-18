@@ -24,7 +24,7 @@ Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
 Scrapy.
 
-If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
+If you're already familiar with other languages, and want to learn Python quickly, :ref:`tutorial-index` is a good resource.
 
 If you're new to programming and want to start with Python, the following books
 may be useful to you: 
@@ -40,7 +40,6 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
-.. _Python Tutorial: https://docs.python.org/3/tutorial
 .. _Automate the Boring Stuff With Python: https://automatetheboringstuff.com/
 .. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
 .. _Learn Python 3 The Hard Way: https://learnpythonthehardway.org/python3/
@@ -286,8 +285,8 @@ to be scraped, you can at least get **some** data.
 
 Besides the :meth:`~parsel.selector.SelectorList.getall` and
 :meth:`~parsel.selector.SelectorList.get` methods, you can also use
-the :meth:`~parsel.selector.SelectorList.re` method to extract using `regular
-expressions`_::
+the :meth:`~parsel.selector.SelectorList.re` method to extract using the Python
+:mod:`re` module::
 
     >>> response.css('title::text').re(r'Quotes.*')
     ['Quotes to Scrape']
@@ -304,7 +303,6 @@ with a selector (see section about :ref:`topics-developer-tools`).
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
 
-.. _regular expressions: https://docs.python.org/3/library/re.html
 .. _Selector Gadget: http://selectorgadget.com/
 
 

@@ -157,11 +157,9 @@ class Request(object_ref):
         See :ref:`topics-request-meta` for a list of special meta keys
         recognized by Scrapy.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.meta`` attribute.
-
-        .. _shallow copied: https://docs.python.org/2/library/copy.html
+        This dict is shallow copied (see :mod:`copy`) when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.meta`` attribute.
         """
         if self._meta is None:
             self._meta = {}

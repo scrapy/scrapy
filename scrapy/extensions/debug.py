@@ -77,15 +77,14 @@ class StackTraceDump(object):
 
 
 class Debugger(object):
-    """Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
-    signal is received. After the debugger is exited, the Scrapy process continues
-    running normally.
+    """Invokes a :ref:`Python debugger <debugger>` inside a running Scrapy
+    process when a `SIGUSR2`_ signal is received. After the debugger is exited,
+    the Scrapy process continues running normally.
 
     For more info see `Debugging in Python`.
 
     This extension only works on POSIX-compliant platforms (ie. not Windows).
 
-    .. _Python debugger: https://docs.python.org/2/library/pdb.html
     .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
     """
 

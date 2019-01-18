@@ -215,7 +215,7 @@ DBM storage backend
 
 A DBM_ storage backend is also available for the HTTP cache middleware.
 
-By default, it uses the anydbm_ module, but you can change it with the
+By default, it uses the :mod:`dbm` module, but you can change it with the
 :setting:`HTTPCACHE_DBM_MODULE` setting.
 
 In order to use this storage backend, set:
@@ -337,7 +337,7 @@ HTTPCACHE_DBM_MODULE
 
 .. versionadded:: 0.13
 
-Default: ``'anydbm'``
+Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
 <httpcache-storage-dbm>`. This setting is specific to the DBM backend.
@@ -450,8 +450,8 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
-   the following environment variables:
+   Like the Python standard library module :mod:`urllib`, it obeys the
+   following environment variables:
 
    * ``http_proxy``
    * ``https_proxy``
@@ -481,9 +481,6 @@ HTTPPROXY_AUTH_ENCODING
 Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
-
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -752,4 +749,3 @@ enable it for :ref:`broad crawls <topics-broad-crawls>`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
-.. _anydbm: https://docs.python.org/2/library/anydbm.html

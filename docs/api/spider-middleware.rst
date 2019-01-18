@@ -82,6 +82,3 @@ Spider middleware manager
 
 .. autoclass:: scrapy.middleware.MiddlewareManager
    :members:
-
-
-.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception

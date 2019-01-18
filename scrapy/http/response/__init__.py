@@ -167,10 +167,10 @@ class Response(object_ref):
         """Constructs an absolute url by combining the Response's :attr:`url`
         with a possible relative url.
 
-        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
-        making this call::
+        This is a wrapper over :func:`urllib.parse.urljoin`, it's merely an
+        alias for making this call::
 
-            urlparse.urljoin(response.url, url)
+            urllib.parse.urljoin(response.url, url)
         """
         return urljoin(self.url, url)
 

@@ -63,4 +63,3 @@ Cookies
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
-.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin

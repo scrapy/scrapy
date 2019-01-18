@@ -81,6 +81,5 @@ Item Exporters
    :members:
 
 
-.. _dict: https://docs.python.org/library/stdtypes.html#dict
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

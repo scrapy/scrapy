@@ -1911,7 +1911,7 @@ Scrapy changes:
 - promoted :ref:`topics-djangoitem` to main contrib
 - LogFormatter method now return dicts(instead of strings) to support lazy formatting (:issue:`164`, :commit:`dcef7b0`)
 - downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the constructor
-- replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
+- replaced memory usage acounting with (more portable) :mod:`resource` module, removed ``scrapy.utils.memory`` module
 - removed signal: ``scrapy.mail.mail_sent``
 - removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
 - DBM is now the default storage backend for HTTP cache middleware
@@ -1983,7 +1983,7 @@ New features and settings
 - Added support for passing custom settings to Scrapyd ``schedule.json`` api (:rev:`2779`, :rev:`2783`)
 - New ``ChunkedTransferMiddleware`` (enabled by default) to support `chunked transfer encoding`_ (:rev:`2769`)
 - Add boto 2.0 support for S3 downloader handler (:rev:`2763`)
-- Added `marshal`_ to formats supported by feed exports (:rev:`2744`)
+- Added :mod:`marshal` to formats supported by feed exports (:rev:`2744`)
 - In request errbacks, offending requests are now received in `failure.request` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
@@ -2251,10 +2251,8 @@ First release of Scrapy.
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _scrapely: https://github.com/scrapy/scrapely
-.. _marshal: https://docs.python.org/2/library/marshal.html
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _lxml: http://lxml.de/
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
-.. _resource: https://docs.python.org/2/library/resource.html
 .. _queuelib: https://github.com/scrapy/queuelib
 .. _cssselect: https://github.com/SimonSapin/cssselect

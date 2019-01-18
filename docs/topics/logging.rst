@@ -9,8 +9,7 @@ Logging
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
-Scrapy uses `Python's builtin logging system
-<https://docs.python.org/3/library/logging.html>`_ for event logging. We'll
+Scrapy uses the Python :mod:`logging` module for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
 
@@ -83,10 +82,10 @@ path::
 
 .. seealso::
 
-    Module logging, `HowTo <https://docs.python.org/2/howto/logging.html>`_
+    Module logging, :ref:`logging-basic-tutorial`
         Basic Logging Tutorial
 
-    Module logging, `Loggers <https://docs.python.org/2/library/logging.html#logger-objects>`_
+    Module logging, :ref:`logger`
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -165,10 +164,7 @@ possible levels listed in :ref:`topics-logging-levels`.
 
 :setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
 used as layouts for all messages. Those strings can contain any placeholders
-listed in `logging's logrecord attributes docs
-<https://docs.python.org/2/library/logging.html#logrecord-attributes>`_ and
-`datetime's strftime and strptime directives
-<https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
+listed in :ref:`logrecord-attributes` and :ref:`strftime-strptime-behavior`
 respectively.
 
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
@@ -190,7 +186,7 @@ to override some of the Scrapy settings regarding logging.
 
 .. seealso::
 
-    Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
+    Module :mod:`logging.handlers`
         Further documentation on available handlers
 
 Advanced customization
