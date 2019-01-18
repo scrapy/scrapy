@@ -1,9 +1,5 @@
-"""
-This module defines the Link object used in Link extractors.
+"""The :mod:`scrapy.link` module defines the :class:`Link` class."""
 
-For actual link extractors implementation see scrapy.linkextractors, or
-its documentation in: docs/topics/link-extractors.rst
-"""
 import warnings
 import six
 

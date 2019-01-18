@@ -1,9 +1,6 @@
-"""
-This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
+"""The :mod:`scrapy.core.engine` module defines the :class:`ExecutionEngine`
+class and tightly related classes."""
 
-For more information see docs/topics/architecture.rst
-
-"""
 import logging
 from time import time
 
@@ -54,6 +51,8 @@ class Slot(object):
 
 
 class ExecutionEngine(object):
+    """Controls the :attr:`scheduler <scheduler_cls>`, the :attr:`downloader`
+    and the :attr:`spider` being crawled."""
 
     def __init__(self, crawler, spider_closed_callback):
         self.crawler = crawler
@@ -61,7 +60,10 @@ class ExecutionEngine(object):
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
         self.slot = None
+
+        #:
         self.spider = None
+
         self.running = False
         self.paused = False
 

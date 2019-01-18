@@ -36,9 +36,6 @@ Item Loaders
 Processors
 ----------
 
-``scrapy.loader.processors``
-''''''''''''''''''''''''''''
-
 .. automodule:: scrapy.loader.processors
    :members:
 
@@ -46,11 +43,10 @@ Processors
 Item Pipelines
 ==============
 
-.. autointerface:: scrapy.interfaces.IPipeline
-   :members:
+.. seealso:: :ref:`topics-item-pipeline`
 
-.. automodule:: scrapy.pipelines
-   :members:
+Built-in pipelines
+------------------
 
 .. autoclass:: scrapy.pipelines.files.FilesPipeline
    :members:
@@ -60,6 +56,20 @@ Item Pipelines
 
 .. autoclass:: scrapy.pipelines.media.MediaPipeline
    :members:
+
+Interface
+---------
+
+.. autointerface:: scrapy.interfaces.IPipeline
+   :members:
+
+
+Manager
+-------
+
+.. automodule:: scrapy.pipelines
+   :members:
+   :undoc-members:
 
 
 .. _topics-exporters-reference:

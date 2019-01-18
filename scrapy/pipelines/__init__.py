@@ -1,8 +1,5 @@
-"""
-Item pipeline
-
-See documentation in docs/item-pipeline.rst
-"""
+"""The :mod:`scrapy.pipelines` module implements the
+:class:`ItemPipelineManager` class."""
 
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list

@@ -1,6 +1,5 @@
-"""
-Scheduler queues
-"""
+"""The :mod:`scrapy.squeues` module defines some built-in queue implementations
+for the :class:`~scrapy.core.scheduler.Scheduler` to use."""
 
 import marshal
 from six.moves import cPickle as pickle
@@ -39,5 +38,9 @@ MarshalFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
     marshal.dumps, marshal.loads)
 MarshalLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue, \
     marshal.dumps, marshal.loads)
+
+#:
 FifoMemoryQueue = queue.FifoMemoryQueue
+
+#:
 LifoMemoryQueue = queue.LifoMemoryQueue

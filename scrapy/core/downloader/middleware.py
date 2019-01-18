@@ -1,8 +1,9 @@
-"""
-Downloader Middleware manager
+"""The :mod:`scrapy.core.downloader.middleware` module defines the
+:class:`DownloaderMiddlewareManager` class.
 
-See documentation in docs/topics/downloader-middleware.rst
+.. seealso:: :ref:`topics-downloader-middleware`
 """
+
 import six
 
 from twisted.internet import defer

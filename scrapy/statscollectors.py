@@ -1,11 +1,7 @@
-"""Scrapy extension for collecting scraping stats
+"""The :mod:`scrapy.statscollectors` module defines the :class:`StatsCollector`
+class and some additional subclasses for collecting scraping stats.
 
-There are several Stats Collectors available under the
-:mod:`scrapy.statscollectors` module and they all implement the Stats
-Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
-class (which they all inherit from).
-
-For an introduction on stats collection see :ref:`topics-stats`.
+.. seealso:: :ref:`topics-stats`
 """
 import pprint
 import logging

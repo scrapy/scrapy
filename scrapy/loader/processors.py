@@ -1,7 +1,7 @@
-"""
-This module provides some commonly used processors for Item Loaders.
+"""The :mod:`scrapy.loader.processors` module provides some commonly used
+processors for :class:`~scrapy.loader.ItemLoader` subclasses.
 
-See documentation in docs/topics/loaders.rst
+.. seealso:: :ref:`topics-loaders`
 """
 
 from scrapy.utils.misc import arg_to_iter

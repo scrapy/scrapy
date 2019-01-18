@@ -103,6 +103,9 @@ nitpick_ignore = [
     # This exception in necessary to suppress a warning triggered on the
     # declaration of scrapy.selector.unified.Selector.selectorlist_cls
     ('py:class', 'SelectorList'),
+    # This exception in necessary to ignore the resolution issues of scheduler
+    # queue classes built with scrapy.squeues._serializable_queue()
+    ('py:class', 'scrapy.squeues._serializable_queue.<locals>.SerializableQueue'),
 ]
 
 

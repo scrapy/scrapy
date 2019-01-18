@@ -1,5 +1,5 @@
-"""This module implements the Scraper component which parses responses and
-extracts information from them"""
+"""The :mod:`scrapy.core.scraper` module defines the :class:`Scraper` class and
+tightly related classes."""
 
 import logging
 from collections import deque
@@ -63,6 +63,8 @@ class Slot(object):
 
 
 class Scraper(object):
+    """Parses :class:`HTTP responses <scrapy.http.Response>` and extracts
+    information from them."""
 
     def __init__(self, crawler):
         self.slot = None

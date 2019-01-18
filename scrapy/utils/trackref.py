@@ -1,4 +1,4 @@
-"""This module provides some functions and classes to record and report
+"""The :mod:`scrapy.utils.trackref` module provides an API to record and report
 references to live object instances.
 
 If you want live objects for a particular class to be tracked, you only have to

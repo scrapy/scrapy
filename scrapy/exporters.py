@@ -1,11 +1,13 @@
-""":ref:`Item exporters <topics-exporters>` are used to export/serialize items
-into different formats.
+"""The :mod:`scrapy.exporters` module defines the :class:`BaseItemExporter`
+class and some subclasses that are bundled with Scrapy.
 
-The item exporters below are bundled with Scrapy. Some of them contain output
-examples, which assume you're exporting these two items::
+The documentation of some of these subclasses contains output examples which
+assume that you are exporting these two :class:`~scrapy.Item` objects::
 
     Item(name='Color TV', price='1200')
     Item(name='DVD player', price='200')
+
+.. seealso:: :ref:`Item exporters <topics-exporters>`
 """
 
 import csv

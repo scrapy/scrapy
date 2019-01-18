@@ -1,7 +1,7 @@
-"""
-Spider Middleware manager
+"""The :mod:`scrapy.core.spidermw` module defines the
+:class:`SpiderMiddlewareManager` class.
 
-See documentation in docs/topics/spider-middleware.rst
+.. seealso:: :ref:`topics-spider-middleware`
 """
 import six
 from twisted.python.failure import Failure
