@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _faq:
 
 Frequently Asked Questions
@@ -101,7 +103,7 @@ Does Scrapy work with HTTP proxies?
 
 Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
-:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
+:class:`~downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -152,7 +154,7 @@ See previous question.
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
-Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
+Yes, see :class:`~downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------
@@ -188,7 +190,7 @@ middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 
 For more info see:
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
+:class:`~spidermiddlewares.offsite.OffsiteMiddleware`.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -199,7 +201,7 @@ Can I use JSON for large exports?
 ---------------------------------
 
 It'll depend on how large your output is. See :ref:`this warning
-<json-with-large-data>` in :class:`~scrapy.exporters.JsonItemExporter`
+<json-with-large-data>` in :class:`~exporters.JsonItemExporter`
 documentation.
 
 Can I return (Twisted) deferreds from signal handlers?
@@ -290,8 +292,8 @@ Enable the :setting:`COOKIES_DEBUG` setting.
 How can I instruct a spider to stop itself?
 -------------------------------------------
 
-Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
-more info see: :exc:`~scrapy.exceptions.CloseSpider`.
+Raise the :exc:`~exceptions.CloseSpider` exception from a callback. For
+more info see: :exc:`~exceptions.CloseSpider`.
 
 How can I prevent my Scrapy bot from getting banned?
 ----------------------------------------------------

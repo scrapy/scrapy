@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.interfaces
+
 .. _topics-spider-middleware:
 
 =================
@@ -29,10 +31,10 @@ The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
 be overridden) and then sorted by order to get the final sorted list of enabled
 middlewares: the first middleware is the one closer to the engine and the last
 is the one closer to the spider. In other words,
-the :meth:`~scrapy.interfaces.ISpiderMiddleware.process_spider_input`
+the :meth:`~ISpiderMiddleware.process_spider_input`
 method of each middleware will be invoked in increasing
 middleware order (100, 200, 300, ...), and the
-:meth:`~scrapy.interfaces.ISpiderMiddleware.process_spider_output` method
+:meth:`~ISpiderMiddleware.process_spider_output` method
 of each middleware will be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
@@ -58,7 +60,7 @@ Writing your own spider middleware
 ==================================
 
 Each middleware component is a Python class that implements the
-:interface:`~scrapy.interfaces.ISpiderMiddleware` interface.
+:interface:`~ISpiderMiddleware` interface.
 
 
 Built-in spider middleware reference

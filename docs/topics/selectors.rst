@@ -67,7 +67,7 @@ more shortcuts: ``response.xpath()`` and ``response.css()``::
     'good'
 
 Scrapy selectors are instances of :class:`~Selector` class
-constructed by passing either :class:`~scrapy.http.TextResponse` object or
+constructed by passing either :class:`~http.TextResponse` object or
 markup as an unicode string (in ``text`` argument).
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
@@ -83,8 +83,8 @@ Constructing from text::
     >>> Selector(text=body).xpath('//span/text()').get()
     'good'
 
-Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
-:class:`~scrapy.http.TextResponse` subclasses::
+Constructing from response - :class:`~http.HtmlResponse` is one of
+:class:`~http.TextResponse` subclasses::
 
     >>> from scrapy.selector import Selector
     >>> from scrapy.http import HtmlResponse
@@ -149,7 +149,7 @@ pseudo-elements::
     'Example website'
 
 As you can see, ``.xpath()`` and ``.css()`` methods return a
-:class:`~scrapy.selector.SelectorList` instance, which is a list of new
+:class:`~selector.SelectorList` instance, which is a list of new
 selectors. This API can be used for quickly selecting nested data::
 
     >>> response.css('img').xpath('@src').getall()
@@ -912,12 +912,12 @@ Selector examples on HTML response
 
 Here are some :class:`Selector` examples to illustrate several concepts.
 In all cases, we assume there is already a :class:`Selector` instantiated with
-a :class:`~scrapy.http.HtmlResponse` object like this::
+a :class:`~http.HtmlResponse` object like this::
 
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (ie. a :class:`~scrapy.selector.SelectorList`
+   :class:`Selector` objects (ie. a :class:`~selector.SelectorList`
    object)::
 
       sel.xpath("//h1")
@@ -940,12 +940,12 @@ Selector examples on XML response
 ---------------------------------
 
 Here are some examples to illustrate concepts for :class:`Selector` objects
-instantiated with an :class:`~scrapy.http.XmlResponse` object::
+instantiated with an :class:`~http.XmlResponse` object::
 
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (ie. a :class:`~scrapy.selector.SelectorList`
+   of :class:`Selector` objects (ie. a :class:`~selector.SelectorList`
    object)::
 
       sel.xpath("//product")

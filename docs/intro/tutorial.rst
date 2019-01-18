@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _intro-tutorial:
 
 ===============
@@ -78,7 +80,7 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`~scrapy.Spider` and define the initial requests to make, optionally how
+:class:`Spider` and define the initial requests to make, optionally how
 to follow links in the pages, and how to parse the downloaded page content to
 extract data.
 
@@ -107,26 +109,26 @@ This is the code for our first Spider. Save it in a file named
             self.log('Saved file %s' % filename)
 
 
-As you can see, our Spider subclasses :class:`~scrapy.Spider` and defines some
+As you can see, our Spider subclasses :class:`Spider` and defines some
 attributes and methods:
 
-* :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
+* :attr:`~Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.Spider.start_requests`: must return an iterable of
+* :meth:`~Spider.start_requests`: must return an iterable of
   Requests (you can return a list of requests or write a generator function)
   which the Spider will begin to crawl from. Subsequent requests will be
   generated successively from these initial requests.
 
-* :meth:`~scrapy.Spider.parse`: a method that will be called to handle
+* :meth:`~Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
-  is an instance of :class:`~scrapy.http.TextResponse` that holds
+  is an instance of :class:`~http.TextResponse` that holds
   the page content and has further helpful methods to handle it.
 
-  The :meth:`~scrapy.Spider.parse` method usually parses the response, extracting
+  The :meth:`~Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`~scrapy.Request`) from them.
+  follow and creating new requests (:class:`Request`) from them.
 
 How to run our spider
 ---------------------
@@ -162,20 +164,20 @@ for the respective URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy schedules the :class:`~scrapy.Request` objects
+Scrapy schedules the :class:`Request` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
-response for each one, it instantiates :class:`~scrapy.http.Response` objects
+response for each one, it instantiates :class:`~http.Response` objects
 and calls the callback method associated with the request (in this case, the
 ``parse`` method) passing the response as argument.
 
 
 A shortcut to the start_requests method
 ---------------------------------------
-Instead of implementing a :meth:`~scrapy.Spider.start_requests` method
-that generates :class:`~scrapy.Request` objects from URLs,
-you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
+Instead of implementing a :meth:`~Spider.start_requests` method
+that generates :class:`Request` objects from URLs,
+you can just define a :attr:`~Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
-of :meth:`~scrapy.Spider.start_requests` to create the initial requests
+of :meth:`~Spider.start_requests` to create the initial requests
 for your spider::
 
     import scrapy
@@ -194,9 +196,9 @@ for your spider::
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-The :meth:`~scrapy.Spider.parse` method will be called to handle each
+The :meth:`~Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy
-to do so. This happens because :meth:`~scrapy.Spider.parse` is Scrapy's
+to do so. This happens because :meth:`~Spider.parse` is Scrapy's
 default callback method, which is called for requests without an explicitly
 assigned callback.
 
@@ -244,8 +246,8 @@ object::
     [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
 
 The result of running ``response.css('title')`` is a list-like object called
-:class:`~scrapy.selector.SelectorList`, which represents a list of
-:class:`~scrapy.Selector` objects that wrap around XML/HTML elements
+:class:`~selector.SelectorList`, which represents a list of
+:class:`Selector` objects that wrap around XML/HTML elements
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
@@ -274,7 +276,7 @@ As an alternative, you could've written::
     >>> response.css('title::text')[0].get()
     'Quotes to Scrape'
 
-However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList`
+However, using ``.get()`` directly on a :class:`~selector.SelectorList`
 instance avoids an ``IndexError`` and returns ``None`` when it doesn't
 find any element matching the selection.
 
@@ -551,7 +553,7 @@ page, extracting data from it::
 
 Now, after extracting the data, the ``parse()`` method looks for the link to
 the next page, builds a full absolute URL using the
-:meth:`~scrapy.http.Response.urljoin` method (since the links can be
+:meth:`~http.Response.urljoin` method (since the links can be
 relative) and yields a new request to the next page, registering itself as
 callback to handle the data extraction for the next page and to keep the
 crawling going through all the pages.
@@ -575,7 +577,7 @@ A shortcut for creating Requests
 --------------------------------
 
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.Response.follow>`::
+:meth:`response.follow <http.Response.follow>`::
 
     import scrapy
 
@@ -598,8 +600,8 @@ As a shortcut for creating Request objects you can use
             if next_page is not None:
                 yield response.follow(next_page, callback=self.parse)
 
-Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
-need to call urljoin. Note that ``response.follow`` just returns a Request
+Unlike :class:`Request`, ``response.follow`` supports relative URLs directly -
+no need to call urljoin. Note that ``response.follow`` just returns a Request
 instance; you still have to yield this Request.
 
 You can also pass a selector to ``response.follow`` instead of a string;
@@ -659,7 +661,7 @@ authors pages calling the ``parse_author`` callback for each of them, and also
 the pagination links with the ``parse`` callback as we saw before.
 
 Here we're passing callbacks to ``response.follow`` as positional arguments
-to make the code shorter; it also works for ``scrapy.Request``.
+to make the code shorter; it also works for ``Request``.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
@@ -675,7 +677,7 @@ Hopefully by now you have a good understanding of how to use the mechanism
 of following links and callbacks with Scrapy.
 
 As yet another example spider that leverages the mechanism of following links,
-check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
+check out the :class:`~spiders.CrawlSpider` class for a generic
 spider that implements a small rules engine that you can use to write your
 crawlers on top of it.
 

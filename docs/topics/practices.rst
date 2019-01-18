@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.crawler
+
 .. _topics-practices:
 
 ================
@@ -19,7 +21,7 @@ Remember that Scrapy is built on top of the Twisted
 asynchronous networking library, so you need to run it inside the Twisted reactor.
 
 The first utility you can use to run your spiders is
-:class:`~scrapy.crawler.CrawlerProcess`. This class will start a Twisted reactor
+:class:`CrawlerProcess`. This class will start a Twisted reactor
 for you, configuring the logging and setting shutdown handlers. This class is
 the one used by all Scrapy commands.
 
@@ -41,12 +43,12 @@ Here's an example showing how to run a single spider with it.
     process.crawl(MySpider)
     process.start() # the script will block here until the crawling is finished
 
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
+Make sure to check :class:`CrawlerProcess` documentation to get
 acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
-your spiders passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
+your spiders passing their name to :class:`CrawlerProcess`, and
 use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
 instance with your project settings.
 
@@ -65,13 +67,13 @@ project as example.
     process.start() # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`~scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
+process: :class:`CrawlerRunner`. This class is a thin wrapper
 that encapsulates some simple helpers to run multiple crawlers, but it won't
 start or interfere with existing reactors in any way.
 
 Using this class the reactor should be explicitly run after scheduling your
-spiders. It's recommended you use :class:`~scrapy.crawler.CrawlerRunner`
-instead of :class:`~scrapy.crawler.CrawlerProcess` if your application is
+spiders. It's recommended you use :class:`CrawlerRunner`
+instead of :class:`CrawlerProcess` if your application is
 already using Twisted and you want to run Scrapy in the same reactor.
 
 Note that you will also have to shutdown the Twisted reactor yourself after the
@@ -131,7 +133,7 @@ Here is an example that runs multiple spiders simultaneously:
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
 
-Same example using :class:`~scrapy.crawler.CrawlerRunner`:
+Same example using :class:`CrawlerRunner`:
 
 ::
 

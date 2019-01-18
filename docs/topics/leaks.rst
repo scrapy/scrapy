@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _topics-leaks:
 
 ======================
@@ -27,7 +29,7 @@ Common causes of memory leaks
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
 Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.Request.meta` attribute or the request callback function)
+:attr:`~Request.meta` attribute or the request callback function)
 and that effectively bounds the lifetime of those referenced objects to the
 lifetime of the Request. This is, by far, the most common cause of memory leaks
 in Scrapy projects, and a quite difficult one to debug for newcomers.
@@ -47,8 +49,8 @@ Too Many Requests?
 ------------------
 
 By default Scrapy keeps the request queue in memory; it includes
-:class:`~scrapy.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.Request.meta`).
+:class:`Request` objects and all objects
+referenced in Request attributes (e.g. in :attr:`~Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
@@ -58,13 +60,13 @@ in control.
 Debugging memory leaks with ``trackref``
 ========================================
 
-:mod:`~scrapy.utils.trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Requests,
-Responses, Item and Selector objects.
+:mod:`~scrapy.utils.trackref` is a module provided by Scrapy to debug the most
+common cases of memory leaks. It basically tracks the references to all live
+Requests, Responses, Item and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
-alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
+alias to the :func:`~utils.trackref.print_live_refs` function::
 
     telnet localhost 6023
 
@@ -80,7 +82,7 @@ As you can see, that report also shows the "age" of the oldest object in each
 class. If you're running multiple spiders per process chances are you can
 figure out which spider is leaking by looking at the oldest request or response.
 You can get the oldest object of each class using the
-:func:`~scrapy.utils.trackref.get_oldest` function (from the telnet console).
+:func:`~utils.trackref.get_oldest` function (from the telnet console).
 
 Which objects are tracked?
 --------------------------
@@ -88,11 +90,11 @@ Which objects are tracked?
 The objects tracked by ``trackrefs`` are all from these classes (and all its
 subclasses):
 
-* :class:`~scrapy.Request`
-* :class:`~scrapy.http.Response`
-* :class:`~scrapy.Item`
-* :class:`~scrapy.Selector`
-* :class:`~scrapy.Spider`
+* :class:`Request`
+* :class:`~http.Response`
+* :class:`Item`
+* :class:`Selector`
+* :class:`Spider`
 
 A real example
 --------------
@@ -138,7 +140,7 @@ Let's check the oldest response::
     'http://www.somenastyspider.com/product.php?pid=123'
 
 If you want to iterate over all objects, instead of getting the oldest one, you
-can use the :func:`~scrapy.utils.trackref.iter_all` function::
+can use the :func:`~utils.trackref.iter_all` function::
 
     >>> from scrapy.utils.trackref import iter_all
     >>> [r.url for r in iter_all('HtmlResponse')]

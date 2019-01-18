@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _topics-shell:
 
 ============
@@ -116,24 +118,24 @@ Available Scrapy objects
 ------------------------
 
 The Scrapy shell automatically creates some convenient objects from the
-downloaded page, like the :class:`~scrapy.http.Response` object and the
-:class:`~scrapy.Selector` objects (for both HTML and XML
+downloaded page, like the :class:`~http.Response` object and the
+:class:`~Selector` objects (for both HTML and XML
 content).
 
 Those objects are:
 
- * ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
+ * ``crawler`` - the current :class:`~crawler.Crawler` object.
 
  * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.Spider` object if there is no spider found for
+   :class:`Spider` object if there is no spider found for
    the current URL
 
- * ``request`` - a :class:`~scrapy.Request` object of the last fetched
-   page. You can modify this request using :meth:`~scrapy.Request.replace`
+ * ``request`` - a :class:`Request` object of the last fetched
+   page. You can modify this request using :meth:`~Request.replace`
    or fetch a new request (without leaving the shell) using the ``fetch``
    shortcut.
 
- * ``response`` - a :class:`~scrapy.http.Response` object containing the last
+ * ``response`` - a :class:`~http.Response` object containing the last
    fetched page
 
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`

@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.interfaces
+
 .. _topics-architecture:
 
 =====================
@@ -42,25 +44,25 @@ this:
 4. The :ref:`Engine <component-engine>` sends the Requests to the
    :ref:`Downloader <component-downloader>`, passing through the
    :ref:`Downloader Middlewares <component-downloader-middleware>` (see
-   :meth:`~scrapy.interfaces.IDownloaderMiddleware.process_request`).
+   :meth:`~IDownloaderMiddleware.process_request`).
 
 5. Once the page finishes downloading the
    :ref:`Downloader <component-downloader>` generates a Response (with
    that page) and sends it to the Engine, passing through the
    :ref:`Downloader Middlewares <component-downloader-middleware>` (see
-   :meth:`~scrapy.interfaces.IDownloaderMiddleware.process_response`).
+   :meth:`~IDownloaderMiddleware.process_response`).
 
 6. The :ref:`Engine <component-engine>` receives the Response from the
    :ref:`Downloader <component-downloader>` and sends it to the
    :ref:`Spider <component-spiders>` for processing, passing
    through the :ref:`Spider Middleware <component-spider-middleware>` (see
-   :meth:`~scrapy.interfaces.ISpiderMiddleware.process_spider_input`).
+   :meth:`~ISpiderMiddleware.process_spider_input`).
 
 7. The :ref:`Spider <component-spiders>` processes the Response and returns
    scraped items and new Requests (to follow) to the
    :ref:`Engine <component-engine>`, passing through the
    :ref:`Spider Middleware <component-spider-middleware>` (see
-   :meth:`~scrapy.interfaces.ISpiderMiddleware.process_spider_output`).
+   :meth:`~ISpiderMiddleware.process_spider_output`).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
    :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to

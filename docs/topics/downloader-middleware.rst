@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy.interfaces
+
 .. _topics-downloader-middleware:
 
 =====================
@@ -39,9 +41,9 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
 the last is the one closer to the downloader. In other words, the
-:meth:`~scrapy.interfaces.IDownloaderMiddleware.process_request` method of each
+:meth:`~IDownloaderMiddleware.process_request` method of each
 middleware will be invoked in increasing middleware order (100, 200, 300, ...)
-and the :meth:`~scrapy.interfaces.IDownloaderMiddleware.process_response`
+and the :meth:`~IDownloaderMiddleware.process_response`
 method of each middleware will be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
@@ -67,6 +69,5 @@ Writing your own downloader middleware
 ======================================
 
 Each middleware component is a Python class that defines one or
-more of the methods of the
-:class:`~scrapy.interfaces.IDownloaderMiddleware` class.
+more of the methods of the :class:`IDownloaderMiddleware` class.
 

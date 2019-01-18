@@ -6,15 +6,15 @@
 Requests and Responses
 ======================
 
-Scrapy uses :class:`Request` and :class:`~scrapy.http.Response` objects for
+Scrapy uses :class:`Request` and :class:`~http.Response` objects for
 crawling web sites.
 
 Typically, :class:`Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
-and returns a :class:`~scrapy.http.Response` object which travels back to the
+and returns a :class:`~http.Response` object which travels back to the
 spider that issued the request.
 
-Both :class:`Request` and :class:`~scrapy.http.Response` classes have
+Both :class:`Request` and :class:`~http.Response` classes have
 subclasses which add functionality not required in the base classes. These are
 described below in :ref:`topics-request-response-ref-request-subclasses` and
 :ref:`topics-request-response-ref-response-subclasses`.
@@ -29,7 +29,7 @@ Passing additional data to callback functions
 
 The callback of a request is a function that will be called when the response
 of that request is downloaded. The callback function will be called with the
-downloaded :class:`~scrapy.http.Response` object as its first argument.
+downloaded :class:`~http.Response` object as its first argument.
 
 Example::
 
@@ -209,7 +209,7 @@ FormRequest
 
 The :class:`FormRequest` class extends the base :class:`Request` with
 functionality for dealing with HTML forms. It uses `lxml.html forms`_  to
-pre-populate form fields with form data from :class:`~scrapy.http.Response`
+pre-populate form fields with form data from :class:`~http.Response`
 objects.
 
 .. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
@@ -268,9 +268,9 @@ Response subclasses
 ===================
 
 Scrapy provides the following built-in Response subclasses:
-:class:`~scrapy.http.TextResponse`, :class:`~scrapy.http.HtmlResponse`,
-:class:`~scrapy.http.XmlResponse`. You can also subclass the
-:class:`~scrapy.http.Response` class to implement your own functionality.
+:class:`~http.TextResponse`, :class:`~http.HtmlResponse`,
+:class:`~http.XmlResponse`. You can also subclass the
+:class:`~http.Response` class to implement your own functionality.
 
 
 .. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

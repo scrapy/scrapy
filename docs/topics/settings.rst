@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _topics-settings:
 
 ========
@@ -67,7 +69,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute::
+do so by setting their :attr:`~Spider.custom_settings` attribute::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -116,10 +118,10 @@ In a spider, the settings are available through ``self.settings``::
     The ``settings`` attribute is set in the base Spider class after the spider
     is initialized.  If you want to use the settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
-    :meth:`~scrapy.Spider.from_crawler` method.
+    :meth:`~Spider.from_crawler` method.
 
 Settings can be accessed through the :attr:`Crawler.settings
-<scrapy.crawler.Crawler.settings>` attribute of the Crawler that is passed to
+<crawler.Crawler.settings>` attribute of the Crawler that is passed to
 ``from_crawler`` method in extensions, middlewares and item pipelines::
 
     class MyExtension(object):
@@ -135,7 +137,7 @@ Settings can be accessed through the :attr:`Crawler.settings
 The settings object can be used like a dict (e.g.,
 ``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
 in the format you need it to avoid type errors, using one of the methods
-provided by the :class:`~scrapy.settings.Settings` API.
+provided by the :class:`~settings.Settings` API.
 
 Rationale for setting names
 ===========================
@@ -308,7 +310,7 @@ Default::
     }
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
-:class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+:class:`~downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
 .. setting:: DEPTH_LIMIT
 
@@ -591,7 +593,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 .. note::
 
     This timeout can be set per spider using
-    :attr:`~scrapy.Spider.download_timeout` spider attribute and per-request
+    :attr:`~Spider.download_timeout` spider attribute and per-request
     using :reqmeta:`download_timeout` Request.meta key.
 
 .. setting:: DOWNLOAD_MAXSIZE
@@ -610,7 +612,7 @@ If you want to disable it set to 0.
 .. note::
 
     This size can be set per spider using
-    :attr:`~scrapy.Spider.download_maxsize` spider attribute and per-request
+    :attr:`~Spider.download_maxsize` spider attribute and per-request
     using :reqmeta:`download_maxsize` Request.meta key.
 
     This feature needs Twisted >= 11.1.
@@ -631,7 +633,7 @@ If you want to disable it set to 0.
 .. note::
 
     This size can be set per spider using
-    :attr:`~scrapy.Spider.download_warnsize` spider attribute and per-request
+    :attr:`~Spider.download_warnsize` spider attribute and per-request
     using :reqmeta:`download_warnsize` Request.meta key.
 
     This feature needs Twisted >= 11.1.
@@ -675,14 +677,14 @@ The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function. In order to change
 the way duplicates are checked you could subclass ``RFPDupeFilter`` and
 override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.Request` object and return its fingerprint
+scrapy :class:`Request` object and return its fingerprint
 (a string).
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
 Be very careful about this however, because you can get into crawling loops.
 It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.Request` that should not be
+``True`` on the specific :class:`Request` that should not be
 filtered.
 
 .. setting:: DUPEFILTER_DEBUG
@@ -1301,7 +1303,7 @@ STATSMAILER_RCPTS
 Default: ``[]`` (empty list)
 
 Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
+:class:`~extensions.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
 

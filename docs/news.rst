@@ -1,3 +1,5 @@
+.. currentmodule:: scrapy
+
 .. _news:
 
 Release notes
@@ -167,11 +169,11 @@ password via the new :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings.
 And if you're using Twisted version 17.1.0 or above, FTP is now available
 with Python 3.
 
-There's a new :meth:`response.follow <scrapy.http.Response.follow>` method
+There's a new :meth:`response.follow <http.Response.follow>` method
 for creating requests; **it is now a recommended way to create Requests
 in Scrapy spiders**. This method makes it easier to write correct
 spiders; ``response.follow`` has several advantages over creating
-``scrapy.Request`` objects directly:
+``Request`` objects directly:
 
 * it handles relative URLs;
 * it works properly with non-ascii URLs on non-UTF8 pages;
@@ -182,7 +184,7 @@ For example, instead of this::
 
     for href in response.css('li.page a::attr(href)').extract():
         url = response.urljoin(href)
-        yield scrapy.Request(url, self.parse, encoding=response.encoding)
+        yield Request(url, self.parse, encoding=response.encoding)
 
 One can now write this::
 
@@ -223,7 +225,7 @@ Enjoy! (Or read on for the rest of changes in this release.)
 Deprecations and Backwards Incompatible Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Default to ``canonicalize=False`` in :class:`~scrapy.linkextractors.LinkExtractor`
+- Default to ``canonicalize=False`` in :class:`~linkextractors.LinkExtractor`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
   **warning, this is technically backwards-incompatible**
 - Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
@@ -244,17 +246,17 @@ New Features
   (:issue:`2535`)
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
-- Added ``flags`` argument and attribute to :class:`~scrapy.Request`
+- Added ``flags`` argument and attribute to :class:`Request`
   objects (:issue:`2047`)
 - Support Anonymous FTP (:issue:`2342`)
 - Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
-  stats to :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
+  stats to :class:`~downloadermiddlewares.retry.RetryMiddleware`
   (:issue:`2543`)
 - Added ``httperror/response_ignored_count`` and ``httperror/response_ignored_status_count/<status>``
-  stats to :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware`
+  stats to :class:`~spidermiddlewares.httperror.HttpErrorMiddleware`
   (:issue:`2566`)
 - Customizable :setting:`Referrer policy <REFERRER_POLICY>` in
-  :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+  :class:`~spidermiddlewares.referer.RefererMiddleware`
   (:issue:`2306`)
 - New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
 - Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
@@ -262,8 +264,8 @@ New Features
 - ``CaselessDict`` now accepts ``Mapping`` instances and not only dicts
   (:issue:`2646`)
 - :ref:`Media downloads <topics-media-pipeline>`, with
-  :class:`~scrapy.pipelines.files.FilesPipeline` or
-  :class:`~scrapy.pipelines.images.ImagesPipeline`, can now optionally handle
+  :class:`~pipelines.files.FilesPipeline` or
+  :class:`~pipelines.images.ImagesPipeline`, can now optionally handle
   HTTP redirects using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting
   (:issue:`2616`, fixes :issue:`2004`)
 - Accept non-complete responses from websites using a new
@@ -286,7 +288,7 @@ Bug fixes
 - LinkExtractor now strips leading and trailing whitespaces from attributes
   (:issue:`2547`, fixes :issue:`1614`)
 - Properly handle whitespaces in action attribute in
-  :class:`~scrapy.FormRequest` (:issue:`2548`)
+  :class:`FormRequest` (:issue:`2548`)
 - Buffer CONNECT response bytes from proxy until all HTTP headers are received
   (:issue:`2495`, fixes :issue:`2491`)
 - FTP downloader now works on Python 3, provided you use Twisted>=17.1
@@ -294,7 +296,7 @@ Bug fixes
 - Use body to choose response type after decompressing content (:issue:`2393`,
   fixes :issue:`2145`)
 - Always decompress ``Content-Encoding: gzip`` at :class:`HttpCompressionMiddleware
-  <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>` stage (:issue:`2391`)
+  <downloadermiddlewares.httpcompression.HttpCompressionMiddleware>` stage (:issue:`2391`)
 - Respect custom log level in ``Spider.custom_settings`` (:issue:`2581`,
   fixes :issue:`1612`)
 - 'make htmlview' fix for macOS (:issue:`2661`)
@@ -328,7 +330,7 @@ Documentation
 
 - Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
 - Mention issue with :meth:`FormRequest.from_response
-  <scrapy.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+  <FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
 - Use single quotes uniformly in templates (:issue:`2596`)
 - Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
 - Removed section on deprecated ``contrib/`` (:issue:`2636`)
@@ -336,7 +338,7 @@ Documentation
   (:issue:`2477`, fixes :issue:`2475`)
 - FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
 - Rearrange selector sections (:issue:`2705`)
-- Remove ``__nonzero__`` from :class:`~scrapy.selector.SelectorList` docs
+- Remove ``__nonzero__`` from :class:`~selector.SelectorList` docs
   (:issue:`2683`)
 - Mention how to disable request filtering in documentation of
   :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
@@ -390,7 +392,7 @@ Bug fixes
 - Fix tests regarding ``*_EXPIRES settings`` with Files/Images pipelines (:issue:`2460`).
 - Fix name of generated pipeline class when using basic project template (:issue:`2466`).
 - Fix compatiblity with Twisted 17+ (:issue:`2496`, :issue:`2528`).
-- Fix ``scrapy.Item`` inheritance on Python 3.6 (:issue:`2511`).
+- Fix ``Item`` inheritance on Python 3.6 (:issue:`2511`).
 - Enforce numeric values for components order in ``SPIDER_MIDDLEWARES``,
   ``DOWNLOADER_MIDDLEWARES``, ``EXTENIONS`` and ``SPIDER_CONTRACTS`` (:issue:`2420`).
 
@@ -850,7 +852,7 @@ Bugfixes
 - Support empty password for http_proxy config (:issue:`1274`).
 - Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
 - Support link rel attribute with multiple values (:issue:`1201`).
-- Fixed ``scrapy.http.FormRequest.from_response`` when there is a ``<base>``
+- Fixed ``scrapy.FormRequest.from_response`` when there is a ``<base>``
   tag (:issue:`1564`).
 - Fixed :setting:`TEMPLATES_DIR` handling (:issue:`1575`).
 - Various ``FormRequest`` fixes (:issue:`1595`, :issue:`1596`, :issue:`1597`).
@@ -928,7 +930,7 @@ Scrapy 1.0.4 (2015-12-30)
 - Add non-python dependencies to Ubuntu install section in the docs (:commit:`fbd010d`)
 - Add OS X installation section to docs (:commit:`d8f4cba`)
 - DOC(ENH): specify path to rtd theme explicitly (:commit:`de73b1a`)
-- minor: scrapy.Spider docs grammar (:commit:`1ddcc7b`)
+- minor: Spider docs grammar (:commit:`1ddcc7b`)
 - Make common practices sample code match the comments (:commit:`1b85bcf`)
 - nextcall repetitive calls (heartbeats). (:commit:`55f7104`)
 - Backport fix compatibility with Twisted 15.4.0 (:commit:`b262411`)
@@ -955,7 +957,7 @@ Scrapy 1.0.2 (2015-08-06)
 
 - Twisted 15.3.0 does not raises PicklingError serializing lambda functions (:commit:`b04dd7d`)
 - Minor method name fix (:commit:`6f85c7f`)
-- minor: scrapy.Spider grammar and clarity (:commit:`9c9d2e0`)
+- minor: Spider grammar and clarity (:commit:`9c9d2e0`)
 - Put a blurb about support channels in CONTRIBUTING (:commit:`c63882b`)
 - Fixed typos (:commit:`a9ae7b0`)
 - Fix doc reference. (:commit:`7c8a4fe`)
@@ -1012,7 +1014,7 @@ override any given setting. As an extension of that goal, we included a new
 level of priority for settings that act exclusively for a single spider,
 allowing them to redefine project settings.
 
-Start using it by defining a :attr:`~scrapy.Spider.custom_settings`
+Start using it by defining a :attr:`~Spider.custom_settings`
 class variable in your spider::
 
     class MySpider(scrapy.Spider):
@@ -1046,8 +1048,8 @@ warnings to switch to the Python logging API entirely.
     logging.info('MESSAGE')
 
 Logging with spiders remains the same, but on top of the
-:meth:`~scrapy.Spider.log` method you’ll have access to a custom
-:attr:`~scrapy.Spider.logger` created for the spider to issue log
+:meth:`~Spider.log` method you’ll have access to a custom
+:attr:`~Spider.logger` created for the spider to issue log
 events:
 
 ::
@@ -1884,7 +1886,7 @@ Scrapy changes:
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backwards compatibility is kept on the Stats Collector API and signals.
-- added :meth:`~scrapy.interfaces.ISpiderMiddleware.process_start_requests` method to spider middlewares
+- added :meth:`~interfaces.ISpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
