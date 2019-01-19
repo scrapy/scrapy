@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import six
-from six.moves.urllib.parse import urljoin, urlencode, urlsplit
+from six.moves.urllib.parse import urljoin, urlencode, urlsplit, parse_qsl
 
 import lxml.html
 from parsel.selector import create_root_node
@@ -37,21 +37,10 @@ class FormRequest(Request):
                 formdata_key_list = []
                 for k in querystr.split('&'):
                     formdata_key_list.append(k.split('=')[0])
-
-                if url_split.query:
-                    queries = (url_split.query).split('&')
-                    query_dict = {}
-                    for x in queries:
-                        k = x.split('=')[0]
-                        v = x.split('=')[1]
-                        if formdata_key_list.count(k)==0:
-                            query_dict[k] = v
-                        query_str = ''
-                        for k, v in query_dict.items():
-                            query_str += (k + '=' + v + '&')
-                    self._set_url(self.url[:self.url.index('?')+1] + query_str + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
-                else:
-                    self._set_url(self.url + '?' + querystr + ('#' + url_split.fragment if url_split.fragment else ''))
+                items = []
+                items += [(k, v) for k, v in parse_qsl(url_split.query) if k not in formdata_key_list]
+                query_str = _urlencode(items, self.encoding)
+                self._set_url(urljoin(self.url,'?'+ (query_str + '&' if query_str else '') + querystr + ('#'+ url_split.fragment if url_split.fragment else '')))
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
