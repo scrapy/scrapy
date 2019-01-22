@@ -3,7 +3,7 @@
 Release notes
 =============
 
-Scrapy 1.5.2 (2019-01-20)
+Scrapy 1.5.2 (2019-01-22)
 -------------------------
 
 * *Security bugfix*: Telnet console extension can be easily exploited by rogue
