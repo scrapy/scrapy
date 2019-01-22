@@ -3,6 +3,23 @@
 Release notes
 =============
 
+Scrapy 1.5.2 (2019-01-20)
+-------------------------
+
+* *Security bugfix*: Telnet console extension can be easily exploited by rogue
+  websites POSTing content to http://localhost:6023, we haven't found a way to
+  exploit it from Scrapy, but it is very easy to trick a browser to do so and
+  elevates the risk for local development environment.
+
+  *The fix is backwards incompatible*, it enables telnet user-password
+  authentication by default with a random generated password. If you can't
+  upgrade right away, please consider setting :setting:`TELNET_CONSOLE_PORT`
+  out of its default value.
+
+  See :ref:`telnet console <topics-telnetconsole>` documentation for more info
+
+* Backport CI build failure under GCE environemnt due to boto import error.
+
 Scrapy 1.5.1 (2018-07-12)
 -------------------------
 
