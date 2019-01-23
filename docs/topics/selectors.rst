@@ -645,9 +645,7 @@ All variable references must have a binding value when calling ``.xpath()``
 This is done by passing as many named arguments as necessary.
 
 `parsel`_, the library powering Scrapy selectors, has more details and examples
-on `XPath variables`_.
-
-.. _XPath variables: https://parsel.readthedocs.io/en/latest/usage.html#variables-in-xpath-expressions
+on :ref:`XPath variables <topics-xpath-variables>`.
 
 
 .. _removing-namespaces:

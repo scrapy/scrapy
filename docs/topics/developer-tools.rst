@@ -112,7 +112,7 @@ see each quote:
 
 With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using 
-the `has-class-extension`_:: 
+the :ref:`has-class-extension <topics-xpath-other-extensions>`::
 
     >>> response.xpath('//span[has-class("text")]/text()').getall()
    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
@@ -264,5 +264,4 @@ to identifying the correct request and replicating it in your spider.
 .. _quotes.toscrape.com: http://quotes.toscrape.com
 .. _quotes.toscrape.com/scroll: quotes.toscrape.com/scroll/
 .. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
-.. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
 
