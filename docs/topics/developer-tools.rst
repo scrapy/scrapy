@@ -115,7 +115,7 @@ we'll simply select all ``span`` tags with the ``class="text"`` by using
 the :ref:`has-class-extension <topics-xpath-other-extensions>`::
 
     >>> response.xpath('//span[has-class("text")]/text()').getall()
-   ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
+    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
     '“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
     '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
     (...)]

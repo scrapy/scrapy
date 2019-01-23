@@ -543,16 +543,16 @@ Example::
 
     >>> from scrapy import Selector
     >>> sel = Selector(text="""
-    ....:     <ul class="list">
-    ....:         <li>1</li>
-    ....:         <li>2</li>
-    ....:         <li>3</li>
-    ....:     </ul>
-    ....:     <ul class="list">
-    ....:         <li>4</li>
-    ....:         <li>5</li>
-    ....:         <li>6</li>
-    ....:     </ul>""")
+    ...     <ul class="list">
+    ...         <li>1</li>
+    ...         <li>2</li>
+    ...         <li>3</li>
+    ...     </ul>
+    ...     <ul class="list">
+    ...         <li>4</li>
+    ...         <li>5</li>
+    ...         <li>6</li>
+    ...     </ul>""")
     >>> xp = lambda x: sel.xpath(x).getall()
 
 This gets all first ``<li>``  elements under whatever it is its parent::
