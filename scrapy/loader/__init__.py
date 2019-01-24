@@ -14,7 +14,7 @@ from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 
 from .common import wrap_loader_context
-from .processors import Identity
+from .processors import Identity, Compose
 
 
 class ItemLoader(object):
@@ -133,15 +133,29 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor', \
-                self.default_input_processor)
+            override_proc = self._get_item_field_attr(field_name, 'input_processor')
+            extend_proc = self._get_item_field_attr(field_name, 'add_input')
+            if override_proc and extend_proc:
+                raise ValueError(f'Not allowed to define input_processor and add_input for {field_name}')
+            if override_proc:
+                return override_proc
+            elif extend_proc:
+                return Compose(self.default_input_processor, extend_proc)
+            return self.default_input_processor
         return proc
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor', \
-                self.default_output_processor)
+            override_proc = self._get_item_field_attr(field_name, 'output_processor')
+            extend_proc = self._get_item_field_attr(field_name, 'add_output')
+            if override_proc and extend_proc:
+                raise ValueError(f'Not allowed to define out_processor and add_output for {field_name}')
+            if override_proc:
+                return override_proc
+            elif extend_proc:
+                return Compose(self.default_output_processor, extend_proc)
+            return self.default_output_processor
         return proc
 
     def _process_input_value(self, field_name, value):
