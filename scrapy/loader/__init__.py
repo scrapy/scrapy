@@ -136,7 +136,7 @@ class ItemLoader(object):
             override_proc = self._get_item_field_attr(field_name, 'input_processor')
             extend_proc = self._get_item_field_attr(field_name, 'add_input')
             if override_proc and extend_proc:
-                raise ValueError(f'Not allowed to define input_processor and add_input for {field_name}')
+                raise ValueError('Not allowed to define input_processor and add_input for %s', field_name)
             if override_proc:
                 return override_proc
             elif extend_proc:
@@ -150,7 +150,7 @@ class ItemLoader(object):
             override_proc = self._get_item_field_attr(field_name, 'output_processor')
             extend_proc = self._get_item_field_attr(field_name, 'add_output')
             if override_proc and extend_proc:
-                raise ValueError(f'Not allowed to define out_processor and add_output for {field_name}')
+                raise ValueError('Not allowed to define out_processor and add_output for %s', field_name)
             if override_proc:
                 return override_proc
             elif extend_proc:

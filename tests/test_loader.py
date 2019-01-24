@@ -2,6 +2,7 @@ import unittest
 import six
 from functools import partial
 
+import scrapy
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import Join, Identity, TakeFirst, \
     Compose, MapCompose, SelectJmes
@@ -269,6 +270,44 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = ChildDefaultedItemLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'MART'])
+
+    def test_extend_default_input_processor_via_field(self):
+        class ExtendItem(Item):
+            name = Field(add_input=MapCompose(six.text_type.swapcase))
+
+        il = DefaultedItemLoader(ExtendItem())
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'MART'])
+
+    def test_extend_and_override_default_input_processor_via_field(self):
+        class ExtendItem(Item):
+            name = Field(add_input=MapCompose(six.text_type.swapcase),
+                         input_processor=MapCompose(six.text_type.swapcase))
+
+        il = DefaultedItemLoader(ExtendItem())
+        self.assertRaises(ValueError, il.add_value, 'name', u'marta')
+
+    def test_extend_default_output_processor_via_field(self):
+        class ExtendItemLoader(DefaultedItemLoader):
+            default_output_processor = MapCompose(lambda v: v.upper())
+
+        class ExtendItem(Item):
+            name = Field(add_output=u" ".join)
+
+        il = ExtendItemLoader(ExtendItem())
+        il.add_value('name', u'marn')
+        il.add_value('name', u'tan')
+        self.assertEqual(il.get_output_value('name'), "MAR TA")
+
+    def test_extend_and_override_default_output_processor_via_field(self):
+        class ExtendItem(Item):
+            name = Field(add_output=u" ".join,
+                         output_processor=u" ".join)
+
+        il = DefaultedItemLoader(ExtendItem())
+        il.add_value('name', u'marn')
+        il.add_value('name', u'tan')
+        self.assertRaises(ValueError, il.load_item)
 
     def test_output_processor_using_function(self):
         il = TestItemLoader()
