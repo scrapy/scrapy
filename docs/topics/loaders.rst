@@ -223,11 +223,35 @@ metadata. Here is an example::
     >>> il.load_item()
     {'name': u'Welcome to my website', 'price': u'1000'}
 
+If you use a custom ItemLoader which specifies: :meth:`ItemLoader.default_input_processor` and/or :meth:`ItemLoader.default_output_processor` you can extend those on field basis. It is not allowed to specify ``add_input`` and ``input_processor`` on the same field. Example::
+
+    import scrapy
+    from scrapy.loader.processors import Join, MapCompose
+    from scrapy.loader import ItemLoader
+    from w3lib.html import remove_tags
+
+    def CustomItemLoader(ItemLoader):
+        default_input_processor = remove_tags
+
+    class Product(scrapy.Item):
+        name = scrapy.Field(
+            add_input=MapCompose(str.upper),
+            output_processor=Join(),
+        )
+
+::
+
+    >>> il = CustomItemLoader(item=Product())
+    >>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
+    >>> il.load_item()
+    {'name': u'WELCOME TO MY WEBSITE'}
+
+
 The precedence order, for both input and output processors, is as follows:
 
 1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most
    precedence)
-2. Field metadata (``input_processor`` and ``output_processor`` key)
+2. Field metadata (``input_processor`` or ``add_input`` and ``output_processor`` or ``add_output`` key)
 3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and
    :meth:`ItemLoader.default_output_processor` (least precedence)
 
