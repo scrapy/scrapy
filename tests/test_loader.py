@@ -271,6 +271,14 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'MART'])
 
+    def test_input_processor_via_field(self):
+        class OverrideItem(Item):
+            name = Field(input_processor=MapCompose(six.text_type.swapcase))
+
+        il = DefaultedItemLoader(OverrideItem())
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'MARTA'])
+
     def test_extend_default_input_processor_via_field(self):
         class ExtendItem(Item):
             name = Field(add_input=MapCompose(six.text_type.swapcase))
@@ -286,6 +294,15 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         il = DefaultedItemLoader(ExtendItem())
         self.assertRaises(ValueError, il.add_value, 'name', u'marta')
+
+    def test_output_processor_via_field(self):
+        class OverrideItem(Item):
+            name = Field(output_processor=u" ".join)
+
+        il = DefaultedItemLoader(OverrideItem())
+        il.add_value('name', u'marn')
+        il.add_value('name', u'tan')
+        self.assertEqual(il.get_output_value('name'), "mar ta")
 
     def test_extend_default_output_processor_via_field(self):
         class ExtendItemLoader(DefaultedItemLoader):
