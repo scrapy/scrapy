@@ -1,7 +1,8 @@
 import os
 import six
-import contextlib
 import shutil
+import tempfile
+import contextlib
 try:
     from unittest import mock
 except ImportError:
@@ -40,13 +41,23 @@ from scrapy.exceptions import NotConfigured
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
+
 class DummyDH(object):
+    lazy = False
+
+    def __init__(self, crawler):
+        pass
+
+
+class DummyLazyDH(object):
+    # Default is lazy for backwards compatibility
 
     def __init__(self, crawler):
         pass
 
 
 class OffDH(object):
+    lazy = False
 
     def __init__(self, crawler):
         raise NotConfigured
@@ -59,8 +70,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
@@ -69,8 +78,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
@@ -79,10 +86,21 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
+
+    def test_lazy_handlers(self):
+        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        self.assertNotIn('scheme', dh._handlers)
+        for scheme in handlers:  # force load lazy handler
+            dh._get_handler(scheme)
+        self.assertIn('scheme', dh._handlers)
+        self.assertNotIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
@@ -913,7 +931,9 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        local_fname = b"/tmp/file.txt"
+        f, local_fname = tempfile.mkstemp()
+        local_fname = to_bytes(local_fname)
+        os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
@@ -922,7 +942,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {b'Local Filename': [b'/tmp/file.txt'], b'Size': [b'17']})
+            self.assertEqual(r.headers, {b'Local Filename': [local_fname],
+                                         b'Size': [b'17']})
             self.assertTrue(os.path.exists(local_fname))
             with open(local_fname, "rb") as f:
                 self.assertEqual(f.read(), b"I have the power!")

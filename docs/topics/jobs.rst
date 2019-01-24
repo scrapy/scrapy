@@ -84,7 +84,7 @@ So, for example, this won't work::
         return scrapy.Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
 
     def other_callback(self, response, somearg):
-        print "the argument passed is:", somearg
+        print("the argument passed is: %s" % somearg)
 
 But this will::
 
@@ -94,7 +94,7 @@ But this will::
 
     def other_callback(self, response):
         somearg = response.meta['somearg']
-        print "the argument passed is:", somearg
+        print("the argument passed is: %s" % somearg)
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.

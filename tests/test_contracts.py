@@ -1,16 +1,23 @@
 from unittest import TextTestResult
 
+from six import get_unbound_function
+from twisted.internet import defer
+from twisted.python import failure
 from twisted.trial import unittest
 
+from scrapy import FormRequest
+from scrapy.crawler import CrawlerRunner
+from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field
-from scrapy.contracts import ContractsManager
+from scrapy.contracts import ContractsManager, Contract
 from scrapy.contracts.default import (
     UrlContract,
     ReturnsContract,
     ScrapesContract,
 )
+from tests.mockserver import MockServer
 
 
 class TestItem(Item):
@@ -20,6 +27,30 @@ class TestItem(Item):
 
 class ResponseMock(object):
     url = 'http://scrapy.org'
+
+
+class CustomSuccessContract(Contract):
+    name = 'custom_success_contract'
+
+    def adjust_request_args(self, args):
+        args['url'] = 'http://scrapy.org'
+        return args
+
+
+class CustomFailContract(Contract):
+    name = 'custom_fail_contract'
+
+    def adjust_request_args(self, args):
+        raise TypeError('Error in adjust_request_args')
+
+
+class CustomFormContract(Contract):
+    name = 'custom_form'
+    request_cls = FormRequest
+
+    def adjust_request_args(self, args):
+        args['formdata'] = {'name': 'scrapy'}
+        return args
 
 
 class TestSpider(Spider):
@@ -98,9 +129,47 @@ class TestSpider(Spider):
         """
         pass
 
+    def custom_form(self, response):
+        """
+        @url http://scrapy.org
+        @custom_form
+        """
+        pass
+
+
+class CustomContractSuccessSpider(Spider):
+    name = 'custom_contract_success_spider'
+
+    def parse(self, response):
+        """
+        @custom_success_contract
+        """
+        pass
+
+
+class CustomContractFailSpider(Spider):
+    name = 'custom_contract_fail_spider'
+
+    def parse(self, response):
+        """
+        @custom_fail_contract
+        """
+        pass
+
+
+class InheritsTestSpider(TestSpider):
+    name = 'inherits_demo_spider'
+
 
 class ContractsManagerTest(unittest.TestCase):
-    contracts = [UrlContract, ReturnsContract, ScrapesContract]
+    contracts = [
+        UrlContract,
+        ReturnsContract,
+        ScrapesContract,
+        CustomFormContract,
+        CustomSuccessContract,
+        CustomFailContract,
+    ]
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
@@ -113,6 +182,9 @@ class ContractsManagerTest(unittest.TestCase):
     def should_fail(self):
         self.assertTrue(self.results.failures)
         self.assertFalse(self.results.errors)
+
+    def should_error(self):
+        self.assertTrue(self.results.errors)
 
     def test_contracts(self):
         spider = TestSpider()
@@ -175,13 +247,77 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_succeed()
 
         # scrapes_item_fail
-        request = self.conman.from_method(spider.scrapes_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_item_fail, self.results)
         request.callback(response)
         self.should_fail()
 
         # scrapes_dict_item_fail
-        request = self.conman.from_method(spider.scrapes_dict_item_fail,
-                self.results)
+        request = self.conman.from_method(spider.scrapes_dict_item_fail, self.results)
         request.callback(response)
         self.should_fail()
+
+    def test_custom_contracts(self):
+        self.conman.from_spider(CustomContractSuccessSpider(), self.results)
+        self.should_succeed()
+
+        self.conman.from_spider(CustomContractFailSpider(), self.results)
+        self.should_error()
+
+    def test_errback(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        try:
+            raise HttpError(response, 'Ignoring non-200 response')
+        except HttpError:
+            failure_mock = failure.Failure()
+
+        request = self.conman.from_method(spider.returns_request, self.results)
+        request.errback(failure_mock)
+
+        self.assertFalse(self.results.failures)
+        self.assertTrue(self.results.errors)
+
+    @defer.inlineCallbacks
+    def test_same_url(self):
+
+        class TestSameUrlSpider(Spider):
+            name = 'test_same_url'
+
+            def __init__(self, *args, **kwargs):
+                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                self.visited = 0
+
+            def start_requests(s):
+                return self.conman.from_spider(s, self.results)
+
+            def parse_first(self, response):
+                self.visited += 1
+                return TestItem()
+
+            def parse_second(self, response):
+                self.visited += 1
+                return TestItem()
+
+        with MockServer() as mockserver:
+            contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
+
+            get_unbound_function(TestSameUrlSpider.parse_first).__doc__ = contract_doc
+            get_unbound_function(TestSameUrlSpider.parse_second).__doc__ = contract_doc
+
+            crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.spider.visited, 2)
+
+    def test_form_contract(self):
+        spider = TestSpider()
+        request = self.conman.from_method(spider.custom_form, self.results)
+        self.assertEqual(request.method, 'POST')
+        self.assertIsInstance(request, FormRequest)
+
+    def test_inherited_contracts(self):
+        spider = InheritsTestSpider()
+
+        requests = self.conman.from_spider(spider, self.results)
+        self.assertTrue(requests)

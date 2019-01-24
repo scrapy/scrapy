@@ -114,10 +114,12 @@ def _get_form(response, formname, formid, formnumber, formxpath):
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
-        formdata = dict(formdata or ())
+        formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
+    if not formdata:
+        formdata = ()
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
@@ -128,14 +130,17 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                             "re": "http://exslt.org/regular-expressions"})
     values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata]
+              if k and k not in formdata_keys]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend((k, v) for k, v in formdata.items() if v is not None)
+    if isinstance(formdata, dict):
+        formdata = formdata.items()
+
+    values.extend((k, v) for k, v in formdata if v is not None)
     return values
 
 
