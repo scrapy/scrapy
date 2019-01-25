@@ -15,7 +15,7 @@ from scrapy.http.request import Request
 class JSONRequest(Request):
     def __init__(self, *args, **kwargs):
         dumps_kwargs = copy.deepcopy(kwargs.pop('dumps_kwargs', {}))
-        dumps_kwargs['sort_keys'] = True
+        dumps_kwargs.setdefault('sort_keys', True)
         self._dumps_kwargs = dumps_kwargs
 
         body_passed = kwargs.get('body', None) is not None
