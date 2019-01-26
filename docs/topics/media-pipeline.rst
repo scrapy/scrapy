@@ -310,7 +310,7 @@ images.
 
 .. setting:: IMAGES_THUMBS
 
-In order use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
+In order to use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
 where the keys are the thumbnail names and the values are their dimensions.
 
 For example::
