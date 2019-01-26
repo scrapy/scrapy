@@ -30,7 +30,7 @@ a *single* job.
 How to use it
 =============
 
-To start a spider with persistence supported enabled, run it like this::
+To start a spider with persistence support enabled, run it like this::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
