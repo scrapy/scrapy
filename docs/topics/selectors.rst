@@ -773,13 +773,13 @@ namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
 :meth:`Selector.remove_namespaces` method for that.
 
-Let's show an example that illustrates this with GitHub blog atom feed.
+Let's show an example that illustrates this with the Python Insider blog atom feed.
 
 .. highlight:: sh
 
 First, we open the shell with the url we want to scrape::
 
-    $ scrapy shell https://github.com/blog.atom
+    $ scrapy shell https://feeds.feedburner.com/PythonInsider
 
 .. highlight:: python
 
@@ -794,8 +794,8 @@ nodes can be accessed directly by their names::
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
-    [<Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
-     <Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
+    [<Selector xpath='//link' data='<link rel="alternate" type="text/html" h'>,
+     <Selector xpath='//link' data='<link rel="next" type="application/atom+'>,
      ...
 
 If you wonder why the namespace removal procedure isn't always called by default
