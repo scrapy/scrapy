@@ -178,27 +178,38 @@ all start with the ``[s]`` prefix)::
 
     >>>
 
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('https://scrapy.org') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='https://scrapy.org',
+    ...                         body=body, encoding='utf8')
+
 
 After that, we can start playing with the objects::
 
     >>> response.xpath('//title/text()').get()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
-    >>> fetch("https://reddit.com")
+    >>> fetch("https://reddit.com")  # doctest: +SKIP
 
-    >>> response.xpath('//title/text()').get()
+    >>> response.xpath('//title/text()').get()  # doctest: +SKIP
     'reddit: the front page of the internet'
 
-    >>> request = request.replace(method="POST")
+    >>> request = request.replace(method="POST")  # doctest: +SKIP
 
-    >>> fetch(request)
+    >>> fetch(request)  # doctest: +SKIP
 
-    >>> response.status
+    >>> response.status  # doctest: +SKIP
     404
 
     >>> from pprint import pprint
 
-    >>> pprint(response.headers)
+    >>> pprint(response.headers)  # doctest: +SKIP
     {'Accept-Ranges': ['bytes'],
      'Cache-Control': ['max-age=0, must-revalidate'],
      'Content-Type': ['text/html; charset=UTF-8'],
@@ -219,7 +230,6 @@ After that, we can start playing with the objects::
      'X-Timer': ['S1481214079.394283,VS0,VE159'],
      'X-Ua-Compatible': ['IE=edge'],
      'X-Xss-Protection': ['1; mode=block']}
-    >>>
 
 
 .. _topics-shell-inspect-response:
@@ -262,6 +272,19 @@ When you run the spider, you will get something similar to this::
     [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
     ...
 
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('http://example.org') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='http://example.org',
+    ...                         body=body, encoding='utf8')
+
+::
+
     >>> response.url
     'http://example.org'
 
@@ -273,13 +296,13 @@ Then, you can check if the extraction code is working::
 Nope, it doesn't. So you can open the response in your web browser and see if
 it's the response you were expecting::
 
-    >>> view(response)
+    >>> view(response)  # doctest: +SKIP
     True
 
 Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::
 
-    >>> ^D
+    >>> ^D  # doctest: +SKIP
     2014-01-23 17:50:03-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
 

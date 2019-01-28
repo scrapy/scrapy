@@ -195,9 +195,11 @@ class ItemLoader(object):
 
         Examples::
 
+            >>> from scrapy.loader import ItemLoader
             >>> from scrapy.loader.processors import TakeFirst
-            >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
-            'FOO`
+            >>> loader = ItemLoader()
+            >>> loader.get_value(u'name: foo', TakeFirst(), str.upper, re='name: (.+)')
+            'FOO'
         """
         regex = kw.get('re', None)
         if regex:

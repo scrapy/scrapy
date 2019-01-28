@@ -84,8 +84,22 @@ tag, select ``Copy > XPath`` and paste it in the scrapy shell like so::
 
     $ scrapy shell "http://quotes.toscrape.com/"
     (...)
+
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('http://quotes.toscrape.com/') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='http://quotes.toscrape.com/',
+    ...                         body=body, encoding='utf8')
+
+::
+
     >>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
-    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”]
+    ['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”']
 
 Adding ``text()`` at the end we are able to extract the first quote with this 
 basic selector. But this XPath is not really that clever. All it does is
@@ -109,16 +123,12 @@ see each quote:
       <div class="tags">(...)</div>
     </div>
 
-
 With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using 
 the :ref:`has-class-extension <topics-xpath-other-extensions>`::
 
     >>> response.xpath('//span[has-class("text")]/text()').getall()
-    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
-    '“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
-    '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
-    (...)]
+    ['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', '“It is our choices, Harry, that show what we truly are, far more than our abilities.”', '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”', ...]
 
 And with one simple, cleverer XPath we are able to extract all quotes from 
 the page. We could have constructed a loop over our first XPath to increase 
@@ -163,7 +173,7 @@ we'll check another quite useful command from the scrapy shell::
 
   $ scrapy shell "quotes.toscrape.com/scroll"
   (...)
-  >>> view(response)
+  >>> view(response)  # doctest: +SKIP
 
 A browser window should open with the webpage but with one 
 crucial difference: Instead of the quotes we just see a greenish 

@@ -238,6 +238,17 @@ You will see something like::
     [s]   view(response)    View response in a browser
     >>>
 
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('http://quotes.toscrape.com/page/1/') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='http://quotes.toscrape.com/page/1/',
+    ...                         body=body, encoding='utf8')
+
 Using the shell, you can try selecting elements using `CSS`_ with the response
 object::
 
@@ -372,6 +383,8 @@ we want::
 We get a list of selectors for the quote HTML elements with::
 
     >>> response.css("div.quote")
+    [<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype="h'>, ...]
+
 
 Each of the selectors returned by the query above allows us to run further
 queries over their sub-elements. Let's assign the first selector to a
@@ -404,9 +417,9 @@ quotes elements and put them together into a Python dictionary::
     ...     author = quote.css("small.author::text").get()
     ...     tags = quote.css("div.tags a.tag::text").getall()
     ...     print(dict(text=text, author=author, tags=tags))
-    {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
-    {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
-        ... a few more of these, omitted for brevity
+    {'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', 'author': 'Albert Einstein', 'tags': ['change', 'deep-thoughts', 'thinking', 'world']}
+    {'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”', 'author': 'J.K. Rowling', 'tags': ['abilities', 'choices']}
+    ...
     >>>
 
 Extracting data in our spider
@@ -521,7 +534,7 @@ There is also an ``attrib`` property available
 (see :ref:`selecting-attributes` for more)::
 
     >>> response.css('li.next a').attrib['href']
-    '/page/2'
+    '/page/2/'
 
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::

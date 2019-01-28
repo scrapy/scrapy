@@ -49,23 +49,23 @@ Using selectors
 Constructing selectors
 ----------------------
 
-.. highlight:: python
+.. doctest::
+   :hide:
 
-Response objects expose a :class:`~Selector` instance
-on ``.selector`` attribute::
+    >>> body = b'<span>good</span>'
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='https://doc.scrapy.org/en/latest/_static/selectors-sample1.html',
+    ...                         body=body, encoding='utf8')
 
-    >>> response.selector.xpath('//span/text()').get()
-    'good'
-
-Querying responses using XPath and CSS is so common that responses include two
-more shortcuts: ``response.xpath()`` and ``response.css()``::
+:class:`~scrapy.http.Response` includes two methods from :class:`Selector`:
+:meth:`~scrapy.http.Response.xpath` and :meth:`~scrapy.http.Response.css`::
 
     >>> response.xpath('//span/text()').get()
     'good'
     >>> response.css('span::text').get()
     'good'
 
-Scrapy selectors are instances of :class:`~Selector` class
+Scrapy selectors are instances of :class:`Selector` class
 constructed by passing either :class:`~http.TextResponse` object or
 markup as an unicode string (in ``text`` argument).
 Usually there is no need to construct Scrapy selectors manually:
@@ -78,7 +78,7 @@ But if required, it is possible to use ``Selector`` directly.
 Constructing from text::
 
     >>> from scrapy.selector import Selector
-    >>> body = '<html><body><span>good</span></body></html>'
+    >>> body = b'<html><body><span>good</span></body></html>'
     >>> Selector(text=body).xpath('//span/text()').get()
     'good'
 
@@ -110,21 +110,32 @@ For the sake of completeness, here's its full HTML code:
 .. literalinclude:: ../_static/selectors-sample1.html
    :language: html
 
-.. highlight:: sh
+First, let's open the shell:
 
-First, let's open the shell::
+.. code-block:: sh
 
     scrapy shell https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have the response available as ``response``
-shell variable, and its attached selector in ``response.selector`` attribute.
+shell variable.
 
 Since we're dealing with HTML, the selector will automatically use an HTML parser.
 
-.. highlight:: python
-
 So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that
-page, let's construct an XPath for selecting the text inside the title tag::
+page, let's construct an XPath for selecting the text inside the title tag:
+
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('https://doc.scrapy.org/en/latest/_static/selectors-sample1.html') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='https://doc.scrapy.org/en/latest/_static/selectors-sample1.html',
+    ...                         body=body, encoding='utf8')
+
+.. doctest::
 
     >>> response.xpath('//title/text()')
     [<Selector xpath='//title/text()' data='Example website'>]
@@ -152,11 +163,7 @@ As you can see, ``.xpath()`` and ``.css()`` methods return a
 selectors. This API can be used for quickly selecting nested data::
 
     >>> response.css('img').xpath('@src').getall()
-    ['image1_thumb.jpg',
-     'image2_thumb.jpg',
-     'image3_thumb.jpg',
-     'image4_thumb.jpg',
-     'image5_thumb.jpg']
+    ['image1_thumb.jpg', 'image2_thumb.jpg', 'image3_thumb.jpg', 'image4_thumb.jpg', 'image5_thumb.jpg']
 
 If you want to extract only the first matched element, you can call the
 selector ``.get()`` (or its alias ``.extract_first()`` commonly used in
@@ -177,14 +184,10 @@ of ``None``:
     'not-found'
 
 Instead of using e.g. ``'@src'`` XPath it is possible to query for attributes
-using ``.attrib`` property of a :class:`~Selector`::
+using ``.attrib`` property of a :class:`Selector`::
 
     >>> [img.attrib['src'] for img in response.css('img')]
-    ['image1_thumb.jpg',
-     'image2_thumb.jpg',
-     'image3_thumb.jpg',
-     'image4_thumb.jpg',
-     'image5_thumb.jpg']
+    ['image1_thumb.jpg', 'image2_thumb.jpg', 'image3_thumb.jpg', 'image4_thumb.jpg', 'image5_thumb.jpg']
 
 As a shortcut, ``.attrib`` is also available on SelectorList directly;
 it returns attributes for the first matching element::
@@ -210,32 +213,16 @@ Now we're going to get the base URL and some image links::
     'http://example.com/'
 
     >>> response.xpath('//a[contains(@href, "image")]/@href').getall()
-    ['image1.html',
-     'image2.html',
-     'image3.html',
-     'image4.html',
-     'image5.html']
+    ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
 
     >>> response.css('a[href*=image]::attr(href)').getall()
-    ['image1.html',
-     'image2.html',
-     'image3.html',
-     'image4.html',
-     'image5.html']
+    ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
 
     >>> response.xpath('//a[contains(@href, "image")]/img/@src').getall()
-    ['image1_thumb.jpg',
-     'image2_thumb.jpg',
-     'image3_thumb.jpg',
-     'image4_thumb.jpg',
-     'image5_thumb.jpg']
+    ['image1_thumb.jpg', 'image2_thumb.jpg', 'image3_thumb.jpg', 'image4_thumb.jpg', 'image5_thumb.jpg']
 
     >>> response.css('a[href*=image] img::attr(src)').getall()
-    ['image1_thumb.jpg',
-     'image2_thumb.jpg',
-     'image3_thumb.jpg',
-     'image4_thumb.jpg',
-     'image5_thumb.jpg']
+    ['image1_thumb.jpg', 'image2_thumb.jpg', 'image3_thumb.jpg', 'image4_thumb.jpg', 'image5_thumb.jpg']
 
 .. _topics-selectors-css-extensions:
 
@@ -268,17 +255,7 @@ Examples:
 * ``*::text`` selects all descendant text nodes of the current selector context::
 
     >>> response.css('#images *::text').getall()
-    ['\n   ',
-     'Name: My image 1 ',
-     '\n   ',
-     'Name: My image 2 ',
-     '\n   ',
-     'Name: My image 3 ',
-     '\n   ',
-     'Name: My image 4 ',
-     '\n   ',
-     'Name: My image 5 ',
-     '\n  ']
+    ['\n   ', 'Name: My image 1 ', '\n   ', 'Name: My image 2 ', '\n   ', 'Name: My image 3 ', '\n   ', 'Name: My image 4 ', '\n   ', 'Name: My image 5 ', '\n  ']
 
 * ``foo::text`` returns no results if ``foo`` element exists, but contains
   no text (i.e. text is empty)::
@@ -296,11 +273,7 @@ Examples:
 * ``a::attr(href)`` selects the *href* attribute value of descendant links::
 
     >>> response.css('a::attr(href)').getall()
-    ['image1.html',
-     'image2.html',
-     'image3.html',
-     'image4.html',
-     'image5.html']
+    ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
 
 .. note::
     See also: :ref:`selecting-attributes`.
@@ -323,16 +296,12 @@ too. Here's an example::
 
     >>> links = response.xpath('//a[contains(@href, "image")]')
     >>> links.getall()
-    ['<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
-     '<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
-     '<a href="image3.html">Name: My image 3 <br><img src="image3_thumb.jpg"></a>',
-     '<a href="image4.html">Name: My image 4 <br><img src="image4_thumb.jpg"></a>',
-     '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
+    ['<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>', '<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>', '<a href="image3.html">Name: My image 3 <br><img src="image3_thumb.jpg"></a>', '<a href="image4.html">Name: My image 4 <br><img src="image4_thumb.jpg"></a>', '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
     >>> for index, link in enumerate(links):
     ...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
     ...     print('Link number %d points to url %r and image %r' % args)
-
+    ...
     Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
     Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
     Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -385,7 +354,7 @@ ID, or when selecting an unique element on a page)::
 Using selectors with regular expressions
 ----------------------------------------
 
-:class:`~Selector` also has a ``.re()`` method for extracting
+:class:`Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
 ``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
 can't construct nested ``.re()`` calls.
@@ -393,18 +362,14 @@ can't construct nested ``.re()`` calls.
 Here's an example used to extract image names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
-    >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
-    ['My image 1',
-     'My image 2',
-     'My image 3',
-     'My image 4',
-     'My image 5']
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(\w+(?:\s+\w+)*)')
+    ['My image 1', 'My image 2', 'My image 3', 'My image 4', 'My image 5']
 
 There's an additional helper reciprocating ``.get()`` (and its
 alias ``.extract_first()``) for ``.re()``, named ``.re_first()``.
 Use it to extract just the first matching string::
 
-    >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(\w+(?:\s+\w+)*)')
     'My image 1'
 
 .. _old-extraction-api:
@@ -661,45 +626,42 @@ method for that.
 
 Let's show an example that illustrates this with the Python Insider blog atom feed.
 
-.. highlight:: sh
-
 First, we open the shell with the url we want to scrape::
 
-    $ scrapy shell https://feeds.feedburner.com/PythonInsider
+.. code-block:: sh
 
-This is how the file starts::
+    scrapy shell https://feeds.feedburner.com/PythonInsider
 
-    <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet ...
-    <feed xmlns="http://www.w3.org/2005/Atom"
-          xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
-          xmlns:blogger="http://schemas.google.com/blogger/2008"
-          xmlns:georss="http://www.georss.org/georss"
-          xmlns:gd="http://schemas.google.com/g/2005"
-          xmlns:thr="http://purl.org/syndication/thread/1.0"
-          xmlns:feedburner="http://rssnamespace.org/feedburner/ext/1.0">
-      ...
+.. doctest::
+   :hide:
+
+    >>> from urllib.request import urlopen
+    >>> with urlopen('https://feeds.feedburner.com/PythonInsider') as html:
+    ...     body = html.read()
+    ...
+    >>> from scrapy.http import XmlResponse
+    >>> response = XmlResponse(url='https://feeds.feedburner.com/PythonInsider',
+    ...                        body=body, encoding='utf8')
 
 You can see several namespace declarations including a default
 "http://www.w3.org/2005/Atom" and another one using the "gd:" prefix for
 "http://schemas.google.com/g/2005".
 
-.. highlight:: python
-
 Once in the shell we can try selecting all ``<link>`` objects and see that it
 doesn't work (because the Atom XML namespace is obfuscating those nodes)::
 
-    >>> response.xpath("//link")
+    >>> response.xpath("//link")  # doctest: +SKIP
     []
+
+..
+    NOTE: doctest skipped due to https://github.com/scrapy/scrapy/issues/3601
 
 But once we call the :meth:`~parsel.selector.Selector.remove_namespaces`
 method, all nodes can be accessed directly by their names::
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
-    [<Selector xpath='//link' data='<link rel="alternate" type="text/html" h'>,
-     <Selector xpath='//link' data='<link rel="next" type="application/atom+'>,
-     ...
+    [<Selector xpath='//link' data='<link rel="alternate" type="text/html" h'>, <Selector xpath='//link' data='<link rel="next" type="application/atom+'>, ...]
 
 If you wonder why the namespace removal procedure isn't always called by default
 instead of having to call it manually, this is because of two reasons, which, in order
@@ -827,29 +789,27 @@ with groups of itemscopes and corresponding itemprops::
     ...                                .//*[@itemscope]/*/@itemprop)''')
     ...     print("    properties: %s" % (props.getall()))
     ...     print("")
-
     current scope: ['http://schema.org/Product']
         properties: ['name', 'aggregateRating', 'offers', 'description', 'review', 'review']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/AggregateRating']
         properties: ['ratingValue', 'reviewCount']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/Offer']
         properties: ['price', 'availability']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/Review']
         properties: ['name', 'author', 'datePublished', 'reviewRating', 'description']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/Rating']
         properties: ['worstRating', 'ratingValue', 'bestRating']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/Review']
         properties: ['name', 'author', 'datePublished', 'reviewRating', 'description']
-
+    <BLANKLINE>
     current scope: ['http://schema.org/Rating']
         properties: ['worstRating', 'ratingValue', 'bestRating']
-
-    >>>
+    <BLANKLINE>
 
 Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
@@ -866,22 +826,34 @@ Scrapy selectors also provide a sorely missed XPath extension function
 ``has-class`` that returns ``True`` for nodes that have all of the specified
 HTML classes.
 
-.. highlight:: html
+For the following HTML:
 
-For the following HTML::
+.. code-block:: html
 
     <p class="foo bar-baz">First</p>
     <p class="foo">Second</p>
     <p class="bar">Third</p>
     <p>Fourth</p>
 
-.. highlight:: python
+.. doctest::
+   :hide:
+
+    >>> body = b'''
+    ... <html><body>
+    ...     <p class="foo bar-baz">First</p>
+    ...     <p class="foo">Second</p>
+    ...     <p class="bar">Third</p>
+    ...     <p>Fourth</p>
+    ... </body></html>
+    ... '''
+    >>> from scrapy.http import TextResponse
+    >>> response = TextResponse(url='http://example.com',
+    ...                         body=body, encoding='utf8')
 
 You can use it like this::
 
     >>> response.xpath('//p[has-class("foo")]')
-    [<Selector xpath='//p[has-class("foo")]' data='<p class="foo bar-baz">First</p>'>,
-     <Selector xpath='//p[has-class("foo")]' data='<p class="foo">Second</p>'>]
+    [<Selector xpath='//p[has-class("foo")]' data='<p class="foo bar-baz">First</p>'>, <Selector xpath='//p[has-class("foo")]' data='<p class="foo">Second</p>'>]
     >>> response.xpath('//p[has-class("foo", "bar-baz")]')
     [<Selector xpath='//p[has-class("foo", "bar-baz")]' data='<p class="foo bar-baz">First</p>'>]
     >>> response.xpath('//p[has-class("foo", "bar")]')

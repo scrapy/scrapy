@@ -104,7 +104,7 @@ You can use the ``est()`` method of the Scrapy engine to quickly show its state
 using the telnet console::
 
     telnet localhost 6023
-    >>> est()
+    >>> est()  # doctest: +SKIP
     Execution engine status
 
     time()-engine.start_time                        : 8.62972998619
@@ -130,19 +130,19 @@ Pause, resume and stop the Scrapy engine
 To pause::
 
     telnet localhost 6023
-    >>> engine.pause()
+    >>> engine.pause()  # doctest: +SKIP
     >>>
 
 To resume::
 
     telnet localhost 6023
-    >>> engine.unpause()
+    >>> engine.unpause()  # doctest: +SKIP
     >>>
 
 To stop::
 
     telnet localhost 6023
-    >>> engine.stop()
+    >>> engine.stop()  # doctest: +SKIP
     Connection closed by foreign host.
 
 

@@ -70,7 +70,7 @@ alias to the :func:`~utils.trackref.print_live_refs` function::
 
     telnet localhost 6023
 
-    >>> prefs()
+    >>> prefs()  # doctest: +SKIP
     Live References
 
     ExampleSpider                       1   oldest: 15s ago
@@ -116,7 +116,7 @@ After the crawler is running for a few minutes and we notice its memory usage
 has grown a lot, we can enter its telnet console and check the live
 references::
 
-    >>> prefs()
+    >>> prefs()  # doctest: +SKIP
     Live References
 
     SomenastySpider                     1   oldest: 15s ago
@@ -136,14 +136,14 @@ Let's check the oldest response::
 
     >>> from scrapy.utils.trackref import get_oldest
     >>> r = get_oldest('HtmlResponse')
-    >>> r.url
+    >>> r.url  # doctest: +SKIP
     'http://www.somenastyspider.com/product.php?pid=123'
 
 If you want to iterate over all objects, instead of getting the oldest one, you
 can use the :func:`~utils.trackref.iter_all` function::
 
     >>> from scrapy.utils.trackref import iter_all
-    >>> [r.url for r in iter_all('HtmlResponse')]
+    >>> [r.url for r in iter_all('HtmlResponse')]  # doctest: +SKIP
     ['http://www.somenastyspider.com/product.php?pid=123',
      'http://www.somenastyspider.com/product.php?pid=584',
     ...
@@ -158,8 +158,8 @@ For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclases). For
 example, this won't show any live references to spiders::
 
-    >>> from scrapy.spiders import Spider
-    >>> prefs(ignore=Spider)
+    >>> from scrapy import Spider
+    >>> prefs(ignore=Spider)  # doctest: +SKIP
 
 
 .. _topics-leaks-guppy:
@@ -185,8 +185,8 @@ The telnet console also comes with a built-in shortcut (``hpy``) for accessing
 Guppy heap objects. Here's an example to view all Python objects available in
 the heap using Guppy::
 
-    >>> x = hpy.heap()
-    >>> x.bytype
+    >>> x = hpy.heap()  # doctest: +SKIP
+    >>> x.bytype  # doctest: +SKIP
     Partition of a set of 297033 objects. Total size = 52587824 bytes.
      Index  Count   %     Size   % Cumulative  % Type
          0  22307   8 16423880  31  16423880  31 dict
@@ -204,7 +204,7 @@ the heap using Guppy::
 You can see that most space is used by dicts. Then, if you want to see from
 which attribute those dicts are referenced, you could do::
 
-    >>> x.bytype[0].byvia
+    >>> x.bytype[0].byvia  # doctest: +SKIP
     Partition of a set of 22307 objects. Total size = 16423880 bytes.
      Index  Count   %     Size   % Cumulative  % Referred Via:
          0  10982  49  9416336  57   9416336  57 '.__dict__'
@@ -240,13 +240,13 @@ If you use ``pip``, you can install muppy with the following command::
 Here's an example to view all Python objects available in
 the heap using muppy::
 
-    >>> from pympler import muppy
-    >>> all_objects = muppy.get_objects()
-    >>> len(all_objects)
+    >>> from pympler import muppy  # doctest: +SKIP
+    >>> all_objects = muppy.get_objects()  # doctest: +SKIP
+    >>> len(all_objects)  # doctest: +SKIP
     28667
-    >>> from pympler import summary
-    >>> suml = summary.summarize(all_objects)
-    >>> summary.print_(suml)
+    >>> from pympler import summary  # doctest: +SKIP
+    >>> suml = summary.summarize(all_objects)  # doctest: +SKIP
+    >>> summary.print_(suml)  # doctest: +SKIP
                                    types |   # objects |   total size
     ==================================== | =========== | ============
                              <class 'str |        9822 |      1.10 MB

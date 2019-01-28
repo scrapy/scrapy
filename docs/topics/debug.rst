@@ -54,7 +54,7 @@ In order to see the item scraped from a specific url::
     $ scrapy parse --spider=myspider -c parse_item -d 2 <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
 
-    >>> STATUS DEPTH LEVEL 2 <<<
+    >>> STATUS DEPTH LEVEL 2 <<<  # doctest: +SKIP
     # Scraped Items  ------------------------------------------------------------
     [{'url': <item_url>}]
 
@@ -66,7 +66,7 @@ Using the ``--verbose`` or ``-v`` option we can see the status at each depth lev
     $ scrapy parse --spider=myspider -c parse_item -d 2 -v <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
 
-    >>> DEPTH LEVEL: 1 <<<
+    >>> DEPTH LEVEL: 1 <<<  # doctest: +SKIP
     # Scraped Items  ------------------------------------------------------------
     []
 
@@ -74,7 +74,7 @@ Using the ``--verbose`` or ``-v`` option we can see the status at each depth lev
     [<GET item_details_url>]
 
 
-    >>> DEPTH LEVEL: 2 <<<
+    >>> DEPTH LEVEL: 2 <<<  # doctest: +SKIP
     # Scraped Items  ------------------------------------------------------------
     [{'url': <item_url>}]
 

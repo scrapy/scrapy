@@ -31,13 +31,16 @@ Declaring Items
 Items are declared using a simple class definition syntax and :class:`Field`
 objects. Here is an example::
 
-    import scrapy
+    >>> import scrapy
+    >>>
+    >>> class Product(scrapy.Item):
+    ...     name = scrapy.Field()
+    ...     price = scrapy.Field()
+    ...     stock = scrapy.Field()
+    ...     last_updated = scrapy.Field(serializer=str)
+    ...
+    >>>
 
-    class Product(scrapy.Item):
-        name = scrapy.Field()
-        price = scrapy.Field()
-        stock = scrapy.Field()
-        last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
    declared similar to `Django Models`_, except that Scrapy Items are much
@@ -83,8 +86,8 @@ Creating items
 ::
 
     >>> product = Product(name='Desktop PC', price=1000)
-    >>> print(product)
-    Product(name='Desktop PC', price=1000)
+    >>> product
+    {'name': 'Desktop PC', 'price': 1000}
 
 Getting field values
 --------------------
@@ -92,9 +95,9 @@ Getting field values
 ::
 
     >>> product['name']
-    Desktop PC
+    'Desktop PC'
     >>> product.get('name')
-    Desktop PC
+    'Desktop PC'
 
     >>> product['price']
     1000
@@ -105,7 +108,7 @@ Getting field values
     KeyError: 'last_updated'
 
     >>> product.get('last_updated', 'not set')
-    not set
+    'not set'
 
     >>> product['lala'] # getting unknown field
     Traceback (most recent call last):
@@ -134,7 +137,8 @@ Setting field values
 
     >>> product['last_updated'] = 'today'
     >>> product['last_updated']
-    today
+    'today'
+    >>> del product['last_updated']
 
     >>> product['lala'] = 'test' # setting unknown field
     Traceback (most recent call last):
@@ -147,10 +151,10 @@ Accessing all populated values
 To access all populated values, just use the typical :class:`dict` API::
 
     >>> product.keys()
-    ['price', 'name']
+    dict_keys(['name', 'price'])
 
     >>> product.items()
-    [('price', 1000), ('name', 'Desktop PC')]
+    ItemsView({'name': 'Desktop PC', 'price': 1000})
 
 Other common tasks
 ------------------
@@ -159,21 +163,21 @@ Copying items::
 
     >>> product2 = Product(product)
     >>> print(product2)
-    Product(name='Desktop PC', price=1000)
+    {'name': 'Desktop PC', 'price': 1000}
 
     >>> product3 = product2.copy()
     >>> print(product3)
-    Product(name='Desktop PC', price=1000)
+    {'name': 'Desktop PC', 'price': 1000}
 
 Creating dicts from items::
 
     >>> dict(product) # create a dict from all populated values
-    {'price': 1000, 'name': 'Desktop PC'}
+    {'name': 'Desktop PC', 'price': 1000}
 
 Creating items from dicts::
 
     >>> Product({'name': 'Laptop PC', 'price': 1500})
-    Product(price=1500, name='Laptop PC')
+    {'name': 'Laptop PC', 'price': 1500}
 
     >>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
     Traceback (most recent call last):

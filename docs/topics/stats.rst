@@ -43,21 +43,30 @@ attribute. Here is an example of an extension that access stats::
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
+.. doctest::
+   :hide:
+
+    >>> from scrapy import Spider
+    >>> from scrapy.crawler import Crawler
+    >>> from scrapy.statscollectors import MemoryStatsCollector
+    >>> stats = MemoryStatsCollector(Crawler(Spider))
+
 Set stat value::
 
-    stats.set_value('hostname', socket.gethostname())
+    >>> from datetime import datetime
+    >>> stats.set_value('start_time', datetime(2008, 6, 26))
 
 Increment stat value::
 
-    stats.inc_value('custom_count')
+    >>> stats.inc_value('custom_count')
 
 Set stat value only if greater than previous::
 
-    stats.max_value('max_items_scraped', value)
+    >>> stats.max_value('max_items_scraped', 100)
 
 Set stat value only if lower than previous::
 
-    stats.min_value('min_free_memory_percent', value)
+    >>> stats.min_value('min_free_memory_percent', 10)
 
 Get stat value::
 
@@ -67,7 +76,7 @@ Get stat value::
 Get all stats::
 
     >>> stats.get_stats()
-    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+    {'start_time': datetime.datetime(2008, 6, 26, 0, 0), 'custom_count': 1, 'max_items_scraped': 100, 'min_free_memory_percent': 10}
 
 Available Stats Collectors
 ==========================

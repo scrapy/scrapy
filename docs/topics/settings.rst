@@ -56,9 +56,9 @@ Arguments provided by the command line are the ones that take most precedence,
 overriding any other options. You can explicitly override one (or more)
 settings using the ``-s`` (or ``--set``) command line option.
 
-.. highlight:: sh
+Example:
 
-Example::
+.. code-block:: sh
 
     scrapy crawl myspider -s LOG_FILE=scrapy.log
 
@@ -100,8 +100,6 @@ module and documented in the :ref:`topics-settings-ref` section.
 
 How to access settings
 ======================
-
-.. highlight:: python
 
 In a spider, the settings are available through ``self.settings``::
 

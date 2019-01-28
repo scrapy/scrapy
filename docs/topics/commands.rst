@@ -289,10 +289,10 @@ Usage examples::
 
     $ scrapy check
     [FAILED] first_spider:parse_item
-    >>> 'RetailPricex' field is missing
+    >>> 'RetailPricex' field is missing  # doctest: +SKIP
 
     [FAILED] first_spider:parse
-    >>> Returned 92 requests, expected 0..4
+    >>> Returned 92 requests, expected 0..4  # doctest: +SKIP
 
 .. command:: list
 
@@ -483,7 +483,7 @@ Usage example::
     $ scrapy parse http://www.example.com/ -c parse_item
     [ ... scrapy log lines crawling example.com spider ... ]
 
-    >>> STATUS DEPTH LEVEL 1 <<<
+    >>> STATUS DEPTH LEVEL 1 <<<  # doctest: +SKIP
     # Scraped Items  ------------------------------------------------------------
     [{'name': 'Example item',
      'category': 'Furniture',

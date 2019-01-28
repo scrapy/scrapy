@@ -29,6 +29,7 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinxcontrib.zopeext.autointerface',

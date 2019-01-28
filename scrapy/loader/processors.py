@@ -43,7 +43,7 @@ class MapCompose(object):
         >>> from scrapy.loader.processors import MapCompose
         >>> proc = MapCompose(filter_world, str.upper)
         >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
-        ['HELLO, 'THIS', 'IS', 'SCRAPY']
+        ['HELLO', 'THIS', 'IS', 'SCRAPY']
 
     As with the Compose processor, functions can receive Loader contexts, and
     constructor keyword arguments are used as default context values. See

@@ -157,13 +157,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         new one, or return ``None`` to ignore the link altogether. If not
         given, ``process_value`` defaults to ``lambda x: x``.
 
-        .. highlight:: html
+        For example, to extract links from this code:
 
-        For example, to extract links from this code::
+        .. code-block:: html
 
             <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
-
-        .. highlight:: python
 
         You can use the following function in ``process_value``::
 
