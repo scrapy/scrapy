@@ -41,7 +41,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                                          (six.get_method_self(method).__class__.__name__, response.__class__.__name__))
                 if response:
                     defer.returnValue(response)
-            defer.returnValue((yield download_func(request=request,spider=spider)))
+            defer.returnValue((yield download_func(request=request, spider=spider)))
 
         @defer.inlineCallbacks
         def process_response(response):
