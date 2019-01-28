@@ -61,7 +61,8 @@ To be discussed:
 
 1. should we support returning deferreds (ie. ``maybeDeferred``) in middleware
    methods?
-2. should we pass Twisted Failures instead of exceptions to error methods?
+2. should we pass Twisted :ref:`Failure <core-howto-glossary-failure>` instances
+   instead of exceptions to error methods?
 
 Spider middleware changes
 =========================

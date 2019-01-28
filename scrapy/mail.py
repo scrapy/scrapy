@@ -38,7 +38,8 @@ def _to_bytes_or_none(text):
 
 class MailSender(object):
     """MailSender is the preferred class to use for sending emails from Scrapy,
-    as it uses `Twisted non-blocking IO`_, like the rest of the framework.
+    as it uses :doc:`Twisted non-blocking IO <core/howto/defer-intro>`, like
+    the rest of the framework.
 
     :param smtphost: the SMTP host to use for sending the emails. If omitted,
                      the :setting:`MAIL_HOST` setting will be used.
@@ -64,8 +65,6 @@ class MailSender(object):
 
     :param smtpssl: enforce using a secure SSL connection
     :type smtpssl: bool
-
-    .. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
     """
 
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',

@@ -47,6 +47,3 @@ Signal Manager
    :synopsis: The signal manager
    :members:
    :undoc-members:
-
-
-.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

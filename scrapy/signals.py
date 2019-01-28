@@ -89,8 +89,9 @@ spider_closed = object()
 #:
 #: This signal does not support returning deferreds from their handlers.
 #:
-#: :param failure: the exception raised as a Twisted `Failure`_ object
-#: :type failure: `Failure`_ object
+#: :param failure: the exception raised as a Twisted
+#:                 :ref:`Failure <core-howto-glossary-failure>` object
+#: :type failure: :ref:`Failure <core-howto-glossary-failure>` object
 #:
 #: :param response: the response being processed when the exception was raised
 #: :type response: :class:`~scrapy.http.Response` object
@@ -228,8 +229,9 @@ item_dropped = object()
 #: :param spider: the spider which raised the exception
 #: :type spider: :class:`~scrapy.spiders.Spider` object
 #:
-#: :param failure: the exception raised as a Twisted `Failure`_ object
-#: :type failure: `Failure`_ object
+#: :param failure: the exception raised as a Twisted
+#:                 :ref:`Failure <core-howto-glossary-failure>` object
+#: :type failure: :ref:`Failure <core-howto-glossary-failure>` object
 item_error = object()
 
 # for backwards compatibility

@@ -126,11 +126,11 @@ properly.::
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return Deferred_ from
+This example demonstrates how to return :doc:`Deferred <core/howto/defer>` from
 :meth:`~IPipeline.process_item` method. It uses Splash_ to render screenshot of
 item url. Pipeline makes request to locally running instance of Splash_. After
-request is downloaded and Deferred callback fires, it saves item to a file and
-adds filename to an item.
+request is downloaded and Deferred callback fires, it
+saves item to a file and adds filename to an item.
 
 ::
 
@@ -170,7 +170,6 @@ adds filename to an item.
             return item
 
 .. _Splash: https://splash.readthedocs.io/en/stable/
-.. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
 -----------------

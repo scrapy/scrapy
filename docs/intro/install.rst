@@ -40,9 +40,9 @@ Things that are good to know
 Scrapy is written in pure Python and depends on a few key Python packages (among others):
 
 * `lxml`_, an efficient XML and HTML parser
-* `parsel`_, an HTML/XML data extraction library written on top of lxml,
+* :doc:`parsel <parsel:index>`, an HTML/XML data extraction library written on top of lxml,
 * `w3lib`_, a multi-purpose helper for dealing with URLs and web page encodings
-* `twisted`_, an asynchronous networking framework
+* :doc:`twisted <twisted:index>`, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
 The minimal versions which Scrapy is tested against are:
@@ -279,9 +279,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
 .. _lxml: http://lxml.de/
-.. _parsel: https://pypi.python.org/pypi/parsel
 .. _w3lib: https://pypi.python.org/pypi/w3lib
-.. _twisted: https://twistedmatrix.com/
 .. _cryptography: https://cryptography.io/
 .. _pyOpenSSL: https://pypi.python.org/pypi/pyOpenSSL
 .. _setuptools: https://pypi.python.org/pypi/setuptools

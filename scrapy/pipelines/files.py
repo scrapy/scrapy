@@ -459,7 +459,8 @@ class FilesPipeline(MediaPipeline):
             successfully or ``False`` if it failed for some reason
 
         *   ``file_info_or_error`` is a dict containing the following keys (if success
-            is ``True``) or a `Twisted Failure`_ if there was a problem.
+            is ``True``) or a Twisted :ref:`Failure <core-howto-glossary-failure>`
+            if there was a problem.
 
             *   ``url`` - the url where the file was downloaded from. This is the url of
                 the request returned from the :meth:`~get_media_requests`

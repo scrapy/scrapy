@@ -33,5 +33,3 @@ Spider Loaders
 
 .. autoclass:: SpiderLoader
    :members:
-
-.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

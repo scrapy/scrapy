@@ -24,7 +24,7 @@ Scrapy 1.5.2 (2019-01-22)
 
   *The fix is backwards incompatible*, it enables telnet user-password
   authentication by default with a random generated password. If you can't
-  upgrade right away, please consider setting :setting:`TELNET_CONSOLE_PORT`
+  upgrade right away, please consider setting :setting:`TELNETCONSOLE_PORT`
   out of its default value.
 
   See :ref:`telnet console <topics-telnetconsole>` documentation for more info

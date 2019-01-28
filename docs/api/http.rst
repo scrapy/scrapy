@@ -62,4 +62,3 @@ Cookies
 
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

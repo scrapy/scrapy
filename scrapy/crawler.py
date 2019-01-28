@@ -177,7 +177,8 @@ class Crawler(object):
 class CrawlerRunner(object):
     """
     This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
+    crawlers inside an already setup :doc:`Twisted reactor
+    <core/howto/reactor-basics>`.
 
     The CrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -302,12 +303,13 @@ class CrawlerProcess(CrawlerRunner):
     A class to run multiple scrapy crawlers in a process simultaneously.
 
     This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
-    for starting a Twisted `reactor`_ and handling shutdown signals, like the
-    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+    for starting a :doc:`Twisted reactor <core/howto/reactor-basics>` and
+    handling shutdown signals, like the keyboard interrupt command Ctrl-C. It
+    also configures top-level logging.
 
     This utility should be a better fit than
     :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
-    Twisted `reactor`_ within your application.
+    :doc:`Twisted reactor <core/howto/reactor-basics>` within your application.
 
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -342,7 +344,8 @@ class CrawlerProcess(CrawlerRunner):
 
     def start(self, stop_after_crawl=True):
         """
-        This method starts a Twisted `reactor`_, adjusts its pool size to
+        This method starts a :doc:`Twisted reactor
+        <core/howto/reactor-basics>`, adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
         on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
 

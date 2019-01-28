@@ -112,17 +112,16 @@ class IPipeline(Interface):
     def process_item(self, item, spider):
         """This method is called for every item pipeline component. :meth:`process_item`
         must either: return a dict with data, return an :class:`~scrapy.item.Item`
-        (or any descendant class) object, return a `Twisted Deferred`_ or raise
-        :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-        processed by further pipeline components.
+        (or any descendant class) object, return a :doc:`Twisted Deferred
+        <core/howto/defer>` or raise :exc:`~scrapy.exceptions.DropItem`
+        exception. Dropped items are no longer processed by further pipeline
+        components.
 
         :param item: the item scraped
         :type item: :class:`~scrapy.item.Item` object or a dict
 
         :param spider: the spider which scraped the item
         :type spider: :class:`~scrapy.spiders.Spider` object
-
-        .. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
         """
 
     def open_spider(self, spider):

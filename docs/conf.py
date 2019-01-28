@@ -246,4 +246,5 @@ autodoc_inherit_docstrings = False
 intersphinx_mapping = {
     'parsel': ('https://parsel.readthedocs.io/en/latest', None),
     'python': ('https://docs.python.org/3', None),
+    'twisted': ('https://twisted.readthedocs.io/en/latest', None),
 }

@@ -70,8 +70,9 @@ Using errbacks to catch exceptions in request processing
 The errback of a request is a function that will be called when an exception
 is raise while processing it.
 
-It receives a `Twisted Failure`_ instance as first parameter and can be
-used to track connection establishment timeouts, DNS errors etc.
+It receives a Twisted :ref:`Failure <core-howto-glossary-failure>` instance as
+first parameter and can be used to track connection establishment timeouts,
+DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
 errors if needed::
@@ -271,6 +272,3 @@ Scrapy provides the following built-in Response subclasses:
 :class:`~http.TextResponse`, :class:`~http.HtmlResponse`,
 :class:`~http.XmlResponse`. You can also subclass the
 :class:`~http.Response` class to implement your own functionality.
-
-
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

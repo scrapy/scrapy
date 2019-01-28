@@ -102,8 +102,8 @@ class Request(object_ref):
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
-       with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
-       as first parameter.
+       with 404 HTTP errors and such. It receives a Twisted
+       :ref:`Failure <core-howto-glossary-failure>` instance as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
 

@@ -50,7 +50,5 @@ Here is a simple example showing how you can catch signals and perform some acti
 Deferred signal handlers
 ========================
 
-Some signals support returning `Twisted deferreds`_ from their handlers, see
-the :ref:`topics-signals-ref` to know which ones.
-
-.. _Twisted deferreds: https://twistedmatrix.com/documents/current/core/howto/defer.html
+Some signals support returning :doc:`Twisted deferreds <core/howto/defer>` from
+their handlers, see the :ref:`topics-signals-ref` to know which ones.
