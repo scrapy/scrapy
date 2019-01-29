@@ -118,6 +118,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.secret_key = u.password or secret_key
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
+        self.policy = settings.get('FEED_STORAGE_S3_ACL', 'private')
         if self.is_botocore:
             import botocore.session
             session = botocore.session.get_session()
@@ -137,12 +138,13 @@ class S3FeedStorage(BlockingFeedStorage):
         file.seek(0)
         if self.is_botocore:
             self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file)
+                Bucket=self.bucketname, Key=self.keyname, Body=file,
+                ACL=self.policy)
         else:
             conn = self.connect_s3(self.access_key, self.secret_key)
             bucket = conn.get_bucket(self.bucketname, validate=False)
             key = bucket.new_key(self.keyname)
-            key.set_contents_from_file(file)
+            key.set_contents_from_file(file, policy=self.policy)
             key.close()
 
 
