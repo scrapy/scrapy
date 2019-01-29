@@ -75,6 +75,9 @@ New extensibility features
 * :signal:`request_reached_downloader` is fired when Downloader gets
   a new Request; this signal can be useful e.g. for custom Schedulers
   (:issue:`3393`).
+* new SitemapSpider :meth:`~.SitemapSpider.sitemap_filter` method which allows
+  to select sitemap entries based on their attributes in SitemapSpider
+  subclasses (:issue:`3512`).
 
 New FilePipeline and MediaPipeline features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,6 +128,7 @@ Usability and other improvements, cleanups
 * unneeded .strip() call is removed (:issue:`3519`);
 * collections.deque is used to store MiddlewareManager methods instead
   of a list (:issue:`3476`)
+* Referer header value is added to RFPDupeFilter log messages (:issue:`3588`)
 
 Bug fixes
 ~~~~~~~~~
@@ -154,7 +158,8 @@ Documentation improvements
   (:issue:`3367`, :issue:`3468`);
 * fixed :setting:`RETRY_HTTP_CODES` default values in docs (:issue:`3335`);
 * remove unused `DEPTH_STATS` option from docs (:issue:`3245`);
-* other cleanups (:issue:`3347`, :issue:`3350`, :issue:`3445`).
+* other cleanups (:issue:`3347`, :issue:`3350`, :issue:`3445`, :issue:`3544`,
+  :issue:`3605`).
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
