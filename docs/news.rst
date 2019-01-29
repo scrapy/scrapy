@@ -3,6 +3,8 @@
 Release notes
 =============
 
+.. _release-1.6.0:
+
 Scrapy 1.6.0 (unreleased)
 -------------------------
 
@@ -18,10 +20,12 @@ Highlights:
   :signal:`request_reached_downloader` signals; ``from_crawler`` support
   for feed exporters, feed storages and dupefilters.
 * ``scrapy.contracts`` fixes and new features;
-* telnet console security improvements;
+* telnet console security improvements, first released as a
+  backport in :ref:`release-1.5.2`;
 * clean-up of the deprecated code;
 * various bug fixes, small new features and usability improvements across
   the codebase.
+
 
 Selector API changes
 ~~~~~~~~~~~~~~~~~~~~
@@ -230,6 +234,8 @@ Cleanups
 * additional files are included to sdist (:issue:`3495`);
 * code style fixes (:issue:`3405`, :issue:`3304`)
 
+.. _release-1.5.2:
+
 Scrapy 1.5.2 (2019-01-22)
 -------------------------
 
@@ -247,6 +253,8 @@ Scrapy 1.5.2 (2019-01-22)
 
 * Backport CI build failure under GCE environemnt due to boto import error.
 
+.. _release-1.5.1:
+
 Scrapy 1.5.1 (2018-07-12)
 -------------------------
 
@@ -261,6 +269,9 @@ This is a maintenance release with important bug fixes, but no new features:
   :issue:`3123`, :issue:`3127`, :issue:`3189`, :issue:`3224`, :issue:`3280`,
   :issue:`3279`, :issue:`3201`, :issue:`3260`, :issue:`3284`, :issue:`3298`,
   :issue:`3294`).
+
+
+.. _release-1.5.0:
 
 Scrapy 1.5.0 (2017-12-29)
 -------------------------
@@ -373,6 +384,7 @@ Docs
 - Document ``from_crawler`` methods for spider and downloader middlewares
   (:issue:`3019`)
 
+.. _release-1.4.0:
 
 Scrapy 1.4.0 (2017-05-18)
 -------------------------
@@ -559,6 +571,8 @@ Documentation
 - Clarify ``allowed_domains`` example (:issue:`2670`)
 
 
+.. _release-1.3.3:
+
 Scrapy 1.3.3 (2017-03-10)
 -------------------------
 
@@ -571,6 +585,7 @@ Bug fixes
   A new setting is introduced to toggle between warning or exception if needed ;
   see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
 
+.. _release-1.3.2:
 
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
@@ -581,6 +596,8 @@ Bug fixes
 - Preserve request class when converting to/from dicts (utils.reqser) (:issue:`2510`).
 - Use consistent selectors for author field in tutorial (:issue:`2551`).
 - Fix TLS compatibility in Twisted 17+ (:issue:`2558`)
+
+.. _release-1.3.1:
 
 Scrapy 1.3.1 (2017-02-08)
 -------------------------
@@ -630,6 +647,8 @@ Cleanups
 - Remove dead code supporting old Twisted versions (:issue:`2544`).
 
 
+.. _release-1.3.0:
+
 Scrapy 1.3.0 (2016-12-21)
 -------------------------
 
@@ -669,12 +688,15 @@ Dependencies & Cleanups
 - ``ChunkedTransferMiddleware`` is deprecated and removed from the default
   downloader middlewares.
 
+.. _release-1.2.3:
 
 Scrapy 1.2.3 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+
+.. _release-1.2.2:
 
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
@@ -711,6 +733,8 @@ Other changes
 .. _conda-forge: https://anaconda.org/conda-forge/scrapy
 
 
+.. _release-1.2.1:
+
 Scrapy 1.2.1 (2016-10-21)
 -------------------------
 
@@ -734,6 +758,8 @@ Other changes
 
 - Removed ``www.`` from ``start_urls`` in built-in spider templates (:issue:`2299`).
 
+
+.. _release-1.2.0:
 
 Scrapy 1.2.0 (2016-10-03)
 -------------------------
@@ -803,12 +829,14 @@ Documentation
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
 
+.. _release-1.1.4:
 
 Scrapy 1.1.4 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+.. _release-1.1.3:
 
 Scrapy 1.1.3 (2016-09-22)
 -------------------------
@@ -826,6 +854,7 @@ Documentation
   rewritten to use http://toscrape.com websites
   (:issue:`2236`, :issue:`2249`, :issue:`2252`).
 
+.. _release-1.1.2:
 
 Scrapy 1.1.2 (2016-08-18)
 -------------------------
@@ -840,6 +869,7 @@ Bug fixes
 - :setting:`IMAGES_EXPIRES` default value set back to 90
   (the regression was introduced in 1.1.1)
 
+.. _release-1.1.1:
 
 Scrapy 1.1.1 (2016-07-13)
 -------------------------
@@ -892,6 +922,7 @@ Tests
 
 - Upgrade py.test requirement on Travis CI and Pin pytest-cov to 2.2.1 (:issue:`2095`)
 
+.. _release-1.1.0:
 
 Scrapy 1.1.0 (2016-05-11)
 -------------------------
@@ -1081,12 +1112,14 @@ Bugfixes
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
 
+.. _release-1.0.7:
 
 Scrapy 1.0.7 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+.. _release-1.0.6:
 
 Scrapy 1.0.6 (2016-05-04)
 -------------------------
@@ -1096,6 +1129,7 @@ Scrapy 1.0.6 (2016-05-04)
 - DOC: Support for Sphinx 1.4+ (:issue:`1893`)
 - DOC: Consistency in selectors examples (:issue:`1869`)
 
+.. _release-1.0.5:
 
 Scrapy 1.0.5 (2016-02-04)
 -------------------------
@@ -1105,6 +1139,7 @@ Scrapy 1.0.5 (2016-02-04)
 - DOC: Fixed typos in tutorial and media-pipeline (:commit:`808a9ea` and :commit:`803bd87`)
 - DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
 
+.. _release-1.0.4:
 
 Scrapy 1.0.4 (2015-12-30)
 -------------------------
@@ -1158,11 +1193,15 @@ Scrapy 1.0.4 (2015-12-30)
 - Small grammatical change (:commit:`8752294`)
 - Add openssl version to version command (:commit:`13c45ac`)
 
+.. _release-1.0.3:
+
 Scrapy 1.0.3 (2015-08-11)
 -------------------------
 
 - add service_identity to scrapy install_requires (:commit:`cbc2501`)
 - Workaround for travis#296 (:commit:`66af9cd`)
+
+.. _release-1.0.2:
 
 Scrapy 1.0.2 (2015-08-06)
 -------------------------
@@ -1174,6 +1213,8 @@ Scrapy 1.0.2 (2015-08-06)
 - Fixed typos (:commit:`a9ae7b0`)
 - Fix doc reference. (:commit:`7c8a4fe`)
 
+.. _release-1.0.1:
+
 Scrapy 1.0.1 (2015-07-01)
 -------------------------
 
@@ -1183,6 +1224,8 @@ Scrapy 1.0.1 (2015-07-01)
 - DOC Bring Ubuntu and Archlinux outside of Windows subsection (:commit:`392233f`)
 - DOC remove version suffix from ubuntu package (:commit:`5303c66`)
 - DOC Update release date for 1.0 (:commit:`c89fa29`)
+
+.. _release-1.0.0:
 
 Scrapy 1.0.0 (2015-06-19)
 -------------------------
