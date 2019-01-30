@@ -63,7 +63,8 @@ Telnet console
 ~~~~~~~~~~~~~~
 
 **Backwards incompatible**: Scrapy's telnet console now requires username
-and password. See :ref:`topics-telnetconsole` for more details.
+and password. See :ref:`topics-telnetconsole` for more details. This change
+fixes a **security issue**; see :ref:`release-1.5.2` release notes for details.
 
 New extensibility features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,7 +118,7 @@ Usability improvements
 * Link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
   "flv" is added to common video extensions (:issue:`3165`)
 * better error message when an exporter is disabled (:issue:`3358`);
-* `scrapy shell --help` mentions syntax required for local files
+* ``scrapy shell --help`` mentions syntax required for local files
   (``./file.html``) - :issue:`3496`.
 * Referer header value is added to RFPDupeFilter log messages (:issue:`3588`)
 
