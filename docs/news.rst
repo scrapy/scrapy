@@ -26,7 +26,6 @@ Highlights:
 * various bug fixes, small new features and usability improvements across
   the codebase.
 
-
 Selector API changes
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -82,6 +81,8 @@ New extensibility features
 * new SitemapSpider :meth:`~.SitemapSpider.sitemap_filter` method which allows
   to select sitemap entries based on their attributes in SitemapSpider
   subclasses (:issue:`3512`).
+* Lazy loading of Downloader Handlers is now optional; this enables better
+  initialization error handling in custom Downloader Handlers (:issue:`3394`).
 
 New FilePipeline and MediaPipeline features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,34 +105,20 @@ New FilePipeline and MediaPipeline features
 * Fixed errback handling in contracts, e.g. for cases where a contract
   is executed for URL which returns non-200 response (:issue:`3371`).
 
-Usability and other improvements, cleanups
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usability improvements
+~~~~~~~~~~~~~~~~~~~~~~
 
-* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
-  in a Windows environment on CI (:issue:`3315`).
-* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`).
-* Lazy loading of Downloader Handlers is now optional; this enables better
-  initialization error handling in custom Downloader Handlers (:issue:`3394`).
-* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
-  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
-* better error message when an exporter is disabled (:issue:`3358`);
-* ``scrapy.http.cookies.CookieJar.clear`` accepts "domain", "path" and "name"
-  optional arguments (:issue:`3231`).
 * more stats for RobotsTxtMiddleware (:issue:`3100`)
 * INFO log level is used to show telnet host/port (:issue:`3115`)
 * a message is added to IgnoreRequest in RobotsTxtMiddleware (:issue:`3113`)
 * better validation of ``url`` argument in ``Response.follow`` (:issue:`3131`)
 * non-zero exit code is returned from Scrapy commands when error happens
-  on spider inititalization (:issue:`3226`);
-* link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
+  on spider inititalization (:issue:`3226`)
+* Link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
   "flv" is added to common video extensions (:issue:`3165`)
+* better error message when an exporter is disabled (:issue:`3358`);
 * `scrapy shell --help` mentions syntax required for local files
   (``./file.html``) - :issue:`3496`.
-* additional files are included to sdist (:issue:`3495`);
-* code style fixes (:issue:`3405`, :issue:`3304`);
-* unneeded .strip() call is removed (:issue:`3519`);
-* collections.deque is used to store MiddlewareManager methods instead
-  of a list (:issue:`3476`)
 * Referer header value is added to RFPDupeFilter log messages (:issue:`3588`)
 
 Bug fixes
@@ -195,44 +182,21 @@ Other deprecation removals:
 * Deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes
   are removed (:issue:`3327`, :issue:`3359`).
 
-Internal improvements
-~~~~~~~~~~~~~~~~~~~~~
+Other improvements, cleanups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* ``from_crawler`` support is added to dupefilters (:issue:`2956`); this allows
-  to access e.g. settings or a spider from a dupefilter.
-* :signal:`item_error` is fired when an error happens in a pipeline
-  (:issue:`3256`);
-* :signal:`request_reached_downloader` is fired when Downloader gets
-  a new Request; this signal can be useful e.g. for custom Schedulers
-  (:issue:`3393`).
+* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
+  in a Windows environment on CI (:issue:`3315`).
+* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`).
+* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
+  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
 * ``scrapy.http.cookies.CookieJar.clear`` accepts "domain", "path" and "name"
   optional arguments (:issue:`3231`).
-
-Usability improvements
-~~~~~~~~~~~~~~~~~~~~~~
-
-* more stats for RobotsTxtMiddleware (:issue:`3100`)
-* INFO log level is used to show telnet host/port (:issue:`3115`)
-* a message is added to IgnoreRequest in RobotsTxtMiddleware (:issue:`3113`)
-* better validation of ``url`` argument in ``Response.follow`` (:issue:`3131`)
-* non-zero exit code is returned from Scrapy commands when error happens
-  on spider inititalization (:issue:`3226`)
-* Link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
-  "flv" is added to common video extensions (:issue:`3165`)
-
-Bug fixes
-~~~~~~~~~
-* proper handling of pickling errors in Python 3 when serializing objects
-  for disk queues (:issue:`3082`)
-* flags are now preserved when copying Requests (:issue:`3342`);
-* FormRequest.from_response clickdata shouldn't ignore elements with
-  ``input[type=image]`` (:issue:`3153`).
-* FormRequest.from_response should preserve duplicate keys (:issue:`3247`)
-
-Cleanups
-~~~~~~~~
 * additional files are included to sdist (:issue:`3495`);
-* code style fixes (:issue:`3405`, :issue:`3304`)
+* code style fixes (:issue:`3405`, :issue:`3304`);
+* unneeded .strip() call is removed (:issue:`3519`);
+* collections.deque is used to store MiddlewareManager methods instead
+  of a list (:issue:`3476`)
 
 .. _release-1.5.2:
 
