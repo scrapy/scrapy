@@ -24,7 +24,8 @@ from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage, GCSFeedStorage,
     S3FeedStorage, StdoutFeedStorage,
     BlockingFeedStorage)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
+from scrapy.utils.test import (assert_aws_environ, get_s3_content_and_delete,
+    get_crawler, mock_google_cloud_storage)
 from scrapy.utils.python import to_native_str
 
 
@@ -207,21 +208,15 @@ class GCSFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         try:
-            from google.cloud.storage import Client, Bucket, Blob
+            from google.cloud.storage import Client
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
         uri = 'gcs://mybucket/export.csv'
         project_id = 'myproject-123'
-        with mock.patch('google.cloud.storage.Client') as m:
-            client_mock = mock.create_autospec(Client)
+        (client_mock, bucket_mock, blob_mock) = mock_google_cloud_storage()
+        with mock.patch('google.cloud.storage.Client') as m:    
             m.return_value = client_mock
-
-            bucket_mock = mock.create_autospec(Bucket)
-            client_mock.get_bucket.return_value = bucket_mock
-
-            blob_mock = mock.create_autospec(Blob)
-            bucket_mock.blob.return_value = blob_mock
 
             f = mock.Mock()
             storage = GCSFeedStorage(uri, project_id)

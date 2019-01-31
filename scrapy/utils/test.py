@@ -7,6 +7,7 @@ import os
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
+from tests import mock
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore
@@ -91,3 +92,18 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+def mock_google_cloud_storage():
+    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
+    classes and set their proper return values.
+    """
+    from google.cloud.storage import Client, Bucket, Blob
+    client_mock = mock.create_autospec(Client)
+
+    bucket_mock = mock.create_autospec(Bucket)
+    client_mock.get_bucket.return_value = bucket_mock
+
+    blob_mock = mock.create_autospec(Blob)
+    bucket_mock.blob.return_value = blob_mock
+
+    return (client_mock, bucket_mock, blob_mock)
