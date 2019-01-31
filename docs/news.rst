@@ -5,7 +5,7 @@ Release notes
 
 .. _release-1.6.0:
 
-Scrapy 1.6.0 (unreleased)
+Scrapy 1.6.0 (2019-01-30)
 -------------------------
 
 Highlights:
