@@ -16,7 +16,7 @@ Motivation
 ==========
 
 When you use Selectors in Scrapy, your final goal is to "extract" the data that
-you've selected, as the [https://doc.scrapy.org/en/latest/topics/selectors.html
+you've selected, as the [https://docs.scrapy.org/en/latest/topics/selectors.html
 XPath Selectors documentation] says (bolding by me):
 
    When you’re scraping web pages, the most common task you need to perform is
@@ -71,5 +71,5 @@ webpage or set of pages.
 References
 ==========
 
- 1. XPath Selectors (https://doc.scrapy.org/topics/selectors.html)
+ 1. XPath Selectors (https://docs.scrapy.org/topics/selectors.html)
  2. XPath and XSLT with lxml (http://lxml.de/xpathxslt.html)

@@ -1,7 +1,7 @@
 """
 tests: this package contains all Scrapy unittests
 
-see https://doc.scrapy.org/en/latest/contributing.html#running-tests
+see https://docs.scrapy.org/en/latest/contributing.html#running-tests
 """
 
 import os

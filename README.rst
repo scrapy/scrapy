@@ -51,18 +51,18 @@ The quick way::
     pip install scrapy
 
 For more details see the install section in the documentation:
-https://doc.scrapy.org/en/latest/intro/install.html
+https://docs.scrapy.org/en/latest/intro/install.html
 
 Documentation
 =============
 
-Documentation is available online at https://doc.scrapy.org/ and in the ``docs``
+Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
 
 Releases
 ========
 
-You can find release notes at https://doc.scrapy.org/en/latest/news.html
+You can find release notes at https://docs.scrapy.org/en/latest/news.html
 
 Community (blog, twitter, mail list, IRC)
 =========================================
@@ -72,7 +72,7 @@ See https://scrapy.org/community/
 Contributing
 ============
 
-See https://doc.scrapy.org/en/master/contributing.html
+See https://docs.scrapy.org/en/master/contributing.html
 
 Code of Conduct
 ---------------

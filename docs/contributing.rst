@@ -7,7 +7,7 @@ Contributing to Scrapy
 .. important::
 
     Double check that you are reading the most recent version of this document at
-    https://doc.scrapy.org/en/master/contributing.html
+    https://docs.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
