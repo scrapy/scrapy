@@ -146,6 +146,32 @@ class S3FeedStorage(BlockingFeedStorage):
             key.close()
 
 
+
+class GCSFeedStorage(BlockingFeedStorage):
+
+    project_id = None
+    bucket_name = None
+    blob_name = None
+
+    def __init__(self, uri, project_id):
+        self.project_id = project_id
+        u = urlparse(uri)
+        self.bucket_name = u.hostname
+        self.blob_name = u.path[1:]  # remove first "/"
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return cls(uri, crawler.settings['GCS_PROJECT_ID'])
+
+    def _store_in_thread(self, file):
+        file.seek(0)
+        from google.cloud.storage import Client
+        client = Client(project=self.project_id)
+        bucket = client.get_bucket(self.bucket_name)
+        blob = bucket.blob(self.blob_name)
+        blob.upload_from_file(file)
+
+
 class FTPFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
