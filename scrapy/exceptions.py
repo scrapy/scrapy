@@ -8,20 +8,42 @@ new exceptions here without documenting them there.
 # Internal
 
 class NotConfigured(Exception):
-    """Indicates a missing configuration situation"""
+    """This exception can be raised by some components to indicate that they
+    will remain disabled. Those components include:
+
+    * Extensions
+    * Item pipelines
+    * Downloader middlewares
+    * Spider middlewares
+
+    The exception must be raised in the component's ``__init__`` method.
+    """
     pass
 
 # HTTP and crawling
 
 class IgnoreRequest(Exception):
-    """Indicates a decision was made not to process a request"""
+    """This exception can be raised by the Scheduler or any downloader
+    middleware to indicate that the request should be ignored."""
 
 class DontCloseSpider(Exception):
-    """Request the spider not to be closed yet"""
+    """This exception can be raised in a :signal:`spider_idle` signal handler
+    to prevent the spider from being closed."""
     pass
 
 class CloseSpider(Exception):
-    """Raise this from callbacks to request the spider to be closed"""
+    """This exception can be raised from a spider callback to request the
+    spider to be closed/stopped. Supported arguments:
+
+    :param reason: the reason for closing
+    :type reason: str
+
+    For example::
+
+        def parse_page(self, response):
+            if 'Bandwidth exceeded' in response.body:
+                raise CloseSpider('bandwidth_exceeded')
+    """
 
     def __init__(self, reason='cancelled'):
         super(CloseSpider, self).__init__()
@@ -30,11 +52,13 @@ class CloseSpider(Exception):
 # Items
 
 class DropItem(Exception):
-    """Drop item from the item pipeline"""
+    """The exception that must be raised by item pipeline stages to stop
+    processing an Item. For more information see
+    :ref:`topics-item-pipeline`."""
     pass
 
 class NotSupported(Exception):
-    """Indicates a feature or method is not supported"""
+    """This exception is raised to indicate an unsupported feature."""
     pass
 
 # Commands

@@ -12,38 +12,80 @@ from scrapy.exceptions import NotConfigured, NotSupported
 
 
 class XMLFeedSpider(Spider):
-    """
-    This class intends to be the base class for spiders that scrape
-    from XML feeds.
+    """XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
+    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
+    and ``html``.  It's recommended to use the ``iternodes`` iterator for
+    performance reasons, since the ``xml`` and ``html`` iterators generate the
+    whole DOM at once in order to parse it.  However, using ``html`` as the
+    iterator may be useful when parsing XML with bad markup.
 
-    You can choose whether to parse the file using the 'iternodes' iterator, an
-    'xml' selector, or an 'html' selector.  In most cases, it's convenient to
-    use iternodes, since it's a faster and cleaner.
+    To set the iterator and the tag name, you must define the following class
+    attributes and overrideable methods:
     """
 
+    #: A string which defines the iterator to use. It can be either:
+    #:
+    #: - ``'iternodes'`` - a fast iterator based on regular expressions
+    #:
+    #: - ``'html'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+    #:   Keep in mind this uses DOM parsing and must load all DOM in memory
+    #:   which could be a problem for big feeds
+    #:
+    #: - ``'xml'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+    #:   Keep in mind this uses DOM parsing and must load all DOM in memory
+    #:   which could be a problem for big feeds
+    #:
+    #: It defaults to: ``'iternodes'``.
     iterator = 'iternodes'
+
+    #: A string with the name of the node (or element) to iterate in.
+    #:
+    #: Example::
+    #:
+    #:     itertag = 'product'
     itertag = 'item'
+
+    #: A list of ``(prefix, uri)`` tuples which define the namespaces
+    #: available in that document that will be processed with this spider. The
+    #: ``prefix`` and ``uri`` will be used to automatically register
+    #: namespaces using the
+    #: :meth:`~scrapy.selector.Selector.register_namespace` method.
+    #:
+    #: You can then specify nodes with namespaces in the :attr:`itertag`
+    #: attribute.
+    #:
+    #: Example::
+    #:
+    #:     class YourSpider(XMLFeedSpider):
+    #:
+    #:         namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
+    #:         itertag = 'n:url'
+    #:         # ...
     namespaces = ()
 
     def process_results(self, response, results):
-        """This overridable method is called for each result (item or request)
-        returned by the spider, and it's intended to perform any last time
-        processing required before returning the results to the framework core,
-        for example setting the item GUIDs. It receives a list of results and
-        the response which originated that results. It must return a list of
-        results (Items or Requests).
-        """
+        """This method is called for each result (item or request) returned by the
+        spider, and it's intended to perform any last time processing required
+        before returning the results to the framework core, for example setting the
+        item IDs. It receives a list of results and the response which originated
+        those results. It must return a list of results (Items or Requests)."""
         return results
 
     def adapt_response(self, response):
-        """You can override this function in order to make any changes you want
-        to into the feed before parsing it. This function must return a
-        response.
-        """
+        """A method that receives the response as soon as it arrives from the spider
+        middleware, before the spider starts parsing it. It can be used to modify
+        the response body before parsing it. This method receives a response and
+        also returns a response (it could be the same or another one)."""
         return response
 
     def parse_node(self, response, selector):
-        """This method must be overriden with your custom spider functionality"""
+        """This method is called for the nodes matching the provided tag name
+        (``itertag``).  Receives the response and an
+        :class:`~scrapy.selector.Selector` for each node.  Overriding this
+        method is mandatory. Otherwise, you spider won't work.  This method
+        must return either a :class:`~scrapy.item.Item` object, a
+        :class:`Request <scrapy.Request>` object, or an iterable containing any of
+        them."""
         if hasattr(self, 'parse_item'):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
@@ -93,6 +135,7 @@ class XMLFeedSpider(Spider):
 
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
+
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
 
@@ -100,8 +143,15 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter = None # When this is None, python's csv module's default delimiter is used
-    quotechar = None # When this is None, python's csv module's default quotechar is used
+    #: A string with the separator character for each field in the CSV file
+    #: Defaults to ``','`` (comma).
+    delimiter = None
+
+    #: A string with the enclosure character for each field in the CSV file
+    #: Defaults to ``'"'`` (quotation mark).
+    quotechar = None
+
+    #: A list of the column names in the CSV file.
     headers = None
 
     def process_results(self, response, results):
@@ -113,7 +163,13 @@ class CSVFeedSpider(Spider):
         return response
 
     def parse_row(self, response, row):
-        """This method must be overriden with your custom spider functionality"""
+        """Receives a response and a dict (representing each row) with a key for each
+        provided (or detected) header of the CSV file.  This spider also gives the
+        opportunity to override ``adapt_response`` and ``process_results`` methods
+        for pre- and post-processing purposes.
+
+        This method must be overriden with your custom spider functionality
+        """
         raise NotImplementedError
 
     def parse_rows(self, response):

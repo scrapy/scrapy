@@ -5,6 +5,12 @@ from scrapy.utils.python import global_object_name
 
 
 class DownloaderStats(object):
+    """Middleware that stores stats of all requests, responses and exceptions that
+    pass through it.
+
+    To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
+    setting.
+    """
 
     def __init__(self, stats):
         self.stats = stats

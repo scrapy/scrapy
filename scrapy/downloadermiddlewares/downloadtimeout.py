@@ -8,6 +8,16 @@ from scrapy import signals
 
 
 class DownloadTimeoutMiddleware(object):
+    """This middleware sets the download timeout for requests specified in the
+    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
+    spider attribute.
+
+    .. note::
+
+        You can also set download timeout per-request using
+        :reqmeta:`download_timeout` Request.meta key; this is supported
+        even when DownloadTimeoutMiddleware is disabled.
+    """
 
     def __init__(self, timeout=180):
         self._timeout = timeout

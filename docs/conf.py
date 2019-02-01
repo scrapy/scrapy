@@ -28,7 +28,9 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'scrapydocs',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinxcontrib.zopeext.autointerface',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

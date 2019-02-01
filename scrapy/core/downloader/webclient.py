@@ -56,6 +56,13 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.write(self.factory.body)
 
     def lineReceived(self, line):
+        """Parse the status line and headers for an HTTP request.
+
+        @param line: Part of an HTTP request header. Request bodies are parsed
+        in L{HTTPClient.rawDataReceived}.
+
+        @type line: C{bytes}
+        """
         return HTTPClient.lineReceived(self, line.rstrip())
 
     def handleHeader(self, key, value):

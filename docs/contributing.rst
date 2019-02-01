@@ -165,18 +165,9 @@ Scrapy:
 Documentation policies
 ======================
 
-* **Don't** use docstrings for documenting classes, or methods which are
-  already documented in the official (sphinx) documentation. Alternatively,
-  **do** provide a docstring, but make sure sphinx documentation uses
-  autodoc_ extension to pull the docstring. For example, the
-  :meth:`ItemLoader.add_value` method should be either
-  documented only in the sphinx documentation (not as a docstring), or
-  it should have a docstring which is pulled to sphinx documentation using
-  autodoc_ extension.
-
-* **Do** use docstrings for documenting functions not present in the official
-  (sphinx) documentation, such as functions from ``scrapy.utils`` package and
-  its sub-modules.
+Use docstrings for documenting API members (classes, methods, etc.) and make
+sure that the Sphinx documentation uses the autodoc_ extension to pull the
+docstring.
 
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 

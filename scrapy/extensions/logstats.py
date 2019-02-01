@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class LogStats(object):
-    """Log basic scraping stats periodically"""
+    """Log basic stats, like crawled pages and scraped items, periodically."""
 
     def __init__(self, stats, interval=60.0):
         self.stats = stats

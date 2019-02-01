@@ -13,10 +13,23 @@ from scrapy.utils.spider import iter_spider_classes
 
 @implementer(ISpiderLoader)
 class SpiderLoader(object):
+    """Default implementation of the
+    :interface:`ISpiderLoader <scrapy.interfaces.ISpiderLoader>` interface.
+
+    It loads the :class:`Spider <scrapy.Spider>` subclasses found recursively
+    in the modules of the :setting:`SPIDER_MODULES` setting.
+
+    It resolves :class:`Spider <scrapy.Spider>` subclasses based on their
+    :class:`name <scrapy.Spider.name>`.
+
+    It matches a :class:`Spider <scrapy.Spider>` subclass to a
+    :class:`Request <scrapy.Request>` object when the domain name of
+    the request URL is a perfect match or a subdomain of the :class:`name
+    <scrapy.Spider.name>` or any of the :class:`allowed_domains
+    <scrapy.Spider.allowed_domains>` of that :class:`Spider <scrapy.Spider>`
+    subclass.
     """
-    SpiderLoader is a class which locates and loads spiders
-    in a Scrapy project.
-    """
+
     def __init__(self, settings):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
@@ -61,24 +74,14 @@ class SpiderLoader(object):
         return cls(settings)
 
     def load(self, spider_name):
-        """
-        Return the Spider class for the given spider name. If the spider
-        name is not found, raise a KeyError.
-        """
         try:
             return self._spiders[spider_name]
         except KeyError:
             raise KeyError("Spider not found: {}".format(spider_name))
 
     def find_by_request(self, request):
-        """
-        Return the list of spider names that can handle the given request.
-        """
         return [name for name, cls in self._spiders.items()
                 if cls.handles_request(request)]
 
     def list(self):
-        """
-        Return a list with the names of all spiders available in the project.
-        """
         return list(self._spiders.keys())

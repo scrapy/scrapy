@@ -53,9 +53,59 @@ class BaseRedirectMiddleware(object):
 
 
 class RedirectMiddleware(BaseRedirectMiddleware):
-    """
-    Handle redirection of requests based on response status
-    and meta-refresh html tag.
+    """This middleware handles redirection of requests based on response status.
+
+    .. reqmeta:: redirect_urls
+
+    The urls which the request goes through (while being redirected) can be found
+    in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
+
+    The :class:`RedirectMiddleware` can be configured through the following
+    settings (see the settings documentation for more info):
+
+    * :setting:`REDIRECT_ENABLED`
+    * :setting:`REDIRECT_MAX_TIMES`
+
+    .. reqmeta:: dont_redirect
+
+    If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_redirect``
+    key set to True, the request will be ignored by this middleware.
+
+    If you want to handle some redirect status codes in your spider, you can
+    specify these in the ``handle_httpstatus_list`` spider attribute.
+
+    For example, if you want the redirect middleware to ignore 301 and 302
+    responses (and pass them through to your spider) you can do this::
+
+        class MySpider(CrawlSpider):
+            handle_httpstatus_list = [301, 302]
+
+    The ``handle_httpstatus_list`` key of :attr:`Request.meta
+    <scrapy.http.Request.meta>` can also be used to specify which response codes to
+    allow on a per-request basis. You can also set the meta key
+    ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
+    for a request.
+
+
+    .. rubric:: RedirectMiddleware settings
+
+    .. setting:: REDIRECT_ENABLED
+
+    .. rubric:: REDIRECT_ENABLED
+
+    .. versionadded:: 0.13
+
+    Default: ``True``
+
+    Whether the Redirect middleware will be enabled.
+
+    .. setting:: REDIRECT_MAX_TIMES
+
+    .. rubric:: REDIRECT_MAX_TIMES
+
+    Default: ``20``
+
+    The maximum number of redirections that will be followed for a single request.
     """
     def process_response(self, request, response, spider):
         if (request.meta.get('dont_redirect', False) or
@@ -81,6 +131,40 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
+    """This middleware handles redirection of requests based on meta-refresh html tag.
+
+    The :class:`MetaRefreshMiddleware` can be configured through the following
+    settings (see the settings documentation for more info):
+
+    * :setting:`METAREFRESH_ENABLED`
+    * :setting:`METAREFRESH_MAXDELAY`
+
+    This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
+    and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`
+
+
+    .. rubric:: MetaRefreshMiddleware settings
+
+    .. setting:: METAREFRESH_ENABLED
+
+    .. rubric::METAREFRESH_ENABLED
+
+    .. versionadded:: 0.17
+
+    Default: ``True``
+
+    Whether the Meta Refresh middleware will be enabled.
+
+    .. setting:: METAREFRESH_MAXDELAY
+
+    .. rubric::METAREFRESH_MAXDELAY
+
+    Default: ``100``
+
+    The maximum meta-refresh delay (in seconds) to follow the redirection.
+    Some sites use meta-refresh for redirecting to a session expired page, so we
+    restrict automatic redirection to the maximum delay.
+    """
 
     enabled_setting = 'METAREFRESH_ENABLED'
 

@@ -12,6 +12,46 @@ from scrapy.utils.python import to_bytes
 
 
 class HttpProxyMiddleware(object):
+    """This middleware sets the HTTP proxy to use for requests, by setting the
+    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
+
+    .. versionadded:: 0.8
+
+    .. reqmeta:: proxy
+
+    Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+    the following environment variables:
+
+    * ``http_proxy``
+    * ``https_proxy``
+    * ``no_proxy``
+
+    You can also set the meta key ``proxy`` per-request, to a value like
+    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
+    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
+    environment variables, and it will also ignore ``no_proxy`` environment variable.
+
+    .. rubric:: HttpProxyMiddleware settings
+
+    .. setting:: HTTPPROXY_ENABLED
+
+    .. rubric:: HTTPPROXY_ENABLED
+
+    Default: ``True``
+
+    Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+    .. setting:: HTTPPROXY_AUTH_ENCODING
+
+    .. rubric:: HTTPPROXY_AUTH_ENCODING
+
+    Default: ``"latin-1"``
+
+    The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
+
+    .. _urllib: https://docs.python.org/2/library/urllib.html
+    .. _urllib2: https://docs.python.org/2/library/urllib2.html
+    """
 
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding

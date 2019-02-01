@@ -207,12 +207,13 @@ keeping all the previously existing metadata values.
 Item objects
 ============
 
-.. class:: Item([arg])
+.. autoclass:: Item
+    :inherited-members:
 
-    Return a new Item optionally initialized from the given argument.
-
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    ..
+       The fields attribute documentation below is copy-pasted from the source
+       code because a Sphinx bug prevents it from being displayed otherwise:
+       https://github.com/sphinx-doc/sphinx/issues/741
 
     .. attribute:: fields
 
@@ -221,19 +222,12 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
 
 Field objects
 =============
 
-.. class:: Field([arg])
+.. autoclass:: Field
 
-    The :class:`Field` class is just an alias to the built-in `dict`_ class and
-    doesn't provide any extra functionality or attributes. In other words,
-    :class:`Field` objects are plain-old Python dicts. A separate class is used
-    to support the :ref:`item declaration syntax <topics-items-declaring>`
-    based on class attributes.
 
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
-
-
+.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict

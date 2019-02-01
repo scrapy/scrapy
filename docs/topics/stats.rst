@@ -81,28 +81,11 @@ default Stats Collector used is the :class:`MemoryStatsCollector`.
 MemoryStatsCollector
 --------------------
 
-.. class:: MemoryStatsCollector
+.. autoclass:: MemoryStatsCollector
+   :members:
 
-    A simple stats collector that keeps the stats of the last scraping run (for
-    each spider) in memory, after they're closed. The stats can be accessed
-    through the :attr:`spider_stats` attribute, which is a dict keyed by spider
-    domain name.
-
-    This is the default Stats Collector used in Scrapy.
-
-    .. attribute:: spider_stats
-
-       A dict of dicts (keyed by spider name) containing the stats of the last
-       scraping run for each spider.
 
 DummyStatsCollector
 -------------------
 
-.. class:: DummyStatsCollector
-
-    A Stats collector which does nothing but is very efficient (because it does
-    nothing). This stats collector can be set via the :setting:`STATS_CLASS`
-    setting, to disable stats collect in order to improve performance. However,
-    the performance penalty of stats collection is usually marginal compared to
-    other Scrapy workload like parsing pages.
-
+.. autoclass:: DummyStatsCollector

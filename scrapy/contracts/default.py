@@ -7,7 +7,10 @@ from . import Contract
 
 # contracts
 class UrlContract(Contract):
-    """ Contract to set the url of the request (mandatory)
+    """Contract to set the url of the request (mandatory)
+
+    Example::
+
         @url http://scrapy.org
     """
 
@@ -19,12 +22,15 @@ class UrlContract(Contract):
 
 
 class ReturnsContract(Contract):
-    """ Contract to check the output of a callback
+    """This contract (``@returns``) sets lower and upper bounds for the items
+    and requests returned by the spider.
 
-        general form:
-        @returns request(s)/item(s) [min=1 [max]]
+    The upper bound is optional::
 
-        e.g.:
+        @returns item(s)|request(s) [min=1 [max]]
+
+    Examples::
+
         @returns request
         @returns request 2
         @returns request 2 10
@@ -75,8 +81,12 @@ class ReturnsContract(Contract):
 
 
 class ScrapesContract(Contract):
-    """ Contract to check presence of fields in scraped items
-        @scrapes page_name page_body
+    """This contract (``@scrapes``) checks that all the items returned by the
+    callback have the specified fields.
+
+    Example::
+
+        @scrapes field_1 field_2 ...
     """
 
     name = 'scrapes'

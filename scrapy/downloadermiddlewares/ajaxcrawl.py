@@ -14,9 +14,30 @@ logger = logging.getLogger(__name__)
 
 
 class AjaxCrawlMiddleware(object):
-    """
-    Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
-    For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
+    """Middleware that finds 'AJAX crawlable' page variants based
+    on meta-fragment html tag. See
+    https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+    for more info.
+
+    .. note::
+
+        Scrapy finds 'AJAX crawlable' pages for URLs like
+        ``'http://example.com/!#foo=bar'`` even without this middleware.
+        AjaxCrawlMiddleware is necessary when URL doesn't contain ``'!#'``.
+        This is often a case for 'index' or 'main' website pages.
+
+    .. rubric:: AjaxCrawlMiddleware Settings
+
+    .. setting:: AJAXCRAWL_ENABLED
+
+    .. rubric:: AJAXCRAWL_ENABLED
+
+    .. versionadded:: 0.21
+
+    Default: ``False``
+
+    Whether the AjaxCrawlMiddleware will be enabled. You may want to
+    enable it for :ref:`broad crawls <topics-broad-crawls>`.
     """
 
     def __init__(self, settings):

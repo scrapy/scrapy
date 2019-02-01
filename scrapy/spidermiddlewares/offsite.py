@@ -15,6 +15,34 @@ logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware(object):
+    """Filters out Requests for URLs outside the domains covered by the spider.
+
+   This middleware filters out every request whose host names aren't in the
+   spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
+   All subdomains of any domain in the list are also allowed.
+   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
+   but not ``www2.example.com`` nor ``example.com``.
+
+   When your spider returns a request for a domain not belonging to those
+   covered by the spider, this middleware will log a debug message similar to
+   this one::
+
+      DEBUG: Filtered offsite request to 'www.othersite.com': <GET http://www.othersite.com/some/page.html>
+
+   To avoid filling the log with too much noise, it will only print one of
+   these messages for each new domain filtered. So, for example, if another
+   request for ``www.othersite.com`` is filtered, no log message will be
+   printed. But if a request for ``someothersite.com`` is filtered, a message
+   will be printed (but only for the first request filtered).
+
+   If the spider doesn't define an
+   :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
+   attribute is empty, the offsite middleware will allow all requests.
+
+   If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
+   set, the offsite middleware will allow the request even if its domain is not
+   listed in allowed domains.
+   """
 
     def __init__(self, stats):
         self.stats = stats

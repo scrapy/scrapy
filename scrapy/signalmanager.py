@@ -4,6 +4,10 @@ from scrapy.utils import signal as _signal
 
 
 class SignalManager(object):
+    """Handles connections between signals and receiver functions.
+
+    For an introduction on signals see :ref:`topics-signals`.
+    """
 
     def __init__(self, sender=dispatcher.Anonymous):
         self.sender = sender

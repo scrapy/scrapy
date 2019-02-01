@@ -41,69 +41,8 @@ MailSender class reference
 MailSender is the preferred class to use for sending emails from Scrapy, as it
 uses `Twisted non-blocking IO`_, like the rest of the framework.
 
-.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
-
-    :param smtphost: the SMTP host to use for sending the emails. If omitted, the
-      :setting:`MAIL_HOST` setting will be used.
-    :type smtphost: str
-
-    :param mailfrom: the address used to send emails (in the ``From:`` header).
-      If omitted, the :setting:`MAIL_FROM` setting will be used.
-    :type mailfrom: str
-
-    :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
-      setting will be used. If not given, no SMTP authentication will be
-      performed.
-    :type smtphost: str or bytes
-
-    :param smtppass: the SMTP pass for authentication.
-    :type smtppass: str or bytes
-
-    :param smtpport: the SMTP port to connect to
-    :type smtpport: int
-
-    :param smtptls: enforce using SMTP STARTTLS
-    :type smtptls: boolean
-
-    :param smtpssl: enforce using a secure SSL connection
-    :type smtpssl: boolean
-
-    .. classmethod:: from_settings(settings)
-
-        Instantiate using a Scrapy settings object, which will respect
-        :ref:`these Scrapy settings <topics-email-settings>`.
-
-        :param settings: the e-mail recipients
-        :type settings: :class:`scrapy.settings.Settings` object
-
-    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
-
-        Send email to the given recipients.
-
-        :param to: the e-mail recipients
-        :type to: str or list of str
-
-        :param subject: the subject of the e-mail
-        :type subject: str
-
-        :param cc: the e-mails to CC
-        :type cc: str or list of str
-
-        :param body: the e-mail body
-        :type body: str
-
-        :param attachs: an iterable of tuples ``(attach_name, mimetype,
-          file_object)`` where  ``attach_name`` is a string with the name that will
-          appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
-          attachment and ``file_object`` is a readable file object with the
-          contents of the attachment
-        :type attachs: iterable
-
-        :param mimetype: the MIME type of the e-mail
-        :type mimetype: str
-
-        :param charset: the character encoding to use for the e-mail contents
-        :type charset: str
+.. autoclass:: MailSender
+   :members:
 
 
 .. _topics-email-settings:

@@ -19,7 +19,11 @@ class BaseItem(object_ref):
 
 
 class Field(dict):
-    """Container of field metadata"""
+    """The :class:`Field` class is just an alias to the built-in `dict`_ class and
+    doesn't provide any extra functionality or attributes. In other words,
+    :class:`Field` objects are plain-old Python dicts. A separate class is used
+    to support the :ref:`item declaration syntax <topics-items-declaring>`
+    based on class attributes."""
 
 
 class ItemMeta(ABCMeta):
@@ -46,7 +50,13 @@ class ItemMeta(ABCMeta):
 
 
 class DictItem(MutableMapping, BaseItem):
+    """Base class for :class:`scrapy.Item`, also used for the :ref:`dynamic
+    creation of item classes <dynamic-item-classes>`."""
 
+    #: A dictionary containing *all declared fields* for this Item, not only
+    #: those populated. The keys are the field names and the values are the
+    #: :class:`Field` objects used in the :ref:`Item declaration
+    #: <topics-items-declaring>`.
     fields = {}
 
     def __init__(self, *args, **kwargs):
@@ -99,4 +109,10 @@ class DictItem(MutableMapping, BaseItem):
 
 @six.add_metaclass(ItemMeta)
 class Item(DictItem):
+    """Return a new Item optionally initialized from the given argument.
+
+    Items replicate the standard `dict`_ class, including its constructor. The
+    only additional attribute provided by Items is
+    :func:`~scrapy.item.Item.fields`.
+    """
     pass

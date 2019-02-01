@@ -6,6 +6,8 @@ import datetime
 from scrapy import signals
 
 class CoreStats(object):
+    """Enable the collection of core statistics, provided the stats collection is
+    enabled (see :ref:`topics-stats`)."""
 
     def __init__(self, stats):
         self.stats = stats

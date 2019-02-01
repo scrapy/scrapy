@@ -108,7 +108,15 @@ class ContractsManager(object):
 
 
 class Contract(object):
-    """ Abstract class for contracts """
+    """Abstract class for contracts
+
+    :param method: callback function to which the contract is associated
+    :type method: function
+
+    :param args: list of arguments passed into the docstring (whitespace
+        separated)
+    :type args: list
+    """
     request_cls = None
 
     def __init__(self, method, *args):
@@ -164,6 +172,13 @@ class Contract(object):
         return request
 
     def adjust_request_args(self, args):
+        """This receives a ``dict`` as an argument containing default arguments
+        for request object. :class:`Request <scrapy.Request>` is used by default,
+        but this can be changed with the ``request_cls`` attribute.
+        If multiple contracts in chain have this attribute defined, the last one is used.
+
+        Must return the same or a modified version of it.
+        """
         return args
 
 

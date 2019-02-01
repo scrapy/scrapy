@@ -19,6 +19,20 @@ logger = logging.getLogger(__name__)
 
 
 class RobotsTxtMiddleware(object):
+    """This middleware filters out requests forbidden by the robots.txt exclusion
+    standard.
+
+    To make sure Scrapy respects robots.txt make sure the middleware is enabled
+    and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
+
+    .. reqmeta:: dont_obey_robotstxt
+
+    If :attr:`Request.meta <scrapy.http.Request.meta>` has
+    ``dont_obey_robotstxt`` key set to True
+    the request will be ignored by this middleware even if
+    :setting:`ROBOTSTXT_OBEY` is enabled.
+    """
+
     DOWNLOAD_PRIORITY = 1000
 
     def __init__(self, crawler):

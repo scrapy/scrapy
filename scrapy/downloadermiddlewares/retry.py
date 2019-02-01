@@ -28,6 +28,64 @@ logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):
+    """A middleware to retry failed requests that are potentially caused by
+    temporary problems such as a connection timeout or HTTP 500 error.
+
+    Failed pages are collected on the scraping process and rescheduled at the
+    end, once the spider has finished crawling all regular (non failed) pages.
+    Once there are no more failed pages to retry, this middleware sends a
+    signal (retry_complete), so other extensions could connect to that signal.
+
+    The :class:`RetryMiddleware` can be configured through the following
+    settings (see the settings documentation for more info):
+
+    * :setting:`RETRY_ENABLED`
+    * :setting:`RETRY_TIMES`
+    * :setting:`RETRY_HTTP_CODES`
+
+    .. reqmeta:: dont_retry
+
+    If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
+    set to True, the request will be ignored by this middleware.
+
+    .. rubric:: RetryMiddleware Settings
+
+    .. setting:: RETRY_ENABLED
+
+    .. rubric:: RETRY_ENABLED
+
+    .. versionadded:: 0.13
+
+    Default: ``True``
+
+    Whether the Retry middleware will be enabled.
+
+    .. setting:: RETRY_TIMES
+
+    .. rubric:: RETRY_TIMES
+
+    Default: ``2``
+
+    Maximum number of times to retry, in addition to the first download.
+
+    Maximum number of retries can also be specified per-request using
+    :reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+    When initialized, the :reqmeta:`max_retry_times` meta key takes higher
+    precedence over the :setting:`RETRY_TIMES` setting.
+
+    .. setting:: RETRY_HTTP_CODES
+
+    .. rubric:: RETRY_HTTP_CODES
+
+    Default: ``[500, 502, 503, 504, 522, 524, 408]``
+
+    Which HTTP response codes to retry. Other errors (DNS lookup issues,
+    connections lost, etc) are always retried.
+
+    In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
+    it is a common code used to indicate server overload. It is not included by
+    default because HTTP specs say so.
+    """
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response

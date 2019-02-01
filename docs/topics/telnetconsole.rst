@@ -153,16 +153,8 @@ To stop::
 Telnet Console signals
 ======================
 
-.. signal:: update_telnet_vars
-.. function:: update_telnet_vars(telnet_vars)
+.. autofunction:: update_telnet_vars(telnet_vars)
 
-    Sent just before the telnet console is opened. You can hook up to this
-    signal to add, remove or update the variables that will be available in the
-    telnet local namespace. In order to do that, you need to update the
-    ``telnet_vars`` dict in your handler.
-
-    :param telnet_vars: the dict of telnet variables
-    :type telnet_vars: dict
 
 Telnet settings
 ===============

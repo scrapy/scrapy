@@ -17,7 +17,24 @@ except ImportError:
 
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
-    sent/received from web sites"""
+    sent/received from web sites.
+
+    This middleware also supports decoding `brotli-compressed`_ responses,
+    provided `brotlipy`_ is installed.
+
+    .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
+    .. _brotlipy: https://pypi.python.org/pypi/brotlipy
+
+    .. rubric:: HttpCompressionMiddleware Settings
+
+    .. setting:: COMPRESSION_ENABLED
+
+    .. rubric:: COMPRESSION_ENABLED
+
+    Default: ``True``
+
+    Whether the Compression middleware will be enabled.
+    """
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):

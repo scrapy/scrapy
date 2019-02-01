@@ -34,12 +34,26 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# signal to update telnet variables
-# args: telnet_vars
+#: .. signal:: update_telnet_vars
+#:
+#: Sent just before the telnet console is opened. You can hook up to this
+#: signal to add, remove or update the variables that will be available in the
+#: telnet local namespace. In order to do that, you need to update the
+#: ``telnet_vars`` dict in your handler.
+#:
+#: :param telnet_vars: the dict of telnet variables
+#: :type telnet_vars: dict
 update_telnet_vars = object()
 
 
 class TelnetConsole(protocol.ServerFactory):
+    """Provides a telnet console for getting into a Python interpreter inside the
+    currently running Scrapy process, which can be very useful for debugging.
+
+    The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+    setting, and the server will listen in the port specified in
+    :setting:`TELNETCONSOLE_PORT`.
+    """
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):

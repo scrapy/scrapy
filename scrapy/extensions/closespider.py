@@ -13,6 +13,67 @@ from scrapy.exceptions import NotConfigured
 
 
 class CloseSpider(object):
+    """Closes a spider automatically when some conditions are met, using a specific
+    closing reason for each condition.
+
+    The conditions for closing a spider can be configured through the following
+    settings:
+
+    * :setting:`CLOSESPIDER_TIMEOUT`
+    * :setting:`CLOSESPIDER_ITEMCOUNT`
+    * :setting:`CLOSESPIDER_PAGECOUNT`
+    * :setting:`CLOSESPIDER_ERRORCOUNT`
+
+    .. setting:: CLOSESPIDER_TIMEOUT
+
+    .. rubric:: CLOSESPIDER_TIMEOUT
+
+    Default: ``0``
+
+    An integer which specifies a number of seconds. If the spider remains open for
+    more than that number of second, it will be automatically closed with the
+    reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
+    timeout.
+
+    .. setting:: CLOSESPIDER_ITEMCOUNT
+
+    .. rubric:: CLOSESPIDER_ITEMCOUNT
+
+    Default: ``0``
+
+    An integer which specifies a number of items. If the spider scrapes more than
+    that amount and those items are passed by the item pipeline, the
+    spider will be closed with the reason ``closespider_itemcount``.
+    Requests which  are currently in the downloader queue (up to
+    :setting:`CONCURRENT_REQUESTS` requests) are still processed.
+    If zero (or non set), spiders won't be closed by number of passed items.
+
+    .. setting:: CLOSESPIDER_PAGECOUNT
+
+    .. rubric:: CLOSESPIDER_PAGECOUNT
+
+    .. versionadded:: 0.11
+
+    Default: ``0``
+
+    An integer which specifies the maximum number of responses to crawl. If the spider
+    crawls more than that, the spider will be closed with the reason
+    ``closespider_pagecount``. If zero (or non set), spiders won't be closed by
+    number of crawled responses.
+
+    .. setting:: CLOSESPIDER_ERRORCOUNT
+
+    .. rubric:: CLOSESPIDER_ERRORCOUNT
+
+    .. versionadded:: 0.11
+
+    Default: ``0``
+
+    An integer which specifies the maximum number of errors to receive before
+    closing the spider. If the spider generates more than that number of errors,
+    it will be closed with the reason ``closespider_errorcount``. If zero (or non
+    set), spiders won't be closed by number of errors.
+    """
 
     def __init__(self, crawler):
         self.crawler = crawler

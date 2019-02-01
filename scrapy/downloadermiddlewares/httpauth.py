@@ -10,8 +10,26 @@ from scrapy import signals
 
 
 class HttpAuthMiddleware(object):
-    """Set Basic HTTP Authorization header
-    (http_user and http_pass spider class attributes)"""
+    """This middleware authenticates all requests generated from certain spiders
+    using `Basic access authentication`_ (aka. HTTP auth).
+
+    To enable HTTP authentication from certain spiders, set the ``http_user``
+    and ``http_pass`` attributes of those spiders.
+
+    Example::
+
+        from scrapy.spiders import CrawlSpider
+
+        class SomeIntranetSiteSpider(CrawlSpider):
+
+            http_user = 'someuser'
+            http_pass = 'somepass'
+            name = 'intranet.example.com'
+
+            # .. rest of the spider code omitted ...
+
+    .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
+    """
 
     @classmethod
     def from_crawler(cls, crawler):

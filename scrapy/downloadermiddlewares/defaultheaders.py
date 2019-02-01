@@ -8,6 +8,8 @@ from scrapy.utils.python import without_none_values
 
 
 class DefaultHeadersMiddleware(object):
+    """This middleware sets all default requests headers specified in the
+    :setting:`DEFAULT_REQUEST_HEADERS` setting."""
 
     def __init__(self, headers):
         self._headers = headers

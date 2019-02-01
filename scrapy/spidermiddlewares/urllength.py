@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class UrlLengthMiddleware(object):
+    """Filters out requests with URLs longer than URLLENGTH_LIMIT
+
+    The :class:`UrlLengthMiddleware` can be configured through the following
+    settings (see the settings documentation for more info):
+
+        * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
+    """
 
     def __init__(self, maxlength):
         self.maxlength = maxlength

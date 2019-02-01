@@ -2,19 +2,28 @@
 An asynchronous FTP file download handler for scrapy which somehow emulates an http response.
 
 FTP connection parameters are passed using the request meta field:
-- ftp_user (required)
-- ftp_password (required)
-- ftp_passive (by default, enabled) sets FTP connection passive mode
-- ftp_local_filename
-        - If not given, file data will come in the response.body, as a normal scrapy Response,
-        which will imply that the entire file will be on memory.
-        - if given, file data will be saved in a local file with the given name
-        This helps when downloading very big files to avoid memory issues. In addition, for
-        convenience the local file name will also be given in the response body.
+
+-   ftp_user (required)
+
+-   ftp_password (required)
+
+-   ftp_passive (by default, enabled) sets FTP connection passive mode
+
+-   ftp_local_filename
+
+    If not given, file data will come in the response.body, as a normal scrapy
+    Response, which will imply that the entire file will be on memory.
+
+    If given, file data will be saved in a local file with the given name
+    This helps when downloading very big files to avoid memory issues. In
+    addition, for convenience the local file name will also be given in the
+    response body.
 
 The status of the built html response will be, by default
-- 200 in case of success
-- 404 in case specified file was not found in the server (ftp code 550)
+
+-   200 in case of success
+
+-   404 in case specified file was not found in the server (ftp code 550)
 
 or raise corresponding ftp exception otherwise
 
@@ -24,8 +33,10 @@ that is not explicitly present among the map keys. You may need to overwrite thi
 mapping if want a different behaviour than default.
 
 In case of status 200 request, response.headers will come with two keys:
-    'Local Filename' - with the value of the local filename if given
-    'Size' - with size of the downloaded data
+
+-   'Local Filename' - with the value of the local filename if given
+
+-   'Size' - with size of the downloaded data
 """
 
 import re

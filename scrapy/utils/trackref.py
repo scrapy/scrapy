@@ -51,12 +51,19 @@ def format_live_refs(ignore=NoneType):
 
 
 def print_live_refs(*a, **kw):
-    """Print tracked objects"""
+    """Print a report of live references, grouped by class name.
+
+    :param ignore: if given, all objects from the specified class (or tuple of
+        classes) will be ignored.
+    :type ignore: class or classes tuple
+    """
     print(format_live_refs(*a, **kw))
 
 
 def get_oldest(class_name):
-    """Get the oldest object for a specific class name"""
+    """Return the oldest object alive with the given class name, or ``None`` if
+    none is found. Use :func:`print_live_refs` first to get a list of all
+    tracked live objects per class name."""
     for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             if not wdict:
@@ -65,7 +72,9 @@ def get_oldest(class_name):
 
 
 def iter_all(class_name):
-    """Iterate over all objects of the same class by its class name"""
+    """Return an iterator over all objects alive with the given class name, or
+    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
+    of all tracked live objects per class name."""
     for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             return six.iterkeys(wdict)

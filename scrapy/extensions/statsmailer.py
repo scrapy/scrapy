@@ -9,6 +9,10 @@ from scrapy.mail import MailSender
 from scrapy.exceptions import NotConfigured
 
 class StatsMailer(object):
+    """This simple extension can be used to send a notification e-mail every time a
+    domain has finished scraping, including the Scrapy stats collected. The email
+    will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
+    setting."""
 
     def __init__(self, stats, recipients, mail):
         self.stats = stats

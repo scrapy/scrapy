@@ -19,6 +19,60 @@ class HttpError(IgnoreRequest):
 
 
 class HttpErrorMiddleware(object):
+    """Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
+    have to deal with them, which (most of the time) imposes an overhead,
+    consumes more resources, and makes the spider logic more complex.
+
+    According to the `HTTP standard`_, successful responses are those whose
+    status codes are in the 200-300 range.
+
+    .. _HTTP standard: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+
+    If you still want to process response codes outside that range, you can
+    specify which response codes the spider is able to handle using the
+    ``handle_httpstatus_list`` spider attribute or
+    :setting:`HTTPERROR_ALLOWED_CODES` setting.
+
+    For example, if you want your spider to handle 404 responses you can do
+    this::
+
+        class MySpider(CrawlSpider):
+            handle_httpstatus_list = [404]
+
+    .. reqmeta:: handle_httpstatus_list
+
+    .. reqmeta:: handle_httpstatus_all
+
+    The ``handle_httpstatus_list`` key of :attr:`Request.meta
+    <scrapy.http.Request.meta>` can also be used to specify which response codes to
+    allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
+    to ``True`` if you want to allow any response code for a request.
+
+    Keep in mind, however, that it's usually a bad idea to handle non-200
+    responses, unless you really know what you're doing.
+
+    For more information see: `HTTP Status Code Definitions`_.
+
+    .. _HTTP Status Code Definitions: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+
+    This spider middleware has the following settings:
+
+    .. setting:: HTTPERROR_ALLOWED_CODES
+
+    .. rubric:: HTTPERROR_ALLOWED_CODES
+
+    Default: ``[]``
+
+    Pass all responses with non-200 status codes contained in this list.
+
+    .. setting:: HTTPERROR_ALLOW_ALL
+
+    .. rubric:: HTTPERROR_ALLOW_ALL
+
+    Default: ``False``
+
+    Pass all responses, regardless of its status code.
+    """
 
     @classmethod
     def from_crawler(cls, crawler):

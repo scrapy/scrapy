@@ -33,27 +33,11 @@ This callback is tested using three built-in contracts:
 
 .. module:: scrapy.contracts.default
 
-.. class:: UrlContract
+.. autoclass:: UrlContract
 
-    This contract (``@url``) sets the sample url used when checking other
-    contract conditions for this spider. This contract is mandatory. All
-    callbacks lacking this contract are ignored when running the checks::
+.. autoclass:: ReturnsContract
 
-    @url url
-
-.. class:: ReturnsContract
-
-    This contract (``@returns``) sets lower and upper bounds for the items and
-    requests returned by the spider. The upper bound is optional::
-
-    @returns item(s)|request(s) [min [max]]
-
-.. class:: ScrapesContract
-
-    This contract (``@scrapes``) checks that all the items returned by the
-    callback have the specified fields::
-
-    @scrapes field_1 field_2 ...
+.. autoclass:: ScrapesContract
 
 Use the :command:`check` command to run the contract checks.
 
@@ -74,30 +58,19 @@ override three methods:
 
 .. module:: scrapy.contracts
 
-.. class:: Contract(method, \*args)
+.. autoclass:: Contract
+   :members:
 
-    :param method: callback function to which the contract is associated
-    :type method: function
+    ..
+        These are method that may or may not be defined in subclasses. That is
+        why they are documented here instead of in the sources.
 
-    :param args: list of arguments passed into the docstring (whitespace
-        separated)
-    :type args: list
-
-    .. method:: Contract.adjust_request_args(args)
-
-        This receives a ``dict`` as an argument containing default arguments
-        for request object. :class:`~scrapy.http.Request` is used by default,
-        but this can be changed with the ``request_cls`` attribute.
-        If multiple contracts in chain have this attribute defined, the last one is used.
-
-        Must return the same or a modified version of it.
-
-    .. method:: Contract.pre_process(response)
+    .. method:: pre_process(response)
 
         This allows hooking in various checks on the response received from the
         sample request, before it's being passed to the callback.
 
-    .. method:: Contract.post_process(output)
+    .. method:: post_process(output)
 
         This allows processing the output of the callback. Iterators are
         converted listified before being passed to this hook.

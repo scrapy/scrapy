@@ -166,30 +166,14 @@ scrapy.utils.trackref module
 
 Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
-.. class:: object_ref
+.. autoclass:: object_ref
 
-    Inherit from this class (instead of object) if you want to track live
-    instances with the ``trackref`` module.
+.. autofunction:: print_live_refs
 
-.. function:: print_live_refs(class_name, ignore=NoneType)
+.. autofunction:: get_oldest
 
-    Print a report of live references, grouped by class name.
+.. autofunction:: iter_all
 
-    :param ignore: if given, all objects from the specified class (or tuple of
-        classes) will be ignored.
-    :type ignore: class or classes tuple
-
-.. function:: get_oldest(class_name)
-
-    Return the oldest object alive with the given class name, or ``None`` if
-    none is found. Use :func:`print_live_refs` first to get a list of all
-    tracked live objects per class name.
-
-.. function:: iter_all(class_name)
-
-    Return an iterator over all objects alive with the given class name, or
-    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
-    of all tracked live objects per class name.
 
 .. _topics-leaks-guppy:
 
