@@ -93,7 +93,7 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None):
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None):
         # BEGIN Backwards compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
@@ -118,7 +118,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.secret_key = u.password or secret_key
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
-        self.policy = settings.get('FEED_STORAGE_S3_ACL', 'private')
+        self.acl = acl
         if self.is_botocore:
             import botocore.session
             session = botocore.session.get_session()
@@ -132,19 +132,28 @@ class S3FeedStorage(BlockingFeedStorage):
     @classmethod
     def from_crawler(cls, crawler, uri):
         return cls(uri, crawler.settings['AWS_ACCESS_KEY_ID'],
-                   crawler.settings['AWS_SECRET_ACCESS_KEY'])
+                   crawler.settings['AWS_SECRET_ACCESS_KEY'],
+                   crawler.settings.get('FEED_STORAGE_S3_ACL'))
 
     def _store_in_thread(self, file):
         file.seek(0)
         if self.is_botocore:
+            kwargs = dict()
+            if self.acl:
+                kwargs.update(dict(ACL=self.acl))
+
             self.s3_client.put_object(
                 Bucket=self.bucketname, Key=self.keyname, Body=file,
-                ACL=self.policy)
+                **kwargs)
         else:
             conn = self.connect_s3(self.access_key, self.secret_key)
             bucket = conn.get_bucket(self.bucketname, validate=False)
             key = bucket.new_key(self.keyname)
-            key.set_contents_from_file(file, policy=self.policy)
+            kwargs = dict()
+            if self.acl:
+                kwargs.update(dict(policy=self.acl))
+
+            key.set_contents_from_file(file, **kwargs)
             key.close()
 
 
