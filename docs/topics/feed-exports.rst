@@ -322,7 +322,7 @@ For a complete list of available values, access the `Canned ACL`_ section on Ama
 
 FEED_STORAGES_BASE
 ------------------
-`
+
 Default::
 
     {
