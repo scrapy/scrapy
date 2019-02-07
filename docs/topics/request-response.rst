@@ -489,6 +489,11 @@ method for this job. Here's an example spider which uses it::
 
     import scrapy
 
+    def authentication_failed(response):
+        # TODO: Check the contents of the response and return True if it failed
+        # or False if it succeeded.
+        pass
+
     class LoginSpider(scrapy.Spider):
         name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
@@ -501,8 +506,7 @@ method for this job. Here's an example spider which uses it::
             )
 
         def after_login(self, response):
-            # check login succeed before going on
-            if "authentication failed" in response.body:
+            if authentication_failed(response):
                 self.logger.error("Login failed")
                 return
 
