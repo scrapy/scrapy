@@ -145,6 +145,7 @@ FEED_STORAGES_BASE = {
     'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
     's3': 'scrapy.extensions.feedexport.S3FeedStorage',
     'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
+    'gcs': 'scrapy.extensions.feedexport.GCSFeedStorage',
 }
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
