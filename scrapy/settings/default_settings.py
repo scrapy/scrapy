@@ -142,10 +142,10 @@ FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
     '': 'scrapy.extensions.feedexport.FileFeedStorage',
     'file': 'scrapy.extensions.feedexport.FileFeedStorage',
-    'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
-    's3': 'scrapy.extensions.feedexport.S3FeedStorage',
     'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
     'gcs': 'scrapy.extensions.feedexport.GCSFeedStorage',
+    's3': 'scrapy.extensions.feedexport.S3FeedStorage',
+    'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
 }
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {

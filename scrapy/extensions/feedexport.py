@@ -146,7 +146,6 @@ class S3FeedStorage(BlockingFeedStorage):
             key.close()
 
 
-
 class GCSFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, project_id):
