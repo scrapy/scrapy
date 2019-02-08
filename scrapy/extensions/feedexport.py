@@ -149,10 +149,6 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class GCSFeedStorage(BlockingFeedStorage):
 
-    project_id = None
-    bucket_name = None
-    blob_name = None
-
     def __init__(self, uri, project_id):
         self.project_id = project_id
         u = urlparse(uri)
