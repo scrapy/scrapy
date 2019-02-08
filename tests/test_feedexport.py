@@ -237,6 +237,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
+    @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
@@ -247,18 +248,14 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
 
-        def _defer(f, *args, **kwargs):
-            return f(*args, **kwargs)
-
         with mock.patch('botocore.client.BaseClient._make_api_call') as m:
-            with mock.patch('twisted.internet.threads.deferToThread',
-                            new=_defer):
-                storage.store(BytesIO(b'test file'))
+            yield storage.store(BytesIO(b'test file'))
 
             operation_name, api_params = m.call_args[0]
             self.assertEqual(operation_name, 'PutObject')
             self.assertNotIn('ACL', api_params)
 
+    @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
@@ -270,18 +267,14 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
-        def _defer(f, *args, **kwargs):
-            return f(*args, **kwargs)
-
         with mock.patch('botocore.client.BaseClient._make_api_call') as m:
-            with mock.patch('twisted.internet.threads.deferToThread',
-                            new=_defer):
-                storage.store(BytesIO(b'test file'))
+            yield storage.store(BytesIO(b'test file'))
 
             operation_name, api_params = m.call_args[0]
             self.assertEqual(operation_name, 'PutObject')
             self.assertEqual(api_params.get('ACL'), 'custom-acl')
 
+    @defer.inlineCallbacks
     def test_store_not_botocore_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
@@ -296,11 +289,7 @@ class S3FeedStorageTest(unittest.TestCase):
         storage.connect_s3 = mock.MagicMock()
         self.assertFalse(storage.is_botocore)
 
-        def _defer(f, *args, **kwargs):
-            return f(*args, **kwargs)
-
-        with mock.patch('twisted.internet.threads.deferToThread', new=_defer):
-            storage.store(BytesIO(b'test file'))
+        yield storage.store(BytesIO(b'test file'))
 
         conn = storage.connect_s3(*storage.connect_s3.call_args)
         bucket = conn.get_bucket(*conn.get_bucket.call_args)
@@ -310,6 +299,7 @@ class S3FeedStorageTest(unittest.TestCase):
             key.set_contents_from_file.call_args
         )
 
+    @defer.inlineCallbacks
     def test_store_not_botocore_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
@@ -325,11 +315,7 @@ class S3FeedStorageTest(unittest.TestCase):
         storage.connect_s3 = mock.MagicMock()
         self.assertFalse(storage.is_botocore)
 
-        def _defer(f, *args, **kwargs):
-            return f(*args, **kwargs)
-
-        with mock.patch('twisted.internet.threads.deferToThread', new=_defer):
-            storage.store(BytesIO(b'test file'))
+        yield storage.store(BytesIO(b'test file'))
 
         conn = storage.connect_s3(*storage.connect_s3.call_args)
         bucket = conn.get_bucket(*conn.get_bucket.call_args)
