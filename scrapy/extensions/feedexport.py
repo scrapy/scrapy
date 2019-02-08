@@ -133,7 +133,7 @@ class S3FeedStorage(BlockingFeedStorage):
     def from_crawler(cls, crawler, uri):
         return cls(uri, crawler.settings['AWS_ACCESS_KEY_ID'],
                    crawler.settings['AWS_SECRET_ACCESS_KEY'],
-                   crawler.settings.get('FEED_STORAGE_S3_ACL'))
+                   crawler.settings['FEED_STORAGE_S3_ACL'])
 
     def _store_in_thread(self, file):
         file.seek(0)
