@@ -141,10 +141,7 @@ class S3FeedStorage(BlockingFeedStorage):
     def _store_in_thread(self, file):
         file.seek(0)
         if self.is_botocore:
-            kwargs = dict()
-            if self.acl:
-                kwargs.update(dict(ACL=self.acl))
-
+            kwargs = {'ACL': self.acl} if self.acl else {}
             self.s3_client.put_object(
                 Bucket=self.bucketname, Key=self.keyname, Body=file,
                 **kwargs)
@@ -152,10 +149,7 @@ class S3FeedStorage(BlockingFeedStorage):
             conn = self.connect_s3(self.access_key, self.secret_key)
             bucket = conn.get_bucket(self.bucketname, validate=False)
             key = bucket.new_key(self.keyname)
-            kwargs = dict()
-            if self.acl:
-                kwargs.update(dict(policy=self.acl))
-
+            kwargs = {'policy': self.acl} if self.acl else {}
             key.set_contents_from_file(file, **kwargs)
             key.close()
 
