@@ -135,7 +135,7 @@ class S3FeedStorage(BlockingFeedStorage):
             uri=uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
-            acl=crawler.settings['FEED_STORAGE_S3_ACL']
+            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None
         )
 
     def _store_in_thread(self, file):

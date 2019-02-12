@@ -312,7 +312,7 @@ The keys are URI schemes and the values are paths to storage classes.
 FEED_STORAGE_S3_ACL
 -------------------
 
-Default: ``None``
+Default: ``''`` (empty string)
 
 A string containing a custom ACL for feeds exported to Amazon S3 by your project.
 
