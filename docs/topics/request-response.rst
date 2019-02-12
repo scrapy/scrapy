@@ -83,13 +83,21 @@ Request objects
         .. reqmeta:: dont_merge_cookies
 
         When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests. That's
-        the typical behaviour of any regular web browser. However, if, for some
-        reason, you want to avoid merging with existing cookies you can instruct
-        Scrapy to do so by setting the ``dont_merge_cookies`` key to True in the
-        :attr:`Request.meta`.
+        cookies for that domain and will be sent again in future requests.
+        That's the typical behaviour of any regular web browser.
 
-        Example of request without merging cookies::
+        If you want to supress per-domain cookie handling for a given request,
+        set the ``dont_merge_cookies`` key to ``True`` in :attr:`Request.meta`.
+
+        If you do:
+
+        -   The request is sent without any cookie beyond those you may have
+            defined through :attr:`Request.headers`.
+
+        -   The cookies from the corresponding response are not saved, and will
+            not be added to future request to the same domain.
+
+        Example of request without cookies::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'},
