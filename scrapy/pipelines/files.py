@@ -273,15 +273,15 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_RESULT_FIELD = 'files'
     STORAGES = {}
 
-    def __init__(self, store_uri, download_func=None, settings=None):
-        if not store_uri:
+    def __init__(self, urifmt, download_func=None, settings=None):
+        if not urifmt:
             raise NotConfigured
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         cls_name = "FilesPipeline"
-        self.store = self._get_store(store_uri)
+        self.urifmt = urifmt
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
@@ -317,14 +317,18 @@ class FilesPipeline(MediaPipeline):
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
-        store_uri = settings['FILES_STORE']
-        return cls(store_uri, settings=settings)
+        urifmt = settings['FILES_STORE']
+        return cls(urifmt, settings=settings)
 
     @classmethod
     def _load_storages(cls, settings):
         storages = settings.getwithbase('FILES_STORAGES')
         for (scheme, storage_cls) in storages.items():
             cls.STORAGES[scheme] = load_object(storage_cls)
+
+    def open_spider(self, spider):
+        self.store = self._get_store(self.urifmt)
+        super(FilesPipeline, self).open_spider(spider)
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
