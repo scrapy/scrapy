@@ -25,7 +25,7 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
-from scrapy.utils.misc import md5sum
+from scrapy.utils.misc import load_object, md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
@@ -269,14 +269,9 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME = "file"
     EXPIRES = 90
-    STORE_SCHEMES = {
-        '': FSFilesStore,
-        'file': FSFilesStore,
-        's3': S3FilesStore,
-        'gs': GCSFilesStore,
-    }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
+    STORAGES = {}
 
     def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
@@ -308,7 +303,8 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def from_settings(cls, settings):
-        s3store = cls.STORE_SCHEMES['s3']
+        cls._load_storages(settings)
+        s3store = cls.STORAGES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
@@ -317,20 +313,26 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_VERIFY = settings['AWS_VERIFY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
-        gcs_store = cls.STORE_SCHEMES['gs']
+        gcs_store = cls.STORAGES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
 
+    @classmethod
+    def _load_storages(cls, settings):
+        storages = settings.getwithbase('FILES_STORAGES')
+        for (scheme, storage_cls) in storages.items():
+            cls.STORAGES[scheme] = load_object(storage_cls)
+
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
-        store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        storage_cls = self.STORAGES[scheme]
+        return storage_cls(uri)
 
     def media_to_download(self, request, info):
         def _onsuccess(result):

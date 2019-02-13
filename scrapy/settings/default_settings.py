@@ -160,6 +160,13 @@ FEED_EXPORT_INDENT = 0
 
 FILES_STORE_S3_ACL = 'private'
 FILES_STORE_GCS_ACL = ''
+FILES_STORAGES = {}
+FILES_STORAGES_BASE = {
+    '': 'scrapy.pipelines.files.FSFilesStore',
+    'file': 'scrapy.pipelines.files.FSFilesStore',
+    's3': 'scrapy.pipelines.files.S3FilesStore',
+    'gs': 'scrapy.pipelines.files.GCSFilesStore',
+}
 
 FTP_USER = 'anonymous'
 FTP_PASSWORD = 'guest'
