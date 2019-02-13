@@ -57,8 +57,12 @@ particular setting. See each middleware documentation for more info.
 Writing your own spider middleware
 ==================================
 
-Each middleware component is a Python class that defines one or more of the
-following methods:
+Each spider middleware is a Python class that defines one or more of the
+methods defined below.
+
+The main entry point is the ``from_crawler`` class method, which receives a
+:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
+object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
 .. module:: scrapy.spidermiddlewares
 
