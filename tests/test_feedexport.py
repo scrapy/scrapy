@@ -18,7 +18,6 @@ from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
-import botocore.client
 import scrapy
 from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (
@@ -239,6 +238,9 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
+        if os.getenv('TOX_ENV_NAME') == 'jessie':
+            raise unittest.SkipTest('botocore is not supported on jessie')
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -254,6 +256,9 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
+        if os.getenv('TOX_ENV_NAME') == 'jessie':
+            raise unittest.SkipTest('botocore is not supported on jessie')
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
