@@ -248,12 +248,9 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
 
-        with mock.patch('botocore.client.BaseClient._make_api_call') as m:
-            yield storage.store(BytesIO(b'test file'))
-
-            operation_name, api_params = m.call_args[0]
-            self.assertEqual(operation_name, 'PutObject')
-            self.assertNotIn('ACL', api_params)
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(BytesIO(b'test file'))
+        self.assertNotIn('ACL', storage.s3_client.put_object.call_args[1])
 
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
@@ -267,12 +264,12 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
-        with mock.patch('botocore.client.BaseClient._make_api_call') as m:
-            yield storage.store(BytesIO(b'test file'))
-
-            operation_name, api_params = m.call_args[0]
-            self.assertEqual(operation_name, 'PutObject')
-            self.assertEqual(api_params.get('ACL'), 'custom-acl')
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(BytesIO(b'test file'))
+        self.assertEqual(
+            storage.s3_client.put_object.call_args[1].get('ACL'),
+            'custom-acl'
+        )
 
     @defer.inlineCallbacks
     def test_store_not_botocore_without_acl(self):
