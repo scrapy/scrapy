@@ -21,7 +21,7 @@ from w3lib.url import file_uri_to_path
 from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import create_instance, get_object_attributes_as_dict, load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
 from scrapy.utils.boto import is_botocore
@@ -289,9 +289,7 @@ class FeedExporter(object):
         return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
     def _get_uri_params(self, spider):
-        params = {}
-        for k in dir(spider):
-            params[k] = getattr(spider, k)
+        params = get_object_attributes_as_dict(spider)
         ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
         self._uripar(params, spider)
