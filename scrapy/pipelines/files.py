@@ -327,8 +327,15 @@ class FilesPipeline(MediaPipeline):
             cls.STORAGES[scheme] = load_object(storage_cls)
 
     def open_spider(self, spider):
-        self.store = self._get_store(self.urifmt)
+        store_uri = self.urifmt % self._get_uri_params(spider)
+        self.store = self._get_store(store_uri)
         super(FilesPipeline, self).open_spider(spider)
+
+    def _get_uri_params(self, spider):
+        params = {}
+        for k in dir(spider):
+            params[k] = getattr(spider, k)
+        return params
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir

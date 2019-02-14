@@ -21,14 +21,40 @@ from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
 from scrapy.utils.boto import is_botocore
 
 from tests import mock
-
+from tests.spiders import SimpleSpider
 
 def _mocked_download_func(request, info):
     response = request.meta.get('response')
     return response() if callable(response) else response
 
+class StoreMock(object):
+
+    def __init__(self, store_uri):
+        self.store_uri = store_uri
+
 
 class FilesPipelineTestCase(unittest.TestCase):
+
+    def test_format_file_store(self):
+        class SpiderMock(object):
+            username = 'foo'
+            password = 'bar'
+            name = 'foobar'
+
+        settings = Settings({
+            'FILES_STORE': 'test://%(username)s:%(password)s:80/%(name)s',
+            'FILES_STORAGES': {
+                'test': 'tests.test_pipeline_files.StoreMock'
+            }
+        })
+
+        pipeline = FilesPipeline.from_settings(settings)
+        pipeline.open_spider(SpiderMock())
+
+        self.assertEqual(pipeline.store.store_uri, 'test://foo:bar:80/foobar')
+
+
+class FilesPipelineFSFileStoreTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
