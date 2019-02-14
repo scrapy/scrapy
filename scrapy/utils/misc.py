@@ -142,3 +142,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls.from_settings(settings, *args, **kwargs)
     else:
         return objcls(*args, **kwargs)
+
+
+def get_object_attributes_as_dict(obj):
+    return { k: getattr(obj, k) for k in dir(obj) }
