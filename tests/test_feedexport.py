@@ -238,8 +238,10 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
-        if os.getenv('TOX_ENV_NAME') == 'jessie':
-            raise unittest.SkipTest('botocore is not supported on jessie')
+        try:
+            import botocore
+        except ImportError:
+            raise unittest.SkipTest('botocore is required')
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
@@ -256,8 +258,10 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
-        if os.getenv('TOX_ENV_NAME') == 'jessie':
-            raise unittest.SkipTest('botocore is not supported on jessie')
+        try:
+            import botocore
+        except ImportError:
+            raise unittest.SkipTest('botocore is required')
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
