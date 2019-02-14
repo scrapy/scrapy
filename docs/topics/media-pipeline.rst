@@ -114,6 +114,13 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
+.. note::
+    Similar to :ref:`topics-feed-uri-params`, it is possible to include URI parameters
+    for both :setting:`FILES_STORE` and :setting:`IMAGES_STORE`.
+    They will be replaced by spider attributes when initializing the store.
+
+    Please note that the ``%(time)s`` parameter is not available for these URIs.
+
 Supported Storage
 =================
 
@@ -218,6 +225,34 @@ policy::
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
 .. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+
+
+Adding a custom storage
+-----------------------
+
+.. setting:: FILES_STORAGES
+
+It is possible to add custom storage backend by setting :setting:`FILES_STORAGES` in ``settings.py``.
+This should a ``dict`` with the `scheme` as key and the value is the path to the storage class.
+The backends provided by scrapy are available in :setting:`FILES_STORAGES_BASE`.
+
+Example::
+
+    FILES_STORAGES = {
+        'ftp': 'myproject.storages.FTPStorage',
+    }
+
+.. setting:: FILES_STORAGES_BASE
+
+FILES_STORAGES_BASE::
+
+    {
+        '': 'scrapy.pipelines.files.FSFilesStore',
+        'file': 'scrapy.pipelines.files.FSFilesStore',
+        's3': 'scrapy.pipelines.files.S3FilesStore',
+        'gs': 'scrapy.pipelines.files.GCSFilesStore',
+    }
+
 
 Usage example
 =============
