@@ -46,6 +46,7 @@ def annotate(file_name, func_name):
     prev_logical_line_num = -1
     last_condition_type = None
     within_function = False
+    fn_header_indent_lvl = -1
 
     token_gen = tokenize.generate_tokens(src.readline)
     for type, string, (srow, _), (_, _), logical_line in token_gen:
@@ -56,7 +57,7 @@ def annotate(file_name, func_name):
             indent_lvl -= 4
 
         # Stop annotating when reaching outside indentation of function
-        if within_function and indent_lvl == 0 and 'def' in logical_line and func_name not in logical_line:
+        if within_function and indent_lvl <= fn_header_indent_lvl and 'def' in logical_line and func_name not in logical_line:
             within_function = False
 
         if logical_line != prev_logical_line:
@@ -66,6 +67,7 @@ def annotate(file_name, func_name):
             # Find the relevant function in source file before starting annotation
             if not within_function and func_name in logical_line:
                 within_function = True
+                fn_header_indent_lvl = indent_lvl
 
             # Check if previous logical line contained a conditional
             # If so, a boolean flag should be inserted on between previous and current logical line
