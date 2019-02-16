@@ -25,6 +25,7 @@ CONDITIONALS = {
     'try',
     'catch',
     'finally',
+    'except',
 }
 
 
@@ -87,7 +88,7 @@ def annotate(file_name, func_name):
             prev_logical_line = logical_line
 
         # Check if current logical line begins with conditional keyword
-        if within_function and type == NAME and string in CONDITIONALS and logical_line.strip().split()[0] == string:
+        if within_function and type == NAME and string in CONDITIONALS and string in logical_line.strip().split()[0]:
             # Record conditional type (boolean flag will be inserted on logical line below)
             last_condition_type = string
 
