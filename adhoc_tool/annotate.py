@@ -35,6 +35,8 @@ def annotate(file_name, func_name):
     # Strip source file from comments and docstrings
     strip_comments.do_file(file_name)
 
+    func_name = f'def {func_name}('
+
     src = open('stripped_' + file_name)
     annotated_src = open('annotated_' + file_name, 'w')
     annotated_src.write('from adhoc_cov_config import BRANCHES\n\n')
@@ -43,7 +45,7 @@ def annotate(file_name, func_name):
     prev_logical_line = ''
     prev_logical_line_num = -1
     last_condition_type = None
-    function_found = False
+    within_function = False
 
     token_gen = tokenize.generate_tokens(src.readline)
     for type, string, (srow, _), (_, _), logical_line in token_gen:
@@ -53,17 +55,21 @@ def annotate(file_name, func_name):
         elif type == DEDENT:
             indent_lvl -= 4
 
+        # Stop annotating when reaching outside indentation of function
+        if within_function and indent_lvl == 0 and 'def' in logical_line and func_name not in logical_line:
+            within_function = False
+
         if logical_line != prev_logical_line:
             # Write previous logical line
             annotated_src.write(prev_logical_line)
 
             # Find the relevant function in source file before starting annotation
-            if not function_found and 'def' in logical_line and func_name in logical_line:
-                function_found = True
+            if not within_function and func_name in logical_line:
+                within_function = True
 
             # Check if previous logical line contained a conditional
             # If so, a boolean flag should be inserted on between previous and current logical line
-            elif function_found and last_condition_type != None:
+            elif within_function and last_condition_type != None:
                 # Match indentation to current logical line and add branch flag variable
                 annotated_src.write(
                     ' ' * indent_lvl + f'{BRANCH_LIST_NAME}[{BRANCH_COUNT}] = True\n')
@@ -79,7 +85,7 @@ def annotate(file_name, func_name):
             prev_logical_line = logical_line
 
         # Check if current logical line begins with conditional keyword
-        if function_found and type == NAME and string in CONDITIONALS and logical_line.strip().split()[0] == string:
+        if within_function and type == NAME and string in CONDITIONALS and logical_line.strip().split()[0] == string:
             # Record conditional type (boolean flag will be inserted on logical line below)
             last_condition_type = string
 
