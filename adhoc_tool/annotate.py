@@ -40,18 +40,20 @@ def annotate(file_name, func_name):
 
     src = open('stripped_' + file_name)
     annotated_src = open('annotated_' + file_name, 'w')
-    annotated_src.write('from adhoc_cov_config import BRANCHES\n\n')
+    annotated_src.write(
+        'from adhoc_cov_config import BRANCHES, BRANCH_COUNT\n\n')
 
     indent_lvl = 0
     prev_logical_line = ''
     prev_logical_line_num = -1
     last_condition_type = None
     within_function = False
-    fn_header_row = -1
+    fn_header_row_start = -1
+    fn_header_row_end = -1
     fn_header_indent_lvl = -1
 
     token_gen = tokenize.generate_tokens(src.readline)
-    for type, string, (srow, _), (_, _), logical_line in token_gen:
+    for type, string, (srow, _), (erow, _), logical_line in token_gen:
         # Keep track of indentation. One indent = 4 spaces
         if type == INDENT:
             indent_lvl += 4
@@ -59,7 +61,8 @@ def annotate(file_name, func_name):
             indent_lvl -= 4
 
         # Stop annotating when reaching outside indentation of function
-        if within_function and indent_lvl <= fn_header_indent_lvl and srow > fn_header_row:
+        # Set global var BRANCH_COUNT i.e total number of branch flags created on last line
+        if within_function and indent_lvl <= fn_header_indent_lvl and srow > fn_header_row_start:
             annotated_src.write(
                 ' ' * (fn_header_indent_lvl + 4) + f'BRANCH_COUNT = {BRANCH_COUNT}\n\n')
             within_function = False
@@ -71,8 +74,15 @@ def annotate(file_name, func_name):
             # Find the relevant function in source file before starting annotation
             if not within_function and func_name in logical_line:
                 within_function = True
-                fn_header_row = srow
+                fn_header_row_start = srow
+                fn_header_row_end = erow
                 fn_header_indent_lvl = indent_lvl
+
+            elif srow == fn_header_row_end + 1:
+                annotated_src.write(
+                    ' ' * (fn_header_indent_lvl + 4) + f'global BRANCHES\n')
+                annotated_src.write(
+                    ' ' * (fn_header_indent_lvl + 4) + f'global BRANCH_COUNT\n')
 
             # Check if previous logical line contained a conditional
             # If so, a boolean flag should be inserted on between previous and current logical line
