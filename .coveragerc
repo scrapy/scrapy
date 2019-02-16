@@ -6,3 +6,4 @@ omit =
   scrapy/xlib/*
   scrapy/conf.py
   scrapy/log.py
+  adhoc_tool/*
