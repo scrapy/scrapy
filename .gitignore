@@ -19,3 +19,6 @@ htmlcov/
 
 # Windows
 Thumbs.db
+.vscode/
+
+adhoc_tool/scratch.py
