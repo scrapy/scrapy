@@ -11,11 +11,12 @@ import tokenize
 import token
 import strip_comments
 import os
-from token import NAME, INDENT, DEDENT
+from token import NAME, INDENT, DEDENT, NEWLINE, NL, COMMENT
 from adhoc_cov_config import BRANCH_COUNT, BRANCH_LIST_NAME
 
 # Keep track of which lines contain conditional statements
 conditional_line_nums = []
+WHITESPACE_TOKENS = {INDENT, NEWLINE, NL, COMMENT}
 CONDITIONALS = {
     'if',
     'else',
@@ -36,8 +37,6 @@ def annotate(file_name, func_name):
     # Strip source file from comments and docstrings
     strip_comments.do_file(file_name)
 
-    func_name = f'def {func_name}('
-
     src = open('stripped_' + file_name)
     annotated_src = open('annotated_' + file_name, 'w')
     annotated_src.write(
@@ -53,16 +52,23 @@ def annotate(file_name, func_name):
     fn_header_indent_lvl = -1
 
     token_gen = tokenize.generate_tokens(src.readline)
-    for type, string, (srow, _), (erow, _), logical_line in token_gen:
+    func_def_header = f'def {func_name}('
+
+    for t in token_gen:
+        t_type, string, (srow, _), (erow, _), logical_line = t
         # Keep track of indentation. One indent = 4 spaces
-        if type == INDENT:
+        if t_type == INDENT:
             indent_lvl += 4
-        elif type == DEDENT:
+        elif t_type == DEDENT:
             indent_lvl -= 4
 
         # Stop annotating when reaching outside indentation of function
         # Set global var BRANCH_COUNT i.e total number of branch flags created on last line
-        if within_function and indent_lvl <= fn_header_indent_lvl and srow > fn_header_row_start:
+        if within_function and \
+                indent_lvl <= fn_header_indent_lvl and \
+                srow > fn_header_row_start and \
+                t_type not in WHITESPACE_TOKENS:
+
             annotated_src.write(
                 ' ' * (fn_header_indent_lvl + 4) + f'BRANCH_COUNT = {BRANCH_COUNT}\n\n')
             within_function = False
@@ -72,7 +78,8 @@ def annotate(file_name, func_name):
             annotated_src.write(prev_logical_line)
 
             # Find the relevant function in source file before starting annotation
-            if not within_function and func_name in logical_line:
+            if not within_function and func_def_header in logical_line:
+
                 within_function = True
                 fn_header_row_start = srow
                 fn_header_row_end = erow
@@ -102,7 +109,7 @@ def annotate(file_name, func_name):
             prev_logical_line = logical_line
 
         # Check if current logical line begins with conditional keyword
-        if within_function and type == NAME and string in CONDITIONALS and string in logical_line.strip().split()[0]:
+        if within_function and t_type == NAME and string in CONDITIONALS and string in logical_line.strip().split()[0]:
             # Record conditional type (boolean flag will be inserted on logical line below)
             last_condition_type = string
 
