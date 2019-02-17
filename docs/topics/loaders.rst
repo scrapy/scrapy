@@ -31,7 +31,8 @@ using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
 Then, you start collecting values into the Item Loader, typically using
-:ref:`Selectors <topics-selectors>`. You can add more than one value to
+:ref:`Selectors <topics-selectors>`. To note, the Item Loader will extract data
+by using the selector ``.getall()`` method. You can add more than one value to
 the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
 
