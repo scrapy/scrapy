@@ -31,7 +31,6 @@ from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
-from scrapy.utils.engine import print_engine_status
 
 from adhoc_tool.adhoc_cov_config import BRANCHES, BRANCH_COUNT, branch_coverage_summary
 from unittest.mock import MagicMock
