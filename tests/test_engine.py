@@ -344,6 +344,33 @@ class EngineTest(unittest.TestCase):
         e.slot = saved_slot
         yield e.close()
 
+    @defer.inlineCallbacks
+    def test_next_request_paused_engine(self):
+        """
+        _next_request should return without attempting to 
+        fetch next request if the ExecutionEngine is paused
+        """
+        # Arrange (mock methods called if engine isn't paused)
+        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        e._needs_backout = MagicMock()
+        e._next_request_from_scheduler = MagicMock()
+        e.next = MagicMock()
+
+        yield e.open_spider(TestSpider(), [])
+        e.start()
+        e.pause()
+
+        # Act
+        yield e._next_request(TestSpider())
+
+        # Assert
+        e._needs_backout.assert_not_called()
+        e._next_request_from_scheduler.assert_not_called()
+        e.next.assert_not_called()
+
+        # Cleanup
+        yield e.close()
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
