@@ -59,3 +59,9 @@ class JsonEncoderTestCase(unittest.TestCase):
         rs = self.encoder.encode(r)
         self.assertIn(r.url, rs)
         self.assertIn(str(r.status), rs)
+
+    # Test highlighting invalid handling of BaseItem in utils/serialize.py
+    def test_encode_base_item(self):
+        d = {1: "1"}
+        b = BaseItem(d)
+        self.assertRaises(TypeError, self.encoder.encode, b)
