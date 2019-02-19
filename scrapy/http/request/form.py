@@ -9,12 +9,15 @@ import six
 from six.moves.urllib.parse import urljoin, urlencode
 
 import lxml.html
+import lxml.etree
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
+from dataclasses import dataclass
+import functools
 
 
 class FormRequest(Request):
@@ -70,38 +73,71 @@ def _urlencode(seq, enc):
 
 def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
+
+    @dataclass
+    class FormChecker:
+        root: lxml.etree = None
+        form_node: lxml.etree = None
+
     root = create_root_node(response.text, lxml.html.HTMLParser,
                             base_url=get_base_url(response))
-    forms = root.xpath('//form')
+    form_checker = FormChecker(root=root)
+
+    # functools.partial returns a callable wrapping a function with all of the arguments frozen.
+    checks = [
+        functools.partial(_check_valid_element, form_checker, response),
+        functools.partial(_check_valid_name, form_checker, formname),
+        functools.partial(_check_valid_id, form_checker, formid),
+        functools.partial(_check_valid_xpath, form_checker, formxpath),
+        functools.partial(_check_valid_number, form_checker, formnumber, response)
+    ]
+
+    # Perform checks one at a time until a valid form is found
+    for check in checks:
+        check()
+        if form_checker.form_node is not None:
+            return form_checker.form_node
+
+
+def _check_valid_element(form_checker, response):
+    forms = form_checker.root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
 
+
+def _check_valid_name(form_checker, formname):
     if formname is not None:
-        f = root.xpath('//form[@name="%s"]' % formname)
+        f = form_checker.root.xpath('//form[@name="%s"]' % formname)
         if f:
-            return f[0]
+            form_checker.form_node = f[0]
 
+
+def _check_valid_id(form_checker, formid):
     if formid is not None:
-        f = root.xpath('//form[@id="%s"]' % formid)
+        f = form_checker.root.xpath('//form[@id="%s"]' % formid)
         if f:
-            return f[0]
+            form_checker.form_node = f[0]
 
-    # Get form element from xpath, if not found, go up
+
+def _check_valid_xpath(form_checker, formxpath):
     if formxpath is not None:
-        nodes = root.xpath(formxpath)
+        nodes = form_checker.root.xpath(formxpath)
         if nodes:
             el = nodes[0]
             while True:
                 if el.tag == 'form':
-                    return el
+                    form_checker.form_node = el
+                    return
                 el = el.getparent()
                 if el is None:
                     break
         encoded = formxpath if six.PY3 else formxpath.encode('unicode_escape')
         raise ValueError('No <form> element found with %s' % encoded)
 
-    # If we get here, it means that either formname was None
-    # or invalid
+
+def _check_valid_number(form_checker, formnumber, response):
+    forms = form_checker.root.xpath('//form')
+
     if formnumber is not None:
         try:
             form = forms[formnumber]
@@ -109,7 +145,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
             raise IndexError("Form number %d not found in %s" %
                              (formnumber, response))
         else:
-            return form
+            form_checker.form_node = form
 
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
@@ -178,7 +214,7 @@ def _get_clickable(clickdata, form):
             'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
             '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
             namespaces={"re": "http://exslt.org/regular-expressions"})
-        ]
+    ]
     if not clickables:
         return
 
