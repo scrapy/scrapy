@@ -65,7 +65,11 @@ data that will be assigned to the ``name`` field later.
 Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
 and finally the ``last_update`` field is populated directly with a literal value
-(``today``) using a different method: :meth:`~ItemLoader.add_value`.
+(``today``) using a different method: :meth:`~ItemLoader.add_value`. To note 
+:meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_xpath` methods will always
+return a list as they are actually calling selector ``getall()`` method over 
+``get()`` which may return a string value. Thus, input processors should be 
+implemented by waiting for a list instead of a single string.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
 called which actually returns the item populated with the data
