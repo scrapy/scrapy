@@ -93,6 +93,12 @@ LxmlLinkExtractor
         Has the same behaviour as ``restrict_xpaths``.
     :type restrict_css: str or list
 
+    :param restrict_text: a single regular expression (or list of regular expressions)
+        that the link's text must match in order to be extracted. If not
+        given (or empty), it will match all links. If a list of regular expressions is
+        given, the link will be extracted if it matches at least one.
+    :type restrict_text: a regular expression (or list of)
+
     :param tags: a tag or a list of tags to consider when extracting links.
         Defaults to ``('a', 'area')``.
     :type tags: str or list
