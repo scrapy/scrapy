@@ -26,6 +26,7 @@ from scrapy.extensions.feedexport import (
     BlockingFeedStorage)
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
 from scrapy.utils.python import to_native_str
+from scrapy.utils.project import get_project_settings
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -134,8 +135,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
-    @mock.patch('scrapy.conf.settings', new={'AWS_ACCESS_KEY_ID': 'conf_key',
-                'AWS_SECRET_ACCESS_KEY': 'conf_secret'}, create=True)
+    @mock.patch('scrapy.utils.project.get_project_settings',
+                new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
+                                                 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
+                create=True)
     def test_parse_credentials(self):
         try:
             import boto

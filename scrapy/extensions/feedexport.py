@@ -98,7 +98,8 @@ class S3FeedStorage(BlockingFeedStorage):
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
         if no_defaults:
-            from scrapy.conf import settings
+            from scrapy.utils.project import get_project_settings
+            settings = get_project_settings()
             if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
                 import warnings
                 from scrapy.exceptions import ScrapyDeprecationWarning
