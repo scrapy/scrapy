@@ -1,6 +1,6 @@
-pytest==3.6.3
+pytest==4.3.0
 pytest-twisted
-pytest-cov==2.5.1
+pytest-cov==2.6.1
 testfixtures
 jmespath
 leveldb; sys_platform != "win32"
