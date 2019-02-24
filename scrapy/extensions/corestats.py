@@ -6,7 +6,8 @@ import datetime
 from scrapy import signals
 
 class CoreStats(object):
-
+    start_time = 0
+    finish_time = 0
     def __init__(self, stats):
         self.stats = stats
 
@@ -21,10 +22,16 @@ class CoreStats(object):
         return o
 
     def spider_opened(self, spider):
-        self.stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
+        start_time = datetime.datetime.now()
+        self.start_time = start_time
+        self.stats.set_value('start_time', start_time, spider=spider)
 
     def spider_closed(self, spider, reason):
-        self.stats.set_value('finish_time', datetime.datetime.utcnow(), spider=spider)
+        finish_time = datetime.datetime.now()
+        elapsed_time = finish_time - self.start_time
+        elapsed_time_seconds = elapsed_time.seconds + elapsed_time.microseconds/1000000
+        self.stats.set_value('finish_time', finish_time, spider=spider)
+        self.stats.set_value('elapsed_time_seconds', elapsed_time_seconds)
         self.stats.set_value('finish_reason', reason, spider=spider)
 
     def item_scraped(self, item, spider):
