@@ -5,7 +5,10 @@ See documentation in docs/topics/item.rst
 """
 
 from pprint import pformat
-from collections import MutableMapping
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
 
 from abc import ABCMeta
 import six

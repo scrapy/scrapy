@@ -1,7 +1,10 @@
 import six
 import json
 import copy
-from collections import MutableMapping
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
