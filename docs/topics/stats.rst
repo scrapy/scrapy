@@ -4,6 +4,9 @@
 Stats Collection
 ================
 
+.. module:: scrapy.statscollectors
+   :synopsis: Stats Collectors
+
 Scrapy provides a convenient facility for collecting stats in the form of
 key/values, where values are often counters. The facility is called the Stats
 Collector, and can be accessed through the :attr:`~scrapy.crawler.Crawler.stats`
@@ -23,6 +26,7 @@ enabled) and extremely efficient (almost unnoticeable) when disabled.
 
 The Stats Collector keeps a stats table per open spider which is automatically
 opened when the spider is opened, and closed when the spider is closed.
+
 
 .. _topics-stats-usecases:
 
@@ -67,6 +71,7 @@ Get all stats::
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
+
 Available Stats Collectors
 ==========================
 
@@ -75,8 +80,99 @@ available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
 default Stats Collector used is the :class:`MemoryStatsCollector`. 
 
-.. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
+.. class:: StatsCollector(crawler)
+
+    The base stats collector that other stats collectors are based on.
+
+    :param crawler: the crawler instance to which the stats collector is bound
+    :type crawler: :class:`~scrapy.crawler.Crawler` object
+
+    .. method:: StatsCollector.get_value(key, [default=None])
+
+       Get stat value
+
+       :param key: stat identifier
+       :type key: any immutable type
+
+       :param default: value to return if the given stat is not found.
+           Optional, defaults to None.
+
+    .. method:: StatsCollector.get_stats()
+
+       Return all stats as a dict
+
+    .. method:: StatsCollector.set_value(key, value)
+
+       Save a stat
+
+       :param key: stat identifier
+       :type key: any immutable type
+
+       :param value: stat value
+       :type value: any type
+
+    .. method:: StatsCollector.set_stats(stats)
+
+       Set and override all stats using provided stats
+
+       :param stats: new stats to save
+       :type stats: dict
+
+    .. method:: StatsCollector.inc_value(key, [count=1, start=0])
+
+       Increment a stat value. If the stat does not exist creates it.
+
+       :param key: stat identifier
+       :type key: any immutable type
+
+       :param count: The value by to increment the stat value.
+           Optional, If not provided defaults to 1.
+       :type count: int
+
+       :param start: The starting value for the stat if it does not exist.
+           Optional. If not provided defaults to 0.
+       :type start: int
+
+    .. method:: StatsCollector.max_value(key, value)
+
+       Set a stat value only if it does not exist or if given value is
+       greater than the saved value
+
+      :param key: stat identifier
+      :type key: any immutable type
+
+      :param value: value to save
+      :type value: int
+
+    .. method:: StatsCollector.min_value(key, value)
+
+       Set a stat value only if it does not exist or if given value is
+       lesser than the saved value
+
+      :param key: stat identifier
+      :type key: any immutable type
+
+      :param value: value to save
+      :type value: int
+
+    .. method:: StatsCollector.clear_stats()
+
+       Reset all stats
+
+    .. method:: open_spider(self, spider)
+
+       This method is called when the spider is opened.
+
+       :param spider: the spider which was opened
+       :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: close_spider(self, spider)
+
+       This method is called when the spider is closed.
+
+       :param spider: the spider which was closed
+       :type spider: :class:`~scrapy.spiders.Spider` object
+
 
 MemoryStatsCollector
 --------------------
