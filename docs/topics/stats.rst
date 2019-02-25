@@ -27,7 +27,6 @@ enabled) and extremely efficient (almost unnoticeable) when disabled.
 The Stats Collector keeps a stats table per open spider which is automatically
 opened when the spider is opened, and closed when the spider is closed.
 
-
 .. _topics-stats-usecases:
 
 Common Stats Collector uses
@@ -70,7 +69,6 @@ Get all stats::
 
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
-
 
 Available Stats Collectors
 ==========================
