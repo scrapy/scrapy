@@ -192,10 +192,10 @@ Google Cloud Storage (GCS)
 
 The feeds are stored on `Google Cloud Storage`_.
 
- * URI scheme: ``gcs``
+ * URI scheme: ``gs``
  * Example URIs:
 
-   * ``gcs://mybucket/path/to/export.csv``
+   * ``gs://mybucket/path/to/export.csv``
 
  * Required external libraries: `google-cloud-storage <https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python>`_.
 

@@ -200,7 +200,7 @@ class GCSFeedStorageTest(unittest.TestCase):
 
         settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': 'publicRead' }
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, 'gcs://mybucket/export.csv')
+        storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
         assert storage.project_id == '123'
         assert storage.acl == 'publicRead'
         assert storage.bucket_name == 'mybucket'
