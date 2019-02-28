@@ -43,6 +43,7 @@ class StatsCollector(object):
 
     def close_spider(self, spider, reason):
         if self._dump:
+            self.set_value('log_count/INFO', self.get_value('log_count/INFO') + 5)
             logger.info("Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
                         extra={'spider': spider})
         self._persist_stats(self._stats, spider)
