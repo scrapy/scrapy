@@ -9,12 +9,10 @@ from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, gzip_magic_number
 
-
 logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
-
     sitemap_urls = ()
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
@@ -83,9 +81,9 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-	file_path = urlparse(response.url).path
-	# to avoid parameters in the url       
-	if file_path.endswith('.xml') or file_path.endswith('.xml.gz'):
+        file_path = urlparse(response.url).path
+        # to avoid parameters in the url
+        if file_path.endswith('.xml') or file_path.endswith('.xml.gz'):
             return response.body
 
 
