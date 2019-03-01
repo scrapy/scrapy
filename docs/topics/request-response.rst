@@ -728,7 +728,7 @@ TextResponse objects
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
-        kept for backwards compatibility; please prefer ``response.text``.
+        kept for backward compatibility; please prefer ``response.text``.
 
 
 HtmlResponse objects

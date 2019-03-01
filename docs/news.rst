@@ -53,7 +53,7 @@ case of Scrapy spiders: callbacks are usually called several times,
 on different pages.
 
 If you're using custom ``Selector`` or ``SelectorList`` subclasses,
-a **backwards incompatible** change in parsel may affect your code.
+a **backward incompatible** change in parsel may affect your code.
 See `parsel changelog`_ for a detailed description, as well as for the
 full list of improvements.
 
@@ -62,7 +62,7 @@ full list of improvements.
 Telnet console
 ~~~~~~~~~~~~~~
 
-**Backwards incompatible**: Scrapy's telnet console now requires username
+**Backward incompatible**: Scrapy's telnet console now requires username
 and password. See :ref:`topics-telnetconsole` for more details. This change
 fixes a **security issue**; see :ref:`release-1.5.2` release notes for details.
 
@@ -209,7 +209,7 @@ Scrapy 1.5.2 (2019-01-22)
   exploit it from Scrapy, but it is very easy to trick a browser to do so and
   elevates the risk for local development environment.
 
-  *The fix is backwards incompatible*, it enables telnet user-password
+  *The fix is backward incompatible*, it enables telnet user-password
   authentication by default with a random generated password. If you can't
   upgrade right away, please consider setting :setting:`TELNET_CONSOLE_PORT`
   out of its default value.
@@ -256,15 +256,15 @@ Some highlights:
 * Better default handling of HTTP 308, 522 and 524 status codes.
 * Documentation is improved, as usual.
 
-Backwards Incompatible Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Backward Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Scrapy 1.5 drops support for Python 3.3.
 * Default Scrapy User-Agent now uses https link to scrapy.org (:issue:`2983`).
-  **This is technically backwards-incompatible**; override
+  **This is technically backward-incompatible**; override
   :setting:`USER_AGENT` if you relied on old value.
 * Logging of settings overridden by ``custom_settings`` is fixed;
-  **this is technically backwards-incompatible** because the logger
+  **this is technically backward-incompatible** because the logger
   changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``. If you're
   parsing Scrapy logs, please update your log parsers (:issue:`1343`).
 * LinkExtractor now ignores ``m4v`` extension by default, this is change
@@ -301,11 +301,11 @@ Bug fixes
 ~~~~~~~~~
 
 - Fix logging of settings overridden by ``custom_settings``;
-  **this is technically backwards-incompatible** because the logger
+  **this is technically backward-incompatible** because the logger
   changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``, so please
   update your log parsers if needed (:issue:`1343`)
 - Default Scrapy User-Agent now uses https link to scrapy.org (:issue:`2983`).
-  **This is technically backwards-incompatible**; override
+  **This is technically backward-incompatible**; override
   :setting:`USER_AGENT` if you relied on old value.
 - Fix PyPy and PyPy3 test failures, support them officially
   (:issue:`2793`, :issue:`2935`, :issue:`2990`, :issue:`3050`, :issue:`2213`,
@@ -415,18 +415,18 @@ offset, using the new :setting:`FEED_EXPORT_INDENT` setting.
 
 Enjoy! (Or read on for the rest of changes in this release.)
 
-Deprecations and Backwards Incompatible Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Deprecations and Backward Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
-  **warning, this is technically backwards-incompatible**
+  **warning, this is technically backward-incompatible**
 - Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
-  **this is technically backwards-incompatible** so please check if you have
+  **this is technically backward-incompatible** so please check if you have
   any non-default ``MEMUSAGE_***`` options set.
 - ``EDITOR`` environment variable now takes precedence over ``EDITOR``
   option defined in settings.py (:issue:`1829`); Scrapy default settings
-  no longer depend on environment variables. **This is technically a backwards
+  no longer depend on environment variables. **This is technically a backward
   incompatible change**.
 - ``Spider.make_requests_from_url`` is deprecated
   (:issue:`1728`, fixes :issue:`1495`).
@@ -636,10 +636,10 @@ New Features
   scrapy shell now follow HTTP redirections by default (:issue:`2290`);
   See :command:`fetch` and :command:`shell` for details.
 - ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
-  this is technically **backwards incompatible** so please check your log parsers.
+  this is technically **backward incompatible** so please check your log parsers.
 - By default, logger names now use a long-form path, e.g. ``[scrapy.extensions.logstats]``,
   instead of the shorter "top-level" variant of prior releases (e.g. ``[scrapy]``);
-  this is **backwards incompatible** if you have log parsers expecting the short
+  this is **backward incompatible** if you have log parsers expecting the short
   logger name part. You can switch back to short logger names using :setting:`LOG_SHORT_NAMES`
   set to ``True``.
 
@@ -750,11 +750,11 @@ Bug fixes
 ~~~~~~~~~
 
 - DefaultRequestHeaders middleware now runs before UserAgent middleware
-  (:issue:`2088`). **Warning: this is technically backwards incompatible**,
+  (:issue:`2088`). **Warning: this is technically backward incompatible**,
   though we consider this a bug fix.
 - HTTP cache extension and plugins that use the ``.scrapy`` data directory now
   work outside projects (:issue:`1581`).  **Warning: this is technically
-  backwards incompatible**, though we consider this a bug fix.
+  backward incompatible**, though we consider this a bug fix.
 - ``Selector`` does not allow passing both ``response`` and ``text`` anymore
   (:issue:`2153`).
 - Fixed logging of wrong callback name with ``scrapy parse`` (:issue:`2169`).
@@ -934,13 +934,13 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - Accept XML node names containing dots as valid (:issue:`1533`).
   - When uploading files or images to S3 (with ``FilesPipeline`` or
     ``ImagesPipeline``), the default ACL policy is now "private" instead
-    of "public" **Warning: backwards incompatible!**.
+    of "public" **Warning: backward incompatible!**.
     You can use :setting:`FILES_STORE_S3_ACL` to change it.
   - We've reimplemented ``canonicalize_url()`` for more correct output,
     especially for URLs with non-ASCII characters (:issue:`1947`).
     This could change link extractors output compared to previous scrapy versions.
     This may also invalidate some cache entries you could still have from pre-1.1 runs.
-    **Warning: backwards incompatible!**.
+    **Warning: backward incompatible!**.
 
 Keep reading for more details on other improvements and bug fixes.
 
@@ -973,7 +973,7 @@ Additional New Features and Enhancements
   - Support for bpython and configure preferred Python shell via
     ``SCRAPY_PYTHON_SHELL`` (:issue:`1100`, :issue:`1444`).
   - Support URLs without scheme (:issue:`1498`)
-    **Warning: backwards incompatible!**
+    **Warning: backward incompatible!**
   - Bring back support for relative file path (:issue:`1710`, :issue:`1550`).
 
 - Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check
@@ -1056,7 +1056,7 @@ Bugfixes
 ~~~~~~~~
 
 - Scrapy does not retry requests that got a ``HTTP 400 Bad Request``
-  response anymore (:issue:`1289`). **Warning: backwards incompatible!**
+  response anymore (:issue:`1289`). **Warning: backward incompatible!**
 - Support empty password for http_proxy config (:issue:`1274`).
 - Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
 - Support link rel attribute with multiple values (:issue:`1201`).
@@ -1646,7 +1646,7 @@ Scrapy 0.24.2 (2014-07-08)
 Scrapy 0.24.1 (2014-06-27)
 --------------------------
 
-- Fix deprecated CrawlerSettings and increase backwards compatibility with
+- Fix deprecated CrawlerSettings and increase backward compatibility with
   .defaults attribute (:commit:`8e3f20a`)
 
 
@@ -1772,7 +1772,7 @@ Scrapy 0.22.0 (released 2014-01-17)
 Enhancements
 ~~~~~~~~~~~~
 
-- [**Backwards incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
+- [**Backward incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
   To restore old backend set `HTTPCACHE_STORAGE` to `scrapy.contrib.httpcache.DbmCacheStorage`
 - Proxy \https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
 - Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
@@ -2092,7 +2092,7 @@ Scrapy 0.16.1 (released 2012-10-26)
 -----------------------------------
 
 - fixed LogStats extension, which got broken after a wrong merge before the 0.16 release (:commit:`8c780fd`)
-- better backwards compatibility for scrapy.conf.settings (:commit:`3403089`)
+- better backward compatibility for scrapy.conf.settings (:commit:`3403089`)
 - extended documentation on how to access crawler stats from extensions (:commit:`c4da0b5`)
 - removed .hgtags (no longer needed now that scrapy uses git) (:commit:`d52c188`)
 - fix dashes under rst headers (:commit:`fa4f7f9`)
@@ -2107,7 +2107,7 @@ Scrapy changes:
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
-- major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backwards compatibility is kept on the Stats Collector API and signals.
+- major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
@@ -2259,7 +2259,7 @@ Code rearranged and removed
 - Removed (undocumented) spider context extension (from scrapy.contrib.spidercontext) (:rev:`2780`)
 - removed ``CONCURRENT_SPIDERS`` setting (use scrapyd maxproc instead) (:rev:`2789`)
 - Renamed attributes of core components: downloader.sites -> downloader.slots, scraper.sites -> scraper.slots (:rev:`2717`, :rev:`2718`)
-- Renamed setting ``CLOSESPIDER_ITEMPASSED`` to :setting:`CLOSESPIDER_ITEMCOUNT` (:rev:`2655`). Backwards compatibility kept.
+- Renamed setting ``CLOSESPIDER_ITEMPASSED`` to :setting:`CLOSESPIDER_ITEMCOUNT` (:rev:`2655`). Backward compatibility kept.
 
 Scrapy 0.12
 -----------
@@ -2356,11 +2356,11 @@ API changes
    - ``scrapy.stats.collector.SimpledbStatsCollector`` to ``scrapy.contrib.statscol.SimpledbStatsCollector``
 - default per-command settings are now specified in the ``default_settings`` attribute of command object class (#201)
 - changed arguments of Item pipeline ``process_item()`` method from ``(spider, item)`` to ``(item, spider)``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - moved ``scrapy.core.signals`` module to ``scrapy.signals``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - moved ``scrapy.core.exceptions`` module to ``scrapy.exceptions``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - added ``handles_request()`` class method to ``BaseSpider``
 - dropped ``scrapy.log.exc()`` function (use ``scrapy.log.err()`` instead)
 - dropped ``component`` argument of ``scrapy.log.msg()`` function
@@ -2431,8 +2431,8 @@ New features
 - Added support for HTTP proxies (``HttpProxyMiddleware``) (:rev:`1781`, :rev:`1785`)
 - Offsite spider middleware now logs messages when filtering out requests (:rev:`1841`)
 
-Backwards-incompatible changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Changed ``scrapy.utils.response.get_meta_refresh()`` signature (:rev:`1804`)
 - Removed deprecated ``scrapy.item.ScrapedItem`` class - use ``scrapy.item.Item instead`` (:rev:`1838`)
