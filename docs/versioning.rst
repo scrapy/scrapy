@@ -16,36 +16,28 @@ There are 3 numbers in a Scrapy version: *A.B.C*
   keep theses cases at a minimum.
 * *C* is the bugfix release number.
 
-Backward-incompatibilities are explicitly mentioned in the :ref:`release notes <news>`,
-and may require special attention before upgrading.
-
-Development releases do not follow 3-numbers version and are generally
-released as ``dev`` suffixed versions, e.g. ``1.3dev``.
-
-.. note::
-    With Scrapy 0.* series, Scrapy used `odd-numbered versions for development releases`_.
-    This is not the case anymore from Scrapy 1.0 onwards.
-
-    Starting with Scrapy 1.0, all releases should be considered production-ready.
-
 For example:
 
-* *1.1.1* is the first bugfix release of the *1.1* series (safe to use in
-  production)
+*   Upgrading from ``1.0.0`` to ``1.0.1`` will not require code changes unless
+    deemed necessary; for example, for security reasons.
+
+*   Upgrading from ``1.0.0`` to ``1.1.0`` may require code changes.
+
+*   Upgrading from ``1.0.0`` to ``2.0.0`` will require code changes.
+
+Backward-incompatibilities are explicitly mentioned in the
+:ref:`release notes <news>` and in the :ref:`deprecation list
+<current-deprecations>`, and may require special attention before upgrading.
 
 
 API Stability
 =============
 
-API stability was one of the major goals for the *1.0* release.
-
-Methods or functions that start with a single dash (``_``) are private and
-should never be relied as stable.
+Names that start with a single dash (``_``) are private and you should never
+rely on them being stable. They may be changed or removed in any version, even
+in bugfix releases, and this will not be covered in the :ref:`release notes
+<news>` or in the :ref:`deprecation list <current-deprecations>`.
 
 Also, keep in mind that stable doesn't mean complete: stable APIs could grow
 new methods or functionality but the existing methods should keep working the
 same way.
-
-
-.. _odd-numbered versions for development releases: https://en.wikipedia.org/wiki/Software_versioning#Odd-numbered_versions_for_development_releases
-

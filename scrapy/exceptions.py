@@ -65,8 +65,10 @@ class UsageError(Exception):
 
 
 class ScrapyDeprecationWarning(Warning):
-    """Warning category for deprecated features, since the default
-    DeprecationWarning is silenced on Python 2.7+
+    """Warning category for deprecated Scrapy features.
+
+    Unlike :class:`DeprecationWarning`, warnings in this category are shown
+    by default.
     """
     pass
 
