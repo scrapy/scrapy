@@ -2,6 +2,8 @@ import re
 import logging
 import six
 
+from six.moves.urllib.parse import urlparse
+
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
@@ -81,7 +83,9 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+	file_path = urlparse(response.url).path
+	# to avoid parameters in the url       
+	if file_path.endswith('.xml') or file_path.endswith('.xml.gz'):
             return response.body
 
 
