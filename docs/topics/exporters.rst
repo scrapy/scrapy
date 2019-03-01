@@ -303,7 +303,7 @@ CsvItemExporter
 
    The additional keyword arguments of this constructor are passed to the
    :class:`BaseItemExporter` constructor, and the leftover arguments to the
-   `csv.writer`_ constructor, so you can use any `csv.writer` constructor
+   `csv.writer`_ constructor, so you can use any ``csv.writer`` constructor
    argument to customize this exporter.
 
    A typical output of this exporter would be::

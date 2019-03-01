@@ -94,7 +94,7 @@ how you :ref:`configure the downloader middlewares
     .. method:: crawl(\*args, \**kwargs)
 
         Starts the crawler by instantiating its spider class with the given
-        `args` and `kwargs` arguments, while setting the execution engine in
+        ``args`` and ``kwargs`` arguments, while setting the execution engine in
         motion.
 
         Returns a deferred that is fired when the crawl is finished.
@@ -180,7 +180,7 @@ SpiderLoader API
     .. method:: load(spider_name)
 
        Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name `spider_name` and will raise
+       loaded spiders for a spider class with name ``spider_name`` and will raise
        a KeyError if not found.
 
        :param spider_name: spider class name

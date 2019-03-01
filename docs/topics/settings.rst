@@ -599,7 +599,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: `1073741824` (1024MB)
+Default: ``1073741824`` (1024MB)
 
 The maximum response size (in bytes) that downloader will download.
 
@@ -620,7 +620,7 @@ If you want to disable it set to 0.
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: `33554432` (32MB)
+Default: ``33554432`` (32MB)
 
 The response size (in bytes) that downloader will start to warn.
 

@@ -255,13 +255,13 @@ class FilesPipeline(MediaPipeline):
     doing stat of the files and determining if file is new, uptodate or
     expired.
 
-    `new` files are those that pipeline never processed and needs to be
+    ``new`` files are those that pipeline never processed and needs to be
         downloaded from supplier site the first time.
 
-    `uptodate` files are the ones that the pipeline processed and are still
+    ``uptodate`` files are the ones that the pipeline processed and are still
         valid files.
 
-    `expired` files are those that pipeline already processed but the last
+    ``expired`` files are those that pipeline already processed but the last
         modification was made long time ago, so a reprocessing is recommended to
         refresh it in case of change.
 

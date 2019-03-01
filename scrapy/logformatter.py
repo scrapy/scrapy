@@ -13,21 +13,21 @@ CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(ref
 class LogFormatter(object):
     """Class for generating log messages for different actions.
 
-    All methods must return a dictionary listing the parameters `level`, `msg`
-    and `args` which are going to be used for constructing the log message when
-    calling logging.log.
+    All methods must return a dictionary listing the parameters ``level``,
+    ``msg`` and ``args`` which are going to be used for constructing the log
+    message when calling logging.log.
 
     Dictionary keys for the method outputs:
-        * `level` should be the log level for that action, you can use those
+        * ``level`` should be the log level for that action, you can use those
         from the python logging library: logging.DEBUG, logging.INFO,
         logging.WARNING, logging.ERROR and logging.CRITICAL.
 
-        * `msg` should be a string that can contain different formatting
-        placeholders. This string, formatted with the provided `args`, is going
-        to be the log message for that action.
+        * ``msg`` should be a string that can contain different formatting
+        placeholders. This string, formatted with the provided ``args``, is
+        going to be the log message for that action.
 
-        * `args` should be a tuple or dict with the formatting placeholders for
-        `msg`.  The final log message is computed as output['msg'] %
+        * ``args`` should be a tuple or dict with the formatting placeholders
+        for ``msg``.  The final log message is computed as output['msg'] %
         output['args'].
     """
 
