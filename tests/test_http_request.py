@@ -290,7 +290,7 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'b'], [b'2'])
 
         #Duplicate GET arguments are preserved
-        formdata={'foo' : 'bar'}
+        data={'foo' : 'bar'}
         fs = _qs(self.request_class('http://example.com/?foo=1&foo=2&a=1&a=2', method='GET', formdata=data))
         self.assertEqual(fs[b'foo'], [b'bar'])
         self.assertEqual(set(fs[b'a']), {b'1', b'2'})
