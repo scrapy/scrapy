@@ -289,6 +289,12 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'a'], [b'1'])
         self.assertEqual(fs[b'b'], [b'2'])
 
+        #GET duplicates are preserved
+        formdata=(('foo', 'bar'), ('foo', 'baz'))
+        fs = _qs(self.request_class('http://example.com/?foo=1&foo=2&a=1&a=2', method='GET', formdata=data))
+        self.assertEqual(set(fs[b'foo']), {b'bar', b'baz'})
+        self.assertEqual(set(fs[b'a']), {b'1', b'2'})
+
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
         data = {b'one': b'two', b'price': b'\xc2\xa3 100'}
