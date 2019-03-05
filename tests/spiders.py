@@ -110,12 +110,42 @@ class ErrorSpider(FollowAllSpider):
             yield request
             self.raise_exception()
 
-class CloseByErrorSpider(ErrorSpider):
+
+class NotCloseByErrorSpider(Spider):
 
     name = 'closebyerror'
+
+    def __init__(self, url="http://example.com", *args, **kwargs):
+        super(NotCloseByErrorSpider, self).__init__(*args, **kwargs)
+        self.start_urls = [url]
+
+    def raise_exception(self):
+        raise self.exception_cls('Expected exception')
+
+    def parse(self, response):
+        for request in response:
+            yield request
+            self.raise_exception()
+
+
+class CloseByErrorSpider(Spider):
+
+    name = 'notclosebyerror'
     custom_settings = {
         'CLOSESPIDER_ERRORCOUNT': 1
     }
+
+    def __init__(self, url="http://example.com", *args, **kwargs):
+        super(NotCloseByErrorSpider, self).__init__(*args, **kwargs)
+        self.start_urls = [url]
+
+    def raise_exception(self):
+        raise self.exception_cls('Expected exception')
+
+    def parse(self, response):
+        for request in response:
+            yield request
+            self.raise_exception()
 
 
 class BrokenStartRequestsSpider(FollowAllSpider):

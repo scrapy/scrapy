@@ -18,7 +18,7 @@ from scrapy.utils.test import get_testenv
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
-from tests.spiders import CloseByErrorSpider
+from tests.spiders import NotCloseByErrorSpider, CloseByErrorSpider
 
 
 class ProjectTest(unittest.TestCase):
@@ -233,9 +233,14 @@ class MySpider(scrapy.Spider):
         self.assertEqual(ret, 0)
 
     def test_close_by_error_spider(self):
-        proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(CloseByErrorSpider))
+        proc, _, _ = self.runspider("from scrapy import Spider\n" + inspect.getsource(CloseByErrorSpider))
         ret = proc.returncode
         self.assertNotEqual(ret, 0)
+
+    def test_not_close_by_error_spider(self):
+        proc, _, _ = self.runspider("from scrapy import Spider\n" + inspect.getsource(NotCloseByErrorSpider))
+        ret = proc.returncode
+        self.assertEqual(ret, 0)
 
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider,
