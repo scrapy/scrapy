@@ -110,6 +110,13 @@ class ErrorSpider(FollowAllSpider):
             yield request
             self.raise_exception()
 
+class CloseByErrorSpider(ErrorSpider):
+
+    name = 'closebyerror'
+    custom_settings = {
+        'CLOSESPIDER_ERRORCOUNT': 1
+    }
+
 
 class BrokenStartRequestsSpider(FollowAllSpider):
 
