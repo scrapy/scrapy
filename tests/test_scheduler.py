@@ -1,18 +1,48 @@
 import shutil
 import tempfile
 import unittest
+import collections
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.crawler import Crawler
+from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
-from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
-from scrapy.signals import request_reached_downloader, request_left_downloader
 from scrapy.spiders import Spider
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
+
+
+MockEngine = collections.namedtuple('MockEngine', ['downloader'])
+MockSlot = collections.namedtuple('MockSlot', ['active'])
+
+
+class MockDownloader:
+    def __init__(self):
+        self.slots = dict()
+
+    def _set_slot_key(self, slot, request, spider):
+        request.meta[Downloader.DOWNLOAD_SLOT] = slot
+
+    def _get_slot_key(self, request, spider):
+        if Downloader.DOWNLOAD_SLOT in request.meta:
+            return request.meta[Downloader.DOWNLOAD_SLOT]
+
+        return urlparse_cached(request).hostname or ''
+
+    def increment(self, slot_key):
+        slot = self.slots.setdefault(slot_key, MockSlot(active=list()))
+        slot.active.append(1)
+
+    def decrement(self, slot_key):
+        slot = self.slots.get(slot_key)
+        slot.active.pop()
+
+    def close(self):
+        pass
 
 
 class MockCrawler(Crawler):
@@ -27,6 +57,7 @@ class MockCrawler(Crawler):
                 DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter'
                 )
         super(MockCrawler, self).__init__(Spider, settings)
+        self.engine = MockEngine(downloader=MockDownloader())
 
 
 class SchedulerHandler:
@@ -42,6 +73,7 @@ class SchedulerHandler:
     def close_scheduler(self):
         self.scheduler.close('finished')
         self.mock_crawler.stop()
+        self.mock_crawler.engine.downloader.close()
 
     def setUp(self):
         self.create_scheduler()
@@ -147,11 +179,11 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    priority_queue_cls = 'queuelib.PriorityQueue'
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
 class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    priority_queue_cls = 'queuelib.PriorityQueue'
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
 _SLOTS = [("http://foo.com/a", 'a'),
@@ -172,7 +204,7 @@ class TestMigration(unittest.TestCase):
 
     def _migration(self, tmp_dir):
         prev_scheduler_handler = SchedulerHandler()
-        prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
+        prev_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
         prev_scheduler_handler.jobdir = tmp_dir
 
         prev_scheduler_handler.create_scheduler()
@@ -196,30 +228,25 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
     def test_logic(self):
+        downloader = self.mock_crawler.engine.downloader
         for url, slot in _SLOTS:
             request = Request(url)
-            _scheduler_slot_write(request, slot)
+            downloader._set_slot_key(slot, request, None)
             self.scheduler.enqueue_request(request)
 
         slots = list()
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(_scheduler_slot_read(request))
-            self.mock_crawler.signals.send_catch_log(
-                    signal=request_reached_downloader,
-                    request=request,
-                    spider=self.spider
-                    )
+            slot = downloader._get_slot_key(request, None)
+            slots.append(slot)
+            downloader.increment(slot)
             requests.append(request)
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(
-                    signal=request_left_downloader,
-                    request=request,
-                    spider=self.spider
-                    )
+            slot = downloader._get_slot_key(request, None)
+            self.mock_crawler.engine.downloader.decrement(slot)
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
@@ -239,9 +266,11 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
     def test_logic(self):
+        downloader = self.mock_crawler.engine.downloader
+
         for url, slot in _SLOTS:
             request = Request(url)
-            _scheduler_slot_write(request, slot)
+            downloader._set_slot_key(slot, request, None)
             self.scheduler.enqueue_request(request)
 
         self.close_scheduler()
@@ -249,33 +278,31 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
 
         slots = []
         requests = []
+        downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(_scheduler_slot_read(request))
-            self.mock_crawler.signals.send_catch_log(
-                    signal=request_reached_downloader,
-                    request=request,
-                    spider=self.spider
-                    )
+            slot = downloader._get_slot_key(request, None)
+            slots.append(slot)
+            downloader.increment(slot)
             requests.append(request)
 
-        self.assertEqual(self.scheduler.mqs._active_downloads, {})
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(
-                    signal=request_left_downloader,
-                    request=request,
-                    spider=self.spider
-                    )
+            slot = downloader._get_slot_key(request, None)
+            downloader.decrement(slot)
 
         _is_slots_unique(_SLOTS, slots)
+        self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
 
 
 class StartUrlsSpider(Spider):
 
     def __init__(self, start_urls):
         self.start_urls = start_urls
+
+    def parse(self, response):
+        pass
 
 
 class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
