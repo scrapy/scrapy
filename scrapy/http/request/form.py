@@ -37,7 +37,8 @@ class FormRequest(Request):
                 formdata_keys = set(dict(parse_qsl(querystr)).keys())
                 items = [(k, v) for k, v in parse_qsl(url_split.query) if k not in formdata_keys]
                 query_str = _urlencode(items, self.encoding)
-                self._set_url(urlunsplit((url_split.scheme, url_split.netloc, url_split.path, (query_str + '&' + querystr) if query_str else querystr, url_split.fragment)))
+                query = (query_str + '&' + querystr) if query_str else querystr
+                self._set_url(urlunsplit(url_split._replace(query = query)))
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
