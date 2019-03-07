@@ -55,9 +55,10 @@ class Command(ScrapyCommand):
         spname = args[0]
 
         self.crawler_process.crawl(spname, **opts.spargs)
-        crawler = list(self.crawler_process.crawlers)
         self.crawler_process.start()
-        closed_by_error_count = any([x.stats.get_value('finish_reason') == 'closespider_errorcount' for x in crawler])
+
+        closed_by_error_count = any(map(lambda x: x.stats.get_value('finish_reason') == 'closespider_errorcount',
+                                        self.crawler_process.crawlers))
 
         if self.crawler_process.bootstrap_failed or closed_by_error_count:
             self.exitcode = 1
