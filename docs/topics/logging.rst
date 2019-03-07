@@ -196,41 +196,11 @@ to override some of the Scrapy settings regarding logging.
 Custom Log Formats
 -------------------
 
-Custom log format can be set for different actions by extending ``scrapy.logformatter.LogFormatter`` class.
-
-Each method of ``scrapy.logformatter.LogFormatter`` represents an action. All methods inherited from 
-``scrapy.logformatter.LogFormatter`` in your custom log formatting class must return a dictionary listing
-the parameters ``level``, ``msg`` and ``args`` which are going to be used for constructing the log message.
-Listed below is details of what each key represents :
-
-*   ``level`` is the log level for that action, you can use those from the python logging library:
-    :setting:`logging.DEBUG`, :setting:`logging.INFO`, :setting:`logging.WARNING`, :setting:`logging.ERROR`
-    and :setting:`logging.CRITICAL`.
-
-*   ``msg`` should be a string that can contain different formatting placeholders. This string, formatted
-    with the provided ``args``, is going to be the long message for that action.
-
-*   ``args`` should be a tuple or dict with the formatting placeholders for `msg`. The final log message is
-    computed as ``msg % args``.
-
-.. note:: To use custom log formatting class, you must mention it in ``settings.py``, by adding a line 
-   ``LOG_FORMATTER = '<path_to_your_class>’``
+Custom log format can be set for different actions by extending :class:`~scrapy.logformatter.LogFormatter` class
+and making :setting:`LOG_FORMATTER` inside ``settings.py`` point to your new class.
  
-.. class:: scrapy.logformatter.LogFormatter
-
-   The default log formatting class in Scrapy.
-
-   .. method:: crawled (request, response, spider)
-
-      ``crawled`` is called to log message when the crawler finds a webpage.
-
-   .. method:: scraped(item, response, spider)
-
-      ``scraped`` is called to log message when an item scraped by a spider.
-
-   .. method::  dropped(item, exception, response, spider)  
-
-      ``dropped`` is called to log message when an item is dropped while it is passing through the item pipeline. 
+.. autoclass:: scrapy.logformatter.LogFormatter
+   :members:
 
 Advanced customization
 ----------------------

@@ -866,6 +866,15 @@ directives.
 
 .. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
 
+.. setting:: LOG_FORMATTER
+
+LOG_FORMATTER
+-------------
+
+Default: ``scrapy.logformatter.LogFormatter``
+
+The class to use for formatting log messages for different actions.
+
 .. setting:: LOG_LEVEL
 
 LOG_LEVEL
