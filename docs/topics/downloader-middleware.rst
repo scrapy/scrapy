@@ -834,8 +834,6 @@ RetryMiddleware
 
 Failed pages are collected on the scraping process and rescheduled at the
 end, once the spider has finished crawling all regular (non failed) pages.
-Once there are no more failed pages to retry, this middleware sends a signal
-(retry_complete), so other extensions could connect to that signal.
 
 The :class:`RetryMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
