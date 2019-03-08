@@ -48,7 +48,10 @@ class RetryMiddleware(object):
         return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_retry', False):
+        if (request.meta.get('dont_retry', False) or
+                response.status in getattr(spider, 'handle_httpstatus_list', []) or
+                response.status in request.meta.get('handle_httpstatus_list', []) or
+                request.meta.get('handle_httpstatus_all', False)):
             return response
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
