@@ -149,6 +149,41 @@ How can I make Scrapy consume less memory?
 
 See previous question.
 
+How can I prevent memory errors due to many allowed domains?
+------------------------------------------------------------
+
+If you have a spider with a long list of
+:attr:`~scrapy.spiders.Spider.allowed_domains` (e.g. 50,000+), consider
+replacing the default
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
+with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
+less memory. For example:
+
+-   If your domain names are similar enough, use your own regular expression
+    instead joining the strings in
+    :attr:`~scrapy.spiders.Spider.allowed_domains` into a complex regular
+    expression.
+
+-   If you can `meet the installation requirements`_, use pyre2_ instead of
+    Python’s re_ to compile your URL-filtering regular expression. See
+    :issue:`1908`.
+
+See also other suggestions at `StackOverflow`_.
+
+.. note:: Remember to disable
+   :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
+   your custom implementation::
+
+       SPIDER_MIDDLEWARES = {
+           'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+           'myproject.middlewares.CustomOffsiteMiddleware': 500,
+       }
+
+.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
+.. _pyre2: https://github.com/andreasvc/pyre2
+.. _re: https://docs.python.org/library/re.html
+.. _StackOverflow: https://stackoverflow.com/q/36440681/939364
+
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 

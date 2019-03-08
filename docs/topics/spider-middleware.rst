@@ -54,6 +54,8 @@ value.  For example, if you want to disable the off-site middleware::
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _custom-spider-middleware:
+
 Writing your own spider middleware
 ==================================
 
