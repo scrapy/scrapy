@@ -19,19 +19,18 @@ class LogFormatter(object):
 
     Dictionary keys for the method outputs:
 
-        *   ``level`` is the log level for that action, you can use those from the 
-            `python logging library <https://docs.python.org/3/library/logging.html>`_ :
-            ``logging.DEBUG``, ``logging.INFO``, ``logging.WARNING``, ``logging.ERROR``
-            and ``logging.CRITICAL``.
+    *   ``level`` is the log level for that action, you can use those from the
+        `python logging library <https://docs.python.org/3/library/logging.html>`_ :
+        ``logging.DEBUG``, ``logging.INFO``, ``logging.WARNING``, ``logging.ERROR``
+        and ``logging.CRITICAL``.
+    *   ``msg`` should be a string that can contain different formatting placeholders.
+        This string, formatted with the provided ``args``, is going to be the long message
+        for that action.
+    *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``.
+        The final log message is computed as ``msg % args``.
 
-        *   ``msg`` should be a string that can contain different formatting placeholders. This string, formatted
-            with the provided ``args``, is going to be the long message for that action.
-
-        *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``. The final log message is
-            computed as ``msg % args``.
-
-    Here is an example on how to create a custom log formatter to lower the severity level of the log message
-    when an item is dropped from the pipeline::
+    Here is an example on how to create a custom log formatter to lower the severity level of
+    the log message when an item is dropped from the pipeline::
 
             class PoliteLogFormatter(logformatter.LogFormatter):
                 def dropped(self, item, exception, response, spider):
