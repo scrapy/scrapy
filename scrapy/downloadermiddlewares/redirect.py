@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 class BaseRedirectMiddleware(object):
 
     enabled_setting = 'REDIRECT_ENABLED'
+    initial_request = ''
 
     def __init__(self, settings):
         if not settings.getbool(self.enabled_setting):
@@ -26,14 +27,16 @@ class BaseRedirectMiddleware(object):
         return cls(crawler.settings)
 
     def _redirect(self, redirected, request, spider, reason):
+        if not self.initial_request:
+            self.initial_request = request
         ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)
         redirects = request.meta.get('redirect_times', 0) + 1
 
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1
-            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
-                [request.url]
+            redirected.meta['redirect_response_urls'] = redirected.meta.get('redirect_response_urls', []) + [redirected.url]
+            self.initial_request.meta['redirect_request_urls'] = self.initial_request.meta.get('redirect_request_urls', []) + [request.url]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
