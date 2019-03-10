@@ -193,11 +193,13 @@ to override some of the Scrapy settings regarding logging.
     Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
         Further documentation on available handlers
 
-Custom Log Formats
--------------------
+.. _custom-log-formats:
 
-Custom log format can be set for different actions by extending :class:`~scrapy.logformatter.LogFormatter` class
-and making :setting:`LOG_FORMATTER` inside ``settings.py`` point to your new class.
+Custom Log Formats
+------------------
+
+A custom log format can be set for different actions by extending :class:`~scrapy.logformatter.LogFormatter` class
+and making :setting:`LOG_FORMATTER` point to your new class.
  
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:

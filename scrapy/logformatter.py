@@ -30,12 +30,24 @@ class LogFormatter(object):
         *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``. The final log message is
             computed as ``msg % args``.
 
+    Here is an example on how to create a custom log formatter to lower the severity level of the log message
+    when an item is dropped from the pipeline::
+
+            class PoliteLogFormatter(logformatter.LogFormatter):
+                def dropped(self, item, exception, response, spider):
+                    return {
+                        'level': logging.INFO, # lowering the level from logging.WARNING
+                        'msg': u"Dropped: %(exception)s" + os.linesep + "%(item)s",
+                        'args': {
+                            'exception': exception,
+                            'item': item,
+                        }
+                    }
+
     """
 
     def crawled(self, request, response, spider):
-        """
-        ``crawled`` is called to log message when the crawler finds a webpage.
-        """
+        """Logs a message when the crawler finds a webpage."""
         request_flags = ' %s' % str(request.flags) if request.flags else ''
         response_flags = ' %s' % str(response.flags) if response.flags else ''
         return {
@@ -53,9 +65,7 @@ class LogFormatter(object):
         }
 
     def scraped(self, item, response, spider):
-        """
-        ``scraped`` is called to log message when an item is scraped by a spider.
-        """
+        """Logs a message when an item is scraped by a spider."""
         if isinstance(response, Failure):
             src = response.getErrorMessage()
         else:
@@ -70,9 +80,7 @@ class LogFormatter(object):
         }
 
     def dropped(self, item, exception, response, spider):
-        """
-        ``dropped`` is called to log message when an item is dropped while it is passing through the item pipeline. 
-        """
+        """Logs a message when an item is dropped while it is passing through the item pipeline."""
         return {
             'level': logging.WARNING,
             'msg': DROPPEDMSG,

@@ -871,9 +871,9 @@ directives.
 LOG_FORMATTER
 -------------
 
-Default: ``scrapy.logformatter.LogFormatter``
+Default: :class:`scrapy.logformatter.LogFormatter`
 
-The class to use for formatting log messages for different actions.
+The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
 
 .. setting:: LOG_LEVEL
 
