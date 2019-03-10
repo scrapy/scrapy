@@ -35,8 +35,8 @@ class BaseRedirectMiddleware(object):
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1
-            redirected.meta['redirect_response_urls'] = redirected.meta.get('redirect_response_urls', []) + [redirected.url]
-            self.initial_request.meta['redirect_request_urls'] = self.initial_request.meta.get('redirect_request_urls', []) + [request.url]
+            redirected.meta['redirect_urls'] = redirected.meta.get('redirect_urls', []) + [redirected.url]
+            self.initial_request.meta['redirect_urls'] = self.initial_request.meta.get('redirect_urls', []) + [request.url]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
