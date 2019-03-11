@@ -28,16 +28,16 @@ class FormRequest(Request):
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
-            querystr = _urlencode(items, self.encoding)
+            form_query_str = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
-                self._set_body(querystr)
+                self._set_body(form_query_str)
             else:
                 url_split = urlsplit(self.url)
-                formdata_keys = set(dict(parse_qsl(querystr)).keys())
+                formdata_keys = set(dict(parse_qsl(form_query_str)).keys())
                 items = [(k, v) for k, v in parse_qsl(url_split.query) if k not in formdata_keys]
-                query_str = _urlencode(items, self.encoding)
-                query = (query_str + '&' + querystr) if query_str else querystr
+                url_query_str = _urlencode(items, self.encoding)
+                query = (url_query_str + '&' + form_query_str) if url_query_str else form_query_str
                 self._set_url(urlunsplit(url_split._replace(query = query)))
 
     @classmethod
