@@ -19,12 +19,12 @@ def identity(x):
 
 class Rule(object):
 
-    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
+    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
         self.link_extractor = link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
-        self.process_request_function = process_request
+        self.process_request_function = process_request or identity
         if follow is None:
             self.follow = False if callback else True
         else:
