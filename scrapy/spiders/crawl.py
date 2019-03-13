@@ -24,11 +24,22 @@ class Rule(object):
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
-        self.process_request = process_request
+        self.process_request_function = process_request
         if follow is None:
             self.follow = False if callback else True
         else:
             self.follow = follow
+
+    def process_request(self, request, response):
+        """
+        Wrapper around the request processing function to maintain backward compatibility
+        with functions that do not take a Response object as parameter.
+        """
+        argcount = self.process_request_function.__code__.co_argcount
+        if getattr(self.process_request_function, '__self__', None):
+            argcount = argcount - 1
+        args = [request] if argcount == 1 else [request, response]
+        return self.process_request_function(*args)
 
 
 class CrawlSpider(Spider):
@@ -65,7 +76,7 @@ class CrawlSpider(Spider):
             for link in links:
                 seen.add(link)
                 r = self._build_request(n, link)
-                yield rule.process_request(r)
+                yield rule.process_request(r, response)
 
     def _response_downloaded(self, response):
         rule = self._rules[response.meta['rule']]
@@ -93,7 +104,7 @@ class CrawlSpider(Spider):
         for rule in self._rules:
             rule.callback = get_method(rule.callback)
             rule.process_links = get_method(rule.process_links)
-            rule.process_request = get_method(rule.process_request)
+            rule.process_request_function = get_method(rule.process_request_function)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
