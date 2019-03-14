@@ -3,7 +3,7 @@ from .http10 import HTTP10DownloadHandler
 from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
 
 
-# backwards compatibility
+# backward compatibility
 class HttpDownloadHandler(HTTP10DownloadHandler):
 
     def __init__(self, *args, **kwargs):

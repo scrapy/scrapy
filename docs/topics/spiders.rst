@@ -190,7 +190,7 @@ scrapy.Spider
    .. method:: log(message, [level, component])
 
        Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backwards compatibility. For more information see
+       kept for backward compatibility. For more information see
        :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)

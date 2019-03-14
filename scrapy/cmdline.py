@@ -99,7 +99,7 @@ def execute(argv=None, settings=None):
     if argv is None:
         argv = sys.argv
 
-    # --- backwards compatibility for scrapy.conf.settings singleton ---
+    # --- backward compatibility for scrapy.conf.settings singleton ---
     if settings is None and 'scrapy.conf' in sys.modules:
         from scrapy import conf
         if hasattr(conf, 'settings'):
@@ -116,7 +116,7 @@ def execute(argv=None, settings=None):
             settings['EDITOR'] = editor
     check_deprecated_settings(settings)
 
-    # --- backwards compatibility for scrapy.conf.settings singleton ---
+    # --- backward compatibility for scrapy.conf.settings singleton ---
     import warnings
     from scrapy.exceptions import ScrapyDeprecationWarning
     with warnings.catch_warnings():
