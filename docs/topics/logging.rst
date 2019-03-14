@@ -254,7 +254,7 @@ scrapy.utils.log module
     case, its usage is not required but it's recommended.
 
     If you plan on configuring the handlers yourself is still recommended you
-    call this function, passing `install_root_handler=False`. Bear in mind
+    call this function, passing ``install_root_handler=False``. Bear in mind
     there won't be any log output set by default in that case.
 
     To get you started on manually configuring logging's output, you can use

@@ -161,7 +161,7 @@ class S3FeedStorageTest(unittest.TestCase):
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'uri_key')
         self.assertEqual(storage.secret_key, 'uri_secret')
-        # Backwards compatibility for initialising without settings
+        # Backward compatibility for initialising without settings
         with warnings.catch_warnings(record=True) as w:
             storage = S3FeedStorage('s3://mybucket/export.csv')
             self.assertEqual(storage.access_key, 'conf_key')

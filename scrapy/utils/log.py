@@ -32,7 +32,7 @@ class TopLevelFormatter(logging.Filter):
 
     Since it can't be set for just one logger (it won't propagate for its
     children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
+    ``loggers`` list where it should act.
     """
 
     def __init__(self, loggers=None):
