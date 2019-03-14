@@ -132,7 +132,7 @@ For example, the following image URL::
 
     http://www.example.com/image.jpg
 
-Whose `SHA1 hash` is::
+Whose ``SHA1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 

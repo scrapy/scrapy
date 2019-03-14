@@ -129,7 +129,7 @@ scrapy.Spider
 
        You probably won't need to override this directly because the default
        implementation acts as a proxy to the :meth:`__init__` method, calling
-       it with the given arguments `args` and named arguments `kwargs`.
+       it with the given arguments ``args`` and named arguments ``kwargs``.
 
        Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
        attributes in the new instance so they can be accessed later inside the
@@ -298,13 +298,13 @@ The above example can also be written as follows::
 
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
-If you were to set the `start_urls` attribute from the command line,
+If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
 using something like
 `ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
 or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
 and then set it as an attribute.
-Otherwise, you would cause iteration over a `start_urls` string
+Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
 resulting in each character being seen as a separate url.
 

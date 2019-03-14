@@ -22,7 +22,7 @@ To use the packages:
 
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 627220E7
 
-2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command::
+2. Create ``/etc/apt/sources.list.d/scrapy.list`` file using the following command::
 
     echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
 
@@ -34,7 +34,7 @@ To use the packages:
 
 .. note:: Repeat step 3 if you are trying to upgrade Scrapy.
 
-.. warning:: `python-scrapy` is a different package provided by official debian
+.. warning:: ``python-scrapy`` is a different package provided by official debian
    repositories, it's very outdated and it isn't supported by Scrapy team.
 
 .. _Scrapinghub: https://scrapinghub.com/
