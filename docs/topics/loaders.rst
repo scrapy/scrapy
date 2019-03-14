@@ -286,7 +286,7 @@ ItemLoader objects
     given, one is instantiated automatically using the class in
     :attr:`default_item_class`.
 
-    When instantiated with a `selector` or a `response` parameters
+    When instantiated with a ``selector`` or a ``response`` parameters
     the :class:`ItemLoader` class provides convenient mechanisms for extracting
     data from web pages using :ref:`selectors <topics-selectors>`.
 

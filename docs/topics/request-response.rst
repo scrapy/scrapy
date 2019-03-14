@@ -50,7 +50,7 @@ Request objects
     :type meta: dict
 
     :param body: the request body. If a ``unicode`` is passed, then it's encoded to
-      ``str`` using the `encoding` passed (which defaults to ``utf-8``). If
+      ``str`` using the ``encoding`` passed (which defaults to ``utf-8``). If
       ``body`` is not given, an empty string is stored. Regardless of the
       type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
@@ -610,7 +610,7 @@ Response objects
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
-        tagging Responses. For example: `'cached'`, `'redirected`', etc. And
+        tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
 
@@ -682,7 +682,7 @@ TextResponse objects
 
             ``unicode(response.body)`` is not a correct way to convert response
             body to unicode: you would be using the system default encoding
-            (typically `ascii`) instead of the response encoding.
+            (typically ``ascii``) instead of the response encoding.
 
 
     .. attribute:: TextResponse.encoding
@@ -690,7 +690,7 @@ TextResponse objects
        A string with the encoding of this response. The encoding is resolved by
        trying the following mechanisms, in order:
 
-       1. the encoding passed in the constructor `encoding` argument
+       1. the encoding passed in the constructor ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (ie. unknown), it is ignored and the next

@@ -80,7 +80,7 @@ returned by the :meth:`CrawlerRunner.crawl
 <scrapy.crawler.CrawlerRunner.crawl>` method.
 
 Here's an example of its usage, along with a callback to manually stop the
-reactor after `MySpider` has finished running.
+reactor after ``MySpider`` has finished running.
 
 ::
 

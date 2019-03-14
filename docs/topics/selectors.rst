@@ -96,7 +96,7 @@ Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
 Using selectors
 ---------------
 
-To explain how to use the selectors we'll use the `Scrapy shell` (which
+To explain how to use the selectors we'll use the ``Scrapy shell`` (which
 provides interactive testing) and an example page located in the Scrapy
 documentation server:
 

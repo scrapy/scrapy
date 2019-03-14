@@ -19,7 +19,7 @@ settings, just like any other Scrapy code.
 It is customary for extensions to prefix their settings with their own name, to
 avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
-`GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
+``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
 .. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
 
@@ -368,7 +368,7 @@ Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`.
+For more info see `Debugging in Python`_.
 
 This extension only works on POSIX-compliant platforms (ie. not Windows).
 

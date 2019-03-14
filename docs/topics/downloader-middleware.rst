@@ -41,7 +41,7 @@ previous (or subsequent) middleware being applied.
 
 If you want to disable a built-in middleware (the ones defined in
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
-in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign `None`
+in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None``
 as its value.  For example, if you want to disable the user-agent middleware::
 
     DOWNLOADER_MIDDLEWARES = {
@@ -357,7 +357,7 @@ HttpCacheMiddleware
 
     .. reqmeta:: dont_cache
 
-    You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals `True`.
+    You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
 .. _httpcache-policy-dummy:
 
@@ -390,17 +390,17 @@ runs to avoid downloading unmodified data (to save bandwidth and speed up crawls
 
 what is implemented:
 
-* Do not attempt to store responses/requests with `no-store` cache-control directive set
-* Do not serve responses from cache if `no-cache` cache-control directive is set even for fresh responses
-* Compute freshness lifetime from `max-age` cache-control directive
-* Compute freshness lifetime from `Expires` response header
-* Compute freshness lifetime from `Last-Modified` response header (heuristic used by Firefox)
-* Compute current age from `Age` response header
-* Compute current age from `Date` header
-* Revalidate stale responses based on `Last-Modified` response header
-* Revalidate stale responses based on `ETag` response header
-* Set `Date` header for any received response missing it
-* Support `max-stale` cache-control directive in requests
+* Do not attempt to store responses/requests with ``no-store`` cache-control directive set
+* Do not serve responses from cache if ``no-cache`` cache-control directive is set even for fresh responses
+* Compute freshness lifetime from ``max-age`` cache-control directive
+* Compute freshness lifetime from ``Expires`` response header
+* Compute freshness lifetime from ``Last-Modified`` response header (heuristic used by Firefox)
+* Compute current age from ``Age`` response header
+* Compute current age from ``Date`` header
+* Revalidate stale responses based on ``Last-Modified`` response header
+* Revalidate stale responses based on ``ETag`` response header
+* Set ``Date`` header for any received response missing it
+* Support ``max-stale`` cache-control directive in requests
 
   This allows spiders to be configured with the full RFC2616 cache policy,
   but avoid revalidation on a request-by-request basis, while remaining
@@ -408,15 +408,15 @@ what is implemented:
 
   Example:
 
-  Add `Cache-Control: max-stale=600` to Request headers to accept responses that
+  Add ``Cache-Control: max-stale=600`` to Request headers to accept responses that
   have exceeded their expiration time by no more than 600 seconds.
 
   See also: RFC2616, 14.9.3
 
 what is missing:
 
-* `Pragma: no-cache` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
-* `Vary` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+* ``Pragma: no-cache`` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+* ``Vary`` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
 * Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
 * ... probably others ..
 
@@ -626,12 +626,12 @@ Default: ``False``
 If enabled, will cache pages unconditionally.
 
 A spider may wish to have all responses available in the cache, for
-future use with `Cache-Control: max-stale`, for instance. The
+future use with ``Cache-Control: max-stale``, for instance. The
 DummyPolicy caches all responses but never revalidates them, and
 sometimes a more nuanced policy is desirable.
 
-This setting still respects `Cache-Control: no-store` directives in responses.
-If you don't want that, filter `no-store` out of the Cache-Control headers in
+This setting still respects ``Cache-Control: no-store`` directives in responses.
+If you don't want that, filter ``no-store`` out of the Cache-Control headers in
 responses you feedto the cache middleware.
 
 .. setting:: HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
@@ -834,8 +834,6 @@ RetryMiddleware
 
 Failed pages are collected on the scraping process and rescheduled at the
 end, once the spider has finished crawling all regular (non failed) pages.
-Once there are no more failed pages to retry, this middleware sends a signal
-(retry_complete), so other extensions could connect to that signal.
 
 The :class:`RetryMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -940,7 +938,7 @@ UserAgentMiddleware
 
    Middleware that allows spiders to override the default user agent.
 
-   In order for a spider to override the default user agent, its `user_agent`
+   In order for a spider to override the default user agent, its ``user_agent``
    attribute must be set.
 
 .. _ajaxcrawl-middleware:
