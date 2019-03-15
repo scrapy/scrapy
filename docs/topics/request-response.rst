@@ -636,6 +636,8 @@ Response objects
 
     .. automethod:: Response.follow
 
+    .. automethod:: Response.retry_request
+
 
 .. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 

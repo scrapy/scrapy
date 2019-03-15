@@ -178,6 +178,17 @@ class BaseResponseTest(unittest.TestCase):
         resp = self.response_class('http://example.com/index', body=body)
         return resp
 
+    def test_retry_request(self):
+        reason = 'No content'
+        body = b'New body'
+        req = Request("http://www.example.com")
+        response = self.response_class("http://www.example.com", request=req)
+        self.assertFalse(req.is_marked_for_retry())
+
+        new_req = response.retry_request(reason, body=body)
+        self.assertTrue(new_req.is_marked_for_retry())
+        self.assertEqual(new_req.body, body)
+
 
 class TextResponseTest(BaseResponseTest):
 

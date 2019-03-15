@@ -96,3 +96,31 @@ class Request(object_ref):
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
+
+    def mark_for_retry(self, reason=None, **kwargs):
+        """Return a new instance that is marked as to be retried.
+        New request is same as this request except attributes provided as keyword arguments.
+
+        :param reason: Reason for retrying. Optional, defaults to None.
+        :type reason: str"""
+        new_req = self.replace(**kwargs)
+        new_req.meta['_retry_requested'] = True
+        new_req.meta['_retry_request_reason'] = reason
+        return new_req
+
+    def unmark_as_retry(self):
+        """Unmark this request as to be retried"""
+        self.meta.pop('_retry_requested', None)
+        self.meta.pop('_retry_request_reason', None)
+
+    def is_marked_for_retry(self):
+        """Return whether this request is marked as to be retried."""
+        return self.meta.get('_retry_requested') is True
+
+    def get_retry_reason(self):
+        """Return reason for retry if this request is marked for retry"""
+        return self.is_marked_for_retry() and self.meta.get('_retry_request_reason') or None
+
+    def is_retrying_enabled(self):
+        """Return whether retrying is enabled on this request"""
+        return not bool(self.meta.get('dont_retry', False))

@@ -113,8 +113,8 @@ class Response(object_ref):
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be a relative URL or a ``scrapy.link.Link`` object,
         not only an absolute URL.
-        
-        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow` 
+
+        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
         """
@@ -133,3 +133,23 @@ class Response(object_ref):
                        priority=priority,
                        dont_filter=dont_filter,
                        errback=errback)
+
+    def retry_request(self, reason=None, **kwargs):
+        """Retry the request tied to this response.
+
+        This returns a new :class:`~.Request` instance that is marked to be retried
+        which is as same as the request tied to this response except attributes
+        provided as keyword arguments. Scrapy will schedule this new request if request retrying
+        is `enabled <https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#retry-enabled>`_
+        and maximum number of
+        `allowed retries <https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#retry-times>`_
+        are not reached.
+
+        :param reason: Reason for retrying. Optional, defaults to None.
+        :type reason: str
+        """
+        request = self.request
+        if not request:
+            raise NotSupported('This response is not tied to any request')
+
+        return request.mark_for_retry(reason, **kwargs)

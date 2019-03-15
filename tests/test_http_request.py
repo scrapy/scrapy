@@ -260,6 +260,43 @@ class RequestTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.request_class('http://example.com', a_function, errback='a_function')
 
+    def test_mark_for_retry(self):
+        r = self.request_class('http://example.com')
+        self.assertFalse(r.is_marked_for_retry())
+
+        r2 = r.mark_for_retry('Empty content')
+        self.assertTrue(r2.is_marked_for_retry())
+
+        new_body = 'new body'
+        r3 = r.mark_for_retry('Empty content', body=new_body)
+        self.assertTrue(r3.is_marked_for_retry())
+        self.assertEqual(r3.body, to_bytes(new_body))
+
+    def test_unmark_as_retry(self):
+        r = self.request_class('http://example.com')
+        r2 = r.mark_for_retry('Empty content')
+        self.assertTrue(r2.is_marked_for_retry())
+        r2.unmark_as_retry()
+        self.assertFalse(r2.is_marked_for_retry())
+
+    def test_get_retry_reason(self):
+        r = self.request_class('http://example.com')
+        self.assertEqual(r.get_retry_reason(), None)
+
+        reason = 'Empty content'
+        r2 = r.mark_for_retry(reason)
+        self.assertEqual(r2.get_retry_reason(), reason)
+
+    def test_is_retrying_enabled(self):
+        r = self.request_class('http://example.com')
+        self.assertTrue(r.is_retrying_enabled())
+
+        new_meta = {
+            'dont_retry': True,
+        }
+        r2 = r.replace(meta=new_meta)
+        self.assertFalse(r2.is_retrying_enabled())
+
 
 class FormRequestTest(RequestTest):
 
