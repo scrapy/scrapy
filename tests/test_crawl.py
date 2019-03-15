@@ -27,7 +27,8 @@ class CrawlTestCase(TestCase):
     def test_callback_kwargs(self):
         crawler = self.runner.create_crawler(KeywordArgumentsSpider)
         yield crawler.crawl(mockserver=self.mockserver)
-        self.assertEqual(crawler.spider.checks, set([True]))
+        self.assertTrue(all(crawler.spider.checks))
+        self.assertEqual(len(crawler.spider.checks), crawler.stats.get_value('boolean_checks'))
 
     @defer.inlineCallbacks
     def test_follow_all(self):

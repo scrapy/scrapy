@@ -31,7 +31,7 @@ class MetaSpider(MockServerSpider):
 class KeywordArgumentsSpider(MockServerSpider):
 
     name = 'kwargs'
-    checks = set()
+    checks = list()
 
     def start_requests(self):
         data = {'key': 'value', 'number': 123}
@@ -41,25 +41,30 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield Request(self.mockserver.url('/no_kwargs'), self.parse_no_kwargs)
 
     def parse_first(self, response, key, number):
-        self.checks.add(key == 'value')
-        self.checks.add(number == 123)
+        self.checks.append(key == 'value')
+        self.checks.append(number == 123)
+        self.crawler.stats.inc_value('boolean_checks', 2)
         yield response.follow(
             self.mockserver.url('/two'),
             self.parse_second,
             kwargs={'new_key': 'new_value'})
 
     def parse_second(self, response, new_key):
-        self.checks.add(new_key == 'new_value')
+        self.checks.append(new_key == 'new_value')
+        self.crawler.stats.inc_value('boolean_checks')
 
     def parse_general(self, response, **kwargs):
         if response.url.endswith('/general_with'):
-            self.checks.add(kwargs['key'] == 'value')
-            self.checks.add(kwargs['number'] == 123)
+            self.checks.append(kwargs['key'] == 'value')
+            self.checks.append(kwargs['number'] == 123)
+            self.crawler.stats.inc_value('boolean_checks', 2)
         elif response.url.endswith('/general_without'):
-            self.checks.add(kwargs == {})
+            self.checks.append(kwargs == {})
+            self.crawler.stats.inc_value('boolean_checks')
 
     def parse_no_kwargs(self, response):
-        pass
+        self.checks.append(response.url.endswith('/no_kwargs'))
+        self.crawler.stats.inc_value('boolean_checks')
 
 
 class FollowAllSpider(MetaSpider):
