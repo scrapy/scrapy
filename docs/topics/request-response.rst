@@ -299,6 +299,7 @@ Those are:
 * :reqmeta:`dont_merge_cookies`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
 * :reqmeta:`dont_obey_robotstxt`
