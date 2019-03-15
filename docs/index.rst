@@ -12,25 +12,7 @@ testing.
 .. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
-Getting help
-============
-
-Having trouble? We'd like to help!
-
-* Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
-* Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
-* Ask or search questions in `StackOverflow using the scrapy tag`_.
-* Ask or search questions in the `Scrapy subreddit`_.
-* Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
-* Report bugs with Scrapy in our `issue tracker`_.
-
-.. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
-.. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
-.. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
-.. _issue tracker: https://github.com/scrapy/scrapy/issues
-
+.. _section-first-steps:
 
 First steps
 ===========
@@ -39,10 +21,14 @@ First steps
    :caption: First steps
    :hidden:
 
+   intro/getting-help
    intro/overview
    intro/install
    intro/tutorial
    intro/examples
+
+:doc:`intro/getting-help`
+    Find support beyond the Scrapy documentation.
 
 :doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
@@ -144,6 +130,7 @@ Built-in services
 :doc:`topics/webservice`
     Monitor and control a crawler using a web service.
 
+.. _section-solving-problems:
 
 Solving specific problems
 =========================
