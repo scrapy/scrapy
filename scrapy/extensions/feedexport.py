@@ -94,7 +94,7 @@ class FileFeedStorage(object):
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None):
-        # BEGIN Backwards compatibility for initialising without keys (and
+        # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
         if no_defaults:
@@ -111,7 +111,7 @@ class S3FeedStorage(BlockingFeedStorage):
                 )
                 access_key = settings['AWS_ACCESS_KEY_ID']
                 secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        # END Backwards compatibility
+        # END Backward compatibility
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
