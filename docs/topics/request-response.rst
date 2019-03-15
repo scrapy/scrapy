@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, allow_offsite_requests=False, errback, flags])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -115,6 +115,13 @@ Request objects
        care, or you will get into crawling loops. Default to ``False``.
     :type dont_filter: boolean
 
+    :param allow_offsite_requests: If this is set to True it indicates that this
+        request should not be filtered out even if the request's domain is not in
+        the :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
+        Optional, defaults to False.
+
+    :type allow_offsite_requests: boolean
+
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
        with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
@@ -166,6 +173,10 @@ Request objects
         spider, from the ``response.meta`` attribute.
 
     .. _shallow copied: https://docs.python.org/2/library/copy.html
+
+    .. attribute:: allow_offsite_requests
+
+       True if offsite requests are allowed for this request.
 
     .. method:: Request.copy()
 
