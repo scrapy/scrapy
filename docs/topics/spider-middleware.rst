@@ -443,3 +443,9 @@ UrlLengthMiddleware
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
 
+RetryMiddleware
+---------------
+.. module:: scrapy.spidermiddlewares.retry
+   :synopsis: Retry Spider Middleware
+
+.. autoclass:: scrapy.spidermiddlewares.retry.RetryMiddleware

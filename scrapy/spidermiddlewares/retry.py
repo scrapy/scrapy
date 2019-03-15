@@ -1,10 +1,3 @@
-"""
-RetryMiddleware is used to retry temporary issues or bans where the response has to be
-processed by spider before been retried.
-
-You can issue a retry request by calling :meth:`scrapy.http.response.Response.retry_request` method on a
-:class:`scrapy.http.response.Response` instance.
-"""
 import logging
 
 from scrapy import Request
@@ -15,6 +8,27 @@ logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):
+    """
+    RetryMiddleware is used to retry requests that have temporary issues or bans where the response has to be
+    processed by spider before been retried.
+
+    You can retry a request by calling :meth:`retry_request <scrapy.http.Response.retry_request>` method on a
+    :class:`Response <scrapy.http.Response>` instance and yielding the returned :class:`Request <scrapy.http.Request>`
+    that is marked to be retried.
+
+    example::
+
+        def parse(self, response):
+            if self.needs_to_be_retried(response):
+                yield response.retry_request('Invalid response')
+
+    RetryMiddleware can be configured through the following settings which are
+    also used in :class:`RetryDownloaderMiddleware <scrapy.downloadermiddlewares.retry.RetryMiddleware>`.
+
+    * :setting:`RETRY_ENABLED`
+    * :setting:`RETRY_TIMES`
+    * :setting:`RETRY_PRIORITY_ADJUST`
+    """
 
     def __init__(self, settings):
         self.enabled = settings.getbool('RETRY_ENABLED')
