@@ -79,28 +79,28 @@ class ImagesPipelineTestCase(unittest.TestCase):
         SIZE = (100, 100)
         # straigh forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
-        im = _create_image('JPEG', 'RGB', SIZE, COLOUR)
-        converted, _ = self.pipeline.convert_image(im)
+        im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+        converted, buf = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
 
         # check that thumbnail keep image ratio
-        thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
+        thumbnail, buf = self.pipeline.convert_image(converted, buf, size=(10, 25))
         self.assertEqual(thumbnail.mode, 'RGB')
         self.assertEqual(thumbnail.size, (10, 10))
 
         # transparency case: RGBA and PNG
         COLOUR = (0, 127, 255, 50)
-        im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-        converted, _ = self.pipeline.convert_image(im)
+        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        converted, buf = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
         # transparency case with palette: P and PNG
         COLOUR = (0, 127, 255, 50)
-        im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
         im = im.convert('P')
-        converted, _ = self.pipeline.convert_image(im)
+        converted, buf = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
@@ -406,7 +406,7 @@ def _create_image(format, *a, **kw):
     buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
-    return Image.open(buf)
+    return Image.open(buf), buf
 
 
 if __name__ == "__main__":
