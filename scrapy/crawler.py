@@ -7,6 +7,7 @@ import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
+from scrapy import Spider
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
@@ -27,6 +28,10 @@ logger = logging.getLogger(__name__)
 class Crawler(object):
 
     def __init__(self, spidercls, settings=None):
+        if isinstance(spidercls, Spider):
+            raise ValueError(
+                'The spidercls argument must be a class, not an object')
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
@@ -168,6 +173,10 @@ class CrawlerRunner(object):
 
         :param dict kwargs: keyword arguments to initialize the spider
         """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
@@ -195,6 +204,10 @@ class CrawlerRunner(object):
           a spider with this name in a Scrapy project (using spider loader),
           then creates a Crawler instance for it.
         """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
         if isinstance(crawler_or_spidercls, Crawler):
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)

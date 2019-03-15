@@ -4,6 +4,7 @@ import warnings
 
 from twisted.internet import defer
 from twisted.trial import unittest
+from pytest import raises
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
@@ -65,6 +66,10 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_crawler_accepts_None(self):
         crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
+
+    def test_crawler_rejects_spider_objects(self):
+        with raises(ValueError):
+            Crawler(DefaultSpider())
 
 
 class SpiderSettingsTestCase(unittest.TestCase):
@@ -176,6 +181,14 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
             self.assertIsInstance(runner.spider_loader, CustomSpiderLoader)
             self.assertEqual(len(w), 1)
             self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
+
+    def test_crawl_rejects_spider_objects(self):
+        with raises(ValueError):
+            CrawlerRunner().crawl(DefaultSpider())
+
+    def test_create_crawler_rejects_spider_objects(self):
+        with raises(ValueError):
+            CrawlerRunner().create_crawler(DefaultSpider())
 
 
 class CrawlerProcessTest(BaseCrawlerTest):
