@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, kwargs])
+.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, cb_kwargs])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -126,8 +126,8 @@ Request objects
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
 
-    :param kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
-    :type kwargs: dict
+    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
+    :type cb_kwargs: dict
 
     .. attribute:: Request.url
 
@@ -168,7 +168,7 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
-    .. attribute:: Request.kwargs
+    .. attribute:: Request.cb_kwargs
 
         A dictionary that contains arbitrary metadata for this request. Its contents
         will be passed to the Request's callback as keyword arguments. It is empty
@@ -177,7 +177,7 @@ Request objects
 
         This dict is `shallow copied`_ when the request is cloned using the
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.kwargs`` attribute.
+        spider, from the ``response.cb_kwargs`` attribute.
 
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
@@ -216,7 +216,7 @@ Example::
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
 The following two examples show how to achieve this by using the 
-:attr:`Request.meta` and :attr:`Request.kwargs` attributes respectively::
+:attr:`Request.meta` and :attr:`Request.cb_kwargs` attributes respectively::
 
     def parse_page1(self, response):
         item = MyItem()
@@ -238,8 +238,8 @@ The following two examples show how to achieve this by using the
         item['main_url'] = response.url
         request = scrapy.Request("http://www.example.com/some_page.html",
                                  callback=self.parse_page2)
-        request.kwargs['item'] = item
-        request.kwargs['foo'] = 'bar'
+        request.cb_kwargs['item'] = item
+        request.cb_kwargs['foo'] = 'bar'
         yield request
 
     def parse_page2(self, response, item, foo):

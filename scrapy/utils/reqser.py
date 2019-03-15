@@ -33,7 +33,7 @@ def request_to_dict(request, spider=None):
         'priority': request.priority,
         'dont_filter': request.dont_filter,
         'flags': request.flags,
-        'kwargs': request.kwargs,
+        'cb_kwargs': request.cb_kwargs,
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
@@ -66,7 +66,7 @@ def request_from_dict(d, spider=None):
         priority=d['priority'],
         dont_filter=d['dont_filter'],
         flags=d.get('flags'),
-        kwargs=d.get('kwargs'),
+        cb_kwargs=d.get('cb_kwargs'),
     )
 
 

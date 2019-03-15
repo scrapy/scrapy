@@ -35,8 +35,8 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     def start_requests(self):
         data = {'key': 'value', 'number': 123}
-        yield Request(self.mockserver.url('/first'), self.parse_first, kwargs=data)
-        yield Request(self.mockserver.url('/general_with'), self.parse_general, kwargs=data)
+        yield Request(self.mockserver.url('/first'), self.parse_first, cb_kwargs=data)
+        yield Request(self.mockserver.url('/general_with'), self.parse_general, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_without'), self.parse_general)
         yield Request(self.mockserver.url('/no_kwargs'), self.parse_no_kwargs)
 
@@ -47,7 +47,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield response.follow(
             self.mockserver.url('/two'),
             self.parse_second,
-            kwargs={'new_key': 'new_value'})
+            cb_kwargs={'new_key': 'new_value'})
 
     def parse_second(self, response, new_key):
         self.checks.append(new_key == 'new_value')

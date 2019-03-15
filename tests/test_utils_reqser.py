@@ -26,7 +26,7 @@ class RequestSerializationTest(unittest.TestCase):
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},
-            kwargs={'k': 'v'},
+            cb_kwargs={'k': 'v'},
             flags=['testFlag'])
         self._assert_serializes_ok(r, spider=self.spider)
 
@@ -53,7 +53,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.cookies, r2.cookies)
         self.assertEqual(r1.meta, r2.meta)
-        self.assertEqual(r1.kwargs, r2.kwargs)
+        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
         self.assertEqual(r1._encoding, r2._encoding)
         self.assertEqual(r1.priority, r2.priority)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
