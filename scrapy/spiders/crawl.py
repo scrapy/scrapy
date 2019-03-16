@@ -24,22 +24,22 @@ class Rule(object):
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
-        self.process_request_function = process_request or identity
+        self.process_request = process_request or identity
         if follow is None:
             self.follow = False if callback else True
         else:
             self.follow = follow
 
-    def process_request(self, request, response):
+    def _process_request(self, request, response):
         """
         Wrapper around the request processing function to maintain backward compatibility
         with functions that do not take a Response object as parameter.
         """
-        argcount = self.process_request_function.__code__.co_argcount
-        if getattr(self.process_request_function, '__self__', None):
+        argcount = self.process_request.__code__.co_argcount
+        if hasattr(self.process_request, '__self__'):
             argcount = argcount - 1
         args = [request] if argcount == 1 else [request, response]
-        return self.process_request_function(*args)
+        return self.process_request(*args)
 
 
 class CrawlSpider(Spider):
@@ -75,8 +75,8 @@ class CrawlSpider(Spider):
                 links = rule.process_links(links)
             for link in links:
                 seen.add(link)
-                r = self._build_request(n, link)
-                yield rule.process_request(r, response)
+                request = self._build_request(n, link)
+                yield rule._process_request(request, response)
 
     def _response_downloaded(self, response):
         rule = self._rules[response.meta['rule']]
@@ -104,7 +104,7 @@ class CrawlSpider(Spider):
         for rule in self._rules:
             rule.callback = get_method(rule.callback)
             rule.process_links = get_method(rule.process_links)
-            rule.process_request_function = get_method(rule.process_request_function)
+            rule.process_request = get_method(rule.process_request)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
