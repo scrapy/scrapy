@@ -271,9 +271,9 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')
-        rsp1 = Response('http://scrapytest.org/first', headers={'Location': '/redirected1'}, status='meta refresh')
+        rsp1 = HtmlResponse('http://scrapytest.org/first', body=self._body(url='/redirected'), status='meta refresh')
         req2 = self.mw.process_response(req1, rsp1, self.spider)
-        rsp2 = Response('http://scrapytest.org/redirected1', headers={'Location': '/redirected2'}, status='meta refresh')
+        rsp2 = HtmlResponse('http://scrapytest.org/redirected1', body=self._body(url='/redirected'), status='meta refresh')
         req3 = self.mw.process_response(req2, rsp2, self.spider)
 
         self.assertEqual(req2.meta['redirect_reasons'], ['meta refresh'])
