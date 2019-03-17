@@ -496,6 +496,59 @@ In order to use this storage backend:
 .. _LevelDB: https://github.com/google/leveldb
 .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
+.. _httpcache-storage-custom:
+
+Implementing custom cache storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement custom cache storage backend by creating a Python class that
+defines the methods described below.
+
+.. module:: scrapy.extensions.httpcache
+
+.. class:: CacheStorage
+
+    .. method:: open_spider(spider)
+
+      This method gets called after a spider has been opened for crawling.
+
+      :param spider: the spider which has been opened
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: close_spider(spider)
+
+      This method gets called after a spider has been closed.
+
+      :param spider: the spider which has been closed
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: retrieve_response(spider, request)
+
+      Returns response if present in cache, or ``None`` otherwise.
+
+      :param spider: the spider which generated the request
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the request to find cached reponse for
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: store_response(spider, request, response)
+
+      Stores the given response in the cache.
+
+      :param spider: the spider for which the response is intended
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: corresponding request the spider generated
+      :type request: :class:`~scrapy.http.Request` object
+
+      :param response: the response to store in the cache
+      :type response: :class:`~scrapy.http.Response` object
+
+In order to use your storage backend, set:
+
+* :setting:`HTTPCACHE_STORAGE` to path of your custom storage class.
+
 
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
