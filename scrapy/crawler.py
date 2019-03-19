@@ -41,8 +41,8 @@ class Crawler(object):
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
-
         logger.info("Overridden settings: %(settings)r", {'settings': d})
+
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
