@@ -275,25 +275,16 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r1.body, b'')
         
     def test_formdata_overrides_querystring_duplicates(self):
-        #Both fragment and query in url
         data = (('a', 'one'), ('a', 'two'), ('b', '2'))
         url = self.request_class('http://www.example.com/?a=0&b=1&c=3#fragment', method='GET', formdata=data).url.split('#')[0]
         fs = _qs(self.request_class(url, method='GET', formdata=data))
         self.assertEqual(set(fs[b'a']), {b'one', b'two'})
         self.assertEqual(fs[b'b'], [b'2'])
-        self.assertEqual(fs[b'c'], [b'3'])
 
-        #None of both in url
         data = {'a' : '1', 'b' : '2'}
         fs = _qs(self.request_class('http://www.example.com/', method='GET', formdata=data))
         self.assertEqual(fs[b'a'], [b'1'])
         self.assertEqual(fs[b'b'], [b'2'])
-
-        #Duplicate GET arguments are preserved
-        data={'foo' : 'bar'}
-        fs = _qs(self.request_class('http://example.com/?foo=1&foo=2&a=1&a=2', method='GET', formdata=data))
-        self.assertEqual(fs[b'foo'], [b'bar'])
-        self.assertEqual(set(fs[b'a']), {b'1', b'2'})
 
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
