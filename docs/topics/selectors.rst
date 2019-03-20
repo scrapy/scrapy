@@ -436,7 +436,7 @@ The following examples show how these methods map to each other.
      >>> response.css('a::attr(href)').extract()
      ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
 
-2. ``Selector.get()`` is the same as ``Selector.extract()``::
+3. ``Selector.get()`` is the same as ``Selector.extract()``::
 
      >>> response.css('a::attr(href)')[0].get()
      'image1.html'
