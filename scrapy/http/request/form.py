@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import six
-from six.moves.urllib.parse import urljoin, urlencode, urlsplit, parse_qsl, urlunsplit
+from six.moves.urllib.parse import urljoin, urlencode, urlsplit, urlunsplit
 
 import lxml.html
 from parsel.selector import create_root_node
@@ -33,12 +33,7 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(form_query_str)
             else:
-                url_split = urlsplit(self.url)
-                formdata_keys = set(dict(parse_qsl(form_query_str)).keys())
-                items = [(k, v) for k, v in parse_qsl(url_split.query) if k not in formdata_keys]
-                url_query_str = _urlencode(items, self.encoding)
-                query = (url_query_str + '&' + form_query_str) if url_query_str else form_query_str
-                self._set_url(urlunsplit(url_split._replace(query = query)))
+                self._set_url(urlunsplit(urlsplit(self.url)._replace(query = form_query_str)))
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
