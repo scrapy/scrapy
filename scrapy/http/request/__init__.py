@@ -38,6 +38,7 @@ class Request(object_ref):
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
+
         self._meta = dict(meta) if meta else None
         self.flags = [] if flags is None else list(flags)
 
