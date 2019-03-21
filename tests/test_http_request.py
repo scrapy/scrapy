@@ -198,7 +198,6 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
-        self.assertEqual(r1.allow_offsite_requests, r2.allow_offsite_requests)
 
         # Request.body can be identical since it's an immutable object (str)
 
@@ -225,15 +224,12 @@ class RequestTest(unittest.TestCase):
         self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
 
         # Empty attributes (which may fail if not compared properly)
-        r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True,
-                                allow_offsite_requests=True)
-        r4 = r3.replace(url="http://www.example.com/2", body=b'', meta={}, dont_filter=False,
-                        allow_offsite_requests=False)
+        r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
+        r4 = r3.replace(url="http://www.example.com/2", body=b'', meta={}, dont_filter=False)
         self.assertEqual(r4.url, "http://www.example.com/2")
         self.assertEqual(r4.body, b'')
         self.assertEqual(r4.meta, {})
         self.assertFalse(r4.dont_filter)
-        self.assertFalse(r4.allow_offsite_requests)
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")

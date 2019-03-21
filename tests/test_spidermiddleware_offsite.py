@@ -24,14 +24,14 @@ class TestOffsiteMiddleware(TestCase):
         res = Response('http://scrapytest.org')
 
         onsite_reqs = [Request('http://scrapytest.org/1'),
-                       Request('http://scrapy.org/1', allow_offsite_requests=False),
+                       Request('http://scrapy.org/1', meta={'allow_offsite_requests': False}),
                        Request('http://sub.scrapy.org/1'),
-                       Request('http://offsite.tld/letmepass', allow_offsite_requests=True),
+                       Request('http://offsite.tld/letmepass', meta={'allow_offsite_requests': True}),
                        Request('http://scrapy.test.org/')]
         offsite_reqs = [Request('http://scrapy2.org'),
                        Request('http://offsite.tld/'),
                        Request('http://offsite.tld/scrapytest.org'),
-                       Request('http://offsite.tld/rogue.scrapytest.org', allow_offsite_requests=False),
+                        Request('http://offsite.tld/rogue.scrapytest.org', meta={'allow_offsite_requests': False}),
                        Request('http://rogue.scrapytest.org.haha.com'),
                        Request('http://roguescrapytest.org'),
                        Request('http://test.org/'),

@@ -18,7 +18,7 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, allow_offsite_requests=False):
+                 dont_filter=False, errback=None, flags=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
@@ -38,8 +38,6 @@ class Request(object_ref):
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
-        self.allow_offsite_requests = allow_offsite_requests
-
         self._meta = dict(meta) if meta else None
         self.flags = [] if flags is None else list(flags)
 
@@ -93,7 +91,7 @@ class Request(object_ref):
         given new values.
         """
         for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'allow_offsite_requests']:
+                  'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
