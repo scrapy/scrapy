@@ -403,11 +403,11 @@ Crawling rules
    This is mainly used for filtering purposes.
 
    ``process_request`` is a callable (or a string, in which case a method from
-   the spider object with that name will be used) which will be called for
-   every request extracted by this rule. This callable should take a Request object
-   as first positional argument and, optionally, the Response object from which the
-   Request originated as second positional argument. It must return a request or None
-   (to filter out the request).
+   the spider object with that name will be used) which will be called for every
+   :class:`~scrapy.http.Request` extracted by this rule. This callable should
+   take said request as first argument and the :class:`~scrapy.http.Response`
+   from which the request originated as second argument. It must return a
+   ``Request`` object or ``None`` (to filter out the request).
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
