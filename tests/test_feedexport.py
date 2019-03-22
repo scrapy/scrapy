@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections import OrderedDict
 import os
 import csv
 import json
@@ -576,6 +577,62 @@ class FeedExportTest(unittest.TestCase):
             {'foo': '',     'baz': '',      'hello': 'world4'},
         ]
         yield self.assertExported(items, header, rows,
+                                  settings=settings, ordered=True)
+
+        # fields may be defined as a comma-separated list
+        header = ["foo", "baz", "hello"]
+        settings = {'FEED_EXPORT_FIELDS': ",".join(header)}
+        rows = [
+            {'foo': 'bar1', 'baz': '',      'hello': ''},
+            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
+            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
+            {'foo': '',     'baz': '',      'hello': 'world4'},
+        ]
+        yield self.assertExported(items, header, rows,
+                                  settings=settings, ordered=True)
+
+        # fields may also be defined as a JSON array
+        header = ["foo", "baz", "hello"]
+        settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
+        rows = [
+            {'foo': 'bar1', 'baz': '',      'hello': ''},
+            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
+            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
+            {'foo': '',     'baz': '',      'hello': 'world4'},
+        ]
+        yield self.assertExported(items, header, rows,
+                                  settings=settings, ordered=True)
+
+        # custom output field names can be specified
+        header = OrderedDict((
+            ("foo", "Foo"),
+            ("baz", "Baz"),
+            ("hello", "Hello"),
+        ))
+        settings = {'FEED_EXPORT_FIELDS': header}
+        rows = [
+            {'Foo': 'bar1', 'Baz': '',      'Hello': ''},
+            {'Foo': 'bar2', 'Baz': '',      'Hello': 'world2'},
+            {'Foo': 'bar3', 'Baz': 'quux3', 'Hello': ''},
+            {'Foo': '',     'Baz': '',      'Hello': 'world4'},
+        ]
+        yield self.assertExported(items, list(header.values()), rows,
+                                  settings=settings, ordered=True)
+
+        # custom output field names can be specified as a JSON object
+        header = OrderedDict((
+            ("foo", "Foo"),
+            ("baz", "Baz"),
+            ("hello", "Hello"),
+        ))
+        settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
+        rows = [
+            {'Foo': 'bar1', 'Baz': '',      'Hello': ''},
+            {'Foo': 'bar2', 'Baz': '',      'Hello': 'world2'},
+            {'Foo': 'bar3', 'Baz': 'quux3', 'Hello': ''},
+            {'Foo': '',     'Baz': '',      'Hello': 'world4'},
+        ]
+        yield self.assertExported(items, list(header.values()), rows,
                                   settings=settings, ordered=True)
 
     @defer.inlineCallbacks

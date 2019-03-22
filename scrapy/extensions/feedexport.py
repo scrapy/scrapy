@@ -201,7 +201,8 @@ class FeedExporter(object):
             raise NotConfigured
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
         self._exporting = False
-        self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
+        self.export_fields = settings.getdictorlist('FEED_EXPORT_FIELDS')
+        self.export_fields = self.export_fields or None
         self.indent = None
         if settings.get('FEED_EXPORT_INDENT') is not None:
             self.indent = settings.getint('FEED_EXPORT_INDENT')

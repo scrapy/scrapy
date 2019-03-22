@@ -1,4 +1,7 @@
+# -*- coding:utf-8 -*-
+
 from __future__ import absolute_import
+from collections import OrderedDict
 import re
 import json
 import marshal
@@ -82,6 +85,14 @@ class BaseItemExporterTest(unittest.TestCase):
         _, name = list(ie._get_serialized_fields(self.i))[0]
         assert isinstance(name, six.text_type)
         self.assertEqual(name, u'John\xa3')
+
+        ie = self._get_exporter(
+            fields_to_export=OrderedDict([('name', u'名稱')])
+        )
+        self.assertEqual(
+            list(ie._get_serialized_fields(self.i)),
+            [(u'名稱', u'John\xa3')]
+        )
 
     def test_field_custom_serializer(self):
         def custom_serializer(value):
@@ -214,6 +225,7 @@ class MarshalItemExporterTest(BaseItemExporterTest):
 
 class CsvItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
+        self.output = tempfile.TemporaryFile()
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
@@ -224,7 +236,8 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return self.assertEqual(csvsplit(first), csvsplit(second), msg)
 
     def _check_output(self):
-        self.assertCsvEqual(to_unicode(self.output.getvalue()), u'age,name\r\n22,John\xa3\r\n')
+        self.output.seek(0)
+        self.assertCsvEqual(to_unicode(self.output.read()), u'age,name\r\n22,John\xa3\r\n')
 
     def assertExportResult(self, item, expected, **kwargs):
         fp = BytesIO()

@@ -56,7 +56,7 @@ CSV
 
  * :setting:`FEED_FORMAT`: ``csv``
  * Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
- * To specify columns to export and their order use
+ * To specify columns to export, their order and their column names, use
    :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
    option, but it is important for CSV because unlike many other export
    formats CSV uses a fixed header.
@@ -259,18 +259,9 @@ FEED_EXPORT_FIELDS
 
 Default: ``None``
 
-A list of fields to export, optional.
-Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
-
-Use FEED_EXPORT_FIELDS option to define fields to export and their order.
-
-When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses fields
-defined in dicts or :class:`~.Item` subclasses a spider is yielding.
-
-If an exporter requires a fixed set of fields (this is the case for
-:ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS
-is empty or None, then Scrapy tries to infer field names from the
-exported data - currently it uses field names from the first item.
+Use the ``FEED_EXPORT_FIELDS`` setting to define the fields to export, their
+order and their output names. See :attr:`BaseItemExporter.fields_to_export
+<scrapy.exporters.BaseItemExporter.fields_to_export>` for more information.
 
 .. setting:: FEED_EXPORT_INDENT
 

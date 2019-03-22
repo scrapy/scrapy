@@ -1,7 +1,7 @@
 import six
 import json
 import copy
-from collections import MutableMapping
+from collections import MutableMapping, OrderedDict
 from importlib import import_module
 from pprint import pformat
 
@@ -197,6 +197,39 @@ class BaseSettings(MutableMapping):
         if isinstance(value, six.string_types):
             value = json.loads(value)
         return dict(value)
+
+    def getdictorlist(self, name, default=None):
+        """Get a setting value as either an ``OrderedDict`` or a list.
+
+        If the setting is already a dict or a list, a copy of it will be
+        returned.
+
+        If it is a string it will be evaluated as JSON, or as a comma-separated
+        list of strings as a fallback.
+
+        For example, settings populated through environment variables will
+        return:
+
+        -   ``OrdetedDict([('key1', 'value1'), ('key2', 'value2')])`` if set to
+            ``'{"key1": "value1", "key2": "value2"}'``
+
+        -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
+        value = self.get(name, default)
+        if value is None:
+            return {}
+        if isinstance(value, six.string_types):
+            try:
+                return json.loads(value, object_pairs_hook=OrderedDict)
+            except ValueError:
+                return value.split(',')
+        return copy.deepcopy(value)
 
     def getwithbase(self, name):
         """Get a composition of a dictionary-like setting and its `_BASE`

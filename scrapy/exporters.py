@@ -2,6 +2,7 @@
 Item Exporters are used to export/serialize items into different formats.
 """
 
+from collections import Mapping
 import csv
 import io
 import sys
@@ -64,6 +65,14 @@ class BaseItemExporter(object):
                 field_iter = six.iterkeys(item.fields)
             else:
                 field_iter = six.iterkeys(item)
+        elif isinstance(self.fields_to_export, Mapping):
+            if include_empty:
+                field_iter = self.fields_to_export.items()
+            else:
+                field_iter = (
+                    (x, y) for x, y in self.fields_to_export.items()
+                    if x in item
+                )
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -71,13 +80,22 @@ class BaseItemExporter(object):
                 field_iter = (x for x in self.fields_to_export if x in item)
 
         for field_name in field_iter:
-            if field_name in item:
-                field = {} if isinstance(item, dict) else item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+            if isinstance(field_name, six.string_types):
+                item_field, output_field = field_name, field_name
+            else:
+                item_field, output_field = field_name
+            if item_field in item:
+                if isinstance(item, dict):
+                    field = {}
+                else:
+                    field = item.fields[item_field]
+                value = self.serialize_field(
+                    field, output_field, item[item_field]
+                )
             else:
                 value = default_value
 
-            yield field_name, value
+            yield output_field, value
 
 
 class JsonLinesItemExporter(BaseItemExporter):
@@ -259,7 +277,11 @@ class CsvItemExporter(BaseItemExporter):
                 else:
                     # use fields declared in Item
                     self.fields_to_export = list(item.fields.keys())
-            row = list(self._build_row(self.fields_to_export))
+            if isinstance(self.fields_to_export, Mapping):
+                fields = self.fields_to_export.values()
+            else:
+                fields = self.fields_to_export
+            row = list(self._build_row(fields))
             self.csv_writer.writerow(row)
 
 

@@ -190,14 +190,33 @@ BaseItemExporter
 
    .. attribute:: fields_to_export
 
-      A list with the name of the fields that will be exported, or None if you
-      want to export all fields. Defaults to None.
+      Fields to export, their order [1]_ and their output names.
 
-      Some exporters (like :class:`CsvItemExporter`) respect the order of the
-      fields defined in this attribute.
+      Possible values are:
 
-      Some exporters may require fields_to_export list in order to export the
-      data properly when spiders return dicts (not :class:`~Item` instances).
+      -   ``None`` (all fields [2]_, default)
+
+      -   A list of fields::
+
+              ['field1', 'field2']
+
+      -   A dict [3]_ where keys are fields and values are output names::
+
+              {'field1': 'Field 1', 'field2': 'Field 2'}
+
+      .. [1] Not all exporters respect the specified field order.
+      .. [2] If you yield items as dicts (not :class:`Item` instances),
+             exporters that need to know the fields to export beforehand, like
+             :class:`CsvItemExporter`, only export the fields found in the
+             first item.
+      .. [3] Dicts preserve insertion order since `Python 3.7`_
+             (`CPython 3.6`_, `PyPy 2.5`_). If you are using an older version
+             of Python, use an OrderedDict_ to enforce a specific field order.
+
+             .. _Python 3.7: https://docs.python.org/whatsnew/3.7.html
+             .. _CPython 3.6: https://docs.python.org/whatsnew/3.6.html#new-dict-implementation
+             .. _PyPy 2.5: https://morepypy.blogspot.com/2015/02/pypy-250-released.html
+             .. _OrderedDict: https://docs.python.org/library/collections.html#collections.OrderedDict
 
    .. attribute:: export_empty_fields
 
@@ -286,8 +305,8 @@ CsvItemExporter
 
    Exports Items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
-   CSV columns and their order. The :attr:`export_empty_fields` attribute has
-   no effect on this exporter.
+   CSV columns, their order and their column names. The
+   :attr:`export_empty_fields` attribute has no effect on this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
