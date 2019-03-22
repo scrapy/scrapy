@@ -10,6 +10,7 @@ import six
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.python import get_func_args
 from scrapy.spiders import Spider
 
 
@@ -35,10 +36,8 @@ class Rule(object):
         Wrapper around the request processing function to maintain backward compatibility
         with functions that do not take a Response object as parameter.
         """
-        argcount = self.process_request.__code__.co_argcount
-        if hasattr(self.process_request, '__self__'):
-            argcount = argcount - 1
-        args = [request] if argcount == 1 else [request, response]
+        arg_count = len(get_func_args(self.process_request))
+        args = [request] if arg_count == 1 else [request, response]
         return self.process_request(*args)
 
 
