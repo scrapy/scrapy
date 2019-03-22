@@ -11,7 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 def _path_safe(text):
-    """ Return a filesystem-safe version of a string ``text`` """
+    """
+    Return a filesystem-safe version of a string ``text``
+
+    >>> _path_safe('simple.org').startswith('simple.org')
+    True
+    >>> _path_safe('dash-underscore_.org').startswith('dash-underscore_.org')
+    True
+    >>> _path_safe('some@symbol?').startswith('some_symbol_')
+    True
+    """
     pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_'
                              for c in text])
     # as we replace some letters we can get collision for different slots
@@ -131,7 +140,6 @@ class DownloaderAwarePriorityQueue(object):
     domains (slots) with the least amount of active downloads are dequeued
     first.
     """
-    _DOWNLOADER_AWARE_PQ_ID = '_DOWNLOADER_AWARE_PQ_ID'
 
     @classmethod
     def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):

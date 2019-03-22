@@ -20,7 +20,7 @@ MockEngine = collections.namedtuple('MockEngine', ['downloader'])
 MockSlot = collections.namedtuple('MockSlot', ['active'])
 
 
-class MockDownloader:
+class MockDownloader(object):
     def __init__(self):
         self.slots = dict()
 
@@ -57,7 +57,7 @@ class MockCrawler(Crawler):
         self.engine = MockEngine(downloader=MockDownloader())
 
 
-class SchedulerHandler:
+class SchedulerHandler(object):
     priority_queue_cls = None
     jobdir = None
 
@@ -220,34 +220,6 @@ class TestMigration(unittest.TestCase):
             self._migration(self.tmpdir)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
-                                               unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
-
-    def test_logic(self):
-        for url, slot in _URLS_WITH_SLOTS:
-            request = Request(url)
-            request.meta[Downloader.DOWNLOAD_SLOT] = slot
-            self.scheduler.enqueue_request(request)
-
-        downloader = self.mock_crawler.engine.downloader
-        dequeued_slots = list()
-        requests = list()
-        while self.scheduler.has_pending_requests():
-            request = self.scheduler.next_request()
-            slot = downloader._get_slot_key(request, None)
-            dequeued_slots.append(slot)
-            downloader.increment(slot)
-            requests.append(request)
-
-        for request in requests:
-            slot = downloader._get_slot_key(request, None)
-            self.mock_crawler.engine.downloader.decrement(slot)
-
-        self.assertTrue(_is_scheduling_fair(list(s for u, s in _URLS_WITH_SLOTS),
-                                            dequeued_slots))
-
-
 def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     """
     We enqueued same number of requests for every slot.
@@ -273,31 +245,33 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     return True
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
-                                             unittest.TestCase):
+class DownloaderAwareSchedulerTestMixin(object):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    reopen = False
 
     def test_logic(self):
-
         for url, slot in _URLS_WITH_SLOTS:
             request = Request(url)
             request.meta[Downloader.DOWNLOAD_SLOT] = slot
             self.scheduler.enqueue_request(request)
 
-        self.close_scheduler()
-        self.create_scheduler()
+        if self.reopen:
+            self.close_scheduler()
+            self.create_scheduler()
 
         dequeued_slots = list()
         requests = []
         downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
+            # pylint: disable=protected-access
             slot = downloader._get_slot_key(request, None)
             dequeued_slots.append(slot)
             downloader.increment(slot)
             requests.append(request)
 
         for request in requests:
+            # pylint: disable=protected-access
             slot = downloader._get_slot_key(request, None)
             downloader.decrement(slot)
 
@@ -306,10 +280,23 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
         self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
 
 
+class TestSchedulerWithDownloaderAwareInMemory(DownloaderAwareSchedulerTestMixin,
+                                               BaseSchedulerInMemoryTester,
+                                               unittest.TestCase):
+    pass
+
+
+class TestSchedulerWithDownloaderAwareOnDisk(DownloaderAwareSchedulerTestMixin,
+                                             BaseSchedulerOnDiskTester,
+                                             unittest.TestCase):
+    reopen = True
+
+
 class StartUrlsSpider(Spider):
 
     def __init__(self, start_urls):
         self.start_urls = start_urls
+        super(StartUrlsSpider, self).__init__(start_urls)
 
     def parse(self, response):
         pass
