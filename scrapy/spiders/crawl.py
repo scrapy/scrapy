@@ -6,16 +6,19 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+import warnings
+
 import six
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_func_args
 from scrapy.spiders import Spider
 
 
-def identity(x):
-    return x
+def _identity(request, response):
+    return request
 
 
 class Rule(object):
@@ -25,19 +28,21 @@ class Rule(object):
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
-        self.process_request = process_request or identity
-        if follow is None:
-            self.follow = False if callback else True
-        else:
-            self.follow = follow
+        self.process_request = process_request or _identity
+        self.follow = follow if follow is not None else not callback
 
     def _process_request(self, request, response):
         """
-        Wrapper around the request processing function to maintain backward compatibility
-        with functions that do not take a Response object as parameter.
+        Wrapper around the request processing function to maintain backward
+        compatibility with functions that do not take a Response object
         """
         arg_count = len(get_func_args(self.process_request))
-        args = [request] if arg_count == 1 else [request, response]
+        if arg_count == 1:
+            args = [request]
+            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
+            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+        else:
+            args = [request, response]
         return self.process_request(*args)
 
 
