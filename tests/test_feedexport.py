@@ -186,6 +186,151 @@ class S3FeedStorageTest(unittest.TestCase):
         content = get_s3_content_and_delete(u.hostname, u.path[1:])
         self.assertEqual(content, expected_content)
 
+    def test_init_without_acl(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, None)
+
+    def test_init_with_acl(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            'custom-acl'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, 'custom-acl')
+
+    def test_from_crawler_without_acl(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, None)
+
+    def test_from_crawler_with_acl(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            'FEED_STORAGE_S3_ACL': 'custom-acl',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, 'custom-acl')
+
+    @defer.inlineCallbacks
+    def test_store_botocore_without_acl(self):
+        try:
+            import botocore
+        except ImportError:
+            raise unittest.SkipTest('botocore is required')
+
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, None)
+
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(BytesIO(b'test file'))
+        self.assertNotIn('ACL', storage.s3_client.put_object.call_args[1])
+
+    @defer.inlineCallbacks
+    def test_store_botocore_with_acl(self):
+        try:
+            import botocore
+        except ImportError:
+            raise unittest.SkipTest('botocore is required')
+
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            'custom-acl'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, 'custom-acl')
+
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(BytesIO(b'test file'))
+        self.assertEqual(
+            storage.s3_client.put_object.call_args[1].get('ACL'),
+            'custom-acl'
+        )
+
+    @defer.inlineCallbacks
+    def test_store_not_botocore_without_acl(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, None)
+
+        storage.is_botocore = False
+        storage.connect_s3 = mock.MagicMock()
+        self.assertFalse(storage.is_botocore)
+
+        yield storage.store(BytesIO(b'test file'))
+
+        conn = storage.connect_s3(*storage.connect_s3.call_args)
+        bucket = conn.get_bucket(*conn.get_bucket.call_args)
+        key = bucket.new_key(*bucket.new_key.call_args)
+        self.assertNotIn(
+            dict(policy='custom-acl'),
+            key.set_contents_from_file.call_args
+        )
+
+    @defer.inlineCallbacks
+    def test_store_not_botocore_with_acl(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            'custom-acl'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.acl, 'custom-acl')
+
+        storage.is_botocore = False
+        storage.connect_s3 = mock.MagicMock()
+        self.assertFalse(storage.is_botocore)
+
+        yield storage.store(BytesIO(b'test file'))
+
+        conn = storage.connect_s3(*storage.connect_s3.call_args)
+        bucket = conn.get_bucket(*conn.get_bucket.call_args)
+        key = bucket.new_key(*bucket.new_key.call_args)
+        self.assertIn(
+            dict(policy='custom-acl'),
+            key.set_contents_from_file.call_args
+        )
+
 
 class StdoutFeedStorageTest(unittest.TestCase):
 
