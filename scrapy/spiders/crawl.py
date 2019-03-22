@@ -21,6 +21,13 @@ def _identity(request, response):
     return request
 
 
+def _get_method(method, spider):
+    if callable(method):
+        return method
+    elif isinstance(method, six.string_types):
+        return getattr(spider, method, None)
+
+
 class Rule(object):
 
     def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
@@ -29,20 +36,24 @@ class Rule(object):
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
         self.process_request = process_request or _identity
+        self.process_request_argcount = None
         self.follow = follow if follow is not None else not callback
+
+    def _compile(self, spider):
+        self.callback = _get_method(self.callback, spider)
+        self.process_links = _get_method(self.process_links, spider)
+        self.process_request = _get_method(self.process_request, spider)
+        self.process_request_argcount = len(get_func_args(self.process_request))
+        if self.process_request_argcount == 1:
+            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
+            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
 
     def _process_request(self, request, response):
         """
         Wrapper around the request processing function to maintain backward
         compatibility with functions that do not take a Response object
         """
-        arg_count = len(get_func_args(self.process_request))
-        if arg_count == 1:
-            args = [request]
-            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
-            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
-        else:
-            args = [request, response]
+        args = [request] if self.process_request_argcount == 1 else [request, response]
         return self.process_request(*args)
 
 
@@ -98,17 +109,9 @@ class CrawlSpider(Spider):
                 yield request_or_item
 
     def _compile_rules(self):
-        def get_method(method):
-            if callable(method):
-                return method
-            elif isinstance(method, six.string_types):
-                return getattr(self, method, None)
-
         self._rules = [copy.copy(r) for r in self.rules]
         for rule in self._rules:
-            rule.callback = get_method(rule.callback)
-            rule.process_links = get_method(rule.process_links)
-            rule.process_request = get_method(rule.process_request)
+            rule._compile(self)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
