@@ -9,6 +9,7 @@ from scrapy.spidermiddlewares.offsite import URLWarning
 from scrapy.utils.test import get_crawler
 import warnings
 
+
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
@@ -23,21 +24,24 @@ class TestOffsiteMiddleware(TestCase):
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
 
-        onsite_reqs = [Request('http://scrapytest.org/1'),
-                       Request('http://scrapy.org/1', meta={'allow_offsite_requests': False}),
-                       Request('http://sub.scrapy.org/1'),
-                       Request('http://offsite.tld/letmepass', meta={'allow_offsite_requests': True}),
-                       Request('http://scrapy.test.org/')]
-        offsite_reqs = [Request('http://scrapy2.org'),
-                       Request('http://offsite.tld/'),
-                       Request('http://offsite.tld/scrapytest.org'),
-                        Request('http://offsite.tld/rogue.scrapytest.org', meta={'allow_offsite_requests': False}),
-                       Request('http://rogue.scrapytest.org.haha.com'),
-                       Request('http://roguescrapytest.org'),
-                       Request('http://test.org/'),
-                       Request('http://notscrapy.test.org/')]
+        onsite_reqs = [
+            Request('http://scrapytest.org/1'),
+            Request('http://scrapy.org/1', meta={'allow_offsite': False}),
+            Request('http://sub.scrapy.org/1'),
+            Request('http://offsite.tld/letmepass', meta={'allow_offsite': True}),
+            Request('http://scrapy.test.org/'),
+        ]
+        offsite_reqs = [
+            Request('http://scrapy2.org'),
+            Request('http://offsite.tld/'),
+            Request('http://offsite.tld/scrapytest.org'),
+            Request('http://offsite.tld/rogue.scrapytest.org', meta={'allow_offsite': False}),
+            Request('http://rogue.scrapytest.org.haha.com'),
+            Request('http://roguescrapytest.org'),
+            Request('http://test.org/'),
+            Request('http://notscrapy.test.org/')
+        ]
         reqs = onsite_reqs + offsite_reqs
-
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEqual(out, onsite_reqs)
 

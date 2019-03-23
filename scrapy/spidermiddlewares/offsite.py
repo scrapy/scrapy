@@ -28,7 +28,7 @@ class OffsiteMiddleware(object):
     def process_spider_output(self, response, result, spider):
         for x in result:
             if isinstance(x, Request):
-                if x.meta.get('allow_offsite_requests', False) or self.should_follow(x, spider):
+                if x.meta.get('allow_offsite', False) or self.should_follow(x, spider):
                     yield x
                 else:
                     domain = urlparse_cached(x).hostname

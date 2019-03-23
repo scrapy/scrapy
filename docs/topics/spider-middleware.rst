@@ -286,7 +286,7 @@ Default: ``False``
 
 Pass all responses, regardless of its status code.
 
-.. reqmeta:: allow_offsite_requests
+.. reqmeta:: allow_offsite
 
 OffsiteMiddleware
 -----------------
@@ -321,7 +321,7 @@ OffsiteMiddleware
    attribute is empty, the offsite middleware will allow all requests.
 
 
-   If the request has `allow_offsite_requests` set to True in
+   If the request has ``allow_offsite`` set to ``True`` in
    :attr:`Request.meta <scrapy.http.Request.meta>` the offsite middleware will allow the request to go through
    even if its domain is not listed in allowed domains.
 
