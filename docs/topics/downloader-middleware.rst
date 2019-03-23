@@ -725,6 +725,7 @@ RedirectMiddleware
    This middleware handles redirection of requests based on response status.
 
 .. reqmeta:: redirect_urls
+.. reqmeta:: redirect_reasons
 
 The urls which the request goes through (while being redirected) and their 
 corresponding status can be found in the ``redirect_urls`` and ``redirect_reasons``
