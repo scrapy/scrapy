@@ -728,8 +728,8 @@ RedirectMiddleware
 .. reqmeta:: redirect_reasons
 
 The urls which the request goes through (while being redirected) and their 
-corresponding status can be found in the ``redirect_urls`` and ``redirect_reasons``
-:attr:`Request.meta <scrapy.http.Request.meta>` keys respectively.
+status or meta-refresh html tag can be found in the ``redirect_urls`` and 
+``redirect_reasons`` :attr:`Request.meta <scrapy.http.Request.meta>` keys respectively.
 
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
