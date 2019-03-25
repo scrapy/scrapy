@@ -1,5 +1,4 @@
 import logging
-import tempfile
 import warnings
 
 from twisted.internet import defer
@@ -37,7 +36,11 @@ class CrawlerTestCase(BaseCrawlerTest):
             self.assertIsInstance(spiders, sl_cls)
 
             self.crawler.spiders
-            self.assertEqual(len(w), 1, "Warn deprecated access only once")
+            is_one_warning = len(w) == 1
+            if not is_one_warning:
+                for warning in w:
+                    print(warning)
+            self.assertTrue(is_one_warning, "Warn deprecated access only once")
 
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
