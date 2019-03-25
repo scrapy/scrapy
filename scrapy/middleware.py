@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 import logging
 import pprint
 
@@ -16,7 +16,7 @@ class MiddlewareManager(object):
 
     def __init__(self, *middlewares):
         self.middlewares = middlewares
-        self.methods = defaultdict(list)
+        self.methods = defaultdict(deque)
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -56,7 +56,7 @@ class MiddlewareManager(object):
         if hasattr(mw, 'open_spider'):
             self.methods['open_spider'].append(mw.open_spider)
         if hasattr(mw, 'close_spider'):
-            self.methods['close_spider'].insert(0, mw.close_spider)
+            self.methods['close_spider'].appendleft(mw.close_spider)
 
     def _process_parallel(self, methodname, obj, *args):
         return process_parallel(self.methods[methodname], obj, *args)

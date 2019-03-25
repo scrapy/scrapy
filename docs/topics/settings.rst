@@ -178,35 +178,48 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
-.. setting:: BOT_NAME
+.. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
 ----------------
 
 Default: ``None``
 
-Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
+Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+Only supported with ``botocore`` library.
 
-.. setting:: AWS_ENDPOINT_URL
+.. setting:: AWS_USE_SSL
 
 AWS_USE_SSL
 -----------
 
 Default: ``None``
 
-Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
-By default SSL will be used.
+Use this option if you want to disable SSL connection for communication with
+S3 or S3-like storage. By default SSL will be used.
+Only supported with ``botocore`` library.
 
-.. setting:: AWS_USE_SSL
+.. setting:: AWS_VERIFY
 
 AWS_VERIFY
 ----------
 
 Default: ``None``
 
-Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default
+SSL verification will occur. Only supported with ``botocore`` library.
 
-.. setting:: AWS_VERIFY
+.. setting:: AWS_REGION_NAME
+
+AWS_REGION_NAME
+---------------
+
+Default: ``None``
+
+The name of the region associated with the AWS client.
+Only supported with ``botocore`` library.
+
+.. setting:: BOT_NAME
 
 BOT_NAME
 --------
@@ -318,16 +331,16 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the request priority based on its depth:
+An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
+a :class:`~scrapy.http.Request` based on its depth.
 
-- if zero (default), no priority adjustment is made from depth
-- **a positive value will decrease the priority, i.e. higher depth
-  requests will be processed later** ; this is commonly used when doing
-  breadth-first crawls (BFO)
-- a negative value will increase priority, i.e., higher depth requests
-  will be processed sooner (DFO)
+The priority of a request is adjusted as follows::
 
-See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
+    request.priority = request.priority - ( depth * DEPTH_PRIORITY )
+
+As depth increases, positive values of ``DEPTH_PRIORITY`` decrease request
+priority (BFO), while negative values increase request priority (DFO). See
+also :ref:`faq-bfo-dfo`.
 
 .. note::
 
@@ -586,7 +599,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: `1073741824` (1024MB)
+Default: ``1073741824`` (1024MB)
 
 The maximum response size (in bytes) that downloader will download.
 
@@ -607,7 +620,7 @@ If you want to disable it set to 0.
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: `33554432` (32MB)
+Default: ``33554432`` (32MB)
 
 The response size (in bytes) that downloader will start to warn.
 

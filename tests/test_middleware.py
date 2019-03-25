@@ -60,9 +60,9 @@ class MiddlewareManagerTest(unittest.TestCase):
     def test_init(self):
         m1, m2, m3 = M1(), M2(), M3()
         mwman = TestMiddlewareManager(m1, m2, m3)
-        self.assertEqual(mwman.methods['open_spider'], [m1.open_spider, m2.open_spider])
-        self.assertEqual(mwman.methods['close_spider'], [m2.close_spider, m1.close_spider])
-        self.assertEqual(mwman.methods['process'], [m1.process, m3.process])
+        self.assertEqual(list(mwman.methods['open_spider']), [m1.open_spider, m2.open_spider])
+        self.assertEqual(list(mwman.methods['close_spider']), [m2.close_spider, m1.close_spider])
+        self.assertEqual(list(mwman.methods['process']), [m1.process, m3.process])
 
     def test_methods(self):
         mwman = TestMiddlewareManager(M1(), M2(), M3())

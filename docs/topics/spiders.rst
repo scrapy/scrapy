@@ -129,7 +129,7 @@ scrapy.Spider
 
        You probably won't need to override this directly because the default
        implementation acts as a proxy to the :meth:`__init__` method, calling
-       it with the given arguments `args` and named arguments `kwargs`.
+       it with the given arguments ``args`` and named arguments ``kwargs``.
 
        Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
        attributes in the new instance so they can be accessed later inside the
@@ -190,7 +190,7 @@ scrapy.Spider
    .. method:: log(message, [level, component])
 
        Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backwards compatibility. For more information see
+       kept for backward compatibility. For more information see
        :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)
@@ -298,13 +298,13 @@ The above example can also be written as follows::
 
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
-If you were to set the `start_urls` attribute from the command line,
+If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
 using something like
 `ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
 or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
 and then set it as an attribute.
-Otherwise, you would cause iteration over a `start_urls` string
+Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
 resulting in each character being seen as a separate url.
 
@@ -679,6 +679,50 @@ SitemapSpider
         retrieved.
 
         Default is ``sitemap_alternate_links`` disabled.
+
+    .. method:: sitemap_filter(entries)
+
+        This is a filter funtion that could be overridden to select sitemap entries
+        based on their attributes.
+
+        For example::
+
+            <url>
+                <loc>http://example.com/</loc>
+                <lastmod>2005-01-01</lastmod>
+            </url>
+
+        We can define a ``sitemap_filter`` function to filter ``entries`` by date::
+
+            from datetime import datetime
+            from scrapy.spiders import SitemapSpider
+
+            class FilteredSitemapSpider(SitemapSpider):
+                name = 'filtered_sitemap_spider'
+                allowed_domains = ['example.com']
+                sitemap_urls = ['http://example.com/sitemap.xml']
+
+                def sitemap_filter(self, entries):
+                    for entry in entries:
+                        date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
+                        if date_time.year >= 2005:
+                            yield entry
+
+        This would retrieve only ``entries`` modified on 2005 and the following
+        years.
+
+        Entries are dict objects extracted from the sitemap document.
+        Usually, the key is the tag name and the value is the text inside it.
+
+        It's important to notice that:
+
+        - as the loc attribute is required, entries without this tag are discarded
+        - alternate links are stored in a list with the key ``alternate``
+          (see ``sitemap_alternate_links``)
+        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
+
+        If you omit this method, all entries found in sitemaps will be
+        processed, observing other attributes and their settings.
 
 
 SitemapSpider examples
