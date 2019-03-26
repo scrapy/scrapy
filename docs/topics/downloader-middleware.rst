@@ -726,14 +726,14 @@ RedirectMiddleware
 
 .. reqmeta:: redirect_urls
 
-The urls which the request goes through (while being redirected) can be found in the
-``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` keys respectively.
+The urls which the request goes through (while being redirected) can be found
+in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
 
 .. reqmeta:: redirect_reasons
 
-The status of redirected urls can be found in the ``redirect_reasons`` 
-:attr:`Request.meta <scrapy.http.Request.meta>` keys respectively. This list can have either
-``int`` HTTP status codes (Ex:- 'redirect_reasons': [301, 302, 402])
+The status of redirected urls can be found in the ``redirect_reasons``
+:attr:`Request.meta <scrapy.http.Request.meta>` key. This list can have
+either ``int`` HTTP status codes (Ex:- 'redirect_reasons': [301, 302, 402])
 or ``string`` 'meta refresh' (Ex:- 'redirect_reasons': ['meta refresh'])
 
 The :class:`RedirectMiddleware` can be configured through the following
