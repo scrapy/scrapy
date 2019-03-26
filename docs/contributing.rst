@@ -7,7 +7,7 @@ Contributing to Scrapy
 .. important::
 
     Double check that you are reading the most recent version of this document at
-    https://doc.scrapy.org/en/master/contributing.html
+    https://docs.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
@@ -55,7 +55,7 @@ guidelines when you're going to report a new bug.
 
 * search the `scrapy-users`_ list and `Scrapy subreddit`_ to see if it has
   been discussed there, or if you're not sure if what you're seeing is a bug.
-  You can also ask in the `#scrapy` IRC channel.
+  You can also ask in the ``#scrapy`` IRC channel.
 
 * write **complete, reproducible, specific bug reports**. The smaller the test
   case, the better. Remember that other developers won't have your project to

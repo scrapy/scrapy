@@ -43,7 +43,7 @@ previous (or subsequent) middleware being applied.
 
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign `None` as its
+in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
 value.  For example, if you want to disable the off-site middleware::
 
     SPIDER_MIDDLEWARES = {
@@ -57,8 +57,12 @@ particular setting. See each middleware documentation for more info.
 Writing your own spider middleware
 ==================================
 
-Each middleware component is a Python class that defines one or more of the
-following methods:
+Each spider middleware is a Python class that defines one or more of the
+methods defined below.
+
+The main entry point is the ``from_crawler`` class method, which receives a
+:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
+object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
 .. module:: scrapy.spidermiddlewares
 
@@ -200,7 +204,7 @@ DepthMiddleware
 .. class:: DepthMiddleware
 
    DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
    there is no value previously set (usually just the first Request) and
    incrementing it by 1 otherwise.
 

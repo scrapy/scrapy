@@ -1,4 +1,4 @@
-# This module is kept for backwards compatibility, so users can import
+# This module is kept for backward compatibility, so users can import
 # scrapy.conf.settings and get the settings they expect
 
 import sys

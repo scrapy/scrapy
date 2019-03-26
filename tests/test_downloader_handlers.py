@@ -50,7 +50,7 @@ class DummyDH(object):
 
 
 class DummyLazyDH(object):
-    # Default is lazy for backwards compatibility
+    # Default is lazy for backward compatibility
 
     def __init__(self, crawler):
         pass

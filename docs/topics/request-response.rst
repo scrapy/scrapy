@@ -50,7 +50,7 @@ Request objects
     :type meta: dict
 
     :param body: the request body. If a ``unicode`` is passed, then it's encoded to
-      ``str`` using the `encoding` passed (which defaults to ``utf-8``). If
+      ``str`` using the ``encoding`` passed (which defaults to ``utf-8``). If
       ``body`` is not given, an empty string is stored. Regardless of the
       type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
@@ -489,6 +489,11 @@ method for this job. Here's an example spider which uses it::
 
     import scrapy
 
+    def authentication_failed(response):
+        # TODO: Check the contents of the response and return True if it failed
+        # or False if it succeeded.
+        pass
+
     class LoginSpider(scrapy.Spider):
         name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
@@ -501,12 +506,49 @@ method for this job. Here's an example spider which uses it::
             )
 
         def after_login(self, response):
-            # check login succeed before going on
-            if "authentication failed" in response.body:
+            if authentication_failed(response):
                 self.logger.error("Login failed")
                 return
 
             # continue scraping with authenticated session...
+
+JSONRequest
+-----------
+
+The JSONRequest class extends the base :class:`Request` class with functionality for
+dealing with JSON requests.
+
+.. class:: JSONRequest(url, [... data, dumps_kwargs])
+
+   The :class:`JSONRequest` class adds two new argument to the constructor. The
+   remaining arguments are the same as for the :class:`Request` class and are
+   not documented here.
+
+   Using the :class:`JSONRequest` will set the ``Content-Type`` header to ``application/json``
+   and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
+
+   :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
+      if :attr:`Request.body` argument is provided this parameter will be ignored.
+      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
+      set to ``'POST'`` automatically.
+   :type data: JSON serializable object
+
+   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+       data into JSON format.
+   :type dumps_kwargs: dict
+
+.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
+
+JSONRequest usage example
+-------------------------
+
+Sending a JSON POST request with a JSON payload::
+
+   data = {
+       'name1': 'value1',
+       'name2': 'value2',
+   }
+   yield JSONRequest(url='http://www.example.com/post/action', data=data)
 
 
 Response objects
@@ -606,7 +648,7 @@ Response objects
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
-        tagging Responses. For example: `'cached'`, `'redirected`', etc. And
+        tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
 
@@ -678,7 +720,7 @@ TextResponse objects
 
             ``unicode(response.body)`` is not a correct way to convert response
             body to unicode: you would be using the system default encoding
-            (typically `ascii`) instead of the response encoding.
+            (typically ``ascii``) instead of the response encoding.
 
 
     .. attribute:: TextResponse.encoding
@@ -686,7 +728,7 @@ TextResponse objects
        A string with the encoding of this response. The encoding is resolved by
        trying the following mechanisms, in order:
 
-       1. the encoding passed in the constructor `encoding` argument
+       1. the encoding passed in the constructor ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (ie. unknown), it is ignored and the next
@@ -724,7 +766,7 @@ TextResponse objects
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
-        kept for backwards compatibility; please prefer ``response.text``.
+        kept for backward compatibility; please prefer ``response.text``.
 
 
 HtmlResponse objects
