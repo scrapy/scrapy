@@ -280,7 +280,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(self.request_class(url, method='GET', formdata=data))
         self.assertEqual(set(fs[b'a']), {b'one', b'two'})
         self.assertEqual(fs[b'b'], [b'2'])
-        self.assertIsNone(fs.get([b'c']))
+        self.assertIsNone(fs.get(b'c'))
 
         data = {'a' : '1', 'b' : '2'}
         fs = _qs(self.request_class('http://www.example.com/', method='GET', formdata=data))
