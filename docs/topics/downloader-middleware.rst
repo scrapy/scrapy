@@ -733,6 +733,17 @@ RedirectMiddleware
 The urls which the request goes through (while being redirected) can be found
 in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
 
+.. reqmeta:: redirect_reasons
+
+The reason behind each redirect in :reqmeta:`redirect_urls` can be found in the
+``redirect_reasons`` :attr:`Request.meta <scrapy.http.Request.meta>` key. For
+example: ``[301, 302, 307, 'meta refresh']``.
+
+The format of a reason depends on the middleware that handled the corresponding
+redirect. For example, :class:`RedirectMiddleware` indicates the triggering
+response status code as an integer, while :class:`MetaRefreshMiddleware`
+always uses the ``'meta refresh'`` string as reason.
+
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
@@ -796,8 +807,9 @@ settings (see the settings documentation for more info):
 * :setting:`METAREFRESH_ENABLED`
 * :setting:`METAREFRESH_MAXDELAY`
 
-This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
-and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`
+This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
+:reqmeta:`redirect_urls` and :reqmeta:`redirect_reasons` request meta keys as described
+for :class:`RedirectMiddleware`
 
 
 MetaRefreshMiddleware settings
