@@ -349,7 +349,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
-    setting. Or you can also implement your own storage backend.
+    setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
 
     Scrapy ships with two HTTP cache policies:
 
@@ -498,10 +498,10 @@ In order to use this storage backend:
 
 .. _httpcache-storage-custom:
 
-Implementing custom cache storage backend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Writing your own storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can implement custom cache storage backend by creating a Python class that
+You can implement a cache storage backend by creating a Python class that
 defines the methods described below.
 
 .. module:: scrapy.extensions.httpcache
@@ -510,14 +510,16 @@ defines the methods described below.
 
     .. method:: open_spider(spider)
 
-      This method gets called after a spider has been opened for crawling.
+      This method gets called after a spider has been opened for crawling. It handles 
+      the :signal:`open_spider <spider_opened>` signal.
 
       :param spider: the spider which has been opened
       :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: close_spider(spider)
 
-      This method gets called after a spider has been closed.
+      This method gets called after a spider has been closed. It handles 
+      the :signal:`close_spider <spider_closed>` signal. 
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.spiders.Spider` object
@@ -539,7 +541,7 @@ defines the methods described below.
       :param spider: the spider for which the response is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
 
-      :param request: corresponding request the spider generated
+      :param request: the corresponding request the spider generated
       :type request: :class:`~scrapy.http.Request` object
 
       :param response: the response to store in the cache
@@ -547,7 +549,7 @@ defines the methods described below.
 
 In order to use your storage backend, set:
 
-* :setting:`HTTPCACHE_STORAGE` to path of your custom storage class.
+* :setting:`HTTPCACHE_STORAGE` to the Python import path of your custom storage class.
 
 
 HTTPCache middleware settings
