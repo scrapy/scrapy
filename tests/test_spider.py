@@ -105,11 +105,11 @@ class SpiderTest(unittest.TestCase):
 
     def test_logger(self):
         spider = self.spider_class('example.com')
-        with LogCapture() as l:
+        with LogCapture() as lc:
             spider.logger.info('test log msg')
-        l.check(('example.com', 'INFO', 'test log msg'))
+        lc.check(('example.com', 'INFO', 'test log msg'))
 
-        record = l.records[0]
+        record = lc.records[0]
         self.assertIn('spider', record.__dict__)
         self.assertIs(record.spider, spider)
 
@@ -190,12 +190,11 @@ class CrawlSpiderTest(SpiderTest):
 
     def test_process_links(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
@@ -208,24 +207,24 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html',
-                           'http://example.org/nofollow.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
 
     def test_process_links_filter(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             import re
 
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="filter_process_links"),
             )
             _test_regex = re.compile('nofollow')
+
             def filter_process_links(self, links):
                 return [link for link in links
                         if not self._test_regex.search(link.url)]
@@ -235,17 +234,16 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 2)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html'])
 
     def test_process_links_generator(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
@@ -259,9 +257,113 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html',
-                           'http://example.org/nofollow.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+
+    def test_process_request(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        def process_request_change_domain(request):
+            return request.replace(url=request.url.replace('.org', '.com'))
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request=process_request_change_domain),
+            )
+
+        with warnings.catch_warnings(record=True) as cw:
+            spider = _CrawlSpider()
+            output = list(spider._requests_to_follow(response))
+            self.assertEqual(len(output), 3)
+            self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+            self.assertEqual([r.url for r in output],
+                             ['http://example.com/somepage/item/12.html',
+                              'http://example.com/about.html',
+                              'http://example.com/nofollow.html'])
+            self.assertEqual(len(cw), 1)
+            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+
+    def test_process_request_with_response(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        def process_request_meta_response_class(request, response):
+            request.meta['response_class'] = response.__class__.__name__
+            return request
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request=process_request_meta_response_class),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+        self.assertEqual([r.meta['response_class'] for r in output],
+                         ['HtmlResponse', 'HtmlResponse', 'HtmlResponse'])
+
+    def test_process_request_instance_method(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request='process_request_upper'),
+            )
+
+            def process_request_upper(self, request):
+                return request.replace(url=request.url.upper())
+
+        with warnings.catch_warnings(record=True) as cw:
+            spider = _CrawlSpider()
+            output = list(spider._requests_to_follow(response))
+            self.assertEqual(len(output), 3)
+            self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+            self.assertEqual([r.url for r in output],
+                             ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
+                              'http://EXAMPLE.ORG/ABOUT.HTML',
+                              'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+            self.assertEqual(len(cw), 1)
+            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+
+    def test_process_request_instance_method_with_response(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request='process_request_meta_response_class'),
+            )
+
+            def process_request_meta_response_class(self, request, response):
+                request.meta['response_class'] = response.__class__.__name__
+                return request
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+        self.assertEqual([r.meta['response_class'] for r in output],
+                         ['HtmlResponse', 'HtmlResponse', 'HtmlResponse'])
 
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()
