@@ -26,8 +26,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self.methods['process_spider_input'].append(mw.process_spider_input)
         if hasattr(mw, 'process_spider_output'):
             self.methods['process_spider_output'].appendleft(mw.process_spider_output)
-        if hasattr(mw, 'process_spider_exception'):
-            self.methods['process_spider_exception'].appendleft(mw.process_spider_exception)
+        if hasattr(mw, 'process_spider_exception') or hasattr(mw, 'process_spider_failure'):
+            if hasattr(mw, 'process_spider_failure'):
+                self.methods['process_spider_failure'].appendleft(mw.process_spider_failure)
+            else:
+                self.methods['process_spider_exception'].appendleft(mw.process_spider_exception)
         if hasattr(mw, 'process_start_requests'):
             self.methods['process_start_requests'].appendleft(mw.process_start_requests)
 
@@ -48,15 +51,23 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
 
-        def process_spider_exception(_failure):
-            exception = _failure.value
-            for method in self.methods['process_spider_exception']:
-                result = method(response=response, exception=exception, spider=spider)
+        def process_spider_failure(_failure):
+            for method in self.methods['process_spider_failure']:
+                result = method(response=response, failure=_failure, spider=spider)
                 assert result is None or _isiterable(result), \
                     'Middleware %s must returns None, or an iterable object, got %s ' % \
                     (fname(method), type(result))
                 if result is not None:
                     return result
+
+            for method in self.methods['process_spider_exception']:
+                result = method(response=response, exception=_failure.value, spider=spider)
+                assert result is None or _isiterable(result), \
+                    'Middleware %s must returns None, or an iterable object, got %s ' % \
+                    (fname(method), type(result))
+                if result is not None:
+                    return result
+
             return _failure
 
         def process_spider_output(result):
@@ -68,7 +79,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return result
 
         dfd = mustbe_deferred(process_spider_input, response)
-        dfd.addErrback(process_spider_exception)
+        dfd.addErrback(process_spider_failure)
         dfd.addCallback(process_spider_output)
         return dfd
 
