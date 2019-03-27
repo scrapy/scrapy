@@ -80,9 +80,10 @@ class ImagesPipelineTestCase(unittest.TestCase):
         # straigh forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
         im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
-        converted, buf = self.pipeline.convert_image(im, buf)
+        converted, converted_buf = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
+        self.assertEqual(converted_buf.read(), buf.read())
 
         # check that thumbnail keep image ratio
         thumbnail, buf = self.pipeline.convert_image(converted, buf, size=(10, 25))
