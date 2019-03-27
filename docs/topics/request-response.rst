@@ -233,19 +233,19 @@ The following two examples show how to achieve this by using the
 
 ::
 
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.cb_kwargs['item'] = item
-        request.cb_kwargs['foo'] = 'bar'
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
         yield request
 
-    def parse_page2(self, response, item, foo):
-        item['other_url'] = response.url
-        item['foo'] = foo
-        yield item
+    def parse_page2(self, response, main_url, foo):
+        yield dict(
+            main_url=main_url,
+            other_url=response.url,
+            foo=foo,
+        )
 
 
 .. _topics-request-response-ref-errbacks:
