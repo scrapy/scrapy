@@ -7,7 +7,7 @@ Contributing to Scrapy
 .. important::
 
     Double check that you are reading the most recent version of this document at
-    https://doc.scrapy.org/en/master/contributing.html
+    https://docs.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
@@ -55,7 +55,7 @@ guidelines when you're going to report a new bug.
 
 * search the `scrapy-users`_ list and `Scrapy subreddit`_ to see if it has
   been discussed there, or if you're not sure if what you're seeing is a bug.
-  You can also ask in the `#scrapy` IRC channel.
+  You can also ask in the ``#scrapy`` IRC channel.
 
 * write **complete, reproducible, specific bug reports**. The smaller the test
   case, the better. Remember that other developers won't have your project to
@@ -165,18 +165,18 @@ Scrapy:
 Documentation policies
 ======================
 
-* **Don't** use docstrings for documenting classes, or methods which are
-  already documented in the official (sphinx) documentation. Alternatively,
-  **do** provide a docstring, but make sure sphinx documentation uses
-  autodoc_ extension to pull the docstring. For example, the
-  :meth:`ItemLoader.add_value` method should be either
-  documented only in the sphinx documentation (not as a docstring), or
-  it should have a docstring which is pulled to sphinx documentation using
-  autodoc_ extension.
+For reference documentation of API members (classes, methods, etc.) use
+docstrings and make sure that the Sphinx documentation uses the autodoc_
+extension to pull the docstrings. API reference documentation should be
+IDE-friendly: short, to the point, and it may provide short examples.
 
-* **Do** use docstrings for documenting functions not present in the official
-  (sphinx) documentation, such as functions from ``scrapy.utils`` package and
-  its sub-modules.
+Other types of documentation, such as tutorials or topics, should be covered in
+files within the ``docs/`` directory. This includes documentation that is
+specific to an API member, but goes beyond API reference documentation.
+
+In any case, if something is covered in a docstring, use the autodoc_
+extension to pull the docstring into the documentation instead of duplicating
+the docstring in files within the ``docs/`` directory.
 
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 

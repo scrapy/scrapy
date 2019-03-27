@@ -249,6 +249,14 @@ class ItemTest(unittest.TestCase):
         copied_item['name'] = copied_item['name'].upper()
         self.assertNotEqual(item['name'], copied_item['name'])
 
+    def test_deepcopy(self):
+        class TestItem(Item):
+            tags = Field()
+        item = TestItem({'tags': ['tag1']})
+        copied_item = item.deepcopy()
+        item['tags'].append('tag2')
+        assert item['tags'] != copied_item['tags']
+
 
 class ItemMetaTest(unittest.TestCase):
 
