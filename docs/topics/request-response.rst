@@ -215,24 +215,12 @@ Example::
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
-The following two examples show how to achieve this by using the 
-:attr:`Request.meta` and :attr:`Request.cb_kwargs` attributes respectively::
-
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.meta['item'] = item
-        yield request
-
-    def parse_page2(self, response):
-        item = response.meta['item']
-        item['other_url'] = response.url
-        yield item
+The following example shows how to achieve this by using the
+:attr:`Request.cb_kwargs` attribute:
 
 ::
 
+    # pass information to the next callback using the Request.cb_kwargs attribute
     def parse(self, response):
         request = scrapy.Request('http://www.example.com/index.html',
                                  callback=self.parse_page2,
@@ -247,6 +235,29 @@ The following two examples show how to achieve this by using the
             foo=foo,
         )
 
+.. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
+   Prior to that, :attr:`Request.meta` was the recommended option for passing
+   information around callbacks. However, after ``1.7`` :attr:`Request.cb_kwargs`
+   became the preferred way of passing user information, leaving :attr:`Request.meta`
+   to be used by internal components like spider or downloader middlewares.
+   The following example, which uses :attr:`Request.meta`, is only kept for historical
+   reasons.
+
+::
+
+    # pass information to the next callback using the Request.meta attribute
+    def parse_page1(self, response):
+        item = MyItem()
+        item['main_url'] = response.url
+        request = scrapy.Request("http://www.example.com/some_page.html",
+                                 callback=self.parse_page2)
+        request.meta['item'] = item
+        yield request
+
+    def parse_page2(self, response):
+        item = response.meta['item']
+        item['other_url'] = response.url
+        yield item
 
 .. _topics-request-response-ref-errbacks:
 
