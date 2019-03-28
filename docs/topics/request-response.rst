@@ -186,12 +186,12 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, encoding, dont_filter, callback, errback])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       attribute :attr:`Request.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). See also
+       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are copied by default
+       (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
 .. _topics-request-response-ref-request-callback-arguments:
@@ -237,11 +237,10 @@ The following example shows how to achieve this by using the
 
 .. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
    Prior to that, :attr:`Request.meta` was the recommended option for passing
-   information around callbacks. However, after ``1.7`` :attr:`Request.cb_kwargs`
+   information around callbacks. However, after ``1.7``, using :attr:`Request.cb_kwargs`
    became the preferred way of passing user information, leaving :attr:`Request.meta`
-   to be used by internal components like spider or downloader middlewares.
-   The following example, which uses :attr:`Request.meta`, is only kept for historical
-   reasons.
+   to be populated by internal components like spider or downloader middlewares.
+   The following :attr:`Request.meta` example is only kept for historical reasons.
 
 ::
 
