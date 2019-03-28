@@ -39,6 +39,9 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield Request(self.mockserver.url('/general_with'), self.parse_general, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_without'), self.parse_general)
         yield Request(self.mockserver.url('/no_kwargs'), self.parse_no_kwargs)
+        yield Request(self.mockserver.url('/default'), self.parse_default, cb_kwargs=data)
+        yield Request(self.mockserver.url('/takes_less'), self.parse_takes_less, cb_kwargs=data)
+        yield Request(self.mockserver.url('/takes_more'), self.parse_takes_more, cb_kwargs=data)
 
     def parse_first(self, response, key, number):
         self.checks.append(key == 'value')
@@ -65,6 +68,25 @@ class KeywordArgumentsSpider(MockServerSpider):
     def parse_no_kwargs(self, response):
         self.checks.append(response.url.endswith('/no_kwargs'))
         self.crawler.stats.inc_value('boolean_checks')
+
+    def parse_default(self, response, key, number=None, default=99):
+        self.checks.append(response.url.endswith('/default'))
+        self.checks.append(key == 'value')
+        self.checks.append(number == 123)
+        self.checks.append(default == 99)
+        self.crawler.stats.inc_value('boolean_checks', 4)
+
+    def parse_takes_less(self, response, key):
+        """
+        Should raise
+        TypeError: parse_takes_less() got an unexpected keyword argument 'number'
+        """
+
+    def parse_takes_more(self, response, key, number, other):
+        """
+        Should raise
+        TypeError: parse_takes_more() missing 1 required positional argument: 'other'
+        """
 
 
 class FollowAllSpider(MetaSpider):
