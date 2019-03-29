@@ -190,8 +190,8 @@ Request objects
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are copied by default
-       (unless new values are given as arguments). See also
+       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are shallow
+       copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
 .. _topics-request-response-ref-request-callback-arguments:
@@ -220,7 +220,6 @@ The following example shows how to achieve this by using the
 
 ::
 
-    # pass information to the next callback using the Request.cb_kwargs attribute
     def parse(self, response):
         request = scrapy.Request('http://www.example.com/index.html',
                                  callback=self.parse_page2,
@@ -236,27 +235,10 @@ The following example shows how to achieve this by using the
         )
 
 .. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
-   Prior to that, :attr:`Request.meta` was the recommended option for passing
-   information around callbacks. However, after ``1.7``, using :attr:`Request.cb_kwargs`
-   became the preferred way of passing user information, leaving :attr:`Request.meta`
-   to be populated by internal components like spider or downloader middlewares.
-   The following :attr:`Request.meta` example is only kept for historical reasons.
-
-::
-
-    # pass information to the next callback using the Request.meta attribute
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.meta['item'] = item
-        yield request
-
-    def parse_page2(self, response):
-        item = response.meta['item']
-        item['other_url'] = response.url
-        yield item
+   Prior to that, using :attr:`Request.meta` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs`
+   became the preferred way for handling user information, leaving :attr:`Request.meta`
+   for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
 
