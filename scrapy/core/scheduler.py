@@ -77,13 +77,8 @@ class Scheduler(object):
 
     def open(self, spider):
         self.spider = spider
-
-        # in-memory PriorityQueue instance
         self.mqs = self._mq()
-
-        # on-disk PriorityQueue instance
         self.dqs = self._dq() if self.dqdir else None
-
         return self.df.open()
 
     def close(self, reason):
