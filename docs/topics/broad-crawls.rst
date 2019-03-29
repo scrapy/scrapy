@@ -40,7 +40,7 @@ concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
 Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
-==============================================
+=================================================
 
 Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
 It works best during single-domain crawl. It does not work well with crawling
