@@ -101,7 +101,7 @@ class Scheduler(object):
         return True
 
     def next_request(self):
-        request = self._mqpop()
+        request = self.mqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
         else:
@@ -140,9 +140,6 @@ class Scheduler(object):
     def _dqpop(self):
         if self.dqs:
             return self.dqs.pop()
-
-    def _mqpop(self):
-        return self.mqs.pop()
 
     def _newmq(self, priority):
         """ Factory for creating memory queues. """
