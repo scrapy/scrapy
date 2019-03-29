@@ -1157,7 +1157,7 @@ SCHEDULER_PRIORITY_QUEUE
 ------------------------
 Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Type of priority queue used by scheduler. Another available type is
+Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.DownloaderAwarePriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
