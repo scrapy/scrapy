@@ -461,8 +461,8 @@ Supported options:
 * ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
-* ``--cb_kwargs``: additional keyword arguments that will be passed to the callback.
-  This must be a valid json string. Example: --cb_kwargs='{"foo" : "bar"}'
+* ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
+  This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
 
 * ``--pipelines``: process items through pipelines
 
