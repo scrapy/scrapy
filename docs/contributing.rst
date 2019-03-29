@@ -205,6 +205,29 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
     ``tox -- tests/test_loader.py``
 
+To run the tests on a specific tox_ environment, use ``-e <name>`` with an
+environment name from ``tox.ini``. For example, to run the tests with Python
+3.6 use::
+
+    tox -e py36
+
+You can also specify a comma-separated list of environmets, and use `tox’s
+parallel mode`_ to run the tests on multiple environments in parallel::
+
+    tox -e py27,py36 -p auto
+
+To pass command-line options to pytest_, add them after ``--`` in your call to
+tox_. Using ``--`` overrides the default positional arguments defined in
+``tox.ini``, so you must include those default positional arguments
+(``scrapy tests``) after ``--`` as well::
+
+    tox -- scrapy tests -x  # stop after first failure
+
+You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
+the Python 3.6 tox_ environment using all your CPU cores::
+
+    tox -e py36 -- scrapy tests -n auto
+
 To see coverage report install `coverage`_ (``pip install coverage``) and run:
 
     ``coverage report``
@@ -238,4 +261,7 @@ And their unit-tests are in::
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _pull request: https://help.github.com/send-pull-requests/
+.. _pytest: https://docs.pytest.org/en/latest/usage.html
+.. _pytest-xdist: https://docs.pytest.org/en/3.0.0/xdist.html
 .. _tox: https://pypi.python.org/pypi/tox
+.. _tox’s parallel mode: https://tox.readthedocs.io/en/latest/example/basic.html#parallel-mode
