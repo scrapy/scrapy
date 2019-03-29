@@ -130,7 +130,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_request_with_cb_kwargs(self):
         raw_json_string = '{"foo" : "bar", "key": "value"}'
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
-                                           '--cb_kwargs', raw_json_string,
+                                           '--cbkwargs', raw_json_string,
                                            '-c', 'parse_request_with_cb_kwargs',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))

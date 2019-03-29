@@ -51,8 +51,8 @@ class Command(ScrapyCommand):
             help="use this callback for parsing, instead looking for a callback")
         parser.add_option("-m", "--meta", dest="meta",
             help="inject extra meta into the Request, it must be a valid raw json string")
-        parser.add_option("--cb_kwargs", dest="cb_kwargs",
-            help="inject extra cb_kwargs into the Request, it must be a valid raw json string")
+        parser.add_option("--cbkwargs", dest="cbkwargs",
+            help="inject extra cbkwargs into the Request, it must be a valid raw json string")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
@@ -212,9 +212,9 @@ class Command(ScrapyCommand):
         if opts.meta:
             request.meta.update(opts.meta)
 
-        # update cb_kwargs if any extra cb_kwargs was passed through the --cb_kwargs option.
-        if opts.cb_kwargs:
-            request.cb_kwargs.update(opts.cb_kwargs)
+        # update cb_kwargs if any extra values were was passed through the --cbkwargs option.
+        if opts.cbkwargs:
+            request.cb_kwargs.update(opts.cbkwargs)
 
         request.meta['_depth'] = 1
         request.meta['_callback'] = request.callback
@@ -243,12 +243,12 @@ class Command(ScrapyCommand):
                                  "Example: --meta='{\"foo\" : \"bar\"}'", print_help=False)
 
     def process_request_cb_kwargs(self, opts):
-        if opts.cb_kwargs:
+        if opts.cbkwargs:
             try:
-                opts.cb_kwargs = json.loads(opts.cb_kwargs)
+                opts.cbkwargs = json.loads(opts.cbkwargs)
             except ValueError:
-                raise UsageError("Invalid --cb_kwargs value, pass a valid json string to --cb_kwargs. "
-                                 "Example: --cb_kwargs='{\"foo\" : \"bar\"}'", print_help=False)
+                raise UsageError("Invalid --cbkwargs value, pass a valid json string to --cbkwargs. "
+                                 "Example: --cbkwargs='{\"foo\" : \"bar\"}'", print_help=False)
 
     def run(self, args, opts):
         # parse arguments
