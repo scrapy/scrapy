@@ -57,7 +57,6 @@ class Scheduler(object):
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         if pqclass is PriorityQueue:
-            # backwards compatibility
             warnings.warn("SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue'"
                           " is no longer supported because of API changes; "
                           "please use 'scrapy.pqueues.ScrapyPriorityQueue'",
