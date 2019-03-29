@@ -46,7 +46,7 @@ Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQ
 It works best during single-domain crawl. It does not work well with crawling
 many different domains in parallel
 
-To apply recommended priority queue use::
+To apply the recommended priority queue use::
 
     SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
