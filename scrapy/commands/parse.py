@@ -52,7 +52,7 @@ class Command(ScrapyCommand):
         parser.add_option("-m", "--meta", dest="meta",
             help="inject extra meta into the Request, it must be a valid raw json string")
         parser.add_option("--cbkwargs", dest="cbkwargs",
-            help="inject extra cbkwargs into the Request, it must be a valid raw json string")
+            help="inject extra callback kwargs into the Request, it must be a valid raw json string")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
