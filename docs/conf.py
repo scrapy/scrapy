@@ -30,6 +30,7 @@ extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
+    'sphinxcontrib.zopeext.autointerface',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
