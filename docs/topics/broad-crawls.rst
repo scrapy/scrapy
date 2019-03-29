@@ -39,7 +39,7 @@ you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
-Use proper :setting:`SCHEDULER_PRIORITY_QUEUE`
+Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
 ==============================================
 
 Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
@@ -96,7 +96,7 @@ When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
 ``INFO`` log level. In order to save CPU (and log storage requirements) you
 should not use ``DEBUG`` log level when preforming large broad crawls in
-production. Using ``DEBUG`` level when developing your (broad) crawler may be 
+production. Using ``DEBUG`` level when developing your (broad) crawler may be
 fine though.
 
 To set the log level use::
