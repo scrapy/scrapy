@@ -2,3 +2,10 @@ For information about installing Scrapy see:
 
 * docs/intro/install.rst (local file)
 * https://docs.scrapy.org/en/latest/intro/install.html (online version)
+
+
+*Enable Auto Completion for pip in Zsh
+*Add the following lines to ~/.zshrc:
+
+*eval "`pip completion --zsh`"
+*compctl -K _pip_completion pip3
