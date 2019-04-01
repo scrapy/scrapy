@@ -82,7 +82,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
         If it raises an exception, Scrapy won't bother calling any other spider
         middleware :meth:`process_spider_input` and will call the request
-        errback.  The output of the errback is chained back in the other
+        errback if there is one, otherwise it will start the :meth:`process_spider_exception`
+        chain. The output of the errback is chained back in the other
         direction for :meth:`process_spider_output` to process it, or
         :meth:`process_spider_exception` if it raised an exception.
 
@@ -116,8 +117,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when a spider or :meth:`process_spider_input`
-        method (from other spider middleware) raises an exception.
+        This method is called when a spider or :meth:`process_spider_output`
+        method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.http.Request`, dict or
@@ -129,7 +130,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         exception reaches the engine (where it's logged and discarded).
 
         If it returns an iterable the :meth:`process_spider_output` pipeline
-        kicks in, and no other :meth:`process_spider_exception` will be called.
+        kicks in, starting from the next spider middleware, and no other
+        :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
           raised
