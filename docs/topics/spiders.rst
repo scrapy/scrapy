@@ -377,7 +377,10 @@ Crawling rules
 .. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
+   defines how links will be extracted from each crawled page. Each produced link will
+   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   link's text in its ``meta`` attribute.
+   The link text can be accessed from the callback method though ``response.meta['link_text']``
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
@@ -438,6 +441,7 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
             item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+            item['link_text'] = response.meta['link_text']
             return item
 
 
