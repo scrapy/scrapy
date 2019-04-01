@@ -379,7 +379,7 @@ Crawling rules
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page. Each produced link will
    be used to generate a :class:`~scrapy.http.Request` object, which will contain the
-   link's text in its ``meta`` attribute.
+   link's text in its ``meta`` dictionary (under the ``link_text`` key).
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
