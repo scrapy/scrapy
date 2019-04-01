@@ -380,13 +380,13 @@ Crawling rules
    defines how links will be extracted from each crawled page. Each produced link will
    be used to generate a :class:`~scrapy.http.Request` object, which will contain the
    link's text in its ``meta`` attribute.
-   The link text can be accessed from the callback method though ``response.meta['link_text']``
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
+   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
+   as its first argument and must return either a single instance or an iterable of
+   :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
+   (or any subclass of them).
 
    .. warning:: When writing crawl spider rules, avoid using ``parse`` as
        callback, since the :class:`CrawlSpider` uses the ``parse`` method
