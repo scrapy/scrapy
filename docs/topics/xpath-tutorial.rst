@@ -762,7 +762,7 @@ What happens when you apply ``string()`` on the document ``<body>`` for example?
 You get a text representation of the document, without the tags:
 
 
-.. xpathdemo:: string(string(//body))
+.. xpathdemo:: string(//body)
 
     <html>
     <head>
