@@ -27,6 +27,8 @@ from twisted.internet import defer, reactor, ssl
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
+from email.header import Header
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,20 +75,19 @@ class MailSender(object):
             rcpts.extend(cc)
             msg['Cc'] = COMMASPACE.join(cc)
 
-        if charset:
-            msg.set_charset(charset)
-
         if attachs:
+            if charset:
+                msg.set_charset(charset)
             msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
             for attach_name, mimetype, f in attachs:
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
                 part.add_header('Content-Disposition', 'attachment; filename="%s"' \
-                    % attach_name)
+                    % Header(attach_name).encode())
                 msg.attach(part)
         else:
-            msg.set_payload(body)
+            msg.set_payload(body, charset)
 
         if _callback:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)

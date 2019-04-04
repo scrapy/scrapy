@@ -3,6 +3,7 @@
 import unittest
 from io import BytesIO
 from email.charset import Charset
+from email.header import Header
 
 from scrapy.mail import MailSender
 
@@ -84,17 +85,18 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_payload(), body)
+        self.assertEqual(msg.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
 
     def test_send_attach_utf8(self):
         subject = u'sübjèçt'
         body = u'bödÿ-àéïöñß'
+        attachment = u'àttäçhmèñt'
         attach = BytesIO()
         attach.write(body.encode('utf-8'))
         attach.seek(0)
-        attachs = [('attachment', 'text/plain', attach)]
+        attachs = [(attachment, 'text/plain', attach)]
 
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
@@ -104,6 +106,7 @@ class MailSenderTest(unittest.TestCase):
         assert self.catched_msg
         self.assertEqual(self.catched_msg['subject'], subject)
         self.assertEqual(self.catched_msg['body'], body)
+        self.assertEqual(self.catched_msg['attach'][0][0], attachment)
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
@@ -119,6 +122,8 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(text.get_charset(), Charset('utf-8'))
         self.assertEqual(attach.get_payload(decode=True).decode('utf-8'), body)
+        self.assertEqual(attach.get('Content-Disposition'),
+                         'attachment; filename="%s"' % Header(attachment).encode())
 
 if __name__ == "__main__":
     unittest.main()
