@@ -86,7 +86,7 @@ def extract_regex(regex, text, encoding='utf-8'):
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
