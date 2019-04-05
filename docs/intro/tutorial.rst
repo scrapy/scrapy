@@ -296,7 +296,7 @@ expressions`_::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools to inspect the HTML and come up
+You can use your browser's developer tools to inspect the HTML and come up
 with a selector (see section about :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
