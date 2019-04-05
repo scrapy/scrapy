@@ -205,7 +205,7 @@ Extracting data
 ---------------
 
 The best way to learn how to extract data with Scrapy is trying selectors
-using the shell :ref:`Scrapy shell <topics-shell>`. Run::
+using the :ref:`Scrapy shell <topics-shell>`. Run::
 
     scrapy shell 'http://quotes.toscrape.com/page/1/'
 
