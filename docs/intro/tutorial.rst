@@ -511,7 +511,7 @@ We can try extracting it in the shell::
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
-Scrapy supports a CSS extension that let's you select the attribute contents,
+Scrapy supports a CSS extension that lets you select the attribute contents,
 like this::
 
     >>> response.css('li.next a::attr(href)').get()
