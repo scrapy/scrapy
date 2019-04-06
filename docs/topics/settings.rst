@@ -897,6 +897,16 @@ Default: ``False``
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
 
+.. setting:: LOGSTATS_INTERVAL
+
+LOGSTATS_INTERVAL
+-----------------
+
+Default: ``60.0``
+
+The interval (in seconds) between each logging printout of the stats 
+by :class:`~extensions.logstats.LogStats`.
+
 .. setting:: MEMDEBUG_ENABLED
 
 MEMDEBUG_ENABLED
