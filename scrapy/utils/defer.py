@@ -48,7 +48,7 @@ def mustbe_deferred(f, *args, **kw):
     # exception in Scrapy - see #125
     except IgnoreRequest as e:
         return defer_fail(failure.Failure(e))
-    except:
+    except Exception:
         return defer_fail(failure.Failure())
     else:
         return defer_result(result)
@@ -102,5 +102,5 @@ def iter_errback(iterable, errback, *a, **kw):
             yield next(it)
         except StopIteration:
             break
-        except:
+        except Exception:
             errback(failure.Failure(), *a, **kw)
