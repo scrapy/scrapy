@@ -55,6 +55,8 @@ class Command(ScrapyCommand):
                           help="only list contracts, without checking them")
         parser.add_option("-v", "--verbose", dest="verbose", default=False, action='store_true',
                           help="print contract tests for all spiders")
+        parser.add_option("-n", "--no-check", dest="no_check", default=False, action='store_true',
+                          help="finds the contracts but does not actually run the crawler")
 
     def run(self, args, opts):
         # load contracts
@@ -89,9 +91,11 @@ class Command(ScrapyCommand):
                     print('  * %s' % method)
         else:
             start = time.time()
-            self.crawler_process.start()
+            if opts.no_check:
+                print('"No check" option selected. Crawler will not run.')
+            else:
+                self.crawler_process.start()
             stop = time.time()
-
             result.printErrors()
             result.printSummary(start, stop)
             self.exitcode = int(not result.wasSuccessful())
