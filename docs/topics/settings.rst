@@ -1155,9 +1155,14 @@ Type of in-memory queue used by scheduler. Other available type is:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-Default: ``'queuelib.PriorityQueue'``
+Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Type of priority queue used by scheduler.
+Type of priority queue used by the scheduler. Another available type is
+``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
+``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
+does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 .. setting:: SPIDER_CONTRACTS
 

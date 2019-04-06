@@ -246,7 +246,7 @@ ROBOTSTXT_OBEY = False
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
-SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
+SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
