@@ -53,9 +53,5 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(total=1000000, mockserver=self.mockserver)
         reason = crawler.spider.meta['close_reason']
         self.assertEqual(reason, 'closespider_timeout')
-        stats = crawler.stats
-        start = stats.get_value('start_time')
-        stop = stats.get_value('finish_time')
-        diff = stop - start
-        total_seconds = diff.seconds + diff.microseconds
+        total_seconds = crawler.stats.get_value('elapsed_time_seconds')
         self.assertTrue(total_seconds >= close_on)
