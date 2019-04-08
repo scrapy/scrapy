@@ -132,7 +132,7 @@ class ImagesPipeline(FilesPipeline):
 
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-            thumb_image, thumb_buf = self.convert_image(image, size)
+            thumb_image, thumb_buf = self.convert_image(image, buf, size)
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(self, image, response_body, size=None):
@@ -153,7 +153,8 @@ class ImagesPipeline(FilesPipeline):
             image.thumbnail(size, Image.ANTIALIAS)
 
         if not size and image.format == 'JPEG':
-            return image, response_body
+            buf = BytesIO(response_body.read())
+            return image, buf
 
         buf = BytesIO()
         image.save(buf, 'JPEG')
