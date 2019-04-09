@@ -357,7 +357,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-policy-dummy`
 
     You can change the HTTP cache policy with the :setting:`HTTPCACHE_POLICY`
-    setting. Or you can also implement your own policy.
+    setting. Or you can also :ref:`implement your own policy. <httpcache-policy-custom>`
 
     .. reqmeta:: dont_cache
 
@@ -427,6 +427,64 @@ what is missing:
 In order to use this policy, set:
 
 * :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.RFC2616Policy``
+
+
+.. _httpcache-policy-custom:
+
+Writing your own policy
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement a cache policy by creating a Python class that
+defines the methods described below.
+
+.. module:: scrapy.extensions.httpcache
+
+.. class:: CachePolicy
+
+    .. method:: should_cache_request(request)
+
+      Returns whether the request is cacheable or not
+
+      :param request: the request to check
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: should_cache_response(response, request)
+
+      Returns whether to cache response or not
+
+      :param cachedresponse: the response to check
+      :type cachedresponse: :class:`~scrapy.http.Response` object
+
+      :param request: the corresponding request
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: is_cached_response_fresh(cachedresponse, request)
+
+      Returns whether cached response has expired or not
+
+      :param cachedresponse: the cached response to check for freshness
+      :type cachedresponse: :class:`~scrapy.http.Response` object
+
+      :param request: the request for which the cached response is intended
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: is_cached_response_valid(cachedresponse, response, request)
+
+      Returns whether cached response is valid or not
+
+      :param cachedresponse: the cached response to validate
+      :type cachedresponse: :class:`~scrapy.http.Response` object
+
+      :param response: the response from the server to use for validation
+      :type response: :class:`~scrapy.http.Response` object
+
+      :param request: the request for which the cached response is intended
+      :type request: :class:`~scrapy.http.Request` object
+
+
+In order to use this policy, set:
+
+* :setting:`HTTPCACHE_POLICY` to the Python import path of your custom policy class.
 
 
 .. _httpcache-storage-fs:
