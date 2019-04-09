@@ -121,6 +121,18 @@ class TextResponse(Response):
     def css(self, query):
         return self.selector.css(query)
 
+    def re(self, regex, replace_entities=True):
+        # type: (Pattern) -> list
+        return self.selector.re(regex, replace_entities=replace_entities)
+
+    def re_first(self, regex, default=None, replace_entities=True):
+        # type: (Pattern) -> str
+        return self.selector.re_first(
+            regex,
+            default=default,
+            replace_entities=replace_entities
+        )
+
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
                dont_filter=False, errback=None):
@@ -129,7 +141,7 @@ class TextResponse(Response):
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be not only an absolute URL, but also
-        
+
         * a relative URL;
         * a scrapy.link.Link object (e.g. a link extractor result);
         * an attribute Selector (not SelectorList) - e.g.
@@ -137,7 +149,7 @@ class TextResponse(Response):
           ``response.xpath('//img/@src')[0]``.
         * a Selector for ``<a>`` or ``<link>`` element, e.g.
           ``response.css('a.my_link')[0]``.
-          
+
         See :ref:`response-follow-example` for usage examples.
         """
         if isinstance(url, parsel.Selector):
