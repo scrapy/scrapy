@@ -5,6 +5,11 @@ Release notes
 
 .. _release-1.6.0:
 
+Scrapy 1.6.1 (2019-MM-DD)
+-------------------------
+
+*   `TextResponse.re()` and `TextResponse.re_first()` added
+
 Scrapy 1.6.0 (2019-01-30)
 -------------------------
 

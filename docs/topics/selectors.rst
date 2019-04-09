@@ -69,9 +69,10 @@ constructed by passing either :class:`~scrapy.http.TextResponse` object or
 markup as an unicode string (in ``text`` argument).
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
-it is more convenient to use ``response.css()`` and ``response.xpath()``
-shortcuts. By using ``response.selector`` or one of these shortcuts
-you can also ensure the response body is parsed only once.
+it is more convenient to use ``response.css()``, ``response.xpath()``,
+``response.re()``, and ``response.re_first()`` shortcuts. By using
+``response.selector`` or one of these shortcuts you can also ensure the
+response body is parsed only once.
 
 But if required, it is possible to use ``Selector`` directly.
 Constructing from text::

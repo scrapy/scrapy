@@ -530,7 +530,7 @@ dealing with JSON requests.
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
       if :attr:`Request.body` argument is provided this parameter will be ignored.
-      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
+      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
@@ -761,6 +761,18 @@ TextResponse objects
         A shortcut to ``TextResponse.selector.css(query)``::
 
             response.css('p')
+
+    .. method:: TextResponse.re(self, regex, replace_entities=True)
+
+        A shortcut to ``TextResponse.selector.re(regex, replace_entities=True)``::
+
+            response.re(r'-(\w+)')
+
+    .. method:: TextResponse.re_first(self, regex, default=None, replace_entities=True)
+
+        A shortcut to ``TextResponse.selector.re_first(regex, default=None, replace_entities=True)``::
+
+            response.re_first(r'-(\w+)', default='')
 
     .. automethod:: TextResponse.follow
 
