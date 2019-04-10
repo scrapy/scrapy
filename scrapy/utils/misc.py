@@ -156,7 +156,7 @@ def set_environ(**kwargs):
     try:
         yield
     finally:
-        for k, v in original_env:
+        for k, v in original_env.items():
             if v is None:
                 del os.environ[k]
             else:
