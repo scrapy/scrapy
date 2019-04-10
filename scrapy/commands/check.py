@@ -68,7 +68,7 @@ class Command(ScrapyCommand):
 
         spider_loader = self.crawler_process.spider_loader
 
-        with set_environ(SCRAPY_CHECK=True):
+        with set_environ(SCRAPY_CHECK='true'):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
                 spidercls.start_requests = lambda s: conman.from_spider(s, result)
