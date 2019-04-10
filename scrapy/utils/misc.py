@@ -1,6 +1,8 @@
 """Helper functions which don't fit anywhere else"""
+import os
 import re
 import hashlib
+from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
 
@@ -9,7 +11,6 @@ from w3lib.html import replace_entities
 
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
-
 
 _ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
 
@@ -40,7 +41,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot+1:]
+    module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
 
     try:
@@ -85,9 +86,9 @@ def extract_regex(regex, text, encoding='utf-8'):
         regex = re.compile(regex, re.UNICODE)
 
     try:
-        strings = [regex.search(text).group('extract')]   # named group
+        strings = [regex.search(text).group('extract')]  # named group
     except Exception:
-        strings = regex.findall(text)    # full regex or numbered groups
+        strings = regex.findall(text)  # full regex or numbered groups
     strings = flatten(strings)
 
     if isinstance(text, six.text_type):
@@ -142,3 +143,21 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls.from_settings(settings, *args, **kwargs)
     else:
         return objcls(*args, **kwargs)
+
+
+@contextmanager
+def set_environ(**kwargs):
+    """Temporarily set environment variables inside the context manager and
+    fully restore previous environment afterwards
+    """
+
+    original_env = {k: os.environ.get(k) for k in kwargs}
+    os.environ.update(kwargs)
+    try:
+        yield
+    finally:
+        for k, v in original_env:
+            if v is None:
+                del os.environ[k]
+            else:
+                os.environ[k] = v
