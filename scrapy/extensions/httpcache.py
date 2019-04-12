@@ -31,7 +31,7 @@ class DummyPolicy(object):
     def should_cache_response(self, response, request):
         return response.status not in self.ignore_http_codes
 
-    def is_cached_response_fresh(self, response, request):
+    def is_cached_response_fresh(self, cachedresponse, request):
         return True
 
     def is_cached_response_valid(self, cachedresponse, response, request):
