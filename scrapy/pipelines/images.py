@@ -151,10 +151,8 @@ class ImagesPipeline(FilesPipeline):
         if size:
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
-
-        if not size and image.format == 'JPEG':
-            buf = BytesIO(response_body.read())
-            return image, buf
+        elif image.format == 'JPEG':
+            return image, response_body
 
         buf = BytesIO()
         image.save(buf, 'JPEG')
