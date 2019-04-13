@@ -87,14 +87,14 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(converted_buf, buf)
 
         # check that thumbnail keep image ratio
-        thumbnail, buf = self.pipeline.convert_image(converted, buf, size=(10, 25))
+        thumbnail, _ = self.pipeline.convert_image(converted, converted_buf, size=(10, 25))
         self.assertEqual(thumbnail.mode, 'RGB')
         self.assertEqual(thumbnail.size, (10, 10))
 
         # transparency case: RGBA and PNG
         COLOUR = (0, 127, 255, 50)
         im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-        converted, buf = self.pipeline.convert_image(im, buf)
+        converted, _ = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
@@ -102,7 +102,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         COLOUR = (0, 127, 255, 50)
         im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
         im = im.convert('P')
-        converted, buf = self.pipeline.convert_image(im, buf)
+        converted, _ = self.pipeline.convert_image(im, buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
