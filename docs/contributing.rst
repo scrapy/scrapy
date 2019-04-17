@@ -167,8 +167,9 @@ Documentation policies
 
 For reference documentation of API members (classes, methods, etc.) use
 docstrings and make sure that the Sphinx documentation uses the autodoc_
-extension to pull the docstrings. API reference documentation should be
-IDE-friendly: short, to the point, and it may provide short examples.
+extension to pull the docstrings. API reference documentation should follow
+docstring conventions (`PEP 257`_) and be IDE-friendly: short, to the point,
+and it may provide short examples.
 
 Other types of documentation, such as tutorials or topics, should be covered in
 files within the ``docs/`` directory. This includes documentation that is
@@ -237,5 +238,6 @@ And their unit-tests are in::
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
+.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
 .. _pull request: https://help.github.com/send-pull-requests/
 .. _tox: https://pypi.python.org/pypi/tox
