@@ -3,7 +3,7 @@ import os
 import unittest
 
 from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, walk_modules
+from scrapy.utils.misc import arg_to_iter, create_instance, load_object, walk_modules, set_environ
 
 from tests import mock
 
@@ -129,6 +129,13 @@ class UtilsMiscTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             create_instance(m, None, None)
+
+    def test_set_environ(self):
+        assert os.environ.get('some_test_environ') is None
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') is None
+
 
 if __name__ == "__main__":
     unittest.main()
