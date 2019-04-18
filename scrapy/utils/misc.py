@@ -41,7 +41,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot + 1:]
+    module, name = path[:dot], path[dot+1:]
     mod = import_module(module)
 
     try:
@@ -86,9 +86,9 @@ def extract_regex(regex, text, encoding='utf-8'):
         regex = re.compile(regex, re.UNICODE)
 
     try:
-        strings = [regex.search(text).group('extract')]  # named group
+        strings = [regex.search(text).group('extract')]   # named group
     except Exception:
-        strings = regex.findall(text)  # full regex or numbered groups
+        strings = regex.findall(text)   # full regex or numbered groups
     strings = flatten(strings)
 
     if isinstance(text, six.text_type):
