@@ -73,6 +73,7 @@ class Command(ScrapyCommand):
             spidercls.start_requests = lambda s: conman.from_spider(s, result)
 
             tested_methods = conman.tested_methods_from_spidercls(spidercls)
+            print('Checking spider %s...' % spidername)
             if opts.list:
                 for method in tested_methods:
                     contract_reqs[spidercls.name].append(method)
