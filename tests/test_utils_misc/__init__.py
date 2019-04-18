@@ -136,6 +136,12 @@ class UtilsMiscTestCase(unittest.TestCase):
             assert os.environ.get('some_test_environ') == 'test_value'
         assert os.environ.get('some_test_environ') is None
 
+        os.environ['some_test_environ'] = 'test'
+        assert os.environ.get('some_test_environ') == 'test'
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') == 'test'
+
 
 if __name__ == "__main__":
     unittest.main()
