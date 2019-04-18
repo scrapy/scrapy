@@ -24,7 +24,11 @@ class CoreStats(object):
         self.stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
 
     def spider_closed(self, spider, reason):
-        self.stats.set_value('finish_time', datetime.datetime.utcnow(), spider=spider)
+        finish_time = datetime.datetime.utcnow()
+        elapsed_time = finish_time - self.stats.get_value('start_time')
+        elapsed_time_seconds = elapsed_time.total_seconds()
+        self.stats.set_value('elapsed_time_seconds', elapsed_time_seconds, spider=spider)
+        self.stats.set_value('finish_time', finish_time, spider=spider)
         self.stats.set_value('finish_reason', reason, spider=spider)
 
     def item_scraped(self, item, spider):

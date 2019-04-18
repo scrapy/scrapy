@@ -86,7 +86,7 @@ def extract_regex(regex, text, encoding='utf-8'):
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
@@ -116,7 +116,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return True if rel is not None and 'nofollow' in rel.split() else False
+    return rel is not None and 'nofollow' in rel.split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):

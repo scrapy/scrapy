@@ -139,6 +139,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
 
+    def test_redirect_reasons(self):
+        req1 = Request('http://scrapytest.org/first')
+        rsp1 = Response('http://scrapytest.org/first', headers={'Location': '/redirected1'}, status=301)
+        req2 = self.mw.process_response(req1, rsp1, self.spider)
+        rsp2 = Response('http://scrapytest.org/redirected1', headers={'Location': '/redirected2'}, status=301)
+        req3 = self.mw.process_response(req2, rsp2, self.spider)
+
+        self.assertEqual(req2.meta['redirect_reasons'], [301])
+        self.assertEqual(req3.meta['redirect_reasons'], [301, 301])
+
     def test_spider_handling(self):
         smartspider = self.crawler._create_spider('smarty')
         smartspider.handle_httpstatus_list = [404, 301, 302]
@@ -259,6 +269,15 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
 
+    def test_redirect_reasons(self):
+        req1 = Request('http://scrapytest.org/first')
+        rsp1 = HtmlResponse('http://scrapytest.org/first', body=self._body(url='/redirected'))
+        req2 = self.mw.process_response(req1, rsp1, self.spider)
+        rsp2 = HtmlResponse('http://scrapytest.org/redirected', body=self._body(url='/redirected1'))
+        req3 = self.mw.process_response(req2, rsp2, self.spider)
+
+        self.assertEqual(req2.meta['redirect_reasons'], ['meta refresh'])
+        self.assertEqual(req3.meta['redirect_reasons'], ['meta refresh', 'meta refresh'])
 
 if __name__ == "__main__":
     unittest.main()

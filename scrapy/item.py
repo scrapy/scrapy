@@ -6,6 +6,7 @@ See documentation in docs/topics/item.rst
 
 from pprint import pformat
 from collections import MutableMapping
+from copy import deepcopy
 
 from abc import ABCMeta
 import six
@@ -95,6 +96,13 @@ class DictItem(MutableMapping, BaseItem):
 
     def copy(self):
         return self.__class__(self)
+
+    def deepcopy(self):
+        """Return a `deep copy`_ of this item.
+
+        .. _deep copy: https://docs.python.org/library/copy.html#copy.deepcopy
+        """
+        return deepcopy(self)
 
 
 @six.add_metaclass(ItemMeta)

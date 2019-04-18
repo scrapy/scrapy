@@ -28,7 +28,8 @@ class Command(ScrapyCommand):
         return "Interactive scraping console"
 
     def long_desc(self):
-        return "Interactive console for scraping the given url"
+        return ("Interactive console for scraping the given url or file. "
+                "Use ./file.html syntax or full path for local file.")
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

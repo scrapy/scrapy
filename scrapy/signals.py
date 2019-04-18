@@ -20,7 +20,7 @@ item_scraped = object()
 item_dropped = object()
 item_error = object()
 
-# for backwards compatibility
+# for backward compatibility
 stats_spider_opened = spider_opened
 stats_spider_closing = spider_closed
 stats_spider_closed = spider_closed

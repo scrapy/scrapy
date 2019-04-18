@@ -96,11 +96,11 @@ Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
 Using selectors
 ---------------
 
-To explain how to use the selectors we'll use the `Scrapy shell` (which
+To explain how to use the selectors we'll use the ``Scrapy shell`` (which
 provides interactive testing) and an example page located in the Scrapy
 documentation server:
 
-    https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    https://docs.scrapy.org/en/latest/_static/selectors-sample1.html
 
 .. _topics-selectors-htmlcode:
 
@@ -113,7 +113,7 @@ For the sake of completeness, here's its full HTML code:
 
 First, let's open the shell::
 
-    scrapy shell https://doc.scrapy.org/en/latest/_static/selectors-sample1.html
+    scrapy shell https://docs.scrapy.org/en/latest/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have the response available as ``response``
 shell variable, and its attached selector in ``response.selector`` attribute.
@@ -436,7 +436,7 @@ The following examples show how these methods map to each other.
      >>> response.css('a::attr(href)').extract()
      ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
 
-2. ``Selector.get()`` is the same as ``Selector.extract()``::
+3. ``Selector.get()`` is the same as ``Selector.extract()``::
 
      >>> response.css('a::attr(href)')[0].get()
      'image1.html'

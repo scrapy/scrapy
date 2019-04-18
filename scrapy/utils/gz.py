@@ -9,6 +9,9 @@ from gzip import GzipFile
 import six
 import re
 
+from scrapy.utils.decorators import deprecated
+
+
 # - Python>=3.5 GzipFile's read() has issues returning leftover
 #   uncompressed data when input is corrupted
 #   (regression or bug-fix compared to Python 3.4)
@@ -53,6 +56,7 @@ def gunzip(data):
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search
 
+@deprecated
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')

@@ -25,7 +25,7 @@ class TestHttpProxyMiddleware(TestCase):
 
     def test_not_enabled(self):
         settings = Settings({'HTTPPROXY_ENABLED': False})
-        crawler = Crawler(spider, settings)
+        crawler = Crawler(Spider, settings)
         self.assertRaises(NotConfigured, partial(HttpProxyMiddleware.from_crawler, crawler))
 
     def test_no_environment_proxies(self):

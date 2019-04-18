@@ -2,9 +2,10 @@
 mock
 mitmproxy==0.10.1
 netlib==0.10.1
-pytest==2.9.2
+pytest
+pytest-cov
 pytest-twisted
-pytest-cov==2.2.1
+pytest-xdist
 jmespath
 brotlipy
 testfixtures
