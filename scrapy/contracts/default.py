@@ -73,7 +73,7 @@ class ReturnsContract(Contract):
             raise ContractFail("Returned %s %s, expected %s" % \
                 (occurrences, self.obj_name, expected))
         else:
-            print('Returned %s %s, expected %s. OK.' % (occurrences, self.obj_name, expected))
+            if self.verbose: print('Returned %s %s, expected %s.' % (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):
@@ -91,4 +91,4 @@ class ScrapesContract(Contract):
                     if not arg in x:
                         raise ContractFail("'%s' field is missing" % arg)
                     found_args.append(arg)
-                print('Fields found: %s' % (found_args))
+                if self.verbose: print('Fields found: %s' % (found_args))
