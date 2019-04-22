@@ -68,6 +68,7 @@ setup(
         'Twisted>=13.1.0',
         'w3lib>=1.17.0',
         'queuelib',
+        'pathlib',
         'lxml',
         'pyOpenSSL',
         'cssselect>=0.9',
