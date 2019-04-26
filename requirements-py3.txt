@@ -1,0 +1,10 @@
+Twisted>=17.9.0
+lxml>=3.2.4
+pyOpenSSL>=0.13.1
+cssselect>=0.9
+queuelib>=1.1.1
+w3lib>=1.17.0
+six>=1.5.2
+PyDispatcher>=2.0.5
+parsel>=1.5
+service_identity

@@ -6,26 +6,56 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+import warnings
 
+import six
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.python import get_func_args
 from scrapy.spiders import Spider
 
-def identity(x):
-    return x
+
+def _identity(request, response):
+    return request
+
+
+def _get_method(method, spider):
+    if callable(method):
+        return method
+    elif isinstance(method, six.string_types):
+        return getattr(spider, method, None)
+
 
 class Rule(object):
 
-    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
+    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
         self.link_extractor = link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
-        self.process_request = process_request
-        if follow is None:
-            self.follow = False if callback else True
-        else:
-            self.follow = follow
+        self.process_request = process_request or _identity
+        self.process_request_argcount = None
+        self.follow = follow if follow is not None else not callback
+
+    def _compile(self, spider):
+        self.callback = _get_method(self.callback, spider)
+        self.process_links = _get_method(self.process_links, spider)
+        self.process_request = _get_method(self.process_request, spider)
+        self.process_request_argcount = len(get_func_args(self.process_request))
+        if self.process_request_argcount == 1:
+            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
+            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+
+    def _process_request(self, request, response):
+        """
+        Wrapper around the request processing function to maintain backward
+        compatibility with functions that do not take a Response object
+        """
+        args = [request] if self.process_request_argcount == 1 else [request, response]
+        return self.process_request(*args)
+
 
 class CrawlSpider(Spider):
 
@@ -44,19 +74,24 @@ class CrawlSpider(Spider):
     def process_results(self, response, results):
         return results
 
+    def _build_request(self, rule, link):
+        r = Request(url=link.url, callback=self._response_downloaded)
+        r.meta.update(rule=rule, link_text=link.text)
+        return r
+
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
             return
         seen = set()
         for n, rule in enumerate(self._rules):
-            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
+            links = [lnk for lnk in rule.link_extractor.extract_links(response)
+                     if lnk not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
             for link in links:
                 seen.add(link)
-                r = Request(url=link.url, callback=self._response_downloaded)
-                r.meta.update(rule=n, link_text=link.text)
-                yield rule.process_request(r)
+                request = self._build_request(n, link)
+                yield rule._process_request(request, response)
 
     def _response_downloaded(self, response):
         rule = self._rules[response.meta['rule']]
@@ -74,17 +109,9 @@ class CrawlSpider(Spider):
                 yield request_or_item
 
     def _compile_rules(self):
-        def get_method(method):
-            if callable(method):
-                return method
-            elif isinstance(method, basestring):
-                return getattr(self, method, None)
-
         self._rules = [copy.copy(r) for r in self.rules]
         for rule in self._rules:
-            rule.callback = get_method(rule.callback)
-            rule.process_links = get_method(rule.process_links)
-            rule.process_request = get_method(rule.process_request)
+            rule._compile(self)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):

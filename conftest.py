@@ -1,6 +1,7 @@
 import glob
 import six
 import pytest
+from twisted import version as twisted_version
 
 
 def _py_files(folder):
@@ -8,24 +9,23 @@ def _py_files(folder):
 
 
 collect_ignore = [
+    # deprecated or moved modules
     "scrapy/conf.py",
-    "scrapy/stats.py",
-    "scrapy/project.py",
-    "scrapy/utils/decorator.py",
-    "scrapy/statscol.py",
-    "scrapy/squeue.py",
     "scrapy/log.py",
-    "scrapy/dupefilter.py",
-    "scrapy/command.py",
-    "scrapy/linkextractor.py",
-    "scrapy/spider.py",
-] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
+
+    # not a test, but looks like a test
+    "scrapy/utils/testsite.py",
+
+]
+
+if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15, 5, 0):
+    collect_ignore += _py_files("scrapy/xlib/tx")
 
 
 if six.PY3:
     for line in open('tests/py3-ignores.txt'):
         file_path = line.strip()
-        if len(file_path) > 0 and file_path[0] != '#':
+        if file_path and file_path[0] != '#':
             collect_ignore.append(file_path)
 
 

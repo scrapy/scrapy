@@ -6,24 +6,28 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check you are reading the most recent version of this document at
-    http://doc.scrapy.org/en/master/contributing.html
+    Double check that you are reading the most recent version of this document at
+    https://docs.scrapy.org/en/master/contributing.html
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
 * Blog about Scrapy. Tell the world how you're using Scrapy. This will help
-  newcomers with more examples and the Scrapy project to increase its
+  newcomers with more examples and will help the Scrapy project to increase its
   visibility.
 
 * Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
-* Submit patches for new functionality and/or bug fixes. Please read
-  `Writing patches`_ and `Submitting patches`_ below for details on how to
+* Submit patches for new functionalities and/or bug fixes. Please read
+  :ref:`writing-patches` and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
-* Join the `scrapy-users`_ mailing list and share your ideas on how to
+* Join the `Scrapy subreddit`_ and share your ideas on how to
   improve Scrapy. We're always open to suggestions.
+
+* Answer Scrapy questions at
+  `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__.
+
 
 Reporting bugs
 ==============
@@ -35,33 +39,48 @@ Reporting bugs
     trusted Scrapy developers, and its archives are not public.
 
 Well-written bug reports are very helpful, so keep in mind the following
-guidelines when reporting a new bug.
+guidelines when you're going to report a new bug.
 
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
-* check the `open issues`_ to see if it has already been reported. If it has,
-  don't dismiss the report but check the ticket history and comments, you may
-  find additional useful information to contribute.
+* if you have a general question about scrapy usage, please ask it at
+  `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__
+  (use "scrapy" tag).
 
-* search the `scrapy-users`_ list to see if it has been discussed there, or
-  if you're not sure if what you're seeing is a bug. You can also ask in the
-  `#scrapy` IRC channel.
+* check the `open issues`_ to see if the issue has already been reported. If it
+  has, don't dismiss the report, but check the ticket history and comments. If 
+  you have additional useful information, please leave a comment, or consider
+  :ref:`sending a pull request <writing-patches>` with a fix.
 
-* write complete, reproducible, specific bug reports. The smaller the test
+* search the `scrapy-users`_ list and `Scrapy subreddit`_ to see if it has
+  been discussed there, or if you're not sure if what you're seeing is a bug.
+  You can also ask in the ``#scrapy`` IRC channel.
+
+* write **complete, reproducible, specific bug reports**. The smaller the test
   case, the better. Remember that other developers won't have your project to
   reproduce the bug, so please include all relevant files required to reproduce
-  it.
+  it. See for example StackOverflow's guide on creating a
+  `Minimal, Complete, and Verifiable example`_ exhibiting the issue.
+
+* the most awesome way to provide a complete reproducible example is to
+  send a pull request which adds a failing test case to the
+  Scrapy testing suite (see :ref:`submitting-patches`).
+  This is helpful even if you don't have an intention to
+  fix the issue yourselves.
 
 * include the output of ``scrapy version -v`` so developers working on your bug
   know exactly which version and platform it occurred on, which is often very
   helpful for reproducing it, or knowing if it was already fixed.
 
+.. _Minimal, Complete, and Verifiable example: https://stackoverflow.com/help/mcve
+
+.. _writing-patches:
+
 Writing patches
 ===============
 
-The better written a patch is, the higher chance that it'll get accepted and
-the sooner that will be merged.
+The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
 Well-written patches should:
 
@@ -80,10 +99,12 @@ Well-written patches should:
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
+.. _submitting-patches:
+
 Submitting patches
 ==================
 
-The best way to submit a patch is to issue a `pull request`_ on Github,
+The best way to submit a patch is to issue a `pull request`_ on GitHub,
 optionally creating a new issue first.
 
 Remember to explain what was fixed or the new functionality (what it is, why
@@ -93,13 +114,36 @@ developers to understand and accept your patch.
 You can also discuss the new functionality (or bug fix) before creating the
 patch, but it's always good to have a patch ready to illustrate your arguments
 and show that you have put some additional thought into the subject. A good
-starting point is to send a pull request on Github. It can be simple enough to
+starting point is to send a pull request on GitHub. It can be simple enough to
 illustrate your idea, and leave documentation/tests for later, after the idea
-has been validated and proven useful. Alternatively, you can send an email to
-`scrapy-users`_ to discuss your idea first.
+has been validated and proven useful. Alternatively, you can start a
+conversation in the `Scrapy subreddit`_ to discuss your idea first.
+
+Sometimes there is an existing pull request for the problem you'd like to
+solve, which is stalled for some reason. Often the pull request is in a
+right direction, but changes are requested by Scrapy maintainers, and the
+original pull request author hasn't had time to address them.
+In this case consider picking up this pull request: open
+a new pull request with all commits from the original pull request, as well as
+additional changes to address the raised issues. Doing so helps a lot; it is
+not considered rude as soon as the original author is acknowledged by keeping
+his/her commits.
+
+You can pull an existing pull request to a local branch
+by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
+(replace 'upstream' with a remote name for scrapy repository,
+``$PR_NUMBER`` with an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE``
+with a name of the branch you want to create locally).
+See also: https://help.github.com/articles/checking-out-pull-requests-locally/#modifying-an-inactive-pull-request-locally.
+
+When writing GitHub pull requests, try to keep titles short but descriptive.
+E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
+prefer "Fix hanging when exception occurs in start_requests (#411)"
+instead of "Fix for #411". Complete titles make it easy to skim through
+the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
-removal, etc) in separate commits than functional changes. This will make pull
+removal, etc) in separate commits from functional changes. This will make pull
 requests easier to review and more likely to get merged.
 
 Coding style
@@ -113,29 +157,29 @@ Scrapy:
 * It's OK to use lines longer than 80 chars if it improves the code
   readability.
 
-* Don't put your name in the code you contribute. Our policy is to keep
-  the contributor's name in the `AUTHORS`_ file distributed with Scrapy.
-
-Scrapy Contrib
-==============
-
-Scrapy contrib shares a similar rationale as Django contrib, which is explained
-in `this post <http://jacobian.org/writing/what-is-django-contrib/>`_. If you
-are working on a new functionality, please follow that rationale to decide
-whether it should be a Scrapy contrib. If unsure, you can ask in
-`scrapy-users`_.
+* Don't put your name in the code you contribute; git provides enough
+  metadata to identify author of the code.
+  See https://help.github.com/articles/setting-your-username-in-git/ for
+  setup instructions.
 
 Documentation policies
 ======================
 
-* **Don't** use docstrings for documenting classes, or methods which are
-  already documented in the official (sphinx) documentation. For example, the
-  :meth:`ItemLoader.add_value` method should be documented in the sphinx
-  documentation, not its docstring.
+For reference documentation of API members (classes, methods, etc.) use
+docstrings and make sure that the Sphinx documentation uses the autodoc_
+extension to pull the docstrings. API reference documentation should follow
+docstring conventions (`PEP 257`_) and be IDE-friendly: short, to the point,
+and it may provide short examples.
 
-* **Do** use docstrings for documenting functions not present in the official
-  (sphinx) documentation, such as functions from ``scrapy.utils`` package and
-  its sub-modules.
+Other types of documentation, such as tutorials or topics, should be covered in
+files within the ``docs/`` directory. This includes documentation that is
+specific to an API member, but goes beyond API reference documentation.
+
+In any case, if something is covered in a docstring, use the autodoc_
+extension to pull the docstring into the documentation instead of duplicating
+the docstring in files within the ``docs/`` directory.
+
+.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 
 Tests
 =====
@@ -146,6 +190,14 @@ tests requires `tox`_.
 Running tests
 -------------
 
+Make sure you have a recent enough `tox`_ installation:
+
+    ``tox --version``
+
+If your version is older than 1.7.0, please update it first:
+
+    ``pip install -U tox``
+
 To run all tests go to the root directory of Scrapy source code and run:
 
     ``tox``
@@ -154,6 +206,36 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
     ``tox -- tests/test_loader.py``
 
+To run the tests on a specific tox_ environment, use ``-e <name>`` with an
+environment name from ``tox.ini``. For example, to run the tests with Python
+3.6 use::
+
+    tox -e py36
+
+You can also specify a comma-separated list of environmets, and use `tox’s
+parallel mode`_ to run the tests on multiple environments in parallel::
+
+    tox -e py27,py36 -p auto
+
+To pass command-line options to pytest_, add them after ``--`` in your call to
+tox_. Using ``--`` overrides the default positional arguments defined in
+``tox.ini``, so you must include those default positional arguments
+(``scrapy tests``) after ``--`` as well::
+
+    tox -- scrapy tests -x  # stop after first failure
+
+You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
+the Python 3.6 tox_ environment using all your CPU cores::
+
+    tox -e py36 -- scrapy tests -n auto
+
+To see coverage report install `coverage`_ (``pip install coverage``) and run:
+
+    ``coverage report``
+
+see output of ``coverage --help`` for more options like html or xml report.
+
+.. _coverage: https://pypi.python.org/pypi/coverage
 
 Writing tests
 -------------
@@ -174,9 +256,14 @@ And their unit-tests are in::
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
+.. _Scrapy subreddit: https://reddit.com/r/scrapy
+.. _Twisted unit-testing framework: https://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
+.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
 .. _pull request: https://help.github.com/send-pull-requests/
+.. _pytest: https://docs.pytest.org/en/latest/usage.html
+.. _pytest-xdist: https://docs.pytest.org/en/3.0.0/xdist.html
 .. _tox: https://pypi.python.org/pypi/tox
+.. _tox’s parallel mode: https://tox.readthedocs.io/en/latest/example/basic.html#parallel-mode

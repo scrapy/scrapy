@@ -18,11 +18,13 @@ Consider the following scrapy spider below::
             )
 
         def parse(self, response):
-            # collect `item_urls`
+            # <processing code not shown>
+            # collect `item_urls` 
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
         def parse_item(self, response):
+            # <processing code not shown>
             item = MyItem()
             # populate `item` fields
             # and extract item_details_url
@@ -142,4 +144,4 @@ available in all future runs should they be necessary again::
 
 For more information, check the :ref:`topics-logging` section.
 
-.. _base tag: http://www.w3schools.com/tags/tag_base.asp
+.. _base tag: https://www.w3schools.com/tags/tag_base.asp

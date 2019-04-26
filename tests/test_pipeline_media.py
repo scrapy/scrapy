@@ -6,6 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
+from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
@@ -22,10 +23,12 @@ def _mocked_download_func(request, info):
 class BaseMediaPipelineTestCase(unittest.TestCase):
 
     pipeline_class = MediaPipeline
+    settings = None
 
     def setUp(self):
         self.spider = Spider('media.com')
-        self.pipe = self.pipeline_class(download_func=_mocked_download_func)
+        self.pipe = self.pipeline_class(download_func=_mocked_download_func,
+                                        settings=Settings(self.settings))
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
 
@@ -44,7 +47,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def test_default_media_downloaded(self):
         request = Request('http://url')
-        response = Response('http://url', body='')
+        response = Response('http://url', body=b'')
         assert self.pipe.media_downloaded(response, request, self.info) is response
 
     def test_default_media_failed(self):
@@ -81,6 +84,11 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         item = dict(name='name')
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
+
+    def test_modify_media_request(self):
+        request = Request('http://url')
+        self.pipe._modify_media_request(request)
+        assert request.meta == {'handle_httpstatus_all': True}
 
 
 class MockedMediaPipeline(MediaPipeline):
@@ -249,3 +257,61 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
         self.assertEqual(self.pipe._mockcalled, \
                 ['get_media_requests', 'media_to_download', 'item_completed'])
+
+
+class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
+
+    def _assert_request_no3xx(self, pipeline_class, settings):
+        pipe = pipeline_class(settings=Settings(settings))
+        request = Request('http://url')
+        pipe._modify_media_request(request)
+
+        self.assertIn('handle_httpstatus_list', request.meta)
+        for status, check in [
+                (200, True),
+
+                # These are the status codes we want
+                # the downloader to handle itself
+                (301, False),
+                (302, False),
+                (302, False),
+                (307, False),
+                (308, False),
+
+                # we still want to get 4xx and 5xx
+                (400, True),
+                (404, True),
+                (500, True)]:
+            if check:
+                self.assertIn(status, request.meta['handle_httpstatus_list'])
+            else:
+                self.assertNotIn(status, request.meta['handle_httpstatus_list'])
+
+    def test_standard_setting(self):
+        self._assert_request_no3xx(
+            MediaPipeline,
+            {
+                'MEDIA_ALLOW_REDIRECTS': True
+            })
+
+    def test_subclass_standard_setting(self):
+
+        class UserDefinedPipeline(MediaPipeline):
+            pass
+
+        self._assert_request_no3xx(
+            UserDefinedPipeline,
+            {
+                'MEDIA_ALLOW_REDIRECTS': True
+            })
+
+    def test_subclass_specific_setting(self):
+
+        class UserDefinedPipeline(MediaPipeline):
+            pass
+
+        self._assert_request_no3xx(
+            UserDefinedPipeline,
+            {
+                'USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS': True
+            })

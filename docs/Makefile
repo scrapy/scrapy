@@ -10,7 +10,8 @@ PAPER        =
 SOURCES      =
 SHELL        = /bin/bash
 
-ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees -D latex_paper_size=$(PAPER) \
+ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees \
+                -D latex_elements.papersize=$(PAPER) \
                 $(SPHINXOPTS) . build/$(BUILDER) $(SOURCES)
 
 .PHONY: help update build html htmlhelp clean
@@ -23,6 +24,7 @@ help:
 	@echo "  text      to make plain text files"
 	@echo "  changes   to make an overview over all changed/added/deprecated items"
 	@echo "  linkcheck to check all external links for integrity"
+	@echo "  watch     build HTML docs, open in browser and watch for changes"
 
 build-dirs:
 	mkdir -p build/$(BUILDER) build/doctrees
@@ -81,7 +83,8 @@ pydoc-topics: build
 	      "into the Lib/ directory"
 
 htmlview: html
-	 $(PYTHON) -c "import webbrowser; webbrowser.open('build/html/index.html')"
+	 $(PYTHON) -c "import webbrowser, os; webbrowser.open('file://' + \
+	 os.path.realpath('build/html/index.html'))"
 
 clean:
 	-rm -rf build/*

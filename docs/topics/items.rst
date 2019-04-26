@@ -21,7 +21,7 @@ their available fields.
 Various Scrapy components use extra information provided by Items: 
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help finding memory leaks 
+tracks Item instances to help find memory leaks 
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -40,6 +40,7 @@ objects. Here is an example::
         name = scrapy.Field()
         price = scrapy.Field()
         stock = scrapy.Field()
+        tags = scrapy.Field()
         last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
@@ -61,7 +62,7 @@ the example above.
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
 reason, there is no reference list of all available metadata keys. Each key
-defined in :class:`Field` objects could be used by a different components, and
+defined in :class:`Field` objects could be used by a different component, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
 :class:`Field` objects is to provide a way to define all field metadata in one
@@ -86,7 +87,7 @@ Creating items
 ::
 
     >>> product = Product(name='Desktop PC', price=1000)
-    >>> print product
+    >>> print(product)
     Product(name='Desktop PC', price=1000)
 
 Getting field values
@@ -155,18 +156,41 @@ To access all populated values, just use the typical `dict API`_::
     >>> product.items()
     [('price', 1000), ('name', 'Desktop PC')]
 
+
+Copying items
+-------------
+
+To copy an item, you must first decide whether you want a shallow copy or a
+deep copy.
+
+If your item contains mutable_ values like lists or dictionaries, a shallow
+copy will keep references to the same mutable values across all different
+copies.
+
+.. _mutable: https://docs.python.org/glossary.html#term-mutable
+
+For example, if you have an item with a list of tags, and you create a shallow
+copy of that item, both the original item and the copy have the same list of
+tags. Adding a tag to the list of one of the items will add the tag to the
+other item as well.
+
+If that is not the desired behavior, use a deep copy instead.
+
+See the `documentation of the copy module`_ for more information.
+
+.. _documentation of the copy module: https://docs.python.org/library/copy.html
+
+To create a shallow copy of an item, you can either call
+:meth:`~scrapy.item.Item.copy` on an existing item
+(``product2 = product.copy()``) or instantiate your item class from an existing
+item (``product2 = Product(product)``).
+
+To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+(``product2 = product.deepcopy()``).
+
+
 Other common tasks
 ------------------
-
-Copying items::
-
-    >>> product2 = Product(product)
-    >>> print product2
-    Product(name='Desktop PC', price=1000)
-
-    >>> product3 = product2.copy()
-    >>> print product3
-    Product(name='Desktop PC', price=1000)
 
 Creating dicts from items::
 

@@ -1,6 +1,8 @@
 import logging
 from six.moves.urllib.parse import urljoin
 
+from w3lib.url import safe_url_string
+
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -32,6 +34,8 @@ class BaseRedirectMiddleware(object):
             redirected.meta['redirect_ttl'] = ttl - 1
             redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
                 [request.url]
+            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + \
+                [reason]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
@@ -51,31 +55,31 @@ class BaseRedirectMiddleware(object):
 
 
 class RedirectMiddleware(BaseRedirectMiddleware):
-    """Handle redirection of requests based on response status and meta-refresh html tag"""
-
+    """
+    Handle redirection of requests based on response status
+    and meta-refresh html tag.
+    """
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_redirect', False):
+        if (request.meta.get('dont_redirect', False) or
+                response.status in getattr(spider, 'handle_httpstatus_list', []) or
+                response.status in request.meta.get('handle_httpstatus_list', []) or
+                request.meta.get('handle_httpstatus_all', False)):
             return response
 
-        if request.method == 'HEAD':
-            if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
-                redirected_url = urljoin(request.url, response.headers['location'])
-                redirected = request.replace(url=redirected_url)
-                return self._redirect(redirected, request, spider, response.status)
-            else:
-                return response
+        allowed_status = (301, 302, 303, 307, 308)
+        if 'Location' not in response.headers or response.status not in allowed_status:
+            return response
 
-        if response.status in [302, 303] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
-            redirected = self._redirect_request_using_get(request, redirected_url)
-            return self._redirect(redirected, request, spider, response.status)
+        location = safe_url_string(response.headers['location'])
 
-        if response.status in [301, 307] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
+        redirected_url = urljoin(request.url, location)
+
+        if response.status in (301, 307, 308) or request.method == 'HEAD':
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
-        return response
+        redirected = self._redirect_request_using_get(request, redirected_url)
+        return self._redirect(redirected, request, spider, response.status)
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
@@ -92,10 +96,9 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
                 not isinstance(response, HtmlResponse):
             return response
 
-        if isinstance(response, HtmlResponse):
-            interval, url = get_meta_refresh(response)
-            if url and interval < self._maxdelay:
-                redirected = self._redirect_request_using_get(request, url)
-                return self._redirect(redirected, request, spider, 'meta refresh')
+        interval, url = get_meta_refresh(response)
+        if url and interval < self._maxdelay:
+            redirected = self._redirect_request_using_get(request, url)
+            return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response

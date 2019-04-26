@@ -1,6 +1,8 @@
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_httprepr
 from scrapy.utils.response import response_httprepr
+from scrapy.utils.python import global_object_name
+
 
 class DownloaderStats(object):
 
@@ -27,6 +29,6 @@ class DownloaderStats(object):
         return response
 
     def process_exception(self, request, exception, spider):
-        ex_class = "%s.%s" % (exception.__class__.__module__, exception.__class__.__name__)
+        ex_class = global_object_name(exception.__class__)
         self.stats.inc_value('downloader/exception_count', spider=spider)
         self.stats.inc_value('downloader/exception_type_count/%s' % ex_class, spider=spider)

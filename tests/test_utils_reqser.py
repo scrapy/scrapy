@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 import unittest
 
-from scrapy.http import Request
+from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
 from scrapy.utils.reqser import request_to_dict, request_from_dict
+
 
 class RequestSerializationTest(unittest.TestCase):
 
@@ -15,23 +17,24 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_all_attributes(self):
         r = Request("http://www.example.com",
-            callback='parse_item',
-            errback='handle_error',
+            callback=self.spider.parse_item,
+            errback=self.spider.handle_error,
             method="POST",
-            body="some body",
+            body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
-            cookies={'currency': 'usd'},
+            cookies={'currency': u'руб'},
             encoding='latin-1',
             priority=20,
-            meta={'a': 'b'})
-        self._assert_serializes_ok(r)
+            meta={'a': 'b'},
+            flags=['testFlag'])
+        self._assert_serializes_ok(r, spider=self.spider)
 
     def test_latin1_body(self):
-        r = Request("http://www.example.com", body="\xa3")
+        r = Request("http://www.example.com", body=b"\xa3")
         self._assert_serializes_ok(r)
 
     def test_utf8_body(self):
-        r = Request("http://www.example.com", body="\xc2\xa3")
+        r = Request("http://www.example.com", body=b"\xc2\xa3")
         self._assert_serializes_ok(r)
 
     def _assert_serializes_ok(self, request, spider=None):
@@ -40,6 +43,7 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_same_request(request, request2)
 
     def _assert_same_request(self, r1, r2):
+        self.assertEqual(r1.__class__, r2.__class__)
         self.assertEqual(r1.url, r2.url)
         self.assertEqual(r1.callback, r2.callback)
         self.assertEqual(r1.errback, r2.errback)
@@ -51,10 +55,17 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1._encoding, r2._encoding)
         self.assertEqual(r1.priority, r2.priority)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
+        self.assertEqual(r1.flags, r2.flags)
+
+    def test_request_class(self):
+        r = FormRequest("http://www.example.com")
+        self._assert_serializes_ok(r, spider=self.spider)
+        r = CustomRequest("http://www.example.com")
+        self._assert_serializes_ok(r, spider=self.spider)
 
     def test_callback_serialization(self):
-        r = Request("http://www.example.com", callback=self.spider.parse_item, \
-            errback=self.spider.handle_error)
+        r = Request("http://www.example.com", callback=self.spider.parse_item,
+                    errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
     def test_unserializable_callback1(self):
@@ -69,7 +80,13 @@ class RequestSerializationTest(unittest.TestCase):
 
 class TestSpider(Spider):
     name = 'test'
+
     def parse_item(self, response):
         pass
+
     def handle_error(self, failure):
         pass
+
+
+class CustomRequest(Request):
+    pass

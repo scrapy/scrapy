@@ -17,11 +17,11 @@ Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
 settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, an
+avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
-`GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
+``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
-.. _Google Sitemaps: http://en.wikipedia.org/wiki/Sitemaps
+.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
 
 Loading & activating extensions
 ===============================
@@ -36,23 +36,22 @@ by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': 500,
-        'scrapy.telnet.TelnetConsole': 500,
+        'scrapy.extensions.telnet.TelnetConsole': 500,
     }
 
 
 As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
 the extension paths, and their values are the orders, which define the
-extension *loading* order. Extensions orders are not as important as middleware
-orders though, and they are typically irrelevant, ie. it doesn't matter in
-which order the extensions are loaded because they don't depend on each other
-[1].
+extension *loading* order. The :setting:`EXTENSIONS` setting is merged with the
+:setting:`EXTENSIONS_BASE` setting defined in Scrapy (and not meant to be
+overridden) and then sorted by order to get the final sorted list of enabled
+extensions.
 
-However, this feature can be exploited if you need to add an extension which
-depends on other extensions already loaded.
-
-[1] This is is why the :setting:`EXTENSIONS_BASE` setting in Scrapy (which
-contains all built-in extensions enabled by default) defines all the extensions
-with the same order (``500``).
+As extensions typically do not depend on each other, their loading order is
+irrelevant in most cases. This is why the :setting:`EXTENSIONS_BASE` setting
+defines all extensions with the same order (``0``). However, this feature can
+be exploited if you need to add an extension which depends on other extensions
+already loaded.
 
 Available, enabled and disabled extensions
 ==========================================
@@ -145,7 +144,7 @@ Here is the code of such extension::
             self.items_scraped += 1
             if self.items_scraped % self.item_count == 0:
                 logger.info("scraped %d items", self.items_scraped)
-                
+
 
 .. _topics-extensions-ref:
 
@@ -181,10 +180,10 @@ enabled (see :ref:`topics-stats`).
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.telnet
+.. module:: scrapy.extensions.telnet
    :synopsis: Telnet console
 
-.. class:: scrapy.telnet.TelnetConsole
+.. class:: scrapy.extensions.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging.
@@ -221,7 +220,7 @@ can be configured with the following settings:
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
 * :setting:`MEMUSAGE_NOTIFY_MAIL`
-* :setting:`MEMUSAGE_REPORT`
+* :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -278,9 +277,11 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``. If zero (or
-non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the
+spider will be closed with the reason ``closespider_itemcount``.
+Requests which  are currently in the downloader queue (up to
+:setting:`CONCURRENT_REQUESTS` requests) are still processed.
+If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
@@ -355,8 +356,8 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 
     kill -QUIT <pid>
 
-.. _SIGUSR2: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-.. _SIGQUIT: http://en.wikipedia.org/wiki/SIGQUIT
+.. _SIGUSR2: https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+.. _SIGQUIT: https://en.wikipedia.org/wiki/SIGQUIT
 
 Debugger extension
 ~~~~~~~~~~~~~~~~~~
@@ -367,9 +368,9 @@ Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`.
+For more info see `Debugging in Python`_.
 
 This extension only works on POSIX-compliant platforms (ie. not Windows).
 
 .. _Python debugger: https://docs.python.org/2/library/pdb.html
-.. _Debugging in Python: http://www.ferg.org/papers/debugging_in_python.html
+.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

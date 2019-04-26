@@ -2,8 +2,8 @@ from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import defer, reactor
+from pydispatch import dispatcher
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 
 
@@ -29,7 +29,7 @@ class SendCatchLogTest(unittest.TestCase):
         self.assertIn('error_handler', record.getMessage())
         self.assertEqual(record.levelname, 'ERROR')
         self.assertEqual(result[0][0], self.error_handler)
-        self.assert_(isinstance(result[0][1], Failure))
+        self.assertIsInstance(result[0][1], Failure)
         self.assertEqual(result[1], (self.ok_handler, "OK"))
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)

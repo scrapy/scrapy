@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 from scrapy.responsetypes import responsetypes
 
@@ -20,8 +21,14 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_content_disposition(self):
         mappings = [
-            ('attachment; filename="data.xml"', XmlResponse),
-            ('attachment; filename=data.xml', XmlResponse),
+            (b'attachment; filename="data.xml"', XmlResponse),
+            (b'attachment; filename=data.xml', XmlResponse),
+            (u'attachment;filename=data£.tar.gz'.encode('utf-8'), Response),
+            (u'attachment;filename=dataµ.tar.gz'.encode('latin-1'), Response),
+            (u'attachment;filename=data高.doc'.encode('gbk'), Response),
+            (u'attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
+            (u'attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
+
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)
@@ -35,6 +42,8 @@ class ResponseTypesTest(unittest.TestCase):
             ('application/vnd.wap.xhtml+xml; charset=utf-8', HtmlResponse),
             ('application/xml; charset=UTF-8', XmlResponse),
             ('application/octet-stream', Response),
+            ('application/x-json; encoding=UTF8;charset=UTF-8', TextResponse),
+            ('application/json-amazonui-streaming;charset=UTF-8', TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_type(source)
@@ -42,15 +51,15 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_body(self):
         mappings = [
-            ('\x03\x02\xdf\xdd\x23', Response),
-            ('Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
-            ('<html><head><title>Hello</title></head>', HtmlResponse),
-            ('<?xml version="1.0" encoding="utf-8"', XmlResponse),
+            (b'\x03\x02\xdf\xdd\x23', Response),
+            (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
+            (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
-        
+
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),

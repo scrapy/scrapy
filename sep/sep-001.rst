@@ -61,7 +61,7 @@ ItemForm
 --------
 
 Pros:
-- same API used for Items (see http://doc.scrapy.org/en/latest/topics/items.html)
+- same API used for Items (see https://docs.scrapy.org/en/latest/topics/items.html)
 - some people consider setitem API more elegant than methods API
 
 Cons:

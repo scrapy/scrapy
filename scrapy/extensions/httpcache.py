@@ -1,17 +1,22 @@
 from __future__ import print_function
 import os
 import gzip
+import logging
 from six.moves import cPickle as pickle
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
 from email.utils import mktime_tz, parsedate_tz
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
+
+
+logger = logging.getLogger(__name__)
 
 
 class DummyPolicy(object):
@@ -26,7 +31,7 @@ class DummyPolicy(object):
     def should_cache_response(self, response, request):
         return response.status not in self.ignore_http_codes
 
-    def is_cached_response_fresh(self, response, request):
+    def is_cached_response_fresh(self, cachedresponse, request):
         return True
 
     def is_cached_response_valid(self, cachedresponse, response, request):
@@ -38,13 +43,20 @@ class RFC2616Policy(object):
     MAXAGE = 3600 * 24 * 365  # one year
 
     def __init__(self, settings):
+        self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
+        self.ignore_response_cache_controls = [to_bytes(cc) for cc in
+            settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')]
         self._cc_parsed = WeakKeyDictionary()
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
-            cch = r.headers.get('Cache-Control', '')
-            self._cc_parsed[r] = parse_cachecontrol(cch)
+            cch = r.headers.get(b'Cache-Control', b'')
+            parsed = parse_cachecontrol(cch)
+            if isinstance(r, Response):
+                for key in self.ignore_response_cache_controls:
+                    parsed.pop(key, None)
+            self._cc_parsed[r] = parsed
         return self._cc_parsed[r]
 
     def should_cache_request(self, request):
@@ -52,31 +64,34 @@ class RFC2616Policy(object):
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if 'no-store' in cc:
+        if b'no-store' in cc:
             return False
         # Any other is eligible for caching
         return True
 
     def should_cache_response(self, response, request):
-        # What is cacheable - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
-        # Response cacheability - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
+        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+        # Response cacheability - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
-        if 'no-store' in cc:
+        if b'no-store' in cc:
             return False
         # Never cache 304 (Not Modified) responses
         elif response.status == 304:
             return False
+        # Cache unconditionally if configured to do so
+        elif self.always_store:
+            return True
         # Any hint on response expiration is good
-        elif 'max-age' in cc or 'Expires' in response.headers:
+        elif b'max-age' in cc or b'Expires' in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
         elif response.status in (300, 301, 308):
             return True
         # Other statuses without expiration requires at least one validator
         elif response.status in (200, 203, 401):
-            return 'Last-Modified' in response.headers or 'ETag' in response.headers
+            return b'Last-Modified' in response.headers or b'ETag' in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
         # info and can not be revalidated
@@ -86,51 +101,87 @@ class RFC2616Policy(object):
     def is_cached_response_fresh(self, cachedresponse, request):
         cc = self._parse_cachecontrol(cachedresponse)
         ccreq = self._parse_cachecontrol(request)
-        if 'no-cache' in cc or 'no-cache' in ccreq:
+        if b'no-cache' in cc or b'no-cache' in ccreq:
             return False
 
         now = time()
         freshnesslifetime = self._compute_freshness_lifetime(cachedresponse, request, now)
         currentage = self._compute_current_age(cachedresponse, request, now)
+
+        reqmaxage = self._get_max_age(ccreq)
+        if reqmaxage is not None:
+            freshnesslifetime = min(freshnesslifetime, reqmaxage)
+
         if currentage < freshnesslifetime:
             return True
+
+        if b'max-stale' in ccreq and b'must-revalidate' not in cc:
+            # From RFC2616: "Indicates that the client is willing to
+            # accept a response that has exceeded its expiration time.
+            # If max-stale is assigned a value, then the client is
+            # willing to accept a response that has exceeded its
+            # expiration time by no more than the specified number of
+            # seconds. If no value is assigned to max-stale, then the
+            # client is willing to accept a stale response of any age."
+            staleage = ccreq[b'max-stale']
+            if staleage is None:
+                return True
+
+            try:
+                if currentage < freshnesslifetime + max(0, int(staleage)):
+                    return True
+            except ValueError:
+                pass
+
         # Cached response is stale, try to set validators if any
         self._set_conditional_validators(request, cachedresponse)
         return False
 
     def is_cached_response_valid(self, cachedresponse, response, request):
+        # Use the cached response if the new response is a server error,
+        # as long as the old response didn't specify must-revalidate.
+        if response.status >= 500:
+            cc = self._parse_cachecontrol(cachedresponse)
+            if b'must-revalidate' not in cc:
+                return True
+
+        # Use the cached response if the server says it hasn't changed.
         return response.status == 304
 
     def _set_conditional_validators(self, request, cachedresponse):
-        if 'Last-Modified' in cachedresponse.headers:
-            request.headers['If-Modified-Since'] = cachedresponse.headers['Last-Modified']
+        if b'Last-Modified' in cachedresponse.headers:
+            request.headers[b'If-Modified-Since'] = cachedresponse.headers[b'Last-Modified']
 
-        if 'ETag' in cachedresponse.headers:
-            request.headers['If-None-Match'] = cachedresponse.headers['ETag']
+        if b'ETag' in cachedresponse.headers:
+            request.headers[b'If-None-Match'] = cachedresponse.headers[b'ETag']
+
+    def _get_max_age(self, cc):
+        try:
+            return max(0, int(cc[b'max-age']))
+        except (KeyError, ValueError):
+            return None
 
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#706
         cc = self._parse_cachecontrol(response)
-        if 'max-age' in cc:
-            try:
-                return max(0, int(cc['max-age']))
-            except ValueError:
-                pass
+        maxage = self._get_max_age(cc)
+        if maxage is not None:
+            return maxage
 
         # Parse date header or synthesize it if none exists
-        date = rfc1123_to_epoch(response.headers.get('Date')) or now
+        date = rfc1123_to_epoch(response.headers.get(b'Date')) or now
 
         # Try HTTP/1.0 Expires header
-        if 'Expires' in response.headers:
-            expires = rfc1123_to_epoch(response.headers['Expires'])
+        if b'Expires' in response.headers:
+            expires = rfc1123_to_epoch(response.headers[b'Expires'])
             # When parsing Expires header fails RFC 2616 section 14.21 says we
             # should treat this as an expiration time in the past.
             return max(0, expires - date) if expires else 0
 
         # Fallback to heuristic using last-modified header
         # This is not in RFC but on Firefox caching implementation
-        lastmodified = rfc1123_to_epoch(response.headers.get('Last-Modified'))
+        lastmodified = rfc1123_to_epoch(response.headers.get(b'Last-Modified'))
         if lastmodified and lastmodified <= date:
             return (date - lastmodified) / 10
 
@@ -143,17 +194,17 @@ class RFC2616Policy(object):
 
     def _compute_current_age(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeCurrentAge
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#366
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#658
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
-        date = rfc1123_to_epoch(response.headers.get('Date')) or now
+        date = rfc1123_to_epoch(response.headers.get(b'Date')) or now
         if now > date:
             currentage = now - date
 
-        if 'Age' in response.headers:
+        if b'Age' in response.headers:
             try:
-                age = int(response.headers['Age'])
+                age = int(response.headers[b'Age'])
                 currentage = max(currentage, age)
             except ValueError:
                 pass
@@ -172,6 +223,8 @@ class DbmCacheStorage(object):
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
         self.db = self.dbmodule.open(dbpath, 'c')
+
+        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         self.db.close()
@@ -225,7 +278,8 @@ class FilesystemCacheStorage(object):
         self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
-        pass
+        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+                     extra={'spider': spider})
 
     def close_spider(self, spider):
         pass
@@ -260,7 +314,7 @@ class FilesystemCacheStorage(object):
             'timestamp': time(),
         }
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
-            f.write(repr(metadata))
+            f.write(to_bytes(repr(metadata)))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=2)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
@@ -281,7 +335,7 @@ class FilesystemCacheStorage(object):
         metapath = os.path.join(rpath, 'pickled_meta')
         if not os.path.exists(metapath):
             return  # not found
-        mtime = os.stat(rpath).st_mtime
+        mtime = os.stat(metapath).st_mtime
         if 0 < self.expiration_secs < time() - mtime:
             return  # expired
         with self._open(metapath, 'rb') as f:
@@ -301,11 +355,14 @@ class LeveldbCacheStorage(object):
         dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)
         self.db = self._leveldb.LevelDB(dbpath)
 
+        logger.debug("Using LevelDB cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
+
     def close_spider(self, spider):
         # Do compactation each time to save space and also recreate files to
         # avoid them being removed in storages with timestamp-based autoremoval.
         self.db.CompactRange()
         del self.db
+        garbage_collect()
 
     def retrieve_response(self, spider, request):
         data = self._read_data(spider, request)
@@ -328,14 +385,14 @@ class LeveldbCacheStorage(object):
             'body': response.body,
         }
         batch = self._leveldb.WriteBatch()
-        batch.Put('%s_data' % key, pickle.dumps(data, protocol=2))
-        batch.Put('%s_time' % key, str(time()))
+        batch.Put(key + b'_data', pickle.dumps(data, protocol=2))
+        batch.Put(key + b'_time', to_bytes(str(time())))
         self.db.Write(batch)
 
     def _read_data(self, spider, request):
         key = self._request_key(request)
         try:
-            ts = self.db.Get('%s_time' % key)
+            ts = self.db.Get(key + b'_time')
         except KeyError:
             return  # not found or invalid entry
 
@@ -343,32 +400,32 @@ class LeveldbCacheStorage(object):
             return  # expired
 
         try:
-            data = self.db.Get('%s_data' % key)
+            data = self.db.Get(key + b'_data')
         except KeyError:
             return  # invalid entry
         else:
             return pickle.loads(data)
 
     def _request_key(self, request):
-        return request_fingerprint(request)
+        return to_bytes(request_fingerprint(request))
 
 
 
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 
-    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
-    >>> parse_cachecontrol('public, max-age=3600') == {'public': None,
-    ...                                                'max-age': '3600'}
+    >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
+    ...                                                 b'max-age': b'3600'}
     True
-    >>> parse_cachecontrol('') == {}
+    >>> parse_cachecontrol(b'') == {}
     True
 
     """
     directives = {}
-    for directive in header.split(','):
-        key, sep, val = directive.strip().partition('=')
+    for directive in header.split(b','):
+        key, sep, val = directive.strip().partition(b'=')
         if key:
             directives[key.lower()] = val if sep else None
     return directives
@@ -376,6 +433,7 @@ def parse_cachecontrol(header):
 
 def rfc1123_to_epoch(date_str):
     try:
+        date_str = to_unicode(date_str, encoding='ascii')
         return mktime_tz(parsedate_tz(date_str))
     except Exception:
         return None

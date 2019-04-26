@@ -6,6 +6,7 @@ from collections import defaultdict
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.python import to_native_str
 
 logger = logging.getLogger(__name__)
 
@@ -52,18 +53,20 @@ class CookiesMiddleware(object):
 
     def _debug_cookie(self, request, spider):
         if self.debug:
-            cl = request.headers.getlist('Cookie')
+            cl = [to_native_str(c, errors='replace')
+                  for c in request.headers.getlist('Cookie')]
             if cl:
-                msg = "Sending cookies to: %s" % request + os.linesep
-                msg += os.linesep.join("Cookie: %s" % c for c in cl)
+                cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
+                msg = "Sending cookies to: {}\n{}".format(request, cookies)
                 logger.debug(msg, extra={'spider': spider})
 
     def _debug_set_cookie(self, response, spider):
         if self.debug:
-            cl = response.headers.getlist('Set-Cookie')
+            cl = [to_native_str(c, errors='replace')
+                  for c in response.headers.getlist('Set-Cookie')]
             if cl:
-                msg = "Received cookies from: %s" % response + os.linesep
-                msg += os.linesep.join("Set-Cookie: %s" % c for c in cl)
+                cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)
+                msg = "Received cookies from: {}\n{}".format(response, cookies)
                 logger.debug(msg, extra={'spider': spider})
 
     def _format_cookie(self, cookie):

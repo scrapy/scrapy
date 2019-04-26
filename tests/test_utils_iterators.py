@@ -1,11 +1,13 @@
+# -*- coding: utf-8 -*-
 import os
+import six
 from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter, _body_or_str, xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
 
-FOOBAR_NL = u"foo" + os.linesep + u"bar"
+FOOBAR_NL = u"foo\nbar"
 
 
 class XmliterTestCase(unittest.TestCase):
@@ -13,7 +15,7 @@ class XmliterTestCase(unittest.TestCase):
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):
-        body = """<?xml version="1.0" encoding="UTF-8"?>\
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>\
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
               <product id="001">\
                 <type>Type 1</type>\
@@ -28,19 +30,89 @@ class XmliterTestCase(unittest.TestCase):
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
         for x in self.xmliter(response, 'product'):
-            attrs.append((x.xpath("@id").extract(), x.xpath("name/text()").extract(), x.xpath("./type/text()").extract()))
+            attrs.append((
+                x.attrib['id'],
+                x.xpath("name/text()").getall(),
+                x.xpath("./type/text()").getall()))
 
         self.assertEqual(attrs,
-                         [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
+                         [('001', ['Name 1'], ['Type 1']), ('002', ['Name 2'], ['Type 2'])])
+
+    def test_xmliter_unusual_node(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+            <root>
+                <matchme...></matchme...>
+                <matchmenot></matchmenot>
+            </root>
+        """
+        response = XmlResponse(url="http://example.com", body=body)
+        nodenames = [e.xpath('name()').getall()
+                 for e in self.xmliter(response, 'matchme...')]
+        self.assertEqual(nodenames, [['matchme...']])
+
+    def test_xmliter_unicode(self):
+        # example taken from https://github.com/scrapy/scrapy/issues/1665
+        body = u"""<?xml version="1.0" encoding="UTF-8"?>
+            <þingflokkar>
+               <þingflokkur id="26">
+                  <heiti />
+                  <skammstafanir>
+                     <stuttskammstöfun>-</stuttskammstöfun>
+                     <löngskammstöfun />
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>80</fyrstaþing>
+                  </tímabil>
+               </þingflokkur>
+               <þingflokkur id="21">
+                  <heiti>Alþýðubandalag</heiti>
+                  <skammstafanir>
+                     <stuttskammstöfun>Ab</stuttskammstöfun>
+                     <löngskammstöfun>Alþb.</löngskammstöfun>
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>76</fyrstaþing>
+                     <síðastaþing>123</síðastaþing>
+                  </tímabil>
+               </þingflokkur>
+               <þingflokkur id="27">
+                  <heiti>Alþýðuflokkur</heiti>
+                  <skammstafanir>
+                     <stuttskammstöfun>A</stuttskammstöfun>
+                     <löngskammstöfun>Alþfl.</löngskammstöfun>
+                  </skammstafanir>
+                  <tímabil>
+                     <fyrstaþing>27</fyrstaþing>
+                     <síðastaþing>120</síðastaþing>
+                  </tímabil>
+               </þingflokkur>
+            </þingflokkar>"""
+
+        for r in (
+            # with bytes
+            XmlResponse(url="http://example.com", body=body.encode('utf-8')),
+            # Unicode body needs encoding information
+            XmlResponse(url="http://example.com", body=body, encoding='utf-8')):
+
+            attrs = []
+            for x in self.xmliter(r, u'þingflokkur'):
+                attrs.append((x.attrib['id'],
+                              x.xpath(u'./skammstafanir/stuttskammstöfun/text()').getall(),
+                              x.xpath(u'./tímabil/fyrstaþing/text()').getall()))
+
+            self.assertEqual(attrs,
+                             [(u'26', [u'-'], [u'80']),
+                              (u'21', [u'Ab'], [u'76']),
+                              (u'27', [u'A'], [u'27'])])
 
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
 
-        self.assertEqual([x.xpath("text()").extract() for x in self.xmliter(body, 'product')],
+        self.assertEqual([x.xpath("text()").getall() for x in self.xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
-        body = """\
+        body = b"""\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
                 <channel>
@@ -63,15 +135,15 @@ class XmliterTestCase(unittest.TestCase):
 
         node = next(my_iter)
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
-        self.assertEqual(node.xpath('title/text()').extract(), ['Item 1'])
-        self.assertEqual(node.xpath('description/text()').extract(), ['This is item 1'])
-        self.assertEqual(node.xpath('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
-        self.assertEqual(node.xpath('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
-        self.assertEqual(node.xpath('g:id/text()').extract(), ['ITEM_1'])
-        self.assertEqual(node.xpath('g:price/text()').extract(), ['400'])
-        self.assertEqual(node.xpath('image_link/text()').extract(), [])
-        self.assertEqual(node.xpath('id/text()').extract(), [])
-        self.assertEqual(node.xpath('price/text()').extract(), [])
+        self.assertEqual(node.xpath('title/text()').getall(), ['Item 1'])
+        self.assertEqual(node.xpath('description/text()').getall(), ['This is item 1'])
+        self.assertEqual(node.xpath('link/text()').getall(), ['http://www.mydummycompany.com/items/1'])
+        self.assertEqual(node.xpath('g:image_link/text()').getall(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.xpath('g:id/text()').getall(), ['ITEM_1'])
+        self.assertEqual(node.xpath('g:price/text()').getall(), ['400'])
+        self.assertEqual(node.xpath('image_link/text()').getall(), [])
+        self.assertEqual(node.xpath('id/text()').getall(), [])
+        self.assertEqual(node.xpath('price/text()').getall(), [])
 
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
@@ -82,11 +154,15 @@ class XmliterTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, next, iter)
 
+    def test_xmliter_objtype_exception(self):
+        i = self.xmliter(42, 'product')
+        self.assertRaises(AssertionError, next, i)
+
     def test_xmliter_encoding(self):
-        body = '<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
+        body = b'<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
         response = XmlResponse('http://www.example.com', body=body)
         self.assertEqual(
-            self.xmliter(response, 'item').next().extract(),
+            next(self.xmliter(response, 'item')).get(),
             u'<item>Some Turkish Characters \xd6\xc7\u015e\u0130\u011e\xdc \xfc\u011f\u0131\u015f\xe7\xf6</item>'
         )
 
@@ -95,7 +171,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):
-        body = """\
+        body = b"""\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns="http://base.google.com/ns/1.0">
                 <channel>
@@ -119,12 +195,12 @@ class LxmlXmliterTestCase(XmliterTestCase):
 
         namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
         node = next(namespace_iter)
-        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.xpath('text()').getall(), ['http://www.mydummycompany.com/images/item1.jpg'])
         node = next(namespace_iter)
-        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
+        self.assertEqual(node.xpath('text()').getall(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
     def test_xmliter_namespaces_prefix(self):
-        body = """\
+        body = b"""\
         <?xml version="1.0" encoding="UTF-8"?>
         <root>
             <h:table xmlns:h="http://www.w3.org/TR/html4/">
@@ -146,15 +222,18 @@ class LxmlXmliterTestCase(XmliterTestCase):
         my_iter = self.xmliter(response, 'table', 'http://www.w3.org/TR/html4/', 'h')
 
         node = next(my_iter)
-        self.assertEqual(len(node.xpath('h:tr/h:td').extract()), 2)
-        self.assertEqual(node.xpath('h:tr/h:td[1]/text()').extract(), ['Apples'])
-        self.assertEqual(node.xpath('h:tr/h:td[2]/text()').extract(), ['Bananas'])
+        self.assertEqual(len(node.xpath('h:tr/h:td').getall()), 2)
+        self.assertEqual(node.xpath('h:tr/h:td[1]/text()').getall(), ['Apples'])
+        self.assertEqual(node.xpath('h:tr/h:td[2]/text()').getall(), ['Bananas'])
 
         my_iter = self.xmliter(response, 'table', 'http://www.w3schools.com/furniture', 'f')
 
         node = next(my_iter)
-        self.assertEqual(node.xpath('f:name/text()').extract(), ['African Coffee Table'])
+        self.assertEqual(node.xpath('f:name/text()').getall(), ['African Coffee Table'])
 
+    def test_xmliter_objtype_exception(self):
+        i = self.xmliter(42, 'product')
+        self.assertRaises(TypeError, next, i)
 
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
@@ -176,11 +255,11 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assert_(all((isinstance(k, unicode) for k in result_row.keys())))
-            self.assert_(all((isinstance(v, unicode) for v in result_row.values())))
+            self.assertTrue(all((isinstance(k, six.text_type) for k in result_row.keys())))
+            self.assertTrue(all((isinstance(v, six.text_type) for v in result_row.values())))
 
     def test_csviter_delimiter(self):
-        body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
+        body = get_testdata('feeds', 'feed-sample3.csv').replace(b',', b'\t')
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response, delimiter='\t')
 
@@ -192,8 +271,8 @@ class UtilsCsvTestCase(unittest.TestCase):
 
     def test_csviter_quotechar(self):
         body1 = get_testdata('feeds', 'feed-sample6.csv')
-        body2 = get_testdata('feeds', 'feed-sample6.csv').replace(",", '|')
-        
+        body2 = get_testdata('feeds', 'feed-sample6.csv').replace(b',', b'|')
+
         response1 = TextResponse(url="http://example.com/", body=body1)
         csv1 = csviter(response1, quotechar="'")
 
@@ -224,7 +303,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u"'id'": u"4",   u"'name'": u"'empty'",   u"'value'": u""}])
 
     def test_csviter_delimiter_binary_response_assume_utf8_encoding(self):
-        body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
+        body = get_testdata('feeds', 'feed-sample3.csv').replace(b',', b'\t')
         response = Response(url="http://example.com/", body=body)
         csv = csviter(response, delimiter='\t')
 
@@ -236,10 +315,10 @@ class UtilsCsvTestCase(unittest.TestCase):
 
     def test_csviter_headers(self):
         sample = get_testdata('feeds', 'feed-sample3.csv').splitlines()
-        headers, body = sample[0].split(','), '\n'.join(sample[1:])
+        headers, body = sample[0].split(b','), b'\n'.join(sample[1:])
 
         response = TextResponse(url="http://example.com/", body=body)
-        csv = csviter(response, headers=headers)
+        csv = csviter(response, headers=[h.decode('utf-8') for h in headers])
 
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
@@ -249,7 +328,7 @@ class UtilsCsvTestCase(unittest.TestCase):
 
     def test_csviter_falserow(self):
         body = get_testdata('feeds', 'feed-sample3.csv')
-        body = '\n'.join((body, 'a,b', 'a,b,c,d'))
+        body = b'\n'.join((body, b'a,b', b'a,b,c,d'))
 
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)

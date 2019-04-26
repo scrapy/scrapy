@@ -1,4 +1,5 @@
 import unittest
+import six
 from functools import partial
 
 from scrapy.loader import ItemLoader
@@ -18,9 +19,22 @@ class TestItem(NameItem):
     summary = Field()
 
 
+class TestNestedItem(Item):
+    name = Field()
+    name_div = Field()
+    name_value = Field()
+
+    url = Field()
+    image = Field()
+
+
 # test item loaders
 class NameItemLoader(ItemLoader):
     default_item_class = TestItem
+
+
+class NestedItemLoader(ItemLoader):
+    default_item_class = TestNestedItem
 
 
 class TestItemLoader(NameItemLoader):
@@ -141,7 +155,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_get_value(self):
         il = NameItemLoader()
-        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), unicode.upper))
+        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), six.text_type.upper))
         self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
         self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
 
@@ -242,7 +256,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
-            name_in = MapCompose(TestItemLoader.name_in, unicode.swapcase)
+            name_in = MapCompose(TestItemLoader.name_in, six.text_type.swapcase)
 
         il = ChildItemLoader()
         il.add_value('name', u'marta')
@@ -250,7 +264,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_in = MapCompose(DefaultedItemLoader.default_input_processor, unicode.swapcase)
+            name_in = MapCompose(DefaultedItemLoader.default_input_processor, six.text_type.swapcase)
 
         il = ChildDefaultedItemLoader()
         il.add_value('name', u'marta')
@@ -276,7 +290,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = TestItemLoader()
         il.add_value('name', [u'$10'])
         try:
-            float('$10')
+            float(u'$10')
         except Exception as e:
             expected_exc_str = str(e)
 
@@ -423,7 +437,7 @@ class ProcessorsTest(unittest.TestCase):
         self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
         self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
         self.assertEqual(proc(['hello', 'world']), u'hello world')
-        self.assert_(isinstance(proc(['hello', 'world']), unicode))
+        self.assertIsInstance(proc(['hello', 'world']), six.text_type)
 
     def test_compose(self):
         proc = Compose(lambda v: v[0], str.upper)
@@ -435,13 +449,13 @@ class ProcessorsTest(unittest.TestCase):
 
     def test_mapcompose(self):
         filter_world = lambda x: None if x == 'world' else x
-        proc = MapCompose(filter_world, unicode.upper)
+        proc = MapCompose(filter_world, six.text_type.upper)
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
 
 
 class SelectortemLoaderTest(unittest.TestCase):
-    response = HtmlResponse(url="", body="""
+    response = HtmlResponse(url="", encoding='utf-8', body=b"""
     <html>
     <body>
     <div id="id">marta</div>
@@ -468,7 +482,7 @@ class SelectortemLoaderTest(unittest.TestCase):
     def test_constructor_with_selector(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
-        self.assert_(l.selector is sel)
+        self.assertIs(l.selector, sel)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
@@ -476,21 +490,21 @@ class SelectortemLoaderTest(unittest.TestCase):
     def test_constructor_with_selector_css(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
-        self.assert_(l.selector is sel)
+        self.assertIs(l.selector, sel)
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response_css(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
@@ -512,7 +526,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_xpath(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath('name', '//p/text()')
@@ -538,7 +552,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_xpath_re(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath('name', '//div/text()', re='ma')
@@ -554,7 +568,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_css(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_css('name', 'p::text')
@@ -592,11 +606,106 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_replace_css_re(self):
         l = TestItemLoader(response=self.response)
-        self.assert_(l.selector)
+        self.assertTrue(l.selector)
         l.add_css('url', 'a::attr(href)')
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
+
+
+class SubselectorLoaderTest(unittest.TestCase):
+    response = HtmlResponse(url="", encoding='utf-8', body=b"""
+    <html>
+    <body>
+    <header>
+      <div id="id">marta</div>
+      <p>paragraph</p>
+    </header>
+    <footer class="footer">
+      <a href="http://www.scrapy.org">homepage</a>
+      <img src="/images/logo.png" width="244" height="65" alt="Scrapy">
+    </footer>
+    </body>
+    </html>
+    """)
+
+    def test_nested_xpath(self):
+        l = NestedItemLoader(response=self.response)
+        nl = l.nested_xpath("//header")
+        nl.add_xpath('name', 'div/text()')
+        nl.add_css('name_div', '#id')
+        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
+
+        self.assertEqual(l.get_output_value('name'), [u'marta'])
+        self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
+        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+
+        self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
+        self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
+        self.assertEqual(l.get_output_value('name_value'), nl.get_output_value('name_value'))
+
+    def test_nested_css(self):
+        l = NestedItemLoader(response=self.response)
+        nl = l.nested_css("header")
+        nl.add_xpath('name', 'div/text()')
+        nl.add_css('name_div', '#id')
+        nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
+
+        self.assertEqual(l.get_output_value('name'), [u'marta'])
+        self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
+        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+
+        self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
+        self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
+        self.assertEqual(l.get_output_value('name_value'), nl.get_output_value('name_value'))
+
+    def test_nested_replace(self):
+        l = NestedItemLoader(response=self.response)
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('a')
+
+        l.add_xpath('url', '//footer/a/@href')
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        nl1.replace_xpath('url', 'img/@src')
+        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+        nl2.replace_xpath('url', '@href')
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+
+    def test_nested_ordering(self):
+        l = NestedItemLoader(response=self.response)
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('a')
+
+        nl1.add_xpath('url', 'img/@src')
+        l.add_xpath('url', '//footer/a/@href')
+        nl2.add_xpath('url', 'text()')
+        l.add_xpath('url', '//footer/a/@href')
+
+        self.assertEqual(l.get_output_value('url'), [
+            u'/images/logo.png',
+            u'http://www.scrapy.org',
+            u'homepage',
+            u'http://www.scrapy.org',
+        ])
+
+    def test_nested_load_item(self):
+        l = NestedItemLoader(response=self.response)
+        nl1 = l.nested_xpath('//footer')
+        nl2 = nl1.nested_xpath('img')
+
+        l.add_xpath('name', '//header/div/text()')
+        nl1.add_xpath('url', 'a/@href')
+        nl2.add_xpath('image', '@src')
+
+        item = l.load_item()
+
+        assert item is l.item
+        assert item is nl1.item
+        assert item is nl2.item
+
+        self.assertEqual(item['name'], [u'marta'])
+        self.assertEqual(item['url'], [u'http://www.scrapy.org'])
+        self.assertEqual(item['image'], [u'/images/logo.png'])
 
 
 class SelectJmesTestCase(unittest.TestCase):

@@ -4,7 +4,13 @@
 Scrapy |version| documentation
 ==============================
 
-This documentation contains everything you need to know about Scrapy.
+Scrapy is a fast high-level `web crawling`_ and `web scraping`_ framework, used
+to crawl websites and extract structured data from their pages. It can be used
+for a wide range of purposes, from data mining to monitoring and automated
+testing.
+
+.. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
+.. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
 Getting help
 ============
@@ -13,13 +19,15 @@ Having trouble? We'd like to help!
 
 * Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
 * Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
-* Search for information in the `archives of the scrapy-users mailing list`_, or
-  `post a question`_.
-* Ask a question in the `#scrapy IRC channel`_.
+* Ask or search questions in `StackOverflow using the scrapy tag`_.
+* Ask or search questions in the `Scrapy subreddit`_.
+* Search for questions on the archives of the `scrapy-users mailing list`_.
+* Ask a question in the `#scrapy IRC channel`_,
 * Report bugs with Scrapy in our `issue tracker`_.
 
-.. _archives of the scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
-.. _post a question: https://groups.google.com/forum/#!forum/scrapy-users
+.. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
+.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
+.. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 
@@ -28,6 +36,7 @@ First steps
 ===========
 
 .. toctree::
+   :caption: First steps
    :hidden:
 
    intro/overview
@@ -53,6 +62,7 @@ Basic concepts
 ==============
 
 .. toctree::
+   :caption: Basic concepts
    :hidden:
 
    topics/commands
@@ -110,6 +120,7 @@ Built-in services
 =================
 
 .. toctree::
+   :caption: Built-in services
    :hidden:
 
    topics/logging
@@ -138,6 +149,7 @@ Solving specific problems
 =========================
 
 .. toctree::
+   :caption: Solving specific problems
    :hidden:
 
    faq
@@ -145,11 +157,9 @@ Solving specific problems
    topics/contracts
    topics/practices
    topics/broad-crawls
-   topics/firefox
-   topics/firebug
+   topics/developer-tools
    topics/leaks
    topics/media-pipeline
-   topics/ubuntu
    topics/deploy
    topics/autothrottle
    topics/benchmarking
@@ -170,20 +180,14 @@ Solving specific problems
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.
 
-:doc:`topics/firefox`
-    Learn how to scrape with Firefox and some useful add-ons.
-
-:doc:`topics/firebug`
-    Learn how to scrape efficiently using Firebug.
+:doc:`topics/developer-tools`
+    Learn how to scrape with your browser's developer tools.
 
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
 :doc:`topics/media-pipeline`
     Download files and/or images associated with your scraped items.
-
-:doc:`topics/ubuntu`
-    Install latest Scrapy packages easily on Ubuntu
 
 :doc:`topics/deploy`
     Deploying your Scrapy spiders and run them in a remote server.
@@ -203,6 +207,7 @@ Extending Scrapy
 ================
 
 .. toctree::
+   :caption: Extending Scrapy
    :hidden:
 
    topics/architecture
@@ -240,6 +245,7 @@ All the rest
 ============
 
 .. toctree::
+   :caption: All the rest
    :hidden:
 
    news

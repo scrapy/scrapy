@@ -8,3 +8,8 @@ class TestExtension(object):
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings)
+
+
+class DummyExtension(object):
+    pass
+

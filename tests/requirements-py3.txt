@@ -1,0 +1,13 @@
+pytest
+pytest-cov
+pytest-twisted
+pytest-xdist
+testfixtures
+jmespath
+leveldb; sys_platform != "win32"
+botocore
+# optional for shell wrapper tests
+bpython
+ipython
+brotlipy
+pywin32; sys_platform == "win32"

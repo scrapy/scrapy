@@ -1,0 +1,25 @@
+#compdef scrapy
+
+# zsh completion for the Scrapy command-line tool
+
+_scrapy() {
+    local curcontext="$curcontext" cmd spiders
+    typeset -A opt_args
+    cmd=$words[2]
+    
+    case "$cmd" in
+        crawl|edit|check)
+            spiders=$(scrapy list 2>/dev/null) || spiders=""
+            if [[ -n "$spiders" ]]; then
+                compadd `echo $spiders`
+            fi
+        ;;
+        *)
+            if [[ CURRENT -eq 2 ]]; then
+                _arguments '*: :(check crawl edit fetch genspider list parse runspider settings shell startproject version view)'
+            fi
+        ;;
+    esac
+}
+
+_scrapy

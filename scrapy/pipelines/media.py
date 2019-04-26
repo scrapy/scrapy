@@ -1,10 +1,13 @@
 from __future__ import print_function
 
+import functools
 import logging
 from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.settings import Settings
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
@@ -24,8 +27,40 @@ class MediaPipeline(object):
             self.downloaded = {}
             self.waiting = defaultdict(list)
 
-    def __init__(self, download_func=None):
+    def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
+
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
+        resolve = functools.partial(self._key_for_pipe,
+                                    base_class_name="MediaPipeline",
+                                    settings=settings)
+        self.allow_redirects = settings.getbool(
+            resolve('MEDIA_ALLOW_REDIRECTS'), False
+        )
+        self._handle_statuses(self.allow_redirects)
+
+    def _handle_statuses(self, allow_redirects):
+        self.handle_httpstatus_list = None
+        if allow_redirects:
+            self.handle_httpstatus_list = SequenceExclude(range(300, 400))
+
+    def _key_for_pipe(self, key, base_class_name=None,
+                      settings=None):
+        """
+        >>> MediaPipeline()._key_for_pipe("IMAGES")
+        'IMAGES'
+        >>> class MyPipe(MediaPipeline):
+        ...     pass
+        >>> MyPipe()._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+        'MYPIPE_IMAGES'
+        """
+        class_name = self.__class__.__name__
+        formatted_key = "{}_{}".format(class_name.upper(), key)
+        if class_name == base_class_name or not base_class_name \
+            or (settings and not settings.get(formatted_key)):
+            return key
+        return formatted_key
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -75,6 +110,12 @@ class MediaPipeline(object):
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
+    def _modify_media_request(self, request):
+        if self.handle_httpstatus_list:
+            request.meta['handle_httpstatus_list'] = self.handle_httpstatus_list
+        else:
+            request.meta['handle_httpstatus_all'] = True
+
     def _check_media_to_download(self, result, request, info):
         if result is not None:
             return result
@@ -85,7 +126,7 @@ class MediaPipeline(object):
                 callback=self.media_downloaded, callbackArgs=(request, info),
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
-            request.meta['handle_httpstatus_all'] = True
+            self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info),

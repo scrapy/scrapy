@@ -8,7 +8,6 @@ from w3lib import html
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
-from scrapy.utils.response import _noscript_re, _script_re
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ class AjaxCrawlMiddleware(object):
         Return True if a page without hash fragment could be "AJAX crawlable"
         according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
         """
-        body = response.body_as_unicode()[:self.lookup_bytes]
+        body = response.text[:self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)
 
 
@@ -89,8 +88,7 @@ def _has_ajaxcrawlable_meta(text):
     if 'content' not in text:
         return False
 
-    text = _script_re.sub(u'', text)
-    text = _noscript_re.sub(u'', text)
-    text = html.remove_comments(html.replace_entities(text))
+    text = html.remove_tags_with_content(text, ('script', 'noscript'))
+    text = html.replace_entities(text)
+    text = html.remove_comments(text)
     return _ajax_crawlable_re.search(text) is not None
-

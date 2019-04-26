@@ -1,4 +1,4 @@
-"""Helper functions which doesn't fit anywhere else"""
+"""Helper functions which don't fit anywhere else"""
 import re
 import hashlib
 from importlib import import_module
@@ -7,7 +7,7 @@ from pkgutil import iter_modules
 import six
 from w3lib.html import replace_entities
 
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
@@ -31,7 +31,7 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be a class, function, variable o instance.
+    object can be a class, function, variable or an instance.
     path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
@@ -52,7 +52,7 @@ def load_object(path):
 
 
 def walk_modules(path):
-    """Loads a module and all its submodules from a the given module path and
+    """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
@@ -81,19 +81,20 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, basestring):
+    if isinstance(regex, six.string_types):
         regex = re.compile(regex, re.UNICODE)
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [replace_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+                for s in strings]
 
 
 def md5sum(file):
@@ -105,9 +106,39 @@ def md5sum(file):
     '784406af91dd5a54fbb9c84c2236595a'
     """
     m = hashlib.md5()
-    while 1:
+    while True:
         d = file.read(8096)
         if not d:
             break
         m.update(d)
     return m.hexdigest()
+
+
+def rel_has_nofollow(rel):
+    """Return True if link rel attribute has nofollow type"""
+    return rel is not None and 'nofollow' in rel.split()
+
+
+def create_instance(objcls, settings, crawler, *args, **kwargs):
+    """Construct a class instance using its ``from_crawler`` or
+    ``from_settings`` constructors, if available.
+
+    At least one of ``settings`` and ``crawler`` needs to be different from
+    ``None``. If ``settings `` is ``None``, ``crawler.settings`` will be used.
+    If ``crawler`` is ``None``, only the ``from_settings`` constructor will be
+    tried.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructors.
+
+    Raises ``ValueError`` if both ``settings`` and ``crawler`` are ``None``.
+    """
+    if settings is None:
+        if crawler is None:
+            raise ValueError("Specifiy at least one of settings and crawler.")
+        settings = crawler.settings
+    if crawler and hasattr(objcls, 'from_crawler'):
+        return objcls.from_crawler(crawler, *args, **kwargs)
+    elif hasattr(objcls, 'from_settings'):
+        return objcls.from_settings(settings, *args, **kwargs)
+    else:
+        return objcls(*args, **kwargs)

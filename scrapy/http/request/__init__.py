@@ -8,6 +8,7 @@ import six
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
+from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
@@ -17,7 +18,7 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None):
+                 dont_filter=False, errback=None, flags=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
@@ -26,6 +27,10 @@ class Request(object_ref):
         assert isinstance(priority, int), "Request priority not an integer: %r" % priority
         self.priority = priority
 
+        if callback is not None and not callable(callback):
+            raise TypeError('callback must be a callable, got %s' % type(callback).__name__)
+        if errback is not None and not callable(errback):
+            raise TypeError('errback must be a callable, got %s' % type(errback).__name__)
         assert callback or not errback, "Cannot use errback without a callback"
         self.callback = callback
         self.errback = errback
@@ -35,6 +40,7 @@ class Request(object_ref):
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None
+        self.flags = [] if flags is None else list(flags)
 
     @property
     def meta(self):
@@ -46,15 +52,12 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, str):
-            self._url = escape_ajax(safe_url_string(url))
-        elif isinstance(url, six.text_type):
-            if self.encoding is None:
-                raise TypeError('Cannot convert unicode url - %s has no encoding' %
-                                type(self).__name__)
-            self._set_url(url.encode(self.encoding))
-        else:
+        if not isinstance(url, six.string_types):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+
+        s = safe_url_string(url, self.encoding)
+        self._url = escape_ajax(s)
+
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
@@ -64,17 +67,10 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body):
-        if isinstance(body, str):
-            self._body = body
-        elif isinstance(body, six.text_type):
-            if self.encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
-            self._body = body.encode(self.encoding)
-        elif body is None:
-            self._body = ''
+        if body is None:
+            self._body = b''
         else:
-            raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
+            self._body = to_bytes(body, self.encoding)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
@@ -95,7 +91,7 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
                   'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)

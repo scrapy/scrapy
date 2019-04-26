@@ -1,7 +1,13 @@
+import sys
 import unittest
 
-from scrapy.item import Item, Field
 import six
+
+from scrapy.item import ABCMeta, Item, ItemMeta, Field
+from tests import mock
+
+
+PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
 
 
 class ItemTest(unittest.TestCase):
@@ -242,6 +248,58 @@ class ItemTest(unittest.TestCase):
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
         self.assertNotEqual(item['name'], copied_item['name'])
+
+    def test_deepcopy(self):
+        class TestItem(Item):
+            tags = Field()
+        item = TestItem({'tags': ['tag1']})
+        copied_item = item.deepcopy()
+        item['tags'].append('tag2')
+        assert item['tags'] != copied_item['tags']
+
+
+class ItemMetaTest(unittest.TestCase):
+
+    def test_new_method_propagates_classcell(self):
+        new_mock = mock.Mock(side_effect=ABCMeta.__new__)
+        base = ItemMeta.__bases__[0]
+
+        with mock.patch.object(base, '__new__', new_mock):
+
+            class MyItem(Item):
+                if not PY36_PLUS:
+                    # This attribute is an internal attribute in Python 3.6+
+                    # and must be propagated properly. See
+                    # https://docs.python.org/3.6/reference/datamodel.html#creating-the-class-object
+                    # In <3.6, we add a dummy attribute just to ensure the
+                    # __new__ method propagates it correctly.
+                    __classcell__ = object()
+
+                def f(self):
+                    # For rationale of this see:
+                    # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222
+                    return __class__  # noqa  https://github.com/scrapy/scrapy/issues/2836
+
+            MyItem()
+
+        (first_call, second_call) = new_mock.call_args_list[-2:]
+
+        mcs, class_name, bases, attrs = first_call[0]
+        assert '__classcell__' not in attrs
+        mcs, class_name, bases, attrs = second_call[0]
+        assert '__classcell__' in attrs
+
+
+class ItemMetaClassCellRegression(unittest.TestCase):
+
+    def test_item_meta_classcell_regression(self):
+        class MyItem(six.with_metaclass(ItemMeta, Item)):
+            def __init__(self, *args, **kwargs):
+                # This call to super() trigger the __classcell__ propagation
+                # requirement. When not done properly raises an error:
+                # TypeError: __class__ set to <class '__main__.MyItem'>
+                # defining 'MyItem' as <class '__main__.MyItem'>
+                super(MyItem, self).__init__(*args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -3,13 +3,13 @@ Files Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
-
+import functools
 import hashlib
 import os
 import os.path
-import rfc822
 import time
 import logging
+from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
@@ -22,10 +22,15 @@ except ImportError:
 from twisted.internet import defer, threads
 
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import to_bytes
+from scrapy.utils.request import referer_str
+from scrapy.utils.boto import is_botocore
+from scrapy.utils.datatypes import CaselessDict
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +40,6 @@ class FileException(Exception):
 
 
 class FSFilesStore(object):
-
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -53,7 +57,7 @@ class FSFilesStore(object):
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = os.path.getmtime(absolute_path)
-        except:  # FIXME: catching everything!
+        except os.error:
             return {}
 
         with open(absolute_path, 'rb') as f:
@@ -74,55 +78,174 @@ class FSFilesStore(object):
 
 
 class S3FilesStore(object):
-
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_ENDPOINT_URL = None
+    AWS_REGION_NAME = None
+    AWS_USE_SSL = None
+    AWS_VERIFY = None
 
-    POLICY = 'public-read'
+    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
+                        # FilesPipeline.from_settings.
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
 
     def __init__(self, uri):
+        self.is_botocore = is_botocore()
+        if self.is_botocore:
+            import botocore.session
+            session = botocore.session.get_session()
+            self.s3_client = session.create_client(
+                's3',
+                aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+                endpoint_url=self.AWS_ENDPOINT_URL,
+                region_name=self.AWS_REGION_NAME,
+                use_ssl=self.AWS_USE_SSL,
+                verify=self.AWS_VERIFY
+            )
+        else:
+            from boto.s3.connection import S3Connection
+            self.S3Connection = S3Connection
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
         def _onsuccess(boto_key):
-            checksum = boto_key.etag.strip('"')
-            last_modified = boto_key.last_modified
-            modified_tuple = rfc822.parsedate_tz(last_modified)
-            modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+            if self.is_botocore:
+                checksum = boto_key['ETag'].strip('"')
+                last_modified = boto_key['LastModified']
+                modified_stamp = time.mktime(last_modified.timetuple())
+            else:
+                checksum = boto_key.etag.strip('"')
+                last_modified = boto_key.last_modified
+                modified_tuple = parsedate_tz(last_modified)
+                modified_stamp = int(mktime_tz(modified_tuple))
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
-        from boto.s3.connection import S3Connection
         # disable ssl (is_secure=False) because of this python bug:
-        # http://bugs.python.org/issue5103
-        c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
+        # https://bugs.python.org/issue5103
+        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
-        b = self._get_boto_bucket()
         key_name = '%s%s' % (self.prefix, path)
-        return threads.deferToThread(b.get_key, key_name)
+        if self.is_botocore:
+            return threads.deferToThread(
+                self.s3_client.head_object,
+                Bucket=self.bucket,
+                Key=key_name)
+        else:
+            b = self._get_boto_bucket()
+            return threads.deferToThread(b.get_key, key_name)
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
-        b = self._get_boto_bucket()
         key_name = '%s%s' % (self.prefix, path)
-        k = b.new_key(key_name)
-        if meta:
-            for metakey, metavalue in six.iteritems(meta):
-                k.set_metadata(metakey, str(metavalue))
-        h = self.HEADERS.copy()
-        if headers:
-            h.update(headers)
         buf.seek(0)
-        return threads.deferToThread(k.set_contents_from_string, buf.getvalue(),
-                                     headers=h, policy=self.POLICY)
+        if self.is_botocore:
+            extra = self._headers_to_botocore_kwargs(self.HEADERS)
+            if headers:
+                extra.update(self._headers_to_botocore_kwargs(headers))
+            return threads.deferToThread(
+                self.s3_client.put_object,
+                Bucket=self.bucket,
+                Key=key_name,
+                Body=buf,
+                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
+                ACL=self.POLICY,
+                **extra)
+        else:
+            b = self._get_boto_bucket()
+            k = b.new_key(key_name)
+            if meta:
+                for metakey, metavalue in six.iteritems(meta):
+                    k.set_metadata(metakey, str(metavalue))
+            h = self.HEADERS.copy()
+            if headers:
+                h.update(headers)
+            return threads.deferToThread(
+                k.set_contents_from_string, buf.getvalue(),
+                headers=h, policy=self.POLICY)
+
+    def _headers_to_botocore_kwargs(self, headers):
+        """ Convert headers to botocore keyword agruments.
+        """
+        # This is required while we need to support both boto and botocore.
+        mapping = CaselessDict({
+            'Content-Type': 'ContentType',
+            'Cache-Control': 'CacheControl',
+            'Content-Disposition': 'ContentDisposition',
+            'Content-Encoding': 'ContentEncoding',
+            'Content-Language': 'ContentLanguage',
+            'Content-Length': 'ContentLength',
+            'Content-MD5': 'ContentMD5',
+            'Expires': 'Expires',
+            'X-Amz-Grant-Full-Control': 'GrantFullControl',
+            'X-Amz-Grant-Read': 'GrantRead',
+            'X-Amz-Grant-Read-ACP': 'GrantReadACP',
+            'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
+        })
+        extra = {}
+        for key, value in six.iteritems(headers):
+            try:
+                kwarg = mapping[key]
+            except KeyError:
+                raise TypeError(
+                    'Header "%s" is not supported by botocore' % key)
+            else:
+                extra[kwarg] = value
+        return extra
+
+
+class GCSFilesStore(object):
+
+    GCS_PROJECT_ID = None
+
+    CACHE_CONTROL = 'max-age=172800'
+
+    # The bucket's default object ACL will be applied to the object.
+    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    POLICY = None
+
+    def __init__(self, uri):
+        from google.cloud import storage
+        client = storage.Client(project=self.GCS_PROJECT_ID)
+        bucket, prefix = uri[5:].split('/', 1)
+        self.bucket = client.bucket(bucket)
+        self.prefix = prefix
+
+    def stat_file(self, path, info):
+        def _onsuccess(blob):
+            if blob:
+                checksum = blob.md5_hash
+                last_modified = time.mktime(blob.updated.timetuple())
+                return {'checksum': checksum, 'last_modified': last_modified}
+            else:
+                return {}
+
+        return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
+
+    def _get_content_type(self, headers):
+        if headers and 'Content-Type' in headers:
+            return headers['Content-Type']
+        else:
+            return 'application/octet-stream'
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        blob = self.bucket.blob(self.prefix + path)
+        blob.cache_control = self.CACHE_CONTROL
+        blob.metadata = {k: str(v) for k, v in six.iteritems(meta or {})}
+        return threads.deferToThread(
+            blob.upload_from_string,
+            data=buf.getvalue(),
+            content_type=self._get_content_type(headers),
+            predefined_acl=self.POLICY
+        )
 
 
 class FilesPipeline(MediaPipeline):
@@ -132,13 +255,13 @@ class FilesPipeline(MediaPipeline):
     doing stat of the files and determining if file is new, uptodate or
     expired.
 
-    `new` files are those that pipeline never processed and needs to be
+    ``new`` files are those that pipeline never processed and needs to be
         downloaded from supplier site the first time.
 
-    `uptodate` files are the ones that the pipeline processed and are still
+    ``uptodate`` files are the ones that the pipeline processed and are still
         valid files.
 
-    `expired` files are those that pipeline already processed but the last
+    ``expired`` files are those that pipeline already processed but the last
         modification was made long time ago, so a reprocessing is recommended to
         refresh it in case of change.
 
@@ -150,27 +273,56 @@ class FilesPipeline(MediaPipeline):
         '': FSFilesStore,
         'file': FSFilesStore,
         's3': S3FilesStore,
+        'gs': GCSFilesStore,
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
 
-    def __init__(self, store_uri, download_func=None):
+    def __init__(self, store_uri, download_func=None, settings=None):
         if not store_uri:
             raise NotConfigured
+
+        if isinstance(settings, dict) or settings is None:
+            settings = Settings(settings)
+
+        cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
-        super(FilesPipeline, self).__init__(download_func=download_func)
+        resolve = functools.partial(self._key_for_pipe,
+                                    base_class_name=cls_name,
+                                    settings=settings)
+        self.expires = settings.getint(
+            resolve('FILES_EXPIRES'), self.EXPIRES
+        )
+        if not hasattr(self, "FILES_URLS_FIELD"):
+            self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
+        if not hasattr(self, "FILES_RESULT_FIELD"):
+            self.FILES_RESULT_FIELD = self.DEFAULT_FILES_RESULT_FIELD
+        self.files_urls_field = settings.get(
+            resolve('FILES_URLS_FIELD'), self.FILES_URLS_FIELD
+        )
+        self.files_result_field = settings.get(
+            resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
+        )
+
+        super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
 
     @classmethod
     def from_settings(cls, settings):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
+        s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
+        s3store.AWS_USE_SSL = settings['AWS_USE_SSL']
+        s3store.AWS_VERIFY = settings['AWS_VERIFY']
+        s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
-        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
-        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
-        cls.EXPIRES = settings.getint('FILES_EXPIRES', 90)
+        gcs_store = cls.STORE_SCHEMES['gs']
+        gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
+        gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
+
         store_uri = settings['FILES_STORE']
-        return cls(store_uri)
+        return cls(store_uri, settings=settings)
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
@@ -191,10 +343,10 @@ class FilesPipeline(MediaPipeline):
 
             age_seconds = time.time() - last_modified
             age_days = age_seconds / 60 / 60 / 24
-            if age_days > self.EXPIRES:
+            if age_days > self.expires:
                 return  # returning None force download
 
-            referer = request.headers.get('Referer')
+            referer = referer_str(request)
             logger.debug(
                 'File (uptodate): Downloaded %(medianame)s from %(request)s '
                 'referred in <%(referer)s>',
@@ -220,7 +372,7 @@ class FilesPipeline(MediaPipeline):
 
     def media_failed(self, failure, request, info):
         if not isinstance(failure.value, IgnoreRequest):
-            referer = request.headers.get('Referer')
+            referer = referer_str(request)
             logger.warning(
                 'File (unknown-error): Error downloading %(medianame)s from '
                 '%(request)s referred in <%(referer)s>: %(exception)s',
@@ -232,7 +384,7 @@ class FilesPipeline(MediaPipeline):
         raise FileException
 
     def media_downloaded(self, response, request, info):
-        referer = request.headers.get('Referer')
+        referer = referer_str(request)
 
         if response.status != 200:
             logger.warning(
@@ -290,18 +442,19 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
+        return [Request(x) for x in item.get(self.files_urls_field, [])]
 
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
         buf = BytesIO(response.body)
-        self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
+        buf.seek(0)
+        self.store.persist_file(path, buf, info)
         return checksum
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.FILES_RESULT_FIELD in item.fields:
-            item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
+        if isinstance(item, dict) or self.files_result_field in item.fields:
+            item[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):
@@ -326,11 +479,12 @@ class FilesPipeline(MediaPipeline):
             return self.file_key(url)
         ## end of deprecation warning block
 
-        media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated
     def file_key(self, url):
         return self.file_path(url)
+
     file_key._base = True

@@ -2,7 +2,7 @@
 Scrapy - a web crawling and web scraping framework written for Python
 """
 
-__all__ = ['__version__', 'version_info', 'optional_features', 'twisted_version',
+__all__ = ['__version__', 'version_info', 'twisted_version',
            'Spider', 'Request', 'FormRequest', 'Selector', 'Item', 'Field']
 
 # Scrapy version
@@ -27,22 +27,8 @@ del warnings
 from . import _monkeypatches
 del _monkeypatches
 
-# WARNING: optional_features set is deprecated and will be removed soon. Do not use.
-optional_features = set()
-# TODO: backwards compatibility, remove for Scrapy 0.20
-optional_features.add('ssl')
-try:
-    import boto
-    del boto
-except ImportError:
-    pass
-else:
-    optional_features.add('boto')
-
 from twisted import version as _txv
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
-if twisted_version >= (11, 1, 0):
-    optional_features.add('http11')
 
 # Declare top-level shortcuts
 from scrapy.spiders import Spider

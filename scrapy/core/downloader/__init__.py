@@ -5,6 +5,7 @@ from time import time
 from datetime import datetime
 from collections import deque
 
+import six
 from twisted.internet import reactor, defer, task
 
 from scrapy.utils.defer import mustbe_deferred
@@ -74,6 +75,8 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
 class Downloader(object):
 
+    DOWNLOAD_SLOT = 'download_slot'
+
     def __init__(self, crawler):
         self.settings = crawler.settings
         self.signals = crawler.signals
@@ -110,8 +113,8 @@ class Downloader(object):
         return key, self.slots[key]
 
     def _get_slot_key(self, request, spider):
-        if 'download_slot' in request.meta:
-            return request.meta['download_slot']
+        if self.DOWNLOAD_SLOT in request.meta:
+            return request.meta[self.DOWNLOAD_SLOT]
 
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
@@ -121,13 +124,16 @@ class Downloader(object):
 
     def _enqueue_request(self, request, spider):
         key, slot = self._get_slot(request, spider)
-        request.meta['download_slot'] = key
+        request.meta[self.DOWNLOAD_SLOT] = key
 
         def _deactivate(response):
             slot.active.remove(request)
             return response
 
         slot.active.add(request)
+        self.signals.send_catch_log(signal=signals.request_reached_downloader,
+                                    request=request,
+                                    spider=spider)
         deferred = defer.Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
@@ -188,11 +194,11 @@ class Downloader(object):
 
     def close(self):
         self._slot_gc_loop.stop()
-        for slot in self.slots.itervalues():
+        for slot in six.itervalues(self.slots):
             slot.close()
 
     def _slot_gc(self, age=60):
         mintime = time() - age
-        for key, slot in self.slots.items():
+        for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
                 self.slots.pop(key).close()

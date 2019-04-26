@@ -4,6 +4,7 @@ from six.moves.urllib.parse import urljoin
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+
 class SiteTest(object):
 
     def setUp(self):
@@ -18,15 +19,24 @@ class SiteTest(object):
     def url(self, path):
         return urljoin(self.baseurl, path)
 
+
+class NoMetaRefreshRedirect(util.Redirect):
+    def render(self, request):
+        content = util.Redirect.render(self, request)
+        return content.replace(b'http-equiv=\"refresh\"',
+            b'http-no-equiv=\"do-not-refresh-me\"')
+
+
 def test_site():
     r = resource.Resource()
-    r.putChild("text", static.Data("Works", "text/plain"))
-    r.putChild("html", static.Data("<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
-    r.putChild("enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
-    r.putChild("redirect", util.Redirect("/redirected"))
-    r.putChild("redirected", static.Data("Redirected here", "text/plain"))
+    r.putChild(b"text", static.Data(b"Works", "text/plain"))
+    r.putChild(b"html", static.Data(b"<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
+    r.putChild(b"enc-gb18030", static.Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
+    r.putChild(b"redirect", util.Redirect(b"/redirected"))
+    r.putChild(b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected"))
+    r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
     return server.Site(r)
-    
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")

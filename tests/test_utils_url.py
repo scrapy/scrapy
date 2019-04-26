@@ -1,7 +1,13 @@
+# -*- coding: utf-8 -*-
 import unittest
 
+import six
+from six.moves.urllib.parse import urlparse
+
 from scrapy.spiders import Spider
-from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
+from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
+                              add_http_if_no_scheme, guess_scheme,
+                              parse_url, strip_url)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -70,104 +76,336 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
 
-    def test_canonicalize_url(self):
-        # simplest case
-        self.assertEqual(canonicalize_url("http://www.example.com/"),
-                                          "http://www.example.com/")
 
-        # always return a str
-        assert isinstance(canonicalize_url(u"http://www.example.com"), str)
+class AddHttpIfNoScheme(unittest.TestCase):
 
-        # append missing path
-        self.assertEqual(canonicalize_url("http://www.example.com"),
-                                          "http://www.example.com/")
-        # typical usage
-        self.assertEqual(canonicalize_url("http://www.example.com/do?a=1&b=2&c=3"),
-                                          "http://www.example.com/do?a=1&b=2&c=3")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?c=1&b=2&a=3"),
-                                          "http://www.example.com/do?a=3&b=2&c=1")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?&a=1"),
-                                          "http://www.example.com/do?a=1")
+    def test_add_scheme(self):
+        self.assertEqual(add_http_if_no_scheme('www.example.com'),
+                                               'http://www.example.com')
 
-        # sorting by argument values
-        self.assertEqual(canonicalize_url("http://www.example.com/do?c=3&b=5&b=2&a=50"),
-                                          "http://www.example.com/do?a=50&b=2&b=5&c=3")
+    def test_without_subdomain(self):
+        self.assertEqual(add_http_if_no_scheme('example.com'),
+                                               'http://example.com')
 
-        # using keep_blank_values
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2", keep_blank_values=False),
-                                          "http://www.example.com/do?a=2")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2"),
-                                          "http://www.example.com/do?a=2&b=")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2", keep_blank_values=False),
-                                          "http://www.example.com/do?a=2")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2"),
-                                          "http://www.example.com/do?a=2&b=&c=")
+    def test_path(self):
+        self.assertEqual(add_http_if_no_scheme('www.example.com/some/page.html'),
+                                               'http://www.example.com/some/page.html')
 
-        self.assertEqual(canonicalize_url(u'http://www.example.com/do?1750,4'),
-                                           'http://www.example.com/do?1750%2C4=')
+    def test_port(self):
+        self.assertEqual(add_http_if_no_scheme('www.example.com:80'),
+                                               'http://www.example.com:80')
 
-        # spaces
-        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a space&a=1"),
-                                          "http://www.example.com/do?a=1&q=a+space")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a+space&a=1"),
-                                          "http://www.example.com/do?a=1&q=a+space")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
-                                          "http://www.example.com/do?a=1&q=a+space")
+    def test_fragment(self):
+        self.assertEqual(add_http_if_no_scheme('www.example.com/some/page#frag'),
+                                               'http://www.example.com/some/page#frag')
 
-        # normalize percent-encoding case (in paths)
-        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
-                                          "http://www.example.com/a%A3do"),
-        # normalize percent-encoding case (in query arguments)
-        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
-                                          "http://www.example.com/do?k=b%A3")
+    def test_query(self):
+        self.assertEqual(add_http_if_no_scheme('www.example.com/do?a=1&b=2&c=3'),
+                                               'http://www.example.com/do?a=1&b=2&c=3')
 
-        # non-ASCII percent-encoding in paths
-        self.assertEqual(canonicalize_url("http://www.example.com/a do?a=1"),
-                                          "http://www.example.com/a%20do?a=1"),
-        self.assertEqual(canonicalize_url("http://www.example.com/a %20do?a=1"),
-                                          "http://www.example.com/a%20%20do?a=1"),
-        self.assertEqual(canonicalize_url("http://www.example.com/a do\xc2\xa3.html?a=1"),
-                                          "http://www.example.com/a%20do%C2%A3.html?a=1")
-        # non-ASCII percent-encoding in query arguments
-        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3"),
-                                          u"http://www.example.com/do?a=5&price=%C2%A3500&z=3")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?price=\xc2\xa3500&a=5&z=3"),
-                                          "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?price(\xc2\xa3)=500&a=1"),
-                                          "http://www.example.com/do?a=1&price%28%C2%A3%29=500")
+    def test_username_password(self):
+        self.assertEqual(add_http_if_no_scheme('username:password@www.example.com'),
+                                               'http://username:password@www.example.com')
 
-        # urls containing auth and ports
-        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com:81/do?now=1"),
-                                          u"http://user:pass@www.example.com:81/do?now=1")
+    def test_complete_url(self):
+        self.assertEqual(add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
 
-        # remove fragments
-        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag"),
-                                          u"http://user:pass@www.example.com/do?a=1")
-        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", keep_fragments=True),
-                                          u"http://user:pass@www.example.com/do?a=1#frag")
+    def test_preserve_http(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com'),
+                                               'http://www.example.com')
 
-        # dont convert safe characters to percent encoding representation
-        self.assertEqual(canonicalize_url(
-            "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html"),
-            "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html")
+    def test_preserve_http_without_subdomain(self):
+        self.assertEqual(add_http_if_no_scheme('http://example.com'),
+                                               'http://example.com')
 
-        # urllib.quote uses a mapping cache of encoded characters. when parsing
-        # an already percent-encoded url, it will fail if that url was not
-        # percent-encoded as utf-8, that's why canonicalize_url must always
-        # convert the urls to string. the following test asserts that
-        # functionality.
-        self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
-                                           'http://www.example.com/caf%E9-con-leche.htm')
+    def test_preserve_http_path(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page.html'),
+                                               'http://www.example.com/some/page.html')
 
-        # domains are case insensitive
-        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com/"),
-                                          "http://www.example.com/")
+    def test_preserve_http_port(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com:80'),
+                                               'http://www.example.com:80')
 
-        # quoted slash and question sign
-        self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC+rocks%3f/?yeah=1"),
-                         "http://foo.com/AC%2FDC+rocks%3F/?yeah=1")
-        self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC/"),
-                         "http://foo.com/AC%2FDC/")
+    def test_preserve_http_fragment(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page#frag'),
+                                               'http://www.example.com/some/page#frag')
+
+    def test_preserve_http_query(self):
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com/do?a=1&b=2&c=3'),
+                                               'http://www.example.com/do?a=1&b=2&c=3')
+
+    def test_preserve_http_username_password(self):
+        self.assertEqual(add_http_if_no_scheme('http://username:password@www.example.com'),
+                                               'http://username:password@www.example.com')
+
+    def test_preserve_http_complete_url(self):
+        self.assertEqual(add_http_if_no_scheme('http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+
+    def test_protocol_relative(self):
+        self.assertEqual(add_http_if_no_scheme('//www.example.com'),
+                                               'http://www.example.com')
+
+    def test_protocol_relative_without_subdomain(self):
+        self.assertEqual(add_http_if_no_scheme('//example.com'),
+                                               'http://example.com')
+
+    def test_protocol_relative_path(self):
+        self.assertEqual(add_http_if_no_scheme('//www.example.com/some/page.html'),
+                                               'http://www.example.com/some/page.html')
+
+    def test_protocol_relative_port(self):
+        self.assertEqual(add_http_if_no_scheme('//www.example.com:80'),
+                                               'http://www.example.com:80')
+
+    def test_protocol_relative_fragment(self):
+        self.assertEqual(add_http_if_no_scheme('//www.example.com/some/page#frag'),
+                                               'http://www.example.com/some/page#frag')
+
+    def test_protocol_relative_query(self):
+        self.assertEqual(add_http_if_no_scheme('//www.example.com/do?a=1&b=2&c=3'),
+                                               'http://www.example.com/do?a=1&b=2&c=3')
+
+    def test_protocol_relative_username_password(self):
+        self.assertEqual(add_http_if_no_scheme('//username:password@www.example.com'),
+                                               'http://username:password@www.example.com')
+
+    def test_protocol_relative_complete_url(self):
+        self.assertEqual(add_http_if_no_scheme('//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+
+    def test_preserve_https(self):
+        self.assertEqual(add_http_if_no_scheme('https://www.example.com'),
+                                               'https://www.example.com')
+
+    def test_preserve_ftp(self):
+        self.assertEqual(add_http_if_no_scheme('ftp://www.example.com'),
+                                               'ftp://www.example.com')
+
+
+class GuessSchemeTest(unittest.TestCase):
+    pass
+
+def create_guess_scheme_t(args):
+    def do_expected(self):
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1]), \
+            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
+                args[0], url, args[1])
+    return do_expected
+
+def create_skipped_scheme_t(args):
+    def do_expected(self):
+        raise unittest.SkipTest(args[2])
+        url = guess_scheme(args[0])
+        assert url.startswith(args[1])
+    return do_expected
+
+for k, args in enumerate ([
+            ('/index',                              'file://'),
+            ('/index.html',                         'file://'),
+            ('./index.html',                        'file://'),
+            ('../index.html',                       'file://'),
+            ('../../index.html',                    'file://'),
+            ('./data/index.html',                   'file://'),
+            ('.hidden/data/index.html',             'file://'),
+            ('/home/user/www/index.html',           'file://'),
+            ('//home/user/www/index.html',          'file://'),
+            ('file:///home/user/www/index.html',    'file://'),
+
+            ('index.html',                          'http://'),
+            ('example.com',                         'http://'),
+            ('www.example.com',                     'http://'),
+            ('www.example.com/index.html',          'http://'),
+            ('http://example.com',                  'http://'),
+            ('http://example.com/index.html',       'http://'),
+            ('localhost',                           'http://'),
+            ('localhost/index.html',                'http://'),
+
+            # some corner cases (default to http://)
+            ('/',                                   'http://'),
+            ('.../test',                            'http://'),
+
+        ], start=1):
+    t_method = create_guess_scheme_t(args)
+    t_method.__name__ = 'test_uri_%03d' % k
+    setattr (GuessSchemeTest, t_method.__name__, t_method)
+
+# TODO: the following tests do not pass with current implementation
+for k, args in enumerate ([
+            ('C:\absolute\path\to\a\file.html',     'file://',
+             'Windows filepath are not supported for scrapy shell'),
+        ], start=1):
+    t_method = create_skipped_scheme_t(args)
+    t_method.__name__ = 'test_uri_skipped_%03d' % k
+    setattr (GuessSchemeTest, t_method.__name__, t_method)
+
+
+class StripUrl(unittest.TestCase):
+
+    def test_noop(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html'),
+            'http://www.example.com/index.html')
+
+    def test_noop_query_string(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html?somekey=somevalue'),
+            'http://www.example.com/index.html?somekey=somevalue')
+
+    def test_fragments(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html?somekey=somevalue#section', strip_fragment=False),
+            'http://www.example.com/index.html?somekey=somevalue#section')
+
+    def test_path(self):
+        for input_url, origin, output_url in [
+            ('http://www.example.com/',
+             False,
+             'http://www.example.com/'),
+
+            ('http://www.example.com',
+             False,
+             'http://www.example.com'),
+
+            ('http://www.example.com',
+             True,
+             'http://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(input_url, origin_only=origin), output_url)
+
+    def test_credentials(self):
+        for i, o in [
+            ('http://username@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            ('https://username:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
+
+            ('ftp://username:password@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+
+    def test_credentials_encoded_delims(self):
+        for i, o in [
+            # user: "username@"
+            # password: none
+            ('http://username%40@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "username:pass"
+            # password: ""
+            ('https://username%3Apass:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "me"
+            # password: "user@domain.com"
+            ('ftp://me:user%40domain.com@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+
+    def test_default_ports_creds_off(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            ('http://username:password@www.example.com:8080/index.html#section',
+             'http://www.example.com:8080/index.html'),
+
+            ('http://username:password@www.example.com:443/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://www.example.com:443/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i), o)
+
+    def test_default_ports(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html',
+             'http://username:password@www.example.com/index.html'),
+
+            ('http://username:password@www.example.com:8080/index.html',
+             'http://username:password@www.example.com:8080/index.html'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=True, strip_credentials=False), o)
+
+    def test_default_ports_keep(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com:21/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=False, strip_credentials=False), o)
+
+    def test_origin_only(self):
+        for i, o in [
+            ('http://username:password@www.example.com/index.html',
+             'http://www.example.com/'),
+
+            ('http://username:password@www.example.com:80/foo/bar?query=value#somefrag',
+             'http://www.example.com/'),
+
+            ('http://username:password@www.example.com:8008/foo/bar?query=value#somefrag',
+             'http://www.example.com:8008/'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(i, origin_only=True), o)
 
 
 if __name__ == "__main__":

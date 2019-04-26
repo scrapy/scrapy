@@ -6,12 +6,15 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 import re
-from six.moves.urllib.parse import urlparse
 
-from scrapy.selector.csstranslator import ScrapyHTMLTranslator
-from scrapy.utils.url import url_is_from_any_domain
-from scrapy.utils.url import canonicalize_url, url_is_from_any_domain, url_has_any_extension
+from six.moves.urllib.parse import urlparse
+from parsel.csstranslator import HTMLTranslator
+from w3lib.url import canonicalize_url
+
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.url import (
+    url_is_from_any_domain, url_has_any_extension,
+)
 
 
 # common file extensions that are not followed if they occur in links
@@ -25,10 +28,11 @@ IGNORED_EXTENSIONS = [
 
     # video
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a',
+    'm4a', 'm4v', 'flv',
 
     # office suites
-    'xls', 'xlsx', 'ppt', 'pptx', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
+    'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
+    'odp',
 
     # other
     'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar',
@@ -36,21 +40,24 @@ IGNORED_EXTENSIONS = [
 
 
 _re_type = type(re.compile("", 0))
-_matches = lambda url, regexs: any((r.search(url) for r in regexs))
-_is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
+_matches = lambda url, regexs: any(r.search(url) for r in regexs)
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', \
+                                                       'file', 'ftp'}
 
 
 class FilteringLinkExtractor(object):
 
-    _csstranslator = ScrapyHTMLTranslator()
+    _csstranslator = HTMLTranslator()
 
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
-                 restrict_xpaths, canonicalize, deny_extensions, restrict_css):
+                 restrict_xpaths, canonicalize, deny_extensions, restrict_css, restrict_text):
 
         self.link_extractor = link_extractor
 
-        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
-        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
+        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x)
+                          for x in arg_to_iter(allow)]
+        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x)
+                         for x in arg_to_iter(deny)]
 
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
@@ -62,7 +69,9 @@ class FilteringLinkExtractor(object):
         self.canonicalize = canonicalize
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
-        self.deny_extensions = set(['.' + e for e in arg_to_iter(deny_extensions)])
+        self.deny_extensions = {'.' + e for e in arg_to_iter(deny_extensions)}
+        self.restrict_text = [x if isinstance(x, _re_type) else re.compile(x)
+                              for x in arg_to_iter(restrict_text)]
 
     def _link_allowed(self, link):
         if not _is_valid_url(link.url):
@@ -78,6 +87,8 @@ class FilteringLinkExtractor(object):
             return False
         if self.deny_extensions and url_has_any_extension(parsed_url, self.deny_extensions):
             return False
+        if self.restrict_text and not _matches(link.text, self.restrict_text):
+            return False
         return True
 
     def matches(self, url):
@@ -87,20 +98,21 @@ class FilteringLinkExtractor(object):
         if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
             return False
 
-        allowed = [regex.search(url) for regex in self.allow_res] if self.allow_res else [True]
-        denied = [regex.search(url) for regex in self.deny_res] if self.deny_res else []
+        allowed = (regex.search(url) for regex in self.allow_res) if self.allow_res else [True]
+        denied = (regex.search(url) for regex in self.deny_res) if self.deny_res else []
         return any(allowed) and not any(denied)
 
     def _process_links(self, links):
         links = [x for x in links if self._link_allowed(x)]
         if self.canonicalize:
             for link in links:
-                link.url = canonicalize_url(urlparse(link.url))
+                link.url = canonicalize_url(link.url)
         links = self.link_extractor._process_links(links)
         return links
 
     def _extract_links(self, *args, **kwargs):
         return self.link_extractor._extract_links(*args, **kwargs)
+
 
 # Top-level imports
 from .lxmlhtml import LxmlLinkExtractor as LinkExtractor

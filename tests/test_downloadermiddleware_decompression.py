@@ -39,7 +39,7 @@ class DecompressionMiddlewareTest(TestCase):
         assert_samelines(self, new.body, rsp.body)
 
     def test_empty_response(self):
-        rsp = Response(url='http://test.com', body='')
+        rsp = Response(url='http://test.com', body=b'')
         new = self.mw.process_response(None, rsp, self.spider)
         assert new is rsp
         assert not rsp.body
