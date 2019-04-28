@@ -120,3 +120,22 @@ get the failures pretty printed::
             for header in self.args:
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
+
+
+Detecting check run
+===================
+It is not encouraged to created different behaviour when running test.
+However, sometimes it is useful to know when a spider is started by scrapy check.
+It can for example be needed to enforce less settings to be set, or to disable some
+uploading of result data. When scrapy check is runned the ``SCRAPY_CHECK`` environment
+variable is set. This can be retrieved via ``os.environ``::
+
+    import os
+    import scrapy
+
+    class ExampleSpider(scrapy.Spider):
+        name = 'example'
+
+        def __init__(self):
+            if os.environ.get('SCRAPY_CHECK'):
+                # Do some scraper adjustments when check is running
