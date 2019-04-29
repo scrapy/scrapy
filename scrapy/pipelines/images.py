@@ -126,16 +126,42 @@ class ImagesPipeline(FilesPipeline):
         if width < self.min_width or height < self.min_height:
             raise ImageException("Image too small (%dx%d < %dx%d)" %
                                  (width, height, self.min_width, self.min_height))
+        
+        def _is_convert_image_overriden():
+            import inspect
+            if six.PY2:
+                convert_image_signature = inspect.getargspec(self.convert_image)
+            elif six.PY3:
+                convert_image_signature = inspect.getfullargspec(self.convert_image)
+            if 'response_body' not in convert_image_signature.args:
+                return True
+            return False
 
-        image, buf = self.convert_image(orig_image, BytesIO(response.body))
+        def _warn():
+            from scrapy.exceptions import ScrapyDeprecationWarning
+            import warnings
+            warnings.warn('ImagesPipeline.convert_image() method overriden in a incompatible way, '
+                          'overriden method does not accept response_body attribute.',
+                          category=ScrapyDeprecationWarning, stacklevel=1)
+
+        convert_image_overriden = _is_convert_image_overriden()
+        if convert_image_overriden:
+            _warn()
+            image, buf = self.convert_image(orig_image)
+        else:
+            image, buf = self.convert_image(orig_image, response_body=BytesIO(response.body))
         yield path, image, buf
 
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-            thumb_image, thumb_buf = self.convert_image(image, buf, size)
+            if convert_image_overriden:
+                _warn()
+                thumb_image, thumb_buf = self.convert_image(image, size)
+            else:
+                thumb_image, thumb_buf = self.convert_image(image, size, buf)
             yield thumb_path, thumb_image, thumb_buf
 
-    def convert_image(self, image, response_body, size=None):
+    def convert_image(self, image, size=None, response_body=None):
         if image.format == 'PNG' and image.mode == 'RGBA':
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
@@ -151,9 +177,16 @@ class ImagesPipeline(FilesPipeline):
         if size:
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
-        elif image.format == 'JPEG':
-            return image, response_body
-
+        else: 
+            if not response_body:
+                from scrapy.exceptions import ScrapyDeprecationWarning
+                import warnings
+                warnings.warn('ImagesPipeline.convert_image() method called in a incompatible way, '
+                              'method called without response_body attribute.',
+                              category=ScrapyDeprecationWarning, stacklevel=1)
+            elif image.format == 'JPEG':
+                return image, response_body
+                
         buf = BytesIO()
         image.save(buf, 'JPEG')
         return image, buf
