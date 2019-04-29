@@ -357,7 +357,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-policy-dummy`
 
     You can change the HTTP cache policy with the :setting:`HTTPCACHE_POLICY`
-    setting. Or you can also :ref:`implement your own policy. <httpcache-policy-custom>`
+    setting. Or you can also :ref:`implement your own policy <httpcache-policy-custom>`.
 
     .. reqmeta:: dont_cache
 
@@ -434,7 +434,7 @@ In order to use this policy, set:
 Writing your own policy
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-You can implement a cache policy by creating a Python class that
+You can implement a cache policy by creating a class that
 defines the methods described below.
 
 .. module:: scrapy.extensions.httpcache
@@ -443,43 +443,19 @@ defines the methods described below.
 
     .. method:: should_cache_request(request)
 
-      Returns whether the request is cacheable or not
-
-      :param request: the request to check
-      :type request: :class:`~scrapy.http.Request` object
+      Return True if the :class:`~scrapy.http.Request` is cacheable otherwise False
 
     .. method:: should_cache_response(response, request)
 
-      Returns whether to cache response or not
-
-      :param cachedresponse: the response to check
-      :type cachedresponse: :class:`~scrapy.http.Response` object
-
-      :param request: the corresponding request
-      :type request: :class:`~scrapy.http.Request` object
+      Return True if :class:`~scrapy.http.Response` should be cached otherwise False
 
     .. method:: is_cached_response_fresh(cachedresponse, request)
 
-      Returns whether cached response has expired or not
-
-      :param cachedresponse: the cached response to check for freshness
-      :type cachedresponse: :class:`~scrapy.http.Response` object
-
-      :param request: the request for which the cached response is intended
-      :type request: :class:`~scrapy.http.Request` object
+      Return True if cached :class:`~scrapy.http.Response` has expired otherwise False
 
     .. method:: is_cached_response_valid(cachedresponse, response, request)
 
-      Returns whether cached response is valid or not
-
-      :param cachedresponse: the cached response to validate
-      :type cachedresponse: :class:`~scrapy.http.Response` object
-
-      :param response: the response from the server to use for validation
-      :type response: :class:`~scrapy.http.Response` object
-
-      :param request: the request for which the cached response is intended
-      :type request: :class:`~scrapy.http.Request` object
+      Return True if cached :class:`~scrapy.http.Response` is valid otherwise False
 
 
 In order to use this policy, set:
