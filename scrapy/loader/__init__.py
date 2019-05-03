@@ -89,7 +89,7 @@ class ItemLoader(object):
     def _add_value(self, field_name, value):
         value = arg_to_iter(value)
         processed_value = self._process_input_value(field_name, value)
-        if processed_value:
+        if processed_value or processed_value == 0:
             self._values[field_name] += arg_to_iter(processed_value)
 
     def _replace_value(self, field_name, value):

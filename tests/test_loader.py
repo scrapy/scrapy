@@ -262,6 +262,13 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'mARTA'])
 
+        class ChildItemLoader(TestItemLoader):
+            name_in = Compose(TakeFirst(), int)
+
+        il = ChildItemLoader()
+        il.add_value('name', u'0')
+        self.assertEqual(il.get_output_value('name'), [0])
+
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose(DefaultedItemLoader.default_input_processor, six.text_type.swapcase)
