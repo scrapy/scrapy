@@ -12,6 +12,7 @@ from w3lib.html import replace_entities
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
+
 _ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
 
 
