@@ -104,7 +104,7 @@ Well-written patches should:
 Submitting patches
 ==================
 
-The best way to submit a patch is to issue a `pull request`_ on GitHub,
+The best way to submit a patch is to issue a `pull request <https://help.github.com/en/articles/creating-a-pull-request>`_ on GitHub,
 optionally creating a new issue first.
 
 Remember to explain what was fixed or the new functionality (what it is, why
