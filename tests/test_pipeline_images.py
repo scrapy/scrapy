@@ -76,36 +76,47 @@ class ImagesPipelineTestCase(unittest.TestCase):
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
     def test_convert_image(self):
-        SIZE = (100, 100)
-        # straigh forward case: RGB and JPEG
+        # tests for old API
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            
+            SIZE = (100, 100)
+            # straigh forward case: RGB and JPEG
+            COLOUR = (0, 127, 255)
+            im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+            converted, converted_buf = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
+
+            # check that thumbnail keep image ratio
+            thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
+            self.assertEqual(thumbnail.mode, 'RGB')
+            self.assertEqual(thumbnail.size, (10, 10))
+
+            # transparency case: RGBA and PNG
+            COLOUR = (0, 127, 255, 50)
+            im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+            converted, _ = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+
+            # transparency case with palette: P and PNG
+            COLOUR = (0, 127, 255, 50)
+            im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+            im = im.convert('P')
+            converted, _ = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+
+            # ensure that we recieved deprecation warnings
+            self.assertTrue(len(w) >= 4)
+
+        # tests for new API
+        # check that we don't convert JPEGs again
         COLOUR = (0, 127, 255)
         im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
-        self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
-        # check that we don't convert JPEGs again
         self.assertEqual(converted_buf, buf)
-
-        # check that thumbnail keep image ratio
-        thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25), response_body=converted_buf)
-        self.assertEqual(thumbnail.mode, 'RGB')
-        self.assertEqual(thumbnail.size, (10, 10))
-
-        # transparency case: RGBA and PNG
-        COLOUR = (0, 127, 255, 50)
-        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-        converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
-        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-        # transparency case with palette: P and PNG
-        COLOUR = (0, 127, 255, 50)
-        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-        im = im.convert('P')
-        converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
-        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
 
 class DeprecatedImagesPipeline(ImagesPipeline):
     def file_key(self, url):

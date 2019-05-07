@@ -141,7 +141,7 @@ class ImagesPipeline(FilesPipeline):
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
             warnings.warn('ImagesPipeline.convert_image() method overriden in a incompatible way, '
-                          'overriden method does not accept response_body attribute.',
+                          'overriden method does not accept response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
         convert_image_overriden = _is_convert_image_overriden()
@@ -162,6 +162,13 @@ class ImagesPipeline(FilesPipeline):
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(self, image, size=None, response_body=None):
+        if not response_body:
+            from scrapy.exceptions import ScrapyDeprecationWarning
+            import warnings
+            warnings.warn('ImagesPipeline.convert_image() method called in a incompatible way, '
+                          'method called without response_body argument.',
+                          category=ScrapyDeprecationWarning, stacklevel=1)
+
         if image.format == 'PNG' and image.mode == 'RGBA':
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
@@ -177,15 +184,8 @@ class ImagesPipeline(FilesPipeline):
         if size:
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
-        else: 
-            if not response_body:
-                from scrapy.exceptions import ScrapyDeprecationWarning
-                import warnings
-                warnings.warn('ImagesPipeline.convert_image() method called in a incompatible way, '
-                              'method called without response_body attribute.',
-                              category=ScrapyDeprecationWarning, stacklevel=1)
-            elif image.format == 'JPEG':
-                return image, response_body
+        elif response_body and image.format == 'JPEG':
+            return image, response_body
                 
         buf = BytesIO()
         image.save(buf, 'JPEG')
