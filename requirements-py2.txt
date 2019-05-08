@@ -3,7 +3,7 @@ lxml
 pyOpenSSL
 cssselect>=0.9
 queuelib
-pathlib
+pathlib2
 w3lib>=1.17.0
 six>=1.5.2
 PyDispatcher>=2.0.5

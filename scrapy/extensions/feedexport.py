@@ -13,7 +13,6 @@ from datetime import datetime
 import six
 from six.moves.urllib.parse import urlparse
 from ftplib import FTP
-from pathlib import Path
 
 from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
@@ -80,10 +79,7 @@ class StdoutFeedStorage(object):
 class FileFeedStorage(object):
 
     def __init__(self, uri):
-        if isinstance(uri, Path):
-            self.path = uri.resolve()
-        else:
-            self.path = file_uri_to_path(uri)
+        self.path = file_uri_to_path(uri)
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
@@ -195,6 +191,8 @@ class FeedExporter(object):
         self.urifmt = settings['FEED_URI']
         if not self.urifmt:
             raise NotConfigured
+        else:
+            self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')
