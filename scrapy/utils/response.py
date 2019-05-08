@@ -31,12 +31,12 @@ def get_base_url(response):
 
 
 _metaref_cache = weakref.WeakKeyDictionary()
-def get_meta_refresh(response):
+def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(text, response.url,
-            response.encoding, ignore_tags=('script', 'noscript'))
+            response.encoding, ignore_tags=ignore_tags)
     return _metaref_cache[response]
 
 
