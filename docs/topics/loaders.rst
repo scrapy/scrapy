@@ -391,6 +391,8 @@ ItemLoader objects
             loader.add_xpath('name', '//p[@class="product-name"]')
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
+            # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
+            loader.add_xpath('name', ['//p[@class="product-name1"]', '//p[@class="product-name2"]'])
 
     .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
 
@@ -434,6 +436,8 @@ ItemLoader objects
             loader.add_css('name', 'p.product-name')
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_css('price', 'p#price', re='the price is (.*)')
+            # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
+            loader.add_css('name', ['p.product-name1', 'p.product-name2'])
 
     .. method:: replace_css(field_name, css, \*processors, \**kwargs)
 

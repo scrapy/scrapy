@@ -612,6 +612,50 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
+    def test_fallback_css_selector(self):
+        sel = Selector(text=u"""
+        <html>
+            <body>
+                <span class="selector1">bruce</span>
+                <span class="selector2">wayne</span>
+                <span class="selector3">batman</span>
+            </body>
+        </html>
+        """)
+        l = TestItemLoader(selector=sel)
+        
+        l.add_css('name', [
+            '.selector1::text',
+            '.selector2::text',
+            '.selector3::text',
+        ])
+        self.assertEqual(
+            l.get_output_value('name'),
+            [u'Bruce', u'Wayne', u'Batman']
+        )
+
+    def test_fallback_xpath_selector(self):
+        sel = Selector(text=u"""
+        <html>
+            <body>
+                <span class="selector1">bruce</span>
+                <span class="selector2">batman</span>
+                <span class="selector3">wayne</span>
+            </body>
+        </html>
+        """)
+        l = TestItemLoader(selector=sel)
+        
+        l.add_xpath('name', [
+            u'//span[contains(@class, "selector1")]/text()',
+            u'//span[contains(@class, "selector2")]/text()',
+            u'//span[contains(@class, "selector3")]/text()',
+        ])
+        self.assertEqual(
+            l.get_output_value('name'),
+            [u'Bruce', u'Batman', u'Wayne']
+        )
+
 
 class SubselectorLoaderTest(unittest.TestCase):
     response = HtmlResponse(url="", encoding='utf-8', body=b"""
