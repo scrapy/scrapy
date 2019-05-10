@@ -385,6 +385,10 @@ ItemLoader objects
         :param xpath: the XPath to extract data from
         :type xpath: str
 
+        :param stop_on_first_match: when ``xpath`` is a list of selectors, should it
+            get only the first match or all? Defaults to ``False``.
+        :type stop_on_first_match: bool
+
         Examples::
 
             # HTML snippet: <p class="product-name">Color TV</p>
@@ -392,7 +396,15 @@ ItemLoader objects
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
             # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
-            loader.add_xpath('name', ['//p[@class="product-name1"]', '//p[@class="product-name2"]'])
+            loader.add_xpath('name', [
+                '//p[@class="product-name1"]',
+                '//p[@class="product-name2"]'
+            ])
+            # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
+            loader.add_xpath('name', [
+                '//p[@class="product-name1"]',
+                '//p[@class="product-name2"]'
+            ], stop_on_first_match=True)
 
     .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
 
@@ -430,6 +442,10 @@ ItemLoader objects
         :param css: the CSS selector to extract data from
         :type css: str
 
+        :param stop_on_first_match: when ``css`` is a list of selectors, should it
+            get only the first match or all? Defaults to ``False``.
+        :type stop_on_first_match: bool
+
         Examples::
 
             # HTML snippet: <p class="product-name">Color TV</p>
@@ -438,6 +454,11 @@ ItemLoader objects
             loader.add_css('price', 'p#price', re='the price is (.*)')
             # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
             loader.add_css('name', ['p.product-name1', 'p.product-name2'])
+            # HTML snippet: <p class="product-name1">Color</p><p class="product-name2">TV</p>
+            loader.add_css('name', [
+                'p.product-name1',
+                'p.product-name2'
+            ], stop_on_first_match=True)
 
     .. method:: replace_css(field_name, css, \*processors, \**kwargs)
 
