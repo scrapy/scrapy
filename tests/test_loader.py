@@ -462,6 +462,9 @@ class SelectortemLoaderTest(unittest.TestCase):
     <p>paragraph</p>
     <a href="http://www.scrapy.org">homepage</a>
     <img src="/images/logo.png" width="244" height="65" alt="Scrapy">
+    <span class="selector1">bruce</span>
+    <span class="selector2">wayne</span>
+    <span class="selector3">batman</span>
     </body>
     </html>
     """)
@@ -613,16 +616,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
     def test_fallback_css_selector(self):
-        sel = Selector(text=u"""
-        <html>
-            <body>
-                <span class="selector1">bruce</span>
-                <span class="selector2">wayne</span>
-                <span class="selector3">batman</span>
-            </body>
-        </html>
-        """)
-        l = TestItemLoader(selector=sel)
+        l = TestItemLoader(response=self.response)
         
         l.add_css('name', [
             '.selector1::text',
@@ -635,16 +629,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         )
 
     def test_fallback_xpath_selector(self):
-        sel = Selector(text=u"""
-        <html>
-            <body>
-                <span class="selector1">bruce</span>
-                <span class="selector2">batman</span>
-                <span class="selector3">wayne</span>
-            </body>
-        </html>
-        """)
-        l = TestItemLoader(selector=sel)
+        l = TestItemLoader(response=self.response)
         
         l.add_xpath('name', [
             u'//span[contains(@class, "selector1")]/text()',
@@ -653,8 +638,41 @@ class SelectortemLoaderTest(unittest.TestCase):
         ])
         self.assertEqual(
             l.get_output_value('name'),
-            [u'Bruce', u'Batman', u'Wayne']
+            [u'Bruce', u'Wayne', u'Batman']
         )
+
+    def test_fallback_css_selector_stop_first_match(self):
+        l = TestItemLoader(response=self.response)
+        l.add_css(
+            'name',
+            ['.selector0::text', '.selector1::text', '.selector2::text'],
+            stop_on_first_match=True
+        )
+        self.assertEqual(l.get_output_value('name'), [u'Bruce'])
+
+        l = TestItemLoader(response=self.response)
+        l.add_css(
+            'name',
+            ['.selector0::text', '.no-exists::text'],
+            stop_on_first_match=True
+        )
+        self.assertEqual(l.get_output_value('name'), [])
+
+    def test_fallback_css_selector_stop_first_match(self):
+        l = TestItemLoader(response=self.response)
+        l.add_xpath('name', [
+            u'//span[contains(@class, "selector0")]/text()',
+            u'//span[contains(@class, "selector1")]/text()',
+            u'//span[contains(@class, "selector2")]/text()',
+        ], stop_on_first_match=True)
+        self.assertEqual(l.get_output_value('name'), [u'Bruce'])
+
+        l = TestItemLoader(response=self.response)
+        l.add_xpath('name', [
+            u'//span[contains(@class, "selector0")]/text()',
+            u'//span[contains(@class, "no-exists")]/text()',
+        ], stop_on_first_match=True)
+        self.assertEqual(l.get_output_value('name'), [])
 
 
 class SubselectorLoaderTest(unittest.TestCase):

@@ -181,7 +181,8 @@ class ItemLoader(object):
     def _get_xpathvalues(self, xpaths, **kw):
         self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
-        return flatten(self.selector.xpath(xpath).getall() for xpath in xpaths)
+        gen = (self.selector.xpath(xpath).getall() for xpath in xpaths)
+        return self._first_or_flatten(gen, **kw)
 
     def add_css(self, field_name, css, *processors, **kw):
         values = self._get_cssvalues(css, **kw)
@@ -198,6 +199,14 @@ class ItemLoader(object):
     def _get_cssvalues(self, csss, **kw):
         self._check_selector_method()
         csss = arg_to_iter(csss)
-        return flatten(self.selector.css(css).getall() for css in csss)
+        gen = (self.selector.css(css).getall() for css in csss)
+        return self._first_or_flatten(gen, **kw)
+
+    def _first_or_flatten(self, values, **kw):
+        if kw.get('stop_on_first_match', False):
+            values = filter(None, values)
+            return next(values, None)
+
+        return flatten(values)
 
 XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)
