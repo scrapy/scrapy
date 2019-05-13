@@ -41,7 +41,8 @@ Requirements
 ============
 
 * Python 2.7 or Python 3.4+
-* Works on Linux, Windows, Mac OSX, BSD
+* Works on Linux, Windows, `Mac OSX <https://docs.scrapy.org/en/latest/intro/install.html#mac-os-x>`_, BSD
+
 
 Install
 =======
@@ -49,6 +50,10 @@ Install
 The quick way::
 
     pip install scrapy
+
+
+
+Note: `For Mac OSX there’s a known issue that prevents pip from updating system packages. <https://docs.scrapy.org/en/latest/intro/install.html#mac-os-x>`_
 
 For more details see the install section in the documentation:
 https://docs.scrapy.org/en/latest/intro/install.html
