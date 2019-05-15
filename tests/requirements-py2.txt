@@ -11,8 +11,4 @@ brotlipy
 testfixtures
 # optional for shell wrapper tests
 bpython
-<<<<<<< HEAD:tests/requirements.txt
-ipython<6
-=======
 ipython<6.0
->>>>>>> upstream/master:tests/requirements-py2.txt
