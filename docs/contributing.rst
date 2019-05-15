@@ -262,7 +262,7 @@ And their unit-tests are in::
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
-.. _pull request: https://help.github.com/send-pull-requests/
+.. _pull request: https://help.github.com/en/articles/creating-a-pull-request
 .. _pytest: https://docs.pytest.org/en/latest/usage.html
 .. _pytest-xdist: https://docs.pytest.org/en/3.0.0/xdist.html
 .. _tox: https://pypi.python.org/pypi/tox
