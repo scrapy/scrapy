@@ -16,6 +16,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 
+@lru_cache
 def basic_auth_header(username, password, auth_encoding):
     user_pass = to_bytes(
         '%s:%s' % (unquote(username), unquote(password)),
@@ -23,6 +24,7 @@ def basic_auth_header(username, password, auth_encoding):
     return b'Basic ' + base64.b64encode(user_pass).strip()
 
 
+@lru_cache
 def get_proxy(url, orig_type, auth_encoding):
     proxy_type, user, password, hostport = _parse_proxy(url)
     proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
