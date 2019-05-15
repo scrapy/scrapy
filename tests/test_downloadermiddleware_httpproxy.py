@@ -3,7 +3,7 @@ import sys
 from functools import partial
 from twisted.trial.unittest import TestCase, SkipTest
 
-from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware, cached_proxy_bypass
+from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware, basic_auth_header, cached_proxy_bypass, get_proxy
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
