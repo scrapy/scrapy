@@ -155,7 +155,6 @@ class ImagesPipeline(FilesPipeline):
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             if convert_image_overriden:
-                _warn()
                 thumb_image, thumb_buf = self.convert_image(image, size)
             else:
                 thumb_image, thumb_buf = self.convert_image(image, size, buf)
