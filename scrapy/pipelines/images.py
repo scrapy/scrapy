@@ -15,7 +15,7 @@ except ImportError:
 from PIL import Image
 
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, get_func_args
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
@@ -127,25 +127,14 @@ class ImagesPipeline(FilesPipeline):
             raise ImageException("Image too small (%dx%d < %dx%d)" %
                                  (width, height, self.min_width, self.min_height))
         
-        def _is_convert_image_overriden():
-            import inspect
-            if six.PY2:
-                convert_image_signature = inspect.getargspec(self.convert_image)
-            elif six.PY3:
-                convert_image_signature = inspect.getfullargspec(self.convert_image)
-            if 'response_body' not in convert_image_signature.args:
-                return True
-            return False
-
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
-            warnings.warn('ImagesPipeline.convert_image() method overriden in a incompatible way, '
+            warnings.warn('ImagesPipeline.convert_image() method overriden in a deprecated way, '
                           'overriden method does not accept response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
-        convert_image_overriden = _is_convert_image_overriden()
-        if convert_image_overriden:
+        if 'response_body' not in get_func_args(self.convert_image):
             _warn()
             image, buf = self.convert_image(orig_image)
         else:
@@ -154,7 +143,7 @@ class ImagesPipeline(FilesPipeline):
 
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-            if convert_image_overriden:
+            if 'response_body' not in get_func_args(self.convert_image):
                 thumb_image, thumb_buf = self.convert_image(image, size)
             else:
                 thumb_image, thumb_buf = self.convert_image(image, size, buf)
@@ -164,7 +153,7 @@ class ImagesPipeline(FilesPipeline):
         if not response_body:
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
-            warnings.warn('ImagesPipeline.convert_image() method called in a incompatible way, '
+            warnings.warn('ImagesPipeline.convert_image() method called in a deprecated way, '
                           'method called without response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=1)
 

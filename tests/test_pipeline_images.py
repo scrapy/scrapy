@@ -108,7 +108,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
             # ensure that we recieved deprecation warnings
-            self.assertTrue(len([warning for warning in w if 'ImagesPipeline.convert_image() method called in a incompatible way' in str(warning.message)]) == 4)
+            self.assertTrue(len([warning for warning in w if 'ImagesPipeline.convert_image() method called in a deprecated way' in str(warning.message)]) == 4)
 
         # tests for new API
         SIZE = (100, 100)
