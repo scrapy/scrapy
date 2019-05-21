@@ -72,7 +72,13 @@ See https://scrapy.org/community/
 Contributing
 ============
 
-See https://docs.scrapy.org/en/master/contributing.html
+Overview: https://docs.scrapy.org/en/master/contributing.html
+For a list of open issues: https://github.com/scrapy/scrapy/issues
+Good first issues for contribution: https://github.com/scrapy/scrapy/contribute
+Reporting bugs: https://docs.scrapy.org/en/master/contributing.html#reporting-bugs
+Writing or submitting patches: https://docs.scrapy.org/en/master/contributing.html#writing-patches
+Coding styles and documentation policies: https://docs.scrapy.org/en/master/contributing.html#coding-style
+Testing: https://docs.scrapy.org/en/master/contributing.html#tests
 
 Code of Conduct
 ---------------
