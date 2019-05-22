@@ -1266,7 +1266,7 @@ does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
-Default: ``5000000``
+Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
 
