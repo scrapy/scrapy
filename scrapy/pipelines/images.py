@@ -134,7 +134,8 @@ class ImagesPipeline(FilesPipeline):
                           'overriden method does not accept response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
-        if 'response_body' not in get_func_args(self.convert_image):
+        convert_image_overriden = 'response_body' not in get_func_args(self.convert_image)
+        if convert_image_overriden:
             _warn()
             image, buf = self.convert_image(orig_image)
         else:
@@ -143,7 +144,7 @@ class ImagesPipeline(FilesPipeline):
 
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-            if 'response_body' not in get_func_args(self.convert_image):
+            if convert_image_overriden:
                 thumb_image, thumb_buf = self.convert_image(image, size)
             else:
                 thumb_image, thumb_buf = self.convert_image(image, size, buf)
