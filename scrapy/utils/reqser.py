@@ -75,7 +75,11 @@ def _find_method(obj, func):
             pass
         else:
             if func_self is obj:
-                return six.get_method_function(func).__name__
+                name = six.get_method_function(func).__name__
+                if name.startswith('__'):
+                    classname = obj.__class__.__name__.lstrip('_')
+                    name = '_%s%s' % (classname, name)
+                return name
     raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 

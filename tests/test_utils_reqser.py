@@ -68,6 +68,12 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
+    def test_private_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider._TestSpider__parse_item_private,
+                    errback=self.spider.handle_error)
+        self._assert_serializes_ok(r, spider=self.spider)
+
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
         self.assertRaises(ValueError, request_to_dict, r)
@@ -85,6 +91,9 @@ class TestSpider(Spider):
         pass
 
     def handle_error(self, failure):
+        pass
+
+    def __parse_item_private(self, response):
         pass
 
 
