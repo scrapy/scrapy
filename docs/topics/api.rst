@@ -154,7 +154,7 @@ Settings API
 SpiderLoader API
 ================
 
-.. module:: scrapy.loader
+.. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
 .. class:: SpiderLoader
