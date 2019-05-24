@@ -2,10 +2,14 @@
 Helper functions for serializing (and deserializing) requests.
 """
 import six
+import re
 
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode, to_native_str
 from scrapy.utils.misc import load_object
+
+
+private_name_regex = re.compile('^__[^_](.*[^_])?_?$')
 
 
 def request_to_dict(request, spider=None):
@@ -76,7 +80,7 @@ def _find_method(obj, func):
         else:
             if func_self is obj:
                 name = six.get_method_function(func).__name__
-                if name.startswith('__'):
+                if private_name_regex.search(name):
                     classname = obj.__class__.__name__.lstrip('_')
                     name = '_%s%s' % (classname, name)
                 return name
