@@ -526,7 +526,7 @@ defines the methods described below.
 
     .. method:: retrieve_response(spider, request)
 
-      Returns response if present in cache, or ``None`` otherwise.
+      Return response if present in cache, or ``None`` otherwise.
 
       :param spider: the spider which generated the request
       :type spider: :class:`~scrapy.spiders.Spider` object
@@ -536,7 +536,7 @@ defines the methods described below.
 
     .. method:: store_response(spider, request, response)
 
-      Stores the given response in the cache.
+      Store the given response in the cache.
 
       :param spider: the spider for which the response is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
