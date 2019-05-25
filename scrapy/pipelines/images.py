@@ -84,6 +84,8 @@ class ImagesPipeline(FilesPipeline):
             resolve('IMAGES_THUMBS'), self.THUMBS
         )
 
+        self._deprecated_convert_image = None
+
     @classmethod
     def from_settings(cls, settings):
         s3store = cls.STORE_SCHEMES['s3']
@@ -126,17 +128,17 @@ class ImagesPipeline(FilesPipeline):
         if width < self.min_width or height < self.min_height:
             raise ImageException("Image too small (%dx%d < %dx%d)" %
                                  (width, height, self.min_width, self.min_height))
-        
-        def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('ImagesPipeline.convert_image() method overriden in a deprecated way, '
-                          'overriden method does not accept response_body argument.',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
 
-        convert_image_overriden = 'response_body' not in get_func_args(self.convert_image)
-        if convert_image_overriden:
-            _warn()
+        if self._deprecated_convert_image is None:
+            self._deprecated_convert_image = 'response_body' not in get_func_args(self.convert_image)
+            if self._deprecated_convert_image:
+                from scrapy.exceptions import ScrapyDeprecationWarning
+                import warnings
+                warnings.warn('ImagesPipeline.convert_image() method overriden in a deprecated way, '
+                              'overriden method does not accept response_body argument.',
+                              category=ScrapyDeprecationWarning, stacklevel=1)
+
+        if self._deprecated_convert_image:
             image, buf = self.convert_image(orig_image)
         else:
             image, buf = self.convert_image(orig_image, response_body=BytesIO(response.body))
@@ -144,7 +146,7 @@ class ImagesPipeline(FilesPipeline):
 
         for thumb_id, size in six.iteritems(self.thumbs):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-            if convert_image_overriden:
+            if self._deprecated_convert_image:
                 thumb_image, thumb_buf = self.convert_image(image, size)
             else:
                 thumb_image, thumb_buf = self.convert_image(image, size, buf)
