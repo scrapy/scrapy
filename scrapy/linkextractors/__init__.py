@@ -15,7 +15,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     url_is_from_any_domain, url_has_any_extension,
 )
-
+from scrapy.utils.python import unique as unique_list
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
@@ -62,9 +62,13 @@ class FilteringLinkExtractor(object):
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
 
-        self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
-        self.restrict_xpaths += tuple(map(self._csstranslator.css_to_xpath,
-                                          arg_to_iter(restrict_css)))
+        _joined_list_xpath_css = arg_to_iter(restrict_xpaths)
+        _joined_list_xpath_css += tuple((map(self._csstranslator.css_to_xpath,
+                                          arg_to_iter(restrict_css))))
+
+        # to avoid duplication of selectors apply unique_list w/out key
+
+        self.restrict_xpaths = tuple(unique_list(_joined_list_xpath_css))
 
         self.canonicalize = canonicalize
         if deny_extensions is None:

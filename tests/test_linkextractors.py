@@ -51,12 +51,14 @@ class Base:
                 Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment')
             ])
 
+        # LinkExctractor with full duplicates extract and unique == False
         def test_extract_filter_allow_with_duplicates(self):
             lx = self.extractor_cls(allow=('sample', ), unique=False)
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                 Link(url='http://example.com/sample3.html#foo', text='sample 3 repetition with fragment')
             ])
@@ -68,6 +70,7 @@ class Base:
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                 Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                 Link(url='http://example.com/sample3.html', text='sample 3 repetition with fragment')
             ])
