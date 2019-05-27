@@ -24,4 +24,9 @@ class PythonRobotParserTest(unittest.TestCase):
                 "Disallow: /disallowed \n"
                 "Allow: /allowed \n"
                 "Crawl-delay: 10 \n")
-        self.assertTrue(rp.crawl_delay("*") == 10)
+        
+        from six.moves.urllib_robotparser import RobotFileParser
+        if hasattr(RobotFileParser, "crawl_delay"):
+            self.assertTrue(rp.crawl_delay("*") == 10)
+        else:
+            self.assertTrue(rp.crawl_delay("*") is None)
