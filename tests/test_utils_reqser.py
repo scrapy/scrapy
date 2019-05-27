@@ -3,7 +3,7 @@ import unittest
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.reqser import request_to_dict, request_from_dict, private_name_regex
 
 
 class RequestSerializationTest(unittest.TestCase):
@@ -73,6 +73,28 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider._TestSpider__parse_item_private,
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
+
+    def test_private_callback_name_matching(self):
+        self.assertTrue(private_name_regex.search('__a'))
+        self.assertTrue(private_name_regex.search('__a_'))
+        self.assertTrue(private_name_regex.search('__a_a'))
+        self.assertTrue(private_name_regex.search('__a_a_'))
+        self.assertTrue(private_name_regex.search('__a__a'))
+        self.assertTrue(private_name_regex.search('__a__a_'))
+        self.assertTrue(private_name_regex.search('__a___a'))
+        self.assertTrue(private_name_regex.search('__a___a_'))
+        self.assertTrue(private_name_regex.search('___a'))
+        self.assertTrue(private_name_regex.search('___a_'))
+        self.assertTrue(private_name_regex.search('___a_a'))
+        self.assertTrue(private_name_regex.search('___a_a_'))
+        self.assertTrue(private_name_regex.search('____a_a_'))
+
+        self.assertFalse(private_name_regex.search('_a'))
+        self.assertFalse(private_name_regex.search('_a_'))
+        self.assertFalse(private_name_regex.search('__a__'))
+        self.assertFalse(private_name_regex.search('__'))
+        self.assertFalse(private_name_regex.search('___'))
+        self.assertFalse(private_name_regex.search('____'))
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)

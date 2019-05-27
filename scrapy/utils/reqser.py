@@ -9,7 +9,7 @@ from scrapy.utils.python import to_unicode, to_native_str
 from scrapy.utils.misc import load_object
 
 
-private_name_regex = re.compile('^__[^_](.*[^_])?_?$')
+private_name_regex = re.compile('^__.*[^_]_?$')
 
 
 def request_to_dict(request, spider=None):
