@@ -62,13 +62,13 @@ class FilteringLinkExtractor(object):
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
 
-        _joined_list_xpath_css = arg_to_iter(restrict_xpaths)
-        _joined_list_xpath_css += tuple((map(self._csstranslator.css_to_xpath,
+        _joined_xpath_css = arg_to_iter(restrict_xpaths)
+        _joined_xpath_css += tuple((map(self._csstranslator.css_to_xpath,
                                           arg_to_iter(restrict_css))))
 
         # to avoid duplication of selectors apply unique_list w/out key
 
-        self.restrict_xpaths = tuple(unique_list(_joined_list_xpath_css))
+        self.restrict_xpaths = tuple(unique_list(_joined_xpath_css))
 
         self.canonicalize = canonicalize
         if deny_extensions is None:
