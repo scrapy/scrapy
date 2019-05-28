@@ -66,7 +66,7 @@ class FilteringLinkExtractor(object):
         _joined_xpath_css += tuple((map(self._csstranslator.css_to_xpath,
                                           arg_to_iter(restrict_css))))
 
-        # to avoid duplication of selectors apply unique_list w/out key
+        #  to avoid duplication of selectors apply unique_list w/out key
 
         self.restrict_xpaths = tuple(unique_list(_joined_xpath_css))
 
