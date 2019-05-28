@@ -164,6 +164,8 @@ Solving specific problems
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/xpath-tutorial
+
 
 :doc:`faq`
     Get answers to most frequently asked questions.
