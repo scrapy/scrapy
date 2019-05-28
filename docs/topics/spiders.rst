@@ -657,7 +657,7 @@ SitemapSpider
 
     .. attribute:: sitemap_follow
 
-        A list of regexes of sitemap that should be followed. This is is only
+        A list of regexes of sitemap that should be followed. This is only
         for sites that use `Sitemap index files`_ that point to other sitemap
         files.
 
