@@ -922,12 +922,71 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
+    This middleware has to be combined with a `robots.txt <http://www.robotstxt.org/>`_ parser.
+
+    Scrapy ships with support for three `robots.txt <http://www.robotstxt.org/>`_ parsers:
+
+    * `RobotFileParser`_
+    * `Reppy`_
+    * `Robotexclusionrulesparser`_
+
+    You can change the `robots.txt <http://www.robotstxt.org/>`_ parser with the :setting:`ROBOTSTXT_PARSER`
+    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+
 .. reqmeta:: dont_obey_robotstxt
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` has
 ``dont_obey_robotstxt`` key set to True
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
+
+.. _support-for-new-robots-parser:
+
+Implementing support for a new parser
+-------------------------------------
+
+You can implement support for a new `robots.txt <http://www.robotstxt.org/>`_ parser by implementing the
+interface described below.
+
+.. module:: scrapy.extensions.robotstxtparser
+
+.. class:: RobotsParser
+
+    .. method:: __init__(content)
+
+      Parse content of `robots.txt <http://www.robotstxt.org/>`_ file.
+
+      :param content: Content of `robots.txt <http://www.robotstxt.org/>`_ file. For Python 2.7, if ``content``
+                    contains non-ASCII characters, it should be ``UTF-8`` encoded. 
+      :type content: ``str``
+
+    .. method:: allowed(url, useragent)
+
+      Return ``True`` if ``url`` is allowed for crawling by the given ``useragent``, otherwise return ``False``.
+
+      :param url: URL to find crawling permission for. For Python 2.7, if ``url`` contains non-ASCII characters, 
+                  it should be ``UTF-8`` encoded.
+      :type url: ``str``
+    
+      :param useragent: User agent to find crawling permission for. For Python 2.7, if ``useragent`` contains non-ASCII characters, 
+                        it should be ``UTF-8`` encoded.
+      :type useragent: ``str`` 
+
+    .. method:: sitemaps()
+
+      Return a generator yielding URL to sitemaps on the website. If there is no sitemap specified, return ``None``.
+
+    .. method:: crawl_delay(useragent)
+
+      Return time (in seconds) specified with ``Crawl-delay`` directive. If nothing is specified, return ``None``.
+
+      :param useragent: User agent to find ``Crawl-delay`` for. For Python 2.7, if ``useragent`` contains non-ASCII characters, 
+                        it should be ``UTF-8`` encoded.
+      :type useragent: ``str`` 
+
+    .. method:: preferred_host()
+
+      Return preferred domain specified with ``Host`` directive. If nothing is specified, return ``None``.
 
 
 DownloaderStats
