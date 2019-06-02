@@ -954,35 +954,31 @@ interface described below.
 
     .. method:: __init__(content)
 
-      Parse content of `robots.txt <http://www.robotstxt.org/>`_ file.
+      Parse content of `robots.txt <http://www.robotstxt.org/>`_ file as bytes.
 
-      :param content: Content of `robots.txt <http://www.robotstxt.org/>`_ file. For Python 2.7, if ``content``
-                    contains non-ASCII characters, it should be ``UTF-8`` encoded. 
-      :type content: ``str``
+      :param content: Content of `robots.txt <http://www.robotstxt.org/>`_ file.
+      :type content: bytes
 
     .. method:: allowed(url, useragent)
 
       Return ``True`` if ``url`` is allowed for crawling by the given ``useragent``, otherwise return ``False``.
 
-      :param url: URL to find crawling permission for. For Python 2.7, if ``url`` contains non-ASCII characters, 
-                  it should be ``UTF-8`` encoded.
-      :type url: ``str``
-    
-      :param useragent: User agent to find crawling permission for. For Python 2.7, if ``useragent`` contains non-ASCII characters, 
-                        it should be ``UTF-8`` encoded.
-      :type useragent: ``str`` 
+      :param url: Absolute URL to find crawling permission for.
+      :type url: string
+
+      :param useragent: User agent to find crawling permission for.
+      :type useragent: string
 
     .. method:: sitemaps()
 
-      Return a generator yielding URL to sitemaps on the website. If there is no sitemap specified, return ``None``.
+      Return a generator yielding URL to sitemaps on the website. If there is no sitemap specified, return an empty generator.
 
     .. method:: crawl_delay(useragent)
 
-      Return time (in seconds) specified with ``Crawl-delay`` directive. If nothing is specified, return ``None``.
+      Return time (in seconds) specified with ``Crawl-delay`` directive as a float. If nothing is specified, return ``None``.
 
-      :param useragent: User agent to find ``Crawl-delay`` for. For Python 2.7, if ``useragent`` contains non-ASCII characters, 
-                        it should be ``UTF-8`` encoded.
-      :type useragent: ``str`` 
+      :param useragent: User agent to find ``Crawl-delay`` for.
+      :type useragent: string
 
     .. method:: preferred_host()
 
