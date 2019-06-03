@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
+import sys
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
@@ -74,6 +75,14 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
+    def test_mixin_private_callback_serialization(self):
+        if sys.version_info[0] < 3:
+            return
+        r = Request("http://www.example.com",
+                    callback=self.spider._TestSpiderMixin__mixin_callback,
+                    errback=self.spider.handle_error)
+        self._assert_serializes_ok(r, spider=self.spider)
+
     def test_private_callback_name_matching(self):
         self.assertTrue(_is_private_method('__a'))
         self.assertTrue(_is_private_method('__a_'))
@@ -106,7 +115,12 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertRaises(ValueError, request_to_dict, r)
 
 
-class TestSpider(Spider):
+class TestSpiderMixin(object):
+    def __mixin_callback(self, response):
+        pass
+
+
+class TestSpider(Spider, TestSpiderMixin):
     name = 'test'
 
     def parse_item(self, response):
