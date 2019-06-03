@@ -1,11 +1,10 @@
+.. currentmodule:: scrapy.extensions.telnet
+
 .. _topics-telnetconsole:
 
 ==============
 Telnet Console
 ==============
-
-.. module:: scrapy.extensions.telnet
-   :synopsis: The Telnet Console
 
 Scrapy comes with a built-in telnet console for inspecting and controlling a
 Scrapy running process. The telnet console is just a regular python shell
