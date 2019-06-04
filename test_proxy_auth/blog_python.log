@@ -1,0 +1,100 @@
+2019-06-04 18:53:14 [scrapy.utils.log] INFO: Scrapy 1.6.0 started (bot: test_proxy_auth)
+2019-06-04 18:53:14 [scrapy.utils.log] INFO: Versions: lxml 4.2.4.0, libxml2 2.9.5, cssselect 1.0.3, parsel 1.5.0, w3lib 1.19.0, Twisted 18.7.0, Python 3.6.2 (v3.6.2:5fd33b5, Jul  8 2017, 04:57:36) [MSC v.1900 64 bit (AMD64)], pyOpenSSL 18.0.0 (OpenSSL 1.1.0i  14 Aug 2018), cryptography 2.3.1, Platform Windows-10-10.0.17134-SP0
+2019-06-04 18:53:14 [scrapy.crawler] INFO: Overridden settings: {'BOT_NAME': 'test_proxy_auth', 'CONCURRENT_REQUESTS': 1, 'COOKIES_ENABLED': False, 'DOWNLOAD_DELAY': 0.1, 'DOWNLOAD_TIMEOUT': 0.1, 'LOG_FILE': './blog_python.log', 'NEWSPIDER_MODULE': 'test_proxy_auth.spiders', 'RETRY_TIMES': 10, 'SPIDER_MODULES': ['test_proxy_auth.spiders']}
+2019-06-04 18:53:14 [scrapy.extensions.telnet] INFO: Telnet Password: 2adb2cb45c62c7a7
+2019-06-04 18:53:14 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.corestats.CoreStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.logstats.LogStats']
+2019-06-04 18:53:15 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'test_proxy_auth.middlewares.ProxyMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2019-06-04 18:53:15 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2019-06-04 18:53:15 [scrapy.middleware] INFO: Enabled item pipelines:
+[]
+2019-06-04 18:53:15 [scrapy.core.engine] INFO: Spider opened
+2019-06-04 18:53:15 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2019-06-04 18:53:15 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6024
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user2:pwd2@234.234.234.234:234
+2019-06-04 18:53:15 [blog_python] INFO: retry 0 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 1 times): An error occurred while connecting: 10049: 在其上下文中，该请求的地址无效。.
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:15 [blog_python] INFO: retry 1 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 2 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:15 [blog_python] INFO: retry 2 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 3 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user2:pwd2@234.234.234.234:234
+2019-06-04 18:53:15 [blog_python] INFO: retry 3 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 4 times): An error occurred while connecting: 10049: 在其上下文中，该请求的地址无效。.
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:15 [blog_python] INFO: retry 4 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 5 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user2:pwd2@234.234.234.234:234
+2019-06-04 18:53:15 [blog_python] INFO: retry 5 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 6 times): An error occurred while connecting: 10049: 在其上下文中，该请求的地址无效。.
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:15 [blog_python] INFO: retry 6 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:15 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 7 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:15 [blog_python] INFO: use the proxy is http://user2:pwd2@234.234.234.234:234
+2019-06-04 18:53:15 [blog_python] INFO: retry 7 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:16 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 8 times): An error occurred while connecting: 10049: 在其上下文中，该请求的地址无效。.
+2019-06-04 18:53:16 [blog_python] INFO: use the proxy is http://user2:pwd2@234.234.234.234:234
+2019-06-04 18:53:16 [blog_python] INFO: retry 8 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:16 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 9 times): An error occurred while connecting: 10049: 在其上下文中，该请求的地址无效。.
+2019-06-04 18:53:16 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:16 [blog_python] INFO: retry 9 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:16 [scrapy.downloadermiddlewares.retry] DEBUG: Retrying <GET https://blog.python.org/> (failed 10 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:16 [blog_python] INFO: use the proxy is http://user1:pwd1@123.123.123.123:123
+2019-06-04 18:53:16 [blog_python] INFO: retry 10 times and the request.headers is {b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'], b'Accept-Language': [b'en'], b'User-Agent': [b'Scrapy/1.6.0 (+https://scrapy.org)'], b'Accept-Encoding': [b'gzip,deflate,br'], b'Proxy-Authorization': [b'Basic dXNlcjI6cHdkMg==']}
+2019-06-04 18:53:16 [scrapy.downloadermiddlewares.retry] DEBUG: Gave up retrying <GET https://blog.python.org/> (failed 11 times): User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:16 [scrapy.core.scraper] ERROR: Error downloading <GET https://blog.python.org/>
+Traceback (most recent call last):
+  File "c:\python36\lib\site-packages\twisted\internet\defer.py", line 1416, in _inlineCallbacks
+    result = result.throwExceptionIntoGenerator(g)
+  File "c:\python36\lib\site-packages\twisted\python\failure.py", line 491, in throwExceptionIntoGenerator
+    return g.throw(self.type, self.value, self.tb)
+  File "c:\python36\lib\site-packages\scrapy\core\downloader\middleware.py", line 43, in process_request
+    defer.returnValue((yield download_func(request=request,spider=spider)))
+  File "c:\python36\lib\site-packages\twisted\internet\defer.py", line 654, in _runCallbacks
+    current.result = callback(current.result, *args, **kw)
+  File "c:\python36\lib\site-packages\scrapy\core\downloader\handlers\http11.py", line 352, in _cb_timeout
+    raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+twisted.internet.error.TimeoutError: User timeout caused connection failure: Getting https://blog.python.org/ took longer than 0.1 seconds..
+2019-06-04 18:53:16 [scrapy.core.engine] INFO: Closing spider (finished)
+2019-06-04 18:53:16 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/exception_count': 11,
+ 'downloader/exception_type_count/twisted.internet.error.ConnectError': 5,
+ 'downloader/exception_type_count/twisted.internet.error.TimeoutError': 6,
+ 'downloader/request_bytes': 2882,
+ 'downloader/request_count': 11,
+ 'downloader/request_method_count/GET': 11,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2019, 6, 4, 10, 53, 16, 663017),
+ 'log_count/DEBUG': 11,
+ 'log_count/ERROR': 1,
+ 'log_count/INFO': 31,
+ 'retry/count': 10,
+ 'retry/max_reached': 1,
+ 'retry/reason_count/twisted.internet.error.ConnectError': 5,
+ 'retry/reason_count/twisted.internet.error.TimeoutError': 5,
+ 'scheduler/dequeued': 11,
+ 'scheduler/dequeued/memory': 11,
+ 'scheduler/enqueued': 11,
+ 'scheduler/enqueued/memory': 11,
+ 'start_time': datetime.datetime(2019, 6, 4, 10, 53, 15, 64836)}
+2019-06-04 18:53:16 [scrapy.core.engine] INFO: Spider closed (finished)
