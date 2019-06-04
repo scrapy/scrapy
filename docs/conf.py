@@ -28,7 +28,8 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'scrapydocs',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.coverage',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -217,4 +218,10 @@ latex_documents = [
 linkcheck_ignore = [
     'http://localhost:\d+', 'http://hg.scrapy.org',
     'http://directory.google.com/'
+]
+
+
+# Options for the Coverage extension
+# ----------------------------------
+coverage_ignore_pyobjects = [
 ]

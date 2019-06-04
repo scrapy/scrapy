@@ -99,6 +99,15 @@ Well-written patches should:
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
+* if you're adding a private API, please add a regular expression to the
+  ``coverage_ignore_pyobjects`` variable of ``docs/conf.py`` to exclude the new
+  private API from documentation coverage checks.
+
+  To see if your private API is skipped properly, generate a documentation
+  coverage report as follows::
+
+      tox -e docs-coverage
+
 .. _submitting-patches:
 
 Submitting patches
