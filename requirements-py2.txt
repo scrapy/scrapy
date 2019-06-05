@@ -1,4 +1,5 @@
 Twisted>=13.1.0
+incremental
 lxml
 pyOpenSSL
 cssselect>=0.9
