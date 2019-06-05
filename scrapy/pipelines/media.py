@@ -3,7 +3,7 @@ from __future__ import print_function
 import functools
 import logging
 from collections import defaultdict
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, _DefGen_Return
 from twisted.python.failure import Failure
 
 from scrapy.settings import Settings
@@ -139,6 +139,11 @@ class MediaPipeline(object):
             result.cleanFailure()
             result.frames = []
             result.stack = None
+
+            # See twisted.internet.defer.returnValue docstring
+            if isinstance(result.value.__context__, _DefGen_Return):
+                result.value.__context__ = None
+
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
         for wad in info.waiting.pop(fp):
