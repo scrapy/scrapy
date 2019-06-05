@@ -116,8 +116,9 @@ class RequestSerializationTest(unittest.TestCase):
     def test_private_name_mangling(self):
         self._assert_mangles_to(
             self.spider, '_TestSpider__parse_item_private')
-        self._assert_mangles_to(
-            self.spider, '_TestSpiderMixin__mixin_callback')
+        if sys.version_info[0] >= 3:
+            self._assert_mangles_to(
+                self.spider, '_TestSpiderMixin__mixin_callback')
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
