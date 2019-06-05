@@ -379,11 +379,11 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
 
-Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text::text").get()
-    >>> title
+    >>> text = quote.css("span.text::text").get()
+    >>> text
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
     >>> author = quote.css("small.author::text").get()
     >>> author
