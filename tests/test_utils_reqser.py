@@ -108,8 +108,9 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertFalse(_is_private_method('____'))
 
     def _assert_mangles_to(self, obj, name):
+        func = getattr(obj, name)
         self.assertEqual(
-            _mangle_private_name(obj, getattr(obj, name), name),
+            _mangle_private_name(obj, func, func.__name__),
             name
         )
 
