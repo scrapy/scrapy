@@ -2,9 +2,11 @@
 import unittest
 import sys
 
+import six
+
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
-from scrapy.utils.reqser import request_to_dict, request_from_dict, _is_private_method
+from scrapy.utils.reqser import request_to_dict, request_from_dict, _is_private_method, _mangle_private_name
 
 
 class RequestSerializationTest(unittest.TestCase):
@@ -104,6 +106,18 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertFalse(_is_private_method('__'))
         self.assertFalse(_is_private_method('___'))
         self.assertFalse(_is_private_method('____'))
+
+    def _assert_mangles_to(self, obj, name):
+        self.assertEqual(
+            _mangle_private_name(obj, getattr(obj, name), name),
+            name
+        )
+
+    def test_private_name_mangling(self):
+        self._assert_mangles_to(
+            self.spider, '_TestSpider__parse_item_private')
+        self._assert_mangles_to(
+            self.spider, '_TestSpiderMixin__mixin_callback')
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
