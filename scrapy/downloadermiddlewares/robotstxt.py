@@ -5,8 +5,8 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 """
 
 import logging
-
-from six.moves.urllib import robotparser
+import sys
+import re
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
@@ -14,6 +14,8 @@ from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_native_str
+from scrapy.utils.misc import load_object
+from scrapy.extensions.robotstxtparser import PythonRobotParser
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class RobotsTxtMiddleware(object):
         self.crawler = crawler
         self._useragent = crawler.settings.get('USER_AGENT')
         self._parsers = {}
+        self._parserimpl = crawler.settings.get('ROBOTSTXT_PARSER')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -43,7 +46,7 @@ class RobotsTxtMiddleware(object):
     def process_request_2(self, rp, request, spider):
         if rp is None:
             return
-        if not rp.can_fetch(to_native_str(self._useragent), request.url):
+        if not rp.allowed(request.url, to_native_str(self._useragent)):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
@@ -62,7 +65,7 @@ class RobotsTxtMiddleware(object):
                 meta={'dont_obey_robotstxt': True}
             )
             dfd = self.crawler.engine.download(robotsreq, spider)
-            dfd.addCallback(self._parse_robots, netloc)
+            dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
             self.crawler.stats.inc_value('robotstxt/request_count')
@@ -85,26 +88,25 @@ class RobotsTxtMiddleware(object):
                          extra={'spider': spider})
         return failure
 
-    def _parse_robots(self, response, netloc):
+    def _parse_robots(self, response, netloc, spider):
         self.crawler.stats.inc_value('robotstxt/response_count')
         self.crawler.stats.inc_value(
             'robotstxt/response_status_count/{}'.format(response.status))
-        rp = robotparser.RobotFileParser(response.url)
-        body = ''
-        if hasattr(response, 'text'):
-            body = response.text
-        else:  # last effort try
-            try:
-                body = response.body.decode('utf-8')
-            except UnicodeDecodeError:
-                # If we found garbage, disregard it:,
-                # but keep the lookup cached (in self._parsers)
-                # Running rp.parse() will set rp state from
-                # 'disallow all' to 'allow any'.
-                self.crawler.stats.inc_value('robotstxt/unicode_error_count')
-        # stdlib's robotparser expects native 'str' ;
-        # with unicode input, non-ASCII encoded bytes decoding fails in Python2
-        rp.parse(to_native_str(body).splitlines())
+        
+        try:
+            rp = load_object(self._parserimpl)(response.body)
+        except ImportError as e:
+            # For Python 2 compatibility
+            errmsg = e.msg if hasattr(e, 'msg') else e.message
+
+            missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
+            logger.error('Unable to use %(robotparser)s . Do you have %(module)s installed?'
+                        'Falling back to the default robots.txt parser.',
+                        {'robotparser': self._parserimpl, 'module': missingmodule}, 
+                        exc_info=sys.exc_info(),
+                        extra={'spider': spider})
+            
+            rp = PythonRobotParser(response.body)
 
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
