@@ -3,13 +3,14 @@ from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
@@ -89,6 +90,30 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         request = Request('http://url')
         self.pipe._modify_media_request(request)
         assert request.meta == {'handle_httpstatus_all': True}
+
+    def test_cache_result(self):
+        request = Request('http://url')
+        response = Response('http://url', body=b'', request=request)
+
+        try:
+            returnValue(response)
+        except BaseException as exc:
+            result = exc
+            try:
+                raise FileException('download-error') from result
+            except Exception as exc:
+                file_exc = exc
+
+        failure = Failure(file_exc)
+        self.assertEqual(failure.value.__context__, result)
+
+        fp = request_fingerprint(request)
+        info = self.pipe.spiderinfo
+        info.downloading.add(fp)
+        info.waiting[fp] = []
+
+        self.pipe._cache_result_and_execute_waiters(failure, fp, info)
+        self.assertIsNone(info.downloaded[fp].value.__context__)
 
 
 class MockedMediaPipeline(MediaPipeline):
