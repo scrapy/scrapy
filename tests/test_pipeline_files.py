@@ -49,6 +49,8 @@ class FilesPipelineTestCase(unittest.TestCase):
                          'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc')
         self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
                          'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg&length=10")),
+                          'full/35981d262ddc8b7a927cbd6d1cb97fa7457c5f3d.jpg')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
                          'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
