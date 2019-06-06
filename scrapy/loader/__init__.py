@@ -35,6 +35,8 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
+        for field_name, value in item.items():
+            self.add_value(field_name, value)
 
     @property
     def _values(self):
