@@ -52,7 +52,7 @@ class FormRequest(Request):
 
         method = kwargs.pop('method', form.method).upper()
         if method not in cls.valid_form_methods:
-            raise ValueError('Invalid form method in chosen form')
+            method = 'GET'
 
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 

@@ -1107,11 +1107,12 @@ class FormRequestTest(RequestTest):
 
         for method in self.request_class.valid_form_methods:
             response = _buildresponse(body % method)
-            r1 = self.request_class.from_response(response)
-            self.assertEqual(r1.method, method)
+            r = self.request_class.from_response(response)
+            self.assertEqual(r.method, method)
 
         response = _buildresponse(body % 'UNKNOWN')
-        self.assertRaises(ValueError, self.request_class.from_response, response)
+        r = self.request_class.from_response(response)
+        self.assertEqual(r.method, 'GET')
 
 
 def _buildresponse(body, **kwargs):
