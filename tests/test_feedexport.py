@@ -6,6 +6,12 @@ import warnings
 from io import BytesIO
 import tempfile
 import shutil
+import six
+
+if six.PY2:
+    from pathlib2 import Path
+else:
+    from pathlib import Path
 from six.moves.urllib.parse import urljoin, urlparse
 from six.moves.urllib.request import pathname2url
 
@@ -384,6 +390,9 @@ class FeedExportTest(unittest.TestCase):
                 runner = CrawlerRunner(Settings(defaults))
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
+
+            if isinstance(defaults.get('FEED_URI'), Path):
+                res_path = str(defaults.get('FEED_URI'))
 
             with open(res_path, 'rb') as f:
                 content = f.read()
@@ -815,3 +824,24 @@ class FeedExportTest(unittest.TestCase):
         yield self.exported_data({}, settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+
+    @defer.inlineCallbacks
+    def test_export_with_feed_uri_type_path(self):
+        # Test export when FEED_URI settings attribute is set to
+        # object of type pathlib.Path (pathlib2.Path for Python 2.7.x)
+        items = [
+            {'foo': 'bar', 'egg': 'spam'},
+            {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
+        ]
+        rows_csv = [
+            {'egg': 'spam', 'foo': 'bar'},
+            {'egg': 'spam', 'foo': 'bar'}
+        ]
+        tempdir = tempfile.mkdtemp()
+        res_path = os.path.join(tempdir, 'res')
+        settings = {
+            'FEED_URI': Path(res_path)
+        }
+        yield self.assertExportedCsv(items, ['egg', 'foo'], rows_csv, settings=settings,
+                                     ordered=False)
+        shutil.rmtree(tempdir, ignore_errors=True)

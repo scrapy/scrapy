@@ -7,8 +7,9 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
 
+from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse, urljoin)
+from six.moves.urllib.request import pathname2url
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
 from w3lib.url import *
@@ -42,6 +43,13 @@ def parse_url(url, encoding=None):
     if isinstance(url, ParseResult):
         return url
     return urlparse(to_unicode(url, encoding))
+
+
+def path2uri(path):
+    """Return uri in file uri format for pathlib.Path instances
+       eg., '/path/to/scrapy' --> 'file:///path/to/scrapy'
+    """
+    return urljoin('file:', pathname2url(str(path)))
 
 
 def escape_ajax(url):

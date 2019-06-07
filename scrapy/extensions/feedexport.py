@@ -11,6 +11,11 @@ import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 import six
+
+if six.PY2:
+    from pathlib2 import Path
+else:
+    from pathlib import Path
 from six.moves.urllib.parse import urlparse
 from ftplib import FTP
 
@@ -25,6 +30,7 @@ from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.url import path2uri
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +197,8 @@ class FeedExporter(object):
         self.urifmt = settings['FEED_URI']
         if not self.urifmt:
             raise NotConfigured
+        elif isinstance(self.urifmt, Path):
+            self.urifmt = path2uri(self.urifmt)
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')
