@@ -24,7 +24,7 @@ from twisted.internet import defer, threads
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
@@ -480,8 +480,37 @@ class FilesPipeline(MediaPipeline):
         ## end of deprecation warning block
 
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        media_ext = self._get_file_extension(url, response or Response("")) # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
+
+    def _get_file_extension(self, url , response):
+        """Helper function to obtain the filename from the response headers, falling back to the original request path
+
+            This function will look at the standard 'Content-Type' and 'Content-Disposition' HTTP response headers
+            and will try to obtain the file extension from it. If they are not present, or does not contain valid
+            that information, this function will return the file extension on original request path.
+
+            IE:
+                * http://www.example.com/image.jpg yields '.jpg'
+                * http://www.example.com/media.do?filename=image.jpg yields '.do'
+                * http://www.example.com/image yields an empty string
+        """
+
+        filename = urlparse(url).path[1:]
+        content_type = response.headers.get('Content-Type', b'')
+        content_disposition = response.headers.get('Content-Disposition', b'')
+
+        if content_type.startswith(b'application/octet-stream '):
+            return content_type[25:]
+
+        if content_disposition.startswith(b'attachment; filename='):
+            filename = content_disposition[22:-1].decode()
+
+        split_filename = filename.split('.')
+        if len(split_filename) > 1:
+            return ".%s" % split_filename[-1]
+
+        return ""
 
     # deprecated
     def file_key(self, url):
