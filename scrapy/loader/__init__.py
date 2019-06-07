@@ -35,8 +35,9 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
+        # Preprocess values if item built from dict
         for field_name, value in item.items():
-            self.add_value(field_name, value)
+            self._values[field_name] = self._process_input_value(field_name, value)
 
     @property
     def _values(self):
