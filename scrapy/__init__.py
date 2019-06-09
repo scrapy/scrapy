@@ -29,6 +29,8 @@ del _monkeypatches
 
 from twisted import version as _txv
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
+import platform
+python_version = tuple(map(int, platform.python_version_tuple()))
 
 # Declare top-level shortcuts
 from scrapy.spiders import Spider
