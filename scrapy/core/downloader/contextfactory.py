@@ -1,9 +1,10 @@
 from OpenSSL import SSL
 from twisted.internet.ssl import ClientContextFactory
 
-from scrapy import twisted_version
+from scrapy import twisted_version, python_version
 
-if twisted_version >= (14, 0, 0):
+if twisted_version >= (14, 0, 0) and (python_version < (3, 0, 0) or
+                                      python_version >= (3, 5, 0)):
 
     from zope.interface.declarations import implementer
 
