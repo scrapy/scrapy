@@ -922,15 +922,15 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
-    This middleware has to be combined with a `robots.txt <http://www.robotstxt.org/>`_ parser.
+    This middleware has to be combined with a robots.txt_ parser.
 
-    Scrapy ships with support for three `robots.txt <http://www.robotstxt.org/>`_ parsers:
+    Scrapy ships with support for the following robots.txt_ parsers:
 
-    * `RobotFileParser`_
+    * `RobotFileParser`_ (default)
     * `Reppy`_
     * `Robotexclusionrulesparser`_
 
-    You can change the `robots.txt <http://www.robotstxt.org/>`_ parser with the :setting:`ROBOTSTXT_PARSER`
+    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
 
 .. reqmeta:: dont_obey_robotstxt
@@ -945,18 +945,16 @@ the request will be ignored by this middleware even if
 Implementing support for a new parser
 -------------------------------------
 
-You can implement support for a new `robots.txt <http://www.robotstxt.org/>`_ parser by implementing the
+You can implement support for a new robots.txt_ parser by implementing the
 interface described below.
 
-.. module:: scrapy.extensions.robotstxtparser
-
-.. class:: RobotsParser
+.. class:: scrapy.extensions.robotstxtparser.RobotsParser
 
     .. method:: __init__(content)
 
-      Parse content of `robots.txt <http://www.robotstxt.org/>`_ file as bytes.
+      Parse content of robots.txt_ file as bytes.
 
-      :param content: Content of `robots.txt <http://www.robotstxt.org/>`_ file.
+      :param content: Content of robots.txt_ file.
       :type content: bytes
 
     .. method:: allowed(url, useragent)
@@ -984,6 +982,8 @@ interface described below.
 
       Return preferred domain specified with ``Host`` directive. If nothing is specified, return ``None``.
 
+
+.. _robots.txt: http://www.robotstxt.org/
 
 DownloaderStats
 ---------------

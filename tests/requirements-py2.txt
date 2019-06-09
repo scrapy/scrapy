@@ -9,6 +9,8 @@ pytest-xdist
 jmespath
 brotlipy
 testfixtures
+reppy
+robotexclusionrulesparser
 # optional for shell wrapper tests
 bpython
 ipython<6.0
