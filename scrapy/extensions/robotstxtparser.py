@@ -23,7 +23,10 @@ class PythonRobotParser():
 
     def sitemaps(self):
         """RobotFileParser does not support Sitemaps directive."""
-        return (sitemap for sitemap in [])
+        def _get_empty_generator():
+            return
+            yield
+        return _get_empty_generator()
 
     def crawl_delay(self, useragent):
         """RobotFileParser does not support Crawl-delay directive for Python version < 3.6 ."""
@@ -31,6 +34,7 @@ class PythonRobotParser():
             useragent = to_native_str(useragent)
         except UnicodeDecodeError:
             return None
+
         if hasattr(self.rp, 'crawl_delay'):
             delay = self.rp.crawl_delay(useragent)
             return None if delay is None else float(delay)
