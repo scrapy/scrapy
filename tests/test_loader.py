@@ -442,6 +442,20 @@ class BasicItemLoaderTest(unittest.TestCase):
         # Values from dict must be added to item _values
         self.assertEqual(il._values.get('title'), 'Test item title 2')
 
+        input_item = {'title': [u'Test item title 3', u'Test item 4']}
+        il = TestItemLoader(item=input_item)
+        # Same rules must work for lists
+        self.assertEqual(il._values.get('title'),
+                         [u'Test item title 3', u'Test item 4'])
+        self.assertEqual(il.load_item(), {
+            'title': [u'Test item title 3', u'Test item 4'],
+        })
+        self.assertEqual(il.get_output_value('title'),
+                         [u'Test item title 3', u'Test item 4'])
+        self.assertEqual(il.load_item(), {
+            'title': [u'Test item title 3', u'Test item 4'],
+        })
+
 
 class ProcessorsTest(unittest.TestCase):
 
