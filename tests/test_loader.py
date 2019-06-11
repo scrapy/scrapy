@@ -419,6 +419,29 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], u'rabbit.hole')
         self.assertEqual(item['summary'], u'rabbithole')
 
+    def test_create_item_from_dict(self):
+        class TestItem(Item):
+            title = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+
+        input_item = {'title': 'Test item title 1'}
+        il = TestItemLoader(item=input_item)
+        # Getting output value mustn't remove value from item
+        self.assertEqual(il.load_item(), {
+            'title': 'Test item title 1',
+        })
+        self.assertEqual(il.get_output_value('title'), 'Test item title 1')
+        self.assertEqual(il.load_item(), {
+            'title': 'Test item title 1',
+        })
+
+        input_item = {'title': 'Test item title 2'}
+        il = TestItemLoader(item=input_item)
+        # Values from dict must be added to item _values
+        self.assertEqual(il._values.get('title'), 'Test item title 2')
+
 
 class ProcessorsTest(unittest.TestCase):
 
@@ -709,28 +732,28 @@ class SubselectorLoaderTest(unittest.TestCase):
 
 
 class SelectJmesTestCase(unittest.TestCase):
-        test_list_equals = {
-            'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
-            'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
-            'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'dict': (
-                'foo.bar[*].name',
-                {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
-                ['one', 'two']
-            ),
-            'list': ('[1]', [1, 2], 2)
-        }
+    test_list_equals = {
+        'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
+        'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
+        'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'dict': (
+            'foo.bar[*].name',
+            {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
+            ['one', 'two']
+        ),
+        'list': ('[1]', [1, 2], 2)
+    }
 
-        def test_output(self):
-            for l in self.test_list_equals:
-                expr, test_list, expected = self.test_list_equals[l]
-                test = SelectJmes(expr)(test_list)
-                self.assertEqual(
-                    test,
-                    expected,
-                    msg='test "{}" got {} expected {}'.format(l, test, expected)
-                )
+    def test_output(self):
+        for l in self.test_list_equals:
+            expr, test_list, expected = self.test_list_equals[l]
+            test = SelectJmes(expr)(test_list)
+            self.assertEqual(
+                test,
+                expected,
+                msg='test "{}" got {} expected {}'.format(l, test, expected)
+            )
 
 
 if __name__ == "__main__":
