@@ -3,8 +3,10 @@
 See documentation in docs/topics/loaders.rst
 
 """
+from collections import MutableMapping
 from collections import defaultdict
 import six
+import copy
 
 from scrapy.item import Item
 from scrapy.selector import Selector
@@ -17,6 +19,38 @@ from .common import wrap_loader_context
 from .processors import Identity
 
 
+class CompoundItemValues(MutableMapping):
+    def __init__(self, original_item=None):
+        self.item = original_item
+        self.reset_values()
+
+    def reset_values(self):
+        self.current_values = copy.deepcopy(self.item) or {}
+        self.local_values = defaultdict(list)
+
+    def __getitem__(self, key):
+        if key in self.current_values and not key in self.local_values:
+            self.local_values[key] = self.current_values[key]
+            del self.current_values[key]
+
+        return self.local_values[key]
+
+    def __setitem__(self, key, value):
+        self.local_values[key] = value
+
+    def __delitem__(self, key):
+        if key in self.current_values:
+            del self.current_values[key]
+        if key in self.local_values:
+            del self.local_values[key]
+
+    def __iter__(self):
+        return self.local_values.__iter__()
+
+    def __len__(self):
+        return self.local_values.__len__()
+
+
 class ItemLoader(object):
 
     default_item_class = Item
@@ -24,46 +58,28 @@ class ItemLoader(object):
     default_output_processor = Identity()
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
+    def __init__(self, item=None, selector=None, response=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
+        self.context = context
         if item is None:
             item = self.default_item_class()
-        self.context = context
-        self.parent = parent
-        self._local_item = context['item'] = item
-        self._local_values = defaultdict(list)
-
-    @property
-    def _values(self):
-        if self.parent is not None:
-            return self.parent._values
+        if isinstance(item, CompoundItemValues):
+            self._values = item
         else:
-            return self._local_values
+            self._values = CompoundItemValues(item)
+        self.item = context['item'] = self._values.item
 
-    @property
-    def item(self):
-        if self.parent is not None:
-            return self.parent.item
-        else:
-            return self._local_item
-
-    def nested_xpath(self, xpath, **context):
+    def nested_xpath(self, xpath):
         selector = self.selector.xpath(xpath)
-        context.update(selector=selector)
-        subloader = self.__class__(
-            item=self.item, parent=self, **context
-        )
+        subloader = self.__class__(item=self._values, selector=selector)
         return subloader
 
-    def nested_css(self, css, **context):
+    def nested_css(self, css):
         selector = self.selector.css(css)
-        context.update(selector=selector)
-        subloader = self.__class__(
-            item=self.item, parent=self, **context
-        )
+        subloader = self.__class__(item=self._values, selector=selector)
         return subloader
 
     def add_value(self, field_name, value, *processors, **kw):
@@ -122,10 +138,10 @@ class ItemLoader(object):
         proc = self.get_output_processor(field_name)
         proc = wrap_loader_context(proc, self.context)
         try:
-            return proc(self._values[field_name])
+            return proc(self.get_collected_values(field_name))
         except Exception as e:
             raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
-                (field_name, self._values[field_name], type(e).__name__, str(e)))
+                (field_name, self.get_collected_values(field_name), type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]

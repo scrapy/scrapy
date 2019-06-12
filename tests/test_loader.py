@@ -210,6 +210,74 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'mart'])
 
+    def test_load_item_using_default_loader_and_replace(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = ItemLoader(item=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+
+        assert item is i
+        self.assertEqual(item['summary'], u'lala')
+        self.assertEqual(item['name'], [u'marta'])
+
+        il.replace_value('summary', u'lolo')
+        self.assertEqual(il.get_output_value('summary'), [u'lolo'])
+
+        item = il.load_item()
+        assert item is i
+        self.assertEqual(item['summary'], [u'lolo'])
+
+    def test_load_item_and_replace_from_previous_item(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        il2.replace_value('name', u'pedro')
+        self.assertEqual(il2.get_output_value('name'), [u'pedr'])
+        self.assertEqual(il2.load_item()['name'], [u'pedr'])
+
+    def test_load_item_and_output_value_from_previous_item(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        self.assertEqual(il2.get_output_value('name'), [u'mart'])
+        self.assertEqual(il2.load_item()['name'], [u'mart'])
+
+    def test_load_item_from_previous_item_adding_more_values(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        il2.add_value('name', u'maria')
+        self.assertEqual(il2.get_output_value('name'), [u'mart', u'mari'])
+        self.assertEqual(il2.load_item()['name'], [u'mart', u'mari'])
+
+    def test_load_item_from_previous_item_adding_item_without_field_type(self):
+        il1 = DefaultedItemLoader()
+        il1.add_value('name', u'marta')
+
+        il2 = DefaultedItemLoader(item=il1.load_item())
+        il2.add_value(None, il1.load_item())
+        self.assertEqual(il2.get_output_value('name'), [u'mart', u'mar'])
+        self.assertEqual(il2.load_item()['name'], [u'mart', u'mar'])
+
+    def test_load_item_with_multiple_additions_on_same_field(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+
+        output = []
+        item = i
+        for times in range(10):
+            il = DefaultedItemLoader(item=item)
+            il.add_value('name', u'lolo')
+            output.append(u'lol')
+            item = il.load_item()
+            assert item is i
+            self.assertEqual(item['summary'], u'lala')
+            self.assertEqual(item['name'], output)
+
     def test_inherited_default_input_processor(self):
         class InheritDefaultedItemLoader(DefaultedItemLoader):
             pass
