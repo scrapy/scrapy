@@ -91,28 +91,69 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.pipe._modify_media_request(request)
         assert request.meta == {'handle_httpstatus_all': True}
 
-    def test_cache_result(self):
+    def test_should_remove_req_res_references_before_caching_the_results(self):
+        """Regression test case to prevent a memory leak in the Media Pipeline.
+
+        The memory leak is triggered when an exception is raised when a Response
+        scheduled by the Media Pipeline is being returned. For example, when a
+        FileException('download-error') is raised because the Response status
+        code is not 200 OK.
+
+        It happens because we are keeping a reference to the Response object
+        inside the FileException context. This is caused by the way Twisted
+        return values from inline callbacks. It raises a custom exception
+        encapsulating the original return value.
+
+        The solution is to remove the exception context when this context is a
+        _DefGen_Return instance, the BaseException used by Twisted to pass the
+        returned value from those inline callbacks.
+
+        Maybe there's a better and more reliable way to test the case described
+        here, but it would be more complicated and involve running - or at least
+        mocking - some async steps from the Media Pipeline. The current test
+        case is simple and detects the problem very fast. On the other hand, it
+        would not detect another kind of leak happening due to old object
+        references being kept inside the Media Pipeline cache.
+        """
+        # Create sample pair of Request and Response objects
         request = Request('http://url')
         response = Response('http://url', body=b'', request=request)
 
+        # Simulate the Media Pipeline behavior to produce a Twisted Failure
         try:
+            # Simulate a Twisted inline callback returning a Response
+            # The returnValue method raises an exception encapsulating the value
             returnValue(response)
         except BaseException as exc:
-            result = exc
+            def_gen_return_exc = exc
             try:
-                raise FileException('download-error') from result
+                # Simulate the media_downloaded callback raising a FileException
+                # This usually happens when the status code is not 200 OK
+                raise FileException('download-error') from def_gen_return_exc
             except Exception as exc:
                 file_exc = exc
+                # Simulate Twisted capturing the FileException
+                # It encapsulates the exception inside a Twisted Failure
+                failure = Failure(file_exc)
 
-        failure = Failure(file_exc)
-        self.assertEqual(failure.value.__context__, result)
+        # The Failure should encapsulate a FileException ...
+        self.assertEqual(failure.value, file_exc)
+        # ... and it should have the returnValue exception as its context
+        self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
+        # Let's calculate the request fingerprint and fake some runtime data...
         fp = request_fingerprint(request)
         info = self.pipe.spiderinfo
         info.downloading.add(fp)
         info.waiting[fp] = []
 
+        # When calling the method that caches the Request's result ...
         self.pipe._cache_result_and_execute_waiters(failure, fp, info)
+        # ... it should store the Twisted Failure ...
+        self.assertEqual(info.downloaded[fp], failure)
+        # ... encapsulating the original FileException ...
+        self.assertEqual(info.downloaded[fp].value, file_exc)
+        # ... but it should not store the returnValue exception on its context
         self.assertIsNone(info.downloaded[fp].value.__context__)
 
 
