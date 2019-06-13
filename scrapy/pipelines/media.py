@@ -140,7 +140,22 @@ class MediaPipeline(object):
             result.frames = []
             result.stack = None
 
-            # See twisted.internet.defer.returnValue docstring
+            # This code fixes a memory leak by avoiding to keep references to
+            # the Request and Response objects on the Media Pipeline cache.
+            #
+            # Twisted inline callbacks pass return values using the function
+            # twisted.internet.defer.returnValue, which encapsulates the return
+            # value inside a _DefGen_Return base exception.
+            #
+            # What happens when the media_downloaded callback raises another
+            # exception, for example a FileException('download-error') when
+            # the Response status code is not 200 OK, is that it stores the
+            # _DefGen_Return exception on the FileException context.
+            #
+            # To avoid keeping references to the Response and therefore Request
+            # objects on the Media Pipeline cache, we should wipe the context of
+            # the exception encapsulated by the Twisted Failure when its a
+            # _DefGen_Return instance.
             if isinstance(result.value.__context__, _DefGen_Return):
                 result.value.__context__ = None
 
