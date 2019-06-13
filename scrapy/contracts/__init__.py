@@ -12,9 +12,10 @@ from scrapy.utils.python import get_spec
 class ContractsManager(object):
     contracts = {}
 
-    def __init__(self, contracts):
+    def __init__(self, contracts, verbose=None):
         for contract in contracts:
             self.contracts[contract.name] = contract
+        self.verbose = verbose
 
     def tested_methods_from_spidercls(self, spidercls):
         methods = []
@@ -33,16 +34,16 @@ class ContractsManager(object):
             if line.startswith('@'):
                 name, args = re.match(r'@(\w+)\s*(.*)', line).groups()
                 args = re.split(r'\s+', args)
-
-                contracts.append(self.contracts[name](method, *args))
-
+                contracts.append(self.contracts[name](method, self.verbose, *args))
         return contracts
 
     def from_spider(self, spider, results):
         requests = []
+        if self.verbose: print('Testing Methods:')
         for method in self.tested_methods_from_spidercls(type(spider)):
             bound_method = spider.__getattribute__(method)
             try:
+                if self.verbose: print('-- %s' % bound_method.__name__)
                 requests.append(self.from_method(bound_method, results))
             except Exception:
                 case = _create_testcase(bound_method, 'contract')
@@ -111,10 +112,11 @@ class Contract(object):
     """ Abstract class for contracts """
     request_cls = None
 
-    def __init__(self, method, *args):
+    def __init__(self, method, verbose=None, *args):
         self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)
         self.testcase_post = _create_testcase(method, '@%s post-hook' % self.name)
         self.args = args
+        self.verbose = verbose
 
     def add_pre_hook(self, request, results):
         if hasattr(self, 'pre_process'):

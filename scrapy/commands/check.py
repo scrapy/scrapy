@@ -59,7 +59,7 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         # load contracts
         contracts = build_component_list(self.settings.getwithbase('SPIDER_CONTRACTS'))
-        conman = ContractsManager(load_object(c) for c in contracts)
+        conman = ContractsManager([load_object(c) for c in contracts], opts.verbose)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
@@ -73,6 +73,7 @@ class Command(ScrapyCommand):
             spidercls.start_requests = lambda s: conman.from_spider(s, result)
 
             tested_methods = conman.tested_methods_from_spidercls(spidercls)
+            print('Checking spider %s...' % spidername)
             if opts.list:
                 for method in tested_methods:
                     contract_reqs[spidercls.name].append(method)
