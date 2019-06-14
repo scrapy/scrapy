@@ -315,7 +315,7 @@ The keys are URI schemes and the values are paths to storage classes.
 .. setting:: FEED_STORAGE_FTP_ACTIVE
 
 FEED_STORAGE_FTP_ACTIVE
--------------------
+-----------------------
 
 Default: ``False``
 
