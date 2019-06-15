@@ -1,7 +1,22 @@
 # coding=utf-8
 from twisted.trial import unittest
 from scrapy.utils.python import to_native_str
-from scrapy.extensions.robotstxtparser import PythonRobotParser, ReppyRobotParser, RerpRobotParser
+
+
+def reppyAvailable():
+    try:
+        from reppy.robots import Robots
+    except ImportError:
+        return False
+    return True
+
+def rerpAvailable():
+    try:
+        from robotexclusionrulesparser import RobotExclusionRulesParser
+    except ImportError:
+        return False
+    return True
+    
 
 class BaseRobotParserTest(unittest.TestCase):
     def _setUp(self, parser_cls):
@@ -131,6 +146,7 @@ class BaseRobotParserTest(unittest.TestCase):
 
 class PythonRobotParserTest(BaseRobotParserTest):
     def setUp(self):
+        from scrapy.extensions.robotstxtparser import PythonRobotParser
         super(PythonRobotParserTest, self)._setUp(PythonRobotParser)
 
     def test_allowed(self):
@@ -142,6 +158,7 @@ class PythonRobotParserTest(BaseRobotParserTest):
 
     def test_sitemaps(self):
         """RobotFileParse doesn't support Sitemap directive. PythonRobotParser should always return an empty generator."""
+        from scrapy.extensions.robotstxtparser import PythonRobotParser
         robotstxt_content = ("User-agent: * \n"
             "Disallow: /disallowed \n"
             "Allow: /allowed \n"
@@ -153,7 +170,8 @@ class PythonRobotParserTest(BaseRobotParserTest):
         super(PythonRobotParserTest, self)._test_no_preferred_host()
 
     def test_crawl_delay(self):
-        # RobotFileParser does not support Crawl-delay directive for Python version < 3.6
+        """RobotFileParser does not support Crawl-delay directive for Python version < 3.6"""
+        from scrapy.extensions.robotstxtparser import PythonRobotParser
         from six.moves.urllib_robotparser import RobotFileParser
         if hasattr(RobotFileParser, "crawl_delay"):
             super(PythonRobotParserTest, self)._test_crawl_delay()
@@ -181,7 +199,11 @@ class PythonRobotParserTest(BaseRobotParserTest):
         super(PythonRobotParserTest, self)._test_unicode_url_and_useragent()
 
 class ReppyRobotParserTest(BaseRobotParserTest):
+    if not reppyAvailable():
+        skip = "Reppy parser is not installed"
+    
     def setUp(self):
+        from scrapy.extensions.robotstxtparser import ReppyRobotParser
         super(ReppyRobotParserTest, self)._setUp(ReppyRobotParser)
 
     def test_allowed(self):
@@ -218,7 +240,11 @@ class ReppyRobotParserTest(BaseRobotParserTest):
         super(ReppyRobotParserTest, self)._test_unicode_url_and_useragent()
 
 class RerpRobotParserTest(BaseRobotParserTest):
+    if not rerpAvailable():
+        skip = "Rerp parser is not installed"
+    
     def setUp(self):
+        from scrapy.extensions.robotstxtparser import RerpRobotParser
         super(RerpRobotParserTest, self)._setUp(RerpRobotParser)
 
     def test_allowed(self):
