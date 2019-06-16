@@ -952,31 +952,31 @@ interface described below.
 
     .. method:: __init__(content)
 
-      Parse content of robots.txt_ file as bytes.
+      Parse the content of a robots.txt_ file as bytes.
 
-      :param content: Content of robots.txt_ file.
+      :param content: Content of a robots.txt_ file.
       :type content: bytes
 
-    .. method:: allowed(url, useragent)
+    .. method:: allowed(url, user_agent)
 
-      Return ``True`` if ``url`` is allowed for crawling by the given ``useragent``, otherwise return ``False``.
+      Return ``True`` if  ``user_agent`` is allowed to crawl ``url``, otherwise return ``False``.
 
-      :param url: Absolute URL to find crawling permission for.
+      :param url: Absolute URL
       :type url: string
 
-      :param useragent: User agent to find crawling permission for.
-      :type useragent: string
+      :param user_agent: User agent
+      :type user_agent: string
 
     .. method:: sitemaps()
 
       Return a generator yielding URL to sitemaps on the website. If there is no sitemap specified, return an empty generator.
 
-    .. method:: crawl_delay(useragent)
+    .. method:: crawl_delay(user_agent)
 
       Return time (in seconds) specified with ``Crawl-delay`` directive as a float. If nothing is specified, return ``None``.
 
-      :param useragent: User agent to find ``Crawl-delay`` for.
-      :type useragent: string
+      :param user_agent: User agent to find ``Crawl-delay`` for.
+      :type user_agent: string
 
     .. method:: preferred_host()
 

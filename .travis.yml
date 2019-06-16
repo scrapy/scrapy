@@ -28,10 +28,14 @@ matrix:
       env: TOXENV=docs
     - python: 3.7
       env: TOXENV=reppy-py37
+      dist: xenial
+      sudo: true
     - python: 2.7
       env: TOXENV=reppy-py27
     - python: 3.7
       env: TOXENV=rerp-py37
+      dist: xenial
+      sudo: true
     - python: 2.7
       env: TOXENV=rerp-py27
 install:

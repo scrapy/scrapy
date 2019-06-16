@@ -100,7 +100,7 @@ class RobotsTxtMiddleware(object):
             errmsg = e.msg if hasattr(e, 'msg') else e.message
 
             missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
-            logger.error('Unable to use %(robotparser)s . Do you have %(module)s installed?'
+            logger.warning('Unable to use %(robotparser)s . Do you have %(module)s installed?'
                         'Falling back to the default robots.txt parser.',
                         {'robotparser': self._parserimpl, 'module': missingmodule}, 
                         exc_info=sys.exc_info(),

@@ -13,30 +13,28 @@ class PythonRobotParser():
         self.rp = RobotFileParser()
         self.rp.parse(content.splitlines()) 
 
-    def allowed(self, url, useragent):
+    def allowed(self, url, user_agent):
         try:
-            useragent = to_native_str(useragent)
+            user_agent = to_native_str(user_agent)
             url = to_native_str(url)
         except UnicodeDecodeError:
             return False
-        return self.rp.can_fetch(useragent, url)
+        return self.rp.can_fetch(user_agent, url)
 
     def sitemaps(self):
         """RobotFileParser does not support Sitemaps directive."""
-        def _get_empty_generator():
-            return
-            yield
-        return _get_empty_generator()
+        return
+        yield
 
-    def crawl_delay(self, useragent):
+    def crawl_delay(self, user_agent):
         """RobotFileParser does not support Crawl-delay directive for Python version < 3.6 ."""
         try:
-            useragent = to_native_str(useragent)
+            user_agent = to_native_str(user_agent)
         except UnicodeDecodeError:
             return None
 
         if hasattr(self.rp, 'crawl_delay'):
-            delay = self.rp.crawl_delay(useragent)
+            delay = self.rp.crawl_delay(user_agent)
             return None if delay is None else float(delay)
         return None
 
@@ -49,14 +47,14 @@ class ReppyRobotParser():
         from reppy.robots import Robots
         self.rp = Robots.parse('', content)
 
-    def allowed(self, url, useragent):
-        return self.rp.allowed(url, useragent)
+    def allowed(self, url, user_agent):
+        return self.rp.allowed(url, user_agent)
 
     def sitemaps(self):
         return (sitemap for sitemap in self.rp.sitemaps)
 
-    def crawl_delay(self, useragent):
-        return self.rp.agent(useragent).delay
+    def crawl_delay(self, user_agent):
+        return self.rp.agent(user_agent).delay
 
     def preferred_host(self):
         """Reppy does not support Host directive."""
@@ -74,23 +72,23 @@ class RerpRobotParser():
             content = ''
         self.rp.parse(content) 
 
-    def allowed(self, url, useragent):
+    def allowed(self, url, user_agent):
         try:
-            useragent = to_unicode(useragent)
+            user_agent = to_unicode(user_agent)
             url = to_unicode(url)
         except UnicodeDecodeError:
             return False
-        return self.rp.is_allowed(useragent, url)
+        return self.rp.is_allowed(user_agent, url)
 
     def sitemaps(self):
         return (sitemap for sitemap in self.rp.sitemaps)
 
-    def crawl_delay(self, useragent):
+    def crawl_delay(self, user_agent):
         try:
-            useragent = to_unicode(useragent)
+            user_agent = to_unicode(user_agent)
         except UnicodeDecodeError:
             return None
-        return self.rp.get_crawl_delay(useragent)
+        return self.rp.get_crawl_delay(user_agent)
 
     def preferred_host(self):
         """Robotexclusionrulesparser does not support Host directive."""
