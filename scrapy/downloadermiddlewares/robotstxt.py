@@ -94,7 +94,7 @@ class RobotsTxtMiddleware(object):
             'robotstxt/response_status_count/{}'.format(response.status))
         
         try:
-            rp = load_object(self._parserimpl)(response.body)
+            rp = load_object(self._parserimpl)(response.body, self.crawler)
         except ImportError as e:
             # For Python 2 compatibility
             errmsg = e.msg if hasattr(e, 'msg') else e.message
@@ -106,7 +106,7 @@ class RobotsTxtMiddleware(object):
                         exc_info=sys.exc_info(),
                         extra={'spider': spider})
             
-            rp = PythonRobotParser(response.body)
+            rp = PythonRobotParser(response.body, self.crawler)
 
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
