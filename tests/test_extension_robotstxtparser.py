@@ -157,7 +157,7 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
             "Disallow: /disallowed \n"
             "Allow: /allowed \n"
             "Sitemap: https://site.local/sitemap.xml".encode('utf-8'))
-        rp = PythonRobotParser(robotstxt_content)
+        rp = PythonRobotParser(robotstxt_content, crawler=None)
         self.assertTrue(not list(rp.sitemaps()))
 
     def test_crawl_delay(self):
@@ -171,7 +171,7 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
                                 "Disallow: /disallowed \n"
                                 "Allow: /allowed \n"
                                 "Crawl-delay: 10".encode('utf-8'))
-            rp = PythonRobotParser(robotstxt_content)
+            rp = PythonRobotParser(robotstxt_content, crawler=None)
             self.assertTrue(rp.crawl_delay("*") is None)
 
     def test_length_based_precedence(self):

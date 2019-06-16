@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 class PythonRobotParser():
     def __init__(self, content, crawler):
         self.crawler = crawler
+        self.spider = None if not crawler else crawler.spider
         try:
             content = to_native_str(content)
         except UnicodeDecodeError:
@@ -18,7 +19,7 @@ class PythonRobotParser():
                 "File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
                 {'parser': "RobotFileParser"},
                 exc_info=sys.exc_info(),
-                extra={'spider': self.crawler.spider})
+                extra={'spider': self.spider})
             content = ''
         self.rp = RobotFileParser()
         self.rp.parse(content.splitlines())
@@ -37,7 +38,7 @@ class PythonRobotParser():
             "%(parser)s does not support Sitemaps directive.",
             {'parser': "RobotFileParser"},
             exc_info=sys.exc_info(),
-            extra={'spider': self.crawler.spider})
+            extra={'spider': self.spider})
         return
         yield
 
@@ -59,14 +60,15 @@ class PythonRobotParser():
             "%(parser)s does not support Host directive.",
             {'parser': "RobotFileParser"},
             exc_info=sys.exc_info(),
-            extra={'spider': self.crawler.spider})
+            extra={'spider': self.spider})
         return None
 
 class ReppyRobotParser():
     def __init__(self, content, crawler):
         from reppy.robots import Robots
-        self.rp = Robots.parse('', content)
         self.crawler = crawler
+        self.spider = None if not crawler else crawler.spider
+        self.rp = Robots.parse('', content)
 
     def allowed(self, url, user_agent):
         return self.rp.allowed(url, user_agent)
@@ -83,12 +85,14 @@ class ReppyRobotParser():
             "%(parser)s does not support Host directive.",
             {'parser': "Reppy parser"},
             exc_info=sys.exc_info(),
-            extra={'spider': self.crawler.spider})
+            extra={'spider': self.spider})
         return None
 
 class RerpRobotParser():
     def __init__(self, content, crawler):
         from robotexclusionrulesparser import RobotExclusionRulesParser
+        self.crawler = crawler
+        self.spider = None if not crawler else crawler.spider
         self.rp = RobotExclusionRulesParser()
         try:
             content = content.decode('utf-8')
@@ -97,7 +101,6 @@ class RerpRobotParser():
             # Switch to 'allow all' state.
             content = ''
         self.rp.parse(content)
-        self.crawler = crawler 
 
     def allowed(self, url, user_agent):
         try:
@@ -123,5 +126,5 @@ class RerpRobotParser():
             "%(parser)s does not support Host directive.",
             {'parser': "RobotExclusionRulesParser"},
             exc_info=sys.exc_info(),
-            extra={'spider': self.crawler.spider})
+            extra={'spider': self.spider})
         return None
