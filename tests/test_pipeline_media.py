@@ -1,4 +1,7 @@
 from __future__ import print_function
+
+import sys
+
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
@@ -114,6 +117,9 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         case is simple and detects the problem very fast. On the other hand, it
         would not detect another kind of leak happening due to old object
         references being kept inside the Media Pipeline cache.
+
+        This problem does not occur in Python 2.7 since we don't have Exception
+        Chaining (https://www.python.org/dev/peps/pep-3134/).
         """
         # Create sample pair of Request and Response objects
         request = Request('http://url')
@@ -138,8 +144,10 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and it should have the returnValue exception as its context
-        self.assertEqual(failure.value.__context__, def_gen_return_exc)
+        # ... and if we're running on Python 3 ...
+        if sys.version_info.major >= 3:
+            # ... it should have the returnValue exception set as its context
+            self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
         fp = request_fingerprint(request)
@@ -154,7 +162,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         # ... encapsulating the original FileException ...
         self.assertEqual(info.downloaded[fp].value, file_exc)
         # ... but it should not store the returnValue exception on its context
-        self.assertIsNone(info.downloaded[fp].value.__context__)
+        self.assertIsNone(getattr(info.downloaded[fp].value, '__context__'))
 
 
 class MockedMediaPipeline(MediaPipeline):

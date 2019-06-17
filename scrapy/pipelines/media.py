@@ -156,7 +156,10 @@ class MediaPipeline(object):
             # objects on the Media Pipeline cache, we should wipe the context of
             # the exception encapsulated by the Twisted Failure when its a
             # _DefGen_Return instance.
-            if isinstance(result.value.__context__, _DefGen_Return):
+            #
+            # This problem does not occur in Python 2.7 since we don't have
+            # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
+            if isinstance(getattr(result.value, '__context__'), _DefGen_Return):
                 result.value.__context__ = None
 
         info.downloading.remove(fp)
