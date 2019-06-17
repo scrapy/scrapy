@@ -175,12 +175,10 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
             self.assertTrue(rp.crawl_delay("*") is None)
 
     def test_length_based_precedence(self):
-        """RobotFileParser does not support length based directives precedence."""
-        raise  unittest.SkipTest
+        raise unittest.SkipTest("RobotFileParser does not support length based directives precedence.")
 
     def test_allowed_wildcards(self):
-        """RobotFileParser does not support wildcards."""
-        raise unittest.SkipTest
+        raise unittest.SkipTest("RobotFileParser does not support wildcards.")
 
 
 class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
