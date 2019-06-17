@@ -34,6 +34,9 @@ class Slot(object):
         return self.concurrency - len(self.transferring)
 
     def download_delay(self):
+        if self.queue:
+            if "per_request_delay" in self.queue[0][0].meta.keys():
+                return self.queue[0][0].meta["per_request_delay"]
         if self.randomize_delay:
             return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
