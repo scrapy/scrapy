@@ -162,7 +162,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         # ... encapsulating the original FileException ...
         self.assertEqual(info.downloaded[fp].value, file_exc)
         # ... but it should not store the returnValue exception on its context
-        self.assertIsNone(getattr(info.downloaded[fp].value, '__context__'))
+        context = getattr(info.downloaded[fp].value, '__context__', None)
+        self.assertIsNone(context)
 
 
 class MockedMediaPipeline(MediaPipeline):
