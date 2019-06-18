@@ -159,8 +159,9 @@ class MediaPipeline(object):
             #
             # This problem does not occur in Python 2.7 since we don't have
             # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
-            if isinstance(getattr(result.value, '__context__'), _DefGen_Return):
-                result.value.__context__ = None
+            context = getattr(result.value, '__context__', None)
+            if isinstance(context, _DefGen_Return):
+                setattr(result.value, '__context__', None)
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
