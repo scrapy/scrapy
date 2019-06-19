@@ -3,7 +3,7 @@ from twisted.trial import unittest
 from scrapy.utils.python import to_native_str
 
 
-def reppyAvailable():
+def reppy_available():
     # check if reppy parser is installed
     try:
         from reppy.robots import Robots
@@ -11,7 +11,7 @@ def reppyAvailable():
         return False
     return True
 
-def rerpAvailable():
+def rerp_available():
     # check if robotexclusionrulesparser is installed 
     try:
         from robotexclusionrulesparser import RobotExclusionRulesParser
@@ -29,7 +29,7 @@ class BaseRobotParserTest():
                     "Disallow: /disallowed \n"
                     "Allow: /allowed \n"
                     "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.allowed("https://www.site.local/allowed", "*"))
         self.assertFalse(rp.allowed("https://www.site.local/disallowed", "*"))
 
@@ -41,7 +41,7 @@ class BaseRobotParserTest():
                                 Allow: /*allowed
                                 Disallow: /
                                 """.encode('utf-8')
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
 
         self.assertTrue(rp.allowed("https://www.site.local/disallowed", "first"))
         self.assertFalse(rp.allowed("https://www.site.local/disallowed/xyz/end", "first"))
@@ -56,14 +56,14 @@ class BaseRobotParserTest():
         robotstxt_content = ("User-agent: * \n"
                             "Disallow: / \n"
                             "Allow: /page".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.allowed("https://www.site.local/page", "*"))
 
     def test_order_based_precedence(self):
         robotstxt_content = ("User-agent: * \n"
                             "Disallow: / \n"
                             "Allow: /page".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertFalse(rp.allowed("https://www.site.local/page", "*"))      
     
     def test_sitemaps(self):
@@ -71,7 +71,7 @@ class BaseRobotParserTest():
                     "Disallow: /disallowed \n"
                     "Allow: /allowed \n"
                     "Sitemap: https://site.local/sitemap.xml".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         sitemaps = list(rp.sitemaps())
         self.assertTrue(len(sitemaps) == 1)
         self.assertTrue("https://site.local/sitemap.xml" in sitemaps)
@@ -81,7 +81,7 @@ class BaseRobotParserTest():
                     "Disallow: /disallowed \n"
                     "Allow: /allowed \n"
                     "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(not list(rp.sitemaps()))
 
     def test_no_preferred_host(self):
@@ -89,7 +89,7 @@ class BaseRobotParserTest():
                             "Disallow: /disallowed \n"
                             "Allow: /allowed \n"
                             "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.preferred_host() is None)
 
     def test_crawl_delay(self):
@@ -97,19 +97,19 @@ class BaseRobotParserTest():
                             "Disallow: /disallowed \n"
                             "Allow: /allowed \n"
                             "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.crawl_delay('*') == 10.0)
 
     def test_no_crawl_delay(self):
         robotstxt_content = ("User-agent: * \n"
                     "Disallow: /disallowed \n"
                     "Allow: /allowed".encode('utf-8'))
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.crawl_delay('*') is None)
 
     def test_empty_response(self):
         """empty response should equal 'allow all'"""
-        rp = self.parser_cls(b'', spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, b'')
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertTrue(rp.allowed("https://site.local/", "chrome"))
         self.assertTrue(rp.allowed("https://site.local/index.html", "*"))
@@ -118,7 +118,7 @@ class BaseRobotParserTest():
     def test_garbage_response(self):
         """garbage response should be discarded, equal 'allow all'"""
         robotstxt_content = b'GIF89a\xd3\x00\xfe\x00\xa2'
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertTrue(rp.allowed("https://site.local/", "chrome"))
         self.assertTrue(rp.allowed("https://site.local/index.html", "*"))
@@ -135,7 +135,7 @@ class BaseRobotParserTest():
 
         User-Agent: UnicödeBöt
         Disallow: /some/randome/page.html""".encode('utf-8')
-        rp = self.parser_cls(robotstxt_content, spider=None)
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertFalse(rp.allowed("https://site.local/admin/", "*"))
         self.assertFalse(rp.allowed("https://site.local/static/", "*"))
@@ -157,7 +157,7 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
             "Disallow: /disallowed \n"
             "Allow: /allowed \n"
             "Sitemap: https://site.local/sitemap.xml".encode('utf-8'))
-        rp = PythonRobotParser(robotstxt_content, spider=None)
+        rp = PythonRobotParser.from_crawler(crawler=None, robotstxt_content)
         self.assertTrue(not list(rp.sitemaps()))
 
     def test_crawl_delay(self):
@@ -171,7 +171,7 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
                                 "Disallow: /disallowed \n"
                                 "Allow: /allowed \n"
                                 "Crawl-delay: 10".encode('utf-8'))
-            rp = PythonRobotParser(robotstxt_content, spider=None)
+            rp = PythonRobotParser.from_crawler(crawler=None, robotstxt_content)
             self.assertTrue(rp.crawl_delay("*") is None)
 
     def test_length_based_precedence(self):
@@ -182,7 +182,7 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
 
 class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not reppyAvailable():
+    if not reppy_available():
         skip = "Reppy parser is not installed"
     
     def setUp(self):
@@ -194,7 +194,7 @@ class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
 
 class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not rerpAvailable():
+    if not rerp_available():
         skip = "Rerp parser is not installed"
     
     def setUp(self):
