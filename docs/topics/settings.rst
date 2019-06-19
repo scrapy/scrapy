@@ -1113,6 +1113,16 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
 
+.. setting:: ROBOTSTXT_PARSER
+
+ROBOTSTXT_PARSER
+----------------
+
+Default: ``'scrapy.extensions.robotstxtparser.PythonRobotParser'``
+
+The parser backend to use for parsing ``robots.txt`` files. For more information see
+:ref:`topics-dlmw-robots`.
+
 .. setting:: SCHEDULER
 
 SCHEDULER
