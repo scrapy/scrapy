@@ -46,7 +46,7 @@ class RobotsTxtMiddleware(object):
     def process_request_2(self, rp, request, spider):
         if rp is None:
             return
-        if not rp.allowed(request.url, to_native_str(self._useragent)):
+        if not rp.allowed(request.url, self._useragent):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
@@ -94,20 +94,18 @@ class RobotsTxtMiddleware(object):
             'robotstxt/response_status_count/{}'.format(response.status))
         
         try:
-            rp = load_object(self._parserimpl)(response.body, self.crawler)
+            rp = load_object(self._parserimpl).from_crawler(self.crawler, response.body)
         except ImportError as e:
             # For Python 2 compatibility
             errmsg = e.msg if hasattr(e, 'msg') else e.message
 
             missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
-            logger.warning('Unable to use %(robotparser)s . Do you have %(module)s installed?'
-                        'Falling back to the default robots.txt parser.',
+            logger.error('Unable to use \'%(robotparser)s\'. Do you have \'%(module)s\' module installed?',
                         {'robotparser': self._parserimpl, 'module': missingmodule}, 
                         exc_info=sys.exc_info(),
                         extra={'spider': spider})
+            rp = None
             
-            rp = PythonRobotParser(response.body, self.crawler)
-
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
         rp_dfd.callback(rp)

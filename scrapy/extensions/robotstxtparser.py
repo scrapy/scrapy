@@ -1,15 +1,14 @@
 import sys
 import logging
-from six.moves.urllib_robotparser import RobotFileParser
 
 from scrapy.utils.python import to_native_str, to_unicode
 
 logger = logging.getLogger(__name__)
 
 class PythonRobotParser():
-    def __init__(self, content, crawler):
-        self.crawler = crawler
-        self.spider = None if not crawler else crawler.spider
+    def __init__(self, content, spider):
+        from six.moves.urllib_robotparser import RobotFileParser
+        self.spider = spider
         try:
             content = to_native_str(content)
         except UnicodeDecodeError:
@@ -24,12 +23,15 @@ class PythonRobotParser():
         self.rp = RobotFileParser()
         self.rp.parse(content.splitlines())
 
+    @classmethod
+    def from_crawler(cls, crawler, content):
+        spider = None if not crawler else crawler.spider
+        o = cls(content, spider)
+        return o
+
     def allowed(self, url, user_agent):
-        try:
-            user_agent = to_native_str(user_agent)
-            url = to_native_str(url)
-        except UnicodeDecodeError:
-            return False
+        user_agent = to_native_str(user_agent)
+        url = to_native_str(url)
         return self.rp.can_fetch(user_agent, url)
 
     def sitemaps(self):
@@ -44,11 +46,7 @@ class PythonRobotParser():
 
     def crawl_delay(self, user_agent):
         """RobotFileParser does not support Crawl-delay directive for Python version < 3.6 ."""
-        try:
-            user_agent = to_native_str(user_agent)
-        except UnicodeDecodeError:
-            return None
-
+        user_agent = to_native_str(user_agent)
         if hasattr(self.rp, 'crawl_delay'):
             delay = self.rp.crawl_delay(user_agent)
             return None if delay is None else float(delay)
@@ -64,11 +62,16 @@ class PythonRobotParser():
         return None
 
 class ReppyRobotParser():
-    def __init__(self, content, crawler):
+    def __init__(self, content, spider):
         from reppy.robots import Robots
-        self.crawler = crawler
-        self.spider = None if not crawler else crawler.spider
+        self.spider = spider
         self.rp = Robots.parse('', content)
+
+    @classmethod
+    def from_crawler(cls, crawler, content):
+        spider = None if not crawler else crawler.spider
+        o = cls(content, spider)
+        return o
 
     def allowed(self, url, user_agent):
         return self.rp.allowed(url, user_agent)
@@ -89,35 +92,39 @@ class ReppyRobotParser():
         return None
 
 class RerpRobotParser():
-    def __init__(self, content, crawler):
+    def __init__(self, content, spider):
         from robotexclusionrulesparser import RobotExclusionRulesParser
-        self.crawler = crawler
-        self.spider = None if not crawler else crawler.spider
+        self.spider = spider
         self.rp = RobotExclusionRulesParser()
         try:
             content = content.decode('utf-8')
         except UnicodeDecodeError:
             # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
             # Switch to 'allow all' state.
+            logger.warning("Failure while parsing robots.txt using %(parser)s."
+                "File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
+                {'parser': "RobotExclusionRulesParser"},
+                exc_info=sys.exc_info(),
+                extra={'spider': self.spider})
             content = ''
         self.rp.parse(content)
 
+    @classmethod
+    def from_crawler(cls, crawler, content):
+        spider = None if not crawler else crawler.spider
+        o = cls(content, spider)
+        return o
+
     def allowed(self, url, user_agent):
-        try:
-            user_agent = to_unicode(user_agent)
-            url = to_unicode(url)
-        except UnicodeDecodeError:
-            return False
+        user_agent = to_unicode(user_agent)
+        url = to_unicode(url)
         return self.rp.is_allowed(user_agent, url)
 
     def sitemaps(self):
         return (sitemap for sitemap in self.rp.sitemaps)
 
     def crawl_delay(self, user_agent):
-        try:
-            user_agent = to_unicode(user_agent)
-        except UnicodeDecodeError:
-            return None
+        user_agent = to_unicode(user_agent)
         return self.rp.get_crawl_delay(user_agent)
 
     def preferred_host(self):

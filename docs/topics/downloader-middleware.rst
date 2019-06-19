@@ -996,15 +996,16 @@ interface described below.
 
 .. class:: scrapy.extensions.robotstxtparser.RobotsParser
 
-    .. method:: __init__(content, crawler)
+    .. method:: from_crawler(crawler, content)
 
-      Parse the content of a robots.txt_ file as bytes.
-
-      :param content: Content of a robots.txt_ file.
-      :type content: bytes
+      Parse the content of a robots.txt_ file as bytes. This must be a class method.
+      It must return a new instance of the parser backend.
 
       :param crawler: crawler which made the request
       :type crawler: :class:`~scrapy.crawler.Crawler` instance
+      
+      :param content: Content of a robots.txt_ file.
+      :type content: bytes
 
     .. method:: allowed(url, user_agent)
 
@@ -1029,7 +1030,7 @@ interface described below.
 
     .. method:: preferred_host()
 
-      Return preferred domain specified with ``Host`` directive. If nothing is specified, return ``None``.
+       Return preferred domain specified with ``Host`` directive. If nothing is specified, return ``None``.
 
 
 .. _robots.txt: http://www.robotstxt.org/
