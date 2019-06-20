@@ -25,8 +25,13 @@ class MapCompose(object):
         for func in wrapped_funcs:
             next_values = []
             for v in values:
-                next_values += arg_to_iter(func(v))
-            values = next_values
+                try:
+                    next_values += arg_to_iter(func(v))
+                except Exception as e:
+                    raise ValueError("Error in MapCompose with "
+                                     "function %s value=%r error='%s: %s'" %
+                                     (func.__name__, value,
+                                      type(e).__name__, str(e)))
         return values
 
 
@@ -46,7 +51,13 @@ class Compose(object):
         for func in wrapped_funcs:
             if value is None and self.stop_on_none:
                 break
-            value = func(value)
+            try:
+                value = func(value)
+            except Exception as e:
+                raise ValueError("Error in Compose with "
+                                 "function %s value=%r error='%s: %s'" %
+                                 (func.__name__, value,
+                                  type(e).__name__, str(e)))
         return value
 
 

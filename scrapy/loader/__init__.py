@@ -128,14 +128,6 @@ class ItemLoader(object):
 
         return item
 
-    def get_output_value(self, field_name):
-        proc = self.get_output_processor(field_name)
-        proc = wrap_loader_context(proc, self.context)
-        try:
-            return proc(self._values[field_name])
-        except Exception as e:
-            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
-                (field_name, self._values[field_name], type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
@@ -145,6 +137,14 @@ class ItemLoader(object):
         if not proc:
             proc = self._get_item_field_attr(field_name, 'input_processor', \
                 self.default_input_processor)
+    def get_output_value(self, field_name):
+        proc = self.get_output_processor(field_name)
+        proc = wrap_loader_context(proc, self.context)
+        try:
+            return proc(self._values[field_name])
+        except Exception as e:
+            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
+                (field_name, self._values[field_name], type(e).__name__, str(e)))
         return proc
 
     def get_output_processor(self, field_name):
