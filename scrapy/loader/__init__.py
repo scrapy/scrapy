@@ -155,9 +155,15 @@ class ItemLoader(object):
         return proc
 
     def _process_input_value(self, field_name, value):
-        proc = self.get_input_processor(field_name)
-        proc = wrap_loader_context(proc, self.context)
-        return proc(value)
+        _proc = self.get_input_processor(field_name)
+        proc = wrap_loader_context(_proc, self.context)
+        try:
+            return proc(value)
+        except Exception as e:
+            raise ValueError(
+                "Error with inputput processor %s: field=%r value=%r "
+                "error='%s: %s'" % (_proc.__class__.__name__, field_name,
+                                    value, type(e).__name__, str(e)))
 
     def _get_item_field_attr(self, field_name, key, default=None):
         if isinstance(self.item, Item):
