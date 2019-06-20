@@ -106,11 +106,17 @@ class ItemLoader(object):
             value = arg_to_iter(value)
             value = flatten(extract_regex(regex, x) for x in value)
 
-        for proc in processors:
+        for _proc in processors:
             if value is None:
                 break
-            proc = wrap_loader_context(proc, self.context)
-            value = proc(value)
+            proc = wrap_loader_context(_proc, self.context)
+            try:
+                value = proc(value)
+            except Exception as e:
+                raise ValueError(
+                    "Error with processor %s value=%r error='%s: %s'" %
+                    (_proc.__class__.__name__, value, type(e).__name__,
+                     str(e)))
         return value
 
     def load_item(self):
