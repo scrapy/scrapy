@@ -482,7 +482,7 @@ class ProcessorsTest(unittest.TestCase):
         proc = Compose(str.upper)
         self.assertEqual(proc(None), None)
         proc = Compose(str.upper, stop_on_none=False)
-        self.assertRaises(TypeError, proc, None)
+        self.assertRaises(ValueError, proc, None)
 
     def test_mapcompose(self):
         filter_world = lambda x: None if x == 'world' else x
