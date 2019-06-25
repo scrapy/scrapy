@@ -162,7 +162,7 @@ class ItemLoader(object):
             return proc(value)
         except Exception as e:
             raise ValueError(
-                "Error with inputput processor %s: field=%r value=%r "
+                "Error with input processor %s: field=%r value=%r "
                 "error='%s: %s'" % (_proc.__class__.__name__, field_name,
                                     value, type(e).__name__, str(e)))
 
