@@ -456,6 +456,42 @@ class BasicItemLoaderTest(unittest.TestCase):
             'title': [u'Test item title 3', u'Test item 4'],
         })
 
+    def test_error_input_processor(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+            name_in = MapCompose(float)
+
+        il = TestItemLoader()
+        self.assertRaises(ValueError, il.add_value, 'name',
+                          [u'marta', u'other'])
+
+    def test_error_output_processor(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+            name_out = Compose(Join(), float)
+
+        il = TestItemLoader()
+        il.add_value('name', u'marta')
+        with self.assertRaises(ValueError):
+            il.load_item()
+
+    def test_error_processor_as_argument(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+
+        il = TestItemLoader()
+        self.assertRaises(ValueError, il.add_value, 'name',
+                          [u'marta', u'other'], Compose(float))
+
 
 class ProcessorsTest(unittest.TestCase):
 

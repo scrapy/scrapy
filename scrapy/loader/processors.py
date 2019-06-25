@@ -28,10 +28,12 @@ class MapCompose(object):
                 try:
                     next_values += arg_to_iter(func(v))
                 except Exception as e:
+                    type_name = type(func).__name__
+                    _name = (func.__name__ if type_name == 'function'
+                             else type_name)
                     raise ValueError("Error in MapCompose with "
                                      "function %s value=%r error='%s: %s'" %
-                                     (func.__name__, value,
-                                      type(e).__name__, str(e)))
+                                     (_name, value, type(e).__name__, str(e)))
             values = next_values
         return values
 
@@ -55,10 +57,12 @@ class Compose(object):
             try:
                 value = func(value)
             except Exception as e:
+                type_name = type(func).__name__
+                _name = (func.__name__ if type_name == 'function' 
+                         else type_name)
                 raise ValueError("Error in Compose with "
                                  "function %s value=%r error='%s: %s'" %
-                                 (func.__name__, value,
-                                  type(e).__name__, str(e)))
+                                 (_name, value, type(e).__name__, str(e)))
         return value
 
 
