@@ -136,7 +136,6 @@ class ItemLoader(object):
         except Exception as e:
             raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
                 (field_name, self._values[field_name], type(e).__name__, str(e)))
-        return proc
 
     def get_collected_values(self, field_name):
         return self._values[field_name]

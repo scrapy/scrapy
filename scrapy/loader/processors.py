@@ -32,6 +32,7 @@ class MapCompose(object):
                                      "function %s value=%r error='%s: %s'" %
                                      (func.__name__, value,
                                       type(e).__name__, str(e)))
+            values = next_values
         return values
 
 
