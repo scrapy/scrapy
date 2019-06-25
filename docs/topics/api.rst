@@ -99,6 +99,8 @@ how you :ref:`configure the downloader middlewares
 
         Returns a deferred that is fired when the crawl is finished.
 
+    .. automethod:: stop
+
 .. autoclass:: CrawlerRunner
    :members:
 
