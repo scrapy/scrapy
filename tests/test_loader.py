@@ -483,12 +483,21 @@ class ProcessorsTest(unittest.TestCase):
         self.assertEqual(proc(None), None)
         proc = Compose(str.upper, stop_on_none=False)
         self.assertRaises(ValueError, proc, None)
+        proc = Compose(str.upper, lambda x: x + 1)
+        self.assertRaises(ValueError, proc, 'hello')
 
     def test_mapcompose(self):
         filter_world = lambda x: None if x == 'world' else x
         proc = MapCompose(filter_world, six.text_type.upper)
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
+        proc = MapCompose(filter_world, six.text_type.upper)
+        self.assertEqual(proc(None), [])
+        proc = MapCompose(filter_world, six.text_type.upper)
+        self.assertRaises(ValueError, proc, [1])
+        proc = MapCompose(filter_world, lambda x: x + 1)
+        self.assertRaises(ValueError, proc, 'hello')
+
 
 
 class SelectortemLoaderTest(unittest.TestCase):
