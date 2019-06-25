@@ -279,5 +279,24 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_reasons'], ['meta refresh'])
         self.assertEqual(req3.meta['redirect_reasons'], ['meta refresh', 'meta refresh'])
 
+    def test_ignore_tags_default(self):
+        req = Request(url='http://example.org')
+        body = ('''<noscript><meta http-equiv="refresh" '''
+                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        rsp = HtmlResponse(req.url, body=body.encode())
+        response = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(response, Response)
+
+    def test_ignore_tags_empty_list(self):
+        crawler = get_crawler(Spider, {'METAREFRESH_IGNORE_TAGS': []})
+        mw = MetaRefreshMiddleware.from_crawler(crawler)
+        req = Request(url='http://example.org')
+        body = ('''<noscript><meta http-equiv="refresh" '''
+                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        rsp = HtmlResponse(req.url, body=body.encode())
+        req2 = mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, 'http://example.org/newpage')
+
 if __name__ == "__main__":
     unittest.main()
