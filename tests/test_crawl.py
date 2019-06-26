@@ -4,19 +4,16 @@ import logging
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-import six
 
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.python import to_unicode
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, KeywordArgumentsSpider, \
+from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
 
 
 class CrawlTestCase(TestCase):
-
-    maxDiff = None
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -25,29 +22,6 @@ class CrawlTestCase(TestCase):
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
-
-    @defer.inlineCallbacks
-    def test_callback_kwargs(self):
-        crawler = self.runner.create_crawler(KeywordArgumentsSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(mockserver=self.mockserver)
-        self.assertTrue(all(crawler.spider.checks))
-        self.assertEqual(len(crawler.spider.checks), crawler.stats.get_value('boolean_checks'))
-        # check exceptions for argument mismatch
-        exceptions = {}
-        for line in log.records:
-            for key in ('takes_less', 'takes_more'):
-                if key in line.getMessage():
-                    exceptions[key] = line
-        self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'")
-        self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
-        # py2 and py3 messages are different
-        exc_message = str(exceptions['takes_more'].exc_info[1])
-        if six.PY2:
-            self.assertEqual(exc_message, "parse_takes_more() takes exactly 5 arguments (4 given)")
-        elif six.PY3:
-            self.assertEqual(exc_message, "parse_takes_more() missing 1 required positional argument: 'other'")
 
     @defer.inlineCallbacks
     def test_follow_all(self):
