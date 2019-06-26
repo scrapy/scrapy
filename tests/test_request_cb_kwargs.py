@@ -9,9 +9,26 @@ from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
 
 
-class KeywordArgumentsSpider(MockServerSpider):
+class InjectArgumentsDownloaderMiddleware(object):
+    def process_request(self, request, spider):
+        if request.callback.__name__ == 'parse_downloader_mw':
+            request.cb_kwargs['from_process_request'] = True
+        return None
 
+    def process_response(self, request, response, spider):
+        if request.callback.__name__ == 'parse_downloader_mw':
+            request.cb_kwargs['from_process_response'] = True
+        return response
+
+
+class KeywordArgumentsSpider(MockServerSpider):
     name = 'kwargs'
+    custom_settings = {
+        'DOWNLOADER_MIDDLEWARES': {
+            __name__ + '.InjectArgumentsDownloaderMiddleware': 750,
+        }
+    }
+
     checks = list()
 
     def start_requests(self):
@@ -23,6 +40,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield Request(self.mockserver.url('/default'), self.parse_default, cb_kwargs=data)
         yield Request(self.mockserver.url('/takes_less'), self.parse_takes_less, cb_kwargs=data)
         yield Request(self.mockserver.url('/takes_more'), self.parse_takes_more, cb_kwargs=data)
+        yield Request(self.mockserver.url('/downloader_mw'), self.parse_downloader_mw)
 
     def parse_first(self, response, key, number):
         self.checks.append(key == 'value')
@@ -68,6 +86,14 @@ class KeywordArgumentsSpider(MockServerSpider):
         Should raise
         TypeError: parse_takes_more() missing 1 required positional argument: 'other'
         """
+
+    def parse_downloader_mw(self, response, from_process_request, from_process_response):
+        """
+        Check if downloader middlewares are able to update the keyword arguments
+        """
+        self.checks.append(bool(from_process_request))
+        self.checks.append(bool(from_process_response))
+        self.crawler.stats.inc_value('boolean_checks', 2)
 
 
 class CallbackKeywordArgumentsTestCase(TestCase):
