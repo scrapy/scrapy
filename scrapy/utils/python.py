@@ -9,6 +9,7 @@ import weakref
 import errno
 import six
 from functools import partial, wraps
+from itertools import chain
 import sys
 
 from scrapy.utils.decorators import deprecated
@@ -387,3 +388,22 @@ if hasattr(sys, "pypy_version_info"):
 else:
     def garbage_collect():
         gc.collect()
+
+
+class MutableChain(object):
+    """
+    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
+    """
+    def __init__(self, *args):
+        self.data = chain(*args)
+
+    def extend(self, *iterables):
+        self.data = chain(self.data, *iterables)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+    def __next__(self):
+        return next(self.data)
+
+    next = __next__

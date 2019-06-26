@@ -135,7 +135,6 @@ class Scraper(object):
             return self.spidermw.scrape_response(
                 self.call_spider, request_result, request, spider)
         else:
-            # FIXME: don't ignore errors in spider middleware
             dfd = self.call_spider(request_result, request, spider)
             return dfd.addErrback(
                 self._log_download_errors, request_result, request, spider)

@@ -805,6 +805,7 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
+* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
@@ -825,6 +826,15 @@ METAREFRESH_ENABLED
 Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
+
+.. setting:: METAREFRESH_IGNORE_TAGS
+
+METAREFRESH_IGNORE_TAGS
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``['script', 'noscript']``
+
+Meta tags within these tags are ignored.
 
 .. setting:: METAREFRESH_MAXDELAY
 

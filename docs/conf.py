@@ -28,7 +28,8 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'scrapydocs',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.coverage',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -217,4 +218,23 @@ latex_documents = [
 linkcheck_ignore = [
     'http://localhost:\d+', 'http://hg.scrapy.org',
     'http://directory.google.com/'
+]
+
+
+# Options for the Coverage extension
+# ----------------------------------
+coverage_ignore_pyobjects = [
+    # Contract’s add_pre_hook and add_post_hook are not documented because
+    # they should be transparent to contract developers, for whom pre_hook and
+    # post_hook should be the actual concern.
+    r'\bContract\.add_(pre|post)_hook$',
+
+    # ContractsManager is an internal class, developers are not expected to
+    # interact with it directly in any way.
+    r'\bContractsManager\b$',
+
+    # For default contracts we only want to document their general purpose in
+    # their constructor, the methods they reimplement to achieve that purpose
+    # should be irrelevant to developers using those contracts.
+    r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
 ]

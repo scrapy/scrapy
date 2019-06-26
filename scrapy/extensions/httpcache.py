@@ -31,7 +31,7 @@ class DummyPolicy(object):
     def should_cache_response(self, response, request):
         return response.status not in self.ignore_http_codes
 
-    def is_cached_response_fresh(self, response, request):
+    def is_cached_response_fresh(self, cachedresponse, request):
         return True
 
     def is_cached_response_valid(self, cachedresponse, response, request):
@@ -70,7 +70,7 @@ class RFC2616Policy(object):
         return True
 
     def should_cache_response(self, response, request):
-        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
+        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
         # Response cacheability - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
