@@ -27,10 +27,11 @@ Common causes of memory leaks
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
 Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.http.Request.meta` attribute or the request callback function)
-and that effectively bounds the lifetime of those referenced objects to the
-lifetime of the Request. This is, by far, the most common cause of memory leaks
-in Scrapy projects, and a quite difficult one to debug for newcomers.
+:attr:`~scrapy.http.Request.cb_kwargs` or :attr:`~scrapy.http.Request.meta`
+attributes or the request callback function) and that effectively bounds the
+lifetime of those referenced objects to the lifetime of the Request. This is,
+by far, the most common cause of memory leaks in Scrapy projects, and a quite
+difficult one to debug for newcomers.
 
 In big projects, the spiders are typically written by different people and some
 of those spiders could be "leaking" and thus affecting the rest of the other
@@ -48,7 +49,8 @@ Too Many Requests?
 
 By default Scrapy keeps the request queue in memory; it includes
 :class:`~scrapy.http.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.meta`).
+referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.cb_kwargs`
+and :attr:`~scrapy.http.Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
@@ -101,7 +103,7 @@ Let's see a concrete example of a hypothetical case of memory leaks.
 Suppose we have some spider with a line similar to this one::
 
     return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
-        callback=self.parse, meta={referer: response})
+                   callback=self.parse, cb_kwargs={'referer': response})
 
 That line is passing a response reference inside a request which effectively
 ties the response lifetime to the requests' one, and that would definitely
