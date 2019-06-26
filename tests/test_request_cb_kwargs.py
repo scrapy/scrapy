@@ -10,6 +10,9 @@ from tests.mockserver import MockServer
 
 
 class InjectArgumentsDownloaderMiddleware(object):
+    """
+    Make sure downloader middlewares are able to update the keyword arguments
+    """
     def process_request(self, request, spider):
         if request.callback.__name__ == 'parse_downloader_mw':
             request.cb_kwargs['from_process_request'] = True
@@ -21,12 +24,38 @@ class InjectArgumentsDownloaderMiddleware(object):
         return response
 
 
+class InjectArgumentsSpiderMiddleware(object):
+    """
+    Make sure spider middlewares are able to update the keyword arguments
+    """
+    def process_start_requests(self, start_requests, spider):
+        for request in start_requests:
+            if request.callback.__name__ == 'parse_spider_mw':
+                request.cb_kwargs['from_process_start_requests'] = True
+            yield request
+
+    def process_spider_input(self, response, spider):
+        request = response.request
+        if request.callback.__name__ == 'parse_spider_mw':
+            request.cb_kwargs['from_process_spider_input'] = True
+        return None
+
+    def process_spider_output(self, response, result, spider):
+        for element in result:
+            if isinstance(element, Request) and element.callback.__name__ == 'parse_spider_mw_2':
+                element.cb_kwargs['from_process_spider_output'] = True
+            yield element
+
+
 class KeywordArgumentsSpider(MockServerSpider):
     name = 'kwargs'
     custom_settings = {
         'DOWNLOADER_MIDDLEWARES': {
             __name__ + '.InjectArgumentsDownloaderMiddleware': 750,
-        }
+        },
+        'SPIDER_MIDDLEWARES': {
+            __name__ + '.InjectArgumentsSpiderMiddleware': 750,
+        },
     }
 
     checks = list()
@@ -41,6 +70,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield Request(self.mockserver.url('/takes_less'), self.parse_takes_less, cb_kwargs=data)
         yield Request(self.mockserver.url('/takes_more'), self.parse_takes_more, cb_kwargs=data)
         yield Request(self.mockserver.url('/downloader_mw'), self.parse_downloader_mw)
+        yield Request(self.mockserver.url('/spider_mw'), self.parse_spider_mw)
 
     def parse_first(self, response, key, number):
         self.checks.append(key == 'value')
@@ -88,12 +118,19 @@ class KeywordArgumentsSpider(MockServerSpider):
         """
 
     def parse_downloader_mw(self, response, from_process_request, from_process_response):
-        """
-        Check if downloader middlewares are able to update the keyword arguments
-        """
         self.checks.append(bool(from_process_request))
         self.checks.append(bool(from_process_response))
         self.crawler.stats.inc_value('boolean_checks', 2)
+
+    def parse_spider_mw(self, response, from_process_spider_input, from_process_start_requests):
+        self.checks.append(bool(from_process_spider_input))
+        self.checks.append(bool(from_process_start_requests))
+        self.crawler.stats.inc_value('boolean_checks', 2)
+        return Request(self.mockserver.url('/spider_mw_2'), self.parse_spider_mw_2)
+
+    def parse_spider_mw_2(self, response, from_process_spider_output):
+        self.checks.append(bool(from_process_spider_output))
+        self.crawler.stats.inc_value('boolean_checks', 1)
 
 
 class CallbackKeywordArgumentsTestCase(TestCase):
