@@ -30,6 +30,8 @@ Python `import search path`_.
 
 .. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
 
+.. _populating-settings:
+
 Populating the settings
 =======================
 
@@ -537,6 +539,8 @@ amount of time between requests, but uses a random interval between 0.5 * :setti
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
+
+.. _spider-download_delay-attribute:
 
 You can also change this setting per spider by setting ``download_delay``
 spider attribute.
