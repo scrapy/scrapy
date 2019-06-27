@@ -30,6 +30,7 @@ extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -73,6 +74,8 @@ language = 'en'
 
 # List of documents that shouldn't be included in the build.
 #unused_docs = []
+
+exclude_patterns = ['build']
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
@@ -250,3 +253,11 @@ coverage_ignore_pyobjects = [
     # Private exception used by the command-line interface implementation.
     r'^scrapy\.exceptions\.UsageError',
 ]
+
+
+# Options for the InterSphinx extension
+# -------------------------------------
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}

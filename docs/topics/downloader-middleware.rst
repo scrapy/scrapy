@@ -52,6 +52,8 @@ as its value.  For example, if you want to disable the user-agent middleware::
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _topics-downloader-middleware-custom:
+
 Writing your own downloader middleware
 ======================================
 
