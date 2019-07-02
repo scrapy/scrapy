@@ -1105,6 +1105,20 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formcss="input[name='abc']")
 
+    def test_from_response_valid_form_methods(self):
+        body = """<form action="post.php" method="%s">
+            <input type="hidden" name="one" value="1">
+            </form>"""
+
+        for method in self.request_class.valid_form_methods:
+            response = _buildresponse(body % method)
+            r = self.request_class.from_response(response)
+            self.assertEqual(r.method, method)
+
+        response = _buildresponse(body % 'UNKNOWN')
+        r = self.request_class.from_response(response)
+        self.assertEqual(r.method, 'GET')
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
