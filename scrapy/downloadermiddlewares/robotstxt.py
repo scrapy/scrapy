@@ -30,16 +30,8 @@ class RobotsTxtMiddleware(object):
         self._parsers = {}
         self._parserimpl = load_object(crawler.settings.get('ROBOTSTXT_PARSER'))
 
-        # check if parser dependencies are met
-        try:
-            self._parserimpl.from_crawler(self.crawler, b'')
-        except ImportError as e:
-            # For Python 2 compatibility
-            errmsg = e.msg if hasattr(e, 'msg') else e.message
-
-            missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
-            raise ImportError('Unable to use \'%s\'. Do you have \'%s\' module installed?' %
-                              (self._parserimpl.__name__, missingmodule))
+        # check if parser dependencies are met, this should throw an error otherwise.
+        self._parserimpl.from_crawler(self.crawler, b'')
 
     @classmethod
     def from_crawler(cls, crawler):
