@@ -21,7 +21,7 @@ def rerp_available():
     return True
 
 
-class BaseRobotParserTest():
+class BaseRobotParserTest:
     def _setUp(self, parser_cls):
         self.parser_cls = parser_cls
 
