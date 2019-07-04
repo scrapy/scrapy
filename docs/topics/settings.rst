@@ -1118,7 +1118,7 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
 ROBOTSTXT_PARSER
 ----------------
 
-Default: ``'scrapy.extensions.robotstxtparser.PythonRobotParser'``
+Default: ``'scrapy.robotstxt.PythonRobotParser'``
 
 The parser backend to use for parsing ``robots.txt`` files. For more information see
 :ref:`topics-dlmw-robots`.
