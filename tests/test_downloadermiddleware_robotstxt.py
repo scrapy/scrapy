@@ -11,6 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
 from tests import mock
+from tests.test_robotstxt_interface import rerp_available, reppy_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -44,6 +45,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         Disallow: /some/randome/page.html
         '''.encode('utf-8'))
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -80,6 +82,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt', body=b'GIF89a\xd3\x00\xfe\x00\xa2')
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -102,6 +105,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt')
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
@@ -121,6 +125,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
+
         def return_failure(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
@@ -136,6 +141,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_immediate_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
+
         def immediate_failure(request, spider):
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
@@ -147,6 +153,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
 
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
+
         def ignore_request(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
@@ -170,3 +177,21 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         spider = None  # not actually used
         return self.assertFailure(maybeDeferred(middleware.process_request, request, spider),
                                   IgnoreRequest)
+
+
+class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
+    if not rerp_available():
+        skip = "Rerp parser is not installed"
+
+    def setUp(self):
+        super(RobotsTxtMiddlewareWithRerpTest, self).setUp()
+        self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.RerpRobotParser')
+
+
+class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
+    if not reppy_available():
+        skip = "Reppy parser is not installed"
+
+    def setUp(self):
+        super(RobotsTxtMiddlewareWithReppyTest, self).setUp()
+        self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.ReppyRobotParser')

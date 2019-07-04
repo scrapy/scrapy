@@ -947,13 +947,12 @@ RobotFileParser
 
 `RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
 Python's inbuilt ``robots.txt`` parser. The parser is fully compliant with `Martijn Koster's 
-1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_, with support for
-``Crawl-delay`` and ``Request-rate`` directives also available from Python 3.6. It lacks
+1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
 support for wildcard matching. Scrapy uses this parser by default.
 
 In order to use this parser, set:
 
-* :setting:`ROBOTSTXT_PARSER` to ``scrapy.extensions.robotstxtparser.PythonRobotParser``
+* :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
 
 .. _rerp-parser:
 
@@ -962,11 +961,15 @@ Robotexclusionrulesparser
 
 `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ is fully compliant
 with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
-with support for wildcard matching, ``Crawl-delay`` directive, and ``Sitemap`` directive.
+with support for wildcard matching.
 
-In order to use this parser, set:
+In order to use this parser:
 
-* :setting:`ROBOTSTXT_PARSER` to ``scrapy.extensions.robotstxtparser.RerpRobotParser``
+* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+  ``pip install robotexclusionrulesparser``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.RerpRobotParser``
 
 .. _reppy-parser:
 
@@ -976,15 +979,18 @@ Reppy parser
 `Reppy <https://github.com/seomoz/reppy/>`_ is a Python wrapper around `Robots Exclusion
 Protocol Parser for C++ <https://github.com/seomoz/rep-cpp>`_. The parser is fully compliant
 with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
-with support for wildcard matching, ``Crawl-delay`` directive, and ``Sitemap`` directive.
-Unlike `RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ and 
-`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_, it uses the length based 
-rule, in particular for ``Allow`` and ``Disallow`` directives, where the most specific rule based 
-on the length of the path trumps the less specific (shorter) rule.
+with support for wildcard matching. Unlike
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ and
+`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_, it uses the length based
+rule, in particular for ``Allow`` and ``Disallow`` directives, where the most specific
+rule based on the length of the path trumps the less specific (shorter) rule.
 
-In order to use this parser, set:
+In order to use this parser:
 
-* :setting:`ROBOTSTXT_PARSER` to ``scrapy.extensions.robotstxtparser.ReppyRobotParser``
+* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.ReppyRobotParser``
 
 .. _support-for-new-robots-parser:
 
@@ -994,18 +1000,18 @@ Implementing support for a new parser
 You can implement support for a new robots.txt_ parser by implementing the
 interface described below.
 
-.. class:: scrapy.extensions.robotstxtparser.RobotsParser
+.. class:: scrapy.robotstxt.RobotsParser
 
-    .. method:: from_crawler(crawler, content)
+    .. method:: from_crawler(crawler, robotstxt_body)
 
       Parse the content of a robots.txt_ file as bytes. This must be a class method.
       It must return a new instance of the parser backend.
 
       :param crawler: crawler which made the request
       :type crawler: :class:`~scrapy.crawler.Crawler` instance
-      
-      :param content: Content of a robots.txt_ file.
-      :type content: bytes
+
+      :param robotstxt_body: content of a robots.txt_ file.
+      :type robotstxt_body: bytes
 
     .. method:: allowed(url, user_agent)
 

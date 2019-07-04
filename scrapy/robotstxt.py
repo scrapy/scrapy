@@ -5,28 +5,29 @@ from scrapy.utils.python import to_native_str, to_unicode
 
 logger = logging.getLogger(__name__)
 
-class PythonRobotParser():
-    def __init__(self, content, spider):
+
+class PythonRobotParser:
+    def __init__(self, robotstxt_body, spider):
         from six.moves.urllib_robotparser import RobotFileParser
         self.spider = spider
         try:
-            content = to_native_str(content)
+            robotstxt_body = to_native_str(robotstxt_body)
         except UnicodeDecodeError:
             # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
             # Switch to 'allow all' state.
-            logger.warning("Failure while parsing robots.txt using %(parser)s." 
-                "File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
-                {'parser': "RobotFileParser"},
-                exc_info=sys.exc_info(),
-                extra={'spider': self.spider})
-            content = ''
+            logger.warning("Failure while parsing robots.txt using %(parser)s."
+                           " File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
+                           {'parser': "RobotFileParser"},
+                           exc_info=sys.exc_info(),
+                           extra={'spider': self.spider})
+            robotstxt_body = ''
         self.rp = RobotFileParser()
-        self.rp.parse(content.splitlines())
+        self.rp.parse(robotstxt_body.splitlines())
 
     @classmethod
-    def from_crawler(cls, crawler, content):
+    def from_crawler(cls, crawler, robotstxt_body):
         spider = None if not crawler else crawler.spider
-        o = cls(content, spider)
+        o = cls(robotstxt_body, spider)
         return o
 
     def allowed(self, url, user_agent):
@@ -36,11 +37,11 @@ class PythonRobotParser():
 
     def sitemaps(self):
         """RobotFileParser does not support Sitemaps directive."""
-        logger.warning("Failure while retrieving sitemaps using %(parser)s." 
-            "%(parser)s does not support Sitemaps directive.",
-            {'parser': "RobotFileParser"},
-            exc_info=sys.exc_info(),
-            extra={'spider': self.spider})
+        logger.warning("Failure while retrieving sitemaps using %(parser)s."
+                       " %(parser)s does not support Sitemaps directive.",
+                       {'parser': "RobotFileParser"},
+                       exc_info=sys.exc_info(),
+                       extra={'spider': self.spider})
         return
         yield
 
@@ -54,23 +55,24 @@ class PythonRobotParser():
 
     def preferred_host(self):
         """RobotFileParser does not support Host directive."""
-        logger.warning("Failure while retrieving preferred host using %(parser)s." 
-            "%(parser)s does not support Host directive.",
-            {'parser': "RobotFileParser"},
-            exc_info=sys.exc_info(),
-            extra={'spider': self.spider})
+        logger.warning("Failure while retrieving preferred host using %(parser)s."
+                       " %(parser)s does not support Host directive.",
+                       {'parser': "RobotFileParser"},
+                       exc_info=sys.exc_info(),
+                       extra={'spider': self.spider})
         return None
 
-class ReppyRobotParser():
-    def __init__(self, content, spider):
+
+class ReppyRobotParser:
+    def __init__(self, robotstxt_body, spider):
         from reppy.robots import Robots
         self.spider = spider
-        self.rp = Robots.parse('', content)
+        self.rp = Robots.parse('', robotstxt_body)
 
     @classmethod
-    def from_crawler(cls, crawler, content):
+    def from_crawler(cls, crawler, robotstxt_body):
         spider = None if not crawler else crawler.spider
-        o = cls(content, spider)
+        o = cls(robotstxt_body, spider)
         return o
 
     def allowed(self, url, user_agent):
@@ -84,35 +86,36 @@ class ReppyRobotParser():
 
     def preferred_host(self):
         """Reppy does not support Host directive."""
-        logger.warning("Failure while retrieving preferred host using %(parser)s." 
-            "%(parser)s does not support Host directive.",
-            {'parser': "Reppy parser"},
-            exc_info=sys.exc_info(),
-            extra={'spider': self.spider})
+        logger.warning("Failure while retrieving preferred host using %(parser)s."
+                       " %(parser)s does not support Host directive.",
+                       {'parser': "Reppy parser"},
+                       exc_info=sys.exc_info(),
+                       extra={'spider': self.spider})
         return None
 
-class RerpRobotParser():
-    def __init__(self, content, spider):
+
+class RerpRobotParser:
+    def __init__(self, robotstxt_body, spider):
         from robotexclusionrulesparser import RobotExclusionRulesParser
         self.spider = spider
         self.rp = RobotExclusionRulesParser()
         try:
-            content = content.decode('utf-8')
+            robotstxt_body = robotstxt_body.decode('utf-8')
         except UnicodeDecodeError:
             # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
             # Switch to 'allow all' state.
             logger.warning("Failure while parsing robots.txt using %(parser)s."
-                "File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
-                {'parser': "RobotExclusionRulesParser"},
-                exc_info=sys.exc_info(),
-                extra={'spider': self.spider})
-            content = ''
-        self.rp.parse(content)
+                           " File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
+                           {'parser': "RobotExclusionRulesParser"},
+                           exc_info=sys.exc_info(),
+                           extra={'spider': self.spider})
+            robotstxt_body = ''
+        self.rp.parse(robotstxt_body)
 
     @classmethod
-    def from_crawler(cls, crawler, content):
+    def from_crawler(cls, crawler, robotstxt_body):
         spider = None if not crawler else crawler.spider
-        o = cls(content, spider)
+        o = cls(robotstxt_body, spider)
         return o
 
     def allowed(self, url, user_agent):
@@ -129,9 +132,9 @@ class RerpRobotParser():
 
     def preferred_host(self):
         """Robotexclusionrulesparser does not support Host directive."""
-        logger.warning("Failure while retrieving preferred host using %(parser)s." 
-            "%(parser)s does not support Host directive.",
-            {'parser': "RobotExclusionRulesParser"},
-            exc_info=sys.exc_info(),
-            extra={'spider': self.spider})
+        logger.warning("Failure while retrieving preferred host using %(parser)s."
+                       " %(parser)s does not support Host directive.",
+                       {'parser': "RobotExclusionRulesParser"},
+                       exc_info=sys.exc_info(),
+                       extra={'spider': self.spider})
         return None

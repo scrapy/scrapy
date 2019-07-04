@@ -25,11 +25,21 @@ class RobotsTxtMiddleware(object):
     def __init__(self, crawler):
         if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
             raise NotConfigured
-
+        self._default_useragent = crawler.settings.get('USER_AGENT', 'Scrapy')
         self.crawler = crawler
-        self._useragent = crawler.settings.get('USER_AGENT')
         self._parsers = {}
-        self._parserimpl = crawler.settings.get('ROBOTSTXT_PARSER')
+        self._parserimpl = load_object(crawler.settings.get('ROBOTSTXT_PARSER'))
+
+        # check if parser dependencies are met
+        try:
+            self._parserimpl.from_crawler(self.crawler, b'')
+        except ImportError as e:
+            # For Python 2 compatibility
+            errmsg = e.msg if hasattr(e, 'msg') else e.message
+
+            missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
+            raise ImportError('Unable to use \'%s\'. Do you have \'%s\' module installed?' %
+                              (self._parserimpl.__name__, missingmodule))
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -45,7 +55,8 @@ class RobotsTxtMiddleware(object):
     def process_request_2(self, rp, request, spider):
         if rp is None:
             return
-        if not rp.allowed(request.url, self._useragent):
+        useragent = request.headers.get(b'User-Agent', self._default_useragent)
+        if not rp.allowed(request.url, useragent):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
@@ -71,6 +82,7 @@ class RobotsTxtMiddleware(object):
 
         if isinstance(self._parsers[netloc], Deferred):
             d = Deferred()
+
             def cb(result):
                 d.callback(result)
                 return result
@@ -89,22 +101,8 @@ class RobotsTxtMiddleware(object):
 
     def _parse_robots(self, response, netloc, spider):
         self.crawler.stats.inc_value('robotstxt/response_count')
-        self.crawler.stats.inc_value(
-            'robotstxt/response_status_count/{}'.format(response.status))
-        
-        try:
-            rp = load_object(self._parserimpl).from_crawler(self.crawler, response.body)
-        except ImportError as e:
-            # For Python 2 compatibility
-            errmsg = e.msg if hasattr(e, 'msg') else e.message
-
-            missingmodule = re.match('No module named (.+)', errmsg).group(1).strip("'")
-            logger.error('Unable to use \'%(robotparser)s\'. Do you have \'%(module)s\' module installed?',
-                        {'robotparser': self._parserimpl, 'module': missingmodule}, 
-                        exc_info=sys.exc_info(),
-                        extra={'spider': spider})
-            rp = None
-            
+        self.crawler.stats.inc_value('robotstxt/response_status_count/{}'.format(response.status))
+        rp = self._parserimpl.from_crawler(self.crawler, response.body)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
         rp_dfd.callback(rp)
