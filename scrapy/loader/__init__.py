@@ -109,8 +109,14 @@ class ItemLoader(object):
         for proc in processors:
             if value is None:
                 break
+            _proc = proc
             proc = wrap_loader_context(proc, self.context)
-            value = proc(value)
+            try:
+                value = proc(value)
+            except Exception as e:
+                raise ValueError("Error with processor %s value=%r error='%s: %s'" %
+                                 (_proc.__class__.__name__, value,
+                                  type(e).__name__, str(e)))
         return value
 
     def load_item(self):
@@ -150,8 +156,15 @@ class ItemLoader(object):
 
     def _process_input_value(self, field_name, value):
         proc = self.get_input_processor(field_name)
+        _proc = proc
         proc = wrap_loader_context(proc, self.context)
-        return proc(value)
+        try:
+            return proc(value)
+        except Exception as e:
+            raise ValueError(
+                "Error with input processor %s: field=%r value=%r "
+                "error='%s: %s'" % (_proc.__class__.__name__, field_name,
+                                    value, type(e).__name__, str(e)))
 
     def _get_item_field_attr(self, field_name, key, default=None):
         if isinstance(self.item, Item):
