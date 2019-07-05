@@ -480,7 +480,14 @@ class FilesPipeline(MediaPipeline):
         ## end of deprecation warning block
 
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        
+        media_ext = os.path.splitext(url)[1] # change to request.url after deprecation
+        if not media_ext[1:-1].isalnum():
+            # the file extension contains non alnum characters. e.g. "?"
+            # this usually happens if url is somethin like below
+            #   https://example.net/some.jpg?ab=1e9b29b5d3d0aa13d601505c6a67ee3e&dc=59C43AAF
+            media_ext = os.path.splitext(urlparse(url).path)[1]
+
         return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated

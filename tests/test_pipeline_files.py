@@ -57,6 +57,8 @@ class FilesPipelineTestCase(unittest.TestCase):
                                    response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("https://dev.mydeco.com/mydeco.pdf?checksum=1233313")),
+                         'full/abd68cf3b70787b1bc981dd8904bdf968ee19d9c.pdf')
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
