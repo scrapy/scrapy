@@ -27,7 +27,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_native_str
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
@@ -479,9 +479,23 @@ class FilesPipeline(MediaPipeline):
             return self.file_key(url)
         ## end of deprecation warning block
 
+        # get filename from Content-Disposition header
+        if response:
+            disposition = response.headers.get('Content-Disposition')
+            filename = self.__filename_from_content_disposition(disposition)
+            if filename:
+                return 'full/%s' % (filename)
+
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
         return 'full/%s%s' % (media_guid, media_ext)
+
+    def __filename_from_content_disposition(self, content_disposition):
+        try:
+            filename = to_native_str(content_disposition).split(';')[1].split('=')[1]
+            return filename.strip('"\'')
+        except IndexError:
+             return None
 
     # deprecated
     def file_key(self, url):
