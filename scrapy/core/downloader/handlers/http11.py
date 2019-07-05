@@ -335,10 +335,18 @@ class ScrapyAgent(object):
         # response body is ready to be consumed
         d.addCallback(self._cb_bodyready, request)
         d.addCallback(self._cb_bodydone, request, url)
+
+        fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
+        # if fail on dataloss is set to false, call _cb_timeout callback instead of d.cancel to allow partial resposnse
+        callback = d.cancel if fail_on_dataloss else self._cb_timedout
+
         # check download timeout
-        self._timeout_cl = reactor.callLater(timeout, d.cancel)
+        self._timeout_cl = reactor.callLater(timeout, callback)
         d.addBoth(self._cb_timeout, request, url, timeout)
         return d
+
+    def _cb_timedout(self):
+        self._txresponse._transport.stopProducing()
 
     def _cb_timeout(self, result, request, url, timeout):
         if self._timeout_cl.active():
@@ -348,6 +356,11 @@ class ScrapyAgent(object):
         # receive connectionLost()
         if self._txresponse:
             self._txresponse._transport.stopProducing()
+
+        fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
+        # return result if fail on dataloss is set to false
+        if not fail_on_dataloss:
+            return result
 
         raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
 

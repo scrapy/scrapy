@@ -205,6 +205,16 @@ class LargeChunkedFileResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
+class InfiniteResource(resource.Resource):
+    def render(self, request):
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
 class HttpTestCase(unittest.TestCase):
 
     scheme = 'http'
@@ -226,6 +236,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
+        r.putChild(b"infinite", InfiniteResource())
         r.putChild(b"chunked", ChunkedResource())
         r.putChild(b"broken-chunked", BrokenChunkedResource())
         r.putChild(b"contentlength", ContentLengthHeaderResource())
@@ -358,6 +369,18 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, body)
         return d
+
+
+class BodyOnInfiniteResponseTimeoutTestCase(HttpTestCase):
+    def test_reponse_body_on_not_data_loss(self):
+        def _test(response):
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.flags, ['dataloss'])
+
+        spider = Spider('foo')
+        meta = {'download_timeout': 5, 'download_fail_on_dataloss': False}
+        request = Request(self.getURL('infinite'), meta=meta)
+        return self.download_request(request, spider).addCallback(_test)
 
 
 class DeprecatedHttpTestCase(HttpTestCase):
@@ -523,6 +546,7 @@ class Https11InvalidDNSId(Https11TestCase):
         super(Https11InvalidDNSId, self).setUp()
         self.host = '127.0.0.1'
 
+
 class Https11InvalidDNSPattern(Https11TestCase):
     """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
 
@@ -678,7 +702,6 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         d = self.download_request(request, Spider('foo'))
         timeout = yield self.assertFailure(d, error.TimeoutError)
         self.assertIn(domain, timeout.osError)
-
 
 class HttpDownloadHandlerMock(object):
     def __init__(self, settings):
