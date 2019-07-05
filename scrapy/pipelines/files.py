@@ -25,12 +25,14 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -481,6 +483,10 @@ class FilesPipeline(MediaPipeline):
 
         media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        # if result is a querystring fragment, ignore url params and use path only
+        if not media_ext[1:].isalnum():
+            media_base_url = urlparse_cached(request).path
+            media_ext = os.path.splitext(media_base_url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated

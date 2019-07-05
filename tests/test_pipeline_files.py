@@ -57,6 +57,16 @@ class FilesPipelineTestCase(unittest.TestCase):
                                    response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("http://localhost:8050/render.png?url=http://www.test.ca&timeout=30wait=3")),
+                          'full/1691f03855fb23bc1e3be2618889a8d0d7ce15f8.png')
+        self.assertEqual(file_path(Request("http://foo.bar/baz.txt?fizz")),
+                          'full/a2b4913a62f65445aeae2bac08cd8c3b41d7195e.txt')
+        self.assertEqual(file_path(Request("http://foo.bar/baz.mp3?fizz")),
+                          'full/e395e5dd4ea00d7440bd7c4e42576ff71c1c7bca.mp3')
+        self.assertEqual(file_path(Request("http://foo.bar/baz?img=fizz.mp3")),
+                          'full/768d1719ad5fa6b6919bbbd65388fae36a3820d4.mp3')
+        self.assertEqual(file_path(Request("http://foo.bar/baz.php?img=fizz.mp3")),
+                          'full/04435a0f665ba33cc2257737d7f2f6c27ea5f2d4.mp3')
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
