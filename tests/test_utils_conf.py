@@ -1,7 +1,9 @@
 import unittest
+import warnings
 
-from scrapy.settings import BaseSettings
-from scrapy.utils.conf import build_component_list, arglist_to_dict
+from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+from scrapy.settings import BaseSettings, Settings
+from scrapy.utils.conf import build_component_list, arglist_to_dict, feed_process_params_from_cli
 
 
 class BuildComponentListTest(unittest.TestCase):
@@ -88,6 +90,50 @@ class UtilsConfTestCase(unittest.TestCase):
     def test_arglist_to_dict(self):
         self.assertEqual(arglist_to_dict(['arg1=val1', 'arg2=val2']),
             {'arg1': 'val1', 'arg2': 'val2'})
+
+
+class FeedExportConfigTestCase(unittest.TestCase):
+
+    def test_feed_export_config_invalid_format(self):
+        settings = Settings()
+        self.assertRaises(UsageError, feed_process_params_from_cli, settings, ['items.dat'], 'noformat')
+
+    def test_feed_export_config_mismatch(self):
+        settings = Settings()
+        self.assertRaises(
+            UsageError,
+            feed_process_params_from_cli, settings, ['items1.dat', 'items2.dat'], 'noformat'
+        )
+
+    def test_feed_export_config_backward_compatible(self):
+        with warnings.catch_warnings(record=True) as cw:
+            settings = Settings()
+            self.assertEqual(
+                {'items.dat': {'format': 'csv'}},
+                feed_process_params_from_cli(settings, ['items.dat'], 'csv')
+            )
+            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+
+    def test_feed_export_config_explicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            {'items_1.dat': {'format': 'json'}, 'items_2.dat': {'format': 'xml'}, 'items_3.dat': {'format': 'csv'}},
+            feed_process_params_from_cli(settings, ['items_1.dat:json', 'items_2.dat:xml', 'items_3.dat:csv'])
+        )
+
+    def test_feed_export_config_implicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            {'items_1.json': {'format': 'json'}, 'items_2.xml': {'format': 'xml'}, 'items_3.csv': {'format': 'csv'}},
+            feed_process_params_from_cli(settings, ['items_1.json', 'items_2.xml', 'items_3.csv'])
+        )
+
+    def test_feed_export_config_stdout(self):
+        settings = Settings()
+        self.assertEqual(
+            {'stdout:': {'format': 'pickle'}},
+            feed_process_params_from_cli(settings, ['-:pickle'])
+        )
 
 
 if __name__ == "__main__":
