@@ -319,6 +319,29 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+How to split an item into multiple items in an item pipeline?
+-------------------------------------------------------------
+
+:ref:`Item pipelines <topics-item-pipeline>` cannot yield multiple items per
+input item. :ref:`Create a spider middleware <custom-spider-middleware>`
+instead, and use its
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+method for this puspose. For example::
+
+    from copy import deepcopy
+
+    from scrapy.item import BaseItem
+
+
+    class MultiplyItemsMiddleware:
+
+        def process_spider_output(self, response, result, spider):
+            for item in result:
+                if isinstance(item, (BaseItem, dict)):
+                    for _ in range(item['multiply_by']):
+                        yield deepcopy(item)
+
+
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
