@@ -51,6 +51,13 @@ def _get_commands_dict(settings, inproject):
         cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
 
+def _get_commands_diff(settings, inproject=True):
+    # returns by default project only commands
+    return list(
+        set([cmdname for cmdname, _ in _get_commands_dict(settings, inproject).items()]) -
+        set([cmdname for cmdname, _ in _get_commands_dict(settings, not inproject).items()])
+    )
+
 def _pop_command_name(argv):
     i = 0
     for arg in argv[1:]:
@@ -80,9 +87,19 @@ def _print_commands(settings, inproject):
     print()
     print('Use "scrapy <command> -h" to see more info about a command')
 
+def _print_unknown_command_msg(settings, cmdname, inproject):
+    proj_only_cmds = sorted(_get_commands_diff(settings))
+    if cmdname in proj_only_cmds and not inproject:
+        cmd_list = u', '.join(proj_only_cmds)
+        print('%s command is not available from this location.\n'
+              'These commands can only be triggered from within a project: %s\n'
+              % (cmdname, cmd_list))
+    else:
+        print(u'Unknown command: %s\n' % cmdname)
+
 def _print_unknown_command(settings, cmdname, inproject):
     _print_header(settings, inproject)
-    print("Unknown command: %s\n" % cmdname)
+    _print_unknown_command_msg(settings, cmdname, inproject)
     print('Use "scrapy" to see available commands')
 
 def _run_print_help(parser, func, *a, **kw):
