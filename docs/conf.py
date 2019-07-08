@@ -237,4 +237,13 @@ coverage_ignore_pyobjects = [
     # their constructor, the methods they reimplement to achieve that purpose
     # should be irrelevant to developers using those contracts.
     r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
+
+    # Methods of downloader middlewares are not documented, only the classes
+    # themselves, since downloader middlewares are controlled through Scrapy
+    # settings.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.(\w*?Middleware|DownloaderStats)\.',
+
+    # Base classes of downloader middlewares are implementation details that
+    # are not meant for users.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.Base\w*?Middleware',
 ]
