@@ -438,9 +438,10 @@ or even enable client-side authentication (and various other things).
     which uses the platform's certificates to validate remote endpoints.
     **This is only available if you use Twisted>=14.0.**
 
-If you do use a custom ContextFactory, make sure it accepts a ``method``
-parameter at init (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`).
+If you do use a custom ContextFactory, make sure its ``__init__` method accepts
+a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`) and a ``settings`` parameter (this is
+the Scrapy settings object).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -467,6 +468,20 @@ This setting must be one of these string values:
 
     We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
     or above (Twisted>=14.0 if you can).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+-------------------------------------
+
+Default: ``False``
+
+Setting this to ``True`` will enable DEBUG level messages about TLS connection
+parameters after establishing HTTPS connections. The kind of information logged
+depends on the versions of OpenSSL and pyOpenSSL.
+
+This setting is only used for the default
+:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 

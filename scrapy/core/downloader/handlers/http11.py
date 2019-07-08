@@ -25,7 +25,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.core.downloader.tls import openssl_methods
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
 
@@ -44,14 +44,15 @@ class HTTP11DownloadHandler(object):
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         # try method-aware context factory
         try:
-            self._contextFactory = self._contextFactoryClass(method=self._sslMethod)
+            self._contextFactory = create_instance(self._contextFactoryClass, settings=settings, crawler=None,
+                                                   method=self._sslMethod)
         except TypeError:
             # use context factory defaults
-            self._contextFactory = self._contextFactoryClass()
+            self._contextFactory = create_instance(self._contextFactoryClass, settings=settings, crawler=None)
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
- e.g. OpenSSL.SSL.SSLv23_METHOD).\
- Please upgrade your context factory class to handle it or ignore it.""" % (
+ e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `settings` argument.\
+ Please upgrade your context factory class to handle them or ignore them.""" % (
                 settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
