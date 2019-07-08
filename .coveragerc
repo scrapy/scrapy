@@ -4,5 +4,3 @@ include = scrapy/*
 omit =
   tests/*
   scrapy/xlib/*
-  scrapy/conf.py
-  scrapy/log.py

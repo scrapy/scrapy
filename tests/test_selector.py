@@ -3,7 +3,6 @@ import weakref
 from twisted.trial import unittest
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import Selector
-from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
 from lxml import etree
 
 
@@ -39,22 +38,6 @@ class SelectorTestCase(unittest.TestCase):
         response = TextResponse(url=url, body=body, encoding='utf-8')
         sel = Selector(response)
         self.assertEqual(url, sel.root.base)
-
-    def test_deprecated_root_argument(self):
-        with warnings.catch_warnings(record=True) as w:
-            root = etree.fromstring(u'<html/>')
-            sel = Selector(_root=root)
-            self.assertIs(root, sel.root)
-            self.assertEqual(str(w[-1].message),
-                             'Argument `_root` is deprecated, use `root` instead')
-
-    def test_deprecated_root_argument_ambiguous(self):
-        with warnings.catch_warnings(record=True) as w:
-            _root = etree.fromstring(u'<xml/>')
-            root = etree.fromstring(u'<html/>')
-            sel = Selector(_root=_root, root=root)
-            self.assertIs(root, sel.root)
-            self.assertIn('Ignoring deprecated `_root` argument', str(w[-1].message))
 
     def test_flavor_detection(self):
         text = b'<div><img src="a.jpg"><p>Hello</div>'
@@ -101,111 +84,6 @@ class SelectorTestCase(unittest.TestCase):
         assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
             x.__class__.__name__
 
-    def test_deprecated_selector_methods(self):
-        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.select('//p')
-            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.extract_unquoted()
-            self.assertSubstring('Use .extract() instead', str(w[-1].message))
-
-    def test_deprecated_selectorlist_methods(self):
-        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.xpath('//p').select('.')
-            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.xpath('//p').extract_unquoted()
-            self.assertSubstring('Use .extract() instead', str(w[-1].message))
-
     def test_selector_bad_args(self):
         with self.assertRaisesRegexp(ValueError, 'received both response and text'):
             Selector(TextResponse(url='http://example.com', body=b''), text=u'')
-
-
-class DeprecatedXpathSelectorTest(unittest.TestCase):
-
-    text = '<div><img src="a.jpg"><p>Hello</div>'
-
-    def test_warnings_xpathselector(self):
-        cls = XPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
-
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
-
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
-
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
-
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
-
-    def test_warnings_xmlxpathselector(self):
-        cls = XmlXPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
-
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
-
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
-
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
-
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(issubclass(cls, XPathSelector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
-            self.assertTrue(isinstance(sel, XPathSelector))
-            self.assertTrue(isinstance(usel, XPathSelector))
-
-    def test_warnings_htmlxpathselector(self):
-        cls = HtmlXPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
-
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
-
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
-
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
-
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(issubclass(cls, XPathSelector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
-            self.assertTrue(isinstance(sel, XPathSelector))
-            self.assertTrue(isinstance(usel, XPathSelector))

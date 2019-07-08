@@ -119,7 +119,3 @@ class CrawlSpider(Spider):
         spider._follow_links = crawler.settings.getbool(
             'CRAWLSPIDER_FOLLOW_LINKS', True)
         return spider
-
-    def set_crawler(self, crawler):
-        super(CrawlSpider, self).set_crawler(crawler)
-        self._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)

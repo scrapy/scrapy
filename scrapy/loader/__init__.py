@@ -8,8 +8,6 @@ import six
 
 from scrapy.item import Item
 from scrapy.selector import Selector
-from scrapy.utils.decorators import deprecated
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 
@@ -191,10 +189,6 @@ class ItemLoader(object):
         values = self._get_xpathvalues(xpath, **kw)
         return self.get_value(values, *processors, **kw)
 
-    @deprecated(use_instead='._get_xpathvalues()')
-    def _get_values(self, xpaths, **kw):
-        return self._get_xpathvalues(xpaths, **kw)
-
     def _get_xpathvalues(self, xpaths, **kw):
         self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
@@ -216,5 +210,3 @@ class ItemLoader(object):
         self._check_selector_method()
         csss = arg_to_iter(csss)
         return flatten(self.selector.css(css).getall() for css in csss)
-
-XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)

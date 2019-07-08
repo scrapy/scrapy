@@ -10,7 +10,7 @@ from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
+from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -50,17 +50,6 @@ class SpiderTest(unittest.TestCase):
         """Constructor arguments are assigned to spider attributes"""
         self.assertRaises(ValueError, self.spider_class)
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
-
-    def test_deprecated_set_crawler_method(self):
-        spider = self.spider_class('example.com')
-        crawler = get_crawler()
-        with warnings.catch_warnings(record=True) as w:
-            spider.set_crawler(crawler)
-            self.assertIn("set_crawler", str(w[0].message))
-            self.assertTrue(hasattr(spider, 'crawler'))
-            self.assertIs(spider.crawler, crawler)
-            self.assertTrue(hasattr(spider, 'settings'))
-            self.assertIs(spider.settings, crawler.settings)
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
@@ -377,20 +366,6 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
 
-    def test_follow_links_attribute_deprecated_population(self):
-        spider = self.spider_class('example.com')
-        self.assertFalse(hasattr(spider, '_follow_links'))
-
-        spider.set_crawler(get_crawler())
-        self.assertTrue(hasattr(spider, '_follow_links'))
-        self.assertTrue(spider._follow_links)
-
-        spider = self.spider_class('example.com')
-        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
-        spider.set_crawler(get_crawler(settings_dict=settings_dict))
-        self.assertTrue(hasattr(spider, '_follow_links'))
-        self.assertFalse(spider._follow_links)
-
 
 class SitemapSpiderTest(SpiderTest):
 
@@ -578,57 +553,9 @@ Sitemap: /sitemap-relative-url.xml
 
 class DeprecationTest(unittest.TestCase):
 
-    def test_basespider_is_deprecated(self):
-        with warnings.catch_warnings(record=True) as w:
-
-            class MySpider1(BaseSpider):
-                pass
-
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider1)[1])
-
-    def test_basespider_issubclass(self):
-        class MySpider2(Spider):
-            pass
-
-        class MySpider2a(MySpider2):
-            pass
-
-        class Foo(object):
-            pass
-
-        class Foo2(object_ref):
-            pass
-
-        assert issubclass(MySpider2, BaseSpider)
-        assert issubclass(MySpider2a, BaseSpider)
-        assert not issubclass(Foo, BaseSpider)
-        assert not issubclass(Foo2, BaseSpider)
-
-    def test_basespider_isinstance(self):
-        class MySpider3(Spider):
-            name = 'myspider3'
-
-        class MySpider3a(MySpider3):
-            pass
-
-        class Foo(object):
-            pass
-
-        class Foo2(object_ref):
-            pass
-
-        assert isinstance(MySpider3(), BaseSpider)
-        assert isinstance(MySpider3a(), BaseSpider)
-        assert not isinstance(Foo(), BaseSpider)
-        assert not isinstance(Foo2(), BaseSpider)
-
     def test_crawl_spider(self):
         assert issubclass(CrawlSpider, Spider)
-        assert issubclass(CrawlSpider, BaseSpider)
         assert isinstance(CrawlSpider(name='foo'), Spider)
-        assert isinstance(CrawlSpider(name='foo'), BaseSpider)
 
     def test_make_requests_from_url_deprecated(self):
         class MySpider4(Spider):
