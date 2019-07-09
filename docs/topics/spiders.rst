@@ -386,7 +386,9 @@ Crawling rules
    the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
    as its first argument and must return either a single instance or an iterable of
    :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
-   (or any subclass of them).
+   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
+   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   in its ``meta`` dictionary (under the ``link_text`` key)
 
    .. warning:: When writing crawl spider rules, avoid using ``parse`` as
        callback, since the :class:`CrawlSpider` uses the ``parse`` method
