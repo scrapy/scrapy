@@ -156,20 +156,20 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class FTPFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, active=False):
+    def __init__(self, uri, use_active_mode=False):
         u = urlparse(uri)
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
         self.password = u.password
         self.path = u.path
-        self.active = active
+        self.use_active_mode = use_active_mode
 
     @classmethod
     def from_crawler(cls, crawler, uri):
         return cls(
             uri=uri,
-            active=crawler.settings['FEED_STORAGE_FTP_ACTIVE'] or False
+            use_active_mode=crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE')
         )
 
     def _store_in_thread(self, file):
@@ -177,7 +177,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         ftp = FTP()
         ftp.connect(self.host, self.port)
         ftp.login(self.username, self.password)
-        if self.active:
+        if self.use_active_mode:
             ftp.set_pasv(False)
         dirname, filename = posixpath.split(self.path)
         ftp_makedirs_cwd(ftp, dirname)
