@@ -246,4 +246,7 @@ coverage_ignore_pyobjects = [
     # Base classes of downloader middlewares are implementation details that
     # are not meant for users.
     r'^scrapy\.downloadermiddlewares\.\w*?\.Base\w*?Middleware',
+
+    # Private exception used by the command-line interface implementation.
+    r'^scrapy\.exceptions\.UsageError',
 ]
