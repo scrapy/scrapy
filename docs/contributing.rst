@@ -99,6 +99,15 @@ Well-written patches should:
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
+* if you're adding a private API, please add a regular expression to the
+  ``coverage_ignore_pyobjects`` variable of ``docs/conf.py`` to exclude the new
+  private API from documentation coverage checks.
+
+  To see if your private API is skipped properly, generate a documentation
+  coverage report as follows::
+
+      tox -e docs-coverage
+
 .. _submitting-patches:
 
 Submitting patches
@@ -167,8 +176,9 @@ Documentation policies
 
 For reference documentation of API members (classes, methods, etc.) use
 docstrings and make sure that the Sphinx documentation uses the autodoc_
-extension to pull the docstrings. API reference documentation should be
-IDE-friendly: short, to the point, and it may provide short examples.
+extension to pull the docstrings. API reference documentation should follow
+docstring conventions (`PEP 257`_) and be IDE-friendly: short, to the point,
+and it may provide short examples.
 
 Other types of documentation, such as tutorials or topics, should be covered in
 files within the ``docs/`` directory. This includes documentation that is
@@ -205,6 +215,29 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
     ``tox -- tests/test_loader.py``
 
+To run the tests on a specific tox_ environment, use ``-e <name>`` with an
+environment name from ``tox.ini``. For example, to run the tests with Python
+3.6 use::
+
+    tox -e py36
+
+You can also specify a comma-separated list of environmets, and use `tox’s
+parallel mode`_ to run the tests on multiple environments in parallel::
+
+    tox -e py27,py36 -p auto
+
+To pass command-line options to pytest_, add them after ``--`` in your call to
+tox_. Using ``--`` overrides the default positional arguments defined in
+``tox.ini``, so you must include those default positional arguments
+(``scrapy tests``) after ``--`` as well::
+
+    tox -- scrapy tests -x  # stop after first failure
+
+You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
+the Python 3.6 tox_ environment using all your CPU cores::
+
+    tox -e py36 -- scrapy tests -n auto
+
 To see coverage report install `coverage`_ (``pip install coverage``) and run:
 
     ``coverage report``
@@ -237,5 +270,9 @@ And their unit-tests are in::
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
-.. _pull request: https://help.github.com/send-pull-requests/
+.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
+.. _pull request: https://help.github.com/en/articles/creating-a-pull-request
+.. _pytest: https://docs.pytest.org/en/latest/usage.html
+.. _pytest-xdist: https://docs.pytest.org/en/3.0.0/xdist.html
 .. _tox: https://pypi.python.org/pypi/tox
+.. _tox’s parallel mode: https://tox.readthedocs.io/en/latest/example/basic.html#parallel-mode

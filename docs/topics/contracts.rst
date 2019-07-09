@@ -120,3 +120,23 @@ get the failures pretty printed::
             for header in self.args:
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
+
+
+Detecting check runs
+====================
+
+When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
+set to the ``true`` string. You can use `os.environ`_ to perform any change to
+your spiders or your settings when ``scrapy check`` is used::
+
+    import os
+    import scrapy
+
+    class ExampleSpider(scrapy.Spider):
+        name = 'example'
+
+        def __init__(self):
+            if os.environ.get('SCRAPY_CHECK'):
+                pass  # Do some scraper adjustments when a check is running
+
+.. _os.environ: https://docs.python.org/3/library/os.html#os.environ

@@ -49,7 +49,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                                              .format(fname(method), type(result)))
                 except _InvalidOutput:
                     raise
-                except:
+                except Exception:
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
 

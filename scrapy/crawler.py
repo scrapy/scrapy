@@ -111,6 +111,8 @@ class Crawler(object):
 
     @defer.inlineCallbacks
     def stop(self):
+        """Starts a graceful stop of the crawler and returns a deferred that is
+        fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
@@ -330,14 +332,7 @@ class CrawlerProcess(CrawlerRunner):
 
 def _get_spider_loader(settings):
     """ Get SpiderLoader instance from settings """
-    if settings.get('SPIDER_MANAGER_CLASS'):
-        warnings.warn(
-            'SPIDER_MANAGER_CLASS option is deprecated. '
-            'Please use SPIDER_LOADER_CLASS.',
-            category=ScrapyDeprecationWarning, stacklevel=2
-        )
-    cls_path = settings.get('SPIDER_MANAGER_CLASS',
-                            settings.get('SPIDER_LOADER_CLASS'))
+    cls_path = settings.get('SPIDER_LOADER_CLASS')
     loader_cls = load_object(cls_path)
     try:
         verifyClass(ISpiderLoader, loader_cls)

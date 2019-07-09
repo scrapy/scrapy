@@ -181,6 +181,7 @@ class RequestTest(unittest.TestCase):
         r1 = self.request_class("http://www.example.com", flags=['f1', 'f2'],
                                 callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
+        r1.cb_kwargs['key'] = 'value'
         r2 = r1.copy()
 
         # make sure copy does not propagate callbacks
@@ -192,6 +193,10 @@ class RequestTest(unittest.TestCase):
         # make sure flags list is shallow copied
         assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
         self.assertEqual(r1.flags, r2.flags)
+
+        # make sure cb_kwargs dict is shallow copied
+        assert r1.cb_kwargs is not r2.cb_kwargs, "cb_kwargs must be a shallow copy, not identical"
+        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
@@ -1099,6 +1104,20 @@ class FormRequestTest(RequestTest):
 
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formcss="input[name='abc']")
+
+    def test_from_response_valid_form_methods(self):
+        body = """<form action="post.php" method="%s">
+            <input type="hidden" name="one" value="1">
+            </form>"""
+
+        for method in self.request_class.valid_form_methods:
+            response = _buildresponse(body % method)
+            r = self.request_class.from_response(response)
+            self.assertEqual(r.method, method)
+
+        response = _buildresponse(body % 'UNKNOWN')
+        r = self.request_class.from_response(response)
+        self.assertEqual(r.method, 'GET')
 
 
 def _buildresponse(body, **kwargs):

@@ -349,7 +349,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
-    setting. Or you can also implement your own storage backend.
+    setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
 
     Scrapy ships with two HTTP cache policies:
 
@@ -495,6 +495,61 @@ In order to use this storage backend:
 
 .. _LevelDB: https://github.com/google/leveldb
 .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
+
+.. _httpcache-storage-custom:
+
+Writing your own storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement a cache storage backend by creating a Python class that
+defines the methods described below.
+
+.. module:: scrapy.extensions.httpcache
+
+.. class:: CacheStorage
+
+    .. method:: open_spider(spider)
+
+      This method gets called after a spider has been opened for crawling. It handles 
+      the :signal:`open_spider <spider_opened>` signal.
+
+      :param spider: the spider which has been opened
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: close_spider(spider)
+
+      This method gets called after a spider has been closed. It handles 
+      the :signal:`close_spider <spider_closed>` signal. 
+
+      :param spider: the spider which has been closed
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: retrieve_response(spider, request)
+
+      Return response if present in cache, or ``None`` otherwise.
+
+      :param spider: the spider which generated the request
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the request to find cached reponse for
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: store_response(spider, request, response)
+
+      Store the given response in the cache.
+
+      :param spider: the spider for which the response is intended
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the corresponding request the spider generated
+      :type request: :class:`~scrapy.http.Request` object
+
+      :param response: the response to store in the cache
+      :type response: :class:`~scrapy.http.Response` object
+
+In order to use your storage backend, set:
+
+* :setting:`HTTPCACHE_STORAGE` to the Python import path of your custom storage class.
 
 
 HTTPCache middleware settings
@@ -805,6 +860,7 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
+* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
@@ -825,6 +881,15 @@ METAREFRESH_ENABLED
 Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
+
+.. setting:: METAREFRESH_IGNORE_TAGS
+
+METAREFRESH_IGNORE_TAGS
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``['script', 'noscript']``
+
+Meta tags within these tags are ignored.
 
 .. setting:: METAREFRESH_MAXDELAY
 

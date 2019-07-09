@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, cb_kwargs])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -126,6 +126,9 @@ Request objects
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
 
+    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
+    :type cb_kwargs: dict
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -165,6 +168,17 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
+    .. attribute:: Request.cb_kwargs
+
+        A dictionary that contains arbitrary metadata for this request. Its contents
+        will be passed to the Request's callback as keyword arguments. It is empty
+        for new Requests, which means by default callbacks only get a :class:`Response`
+        object as argument.
+
+        This dict is `shallow copied`_ when the request is cloned using the
+        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
+        spider, from the ``response.cb_kwargs`` attribute.
+
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
@@ -172,12 +186,12 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, encoding, dont_filter, callback, errback])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       attribute :attr:`Request.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). See also
+       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are shallow
+       copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
 .. _topics-request-response-ref-request-callback-arguments:
@@ -200,25 +214,31 @@ Example::
         self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
-functions so you can receive the arguments later, in the second callback. You
-can use the :attr:`Request.meta` attribute for that.
+functions so you can receive the arguments later, in the second callback.
+The following example shows how to achieve this by using the
+:attr:`Request.cb_kwargs` attribute:
 
-Here's an example of how to pass an item using this mechanism, to populate
-different fields from different pages::
+::
 
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.meta['item'] = item
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
         yield request
 
-    def parse_page2(self, response):
-        item = response.meta['item']
-        item['other_url'] = response.url
-        yield item
+    def parse_page2(self, response, main_url, foo):
+        yield dict(
+            main_url=main_url,
+            other_url=response.url,
+            foo=foo,
+        )
 
+.. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
+   Prior to that, using :attr:`Request.meta` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs`
+   became the preferred way for handling user information, leaving :attr:`Request.meta`
+   for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
 

@@ -43,6 +43,12 @@ class MySpider(scrapy.Spider):
         else:
             self.logger.debug('It Works!')
 
+    def parse_request_with_cb_kwargs(self, response, foo=None, key=None):
+        if foo == 'bar' and key == 'value':
+            self.logger.debug('It Works!')
+        else:
+            self.logger.debug('It Does Not Work :(')
+
     def parse_request_without_meta(self, response):
         foo = response.meta.get('foo', 'bar')
 
@@ -120,6 +126,14 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
+    @defer.inlineCallbacks
+    def test_request_with_cb_kwargs(self):
+        raw_json_string = '{"foo" : "bar", "key": "value"}'
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                           '--cbkwargs', raw_json_string,
+                                           '-c', 'parse_request_with_cb_kwargs',
+                                           self.url('/html')])
+        self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
     @defer.inlineCallbacks
     def test_request_without_meta(self):

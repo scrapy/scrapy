@@ -129,12 +129,22 @@ Does Scrapy crawl in breadth-first or depth-first order?
 
 By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
 basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases. If you do want to crawl in true `BFO order`_, you can do it by
+in most cases.
+
+If you do want to crawl in true `BFO order`_, you can do it by
 setting the following settings::
 
     DEPTH_PRIORITY = 1
     SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
     SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
+
+While pending requests are below the configured values of
+:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
+concurrently. As a result, the first few requests of a crawl rarely follow the
+desired order. Lowering those settings to ``1`` enforces the desired order, but
+it significantly slows down the crawl as a whole.
+
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -318,6 +328,29 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 --------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
+
+How to split an item into multiple items in an item pipeline?
+-------------------------------------------------------------
+
+:ref:`Item pipelines <topics-item-pipeline>` cannot yield multiple items per
+input item. :ref:`Create a spider middleware <custom-spider-middleware>`
+instead, and use its
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+method for this puspose. For example::
+
+    from copy import deepcopy
+
+    from scrapy.item import BaseItem
+
+
+    class MultiplyItemsMiddleware:
+
+        def process_spider_output(self, response, result, spider):
+            for item in result:
+                if isinstance(item, (BaseItem, dict)):
+                    for _ in range(item['multiply_by']):
+                        yield deepcopy(item)
+
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
