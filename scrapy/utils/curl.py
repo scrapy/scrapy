@@ -6,7 +6,8 @@ from six import string_types, iteritems
 
 class CurlParser(argparse.ArgumentParser):
     def error(self, message):
-        raise ValueError(message)
+        error_msg = 'There was an error parsing the CURL command: {}'.format(message)
+        raise ValueError(error_msg)
 
 
 curl_parser = CurlParser()
@@ -15,10 +16,15 @@ curl_parser.add_argument('-H', '--header', dest='headers', action='append')
 curl_parser.add_argument('-X', '--request', dest='method', default='get')
 curl_parser.add_argument('-d', '--data', dest='data')
 curl_parser.add_argument('--compressed', action='store_true')
-# curl_parser.parse_args(split(curl_str)[1:])
 
 
-def parse_curl_cmd(curl_args):
+def curl_to_request_kwargs(curl_args):
+    """Convert CURL command syntax to Request kwargs
+
+    :param curl_args: string containing the CURL command
+    :return: dictionary of Request kwargs
+    """
+
     if isinstance(curl_args, string_types):
         curl_args = split(curl_args)
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])

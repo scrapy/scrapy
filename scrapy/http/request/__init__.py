@@ -12,6 +12,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
+from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class Request(object_ref):
@@ -103,3 +104,9 @@ class Request(object_ref):
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
+
+    @classmethod
+    def from_curl(cls, curl_str):
+        """Create a new Request from a string containing a CURL command"""
+        kwargs = curl_to_request_kwargs(curl_str)
+        return Request(**kwargs)
