@@ -22,6 +22,11 @@ class ParseCurlCmdTest(unittest.TestCase):
         expected_result = {"method": "GET", "url": "http://example.org/"}
         self._test_command(curl_command, expected_result)
 
+    def test_get_without_scheme(self):
+        curl_command = "curl www.example.org"
+        expected_result = {"method": "GET", "url": "http://www.example.org"}
+        self._test_command(curl_command, expected_result)
+
     def test_get_basic_auth(self):
         curl_command = 'curl "https://api.test.com/" -u "some_username:some_password"'
         expected_result = {
@@ -142,13 +147,13 @@ class ParseCurlCmdTest(unittest.TestCase):
         self._test_command(curl_command, expected_result)
 
     def test_delete(self):
-        curl_command = 'curl -X "DELETE" http://www.url.com/page'
-        expected_result = {"method": "DELETE", "url": "http://www.url.com/page"}
+        curl_command = 'curl -X "DELETE" https://www.url.com/page'
+        expected_result = {"method": "DELETE", "url": "https://www.url.com/page"}
         self._test_command(curl_command, expected_result)
 
     def test_get_silent(self):
         curl_command = 'curl --silent "www.example.com"'
-        expected_result = {"method": "GET", "url": "www.example.com"}
+        expected_result = {"method": "GET", "url": "http://www.example.com"}
         self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
     def test_too_few_arguments_error(self):

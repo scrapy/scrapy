@@ -1,6 +1,8 @@
 import argparse
 from shlex import split
+
 from six.moves.http_cookies import SimpleCookie
+from six.moves.urllib.parse import urlparse, urlunparse
 from six import string_types, iteritems
 from w3lib.http import basic_auth_header
 
@@ -39,9 +41,17 @@ def curl_to_request_kwargs(curl_args):
         msg = 'Unrecognized arguments: %s'
         raise ValueError(msg % (argv,))
 
+    url = parsed_args.url
+
+    # curl automatically prepends 'http' if the scheme is missing, but scrapy.Request
+    # needs an scheme to work
+    parsed_url = urlparse(url)
+    if not parsed_url.scheme:
+        url = 'http://'+url
+
     result = {
         'method': parsed_args.method.upper(),
-        'url': parsed_args.url,
+        'url': url,
     }
 
     headers = []
