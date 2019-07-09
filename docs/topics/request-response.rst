@@ -194,6 +194,11 @@ Request objects
        copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
+    .. classmethod:: Request.from_curl(curl_command)
+
+       Create a Request object from a string containing a curl command. It populates
+       the HTTP method, the URL, the headers, the cookies and the body.
+
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions

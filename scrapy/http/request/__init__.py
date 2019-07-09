@@ -106,7 +106,7 @@ class Request(object_ref):
         return cls(*args, **kwargs)
 
     @classmethod
-    def from_curl(cls, curl_str):
-        """Create a new Request from a string containing a CURL command"""
-        kwargs = curl_to_request_kwargs(curl_str)
+    def from_curl(cls, curl_command):
+        """Create a new Request from a string containing a curl command"""
+        kwargs = curl_to_request_kwargs(curl_command)
         return Request(**kwargs)
