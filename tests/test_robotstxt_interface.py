@@ -67,47 +67,6 @@ class BaseRobotParserTest:
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
         self.assertFalse(rp.allowed("https://www.site.local/page", "*"))
 
-    def test_sitemaps(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Sitemap: https://site.local/sitemap.xml".encode('utf-8'))
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        sitemaps = list(rp.sitemaps())
-        self.assertTrue(len(sitemaps) == 1)
-        self.assertTrue("https://site.local/sitemap.xml" in sitemaps)
-
-    def test_no_sitemaps(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        self.assertTrue(not list(rp.sitemaps()))
-
-    def test_no_preferred_host(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        self.assertTrue(rp.preferred_host() is None)
-
-    def test_crawl_delay(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Crawl-delay: 10".encode('utf-8'))
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        self.assertTrue(rp.crawl_delay('*') == 10.0)
-
-    def test_no_crawl_delay(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed".encode('utf-8'))
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        self.assertTrue(rp.crawl_delay('*') is None)
-
     def test_empty_response(self):
         """empty response should equal 'allow all'"""
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=b'')
@@ -151,30 +110,6 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
     def setUp(self):
         from scrapy.robotstxt import PythonRobotParser
         super(PythonRobotParserTest, self)._setUp(PythonRobotParser)
-
-    def test_sitemaps(self):
-        """RobotFileParse doesn't support Sitemap directive. PythonRobotParser should always return an empty generator."""
-        from scrapy.robotstxt import PythonRobotParser
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Sitemap: https://site.local/sitemap.xml".encode('utf-8'))
-        rp = PythonRobotParser.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-        self.assertTrue(not list(rp.sitemaps()))
-
-    def test_crawl_delay(self):
-        """RobotFileParser does not support Crawl-delay directive for Python version < 3.6"""
-        from scrapy.robotstxt import PythonRobotParser
-        from six.moves.urllib_robotparser import RobotFileParser
-        if hasattr(RobotFileParser, "crawl_delay"):
-            super(PythonRobotParserTest, self).test_crawl_delay()
-        else:
-            robotstxt_robotstxt_body = ("User-agent: * \n"
-                                        "Disallow: /disallowed \n"
-                                        "Allow: /allowed \n"
-                                        "Crawl-delay: 10".encode('utf-8'))
-            rp = PythonRobotParser.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
-            self.assertTrue(rp.crawl_delay("*") is None)
 
     def test_length_based_precedence(self):
         raise unittest.SkipTest("RobotFileParser does not support length based directives precedence.")

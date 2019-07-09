@@ -997,47 +997,15 @@ In order to use this parser:
 Implementing support for a new parser
 -------------------------------------
 
-You can implement support for a new robots.txt_ parser by implementing the
-interface described below.
+You can implement support for a new robots.txt_ parser by subclassing
+the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
+implementing the methods described below.
 
-.. class:: scrapy.robotstxt.RobotsParser
+.. module:: scrapy.robotstxt
+   :synopsis: robots.txt parser interface and implementations
 
-    .. method:: from_crawler(crawler, robotstxt_body)
-
-      Parse the content of a robots.txt_ file as bytes. This must be a class method.
-      It must return a new instance of the parser backend.
-
-      :param crawler: crawler which made the request
-      :type crawler: :class:`~scrapy.crawler.Crawler` instance
-
-      :param robotstxt_body: content of a robots.txt_ file.
-      :type robotstxt_body: bytes
-
-    .. method:: allowed(url, user_agent)
-
-      Return ``True`` if  ``user_agent`` is allowed to crawl ``url``, otherwise return ``False``.
-
-      :param url: Absolute URL
-      :type url: string
-
-      :param user_agent: User agent
-      :type user_agent: string
-
-    .. method:: sitemaps()
-
-      Return a generator yielding URL to sitemaps on the website. If there is no sitemap specified, return an empty generator.
-
-    .. method:: crawl_delay(user_agent)
-
-      Return time (in seconds) specified with ``Crawl-delay`` directive as a float. If nothing is specified, return ``None``.
-
-      :param user_agent: User agent to find ``Crawl-delay`` for.
-      :type user_agent: string
-
-    .. method:: preferred_host()
-
-       Return preferred domain specified with ``Host`` directive. If nothing is specified, return ``None``.
-
+.. autoclass:: RobotParser
+   :members:
 
 .. _robots.txt: http://www.robotstxt.org/
 
