@@ -71,6 +71,13 @@ class FileFeedStorageTest(unittest.TestCase):
 
 class FTPFeedStorageTest(unittest.TestCase):
 
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
     def test_store(self):
         uri = os.environ.get('FEEDTEST_FTP_URI')
         path = os.environ.get('FEEDTEST_FTP_PATH')
@@ -80,9 +87,20 @@ class FTPFeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
 
+    def test_store_active_mode(self):
+        uri = os.environ.get('FEEDTEST_FTP_URI')
+        path = os.environ.get('FEEDTEST_FTP_PATH')
+        if not (uri and path):
+            raise unittest.SkipTest("No FTP server available for testing")
+        use_active_mode = {'FEED_STORAGE_FTP_ACTIVE': True}
+        crawler = get_crawler(settings_dict=use_active_mode)
+        st = FTPFeedStorage.from_crawler(crawler, uri)
+        verifyObject(IFeedStorage, st)
+        return self._assert_stores(st, path)
+
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
-        spider = scrapy.Spider("default")
+        spider = self.get_test_spider()
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
