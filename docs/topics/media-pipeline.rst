@@ -114,6 +114,19 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
+
+It is also recommended to review several options that are explained
+in more details below:
+
+- ``MEDIA_ALLOW_REDIRECTS`` to allow redirects when downloading media items:
+  by default redirects are not followed.
+  See :ref:`topics-media-pipeline-redirects`.
+- ``MEDIA_CACHE_SIZE`` to limit the cache size: by default meta information
+  (url, path and checksum) for all downloaded files and images is cached
+  in order to avoid downloading the same file multiple times.
+  See :ref:`topics-media-pipeline-cache`.
+
+
 Supported Storage
 =================
 
@@ -368,6 +381,8 @@ all be dropped because at least one dimension is shorter than the constraint.
 
 By default, there are no size constraints, so all images are processed.
 
+.. _topics-media-pipeline-redirects:
+
 Allowing redirections
 ---------------------
 
@@ -379,6 +394,29 @@ to a media file URL request will mean the media download is considered failed.
 To handle media redirections, set this setting to ``True``::
 
     MEDIA_ALLOW_REDIRECTS = True
+
+.. _topics-media-pipeline-cache:
+
+Limiting cache size
+-------------------
+
+.. setting:: MEDIA_CACHE_SIZE
+
+By default media pipeline caches meta information
+(url, path and checksum) for all downloaded files and images
+in order to avoid downloading the same file multiple times.
+This caching might consume noticeable amount of memory for large-scale crawls
+with millions of items downloaded. In order to limit the cache size
+(and memory usage), set the maximal cache size::
+
+    MEDIA_CACHE_SIZE = 10000
+
+Zero is also an allowed value, this will disable the cache completely::
+
+    MEDIA_CACHE_SIZE = 0
+
+Cache size is not limited by default, a ``None`` or an empty string ``''``
+value for ``MEDIA_CACHE_SIZE`` enable this behaviour.
 
 .. _topics-media-pipeline-override:
 
