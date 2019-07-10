@@ -1,5 +1,6 @@
 import unittest
 
+from six import assertRaisesRegex
 from w3lib.http import basic_auth_header
 
 from scrapy import Request
@@ -157,14 +158,16 @@ class ParseCurlCmdTest(unittest.TestCase):
         self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
     def test_too_few_arguments_error(self):
-        self.assertRaisesRegexp(
+        assertRaisesRegex(
+            self,
             ValueError,
-            "too few arguments|the following arguments are required:\s*url",
+            r"too few arguments|the following arguments are required:\s*url",
             lambda: curl_to_request_kwargs("curl"),
         )
 
     def test_unknown_arg_error(self):
-        self.assertRaisesRegexp(
+        assertRaisesRegex(
+            self,
             ValueError,
             "Unrecognized arguments:.*--bar.*--baz",
             lambda: curl_to_request_kwargs("curl --bar --baz url"),

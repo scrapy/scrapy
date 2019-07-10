@@ -106,9 +106,12 @@ class Request(object_ref):
         return cls(*args, **kwargs)
 
     @classmethod
-    def from_curl(cls, curl_command):
+    def from_curl(cls, curl_command, **kwargs):
         """Create a Request object from a string containing a `curl <https://curl.haxx.se/>`_ command. It populates the
-         HTTP method, the URL, the headers, the cookies and the body.
+        HTTP method, the URL, the headers, the cookies and the body. It accepts the same arguments as the
+        :class:`Request` class. Note that all the arguments provided take preference and will override the values of
+        the same arguments contained in the curl command.
        """
-        kwargs = curl_to_request_kwargs(curl_command)
-        return Request(**kwargs)
+        request_kwargs = curl_to_request_kwargs(curl_command)
+        request_kwargs.update(kwargs)
+        return Request(**request_kwargs)
