@@ -169,8 +169,6 @@ https://stackoverflow.com/a/1699163). Scrapy uses the passive connection mode
 by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
- * :setting:`FEED_STORAGE_FTP_ACTIVE`
-
 .. _topics-feed-storage-s3:
 
 S3
@@ -322,7 +320,8 @@ FEED_STORAGE_FTP_ACTIVE
 
 Default: ``False``
 
-Whether to use active mode when exporting feeds to a FTP server.
+Whether to use [active mode](https://stackoverflow.com/a/1699163) when exporting feeds
+to a FTP server.
 
 .. setting:: FEED_STORAGE_S3_ACL
 
