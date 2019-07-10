@@ -164,7 +164,10 @@ The feeds are stored in a FTP server.
  * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
  * Required external libraries: none
 
-By default transfers are made in passive mode, you use active mode using this setting:
+FTP supports two different connection modes: [active or passive](
+https://stackoverflow.com/a/1699163). Scrapy uses the passive connection mode
+by default. To use the active connection mode instead, set the
+:setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
  * :setting:`FEED_STORAGE_FTP_ACTIVE`
 
