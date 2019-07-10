@@ -83,7 +83,7 @@ class ParseCurlCmdTest(unittest.TestCase):
 
     def test_post(self):
         curl_command = (
-            "curl 'http://httpbin.org/post' -H 'Cookie: _gauges_unique_year=1; "
+            "curl 'http://httpbin.org/post' -X POST -H 'Cookie: _gauges_unique_year=1; "
             "_gauges_unique=1; _gauges_unique_month=1; _gauges_unique_hour=1; "
             "_gauges_unique_day=1' -H 'Origin: http://httpbin.org' -H 'Accept-Encoding: gzip, deflate'"
             " -H 'Accept-Language: en-US,en;q=0.9,ru;q=0.8,es;q=0.7' -H 'Upgrade-Insecure-Requests: 1'"
@@ -95,7 +95,7 @@ class ParseCurlCmdTest(unittest.TestCase):
             "%40example.org&size=small&topping=cheese&topping=onion&delivery=12%3A15&comments=' --compressed"
         )
         expected_result = {
-            "method": "GET",
+            "method": "POST",
             "url": "http://httpbin.org/post",
             "body": "custname=John+Smith&custtel=500&custemail=jsmith%40example.org&size=small&topping=cheese&topping=onion&delivery=12%3A15&comments=",
             "cookies": dict(
