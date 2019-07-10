@@ -9,7 +9,8 @@ from w3lib.http import basic_auth_header
 
 class CurlParser(argparse.ArgumentParser):
     def error(self, message):
-        error_msg = 'There was an error parsing the curl command: {}'.format(message)
+        error_msg = \
+            'There was an error parsing the curl command: {}'.format(message)
         raise ValueError(error_msg)
 
 
@@ -43,7 +44,7 @@ def curl_to_request_kwargs(curl_args):
 
     url = parsed_args.url
 
-    # curl automatically prepends 'http' if the scheme is missing, but scrapy.Request
+    # curl automatically prepends 'http' if the scheme is missing, but Request
     # needs an scheme to work
     parsed_url = urlparse(url)
     if not parsed_url.scheme:
