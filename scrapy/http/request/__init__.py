@@ -107,6 +107,8 @@ class Request(object_ref):
 
     @classmethod
     def from_curl(cls, curl_command):
-        """Create a new Request from a string containing a curl command"""
+        """Create a Request object from a string containing a `curl <https://curl.haxx.se/>`_ command. It populates the
+         HTTP method, the URL, the headers, the cookies and the body.
+       """
         kwargs = curl_to_request_kwargs(curl_command)
         return Request(**kwargs)

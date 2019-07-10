@@ -2,7 +2,7 @@ import argparse
 from shlex import split
 
 from six.moves.http_cookies import SimpleCookie
-from six.moves.urllib.parse import urlparse, urlunparse
+from six.moves.urllib.parse import urlparse
 from six import string_types, iteritems
 from w3lib.http import basic_auth_header
 
