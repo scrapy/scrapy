@@ -7,7 +7,7 @@ from scrapy import Request
 from scrapy.utils.curl import curl_to_request_kwargs
 
 
-class ParseCurlCmdTest(unittest.TestCase):
+class CurlToRequestKwargsTest(unittest.TestCase):
     maxDiff = 5000
 
     def _test_command(self, curl_command, expected_result):
@@ -77,15 +77,13 @@ class ParseCurlCmdTest(unittest.TestCase):
                 ("Referer", "http://httpbin.org/"),
                 ("Connection", "keep-alive"),
             ],
-            "cookies": dict(
-                [
-                    ("_gauges_unique_year", "1"),
-                    ("_gauges_unique_hour", "1"),
-                    ("_gauges_unique_day", "1"),
-                    ("_gauges_unique", "1"),
-                    ("_gauges_unique_month", "1"),
-                ]
-            ),
+            "cookies": {
+                '_gauges_unique_year': '1',
+                '_gauges_unique_hour': '1',
+                '_gauges_unique_day': '1',
+                '_gauges_unique': '1',
+                '_gauges_unique_month': '1'
+            },
         }
         self._test_command(curl_command, expected_result)
 
@@ -112,15 +110,13 @@ class ParseCurlCmdTest(unittest.TestCase):
             "body": "custname=John+Smith&custtel=500&custemail=jsmith%40exampl"
                     "e.org&size=small&topping=cheese&topping=onion&delivery=12"
                     "%3A15&comments=",
-            "cookies": dict(
-                [
-                    ("_gauges_unique_year", "1"),
-                    ("_gauges_unique_hour", "1"),
-                    ("_gauges_unique_day", "1"),
-                    ("_gauges_unique", "1"),
-                    ("_gauges_unique_month", "1"),
-                ]
-            ),
+            "cookies": {
+                '_gauges_unique_year': '1',
+                '_gauges_unique_hour': '1',
+                '_gauges_unique_day': '1',
+                '_gauges_unique': '1',
+                '_gauges_unique_month': '1'
+            },
             "headers": [
                 ("Origin", "http://httpbin.org"),
                 ("Accept-Encoding", "gzip, deflate"),

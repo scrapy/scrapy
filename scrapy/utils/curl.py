@@ -20,6 +20,7 @@ curl_parser.add_argument('-H', '--header', dest='headers', action='append')
 curl_parser.add_argument('-X', '--request', dest='method', default='get')
 curl_parser.add_argument('-d', '--data', dest='data')
 curl_parser.add_argument('-u', '--user', dest='auth')
+
 curl_parser.add_argument('--compressed', action='store_true')
 curl_parser.add_argument('-s', '--silent', action='store_true')
 
@@ -45,7 +46,7 @@ def curl_to_request_kwargs(curl_args):
     url = parsed_args.url
 
     # curl automatically prepends 'http' if the scheme is missing, but Request
-    # needs an scheme to work
+    # needs the scheme to work
     parsed_url = urlparse(url)
     if not parsed_url.scheme:
         url = 'http://'+url
@@ -56,14 +57,14 @@ def curl_to_request_kwargs(curl_args):
     }
 
     headers = []
-    cookies = []
-    for h in parsed_args.headers or ():
-        name, val = h.split(':', 1)
+    cookies = {}
+    for header in parsed_args.headers or ():
+        name, val = header.split(':', 1)
         name = name.strip().title()
         val = val.strip()
         if name == 'Cookie':
             for name, morsel in iteritems(SimpleCookie(val)):
-                cookies.append((name, morsel.value))
+                cookies[name] = morsel.value
         else:
             headers.append((name, val))
 
@@ -74,7 +75,7 @@ def curl_to_request_kwargs(curl_args):
     if headers:
         result['headers'] = headers
     if cookies:
-        result['cookies'] = dict(cookies)
+        result['cookies'] = cookies
     if parsed_args.data:
         result['body'] = parsed_args.data
 
