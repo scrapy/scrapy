@@ -438,10 +438,10 @@ or even enable client-side authentication (and various other things).
     which uses the platform's certificates to validate remote endpoints.
     **This is only available if you use Twisted>=14.0.**
 
-If you do use a custom ContextFactory, make sure its ``__init__` method accepts
-a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
+If you do use a custom ContextFactory, make sure its ``__init__`` method
+accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
 :setting:`DOWNLOADER_CLIENT_TLS_METHOD`) and a ``settings`` parameter (this is
-the Scrapy settings object).
+the Scrapy :class:`~scrapy.settings.Settings` object).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
