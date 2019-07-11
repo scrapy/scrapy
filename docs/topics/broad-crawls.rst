@@ -39,6 +39,8 @@ you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
+.. _broad-crawls-scheduler-priority-queue:
+
 Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
 =================================================
 
@@ -50,23 +52,36 @@ To apply the recommended priority queue use::
 
     SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
+.. _broad-crawls-concurrency:
+
 Increase concurrency
 ====================
 
 Concurrency is the number of requests that are processed in parallel. There is
-a global limit and a per-domain limit.
+a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
+can be set either per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) or per
+IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
+
+.. note:: The scheduler priority queue :ref:`recommended for broad crawls
+          <broad-crawls-scheduler-priority-queue>` does not support
+          :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
-to increase it will depend on how much CPU you crawler will have available. A
-good starting point is ``100``, but the best way to find out is by doing some
-trials and identifying at what concurrency your Scrapy process gets CPU
-bounded. For optimum performance, you should pick a concurrency where CPU usage
-is at 80-90%.
+to increase it will depend on how much CPU and memory you crawler will have
+available.
 
-To increase the global concurrency use::
+A good starting point is ``100``::
 
     CONCURRENT_REQUESTS = 100
+
+But the best way to find out is by doing some trials and identifying at what
+concurrency your Scrapy process gets CPU bounded. For optimum performance, you
+should pick a concurrency where CPU usage is at 80-90%.
+
+Increasing concurrency also increases memory usage. If memory usage is a
+concern, you might need to lower your global concurrency limit accordingly.
+
 
 Increase Twisted IO thread pool maximum size
 ============================================
@@ -175,31 +190,24 @@ and enabling it for focused crawls doesn't make much sense.
 
 .. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
 
-Reducing memory consumption for broad crawls
-============================================
+.. _broad-crawls-bfo:
 
-For broad crawls, the amount of memory used for storing `Requests`_, references, and further information may soon become pretty large.
-The following steps help to reduce the amount of memory used for broad crawls.
+Crawl in BFO order
+==================
 
-1) **Change the queue type:** The default queue for crawls is "Last-In-First-Out ( `LIFO`_ )" using the concept of "Depth-First Search ( `DFS`_ )". In case the page scraping is faster than the processing of the spiders, early `Requests`_ might not be processed and therefore block memory until the final depth is reached. Setting the queue from LIFO to "First-In-First-Out ( `FIFO`_ )" and setting dispatching from `DFS`_ to "Breadth-First Search ( `BFS`_ )", as shown in the `FAQ`_ will solve this problem::
+:ref:`Scrapy crawls in DFO order by default <faq-bfo-dfo>`.
 
-    DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
+In broad crawls, however, page crawling tends to be faster than page
+processing. As a result, unprocessed early requests stay in memory until the
+final depth is reached, which can significantly increase memory usage.
 
-2) **Reduce the number of concurrent requests:** As stated before, the global concurrency level can be set using::
- 
-    CONCURRENT_REQUESTS = 100
+:ref:`Crawl in BFO order <faq-bfo-dfo>` instead to save memory.
 
-However, if scraping is faster than processing, the queue will eventually exceed the memory size.
-Unfortunately, there is yet no autobalancing feature available, so you need to find concurrency values that fit your processing speed.
 
-3) **Use the profiling and trackref capabilities of scrapy:** scrapy provides an own and interactive profiling and reference tracking tool. See `debugging memory leaks`_ for more information.
+Be mindful of memory leaks
+==========================
 
-.. _debugging memory leaks: http://doc.scrapy.org/en/latest/topics/leaks.html
-.. _Requests: http://doc.scrapy.org/en/latest/topics/request-response.html#request-objects
-.. _LIFO: http://en.wikipedia.org/wiki/Stack_(abstract_data_type)
-.. _FIFO: http://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)
-.. _BFS: http://en.wikipedia.org/wiki/Breadth-first_search
-.. _DFS: http://en.wikipedia.org/wiki/Depth-first_search
-.. _FAQ: http://doc.scrapy.org/en/latest/faq.html#does-scrapy-crawl-in-breadth-first-or-depth-first-order
+If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
+BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
+<broad-crawls-concurrency>` you should :ref:`debug your memory leaks
+<topics-leaks>`.
