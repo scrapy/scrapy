@@ -71,7 +71,7 @@ if twisted_version >= (14, 0, 0):
         """
 
         def __init__(self, hostname, ctx, verbose_logging=False):
-            super().__init__(hostname, ctx)
+            super(ScrapyClientTLSOptions, self).__init__(hostname, ctx)
             self.verbose_logging = verbose_logging
 
         def _identityVerifyingInfoCallback(self, connection, where, ret):
