@@ -13,10 +13,13 @@ __doctests__ = ['scrapy.utils.misc']
 class UtilsMiscTestCase(unittest.TestCase):
 
     def test_load_object(self):
+        obj = load_object(load_object)
+        self.assertIs(obj, load_object)
         obj = load_object('scrapy.utils.misc.load_object')
-        assert obj is load_object
+        self.assertIs(obj, load_object)
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
+        self.assertRaises(TypeError, load_object, dict())
 
     def test_walk_modules(self):
         mods = walk_modules('tests.test_utils_misc.test_walk_modules')
