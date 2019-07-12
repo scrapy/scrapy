@@ -252,15 +252,16 @@ If the handy ``has_next`` element is ``true`` (try loading
 `quotes.toscrape.com/api/quotes?page=10`_ in your browser or a
 page-number greater than 10), we increment the ``page`` attribute 
 and ``yield`` a new request, inserting the incremented page-number 
-into our ``url``. 
+into our ``url``.
+
+.. _requests-from-curl:
 
 In more complex websites, it could be difficult to easily reproduce the
-requests, as we could need to add ``headers`` or ``cookies`` to make it work. In those
-cases you can export the requests in `cURL <https://curl.haxx.se/>`_ format, by
-right-clicking on it in the network tool and using the
+requests, as we could need to add ``headers`` or ``cookies`` to make it work.
+In those cases you can export the requests in `cURL <https://curl.haxx.se/>`_
+format, by right-clicking on each of them in the network tool and using the
 :meth:`~scrapy.http.Request.from_curl()` method to generate an equivalent
-request. To do so, just import the :class:`~scrapy.http.Request` class and use this
-method to get the desired request::
+request::
 
     from scrapy import Request
 
@@ -273,11 +274,9 @@ method to get the desired request::
         "I0LWJlZGYtMmM0YjgzZmI0MGY0' -H 'Connection: keep-alive' -H 'Referer: http"
         "://quotes.toscrape.com/scroll' -H 'Cache-Control: max-age=0'")
 
-
 Alternatively, if you want to know the arguments needed to recreate that
 request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
 function and you will get a dictionary with the equivalent arguments.
-
 
 As you can see, with a few inspections in the `Network`-tool we
 were able to easily replicate the dynamic requests of the scrolling 
