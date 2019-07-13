@@ -288,7 +288,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
 
             def process_value(value):
-                m = re.search("javascript:goToPage\('(.*?)'", value)
+                m = re.search(r"javascript:goToPage\('(.*?)'", value)
                 if m:
                     return m.group(1)
 
