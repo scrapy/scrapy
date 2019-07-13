@@ -44,6 +44,8 @@ import sys
 if sys.version_info[0] == 2:
     import unittest
     import twisted.trial.unittest
+    if not getattr(unittest.TestCase, 'assertRegex', None):
+        unittest.TestCase.assertRegex = unittest.TestCase.assertRegexpMatches
     if not getattr(unittest.TestCase, 'assertRaisesRegex', None):
         unittest.TestCase.assertRaisesRegex = unittest.TestCase.assertRaisesRegexp
     if not getattr(twisted.trial.unittest.TestCase, 'assertRaisesRegex', None):
