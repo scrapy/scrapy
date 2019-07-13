@@ -6,11 +6,18 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import copy
-import six
+import collections
 import warnings
-from collections import OrderedDict, Mapping
+
+import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+
+
+if six.PY3:
+    Mapping = collections.abc.Mapping
+else:
+    Mapping = collections.Mapping
 
 
 class MultiValueDictKeyError(KeyError):
@@ -289,7 +296,7 @@ class MergeDict(object):
         return self.__copy__()
 
 
-class LocalCache(OrderedDict):
+class LocalCache(collections.OrderedDict):
     """Dictionary with a finite number of keys.
 
     Older items expires first.

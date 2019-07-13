@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import re
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
@@ -31,18 +30,16 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def _get_successful_crawler(self):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
-        ROBOTS = re.sub(b'^\s+(?m)', b'', u'''
-        User-Agent: *
-        Disallow: /admin/
-        Disallow: /static/
-
-        # taken from https://en.wikipedia.org/robots.txt
-        Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
-        Disallow: /wiki/Käyttäjä:
-
-        User-Agent: UnicödeBöt
-        Disallow: /some/randome/page.html
-        '''.encode('utf-8'))
+        ROBOTS = u"""
+User-Agent: *
+Disallow: /admin/
+Disallow: /static/
+# taken from https://en.wikipedia.org/robots.txt
+Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
+Disallow: /wiki/Käyttäjä:
+User-Agent: UnicödeBöt
+Disallow: /some/randome/page.html
+""".encode('utf-8')
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
         def return_response(request, spider):
             deferred = Deferred()
