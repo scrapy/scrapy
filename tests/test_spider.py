@@ -595,5 +595,5 @@ class NoParseMethodSpiderTest(unittest.TestCase):
         resp = TextResponse(url="http://www.example.com/random_url", body=text)
 
         exc_msg = 'Spider.parse callback is not defined'
-        with self.assertRaisesRegexp(NotImplementedError, exc_msg):
+        with self.assertRaisesRegex(NotImplementedError, exc_msg):
             spider.parse(resp)
