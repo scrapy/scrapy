@@ -1,6 +1,9 @@
+from os import environ
 from os.path import dirname, join
 from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 
 with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
@@ -26,6 +29,26 @@ if has_environment_marker_platform_impl_support():
     ]
 
 
+def install_bash_completion_inside_virtualenv():
+    if environ.get('VIRTUAL_ENV'):
+        activate_path = join(environ['VIRTUAL_ENV'], 'bin/activate')
+        with open('extras/scrapy_bash_completion') as src, open(activate_path, 'a') as dest:
+            dest.write('\n\n\n')
+            dest.write(src.read())
+
+
+class PostDevelopCommand(develop):
+    def run(self):
+        install_bash_completion_inside_virtualenv()
+        develop.run(self)
+
+
+class PostInstallCommand(install):
+    def run(self):
+        install_bash_completion_inside_virtualenv()
+        install.run(self)
+
+
 setup(
     name='Scrapy',
     version=version,
@@ -41,6 +64,13 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': ['scrapy = scrapy.cmdline:execute']
+    },
+    data_files=[
+        ('/etc/bash_completion.d', ['extras/scrapy_bash_completion']),
+    ],
+    cmdclass={
+        'develop': PostDevelopCommand,
+        'install': PostInstallCommand,
     },
     classifiers=[
         'Framework :: Scrapy',
