@@ -164,7 +164,8 @@ class Scheduler(object):
         q = create_instance(self.pqclass,
                             None,
                             self.crawler,
-                            self._newdq,
+                            self.dqclass,
+                            self.dqdir,
                             state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
