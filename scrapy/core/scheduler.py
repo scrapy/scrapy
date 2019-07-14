@@ -119,7 +119,7 @@ class Scheduler(object):
         if self.dqs is None:
             return
         try:
-            self.dqs.push(request, -request.priority)
+            self.dqs.push(request)
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
@@ -135,7 +135,7 @@ class Scheduler(object):
             return True
 
     def _mqpush(self, request):
-        self.mqs.push(request, -request.priority)
+        self.mqs.push(request)
 
     def _dqpop(self):
         if self.dqs:
