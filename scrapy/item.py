@@ -4,14 +4,20 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-from pprint import pformat
-from collections import MutableMapping
-from copy import deepcopy
-
 from abc import ABCMeta
+from pprint import pformat
+from copy import deepcopy
+import collections
+
 import six
 
 from scrapy.utils.trackref import object_ref
+
+
+if six.PY3:
+    MutableMapping = collections.abc.MutableMapping
+else:
+    MutableMapping = collections.MutableMapping
 
 
 class BaseItem(object_ref):
