@@ -245,6 +245,13 @@ class MergeDict(object):
     first occurrence will be used.
     """
     def __init__(self, *dicts):
+        if six.PY3:
+            warnings.warn(
+                "scrapy.utils.datatypes.MergeDict is deprecated in favor "
+                "of collections.ChainMap (introduced in Python 3.3)",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self.dicts = dicts
 
     def __getitem__(self, key):
