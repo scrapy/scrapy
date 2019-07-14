@@ -60,12 +60,12 @@ class _SlotPriorityQueues(object):
             del self.pqueues[slot]
         return request
 
-    def push_slot(self, slot, obj, priority):
+    def push_slot(self, slot, obj):
         """ Push an object to a priority queue for this slot """
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
-        queue.push(obj, priority)
+        queue.push(obj)
 
     def close(self):
         active = {slot: queue.close()
@@ -108,7 +108,8 @@ class ScrapyPriorityQueue(object):
                                          self.key + '/' + str(key),
                                          startprios)
 
-    def push(self, obj, priority=0):
+    def push(self, obj):
+        priority = -obj.priority
         if priority not in self.queues:
             self.queues[priority] = self.qfactory(priority)
         q = self.queues[priority]
@@ -198,9 +199,9 @@ class DownloaderAwarePriorityQueue(object):
         request = self._slot_pqueues.pop_slot(slot)
         return request
 
-    def push(self, request, priority):
+    def push(self, request):
         slot = self._downloader_interface.get_slot_key(request)
-        self._slot_pqueues.push_slot(slot, request, priority)
+        self._slot_pqueues.push_slot(slot, request)
 
     def close(self):
         return self._slot_pqueues.close()
