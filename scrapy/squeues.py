@@ -2,6 +2,7 @@
 Scheduler queues
 """
 
+import errno
 import marshal
 import os
 import os.path
@@ -17,7 +18,10 @@ def _with_mkdir(queue_class):
     class DirectoriesCreated(queue_class):
 
         def __init__(self, path, *args, **kwargs):
-            os.makedirs(os.path.dirname(path), exist_ok=True)
+            dirname = os.path.dirname(path)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+
             super(DirectoriesCreated, self).__init__(path, *args, **kwargs)
 
     return DirectoriesCreated
