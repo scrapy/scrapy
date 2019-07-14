@@ -108,15 +108,6 @@ class ScrapyPriorityQueue(object):
         if not startprios:
             return
 
-        if not isinstance(startprios, dict):
-            raise ValueError("ScrapyPriorityQueue accepts "
-                             "``startprios`` as a dict; %r instance "
-                             "is passed. Most likely, it means the state is"
-                             "created by an incompatible priority queue. "
-                             "Only a crawl started with the same priority "
-                             "queue class can be resumed." %
-                             slot_startprios.__class__)
-
         for priority, state in startprios.items():
             priority = int(priority)
             self.queues[priority] = self.qfactory(priority, state)
@@ -151,7 +142,7 @@ class ScrapyPriorityQueue(object):
     def close(self):
         active = {}
         for p, q in self.queues.items():
-            active[p] = q.close()
+            active[str(p)] = q.close()
         return active
 
     def __len__(self):
