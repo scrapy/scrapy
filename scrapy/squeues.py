@@ -26,7 +26,7 @@ def _scrapy_queue(queue_class, serialize, deserialize, *, use_key=False):
 
     class SerializableQueue(queue_class):
 
-        def __init__(self, crawler, key, _):
+        def __init__(self, crawler, key, startprios):
             self.spider = crawler.spider
             args_ = []
             if use_key:
