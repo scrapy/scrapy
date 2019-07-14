@@ -60,12 +60,12 @@ class _SlotPriorityQueues(object):
             del self.pqueues[slot]
         return request
 
-    def push_slot(self, slot, obj):
+    def push_slot(self, slot, request):
         """ Push an object to a priority queue for this slot """
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
-        queue.push(obj)
+        queue.push(request)
 
     def close(self):
         active = {slot: queue.close()
@@ -108,12 +108,12 @@ class ScrapyPriorityQueue(object):
                                          self.key + '/' + str(key),
                                          startprios)
 
-    def push(self, obj):
-        priority = -obj.priority
+    def push(self, request):
+        priority = -request.priority
         if priority not in self.queues:
             self.queues[priority] = self.qfactory(priority)
         q = self.queues[priority]
-        q.push(obj) # this may fail (eg. serialization error)
+        q.push(request) # this may fail (eg. serialization error)
         if self.curprio is None or priority < self.curprio:
             self.curprio = priority
 
