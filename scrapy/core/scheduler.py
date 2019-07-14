@@ -141,15 +141,6 @@ class Scheduler(object):
         if self.dqs:
             return self.dqs.pop()
 
-    def _newmq(self, priority):
-        """ Factory for creating memory queues. """
-        return self.mqclass()
-
-    def _newdq(self, priority):
-        """ Factory for creating disk queues. """
-        path = join(self.dqdir, 'p%s' % (priority, ))
-        return self.dqclass(self.crawler, path)
-
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
         return create_instance(self.pqclass,
