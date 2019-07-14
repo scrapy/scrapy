@@ -33,8 +33,11 @@ def install_bash_completion_inside_virtualenv():
     if environ.get('VIRTUAL_ENV'):
         activate_path = join(environ['VIRTUAL_ENV'], 'bin/activate')
         with open('extras/scrapy_bash_completion') as src, open(activate_path, 'a') as dest:
-            dest.write('\n\n\n')
-            dest.write(src.read())
+            dest.write("\n\n\n")
+            dest.write("shell=`echo $0 | awk -F/ '{print $NF}'`\n")
+            dest.write("if [ $shell = 'bash' ] ; then\n")
+            dest.write(''.join(['    ' + line for line in src.readlines()]))
+            dest.write("fi")
 
 
 class PostDevelopCommand(develop):
