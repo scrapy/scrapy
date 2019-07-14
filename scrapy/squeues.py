@@ -10,13 +10,16 @@ from queuelib import queue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
-def _serializable_queue(queue_class, serialize, deserialize):
+def _scrapy_queue(queue_class, serialize, deserialize, *, use_key=False):
 
     class SerializableQueue(queue_class):
 
-        def __init__(self, crawler, key):
+        def __init__(self, crawler, key, _):
             self.spider = crawler.spider
-            super(SerializableQueue, self).__init__(key)
+            args_ = []
+            if use_key:
+                args_ = [key]
+            super(SerializableQueue, self).__init__(*args_)
 
         def push(self, request):
             if serialize:
@@ -50,13 +53,15 @@ def _pickle_serialize(obj):
         raise ValueError(str(e))
 
 
-PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue,
-    _pickle_serialize, pickle.loads)
-PickleLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue,
-    _pickle_serialize, pickle.loads)
-MarshalFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue,
-    marshal.dumps, marshal.loads)
-MarshalLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue,
-    marshal.dumps, marshal.loads)
-FifoMemoryQueue = queue.FifoMemoryQueue
-LifoMemoryQueue = queue.LifoMemoryQueue
+PickleFifoDiskQueue = _scrapy_queue(queue.FifoDiskQueue,
+    _pickle_serialize, pickle.loads, use_key=True)
+PickleLifoDiskQueue = _scrapy_queue(queue.LifoDiskQueue,
+    _pickle_serialize, pickle.loads, use_key=True)
+MarshalFifoDiskQueue = _scrapy_queue(queue.FifoDiskQueue,
+    marshal.dumps, marshal.loads, use_key=True)
+MarshalLifoDiskQueue = _scrapy_queue(queue.LifoDiskQueue,
+    marshal.dumps, marshal.loads, use_key=True)
+FifoMemoryQueue = _scrapy_queue(queue.FifoMemoryQueue,
+    None, None, use_key=False)
+LifoMemoryQueue = _scrapy_queue(queue.LifoMemoryQueue,
+    None, None, use_key=False)
