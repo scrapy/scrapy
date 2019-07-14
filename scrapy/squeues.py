@@ -3,11 +3,23 @@ Scheduler queues
 """
 
 import marshal
+import os
+import os.path
 from six.moves import cPickle as pickle
 
 from queuelib import queue
 
 from scrapy.utils.reqser import request_to_dict, request_from_dict
+
+
+def _with_mkdir(queue_class):
+
+    class DirectoriesCreated(queue_class):
+        def __init__(self, path, *args, **kwargs):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            super(DirectoriesCreated, self).__init__(path, *args, **kwargs)
+
+    return DirectoriesCreated
 
 
 def _scrapy_queue(queue_class, serialize, deserialize, *, use_key=False):
@@ -53,13 +65,13 @@ def _pickle_serialize(obj):
         raise ValueError(str(e))
 
 
-PickleFifoDiskQueue = _scrapy_queue(queue.FifoDiskQueue,
+PickleFifoDiskQueue = _scrapy_queue(_with_mkdir(queue.FifoDiskQueue),
     _pickle_serialize, pickle.loads, use_key=True)
-PickleLifoDiskQueue = _scrapy_queue(queue.LifoDiskQueue,
+PickleLifoDiskQueue = _scrapy_queue(_with_mkdir(queue.LifoDiskQueue),
     _pickle_serialize, pickle.loads, use_key=True)
-MarshalFifoDiskQueue = _scrapy_queue(queue.FifoDiskQueue,
+MarshalFifoDiskQueue = _scrapy_queue(_with_mkdir(queue.FifoDiskQueue),
     marshal.dumps, marshal.loads, use_key=True)
-MarshalLifoDiskQueue = _scrapy_queue(queue.LifoDiskQueue,
+MarshalLifoDiskQueue = _scrapy_queue(_with_mkdir(queue.LifoDiskQueue),
     marshal.dumps, marshal.loads, use_key=True)
 FifoMemoryQueue = _scrapy_queue(queue.FifoMemoryQueue,
     None, None, use_key=False)
