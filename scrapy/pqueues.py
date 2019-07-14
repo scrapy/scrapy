@@ -29,24 +29,6 @@ def _path_safe(text):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class _Priority(namedtuple("_Priority", ["priority", "slot"])):
-    """ Slot-specific priority. It is a hack - ``(priority, slot)`` tuple
-    which can be used instead of int priorities in queues:
-
-    * they are ordered in the same way - order is still by priority value,
-      min(prios) works;
-    * str(p) representation is guaranteed to be different when slots
-      are different - this is important because str(p) is used to create
-      queue files on disk;
-    * they have readable str(p) representation which is safe
-      to use as a file name.
-    """
-    __slots__ = ()
-
-    def __str__(self):
-        return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
-
-
 class _SlotPriorityQueues(object):
     """ Container for multiple priority queues. """
     def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
@@ -62,12 +44,12 @@ class _SlotPriorityQueues(object):
         self.crawler = crawler
         self.pqueues = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(startprios)
+            self.pqueues[slot] = self.pqfactory(slot, startprios)
 
-    def pqfactory(self, startprios=()):
+    def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(self.crawler,
                                    self.downstream_queue_cls,
-                                   self.key,
+                                   self.key + '/' + _path_safe(slot),
                                    startprios)
 
     def pop_slot(self, slot):
@@ -81,7 +63,7 @@ class _SlotPriorityQueues(object):
     def push_slot(self, slot, obj, priority):
         """ Push an object to a priority queue for this slot """
         if slot not in self.pqueues:
-            self.pqueues[slot] = self.pqfactory()
+            self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
         queue.push(obj, priority)
 
@@ -200,10 +182,6 @@ class DownloaderAwarePriorityQueue(object):
                              "queue class can be resumed." %
                              slot_startprios.__class__)
 
-        slot_startprios = {
-            slot: [_Priority(p, slot) for p in startprios]
-            for slot, startprios in (slot_startprios or {}).items()}
-
         self._slot_pqueues = _SlotPriorityQueues(crawler,
                                                  downstream_queue_cls,
                                                  key,
@@ -222,13 +200,10 @@ class DownloaderAwarePriorityQueue(object):
 
     def push(self, request, priority):
         slot = self._downloader_interface.get_slot_key(request)
-        priority_slot = _Priority(priority=priority, slot=slot)
-        self._slot_pqueues.push_slot(slot, request, priority_slot)
+        self._slot_pqueues.push_slot(slot, request, priority)
 
     def close(self):
-        active = self._slot_pqueues.close()
-        return {slot: [p.priority for p in startprios]
-                for slot, startprios in active.items()}
+        return self._slot_pqueues.close()
 
     def __len__(self):
         return len(self._slot_pqueues)
