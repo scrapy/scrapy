@@ -1,4 +1,5 @@
-from os import environ
+import os
+import shutil
 from os.path import dirname, join
 from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
@@ -30,14 +31,13 @@ if has_environment_marker_platform_impl_support():
 
 
 def install_bash_completion_inside_virtualenv():
-    if environ.get('VIRTUAL_ENV'):
-        activate_path = join(environ['VIRTUAL_ENV'], 'bin/activate')
-        with open('extras/scrapy_bash_completion') as src, open(activate_path, 'a') as dest:
-            dest.write("\n\n\n")
-            dest.write("shell=`echo $0 | awk -F/ '{print $NF}'`\n")
-            dest.write("if [ $shell = 'bash' ] ; then\n")
-            dest.write(''.join(['    ' + line for line in src.readlines()]))
-            dest.write("fi")
+    if os.environ.get('VIRTUAL_ENV'):
+        bin_dir = join(os.environ['VIRTUAL_ENV'], 'bin')
+        shutil.copy('extras/scrapy_bash_completion', bin_dir)
+        with open(join(bin_dir, 'activate'), 'a') as dest:
+            dest.write('\n\n')
+            dest.write('# bash completion for the Scrapy command-line tool (added by Scrapy)\n')
+            dest.write('[ -n "${BASH-}" ] && [ -f scrapy_bash_completion ] && source scrapy_bash_completion\n')
 
 
 class PostDevelopCommand(develop):
