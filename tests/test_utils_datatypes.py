@@ -5,7 +5,7 @@ import six
 if six.PY3:
     from collections.abc import Mapping, MutableMapping
 else:
-    from collections.abc import Mapping, MutableMapping
+    from collections import Mapping, MutableMapping
 
 from scrapy.utils.datatypes import CaselessDict, SequenceExclude
 
