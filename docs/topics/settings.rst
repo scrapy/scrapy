@@ -866,6 +866,22 @@ directives.
 
 .. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
 
+.. warning::
+    ``%z`` may not work as expected on all systems. If you need unambiguous
+    date and time in log records, one option is to set :setting:`LOG_DATETIME_UTC`
+    to ``True`` and use a UTC format such as ``'%Y-%m-%dT%H:%M:%S+0000'``
+
+.. setting:: LOG_DATETIME_UTC
+
+LOG_DATETIME_UTC
+----------------
+
+Default: ``False``
+
+If ``True``,  the ``%(asctime)s`` placeholder in :setting:`LOG_FORMAT`
+will be expanded as a UTC time object, following :setting:`LOG_DATEFORMAT`,
+instead of system local date and time.
+
 .. setting:: LOG_LEVEL
 
 LOG_LEVEL

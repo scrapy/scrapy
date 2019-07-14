@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import time
 import warnings
 from logging.config import dictConfig
 
@@ -134,6 +135,8 @@ def _get_handler(settings):
         fmt=settings.get('LOG_FORMAT'),
         datefmt=settings.get('LOG_DATEFORMAT')
     )
+    if settings.getbool('LOG_DATETIME_UTC'):
+        formatter.converter = time.gmtime
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
     if settings.getbool('LOG_SHORT_NAMES'):
