@@ -54,6 +54,7 @@ class ScrapyPriorityQueue(object):
 
     def qfactory(self, key, startprios=()):
         return self.downstream_queue_cls(self.crawler,
+                                         None,
                                          self.key + '/' + str(key),
                                          startprios)
 
