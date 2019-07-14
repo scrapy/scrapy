@@ -90,8 +90,73 @@ class _SlotPriorityQueues(object):
         return slot in self.pqueues
 
 
-class ScrapyPriorityQueue(PriorityQueue):
-    pass
+class ScrapyPriorityQueue(object):
+
+    @classmethod
+    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+        return cls(crawler, downstream_queue_cls, key, startprios)
+
+    def __init__(self, crawler, downstream_queue_cls, key, startprios=()):
+        self.crawler = crawler
+        self.downstream_queue_cls = downstream_queue_cls
+        self.key = key
+        self.queues = {}
+        self.curprio = None
+        self.read_prios(startprios)
+
+    def read_prios(self, startprios):
+        if not startprios:
+            return
+
+        if not isinstance(startprios, dict):
+            raise ValueError("ScrapyPriorityQueue accepts "
+                             "``startprios`` as a dict; %r instance "
+                             "is passed. Most likely, it means the state is"
+                             "created by an incompatible priority queue. "
+                             "Only a crawl started with the same priority "
+                             "queue class can be resumed." %
+                             slot_startprios.__class__)
+
+        for priority, state in startprios.items():
+            self.queues[priority] = self.qfactory(priority, state)
+
+        self.curprio = min(startprios)
+
+    def qfactory(self, key, startprios=()):
+        return self.downstream_queue_cls(self.crawler,
+                                         self.key + '/' + str(key),
+                                         startprios)
+
+    def push(self, obj, priority=0):
+        if priority not in self.queues:
+            self.queues[priority] = self.qfactory(priority)
+        q = self.queues[priority]
+        q.push(obj) # this may fail (eg. serialization error)
+        if self.curprio is None or priority < self.curprio:
+            self.curprio = priority
+
+    def pop(self):
+        if self.curprio is None:
+            return
+        q = self.queues[self.curprio]
+        m = q.pop()
+        if len(q) == 0:
+            del self.queues[self.curprio]
+            q.close()
+            prios = [p for p, q in self.queues.items() if len(q) > 0]
+            self.curprio = min(prios) if prios else None
+        return m
+
+    def close(self):
+        active = {}
+        for p, q in self.queues.items():
+            if len(q):
+                active.append(p)
+            q.close()
+        return active
+
+    def __len__(self):
+        return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
 class DownloaderInterface(object):

@@ -152,7 +152,11 @@ class Scheduler(object):
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
-        return create_instance(self.pqclass, None, self.crawler, self._newmq)
+        return create_instance(self.pqclass,
+                               None,
+                               self.crawler,
+                               self.mqclass,
+                               '')
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
