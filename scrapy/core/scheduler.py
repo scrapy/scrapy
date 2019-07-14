@@ -148,12 +148,11 @@ class Scheduler(object):
     def _newdq(self, priority):
         """ Factory for creating disk queues. """
         path = join(self.dqdir, 'p%s' % (priority, ))
-        return self.dqclass(path)
+        return self.dqclass(self.crawler, path)
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
-        return create_instance(self.pqclass, None, self.crawler, self._newmq,
-                               serialize=False)
+        return create_instance(self.pqclass, None, self.crawler, self._newmq)
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
@@ -162,8 +161,7 @@ class Scheduler(object):
                             None,
                             self.crawler,
                             self._newdq,
-                            state,
-                            serialize=True)
+                            state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})

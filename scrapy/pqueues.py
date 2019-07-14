@@ -91,29 +91,7 @@ class _SlotPriorityQueues(object):
 
 
 class ScrapyPriorityQueue(PriorityQueue):
-    """
-    PriorityQueue which works with scrapy.Request instances and
-    can optionally convert them to/from dicts before/after putting to a queue.
-    """
-    def __init__(self, crawler, qfactory, startprios=(), serialize=False):
-        super(ScrapyPriorityQueue, self).__init__(qfactory, startprios)
-        self.serialize = serialize
-        self.spider = crawler.spider
-
-    @classmethod
-    def from_crawler(cls, crawler, qfactory, startprios=(), serialize=False):
-        return cls(crawler, qfactory, startprios, serialize)
-
-    def push(self, request, priority=0):
-        if self.serialize:
-            request = request_to_dict(request, self.spider)
-        super(ScrapyPriorityQueue, self).push(request, priority)
-
-    def pop(self):
-        request = super(ScrapyPriorityQueue, self).pop()
-        if request and self.serialize:
-            request = request_from_dict(request, self.spider)
-        return request
+    pass
 
 
 class DownloaderInterface(object):
@@ -142,10 +120,10 @@ class DownloaderAwarePriorityQueue(object):
     """
 
     @classmethod
-    def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):
-        return cls(crawler, qfactory, slot_startprios, serialize)
+    def from_crawler(cls, crawler, qfactory, slot_startprios=None):
+        return cls(crawler, qfactory, slot_startprios)
 
-    def __init__(self, crawler, qfactory, slot_startprios=None, serialize=False):
+    def __init__(self, crawler, qfactory, slot_startprios=None):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
             raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
                              % (self.__class__,))
@@ -164,9 +142,8 @@ class DownloaderAwarePriorityQueue(object):
             for slot, startprios in (slot_startprios or {}).items()}
 
         def pqfactory(startprios=()):
-            return ScrapyPriorityQueue(crawler, qfactory, startprios, serialize)
+            return ScrapyPriorityQueue(qfactory, startprios)
         self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
-        self.serialize = serialize
         self._downloader_interface = DownloaderInterface(crawler)
 
     def pop(self):

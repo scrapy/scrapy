@@ -7,19 +7,35 @@ from six.moves import cPickle as pickle
 
 from queuelib import queue
 
+from scrapy.utils.reqser import request_to_dict, request_from_dict
+
 
 def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
 
-        def push(self, obj):
-            s = serialize(obj)
-            super(SerializableQueue, self).push(s)
+        def __init__(self, crawler, key):
+            self.spider = crawler.spider
+            super(SerializableQueue, self).__init__(key)
+
+        def push(self, request):
+            if serialize:
+                request = request_to_dict(request, self.spider)
+                request = serialize(request)
+
+            return super(SerializableQueue, self).push(request)
 
         def pop(self):
-            s = super(SerializableQueue, self).pop()
-            if s:
-                return deserialize(s)
+            request = super(SerializableQueue, self).pop()
+
+            if not request:
+                return None
+
+            if deserialize:
+                request = deserialize(request)
+                request = request_from_dict(request, self.spider)
+
+            return request
 
     return SerializableQueue
 
