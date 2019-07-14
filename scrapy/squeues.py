@@ -15,6 +15,7 @@ from scrapy.utils.reqser import request_to_dict, request_from_dict
 def _with_mkdir(queue_class):
 
     class DirectoriesCreated(queue_class):
+
         def __init__(self, path, *args, **kwargs):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             super(DirectoriesCreated, self).__init__(path, *args, **kwargs)
@@ -22,37 +23,53 @@ def _with_mkdir(queue_class):
     return DirectoriesCreated
 
 
-def _scrapy_queue(queue_class, serialize, deserialize, *, use_key=False):
+def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
 
-        def __init__(self, crawler, key, startprios):
-            self.spider = crawler.spider
-            args_ = []
-            if use_key:
-                args_ = [key]
-            super(SerializableQueue, self).__init__(*args_)
-
-        def push(self, request):
-            if serialize:
-                request = request_to_dict(request, self.spider)
-                request = serialize(request)
-
-            return super(SerializableQueue, self).push(request)
+        def push(self, obj):
+            s = serialize(obj)
+            super(SerializableQueue, self).push(s)
 
         def pop(self):
-            request = super(SerializableQueue, self).pop()
+            s = super(SerializableQueue, self).pop()
+            if s:
+                return deserialize(s)
+
+    return SerializableQueue
+
+
+def _scrapy_serialization_queue(queue_class):
+
+    class ScrapyRequestQueue(queue_class):
+
+        def __init__(self, crawler, key, startprios):
+            self.spider = crawler.spider
+            super(ScrapyRequestQueue, self).__init__(key)
+
+        def push(self, request):
+            request = request_to_dict(request, self.spider)
+            return super(ScrapyRequestQueue, self).push(request)
+
+        def pop(self):
+            request = super(ScrapyRequestQueue, self).pop()
 
             if not request:
                 return None
 
-            if deserialize:
-                request = deserialize(request)
-                request = request_from_dict(request, self.spider)
-
+            request = request_from_dict(request, self.spider)
             return request
 
-    return SerializableQueue
+    return ScrapyRequestQueue
+
+
+def _scrapy_in_memory_queue(queue_class):
+
+    class ScrapyRequestQueue(queue_class):
+        def __init__(self, crawler, key, startprios):
+            super(ScrapyRequestQueue, self).__init__()
+
+    return ScrapyRequestQueue
 
 
 def _pickle_serialize(obj):
@@ -65,15 +82,18 @@ def _pickle_serialize(obj):
         raise ValueError(str(e))
 
 
-PickleFifoDiskQueue = _scrapy_queue(_with_mkdir(queue.FifoDiskQueue),
-    _pickle_serialize, pickle.loads, use_key=True)
-PickleLifoDiskQueue = _scrapy_queue(_with_mkdir(queue.LifoDiskQueue),
-    _pickle_serialize, pickle.loads, use_key=True)
-MarshalFifoDiskQueue = _scrapy_queue(_with_mkdir(queue.FifoDiskQueue),
-    marshal.dumps, marshal.loads, use_key=True)
-MarshalLifoDiskQueue = _scrapy_queue(_with_mkdir(queue.LifoDiskQueue),
-    marshal.dumps, marshal.loads, use_key=True)
-FifoMemoryQueue = _scrapy_queue(queue.FifoMemoryQueue,
-    None, None, use_key=False)
-LifoMemoryQueue = _scrapy_queue(queue.LifoMemoryQueue,
-    None, None, use_key=False)
+PickleFifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.FifoDiskQueue),
+   _pickle_serialize, pickle.loads)
+PickleLifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.LifoDiskQueue),
+   _pickle_serialize, pickle.loads)
+MarshalFifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.FifoDiskQueue),
+   marshal.dumps, marshal.loads)
+MarshalLifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.LifoDiskQueue),
+    marshal.dumps, marshal.loads)
+
+PickleFifoDiskQueue = _scrapy_serialization_queue(PickleFifoDiskQueueNonRequest)
+PickleLifoDiskQueue = _scrapy_serialization_queue(PickleLifoDiskQueueNonRequest)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(MarshalFifoDiskQueueNonRequest)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(MarshalLifoDiskQueueNonRequest)
+FifoMemoryQueue = _scrapy_in_memory_queue(queue.FifoMemoryQueue)
+LifoMemoryQueue = _scrapy_in_memory_queue(queue.LifoMemoryQueue)
