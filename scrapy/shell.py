@@ -14,21 +14,18 @@ from w3lib.url import any_to_uri
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.console import start_python_console
-from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.misc import load_object
-from scrapy.utils.response import open_in_browser
 from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
+from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.misc import is_item_like, load_object
+from scrapy.utils.response import open_in_browser
 
 
 class Shell(object):
 
-    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
-                        Settings)
+    relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
@@ -157,7 +154,7 @@ class Shell(object):
         return "\n".join("[s] %s" % l for l in b)
 
     def _is_relevant(self, value):
-        return isinstance(value, self.relevant_classes)
+        return isinstance(value, self.relevant_classes) or is_item_like(value)
 
 
 def inspect_response(response, spider):

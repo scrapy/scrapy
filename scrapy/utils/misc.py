@@ -8,7 +8,7 @@ from pkgutil import iter_modules
 
 from w3lib.html import replace_entities
 
-from scrapy.utils.python import flatten, to_unicode
+from scrapy.utils.python import flatten, to_unicode, is_dataclass_instance
 from scrapy.item import BaseItem
 
 
@@ -27,6 +27,10 @@ def arg_to_iter(arg):
         return arg
     else:
         return [arg]
+
+
+def is_item_like(obj):
+    return isinstance(obj, (BaseItem, dict)) or is_dataclass_instance(obj)
 
 
 def load_object(path):

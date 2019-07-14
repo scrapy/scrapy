@@ -5,9 +5,9 @@ from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
-from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
+from scrapy.utils.misc import is_item_like
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
@@ -117,7 +117,7 @@ class Command(ScrapyCommand):
         items, requests = [], []
 
         for x in iterate_spider_output(callback(response, **cb_kwargs)):
-            if isinstance(x, (BaseItem, dict)):
+            if is_item_like(x):
                 items.append(x)
             elif isinstance(x, Request):
                 requests.append(x)

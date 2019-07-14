@@ -7,9 +7,21 @@ from itertools import count
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
-    memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, get_func_args, to_bytes, to_unicode,
-    without_none_values, MutableChain)
+    binary_is_text,
+    dataclass_asdict,
+    dataclasses_available,
+    equal_attributes,
+    get_func_args,
+    is_dataclass_instance,
+    memoizemethod_noargs,
+    MutableChain,
+    to_bytes,
+    to_unicode,
+    WeakKeyCache,
+    without_none_values,
+)
+from scrapy.utils.test import create_dataclass_item_class
+
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -222,6 +234,24 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
+
+class DataclassItemsTestCase(unittest.TestCase):
+
+    @unittest.skipUnless(dataclasses_available, "dataclasses module is not available")
+    def test_dataclasses_asdict(self):
+        TestDataClass = create_dataclass_item_class()
+        self.assertTrue(is_dataclass_instance(TestDataClass("Name", "URL", 10)))
+        self.assertEqual(
+            dataclass_asdict(TestDataClass("Name", "URL", 10)),
+            dict(name="Name", url="URL", price=10)
+        )
+
+    @unittest.skipIf(dataclasses_available, "dataclasses module is available")
+    def test_dataclasses_importerror(self):
+        self.assertFalse(is_dataclass_instance(object()))
+        self.assertRaises(ImportError, dataclass_asdict, object())
+
 
 if __name__ == "__main__":
     unittest.main()

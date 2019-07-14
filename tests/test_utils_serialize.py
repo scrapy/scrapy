@@ -1,12 +1,14 @@
+import datetime
 import json
 import unittest
-import datetime
 from decimal import Decimal
 
 from twisted.internet import defer
 
-from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.http import Request, Response
+from scrapy.utils.python import dataclasses_available
+from scrapy.utils.serialize import ScrapyJSONEncoder
+from scrapy.utils.test import create_dataclass_item_class
 
 
 class JsonEncoderTestCase(unittest.TestCase):
@@ -47,3 +49,13 @@ class JsonEncoderTestCase(unittest.TestCase):
         rs = self.encoder.encode(r)
         self.assertIn(r.url, rs)
         self.assertIn(str(r.status), rs)
+
+    @unittest.skipUnless(dataclasses_available, "No dataclass support")
+    def test_encode_dataclass_item(self):
+        TestDataClass = create_dataclass_item_class()
+        item = TestDataClass(name="Product", url="http://product.org", price=1)
+        encoded = self.encoder.encode(item)
+        self.assertEqual(
+            encoded,
+            '{"name": "Product", "url": "http://product.org", "price": 1}'
+        )

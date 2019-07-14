@@ -6,6 +6,7 @@ from twisted.internet import defer
 
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
+from scrapy.utils.python import is_dataclass_instance, dataclass_asdict
 
 
 class ScrapyJSONEncoder(json.JSONEncoder):
@@ -28,6 +29,8 @@ class ScrapyJSONEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, BaseItem):
             return dict(o)
+        elif is_dataclass_instance(o):
+            return dataclass_asdict(o)
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)
         elif isinstance(o, Response):

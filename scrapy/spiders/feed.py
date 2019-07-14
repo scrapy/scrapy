@@ -31,7 +31,7 @@ class XMLFeedSpider(Spider):
         processing required before returning the results to the framework core,
         for example setting the item GUIDs. It receives a list of results and
         the response which originated that results. It must return a list of
-        results (Items or Requests).
+        results (items or requests).
         """
         return results
 
@@ -52,8 +52,8 @@ class XMLFeedSpider(Spider):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a BaseItem, a Request, or a list
-        containing any of them.
+        This method must return either a BaseItem, a dict, a dataclass,
+        a Request, or a list containing any of them.
         """
 
         for selector in nodes:

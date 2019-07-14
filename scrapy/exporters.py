@@ -4,16 +4,17 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import pprint
 import marshal
-import warnings
 import pickle
+import pprint
+import warnings
 from xml.sax.saxutils import XMLGenerator
 
-from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, is_listlike
-from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.item import BaseItem
+from scrapy.utils.python import (dataclass_asdict, is_dataclass_instance,
+                                 is_listlike, to_bytes, to_unicode)
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
@@ -55,6 +56,8 @@ class BaseItemExporter(object):
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
+        if is_dataclass_instance(item):
+            item = dataclass_asdict(item)
         if include_empty is None:
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:

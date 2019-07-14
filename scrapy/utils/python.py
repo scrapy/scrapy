@@ -1,17 +1,34 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+import errno
 import gc
+import inspect
 import os
 import re
-import inspect
+import sys
 import weakref
-import errno
 from functools import partial, wraps
 from itertools import chain
-import sys
 
 from scrapy.utils.decorators import deprecated
+
+
+try:
+    from dataclasses import is_dataclass, asdict as dataclass_asdict
+except ImportError:
+    dataclasses_available = False
+
+    def is_dataclass_instance(_):
+        return False
+
+    def dataclass_asdict(_):
+        raise ImportError("no module named 'dataclasses'")
+else:
+    dataclasses_available = True
+
+    def is_dataclass_instance(obj):
+        return not isinstance(obj, type) and is_dataclass(obj)
 
 
 def flatten(x):

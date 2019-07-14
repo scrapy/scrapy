@@ -3,12 +3,14 @@ This module contains some assorted functions used in tests
 """
 
 import os
+from textwrap import dedent
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.python import dataclasses_available
 
 
 def assert_aws_environ():
@@ -96,3 +98,38 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+
+def create_dataclass_item_class():
+    """
+    FIXME: ugly hack to prevent SyntaxError in py<3.6 (see PEP 526).
+
+    The 'exec' usage is safe because the executed code is known.
+    """
+    if not dataclasses_available:
+        return
+
+    data_class_str = """
+        from dataclasses import dataclass
+        @dataclass
+        class TestDataClass:
+            name: str
+            url: str
+            price: int
+    """
+    exec(dedent(data_class_str).strip(), globals())  # nosec: B102
+    return TestDataClass  # noqa: F821
+
+
+def create_dataclass_item_class_for_item_loader():
+    if not dataclasses_available:
+        return
+
+    data_class_str = """
+        from dataclasses import dataclass, field
+        @dataclass
+        class TestDataClass:
+            name: list = field(default_factory=list)
+    """
+    exec(dedent(data_class_str).strip(), globals())  # nosec: B102
+    return TestDataClass  # noqa: F821

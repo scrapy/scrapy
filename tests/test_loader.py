@@ -7,6 +7,8 @@ from scrapy.loader import ItemLoader
 from scrapy.loader.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 from scrapy.selector import Selector
+from scrapy.utils.python import dataclasses_available, dataclass_asdict
+from scrapy.utils.test import create_dataclass_item_class_for_item_loader
 
 
 # test items
@@ -460,13 +462,16 @@ class InitializationTestMixin(object):
 
     item_class = None
 
+    def to_dict(self, item):
+        return dict(item)
+
     def test_keep_single_value(self):
         """Loaded item should contain values from the initial item"""
         input_item = self.item_class(name='foo')
         il = ItemLoader(item=input_item)
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo']})
 
     def test_keep_list(self):
         """Loaded item should contain values from the initial item"""
@@ -474,7 +479,7 @@ class InitializationTestMixin(object):
         il = ItemLoader(item=input_item)
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo', 'bar']})
 
     def test_add_value_singlevalue_singlevalue(self):
         """Values added after initialization should be appended"""
@@ -483,7 +488,7 @@ class InitializationTestMixin(object):
         il.add_value('name', 'bar')
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo', 'bar']})
 
     def test_add_value_singlevalue_list(self):
         """Values added after initialization should be appended"""
@@ -492,7 +497,7 @@ class InitializationTestMixin(object):
         il.add_value('name', ['item', 'loader'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'item', 'loader']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo', 'item', 'loader']})
 
     def test_add_value_list_singlevalue(self):
         """Values added after initialization should be appended"""
@@ -501,7 +506,7 @@ class InitializationTestMixin(object):
         il.add_value('name', 'qwerty')
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'qwerty']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo', 'bar', 'qwerty']})
 
     def test_add_value_list_list(self):
         """Values added after initialization should be appended"""
@@ -510,7 +515,7 @@ class InitializationTestMixin(object):
         il.add_value('name', ['item', 'loader'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'item', 'loader']})
+        self.assertEqual(self.to_dict(loaded_item), {'name': ['foo', 'bar', 'item', 'loader']})
 
     def test_get_output_value_singlevalue(self):
         """Getting output value must not remove value from item"""
@@ -519,7 +524,7 @@ class InitializationTestMixin(object):
         self.assertEqual(il.get_output_value('name'), ['foo'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({'name': ['foo']}))
+        self.assertEqual(self.to_dict(loaded_item), dict({'name': ['foo']}))
 
     def test_get_output_value_list(self):
         """Getting output value must not remove value from item"""
@@ -528,7 +533,7 @@ class InitializationTestMixin(object):
         self.assertEqual(il.get_output_value('name'), ['foo', 'bar'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({'name': ['foo', 'bar']}))
+        self.assertEqual(self.to_dict(loaded_item), dict({'name': ['foo', 'bar']}))
 
     def test_values_single(self):
         """Values from initial item must be added to loader._values"""
@@ -549,6 +554,14 @@ class InitializationFromDictTest(InitializationTestMixin, unittest.TestCase):
 
 class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
     item_class = NameItem
+
+
+@unittest.skipIf(not dataclasses_available, "dataclasses module is not available")
+class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
+    item_class = create_dataclass_item_class_for_item_loader()
+
+    def to_dict(self, item):
+        return dataclass_asdict(item)
 
 
 class BaseNoInputReprocessingLoader(ItemLoader):

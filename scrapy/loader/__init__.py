@@ -11,7 +11,7 @@ from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, is_dataclass_instance, dataclass_asdict
 
 
 def unbound_method(method):
@@ -43,6 +43,8 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
+        if is_dataclass_instance(item):
+            item = dataclass_asdict(item)
         # values from initial item
         for field_name, value in item.items():
             self._values[field_name] += arg_to_iter(value)
@@ -131,7 +133,10 @@ class ItemLoader(object):
         for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
-                item[field_name] = value
+                if is_dataclass_instance(item):
+                    setattr(item, field_name, value)
+                else:
+                    item[field_name] = value
 
         return item
 

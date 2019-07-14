@@ -9,14 +9,14 @@ from twisted.internet import defer
 
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, is_item_like
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+from scrapy.utils.request import referer_str
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.utils.request import referer_str
+
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class Scraper(object):
         """
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
-        elif isinstance(output, (BaseItem, dict)):
+        elif is_item_like(output):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)
@@ -191,7 +191,7 @@ class Scraper(object):
             pass
         else:
             typename = type(output).__name__
-            logger.error('Spider must return Request, BaseItem, dict or None, '
+            logger.error('Spider must return Request, BaseItem, dict, dataclass or None, '
                          'got %(typename)r in %(request)s',
                          {'request': request, 'typename': typename},
                          extra={'spider': spider})

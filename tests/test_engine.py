@@ -15,20 +15,21 @@ import re
 import sys
 from urllib.parse import urlparse
 
-from twisted.internet import reactor, defer
-from twisted.web import server, static, util
+from pydispatch import dispatcher
+from twisted.internet import defer, reactor
 from twisted.trial import unittest
+from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.test import get_crawler
-from pydispatch import dispatcher
-from tests import tests_datadir
-from scrapy.spiders import Spider
+from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
-from scrapy.http import Request
+from scrapy.spiders import Spider
+from scrapy.utils.python import dataclass_asdict, is_dataclass_instance
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.test import create_dataclass_item_class, get_crawler
+from tests import tests_datadir
 
 
 class TestItem(Item):
@@ -73,6 +74,20 @@ class TestDupeFilterSpider(TestSpider):
 
 class DictItemsSpider(TestSpider):
     item_cls = dict
+
+
+TestDataClass = create_dataclass_item_class()
+if TestDataClass:
+    class DataClassItemsSpider(DictItemsSpider):
+        def parse_item(self, response):
+            item = super().parse_item(response)
+            return TestDataClass(
+                name=item.get('name'),
+                url=item.get('url'),
+                price=item.get('price'),
+            )
+else:
+    DataClassItemsSpider = None
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
@@ -179,7 +194,10 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-        for spider in TestSpider, DictItemsSpider:
+
+        for spider in (TestSpider, DictItemsSpider, DataClassItemsSpider):
+            if spider is None:
+                continue
             self.run = CrawlerRun(spider)
             yield self.run.run()
             self._assert_visited_urls()
@@ -255,6 +273,8 @@ class EngineTest(unittest.TestCase):
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))
         for item, response in self.run.itemresp:
+            if is_dataclass_instance(item):
+                item = dataclass_asdict(item)
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
                 self.assertEqual('Item 1 name', item['name'])
