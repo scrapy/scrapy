@@ -108,11 +108,10 @@ class ScrapyPriorityQueue(object):
         if not startprios:
             return
 
-        for priority, state in startprios.items():
-            priority = int(priority)
-            self.queues[priority] = self.qfactory(priority, state)
+        for priority in startprios:
+            self.queues[priority] = self.qfactory(priority)
 
-        self.curprio = min(int(p) for p in startprios)
+        self.curprio = min(p for p in startprios)
 
     def qfactory(self, key, startprios=()):
         return self.downstream_queue_cls(self.crawler,
@@ -140,9 +139,10 @@ class ScrapyPriorityQueue(object):
         return m
 
     def close(self):
-        active = {}
+        active = []
         for p, q in self.queues.items():
-            active[str(p)] = q.close()
+            active.append(p)
+            q.close()
         return active
 
     def __len__(self):
