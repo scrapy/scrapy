@@ -49,7 +49,7 @@ class _Priority(namedtuple("_Priority", ["priority", "slot"])):
 
 class _SlotPriorityQueues(object):
     """ Container for multiple priority queues. """
-    def __init__(self, pqfactory, slot_startprios=None):
+    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
         """
         ``pqfactory`` is a factory for creating new PriorityQueues.
         It must be a function which accepts a single optional ``startprios``
@@ -57,10 +57,18 @@ class _SlotPriorityQueues(object):
 
         ``slot_startprios`` is a ``{slot: startprios}`` dict.
         """
-        self.pqfactory = pqfactory
+        self.downstream_queue_cls = downstream_queue_cls
+        self.key = key
+        self.crawler = crawler
         self.pqueues = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(startprios)
+
+    def pqfactory(self, startprios=()):
+        return ScrapyPriorityQueue(self.crawler,
+                                   self.downstream_queue_cls,
+                                   self.key,
+                                   startprios)
 
     def pop_slot(self, slot):
         """ Pop an object from a priority queue for this slot """
@@ -175,10 +183,10 @@ class DownloaderAwarePriorityQueue(object):
     """
 
     @classmethod
-    def from_crawler(cls, crawler, qfactory, slot_startprios=None):
-        return cls(crawler, qfactory, slot_startprios)
+    def from_crawler(cls, crawler, downstream_queue_cls, key, slot_startprios=()):
+        return cls(crawler, downstream_queue_cls, key, slot_startprios)
 
-    def __init__(self, crawler, qfactory, slot_startprios=None):
+    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
             raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
                              % (self.__class__,))
@@ -196,9 +204,10 @@ class DownloaderAwarePriorityQueue(object):
             slot: [_Priority(p, slot) for p in startprios]
             for slot, startprios in (slot_startprios or {}).items()}
 
-        def pqfactory(startprios=()):
-            return ScrapyPriorityQueue(qfactory, startprios)
-        self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
+        self._slot_pqueues = _SlotPriorityQueues(crawler,
+                                                 downstream_queue_cls,
+                                                 key,
+                                                 slot_startprios)
         self._downloader_interface = DownloaderInterface(crawler)
 
     def pop(self):
