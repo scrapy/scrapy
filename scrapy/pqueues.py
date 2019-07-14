@@ -29,57 +29,6 @@ def _path_safe(text):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class _SlotPriorityQueues(object):
-    """ Container for multiple priority queues. """
-    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
-        """
-        ``pqfactory`` is a factory for creating new PriorityQueues.
-        It must be a function which accepts a single optional ``startprios``
-        argument, with a list of priorities to create queues for.
-
-        ``slot_startprios`` is a ``{slot: startprios}`` dict.
-        """
-        self.downstream_queue_cls = downstream_queue_cls
-        self.key = key
-        self.crawler = crawler
-        self.pqueues = {}  # slot -> priority queue
-        for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(slot, startprios)
-
-    def pqfactory(self, slot, startprios=()):
-        return ScrapyPriorityQueue(self.crawler,
-                                   self.downstream_queue_cls,
-                                   self.key + '/' + _path_safe(slot),
-                                   startprios)
-
-    def pop_slot(self, slot):
-        """ Pop an object from a priority queue for this slot """
-        queue = self.pqueues[slot]
-        request = queue.pop()
-        if len(queue) == 0:
-            del self.pqueues[slot]
-        return request
-
-    def push_slot(self, slot, request):
-        """ Push an object to a priority queue for this slot """
-        if slot not in self.pqueues:
-            self.pqueues[slot] = self.pqfactory(slot)
-        queue = self.pqueues[slot]
-        queue.push(request)
-
-    def close(self):
-        active = {slot: queue.close()
-                  for slot, queue in self.pqueues.items()}
-        self.pqueues.clear()
-        return active
-
-    def __len__(self):
-        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
-
-    def __contains__(self, slot):
-        return slot in self.pqueues
-
-
 class ScrapyPriorityQueue(object):
 
     @classmethod
@@ -183,28 +132,50 @@ class DownloaderAwarePriorityQueue(object):
                              "queue class can be resumed." %
                              slot_startprios.__class__)
 
-        self._slot_pqueues = _SlotPriorityQueues(crawler,
-                                                 downstream_queue_cls,
-                                                 key,
-                                                 slot_startprios)
         self._downloader_interface = DownloaderInterface(crawler)
+        self.downstream_queue_cls = downstream_queue_cls
+        self.key = key
+        self.crawler = crawler
+
+        self.pqueues = {}  # slot -> priority queue
+        for slot, startprios in (slot_startprios or {}).items():
+            self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+
+    def pqfactory(self, slot, startprios=()):
+        return ScrapyPriorityQueue(self.crawler,
+                                   self.downstream_queue_cls,
+                                   self.key + '/' + _path_safe(slot),
+                                   startprios)
 
     def pop(self):
-        stats = self._downloader_interface.stats(self._slot_pqueues.pqueues)
+        stats = self._downloader_interface.stats(self.pqueues)
 
         if not stats:
             return
 
         slot = min(stats)[1]
-        request = self._slot_pqueues.pop_slot(slot)
+        queue = self.pqueues[slot]
+        request = queue.pop()
+        if len(queue) == 0:
+            del self.pqueues[slot]
         return request
 
     def push(self, request):
         slot = self._downloader_interface.get_slot_key(request)
-        self._slot_pqueues.push_slot(slot, request)
+        if slot not in self.pqueues:
+            self.pqueues[slot] = self.pqfactory(slot)
+        queue = self.pqueues[slot]
+        queue.push(request)
 
     def close(self):
-        return self._slot_pqueues.close()
+        active = {slot: queue.close()
+                  for slot, queue in self.pqueues.items()}
+        self.pqueues.clear()
+        return active
 
     def __len__(self):
-        return len(self._slot_pqueues)
+        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+
+    def __contains__(self, slot):
+        return slot in self.pqueues
