@@ -442,8 +442,9 @@ or even enable client-side authentication (and various other things).
 
 If you do use a custom ContextFactory, make sure its ``__init__`` method
 accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`) and a ``tls_verbose_logging``
-parameter (``bool``).
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
+parameter (``bool``) and a ``tls_ciphers`` parameter (see
+:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
 

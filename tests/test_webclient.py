@@ -6,9 +6,10 @@ import os
 import six
 import shutil
 
+import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
-from twisted.internet import reactor, defer, ssl
+from twisted.internet import reactor, defer
 from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
@@ -18,8 +19,9 @@ from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Request, Headers
 from scrapy.settings import Settings
+from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes, to_unicode
-from tests.mockserver import ssl_context_factory, broken_ssl_context_factory
+from tests.mockserver import ssl_context_factory
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -402,12 +404,19 @@ class WebClientSSLTestCase(unittest.TestCase):
             self.assertEqual, to_bytes(s))
 
 
-class WebClientBrokenSSLTestCase(WebClientSSLTestCase):
-    context_factory = broken_ssl_context_factory(cipher_string='CAMELLIA256-SHA')
+class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
+    # we try to use a cipher that is not enabled by default in OpenSSL
+    custom_ciphers = 'CAMELLIA256-SHA'
+    context_factory = ssl_context_factory(cipher_string=custom_ciphers)
 
     def testPayload(self):
         s = "0123456789" * 10
-        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': self.custom_ciphers})
+        client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
         return getPage(self.getURL("payload"), body=s,
-                       contextFactory=ScrapyClientContextFactory(settings=settings)).addCallback(self.assertEqual,
-                                                                                                 to_bytes(s))
+                       contextFactory=client_context_factory).addCallback(self.assertEqual, to_bytes(s))
+
+    def testPayloadDefaultCiphers(self):
+        s = "0123456789" * 10
+        d = getPage(self.getURL("payload"), body=s, contextFactory=ScrapyClientContextFactory())
+        return self.assertFailure(d, OpenSSL.SSL.Error)

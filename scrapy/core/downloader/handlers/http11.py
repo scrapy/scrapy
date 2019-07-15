@@ -54,7 +54,7 @@ class HTTP11DownloadHandler(object):
             )
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
- e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument.\
+ e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
  Please upgrade your context factory class to handle them or ignore them.""" % (
                 settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
             warnings.warn(msg)

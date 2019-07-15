@@ -39,7 +39,7 @@ from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 
-from tests.mockserver import MockServer, ssl_context_factory, Echo, broken_ssl_context_factory
+from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 
@@ -553,7 +553,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
         super(Https11InvalidDNSPattern, self).setUp()
 
 
-class Https11BadCiphers(unittest.TestCase):
+class Https11CustomCiphers(unittest.TestCase):
     scheme = 'https'
     download_handler_cls = HTTP11DownloadHandler
 
@@ -569,7 +569,7 @@ class Https11BadCiphers(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
         self.port = reactor.listenSSL(
-            0, self.wrapper, broken_ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
+            0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
             interface=self.host)
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(

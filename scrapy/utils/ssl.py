@@ -6,6 +6,11 @@ import OpenSSL._util as pyOpenSSLutil
 from scrapy.utils.python import to_native_str
 
 
+# The OpenSSL symbol is present since 1.1.1 but it's not currently supported in any version of pyOpenSSL.
+# Using the binding directly, as this code does, requires cryptography 2.4.
+SSL_OP_NO_TLSv1_3 = getattr(pyOpenSSLutil.lib, 'SSL_OP_NO_TLSv1_3', 0)
+
+
 def ffi_buf_to_string(buf):
     return to_native_str(pyOpenSSLutil.ffi.string(buf))
 
