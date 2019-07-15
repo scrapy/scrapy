@@ -14,10 +14,10 @@ import six
 from scrapy.utils.trackref import object_ref
 
 
-if six.PY3:
-    MutableMapping = collections.abc.MutableMapping
-else:
+if six.PY2:
     MutableMapping = collections.MutableMapping
+else:
+    MutableMapping = collections.abc.MutableMapping
 
 
 class BaseItem(object_ref):

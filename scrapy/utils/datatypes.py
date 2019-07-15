@@ -14,10 +14,10 @@ import six
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-if six.PY3:
-    Mapping = collections.abc.Mapping
-else:
+if six.PY2:
     Mapping = collections.Mapping
+else:
+    Mapping = collections.abc.Mapping
 
 
 class MultiValueDictKeyError(KeyError):

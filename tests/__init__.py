@@ -40,8 +40,8 @@ def get_testdata(*paths):
 # FIXME: delete after dropping py2 support
 # Monkey patch the unittest module to prevent the
 # DeprecationWarning about assertRaisesRegexp -> assertRaisesRegex
-import sys
-if sys.version_info[0] == 2:
+import six
+if six.PY2:
     import unittest
     import twisted.trial.unittest
     if not getattr(unittest.TestCase, 'assertRegex', None):

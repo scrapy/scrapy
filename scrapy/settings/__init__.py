@@ -8,10 +8,10 @@ from pprint import pformat
 from scrapy.settings import default_settings
 
 
-if six.PY3:
-    MutableMapping = collections.abc.MutableMapping
-else:
+if six.PY2:
     MutableMapping = collections.MutableMapping
+else:
+    MutableMapping = collections.abc.MutableMapping
 
 
 SETTINGS_PRIORITIES = {

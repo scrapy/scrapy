@@ -1,7 +1,8 @@
-import sys
+import six
 from six.moves import copyreg
 
-if sys.version_info[0] == 2:
+
+if six.PY2:
     from urlparse import urlparse
 
     # workaround for https://bugs.python.org/issue7904 - Python < 2.7
@@ -13,11 +14,6 @@ if sys.version_info[0] == 2:
     if urlparse('s3://bucket/key?key=value').query != 'key=value':
         from urlparse import uses_query
         uses_query.append('s3')
-
-    # Prevent the DeprecationWarning about SafeConfigParser -> ConfigParser
-    import configparser
-    if not getattr(configparser, 'ConfigParser', None):
-        configparser.ConfigParser = configparser.SafeConfigParser
 
 
 # Undo what Twisted's perspective broker adds to pickle register
