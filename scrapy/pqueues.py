@@ -52,11 +52,9 @@ class ScrapyPriorityQueue(object):
 
         self.curprio = min(p for p in startprios)
 
-    def qfactory(self, key, startprios=()):
+    def qfactory(self, key):
         return self.downstream_queue_cls(self.crawler,
-                                         None,
-                                         self.key + '/' + str(key),
-                                         startprios)
+                                         self.key + '/' + str(key))
 
     def push(self, request):
         priority = -request.priority

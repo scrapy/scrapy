@@ -47,7 +47,7 @@ def _scrapy_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
 
-        def __init__(self, crawler, downstream_queue_cls, key, startprios):
+        def __init__(self, crawler, key):
             self.spider = crawler.spider
             super(ScrapyRequestQueue, self).__init__(key)
 
@@ -70,7 +70,7 @@ def _scrapy_serialization_queue(queue_class):
 def _scrapy_in_memory_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
-        def __init__(self, crawler, downstream_queue_cls, key, startprios):
+        def __init__(self, crawler, key):
             super(ScrapyRequestQueue, self).__init__()
 
     return ScrapyRequestQueue
