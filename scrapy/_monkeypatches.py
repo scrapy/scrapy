@@ -1,7 +1,8 @@
-import sys
+import six
 from six.moves import copyreg
 
-if sys.version_info[0] == 2:
+
+if six.PY2:
     from urlparse import urlparse
 
     # workaround for https://bugs.python.org/issue7904 - Python < 2.7

@@ -170,7 +170,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         status, out, stderr = yield self.execute(
             ['--spider', self.spider_name, '-c', 'dummy', self.url('/html')]
         )
-        self.assertRegexpMatches(_textmode(out), """# Scraped Items  -+\n\[\]""")
+        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find callback""", _textmode(stderr))
 
     @defer.inlineCallbacks
@@ -195,7 +195,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         status, out, stderr = yield self.execute(
             ['--spider', self.spider_name, '-r', self.url('/html')]
         )
-        self.assertRegexpMatches(_textmode(out), """# Scraped Items  -+\n\[\]""")
+        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""No CrawlSpider rules found""", _textmode(stderr))
 
     @defer.inlineCallbacks
@@ -203,7 +203,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         status, out, stderr = yield self.execute(
             ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/html')]
         )
-        self.assertRegexpMatches(_textmode(out), """# Scraped Items  -+\n\[\]""")
+        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
 
     @defer.inlineCallbacks
     def test_crawlspider_no_matching_rule(self):
@@ -211,5 +211,5 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         status, out, stderr = yield self.execute(
             ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/enc-gb18030')]
         )
-        self.assertRegexpMatches(_textmode(out), """# Scraped Items  -+\n\[\]""")
+        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))

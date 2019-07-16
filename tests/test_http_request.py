@@ -989,9 +989,9 @@ class FormRequestTest(RequestTest):
 
         xpath = u"//form[@name='\u03b1']"
         encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
-        self.assertRaisesRegexp(ValueError, re.escape(encoded),
-                                self.request_class.from_response,
-                                response, formxpath=xpath)
+        self.assertRaisesRegex(ValueError, re.escape(encoded),
+                               self.request_class.from_response,
+                               response, formxpath=xpath)
 
     def test_from_response_button_submit(self):
         response = _buildresponse(

@@ -135,9 +135,9 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com", body=b'hello')
         if self.response_class == Response:
             msg = "Response content isn't text"
-            self.assertRaisesRegexp(AttributeError, msg, getattr, r, 'text')
-            self.assertRaisesRegexp(NotSupported, msg, r.css, 'body')
-            self.assertRaisesRegexp(NotSupported, msg, r.xpath, '//body')
+            self.assertRaisesRegex(AttributeError, msg, getattr, r, 'text')
+            self.assertRaisesRegex(NotSupported, msg, r.css, 'body')
+            self.assertRaisesRegex(NotSupported, msg, r.xpath, '//body')
         else:
             r.text
             r.css('body')
@@ -425,13 +425,13 @@ class TextResponseTest(BaseResponseTest):
 
     def test_follow_selector_list(self):
         resp = self._links_response()
-        self.assertRaisesRegexp(ValueError, 'SelectorList',
-                                resp.follow, resp.css('a'))
+        self.assertRaisesRegex(ValueError, 'SelectorList',
+                               resp.follow, resp.css('a'))
 
     def test_follow_selector_invalid(self):
         resp = self._links_response()
-        self.assertRaisesRegexp(ValueError, 'Unsupported',
-                                resp.follow, resp.xpath('count(//div)')[0])
+        self.assertRaisesRegex(ValueError, 'Unsupported',
+                               resp.follow, resp.xpath('count(//div)')[0])
 
     def test_follow_selector_attribute(self):
         resp = self._links_response()
@@ -443,8 +443,8 @@ class TextResponseTest(BaseResponseTest):
             url='http://example.com',
             body=b'<html><body><a name=123>click me</a></body></html>',
         )
-        self.assertRaisesRegexp(ValueError, 'no href',
-                                resp.follow, resp.css('a')[0])
+        self.assertRaisesRegex(ValueError, 'no href',
+                               resp.follow, resp.css('a')[0])
 
     def test_follow_whitespace_selector(self):
         resp = self.response_class(

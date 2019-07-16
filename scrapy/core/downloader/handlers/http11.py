@@ -101,7 +101,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile(b'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
+    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
@@ -479,10 +479,10 @@ class _ResponseReader(protocol.Protocol):
                 return
 
             elif not self._fail_on_dataloss_warned:
-                logger.warn("Got data loss in %s. If you want to process broken "
-                            "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
-                            " -- This message won't be shown in further requests",
-                            self._txresponse.request.absoluteURI.decode())
+                logger.warning("Got data loss in %s. If you want to process broken "
+                               "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
+                               " -- This message won't be shown in further requests",
+                               self._txresponse.request.absoluteURI.decode())
                 self._fail_on_dataloss_warned = True
 
         self._finished.errback(reason)

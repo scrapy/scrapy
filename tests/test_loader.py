@@ -691,7 +691,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertTrue(l.selector)
         l.add_css('url', 'a::attr(href)')
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
-        l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
+        l.replace_css('url', 'a::attr(href)', re=r'http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
 
