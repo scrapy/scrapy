@@ -56,8 +56,11 @@ class ScrapyPriorityQueue(object):
         return self.downstream_queue_cls(self.crawler,
                                          self.key + '/' + str(key))
 
+    def priority(self, request):
+        return -request.priority
+
     def push(self, request):
-        priority = -request.priority
+        priority = self.priority(request)
         if priority not in self.queues:
             self.queues[priority] = self.qfactory(priority)
         q = self.queues[priority]
