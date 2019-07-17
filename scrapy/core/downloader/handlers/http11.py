@@ -443,7 +443,7 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received += len(bodyBytes)
 
         if self._maxsize and self._bytes_received > self._maxsize:
-            logger.error("Received (%(bytes)s) bytes larger than download "
+            logger.warning("Received (%(bytes)s) bytes larger than download "
                          "max size (%(maxsize)s) in request %(request)s.",
                          {'bytes': self._bytes_received,
                           'maxsize': self._maxsize,
