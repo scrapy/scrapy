@@ -1,15 +1,14 @@
 import sys
 import logging
 from abc import ABCMeta, abstractmethod
+from six import with_metaclass
 
 from scrapy.utils.python import to_native_str, to_unicode
 
 logger = logging.getLogger(__name__)
 
 
-class RobotParser:
-    __metaclass__ = ABCMeta
-
+class RobotParser(with_metaclass(ABCMeta)):
     @classmethod
     @abstractmethod
     def from_crawler(cls, crawler, robotstxt_body):
