@@ -34,8 +34,7 @@ Here's an example showing how to run a single spider with it.
         # Your spider definition
         ...
 
-    process = CrawlerProcess({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)',
+    process = CrawlerProcess(settings={
         'FEED_FORMAT':'json',
         'FEED_URI':'items.json'
     })
@@ -43,11 +42,8 @@ Here's an example showing how to run a single spider with it.
     process.crawl(MySpider)
     process.start() # the script will block here until the crawling is finished
 
-Define settings within dictionary in
-CrawlerProcess. FEED_FORMAT and FEED_URI are the equivalent to "-o items.json" when using the scrapy crawl shell command.
-
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
-acquainted with its usage details.
+Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
