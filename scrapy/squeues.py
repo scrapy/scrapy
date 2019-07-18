@@ -67,7 +67,7 @@ def _scrapy_serialization_queue(queue_class):
     return ScrapyRequestQueue
 
 
-def _scrapy_in_memory_queue(queue_class):
+def _scrapy_non_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
         def __init__(self, crawler, key):
@@ -99,5 +99,5 @@ PickleFifoDiskQueue = _scrapy_serialization_queue(PickleFifoDiskQueueNonRequest)
 PickleLifoDiskQueue = _scrapy_serialization_queue(PickleLifoDiskQueueNonRequest)
 MarshalFifoDiskQueue = _scrapy_serialization_queue(MarshalFifoDiskQueueNonRequest)
 MarshalLifoDiskQueue = _scrapy_serialization_queue(MarshalLifoDiskQueueNonRequest)
-FifoMemoryQueue = _scrapy_in_memory_queue(queue.FifoMemoryQueue)
-LifoMemoryQueue = _scrapy_in_memory_queue(queue.LifoMemoryQueue)
+FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
+LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
