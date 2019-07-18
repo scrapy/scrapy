@@ -29,17 +29,18 @@ if twisted_version >= (14, 0, 0):
          understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols.'
         """
 
-        def __init__(self, method=SSL.SSLv23_METHOD, settings=None, *args, **kwargs):
+        def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, *args, **kwargs):
             super(ScrapyClientContextFactory, self).__init__(*args, **kwargs)
             self._ssl_method = method
-            if settings:
-                self.tls_verbose_logging = settings['DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING']
-            else:
-                self.tls_verbose_logging = False
+            self.tls_verbose_logging = tls_verbose_logging
 
         @classmethod
         def from_settings(cls, settings, method=SSL.SSLv23_METHOD, *args, **kwargs):
-            return cls(method=method, settings=settings, *args, **kwargs)
+            if settings:
+                tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
+            else:
+                tls_verbose_logging = False
+            return cls(method=method, tls_verbose_logging=tls_verbose_logging, *args, **kwargs)
 
         def getCertificateOptions(self):
             # setting verify=True will require you to provide CAs
