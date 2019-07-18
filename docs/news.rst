@@ -11,6 +11,10 @@ Release notes
 Scrapy 1.7.0 (2019-07-18)
 -------------------------
 
+.. note:: Make sure you install Scrapy 1.7.1. The Scrapy 1.7.0 package in PyPI
+          is the result of an erroneous commit tagging and does not include all
+          the changes described below.
+
 Highlights:
 
 * Improvements for crawls targeting multiple domains
