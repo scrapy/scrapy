@@ -20,6 +20,22 @@ matrix:
       env: TOXENV=py35
     - python: 3.6
       env: TOXENV=py36
+    - python: 2.7
+      env: TOXENV=py27
+      dist: xenial
+      sudo: true
+    - python: 3.4
+      env: TOXENV=py34
+      dist: xenial
+      sudo: true
+    - python: 3.5
+      env: TOXENV=py35
+      dist: xenial
+      sudo: true
+    - python: 3.6
+      env: TOXENV=py36
+      dist: xenial
+      sudo: true
     - python: 3.7
       env: TOXENV=py37
       dist: xenial
