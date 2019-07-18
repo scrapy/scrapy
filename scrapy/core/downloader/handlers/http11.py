@@ -366,13 +366,13 @@ class ScrapyAgent(object):
         fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
 
         if maxsize and expected_size > maxsize:
-            error_msg = ("Cancelling download of %(url)s: expected response "
-                         "size (%(size)s) larger than download max size (%(maxsize)s).")
-            error_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
+            warning_msg = ("Expected response size (%(size)s) larger than "
+                           "download max size (%(maxsize)s) in request %(request)s.")
+            warning_args = {'request': request, 'size': expected_size, 'maxsize': maxsize}
 
-            logger.error(error_msg, error_args)
+            logger.warning(warning_msg, warning_args)
+
             txresponse._transport._producer.loseConnection()
-            raise defer.CancelledError(error_msg % error_args)
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
@@ -444,10 +444,10 @@ class _ResponseReader(protocol.Protocol):
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.warning("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s) in request %(request)s.",
-                         {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize,
-                          'request': self._request})
+                           "max size (%(maxsize)s) in request %(request)s.",
+                           {'bytes': self._bytes_received,
+                            'maxsize': self._maxsize,
+                            'request': self._request})
             # Clear buffer earlier to avoid keeping data in memory for a long
             # time.
             self._bodybuf.truncate(0)
