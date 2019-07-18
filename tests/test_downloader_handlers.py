@@ -414,7 +414,7 @@ class Http11TestCase(HttpTestCase):
             request = Request(self.getURL('largechunkedfile'))
 
             def check(logger):
-                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             d = self.download_request(request, Spider('foo', download_maxsize=1500))
             yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
@@ -548,8 +548,8 @@ class Http11MockServerTestCase(unittest.TestCase):
         # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
         yield crawler.crawl(seed=Request(url=self.mockserver.url('/partial'), meta={'download_maxsize': 1000}))
-        failure = crawler.spider.meta['failure']
-        self.assertIsInstance(failure.value, defer.CancelledError)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
 
     @defer.inlineCallbacks
     def test_download(self):
