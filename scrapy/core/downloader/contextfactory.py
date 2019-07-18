@@ -35,10 +35,7 @@ if twisted_version >= (14, 0, 0):
 
         @classmethod
         def from_settings(cls, settings, method=SSL.SSLv23_METHOD, *args, **kwargs):
-            if settings:
-                tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
-            else:
-                tls_verbose_logging = False
+            tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
             return cls(method=method, tls_verbose_logging=tls_verbose_logging, *args, **kwargs)
 
         def getCertificateOptions(self):
