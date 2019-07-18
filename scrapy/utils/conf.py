@@ -1,7 +1,7 @@
 import os
 import sys
 import numbers
-import configparser
+from six.moves import configparser
 from operator import itemgetter
 
 import six
