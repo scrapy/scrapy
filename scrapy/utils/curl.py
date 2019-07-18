@@ -26,7 +26,7 @@ curl_parser.add_argument('-s', '--silent', action='store_true')
 
 
 def curl_to_request_kwargs(curl_args):
-    """Convert a curl command syntax to Request kwargs
+    """Convert a curl command syntax to Request kwargs.
 
     :param curl_args: string containing the curl command
     :return: dictionary of Request kwargs
@@ -60,7 +60,7 @@ def curl_to_request_kwargs(curl_args):
     cookies = {}
     for header in parsed_args.headers or ():
         name, val = header.split(':', 1)
-        name = name.strip().title()
+        name = name.strip()
         val = val.strip()
         if name == 'Cookie':
             for name, morsel in iteritems(SimpleCookie(val)):
