@@ -1,14 +1,18 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-
+about: Report a problem to help us improve
 ---
 
 <!--
 
-Have you read Scrapy's Code of Conduct? By filing an Issue, you are expected to comply with it, including treating everyone with respect: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+Thanks for taking an interest in Scrapy!
 
-Do you want to ask a question? Are you looking for support? The Scrapy Community page is the best place to get started: https://scrapy.org/community/
+If you have a question that starts with "How to...", please see the Scrapy Community page: https://scrapy.org/community/.
+The Github issue tracker's purpose is to deal with bug reports and feature requests for the project itself.
+
+Keep in mind that by filing an issue, you are expected to comply with Scrapy's Code of Conduct, including treating everyone with respect: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+
+The following is just a suggested template to structure your issue, you can find more detailed information at https://doc.scrapy.org/en/latest/contributing.html#reporting-bugs.
 
 -->
 
