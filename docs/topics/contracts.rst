@@ -69,7 +69,7 @@ create and load your own contracts in the project by using the
         'myproject.contracts.ItemValidate': 10,
     }
 
-Each contract must inherit from :class:`scrapy.contracts.Contract` and can
+Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
 .. module:: scrapy.contracts
@@ -102,9 +102,14 @@ override three methods:
         This allows processing the output of the callback. Iterators are
         converted listified before being passed to this hook.
 
+Raise :class:`~scrapy.exceptions.ContractFail` from
+:class:`~scrapy.contracts.Contract.pre_process` or
+:class:`~scrapy.contracts.Contract.post_process` if expectations are not met:
+
+.. autoclass:: scrapy.exceptions.ContractFail
+
 Here is a demo contract which checks the presence of a custom header in the
-response received. Raise :class:`scrapy.exceptions.ContractFail` in order to
-get the failures pretty printed::
+response received::
 
     from scrapy.contracts import Contract
     from scrapy.exceptions import ContractFail
@@ -120,3 +125,24 @@ get the failures pretty printed::
             for header in self.args:
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
+
+.. _detecting-contract-check-runs:
+
+Detecting check runs
+====================
+
+When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
+set to the ``true`` string. You can use `os.environ`_ to perform any change to
+your spiders or your settings when ``scrapy check`` is used::
+
+    import os
+    import scrapy
+
+    class ExampleSpider(scrapy.Spider):
+        name = 'example'
+
+        def __init__(self):
+            if os.environ.get('SCRAPY_CHECK'):
+                pass  # Do some scraper adjustments when a check is running
+
+.. _os.environ: https://docs.python.org/3/library/os.html#os.environ

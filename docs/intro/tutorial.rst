@@ -22,9 +22,7 @@ Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
 Scrapy.
 
-If you're already familiar with other languages, and want to learn Python
-quickly, we recommend reading through `Dive Into Python 3`_.  Alternatively,
-you can follow the `Python Tutorial`_.
+If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
 may be useful to you: 
@@ -40,7 +38,6 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
-.. _Dive Into Python 3: http://www.diveintopython3.net
 .. _Python Tutorial: https://docs.python.org/3/tutorial
 .. _Automate the Boring Stuff With Python: https://automatetheboringstuff.com/
 .. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
@@ -208,7 +205,7 @@ Extracting data
 ---------------
 
 The best way to learn how to extract data with Scrapy is trying selectors
-using the shell :ref:`Scrapy shell <topics-shell>`. Run::
+using the :ref:`Scrapy shell <topics-shell>`. Run::
 
     scrapy shell 'http://quotes.toscrape.com/page/1/'
 
@@ -299,8 +296,8 @@ expressions`_::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools to inspect the HTML and come up
-with a selector (see section about :ref:`topics-developer-tools`).
+You can use your browser's developer tools to inspect the HTML and come up
+with a selector (see :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
@@ -382,11 +379,11 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
 
-Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text::text").get()
-    >>> title
+    >>> text = quote.css("span.text::text").get()
+    >>> text
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
     >>> author = quote.css("small.author::text").get()
     >>> author
@@ -514,7 +511,7 @@ We can try extracting it in the shell::
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
-Scrapy supports a CSS extension that let's you select the attribute contents,
+Scrapy supports a CSS extension that lets you select the attribute contents,
 like this::
 
     >>> response.css('li.next a::attr(href)').get()

@@ -158,6 +158,9 @@ FEED_EXPORTERS_BASE = {
 }
 FEED_EXPORT_INDENT = 0
 
+FEED_STORAGE_FTP_ACTIVE = False
+FEED_STORAGE_S3_ACL = ''
+
 FILES_STORE_S3_ACL = 'private'
 FILES_STORE_GCS_ACL = ''
 
@@ -219,6 +222,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
+METAREFRESH_IGNORE_TAGS = ['script', 'noscript']
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
@@ -236,7 +240,7 @@ REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
@@ -244,7 +248,7 @@ ROBOTSTXT_OBEY = False
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
-SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
+SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
@@ -277,6 +281,8 @@ USER_AGENT = 'Scrapy/%s (+https://scrapy.org)' % import_module('scrapy').__versi
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
+TELNETCONSOLE_USERNAME = 'scrapy'
+TELNETCONSOLE_PASSWORD = None
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {

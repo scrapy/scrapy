@@ -177,7 +177,7 @@ class Root(Resource):
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
-        except:
+        except Exception:
             pass
         self.putChild(b"redirect-to", RedirectTo())
 

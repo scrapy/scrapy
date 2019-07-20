@@ -16,7 +16,7 @@ _DATABASES = collections.defaultdict(DummyDB)
 def open(file, flag='r', mode=0o666):
     """Open or create a dummy database compatible.
 
-    Arguments `flag` and `mode` are ignored.
+    Arguments ``flag`` and ``mode`` are ignored.
     """
     # return same instance for same file argument
     return _DATABASES[file]

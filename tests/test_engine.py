@@ -40,9 +40,9 @@ class TestSpider(Spider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
 
-    itemurl_re = re.compile("item\d+.html")
-    name_re = re.compile("<h1>(.*?)</h1>", re.M)
-    price_re = re.compile(">Price: \$(.*?)<", re.M)
+    itemurl_re = re.compile(r"item\d+.html")
+    name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
+    price_re = re.compile(r">Price: \$(.*?)<", re.M)
 
     item_cls = TestItem
 

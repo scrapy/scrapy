@@ -94,7 +94,7 @@ class ContractsManager(object):
             try:
                 output = cb(response)
                 output = list(iterate_spider_output(output))
-            except:
+            except Exception:
                 case = _create_testcase(method, 'callback')
                 results.addError(case, sys.exc_info())
 

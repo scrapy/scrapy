@@ -30,7 +30,7 @@ a *single* job.
 How to use it
 =============
 
-To start a spider with persistence supported enabled, run it like this::
+To start a spider with persistence support enabled, run it like this::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
@@ -71,7 +71,7 @@ on cookies.
 Request serialization
 ---------------------
 
-Requests must be serializable by the `pickle` module, in order for persistence
+Requests must be serializable by the ``pickle`` module, in order for persistence
 to work, so you should make sure that your requests are serializable.
 
 The most common issue here is to use ``lambda`` functions on request callbacks that
@@ -81,7 +81,8 @@ So, for example, this won't work::
 
     def some_callback(self, response):
         somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
+        return scrapy.Request('http://www.example.com',
+                              callback=lambda r: self.other_callback(r, somearg))
 
     def other_callback(self, response, somearg):
         print("the argument passed is: %s" % somearg)
@@ -90,10 +91,10 @@ But this will::
 
     def some_callback(self, response):
         somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=self.other_callback, meta={'somearg': somearg})
+        return scrapy.Request('http://www.example.com',
+                              callback=self.other_callback, cb_kwargs={'somearg': somearg})
 
-    def other_callback(self, response):
-        somearg = response.meta['somearg']
+    def other_callback(self, response, somearg):
         print("the argument passed is: %s" % somearg)
 
 If you wish to log the requests that couldn't be serialized, you can set the

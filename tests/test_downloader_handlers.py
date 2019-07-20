@@ -24,7 +24,7 @@ from w3lib.url import path_to_file_uri
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -41,13 +41,23 @@ from scrapy.exceptions import NotConfigured
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
+
 class DummyDH(object):
+    lazy = False
+
+    def __init__(self, crawler):
+        pass
+
+
+class DummyLazyDH(object):
+    # Default is lazy for backward compatibility
 
     def __init__(self, crawler):
         pass
 
 
 class OffDH(object):
+    lazy = False
 
     def __init__(self, crawler):
         raise NotConfigured
@@ -60,8 +70,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
@@ -70,8 +78,6 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
-            dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
@@ -80,10 +86,21 @@ class LoadTestCase(unittest.TestCase):
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._schemes)
-        for scheme in handlers: # force load handlers
+        for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
+
+    def test_lazy_handlers(self):
+        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
+        self.assertIn('scheme', dh._schemes)
+        self.assertNotIn('scheme', dh._handlers)
+        for scheme in handlers:  # force load lazy handler
+            dh._get_handler(scheme)
+        self.assertIn('scheme', dh._handlers)
+        self.assertNotIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
@@ -341,11 +358,6 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, body)
         return d
-
-
-class DeprecatedHttpTestCase(HttpTestCase):
-    """HTTP 1.0 test case"""
-    download_handler_cls = HttpDownloadHandler
 
 
 class Http10TestCase(HttpTestCase):
@@ -637,11 +649,6 @@ class HttpProxyTestCase(unittest.TestCase):
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
-
-
-class DeprecatedHttpProxyTestCase(unittest.TestCase):
-    """Old deprecated reference to http10 downloader handler"""
-    download_handler_cls = HttpDownloadHandler
 
 
 class Http10ProxyTestCase(HttpProxyTestCase):

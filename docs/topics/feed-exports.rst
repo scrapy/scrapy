@@ -164,6 +164,11 @@ The feeds are stored in a FTP server.
  * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
  * Required external libraries: none
 
+FTP supports two different connection modes: `active or passive
+<https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
+mode by default. To use the active connection mode instead, set the
+:setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
+
 .. _topics-feed-storage-s3:
 
 S3
@@ -185,6 +190,10 @@ passed through the following settings:
  * :setting:`AWS_ACCESS_KEY_ID`
  * :setting:`AWS_SECRET_ACCESS_KEY`
 
+You can also define a custom ACL for exported feeds using this setting:
+
+ * :setting:`FEED_STORAGE_S3_ACL`
+
 .. _topics-feed-storage-stdout:
 
 Standard output
@@ -205,6 +214,8 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_URI` (mandatory)
  * :setting:`FEED_FORMAT`
  * :setting:`FEED_STORAGES`
+ * :setting:`FEED_STORAGE_FTP_ACTIVE`
+ * :setting:`FEED_STORAGE_S3_ACL`
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_ENCODING`
@@ -302,6 +313,30 @@ Default: ``{}``
 A dict containing additional feed storage backends supported by your project.
 The keys are URI schemes and the values are paths to storage classes.
 
+.. setting:: FEED_STORAGE_FTP_ACTIVE
+
+FEED_STORAGE_FTP_ACTIVE
+-----------------------
+
+Default: ``False``
+
+Whether to use the active connection mode when exporting feeds to an FTP server
+(``True``) or use the passive connection mode instead (``False``, default).
+
+For information about FTP connection modes, see `What is the difference between
+active and passive FTP? <https://stackoverflow.com/a/1699163>`_.
+
+.. setting:: FEED_STORAGE_S3_ACL
+
+FEED_STORAGE_S3_ACL
+-------------------
+
+Default: ``''`` (empty string)
+
+A string containing a custom ACL for feeds exported to Amazon S3 by your project.
+
+For a complete list of available values, access the `Canned ACL`_ section on Amazon S3 docs.
+
 .. setting:: FEED_STORAGES_BASE
 
 FEED_STORAGES_BASE
@@ -366,3 +401,4 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _boto: https://github.com/boto/boto
 .. _botocore: https://github.com/boto/botocore
+.. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl

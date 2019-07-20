@@ -4,13 +4,20 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-from pprint import pformat
-from collections import MutableMapping
-
 from abc import ABCMeta
+from pprint import pformat
+from copy import deepcopy
+import collections
+
 import six
 
 from scrapy.utils.trackref import object_ref
+
+
+if six.PY2:
+    MutableMapping = collections.MutableMapping
+else:
+    MutableMapping = collections.abc.MutableMapping
 
 
 class BaseItem(object_ref):
@@ -95,6 +102,13 @@ class DictItem(MutableMapping, BaseItem):
 
     def copy(self):
         return self.__class__(self)
+
+    def deepcopy(self):
+        """Return a `deep copy`_ of this item.
+
+        .. _deep copy: https://docs.python.org/library/copy.html#copy.deepcopy
+        """
+        return deepcopy(self)
 
 
 @six.add_metaclass(ItemMeta)

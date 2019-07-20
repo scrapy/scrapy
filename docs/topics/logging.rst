@@ -238,12 +238,13 @@ scrapy.utils.log module
 
 .. autofunction:: configure_logging
 
-    ``configure_logging`` is automatically called when using Scrapy commands,
-    but needs to be called explicitly when running custom scripts. In that
-    case, its usage is not required but it's recommended.
+    ``configure_logging`` is automatically called when using Scrapy commands
+    or :class:`~scrapy.crawler.CrawlerProcess`, but needs to be called explicitly
+    when running custom scripts using :class:`~scrapy.crawler.CrawlerRunner`.
+    In that case, its usage is not required but it's recommended.
 
     If you plan on configuring the handlers yourself is still recommended you
-    call this function, passing `install_root_handler=False`. Bear in mind
+    call this function, passing ``install_root_handler=False``. Bear in mind
     there won't be any log output set by default in that case.
 
     To get you started on manually configuring logging's output, you can use
