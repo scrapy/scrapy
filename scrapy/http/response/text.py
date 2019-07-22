@@ -32,9 +32,6 @@ class TextResponse(Response):
 
     def _set_url(self, url):
         if isinstance(url, six.text_type):
-            if six.PY2 and self.encoding is None:
-                raise TypeError("Cannot convert unicode url - %s "
-                                "has no encoding" % type(self).__name__)
             self._url = to_native_str(url, self.encoding)
         else:
             super(TextResponse, self)._set_url(url)

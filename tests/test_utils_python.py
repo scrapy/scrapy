@@ -231,12 +231,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
-            stripself = not six.PY2  # PyPy3 exposes them as methods
             self.assertEqual(
-                get_func_args(six.text_type.split, stripself), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself), ['list'])
+                get_func_args(six.text_type.split, True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join, True), ['list'])
             self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself), ['obj'])
+                get_func_args(operator.itemgetter(2), True), ['obj'])
 
 
     def test_without_none_values(self):

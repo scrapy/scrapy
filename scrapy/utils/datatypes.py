@@ -7,17 +7,12 @@ This module must not depend on any module outside the Standard Library.
 
 import copy
 import collections
+from collections.abc import Mapping
 import warnings
 
 import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-
-
-if six.PY2:
-    Mapping = collections.Mapping
-else:
-    Mapping = collections.abc.Mapping
 
 
 class MultiValueDictKeyError(KeyError):
@@ -252,13 +247,12 @@ class MergeDict(object):
     first occurrence will be used.
     """
     def __init__(self, *dicts):
-        if not six.PY2:
-            warnings.warn(
-                "scrapy.utils.datatypes.MergeDict is deprecated in favor "
-                "of collections.ChainMap (introduced in Python 3.3)",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            "scrapy.utils.datatypes.MergeDict is deprecated in favor "
+            "of collections.ChainMap (introduced in Python 3.3)",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.dicts = dicts
 
     def __getitem__(self, key):
