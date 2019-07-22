@@ -163,33 +163,6 @@ class UtilsPythonTestCase(unittest.TestCase):
                 gc.collect()
         self.assertFalse(len(wk._weakdict))
 
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict(self):
-        d = {'a': 123, u'b': b'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d, keys_only=False)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_tuples(self):
-        tuples = [('a', 123), (u'b', 'c'), (u'd', u'e'), (object(), u'e')]
-        d = dict(tuples)
-        d2 = stringify_dict(tuples, keys_only=False)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_keys_only(self):
-        d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
-
     def test_get_func_args(self):
         def f1(a, b, c):
             pass
