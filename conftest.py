@@ -1,5 +1,4 @@
 import glob
-import six
 import pytest
 from twisted import version as twisted_version
 
@@ -18,11 +17,10 @@ if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15,
     collect_ignore += _py_files("scrapy/xlib/tx")
 
 
-if six.PY3:
-    for line in open('tests/py3-ignores.txt'):
-        file_path = line.strip()
-        if file_path and file_path[0] != '#':
-            collect_ignore.append(file_path)
+for line in open('tests/py3-ignores.txt'):
+    file_path = line.strip()
+    if file_path and file_path[0] != '#':
+        collect_ignore.append(file_path)
 
 
 @pytest.fixture()
