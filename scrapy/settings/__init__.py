@@ -1,17 +1,11 @@
 import six
 import json
 import copy
-import collections
+from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
 from scrapy.settings import default_settings
-
-
-if six.PY2:
-    MutableMapping = collections.MutableMapping
-else:
-    MutableMapping = collections.abc.MutableMapping
 
 
 SETTINGS_PRIORITIES = {

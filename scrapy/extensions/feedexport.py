@@ -10,7 +10,6 @@ import logging
 import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-import six
 from six.moves.urllib.parse import urlparse, unquote
 from ftplib import FTP
 
@@ -65,7 +64,7 @@ class StdoutFeedStorage(object):
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
-            _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
+            _stdout = sys.stdout.buffer
         self._stdout = _stdout
 
     def open(self, spider):

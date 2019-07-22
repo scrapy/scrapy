@@ -62,12 +62,8 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
 
-        if six.PY2:
-            self.assertEqual(itemrepr,
-                             "{'name': u'John Doe', 'number': 123}")
-        else:
-            self.assertEqual(itemrepr,
-                             "{'name': 'John Doe', 'number': 123}")
+        self.assertEqual(itemrepr,
+                         "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')

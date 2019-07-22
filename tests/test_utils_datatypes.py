@@ -1,11 +1,6 @@
+from collections.abc import Mapping, MutableMapping
 import copy
 import unittest
-
-import six
-if six.PY2:
-    from collections import Mapping, MutableMapping
-else:
-    from collections.abc import Mapping, MutableMapping
 
 from scrapy.utils.datatypes import CaselessDict, SequenceExclude
 

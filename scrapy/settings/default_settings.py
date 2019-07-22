@@ -17,8 +17,6 @@ import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
 
-import six
-
 AJAXCRAWL_ENABLED = False
 
 AUTOTHROTTLE_ENABLED = False
@@ -179,7 +177,7 @@ HTTPCACHE_ALWAYS_STORE = False
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
-HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
+HTTPCACHE_DBM_MODULE = 'dbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
