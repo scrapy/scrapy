@@ -113,10 +113,7 @@ def to_bytes(text, encoding=None, errors='strict'):
 def to_native_str(text, encoding=None, errors='strict'):
     """ Return str representation of ``text``
     (bytes in Python 2.x and unicode in Python 3.x). """
-    if six.PY2:
-        return to_bytes(text, encoding, errors)
-    else:
-        return to_unicode(text, encoding, errors)
+    return to_unicode(text, encoding, errors)
 
 
 def re_rsearch(pattern, text, chunk_size=1024):
@@ -189,7 +186,7 @@ def _getargspec_py23(func):
     """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
                                                         defaults)
 
-    Identical to inspect.getargspec() in python2, but uses
+    Was identical to inspect.getargspec() in python2, but uses
     inspect.getfullargspec() for python3 behind the scenes to avoid
     DeprecationWarning.
 
@@ -199,9 +196,6 @@ def _getargspec_py23(func):
     >>> _getargspec_py23(f)
     ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
     """
-    if six.PY2:
-        return inspect.getargspec(func)
-
     return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
 
 

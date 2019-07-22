@@ -7,17 +7,11 @@ See documentation in docs/topics/item.rst
 from abc import ABCMeta
 from pprint import pformat
 from copy import deepcopy
-import collections
+from collections.abc import MutableMapping
 
 import six
 
 from scrapy.utils.trackref import object_ref
-
-
-if six.PY2:
-    MutableMapping = collections.MutableMapping
-else:
-    MutableMapping = collections.abc.MutableMapping
 
 
 class BaseItem(object_ref):

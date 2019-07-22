@@ -470,7 +470,7 @@ DBM storage backend
 
 A DBM_ storage backend is also available for the HTTP cache middleware.
 
-By default, it uses the anydbm_ module, but you can change it with the
+By default, it uses the dbm_ module, but you can change it with the
 :setting:`HTTPCACHE_DBM_MODULE` setting.
 
 In order to use this storage backend, set:

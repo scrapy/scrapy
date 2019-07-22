@@ -1,13 +1,10 @@
+from configparser import ConfigParser
 import os
 import sys
 import numbers
 from operator import itemgetter
 
 import six
-if six.PY2:
-    from ConfigParser import SafeConfigParser as ConfigParser
-else:
-    from configparser import ConfigParser
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath

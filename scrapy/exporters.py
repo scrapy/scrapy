@@ -216,7 +216,7 @@ class CsvItemExporter(BaseItemExporter):
             write_through=True,
             encoding=self.encoding,
             newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
-        ) if six.PY3 else file
+        )
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued

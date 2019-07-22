@@ -60,9 +60,6 @@ class SettingsAttributeTest(unittest.TestCase):
 
 class BaseSettingsTest(unittest.TestCase):
 
-    if six.PY3:
-        assertItemsEqual = unittest.TestCase.assertCountEqual
-
     def setUp(self):
         self.settings = BaseSettings()
 
@@ -152,7 +149,7 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.setmodule(
             'tests.test_settings.default_settings', 10)
 
-        self.assertItemsEqual(six.iterkeys(self.settings.attributes),
+        self.assertCountEqual(six.iterkeys(self.settings.attributes),
                               six.iterkeys(ctrl_attributes))
 
         for key in six.iterkeys(ctrl_attributes):
@@ -342,9 +339,6 @@ class BaseSettingsTest(unittest.TestCase):
 
 
 class SettingsTest(unittest.TestCase):
-
-    if six.PY3:
-        assertItemsEqual = unittest.TestCase.assertCountEqual
 
     def setUp(self):
         self.settings = Settings()

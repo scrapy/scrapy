@@ -9,18 +9,13 @@ try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
-import six
 
 from email.utils import COMMASPACE, formatdate
 from six.moves.email_mime_multipart import MIMEMultipart
 from six.moves.email_mime_text import MIMEText
 from six.moves.email_mime_base import MIMEBase
-if six.PY2:
-    from email.MIMENonMultipart import MIMENonMultipart
-    from email import Encoders
-else:
-    from email.mime.nonmultipart import MIMENonMultipart
-    from email import encoders as Encoders
+from email.mime.nonmultipart import MIMENonMultipart
+from email import encoders as Encoders
 
 from twisted.internet import defer, reactor, ssl
 

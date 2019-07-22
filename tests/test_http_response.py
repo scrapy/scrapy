@@ -21,8 +21,7 @@ class BaseResponseTest(unittest.TestCase):
         # Response requires url in the consturctor
         self.assertRaises(Exception, self.response_class)
         self.assertTrue(isinstance(self.response_class('http://example.com/'), self.response_class))
-        if not six.PY2:
-            self.assertRaises(TypeError, self.response_class, b"http://example.com")
+        self.assertRaises(TypeError, self.response_class, b"http://example.com")
         # body can be str or None
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b''), self.response_class))
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'body'), self.response_class))
