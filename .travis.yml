@@ -12,18 +12,21 @@ matrix:
       env: TOXENV=jessie
     - python: 2.7
       env: TOXENV=pypy
-    - python: 2.7
+    - python: 3.6
+      dist: xenial
       env: TOXENV=pypy3
     - python: 3.5
       env: TOXENV=py35
+      dist: xenial
     - python: 3.6
       env: TOXENV=py36
+      dist: xenial
     - python: 3.7
       env: TOXENV=py37
       dist: xenial
-      sudo: true
     - python: 3.6
       env: TOXENV=docs
+      dist: xenial
 install:
   - |
       if [ "$TOXENV" = "pypy" ]; then
