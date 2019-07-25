@@ -1,5 +1,6 @@
 from unittest import mock
 
+from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
@@ -177,3 +178,31 @@ class ProcessExceptionInvalidOutput(ManagerTestCase):
         dfd.addBoth(results.append)
         self.assertIsInstance(results[0], Failure)
         self.assertIsInstance(results[0].value, _InvalidOutput)
+
+
+class MiddlewareUsingDeferreds(ManagerTestCase):
+    """Middlewares using Deferreds should work"""
+
+    def test_deferred(self):
+        resp = Response('http://example.com/index.html')
+
+        class DeferredMiddleware:
+            def cb(self, result):
+                return result
+
+            def process_request(self, request, spider):
+                d = Deferred()
+                d.addCallback(self.cb)
+                d.callback(resp)
+                return d
+
+        self.mwman._add_middleware(DeferredMiddleware())
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)
