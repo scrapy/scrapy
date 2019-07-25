@@ -87,7 +87,7 @@ class SitemapSpider(Spider):
         # the HTTP response being sent with "Content-Encoding: gzip"
         # without actually being a .gz file in the first place,
         # merely gzip-compressed on the fly,
-        # in other word, here, we have plain XML or TXT
+        # in other word, here, we have plain XML or text
         elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
             return response.body
         elif response.url.endswith('.txt') or response.url.endswith('.txt.gz'):
