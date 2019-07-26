@@ -1,14 +1,11 @@
 import argparse
-import logging
+import warnings
 from shlex import split
 
 from six.moves.http_cookies import SimpleCookie
 from six.moves.urllib.parse import urlparse
 from six import string_types, iteritems
 from w3lib.http import basic_auth_header
-
-
-logger = logging.getLogger(__name__)
 
 
 class CurlParser(argparse.ArgumentParser):
@@ -57,7 +54,7 @@ def curl_to_request_kwargs(curl_args, ignore_unknown_options=True):
     if argv:
         msg = 'Unrecognized options: {}'.format(', '.join(argv))
         if ignore_unknown_options:
-            logger.warning(msg)
+            warnings.warn(msg)
         else:
             raise ValueError(msg)
 

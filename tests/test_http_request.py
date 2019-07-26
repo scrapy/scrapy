@@ -328,10 +328,12 @@ class RequestTest(unittest.TestCase):
 
     def test_from_curl_ignore_unknown_options(self):
         # By default: it works and ignores the unknown options: --foo and -z
-        r = self.request_class.from_curl(
-            'curl -X DELETE "http://example.org" --foo -z',
-        )
-        self.assertEqual(r.method, "DELETE")
+        with warnings.catch_warnings():  # avoid warning when executing tests
+            warnings.simplefilter('ignore')
+            r = self.request_class.from_curl(
+                'curl -X DELETE "http://example.org" --foo -z',
+            )
+            self.assertEqual(r.method, "DELETE")
 
         # If `ignore_unknon_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z

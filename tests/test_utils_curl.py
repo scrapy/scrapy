@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from six import assertRaisesRegex
 from w3lib.http import basic_auth_header
@@ -185,10 +186,12 @@ class CurlToRequestKwargsTest(unittest.TestCase):
 
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
-        curl_command = 'curl --bar --baz http://www.example.com'
-        expected_result = \
-            {"method": "GET", "url": "http://www.example.com"}
-        self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+        with warnings.catch_warnings():  # avoid warning when executing tests
+            warnings.simplefilter('ignore')
+            curl_command = 'curl --bar --baz http://www.example.com'
+            expected_result = \
+                {"method": "GET", "url": "http://www.example.com"}
+            self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
         # case 2: ignore_unknown_options=False (raise exception):
         assertRaisesRegex(
