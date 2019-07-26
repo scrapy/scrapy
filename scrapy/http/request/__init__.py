@@ -106,14 +106,18 @@ class Request(object_ref):
         return cls(*args, **kwargs)
 
     @classmethod
-    def from_curl(cls, curl_command, **kwargs):
+    def from_curl(cls, curl_command, ignore_unknown_options=True, **kwargs):
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
-        arguments as the :class:`Request` class. Note that all the arguments
-        provided take preference and will override the values of the same
-        arguments contained in the curl command.
+        arguments as the :class:`Request` class, taking preference and
+        overriding the values of the same arguments contained in the cURL
+        command.
+
+        Unrecognized options are ignored by default. To raise an error when
+        finding unknown options call this method by passing
+        ``ignore_unknown_options=False``.
        """
-        request_kwargs = curl_to_request_kwargs(curl_command)
+        request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return Request(**request_kwargs)

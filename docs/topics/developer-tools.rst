@@ -276,7 +276,7 @@ request::
 
 Alternatively, if you want to know the arguments needed to recreate that
 request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
-function and you will get a dictionary with the equivalent arguments.
+function to get a dictionary with the equivalent arguments.
 
 As you can see, with a few inspections in the `Network`-tool we
 were able to easily replicate the dynamic requests of the scrolling 

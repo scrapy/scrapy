@@ -326,6 +326,23 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.method, "POST")
         self.assertEqual(r.meta, {"key": "value"})
 
+    def test_from_curl_ignore_unknown_options(self):
+        # By default: it works and ignores the unknown options: --foo and -z
+        r = self.request_class.from_curl(
+            'curl -X DELETE "http://example.org" --foo -z',
+        )
+        self.assertEqual(r.method, "DELETE")
+
+        # If `ignore_unknon_options` is set to `False` it raises an error with
+        # the unknown options: --foo and -z
+        self.assertRaises(
+            ValueError,
+            lambda: self.request_class.from_curl(
+                'curl -X PATCH "http://example.org" --foo -z',
+                ignore_unknown_options=False,
+            ),
+        )
+
 
 class FormRequestTest(RequestTest):
 

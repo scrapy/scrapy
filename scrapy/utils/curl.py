@@ -1,10 +1,14 @@
 import argparse
+import logging
 from shlex import split
 
 from six.moves.http_cookies import SimpleCookie
 from six.moves.urllib.parse import urlparse
 from six import string_types, iteritems
 from w3lib.http import basic_auth_header
+
+
+logger = logging.getLogger(__name__)
 
 
 class CurlParser(argparse.ArgumentParser):
@@ -21,14 +25,24 @@ curl_parser.add_argument('-X', '--request', dest='method', default='get')
 curl_parser.add_argument('-d', '--data', dest='data')
 curl_parser.add_argument('-u', '--user', dest='auth')
 
-curl_parser.add_argument('--compressed', action='store_true')
-curl_parser.add_argument('-s', '--silent', action='store_true')
+
+safe_to_ignore_arguments = [
+    ['--compressed'],
+    ['-s', '--silent'],
+    ['-v', '--verbose'],
+    ['-#', '--progress-bar']
+]
+
+for argument in safe_to_ignore_arguments:
+    curl_parser.add_argument(*argument, action='store_true')
 
 
-def curl_to_request_kwargs(curl_args):
-    """Convert a curl command syntax to Request kwargs.
+def curl_to_request_kwargs(curl_args, ignore_unknown_options=True):
+    """Convert a cURL command syntax to Request kwargs.
 
-    :param curl_args: string containing the curl command
+    :param str curl_args: string containing the curl command
+    :param bool ignore_unknown_options: If true, only a warning is emitted when
+    cURL options are unknown. Otherwise raises an error. (default: True)
     :return: dictionary of Request kwargs
     """
 
@@ -39,9 +53,13 @@ def curl_to_request_kwargs(curl_args):
         raise ValueError('A curl command must start with "curl"')
 
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
+
     if argv:
-        msg = 'Unrecognized arguments: %s'
-        raise ValueError(msg % (argv,))
+        msg = 'Unrecognized options: {}'.format(', '.join(argv))
+        if ignore_unknown_options:
+            logger.warning(msg)
+        else:
+            raise ValueError(msg)
 
     url = parsed_args.url
 
@@ -62,7 +80,7 @@ def curl_to_request_kwargs(curl_args):
         name, val = header.split(':', 1)
         name = name.strip()
         val = val.strip()
-        if name == 'Cookie':
+        if name.title() == 'Cookie':
             for name, morsel in iteritems(SimpleCookie(val)):
                 cookies[name] = morsel.value
         else:

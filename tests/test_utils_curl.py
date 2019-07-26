@@ -183,12 +183,22 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             lambda: curl_to_request_kwargs("curl"),
         )
 
-    def test_unknown_arg_error(self):
+    def test_ignore_unknown_options(self):
+        # case 1: ignore_unknown_options=True:
+        curl_command = 'curl --bar --baz http://www.example.com'
+        expected_result = \
+            {"method": "GET", "url": "http://www.example.com"}
+        self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+
+        # case 2: ignore_unknown_options=False (raise exception):
         assertRaisesRegex(
             self,
             ValueError,
-            "Unrecognized arguments:.*--bar.*--baz",
-            lambda: curl_to_request_kwargs("curl --bar --baz url"),
+            "Unrecognized options:.*--bar.*--baz",
+            lambda: curl_to_request_kwargs(
+                "curl --bar --baz http://www.example.com",
+                ignore_unknown_options=False
+            ),
         )
 
     def test_must_start_with_curl_error(self):
