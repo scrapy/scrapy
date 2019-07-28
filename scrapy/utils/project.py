@@ -68,10 +68,7 @@ def get_project_settings():
         settings.setmodule(settings_module_path, priority='project')
 
     # XXX: remove this hack
-    pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
-    if pickled_settings:
-        settings.setdict(pickle.loads(pickled_settings), priority='project')
-
+    
     # XXX: deprecate and remove this functionality
     env_overrides = {k[7:]: v for k, v in os.environ.items() if
                      k.startswith('SCRAPY_')}
