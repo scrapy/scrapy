@@ -244,7 +244,7 @@ RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
-ROBOTSTXT_OBEY = False
+ROBOTSTXT_OBEY = True
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
