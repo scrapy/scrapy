@@ -57,19 +57,17 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """
-    from scrapy.http import HtmlResponse, TextResponse
-    # XXX: this implementation is a bit dirty and could be improved
-    body = response.body
-    if isinstance(response, HtmlResponse):
-        if b'<base' not in body:
-            repl = '<head><base href="%s">' % response.url
-            body = body.replace(b'<head>', to_bytes(repl))
-        ext = '.html'
-    elif isinstance(response, TextResponse):
-        ext = '.txt'
-    else:
-        raise TypeError("Unsupported response type: %s" %
-                        response.__class__.__name__)
+    def get_body(response):
+        from scrapy.http import HtmlResponse
+        body = response.body
+        if isinstance(response, HtmlResponse):
+            if b'<base' not in body:
+                repl = '<head><base href="%s">' % response.url
+                body = body.replace(b'<head>', to_bytes(repl))
+        return body
+    
+    ext = response.file_extension
+    body = get_body(response)
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

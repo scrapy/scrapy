@@ -158,6 +158,9 @@ class TextResponse(Response):
             cb_kwargs=cb_kwargs,
         )
 
+    @property
+    def file_extension(self):
+        return '.txt'
 
 def _url_from_selector(sel):
     # type: (parsel.Selector) -> str

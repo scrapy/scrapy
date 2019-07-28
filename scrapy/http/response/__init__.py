@@ -134,3 +134,8 @@ class Response(object_ref):
                        dont_filter=dont_filter,
                        errback=errback,
                        cb_kwargs=cb_kwargs)
+    
+    @property
+    def file_extension(self):
+        raise  TypeError("Unsupported response type: %s" %
+                        self.__class__.__name__)
