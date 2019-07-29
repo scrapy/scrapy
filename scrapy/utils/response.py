@@ -6,6 +6,7 @@ import os
 import weakref
 import webbrowser
 import tempfile
+import warnings
 
 from twisted.web import http
 from scrapy.utils.python import to_bytes, to_native_str
@@ -68,8 +69,14 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: %s" %
-                        response.__class__.__name__)
+       	warnings.warn("Unsupported response type %s"%response.__class__.__name__)
+        ext=[]
+        url=response.url
+        for i in  range(len(url)-1,0,-1):
+        	ext.insert(0,url[i])
+        	if(url[i]=='.'):
+        		break
+        ext="".join(ext)
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
