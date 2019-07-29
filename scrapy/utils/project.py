@@ -66,8 +66,6 @@ def get_project_settings():
     settings_module_path = os.environ.get(ENVVAR)
     if settings_module_path:
         settings.setmodule(settings_module_path, priority='project')
-
-    # XXX: remove this hack
     
     # XXX: deprecate and remove this functionality
     env_overrides = {k[7:]: v for k, v in os.environ.items() if
