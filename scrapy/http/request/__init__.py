@@ -117,6 +117,15 @@ class Request(object_ref):
         Unrecognized options are ignored by default. To raise an error when
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
+
+        .. caution:: Although the request is built based on the content of the
+                     cURL command, some headers could be added when requesting
+                     attending to the enabled middlewares (E.g.:
+                     :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`,
+                     :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
+                     :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
+                     etc.).
+
        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
