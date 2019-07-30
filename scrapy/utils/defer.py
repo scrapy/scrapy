@@ -1,10 +1,14 @@
 """
 Helper functions for dealing with Twisted deferreds
 """
+import asyncio
+import asyncio.futures
+import inspect
 
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
+from scrapy import asyncio_supported
 from scrapy.exceptions import IgnoreRequest
 
 
@@ -113,3 +117,21 @@ def iter_errback(iterable, errback, *a, **kw):
             break
         except Exception:
             errback(failure.Failure(), *a, **kw)
+
+
+def isfuture(o):
+    # workaround for Python before 3.5.3 not having asyncio.isfuture
+    if hasattr(asyncio, 'isfuture'):
+        return asyncio.isfuture(o)
+    return isinstance(o, asyncio.futures.Future)
+
+
+def deferred_from_coro(o):
+    """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
+    if isinstance(o, defer.Deferred):
+        return o
+    if asyncio.iscoroutine(o) or isfuture(o) or inspect.isawaitable(o):
+        if not asyncio_supported:
+            raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
+        return defer.Deferred.fromFuture(asyncio.ensure_future(o))
+    return o
