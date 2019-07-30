@@ -4,7 +4,8 @@ mitmproxy; python_version >= '3.6'
 mitmproxy==3.0.4; python_version < '3.6'
 pytest
 pytest-cov
-pytest-twisted
+#pytest-twisted
+-e git+https://github.com/pytest-dev/pytest-twisted@81b91f17#egg=pytest-twisted
 pytest-xdist
 sybil
 testfixtures
