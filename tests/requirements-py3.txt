@@ -3,7 +3,8 @@ jmespath
 leveldb; sys_platform != "win32"
 pytest
 pytest-cov
-pytest-twisted
+#pytest-twisted
+-e git+https://github.com/pytest-dev/pytest-twisted@81b91f17#egg=pytest-twisted
 pytest-xdist
 testfixtures
 

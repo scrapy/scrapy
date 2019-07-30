@@ -4,6 +4,9 @@ from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 
 from OpenSSL import SSL
+
+import scrapy  # needed before importing twisted.internet.reactor
+
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
