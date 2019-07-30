@@ -10,7 +10,7 @@ from twisted.internet import defer
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred, deferred_from_coro
 from scrapy.utils.conf import build_component_list
 
 
@@ -35,7 +35,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         @defer.inlineCallbacks
         def process_request(request):
             for method in self.methods['process_request']:
-                response = yield method(request=request, spider=spider)
+                response = yield deferred_from_coro(method(request=request, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_request must return None, Response or Request, got %s' % \
                                          (six.get_method_self(method).__class__.__name__, response.__class__.__name__))
@@ -50,7 +50,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 defer.returnValue(response)
 
             for method in self.methods['process_response']:
-                response = yield method(request=request, response=response, spider=spider)
+                response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_response must return Response or Request, got %s' % \
                                          (six.get_method_self(method).__class__.__name__, type(response)))
@@ -62,7 +62,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         def process_exception(_failure):
             exception = _failure.value
             for method in self.methods['process_exception']:
-                response = yield method(request=request, exception=exception, spider=spider)
+                response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_exception must return None, Response or Request, got %s' % \
                                          (six.get_method_self(method).__class__.__name__, type(response)))
