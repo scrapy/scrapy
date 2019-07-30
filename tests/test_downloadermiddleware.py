@@ -1,3 +1,4 @@
+import asyncio
 from unittest import mock
 
 from twisted.internet.defer import Deferred
@@ -197,6 +198,29 @@ class MiddlewareUsingDeferreds(ManagerTestCase):
                 return d
 
         self.mwman._add_middleware(DeferredMiddleware())
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)
+
+
+class MiddlewareUsingCoro(ManagerTestCase):
+    """Middlewares using asyncio coroutines should work"""
+
+    def test_asyncdef(self):
+        resp = Response('http://example.com/index.html')
+
+        class CoroMiddleware:
+            async def process_request(self, request, spider):
+                await asyncio.sleep(0.1)
+                return resp
+
+        self.mwman._add_middleware(CoroMiddleware())
         req = Request('http://example.com/index.html')
         download_func = mock.MagicMock()
         dfd = self.mwman.download(download_func, req, self.spider)
