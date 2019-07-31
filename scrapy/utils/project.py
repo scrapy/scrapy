@@ -1,6 +1,7 @@
 import os
 from six.moves import cPickle as pickle
 import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 from importlib import import_module
 from os.path import join, dirname, abspath, isabs, exists
@@ -70,7 +71,9 @@ def get_project_settings():
     # XXX: remove this hack
     pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
     if pickled_settings:
-        warnings.warn("Use of environmental variable 'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' is deprecated",DeprecationWarning)
+        warnings.warn("Use of environment variable \
+        'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' \
+        is deprecated",ScrapyDeprecationWarning)
         settings.setdict(pickle.loads(pickled_settings), priority='project')
 
     # XXX: deprecate and remove this functionality
