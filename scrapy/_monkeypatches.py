@@ -10,7 +10,7 @@ if six.PY2:
         from urlparse import uses_query
         uses_query.append('s3')
 
-        
+
 # Undo what Twisted's perspective broker adds to pickle register
 # to prevent bugs like Twisted#7989 while serializing requests
 import twisted.persisted.styles  # NOQA
