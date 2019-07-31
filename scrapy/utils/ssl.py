@@ -23,12 +23,12 @@ def get_temp_key_info(ssl_object):
 
     # adapted from OpenSSL apps/s_cb.c::ssl_print_tmp_key()
     temp_key_p = pyOpenSSLutil.ffi.new("EVP_PKEY **")
-    pyOpenSSLutil.lib.SSL_get_server_tmp_key(ssl_object, temp_key_p)
-    if temp_key_p == pyOpenSSLutil.ffi.NULL:
+    if not pyOpenSSLutil.lib.SSL_get_server_tmp_key(ssl_object, temp_key_p):
         return None
-
     temp_key = temp_key_p[0]
-    pyOpenSSLutil.ffi.gc(temp_key, pyOpenSSLutil.lib.EVP_PKEY_free)
+    if temp_key == pyOpenSSLutil.ffi.NULL:
+        return None
+    temp_key = pyOpenSSLutil.ffi.gc(temp_key, pyOpenSSLutil.lib.EVP_PKEY_free)
     key_info = []
     key_type = pyOpenSSLutil.lib.EVP_PKEY_id(temp_key)
     if key_type == pyOpenSSLutil.lib.EVP_PKEY_RSA:
@@ -38,7 +38,7 @@ def get_temp_key_info(ssl_object):
     elif key_type == pyOpenSSLutil.lib.EVP_PKEY_EC:
         key_info.append('ECDH')
         ec_key = pyOpenSSLutil.lib.EVP_PKEY_get1_EC_KEY(temp_key)
-        pyOpenSSLutil.ffi.gc(ec_key, pyOpenSSLutil.lib.EC_KEY_free)
+        ec_key = pyOpenSSLutil.ffi.gc(ec_key, pyOpenSSLutil.lib.EC_KEY_free)
         nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key))
         cname = pyOpenSSLutil.lib.EC_curve_nid2nist(nid)
         if cname == pyOpenSSLutil.ffi.NULL:
