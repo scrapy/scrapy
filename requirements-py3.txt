@@ -1,5 +1,6 @@
 Twisted>=17.9.0
-lxml>=3.2.4
+lxml;python_version!="3.4"
+lxml<=4.3.5;python_version=="3.4"
 pyOpenSSL>=0.13.1
 cssselect>=0.9
 queuelib>=1.1.1

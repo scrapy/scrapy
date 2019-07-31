@@ -963,7 +963,7 @@ precedence over the :setting:`RETRY_TIMES` setting.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 522, 524, 408]``
+Default: ``[500, 502, 503, 504, 522, 524, 408, 429]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
