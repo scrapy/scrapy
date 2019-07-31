@@ -10,6 +10,7 @@ matrix:
       env: TOXENV=py27
     - python: 2.7
       env: TOXENV=jessie
+      dist: trusty
     - python: 2.7
       env: TOXENV=pypy
     - python: 2.7
