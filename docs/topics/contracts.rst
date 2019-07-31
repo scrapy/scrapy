@@ -126,6 +126,7 @@ response received::
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
 
+.. _detecting-contract-check-runs:
 
 Detecting check runs
 ====================

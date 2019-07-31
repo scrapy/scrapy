@@ -164,9 +164,9 @@ The feeds are stored in a FTP server.
  * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
  * Required external libraries: none
 
-FTP supports two different connection modes: [active or passive](
-https://stackoverflow.com/a/1699163). Scrapy uses the passive connection mode
-by default. To use the active connection mode instead, set the
+FTP supports two different connection modes: `active or passive
+<https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
+mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
 .. _topics-feed-storage-s3:
@@ -320,8 +320,11 @@ FEED_STORAGE_FTP_ACTIVE
 
 Default: ``False``
 
-Whether to use [active mode](https://stackoverflow.com/a/1699163) when exporting feeds
-to a FTP server.
+Whether to use the active connection mode when exporting feeds to an FTP server
+(``True``) or use the passive connection mode instead (``False``, default).
+
+For information about FTP connection modes, see `What is the difference between
+active and passive FTP? <https://stackoverflow.com/a/1699163>`_.
 
 .. setting:: FEED_STORAGE_S3_ACL
 

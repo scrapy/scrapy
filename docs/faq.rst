@@ -329,6 +329,8 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+.. _faq-split-item:
+
 How to split an item into multiple items in an item pipeline?
 -------------------------------------------------------------
 
