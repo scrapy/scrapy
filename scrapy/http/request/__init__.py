@@ -118,13 +118,16 @@ class Request(object_ref):
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
 
-        .. caution:: Although the request is built based on the content of the
-                     cURL command, some headers could be added when requesting
-                     attending to the enabled middlewares (E.g.:
+        .. caution:: Enabled
+                     :ref:`downloader middlewares <topics-downloader-middleware>`
+                     and
+                     :ref:`spider middlewares <topics-spider-middleware>`,
+                     such as
                      :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`,
                      :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
+                     or
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
-                     etc.).
+                     may modify the :class:`~scrapy.http.Request` object.
 
        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)

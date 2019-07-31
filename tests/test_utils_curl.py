@@ -209,9 +209,3 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             ValueError,
             lambda: curl_to_request_kwargs("carl -X POST http://example.org")
         )
-
-    def test_list_args(self):
-        result = curl_to_request_kwargs(["curl", "http://example.org"])
-        self.assertEqual(
-            result, {"method": "GET", "url": "http://example.org"}
-        )

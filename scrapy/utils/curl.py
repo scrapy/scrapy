@@ -34,17 +34,16 @@ for argument in safe_to_ignore_arguments:
     curl_parser.add_argument(*argument, action='store_true')
 
 
-def curl_to_request_kwargs(curl_args, ignore_unknown_options=True):
+def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
     """Convert a cURL command syntax to Request kwargs.
 
-    :param str curl_args: string containing the curl command
+    :param str curl_command: string containing the curl command
     :param bool ignore_unknown_options: If true, only a warning is emitted when
     cURL options are unknown. Otherwise raises an error. (default: True)
     :return: dictionary of Request kwargs
     """
 
-    if isinstance(curl_args, string_types):
-        curl_args = split(curl_args)
+    curl_args = split(curl_command)
 
     if curl_args[0] != 'curl':
         raise ValueError('A curl command must start with "curl"')
