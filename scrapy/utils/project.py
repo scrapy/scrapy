@@ -71,9 +71,9 @@ def get_project_settings():
     # XXX: remove this hack
     pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
     if pickled_settings:
-        warnings.warn("Use of environment variable \
-        'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' \
-        is deprecated",ScrapyDeprecationWarning)
+        warnings.warn("Use of environment variable "
+                      "'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE'"
+                      " is deprecated.",ScrapyDeprecationWarning)
         settings.setdict(pickle.loads(pickled_settings), priority='project')
 
     # XXX: deprecate and remove this functionality
