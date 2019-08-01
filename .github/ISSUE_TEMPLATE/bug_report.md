@@ -12,7 +12,7 @@ The Github issue tracker's purpose is to deal with bug reports and feature reque
 
 Keep in mind that by filing an issue, you are expected to comply with Scrapy's Code of Conduct, including treating everyone with respect: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
-The following is just a suggested template to structure your issue, you can find more detailed information at https://doc.scrapy.org/en/latest/contributing.html#reporting-bugs.
+The following is a suggested template to structure your issue, you can find more guidelines at https://doc.scrapy.org/en/latest/contributing.html#reporting-bugs
 
 -->
 
@@ -34,8 +34,8 @@ The following is just a suggested template to structure your issue, you can find
 
 ### Versions
 
-You can get this information from copy and pasting the output of `scrapy version --verbose` from the command line. Also, please include the OS and what version of the OS you're running.
+Please paste here the output of executing `scrapy version --verbose` in the command line.
 
-### Additional Information
+### Additional context
 
-Any additional information, configuration or data that might be necessary to reproduce the issue.
+Any additional information, configuration, data or output from commands that might be necessary to reproduce or understand the issue.
