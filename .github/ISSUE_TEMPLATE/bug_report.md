@@ -38,4 +38,4 @@ Please paste here the output of executing `scrapy version --verbose` in the comm
 
 ### Additional context
 
-Any additional information, configuration, data or output from commands that might be necessary to reproduce or understand the issue.
+Any additional information, configuration, data or output from commands that might be necessary to reproduce or understand the issue. Please try not to include screenshots of code or the command line, paste the contents as text instead. You can use [GitHub Flavored Markdown](https://help.github.com/en/articles/creating-and-highlighting-code-blocks) to make the text look better.
