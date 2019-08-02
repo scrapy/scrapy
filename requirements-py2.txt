@@ -8,7 +8,6 @@ queuelib>=1.4.2    # Earlier versions fail with "AttributeError: '...QueueTest' 
 # Reference versions taken from https://packages.ubuntu.com/xenial/python/
 cssselect>=0.9.1
 lxml>=3.5.0
-queuelib>=1.1.1
 service_identity>=16.0.0
 six>=1.10.0
 Twisted>=16.0.0
