@@ -245,6 +245,7 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
+ROBOTSTXT_PARSER = 'scrapy.robotstxt.PythonRobotParser'
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'

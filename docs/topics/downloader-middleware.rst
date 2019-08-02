@@ -989,6 +989,17 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
+    This middleware has to be combined with a robots.txt_ parser.
+
+    Scrapy ships with support for the following robots.txt_ parsers:
+
+    * :ref:`RobotFileParser <python-robotfileparser>` (default)
+    * :ref:`Reppy <reppy-parser>`
+    * :ref:`Robotexclusionrulesparser <rerp-parser>`
+
+    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
+    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+
 .. reqmeta:: dont_obey_robotstxt
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` has
@@ -996,6 +1007,74 @@ If :attr:`Request.meta <scrapy.http.Request.meta>` has
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
+.. _python-robotfileparser:
+
+RobotFileParser
+~~~~~~~~~~~~~~~
+
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
+Python's inbuilt ``robots.txt`` parser. The parser is fully compliant with `Martijn Koster's 
+1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
+support for wildcard matching. Scrapy uses this parser by default.
+
+In order to use this parser, set:
+
+* :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
+
+.. _rerp-parser:
+
+Robotexclusionrulesparser
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ is fully compliant
+with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
+with support for wildcard matching.
+
+In order to use this parser:
+
+* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+  ``pip install robotexclusionrulesparser``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.RerpRobotParser``
+
+.. _reppy-parser:
+
+Reppy parser
+~~~~~~~~~~~~
+
+`Reppy <https://github.com/seomoz/reppy/>`_ is a Python wrapper around `Robots Exclusion
+Protocol Parser for C++ <https://github.com/seomoz/rep-cpp>`_. The parser is fully compliant
+with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
+with support for wildcard matching. Unlike
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ and
+`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_, it uses the length based
+rule, in particular for ``Allow`` and ``Disallow`` directives, where the most specific
+rule based on the length of the path trumps the less specific (shorter) rule.
+
+In order to use this parser:
+
+* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.ReppyRobotParser``
+
+.. _support-for-new-robots-parser:
+
+Implementing support for a new parser
+-------------------------------------
+
+You can implement support for a new robots.txt_ parser by subclassing
+the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
+implementing the methods described below.
+
+.. module:: scrapy.robotstxt
+   :synopsis: robots.txt parser interface and implementations
+
+.. autoclass:: RobotParser
+   :members:
+
+.. _robots.txt: http://www.robotstxt.org/
 
 DownloaderStats
 ---------------

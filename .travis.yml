@@ -9,6 +9,8 @@ matrix:
   include:
     - env: TOXENV=py27
       python: 2.7
+    - env: TOXENV=py27-extra-deps
+      python: 2.7
     - env: TOXENV=pypy
       python: 2.7
     - env: TOXENV=pypy3
@@ -18,6 +20,8 @@ matrix:
     - env: TOXENV=py36
       python: 3.6
     - env: TOXENV=py37
+      python: 3.7
+    - env: TOXENV=py37-extra-deps
       python: 3.7
     - env: TOXENV=docs
       python: 3.6
