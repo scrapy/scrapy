@@ -4,11 +4,10 @@ Twisted>=17.9.0
 w3lib>=1.17.0
 
 pyOpenSSL>=16.2.0  # Earlier versions fail with "AttributeError: module 'lib' has no attribute 'SSL_ST_INIT'"
-queuelib>=1.4.2    # Earlier versions fail with "AttributeError: '...DiskQueueTest' object has no attribute 'qpath'"
+queuelib>=1.4.2    # Earlier versions fail with "AttributeError: '...QueueTest' object has no attribute 'qpath'"
 
 # Reference versions taken from https://packages.ubuntu.com/xenial/python/
 cssselect>=0.9.1
 lxml>=3.5.0
 service_identity>=16.0.0
 six>=1.10.0
-
