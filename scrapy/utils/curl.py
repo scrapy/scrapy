@@ -25,6 +25,8 @@ curl_parser.add_argument('-u', '--user', dest='auth')
 
 safe_to_ignore_arguments = [
     ['--compressed'],
+    # `--compressed` argument is not safe to ignore, but it's included here
+    # because the `HttpCompressionMiddleware` is enabled by default
     ['-s', '--silent'],
     ['-v', '--verbose'],
     ['-#', '--progress-bar']
@@ -63,12 +65,9 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
     # needs the scheme to work
     parsed_url = urlparse(url)
     if not parsed_url.scheme:
-        url = 'http://'+url
+        url = 'http://' + url
 
-    result = {
-        'method': parsed_args.method.upper(),
-        'url': url,
-    }
+    result = {'method': parsed_args.method.upper(), 'url': url}
 
     headers = []
     cookies = {}
