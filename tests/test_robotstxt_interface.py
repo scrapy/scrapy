@@ -127,7 +127,7 @@ class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
         super(ReppyRobotParserTest, self)._setUp(ReppyRobotParser)
 
     def test_order_based_precedence(self):
-        raise unittest.SkipTest("Rerp does not support order based directives precedence.")
+        raise unittest.SkipTest("Reppy does not support order based directives precedence.")
 
 
 class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
@@ -140,3 +140,15 @@ class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def test_length_based_precedence(self):
         raise unittest.SkipTest("Rerp does not support length based directives precedence.")
+
+
+class ProtegoRobotParserTest(BaseRobotParserTest, unittest.TestCase):
+    if not rerp_available():
+        skip = "Protego parser is not installed"
+
+    def setUp(self):
+        from scrapy.robotstxt import ProtegoRobotParser
+        super(ProtegoRobotParserTest, self)._setUp(ProtegoRobotParser)
+
+    def test_order_based_precedence(self):
+        raise unittest.SkipTest("Protego does not support order based directives precedence.")

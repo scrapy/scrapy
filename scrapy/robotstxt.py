@@ -110,3 +110,32 @@ class RerpRobotParser(RobotParser):
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
         return self.rp.is_allowed(user_agent, url)
+
+
+class ProtegoRobotParser(RobotParser):
+    def __init__(self, robotstxt_body, spider):
+        from protego import Protego
+        self.spider = spider
+        try:
+            robotstxt_body = robotstxt_body.decode('utf-8')
+        except UnicodeDecodeError:
+            # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
+            # Switch to 'allow all' state.
+            logger.warning("Failure while parsing robots.txt using %(parser)s."
+                           " File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
+                           {'parser': "ProtegoRobotParser"},
+                           exc_info=sys.exc_info(),
+                           extra={'spider': self.spider})
+            robotstxt_body = ''
+        self.rp = Protego.parse(robotstxt_body)
+
+    @classmethod
+    def from_crawler(cls, crawler, robotstxt_body):
+        spider = None if not crawler else crawler.spider
+        o = cls(robotstxt_body, spider)
+        return o
+
+    def allowed(self, url, user_agent):
+        user_agent = to_unicode(user_agent)
+        url = to_unicode(url)
+        return self.rp.can_fetch(url, user_agent)
