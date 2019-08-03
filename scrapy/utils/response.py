@@ -6,10 +6,12 @@ import os
 import weakref
 import webbrowser
 import tempfile
+import mimetypes
 
 from twisted.web import http
 from scrapy.utils.python import to_bytes, to_native_str
 from w3lib import html
+from scrapy.utils.mime import MimeTypes
 
 
 _baseurl_cache = weakref.WeakKeyDictionary()
@@ -53,24 +55,31 @@ def response_httprepr(response):
     return s
 
 
+def populate_base_tag(body, url):
+        if b'<base' not in body:
+            repl = '<head><base href="%s">' % url
+            body = body.replace(b'<head>', to_bytes(repl))
+        return body
+
+
 def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """
-    from scrapy.http import HtmlResponse, TextResponse
-    # XXX: this implementation is a bit dirty and could be improved
+    from scrapy.http.response.html import HtmlResponse
+
+    mime_handler = MimeTypes()
+    mime_type = mime_handler.from_response(response) 
+    ext = mime_handler.get_extension(mime_type) 
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b'<base' not in body:
-            repl = '<head><base href="%s">' % response.url
-            body = body.replace(b'<head>', to_bytes(repl))
-        ext = '.html'
-    elif isinstance(response, TextResponse):
-        ext = '.txt'
-    else:
-        raise TypeError("Unsupported response type: %s" %
-                        response.__class__.__name__)
+        body = populate_base_tag(body, response.url)
     fd, fname = tempfile.mkstemp(ext)
+    
     os.write(fd, body)
     os.close(fd)
     return _openfunc("file://%s" % fname)
+
+
+    
+        
