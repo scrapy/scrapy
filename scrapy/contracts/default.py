@@ -86,4 +86,5 @@ class ScrapesContract(Contract):
             if isinstance(x, (BaseItem, dict)):
                 missing = [arg for arg in self.args if arg not in x]
                 if missing:
-                    raise ContractFail("'%s' field is missing" % " ".join(missing))
+                    raise ContractFail(
+                        "Missing fields: %s" % ", ".join(missing))
