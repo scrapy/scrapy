@@ -123,6 +123,14 @@ class TestSpider(Spider):
         """
         return {'url': response.url}
 
+    def scrapes_multiple_missing_fields(self, response):
+        """ returns item with no name
+        @url http://scrapy.org
+        @returns items 1 1
+        @scrapes name url
+        """
+        return {}
+
     def parse_no_url(self, response):
         """ method with no url
         @returns items 1 1
@@ -255,6 +263,13 @@ class ContractsManagerTest(unittest.TestCase):
         request = self.conman.from_method(spider.scrapes_dict_item_fail, self.results)
         request.callback(response)
         self.should_fail()
+
+        # scrapes_multiple_missing_fields
+        request = self.conman.from_method(spider.scrapes_multiple_missing_fields, self.results)
+        request.callback(response)
+        self.should_fail()
+        message = 'ContractFail: Missing fields: name, url'
+        assert message in self.results.failures[-1][-1]
 
     def test_custom_contracts(self):
         self.conman.from_spider(CustomContractSuccessSpider(), self.results)
