@@ -12,6 +12,22 @@ matrix:
     - python: 2.7
       env: TOXENV=jessie
     - python: 2.7
+      env: TOXENV=scurl27
+      dist: trusty
+      sudo: true
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - gcc-5
+          - g++-5
+      before_install: sudo apt-get update -qq
+      script:
+        - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+        - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
+        - tox
+    - python: 2.7
       env: TOXENV=pypy
     - python: 2.7
       env: TOXENV=pypy3
@@ -25,6 +41,22 @@ matrix:
       env: TOXENV=py37
       dist: xenial
       sudo: true
+    - python: 3.6
+      env: TOXENV=scurl
+      dist: trusty
+      sudo: true
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - gcc-5
+          - g++-5
+      before_install: sudo apt-get update -qq
+      script:
+        - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+        - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
+        - tox
     - python: 3.6
       env: TOXENV=docs
     - python: 3.7

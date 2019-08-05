@@ -15,6 +15,11 @@ from w3lib.url import *
 from w3lib.url import _safe_chars, _unquotepath
 from scrapy.utils.python import to_unicode
 
+try:
+    from scurl import urljoin
+except ImportError as e:
+    from six.moves.urllib.parse import urljoin
+
 
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""

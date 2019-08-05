@@ -33,6 +33,20 @@ to avoid conflicting with your system packages.
 For more detailed and platform specifics instructions, as well as
 troubleshooting information, read on.
 
+Additional plugin for Scrapy
+----------------------------
+
+The project Scurl was built through the funding of the program Google Summer of Code 2018.
+It helps improve the performance of Scrapy spiders by 10 - 15%. To activate Scurl for
+your spiders, you only need to install it within the same environment of your Scrapy project::
+
+    pip install scurl
+
+Currently, it only supports **Linux** and **macOS**! More information can be found at the
+`Scurl project repository`_ itself and the `final report`_ of Google Summer of Code 2018.
+
+.. _Scurl project repository: https://github.com/scrapy/scurl
+.. _final report: https://gist.github.com/nctl144/48c924e039a612f009b7827768feb184
 
 Things that are good to know
 ----------------------------
