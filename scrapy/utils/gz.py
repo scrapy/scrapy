@@ -1,13 +1,8 @@
 import struct
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-from gzip import GzipFile
-
 import six
 import re
+from six import BytesIO
+from gzip import GzipFile
 
 from scrapy.utils.decorators import deprecated
 
