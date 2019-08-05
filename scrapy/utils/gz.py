@@ -1,7 +1,6 @@
 import struct
 import six
 import re
-from six import BytesIO
 from gzip import GzipFile
 
 from scrapy.utils.decorators import deprecated
@@ -15,9 +14,11 @@ from scrapy.utils.decorators import deprecated
 # - scrapy does not support Python 3.2
 # - Python 2.7 GzipFile works fine with standard read() + extrabuf
 if six.PY2:
+    from cStringIO import StringIO as BytesIO
     def read1(gzf, size=-1):
         return gzf.read(size)
 else:
+    from io import BytesIO
     def read1(gzf, size=-1):
         return gzf.read1(size)
 
