@@ -1,5 +1,7 @@
 import json
 import logging
+from ipaddress import IPv4Address
+from urllib.parse import urlparse
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -308,3 +310,28 @@ with multiples lines
         self.assertIn("[callback] status 201", str(log))
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
+
+    @defer.inlineCallbacks
+    def test_dns_server_ip_address(self):
+        from socket import gethostbyname
+
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = 'https://example.org'
+        yield crawler.crawl(seed=url)
+        ip_address = crawler.spider.meta['responses'][0].ip_address
+        self.assertIsInstance(ip_address, IPv4Address)
+        self.assertEqual(str(ip_address), gethostbyname(urlparse(url).netloc))
+
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url('/status?n=200')
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        ip_address = crawler.spider.meta['responses'][0].ip_address
+        self.assertIsNone(ip_address)
+
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url('/echo?body=test')
+        expected_netloc, _ = urlparse(url).netloc.split(':')
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        ip_address = crawler.spider.meta['responses'][0].ip_address
+        self.assertIsInstance(ip_address, IPv4Address)
+        self.assertEqual(str(ip_address), gethostbyname(expected_netloc))

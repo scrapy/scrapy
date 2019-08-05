@@ -172,7 +172,7 @@ class Downloader(object):
             return response
         dfd.addCallback(_downloaded)
 
-        # 3. After response arrives,  remove the request from transferring
+        # 3. After response arrives, remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)

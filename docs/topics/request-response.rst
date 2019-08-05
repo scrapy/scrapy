@@ -34,7 +34,7 @@ Request objects
     :type url: string
 
     :param callback: the function that will be called with the response of this
-       request (once its downloaded) as its first parameter. For more information
+       request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
        :meth:`~scrapy.spiders.Spider.parse` method will be used.
@@ -611,6 +611,12 @@ Response objects
         This represents the :class:`Request` that generated this response.
     :type request: :class:`Request` object
 
+    :param ip_address: The IP address of the server from which the Response originated.
+    :type ip_address: :class:`ipaddress.IPv4Address` object
+
+    .. FIXME: Add ipaddress.IPv6Address once it's supported
+
+
     .. attribute:: Response.url
 
         A string containing the URL of the response.
@@ -678,6 +684,10 @@ Response objects
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.ip_address
+
+        The IP address of the server from which the Response originated.
 
     .. method:: Response.copy()
 
