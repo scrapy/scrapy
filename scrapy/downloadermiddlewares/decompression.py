@@ -8,8 +8,11 @@ import zipfile
 import tarfile
 import logging
 import six
-from six import BytesIO
 from tempfile import mktemp
+if six.PY2:
+    from cStringIO import StringIO as BytesIO
+else:
+    from io import BytesIO
 
 from scrapy.responsetypes import responsetypes
 
