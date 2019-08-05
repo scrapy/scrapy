@@ -7,14 +7,9 @@ import gzip
 import zipfile
 import tarfile
 import logging
-from tempfile import mktemp
-
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from six import BytesIO
+from tempfile import mktemp
 
 from scrapy.responsetypes import responsetypes
 
