@@ -9,7 +9,7 @@ matrix:
   include:
     - env: TOXENV=py27
       python: 2.7
-    - env: TOXENV=py27-pinned-versions
+    - env: TOXENV=py27-pinned
       python: 2.7
     - env: TOXENV=py27-extra-deps
       python: 2.7
@@ -19,7 +19,7 @@ matrix:
       python: 3.5
     - env: TOXENV=py35
       python: 3.5
-    - env: TOXENV=py35-pinned-versions
+    - env: TOXENV=py35-pinned
       python: 3.5
     - env: TOXENV=py36
       python: 3.6

@@ -66,6 +66,7 @@ setup(
     install_requires=[
         'Twisted>=16.0.0;python_version=="2.7"',
         'Twisted>=17.9.0;python_version>="3.5"',
+        'cryptography>=2.0',
         'cssselect>=0.9.1',
         'lxml>=3.5.0',
         'parsel>=1.5.0',
@@ -75,6 +76,7 @@ setup(
         'service_identity>=16.0.0',
         'six>=1.10.0',
         'w3lib>=1.17.0',
+        'zope.interface>=4.1.3',
     ],
     extras_require=extras_require,
 )
