@@ -50,7 +50,7 @@ class ScrapyPriorityQueue(object):
         for priority in startprios:
             self.queues[priority] = self.qfactory(priority)
 
-        self.curprio = min(p for p in startprios)
+        self.curprio = min(startprios)
 
     def qfactory(self, key):
         return self.downstream_queue_cls(self.crawler,
