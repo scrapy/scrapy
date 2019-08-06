@@ -144,20 +144,20 @@ class Scheduler(object):
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
         return create_instance(self.pqclass,
-                               None,
-                               self.crawler,
-                               self.mqclass,
-                               '')
+                               settings=None,
+                               crawler=self.crawler,
+                               downstream_queue_cls=self.mqclass,
+                               key='')
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
         state = self._read_dqs_state(self.dqdir)
         q = create_instance(self.pqclass,
-                            None,
-                            self.crawler,
-                            self.dqclass,
-                            self.dqdir,
-                            state)
+                            settings=None,
+                            crawler=self.crawler,
+                            downstream_queue_cls=self.dqclass,
+                            key=self.dqdir,
+                            startprios=state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})

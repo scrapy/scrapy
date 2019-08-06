@@ -117,8 +117,8 @@ class DownloaderAwarePriorityQueue(object):
     """
 
     @classmethod
-    def from_crawler(cls, crawler, downstream_queue_cls, key, slot_startprios=()):
-        return cls(crawler, downstream_queue_cls, key, slot_startprios)
+    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+        return cls(crawler, downstream_queue_cls, key, startprios)
 
     def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
