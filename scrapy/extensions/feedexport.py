@@ -11,7 +11,7 @@ import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 import six
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse, unquote
 from ftplib import FTP
 
 from zope.interface import Interface, implementer
@@ -162,7 +162,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
-        self.password = u.password
+        self.password = unquote(u.password)
         self.path = u.path
         self.use_active_mode = use_active_mode
 
