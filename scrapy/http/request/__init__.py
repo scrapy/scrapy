@@ -118,11 +118,13 @@ class Request(object_ref):
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
 
-        .. caution:: Enabled
+        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
+                     subclasses, such as :class:`~scrapy.http.JSONRequest`, or
+                     :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
                      and
-                     :ref:`spider middlewares <topics-spider-middleware>`,
-                     such as
+                     :ref:`spider middlewares <topics-spider-middleware>`
+                     enabled, such as
                      :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`,
                      :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
                      or
@@ -132,4 +134,4 @@ class Request(object_ref):
        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
-        return Request(**request_kwargs)
+        return cls(**request_kwargs)
