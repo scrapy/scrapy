@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import OpenSSL
 import OpenSSL._util as pyOpenSSLutil
 
 from scrapy.utils.python import to_native_str
@@ -48,3 +49,10 @@ def get_temp_key_info(ssl_object):
         key_info.append(ffi_buf_to_string(pyOpenSSLutil.lib.OBJ_nid2sn(key_type)))
     key_info.append('%s bits' % pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key))
     return ', '.join(key_info)
+
+
+def get_openssl_version():
+    system_openssl = OpenSSL.SSL.SSLeay_version(
+        OpenSSL.SSL.SSLEAY_VERSION
+    ).decode('ascii', errors='replace')
+    return '{} ({})'.format(OpenSSL.version.__version__, system_openssl)
