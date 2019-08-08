@@ -10,7 +10,6 @@ from email.utils import COMMASPACE, formatdate
 from six.moves.email_mime_multipart import MIMEMultipart
 from six.moves.email_mime_text import MIMEText
 from six.moves.email_mime_base import MIMEBase
-from six import BytesIO
 if six.PY2:
     from cStringIO import StringIO as BytesIO
     from email.MIMENonMultipart import MIMENonMultipart
