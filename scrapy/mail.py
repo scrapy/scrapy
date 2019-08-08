@@ -12,9 +12,11 @@ from six.moves.email_mime_text import MIMEText
 from six.moves.email_mime_base import MIMEBase
 from six import BytesIO
 if six.PY2:
+    from cStringIO import StringIO as BytesIO
     from email.MIMENonMultipart import MIMENonMultipart
     from email import Encoders
 else:
+    from io import BytesIO
     from email.mime.nonmultipart import MIMENonMultipart
     from email import encoders as Encoders
 
