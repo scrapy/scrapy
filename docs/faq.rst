@@ -69,7 +69,7 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 and Python 3.4+
+Scrapy is supported under Python 2.7 and Python 3.5+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
@@ -328,6 +328,8 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 --------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
+
+.. _faq-split-item:
 
 How to split an item into multiple items in an item pipeline?
 -------------------------------------------------------------

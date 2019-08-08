@@ -25,7 +25,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.core.downloader.tls import openssl_methods
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy import twisted_version
 
@@ -44,14 +44,15 @@ class HTTP11DownloadHandler(object):
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         # try method-aware context factory
         try:
-            self._contextFactory = self._contextFactoryClass(method=self._sslMethod)
+            self._contextFactory = create_instance(self._contextFactoryClass, settings=settings, crawler=None,
+                                                   method=self._sslMethod)
         except TypeError:
             # use context factory defaults
-            self._contextFactory = self._contextFactoryClass()
+            self._contextFactory = create_instance(self._contextFactoryClass, settings=settings, crawler=None)
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
- e.g. OpenSSL.SSL.SSLv23_METHOD).\
- Please upgrade your context factory class to handle it or ignore it.""" % (
+ e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument.\
+ Please upgrade your context factory class to handle them or ignore them.""" % (
                 settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
@@ -101,7 +102,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile(b'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
+    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
@@ -479,10 +480,10 @@ class _ResponseReader(protocol.Protocol):
                 return
 
             elif not self._fail_on_dataloss_warned:
-                logger.warn("Got data loss in %s. If you want to process broken "
-                            "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
-                            " -- This message won't be shown in further requests",
-                            self._txresponse.request.absoluteURI.decode())
+                logger.warning("Got data loss in %s. If you want to process broken "
+                               "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
+                               " -- This message won't be shown in further requests",
+                               self._txresponse.request.absoluteURI.decode())
                 self._fail_on_dataloss_warned = True
 
         self._finished.errback(reason)

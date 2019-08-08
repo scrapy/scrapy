@@ -171,6 +171,8 @@ Scrapy:
   See https://help.github.com/articles/setting-your-username-in-git/ for
   setup instructions.
 
+.. _documentation-policies:
+
 Documentation policies
 ======================
 
@@ -195,6 +197,8 @@ Tests
 
 Tests are implemented using the `Twisted unit-testing framework`_, running
 tests requires `tox`_.
+
+.. _running-tests:
 
 Running tests
 -------------
