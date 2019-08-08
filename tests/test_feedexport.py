@@ -6,7 +6,8 @@ import warnings
 from io import BytesIO
 import tempfile
 import shutil
-from six.moves.urllib.parse import urljoin, urlparse
+import string
+from six.moves.urllib.parse import urljoin, urlparse, quote
 from six.moves.urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
@@ -97,6 +98,12 @@ class FTPFeedStorageTest(unittest.TestCase):
         st = FTPFeedStorage.from_crawler(crawler, uri)
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
+
+    def test_uri_auth_quote(self):
+        # RFC3986: 3.2.1. User Information
+        pw_quoted = quote(string.punctuation, safe='')
+        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted)
+        self.assertEqual(st.password, string.punctuation)
 
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
