@@ -85,6 +85,13 @@ It might be enough to yield a :class:`~scrapy.http.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
 form parameters (see :class:`~scrapy.http.FormRequest`) of that request.
 
+As all major browsers allow to export the requests in `cURL
+<https://curl.haxx.se/>`_ format, Scrapy incorporates the method
+:meth:`~scrapy.http.Request.from_curl()` to generate an equivalent
+:class:`~scrapy.http.Request` from a cURL command. To get more information
+visit :ref:`request from curl <requests-from-curl>` inside the network
+tool section.
+
 Once you get the expected response, you can :ref:`extract the desired data from
 it <topics-handling-response-formats>`.
 

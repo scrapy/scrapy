@@ -269,6 +269,82 @@ class RequestTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.request_class('http://example.com', a_function, errback='a_function')
 
+    def test_from_curl(self):
+        # Note: more curated tests regarding curl conversion are in
+        # `test_utils_curl.py`
+        curl_command = (
+            "curl 'http://httpbin.org/post' -X POST -H 'Cookie: _gauges_unique"
+            "_year=1; _gauges_unique=1; _gauges_unique_month=1; _gauges_unique"
+            "_hour=1; _gauges_unique_day=1' -H 'Origin: http://httpbin.org' -H"
+            " 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: en-US,en;q"
+            "=0.9,ru;q=0.8,es;q=0.7' -H 'Upgrade-Insecure-Requests: 1' -H 'Use"
+            "r-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTM"
+            "L, like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.3202.75 S"
+            "afari/537.36' -H 'Content-Type: application /x-www-form-urlencode"
+            "d' -H 'Accept: text/html,application/xhtml+xml,application/xml;q="
+            "0.9,image/webp,image/apng,*/*;q=0.8' -H 'Cache-Control: max-age=0"
+            "' -H 'Referer: http://httpbin.org/forms/post' -H 'Connection: kee"
+            "p-alive' --data 'custname=John+Smith&custtel=500&custemail=jsmith"
+            "%40example.org&size=small&topping=cheese&topping=onion&delivery=1"
+            "2%3A15&comments=' --compressed"
+        )
+        r = self.request_class.from_curl(curl_command)
+        self.assertEqual(r.method, "POST")
+        self.assertEqual(r.url, "http://httpbin.org/post")
+        self.assertEqual(r.body,
+                         b"custname=John+Smith&custtel=500&custemail=jsmith%40"
+                         b"example.org&size=small&topping=cheese&topping=onion"
+                         b"&delivery=12%3A15&comments=")
+        self.assertEqual(r.cookies, {
+            '_gauges_unique_year': '1',
+            '_gauges_unique': '1',
+            '_gauges_unique_month': '1',
+            '_gauges_unique_hour': '1',
+            '_gauges_unique_day': '1'
+        })
+        self.assertEqual(r.headers, {
+            b'Origin': [b'http://httpbin.org'],
+            b'Accept-Encoding': [b'gzip, deflate'],
+            b'Accept-Language': [b'en-US,en;q=0.9,ru;q=0.8,es;q=0.7'],
+            b'Upgrade-Insecure-Requests': [b'1'],
+            b'User-Agent': [b'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.'
+                            b'36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202'
+                            b'.75 Chrome/62.0.3202.75 Safari/537.36'],
+            b'Content-Type': [b'application /x-www-form-urlencoded'],
+            b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.'
+                        b'9,image/webp,image/apng,*/*;q=0.8'],
+            b'Cache-Control': [b'max-age=0'],
+            b'Referer': [b'http://httpbin.org/forms/post'],
+            b'Connection': [b'keep-alive']})
+
+    def test_from_curl_with_kwargs(self):
+        r = self.request_class.from_curl(
+            'curl -X PATCH "http://example.org"',
+            method="POST",
+            meta={'key': 'value'}
+        )
+        self.assertEqual(r.method, "POST")
+        self.assertEqual(r.meta, {"key": "value"})
+
+    def test_from_curl_ignore_unknown_options(self):
+        # By default: it works and ignores the unknown options: --foo and -z
+        with warnings.catch_warnings():  # avoid warning when executing tests
+            warnings.simplefilter('ignore')
+            r = self.request_class.from_curl(
+                'curl -X DELETE "http://example.org" --foo -z',
+            )
+            self.assertEqual(r.method, "DELETE")
+
+        # If `ignore_unknon_options` is set to `False` it raises an error with
+        # the unknown options: --foo and -z
+        self.assertRaises(
+            ValueError,
+            lambda: self.request_class.from_curl(
+                'curl -X PATCH "http://example.org" --foo -z',
+                ignore_unknown_options=False,
+            ),
+        )
+
 
 class FormRequestTest(RequestTest):
 

@@ -194,6 +194,8 @@ Request objects
        copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
+    .. automethod:: from_curl
+
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions
