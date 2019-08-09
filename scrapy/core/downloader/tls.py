@@ -10,11 +10,13 @@ from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 
 logger = logging.getLogger(__name__)
 
+
 METHOD_SSLv3 = 'SSLv3'
 METHOD_TLS = 'TLS'
 METHOD_TLSv10 = 'TLSv1.0'
 METHOD_TLSv11 = 'TLSv1.1'
 METHOD_TLSv12 = 'TLSv1.2'
+
 
 openssl_methods = {
     METHOD_TLS:    SSL.SSLv23_METHOD,                   # protocol negotiation (recommended)
@@ -24,11 +26,6 @@ openssl_methods = {
     METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
 }
 
-
-# ClientTLSOptions requires a recent-enough version of Twisted (14.0.0+)
-# Not having ScrapyClientTLSOptions should not matter for older
-# Twisted versions because it is not used in the fallback
-# ScrapyClientContextFactory.
 
 try:
     # XXX: this import would fail on Debian jessie with system installed
