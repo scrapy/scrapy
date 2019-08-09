@@ -1,8 +1,9 @@
 import logging
 
 from OpenSSL import SSL
-from twisted.internet.ssl import AcceptableCiphers
+from service_identity.exceptions import CertificateError
 from twisted.internet._sslverify import ClientTLSOptions, verifyHostname, VerificationError
+from twisted.internet.ssl import AcceptableCiphers
 
 from scrapy import twisted_version
 from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
@@ -26,15 +27,6 @@ openssl_methods = {
     METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
 }
 
-
-try:
-    # XXX: this import would fail on Debian jessie with system installed
-    # service_identity library, due to lack of cryptography.x509 dependency
-    # See https://github.com/pyca/service_identity/issues/21
-    from service_identity.exceptions import CertificateError
-    verification_errors = (CertificateError, VerificationError)
-except ImportError:
-    verification_errors = VerificationError
 
 if twisted_version < (17, 0, 0):
     from twisted.internet._sslverify import _maybeSetHostNameIndication
@@ -87,7 +79,7 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
 
             try:
                 verifyHostname(connection, self._hostnameASCII)
-            except verification_errors as e:
+            except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "{}"; {}'.format(
                         self._hostnameASCII, e))
