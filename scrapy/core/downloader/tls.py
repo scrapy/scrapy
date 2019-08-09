@@ -29,8 +29,7 @@ openssl_methods = {
 
 
 if twisted_version < (17, 0, 0):
-    from twisted.internet._sslverify import _maybeSetHostNameIndication
-    set_tlsext_host_name = _maybeSetHostNameIndication
+    from twisted.internet._sslverify import _maybeSetHostNameIndication as set_tlsext_host_name
 else:
     def set_tlsext_host_name(connection, hostNameBytes):
         connection.set_tlsext_host_name(hostNameBytes)
