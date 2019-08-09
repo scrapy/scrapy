@@ -27,7 +27,7 @@ from scrapy.core.downloader.webclient import _parse
 from scrapy.core.downloader.tls import openssl_methods
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy import twisted_version
+
 
 logger = logging.getLogger(__name__)
 
@@ -211,21 +211,14 @@ class TunnelingAgent(Agent):
         self._proxyConf = proxyConf
         self._contextFactory = contextFactory
 
-    if twisted_version >= (15, 0, 0):
-        def _getEndpoint(self, uri):
-            return TunnelingTCP4ClientEndpoint(
-                self._reactor, uri.host, uri.port, self._proxyConf,
-                self._contextFactory, self._endpointFactory._connectTimeout,
-                self._endpointFactory._bindAddress)
-    else:
-        def _getEndpoint(self, scheme, host, port):
-            return TunnelingTCP4ClientEndpoint(
-                self._reactor, host, port, self._proxyConf,
-                self._contextFactory, self._connectTimeout,
-                self._bindAddress)
+    def _getEndpoint(self, uri):
+        return TunnelingTCP4ClientEndpoint(
+            self._reactor, uri.host, uri.port, self._proxyConf,
+            self._contextFactory, self._endpointFactory._connectTimeout,
+            self._endpointFactory._bindAddress)
 
     def _requestWithEndpoint(self, key, endpoint, method, parsedURI,
-            headers, bodyProducer, requestPath):
+                             headers, bodyProducer, requestPath):
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
@@ -250,12 +243,7 @@ class ScrapyProxyAgent(Agent):
         """
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
-        if twisted_version >= (15, 0, 0):
-            proxyEndpoint = self._getEndpoint(self._proxyURI)
-        else:
-            proxyEndpoint = self._getEndpoint(self._proxyURI.scheme,
-                                              self._proxyURI.host,
-                                              self._proxyURI.port)
+        proxyEndpoint = self._getEndpoint(self._proxyURI)
         key = ("http-proxy", self._proxyURI.host, self._proxyURI.port)
         return self._requestWithEndpoint(key, proxyEndpoint, method,
                                          URI.fromBytes(uri), headers,
