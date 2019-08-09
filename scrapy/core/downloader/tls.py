@@ -1,5 +1,8 @@
 import logging
+
 from OpenSSL import SSL
+from twisted.internet.ssl import AcceptableCiphers
+from twisted.internet._sslverify import ClientTLSOptions, verifyHostname, VerificationError
 
 from scrapy import twisted_version
 from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
@@ -22,95 +25,90 @@ openssl_methods = {
 }
 
 
-if twisted_version >= (14, 0, 0):
-    # ClientTLSOptions requires a recent-enough version of Twisted.
-    # Not having ScrapyClientTLSOptions should not matter for older
-    # Twisted versions because it is not used in the fallback
-    # ScrapyClientContextFactory.
+# ClientTLSOptions requires a recent-enough version of Twisted (14.0.0+)
+# Not having ScrapyClientTLSOptions should not matter for older
+# Twisted versions because it is not used in the fallback
+# ScrapyClientContextFactory.
 
-    # taken from twisted/twisted/internet/_sslverify.py
+# taken from twisted/twisted/internet/_sslverify.py
 
-    try:
-        # XXX: this try-except is not needed in Twisted 17.0.0+ because
-        # it requires pyOpenSSL 0.16+.
-        from OpenSSL.SSL import SSL_CB_HANDSHAKE_DONE, SSL_CB_HANDSHAKE_START
-    except ImportError:
-        SSL_CB_HANDSHAKE_START = 0x10
-        SSL_CB_HANDSHAKE_DONE = 0x20
+try:
+    # XXX: this try-except is not needed in Twisted 17.0.0+ because
+    # it requires pyOpenSSL 0.16+.
+    from OpenSSL.SSL import SSL_CB_HANDSHAKE_DONE, SSL_CB_HANDSHAKE_START
+except ImportError:
+    SSL_CB_HANDSHAKE_START = 0x10
+    SSL_CB_HANDSHAKE_DONE = 0x20
 
-    from twisted.internet.ssl import AcceptableCiphers
-    from twisted.internet._sslverify import (ClientTLSOptions,
-                                             verifyHostname,
-                                             VerificationError)
-    try:
-        # XXX: this import would fail on Debian jessie with system installed
-        # service_identity library, due to lack of cryptography.x509 dependency
-        # See https://github.com/pyca/service_identity/issues/21
-        from service_identity.exceptions import CertificateError
-        verification_errors = (CertificateError, VerificationError)
-    except ImportError:
-        verification_errors = VerificationError
+try:
+    # XXX: this import would fail on Debian jessie with system installed
+    # service_identity library, due to lack of cryptography.x509 dependency
+    # See https://github.com/pyca/service_identity/issues/21
+    from service_identity.exceptions import CertificateError
+    verification_errors = (CertificateError, VerificationError)
+except ImportError:
+    verification_errors = VerificationError
 
-    if twisted_version < (17, 0, 0):
-        from twisted.internet._sslverify import _maybeSetHostNameIndication
-        set_tlsext_host_name = _maybeSetHostNameIndication
-    else:
-        def set_tlsext_host_name(connection, hostNameBytes):
-            connection.set_tlsext_host_name(hostNameBytes)
+if twisted_version < (17, 0, 0):
+    from twisted.internet._sslverify import _maybeSetHostNameIndication
+    set_tlsext_host_name = _maybeSetHostNameIndication
+else:
+    def set_tlsext_host_name(connection, hostNameBytes):
+        connection.set_tlsext_host_name(hostNameBytes)
 
 
-    class ScrapyClientTLSOptions(ClientTLSOptions):
-        """
-        SSL Client connection creator ignoring certificate verification errors
-        (for genuinely invalid certificates or bugs in verification code).
+class ScrapyClientTLSOptions(ClientTLSOptions):
+    """
+    SSL Client connection creator ignoring certificate verification errors
+    (for genuinely invalid certificates or bugs in verification code).
 
-        Same as Twisted's private _sslverify.ClientTLSOptions,
-        except that VerificationError, CertificateError and ValueError
-        exceptions are caught, so that the connection is not closed, only
-        logging warnings. Also, HTTPS connection parameters logging is added.
-        """
+    Same as Twisted's private _sslverify.ClientTLSOptions,
+    except that VerificationError, CertificateError and ValueError
+    exceptions are caught, so that the connection is not closed, only
+    logging warnings. Also, HTTPS connection parameters logging is added.
+    """
 
-        def __init__(self, hostname, ctx, verbose_logging=False):
-            super(ScrapyClientTLSOptions, self).__init__(hostname, ctx)
-            self.verbose_logging = verbose_logging
+    def __init__(self, hostname, ctx, verbose_logging=False):
+        super(ScrapyClientTLSOptions, self).__init__(hostname, ctx)
+        self.verbose_logging = verbose_logging
 
-        def _identityVerifyingInfoCallback(self, connection, where, ret):
-            if where & SSL_CB_HANDSHAKE_START:
-                set_tlsext_host_name(connection, self._hostnameBytes)
-            elif where & SSL_CB_HANDSHAKE_DONE:
-                if self.verbose_logging:
-                    if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
-                        if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
-                            logger.debug('SSL connection to %s using protocol %s, cipher %s',
-                                         self._hostnameASCII,
-                                         connection.get_protocol_version_name(),
-                                         connection.get_cipher_name(),
-                                         )
-                        else:
-                            logger.debug('SSL connection to %s using cipher %s',
-                                         self._hostnameASCII,
-                                         connection.get_cipher_name(),
-                                         )
-                    server_cert = connection.get_peer_certificate()
-                    logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
-                                 x509name_to_string(server_cert.get_issuer()),
-                                 x509name_to_string(server_cert.get_subject()),
-                                 )
-                    key_info = get_temp_key_info(connection._ssl)
-                    if key_info:
-                        logger.debug('SSL temp key: %s', key_info)
+    def _identityVerifyingInfoCallback(self, connection, where, ret):
+        if where & SSL_CB_HANDSHAKE_START:
+            set_tlsext_host_name(connection, self._hostnameBytes)
+        elif where & SSL_CB_HANDSHAKE_DONE:
+            if self.verbose_logging:
+                if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
+                    if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
+                        logger.debug('SSL connection to %s using protocol %s, cipher %s',
+                                     self._hostnameASCII,
+                                     connection.get_protocol_version_name(),
+                                     connection.get_cipher_name(),
+                                     )
+                    else:
+                        logger.debug('SSL connection to %s using cipher %s',
+                                     self._hostnameASCII,
+                                     connection.get_cipher_name(),
+                                     )
+                server_cert = connection.get_peer_certificate()
+                logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
+                             x509name_to_string(server_cert.get_issuer()),
+                             x509name_to_string(server_cert.get_subject()),
+                             )
+                key_info = get_temp_key_info(connection._ssl)
+                if key_info:
+                    logger.debug('SSL temp key: %s', key_info)
 
-                try:
-                    verifyHostname(connection, self._hostnameASCII)
-                except verification_errors as e:
-                    logger.warning(
-                        'Remote certificate is not valid for hostname "{}"; {}'.format(
-                            self._hostnameASCII, e))
+            try:
+                verifyHostname(connection, self._hostnameASCII)
+            except verification_errors as e:
+                logger.warning(
+                    'Remote certificate is not valid for hostname "{}"; {}'.format(
+                        self._hostnameASCII, e))
 
-                except ValueError as e:
-                    logger.warning(
-                        'Ignoring error while verifying certificate '
-                        'from host "{}" (exception: {})'.format(
-                            self._hostnameASCII, repr(e)))
+            except ValueError as e:
+                logger.warning(
+                    'Ignoring error while verifying certificate '
+                    'from host "{}" (exception: {})'.format(
+                        self._hostnameASCII, repr(e)))
 
-    DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
+DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
