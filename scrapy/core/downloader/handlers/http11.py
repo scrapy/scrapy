@@ -13,12 +13,8 @@ from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import _DataLoss, PotentialDataLoss
-from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, ResponseFailed
-try:
-    from twisted.web.client import URI
-except ImportError:
-    from twisted.web.client import _URI as URI
+from twisted.web.client import (Agent, ProxyAgent, ResponseDone,
+                                HTTPConnectionPool, ResponseFailed, URI)
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from scrapy.http import Headers
