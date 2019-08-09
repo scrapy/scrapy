@@ -30,16 +30,6 @@ openssl_methods = {
 # Twisted versions because it is not used in the fallback
 # ScrapyClientContextFactory.
 
-# taken from twisted/twisted/internet/_sslverify.py
-
-try:
-    # XXX: this try-except is not needed in Twisted 17.0.0+ because
-    # it requires pyOpenSSL 0.16+.
-    from OpenSSL.SSL import SSL_CB_HANDSHAKE_DONE, SSL_CB_HANDSHAKE_START
-except ImportError:
-    SSL_CB_HANDSHAKE_START = 0x10
-    SSL_CB_HANDSHAKE_DONE = 0x20
-
 try:
     # XXX: this import would fail on Debian jessie with system installed
     # service_identity library, due to lack of cryptography.x509 dependency
@@ -73,9 +63,9 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
         self.verbose_logging = verbose_logging
 
     def _identityVerifyingInfoCallback(self, connection, where, ret):
-        if where & SSL_CB_HANDSHAKE_START:
+        if where & SSL.SSL_CB_HANDSHAKE_START:
             set_tlsext_host_name(connection, self._hostnameBytes)
-        elif where & SSL_CB_HANDSHAKE_DONE:
+        elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
                 if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
                     if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
