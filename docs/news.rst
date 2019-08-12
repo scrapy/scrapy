@@ -6,6 +6,130 @@ Release notes
 .. note:: Scrapy 1.x will be the last series supporting Python 2. Scrapy 2.0,
           planned for Q4 2019 or Q1 2020, will support **Python 3 only**.
 
+.. _release-1.8.0:
+
+Scrapy 1.8.0 (2019-08-NN)
+-------------------------
+
+Highlights:
+
+* Dropped Python 3.4 support and updated minimum requirements
+* New :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class method
+* New :setting:`ROBOTSTXT_PARSER` and :setting:`ROBOTSTXT_USER_AGENT` settings
+* New :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
+  :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` settings
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   Python 3.4 is no longer supported, and some of the minimum requirements of
+    Scrapy have also changed:
+
+    *   cssselect_ 0.9.1
+    *   cryptography_ 2.0
+    *   lxml_ 3.5.0
+    *   pyOpenSSL_ 16.2.0
+    *   queuelib_ 1.4.2
+    *   service_identity_ 16.0.0
+    *   six_ 1.10.0
+    *   Twisted_ 17.9.0 (16.0.0 with Python 2)
+    *   zope.interface_ 4.1.3
+
+    (:issue:`3892`)
+
+*   If you are using a custom context factory
+    (:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`), its constructor must accept
+    two new parameters: ``tls_verbose_logging`` and ``tls_ciphers``
+    (:issue:`2111`, :issue:`3392`, :issue:`3442`, :issue:`3450`)
+
+
+New features
+~~~~~~~~~~~~
+
+*   A new :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class
+    method allows :ref:`creating a request from a cURL command
+    <requests-from-curl>` (:issue:`2985`, :issue:`3862`)
+
+*   A new :setting:`ROBOTSTXT_PARSER` setting allows choosing which robots.txt_
+    parser to use. It includes built-in support for
+    :ref:`RobotFileParser <python-robotfileparser>` (default),
+    :ref:`Protego <protego-parser>`, :ref:`Reppy <reppy-parser>`, and
+    :ref:`Robotexclusionrulesparser <rerp-parser>`, and allows you to
+    :ref:`implement support for additional parsers
+    <support-for-new-robots-parser>` (:issue:`754`, :issue:`2669`,
+    :issue:`3796`, :issue:`3935`)
+
+*   A new :setting:`ROBOTSTXT_USER_AGENT` setting allows defining a separate
+    user agent string to use for robots.txt_ parsing (:issue:`3931`,
+    :issue:`3966`)
+
+*   Use the new :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` setting to customize
+    the TLS/SSL ciphers used by the default HTTP/1.1 downloader (:issue:`3392`,
+    :issue:`3442`)
+
+*   Set the new :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` setting to
+    ``True`` to enable debug-level messages about TLS connection parameters
+    after establishing HTTPS connections (:issue:`2111`, :issue:`3450`)
+
+*   All missing fields are now reported when a :class:`@scrapes
+    <scrapy.contracts.default.ScrapesContract>` spider contract fails
+    (:issue:`766`, :issue:`3939`)
+
+
+Bug fixes
+~~~~~~~~~
+
+*   When using botocore_ to persist files in S3, all botocore-supported headers
+    are properly mapped now (:issue:`3904`, :issue:`3905`)
+
+*   FTP passwords in :setting:`FEED_URI` containing percent-escaped characters
+    are now properly decoded (:issue:`3941`)
+
+*   A memory-handling and error-handling issue in
+    :func:`scrapy.utils.ssl.get_temp_key_info` has been fixed (:issue:`3920`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   The documentation now covers how to define and configure a :ref:`custom log
+    format <custom-log-formats>` (:issue:`3616`, :issue:`3660`)
+
+*   API documentation added for :class:`~scrapy.exporters.MarshalItemExporter`
+    and :class:`~scrapy.exporters.PythonItemExporter` (:issue:`3973`)
+
+*   Minor documentation fixes (:issue:`3894`, :issue:`3934`, :issue:`3978`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   Use of the undocumented ``SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE`` environment
+    variable is deprecated (:issue:`3910`)
+
+
+Other changes
+~~~~~~~~~~~~~
+
+*   Minimum versions of optional Scrapy requirements that are covered by
+    continuous integration tests have been updated:
+
+    *   botocore_ 1.3.23
+    *   Pillow_ 3.4.2
+
+    Lower versions of these optional requirements may work, but it is not
+    guaranteed (:issue:`3892`)
+
+*   Github templates for bug reports and feature requests (:issue:`3126`,
+    :issue:`3471`, :issue:`3749`, :issue:`3754`)
+
+*   Continuous integration fixes (:issue:`3923`)
+
+*   Code cleanup (:issue:`3907`, :issue:`3946`, :issue:`3950`)
+
+
+.. _release-1.7.4:
+
 Scrapy 1.7.4 (2019-10-21)
 -------------------------
 
@@ -18,10 +142,16 @@ makes later calls to :meth:`ItemLoader.get_output_value()
 <scrapy.loader.ItemLoader.get_output_value>` or :meth:`ItemLoader.load_item()
 <scrapy.loader.ItemLoader.load_item>` return empty data.
 
+
+.. _release-1.7.3:
+
 Scrapy 1.7.3 (2019-08-01)
 -------------------------
 
 Enforce lxml 4.3.5 or lower for Python 3.4 (:issue:`3912`, :issue:`3918`).
+
+
+.. _release-1.7.2:
 
 Scrapy 1.7.2 (2019-07-23)
 -------------------------
@@ -29,10 +159,13 @@ Scrapy 1.7.2 (2019-07-23)
 Fix Python 2 support (:issue:`3889`, :issue:`3893`, :issue:`3896`).
 
 
+.. _release-1.7.1:
+
 Scrapy 1.7.1 (2019-07-18)
 -------------------------
 
 Re-packaging of Scrapy 1.7.0, which was missing some changes in PyPI.
+
 
 .. _release-1.7.0:
 
@@ -568,7 +701,7 @@ Scrapy 1.5.2 (2019-01-22)
 
   See :ref:`telnet console <topics-telnetconsole>` documentation for more info
 
-* Backport CI build failure under GCE environemnt due to boto import error.
+* Backport CI build failure under GCE environment due to boto import error.
 
 .. _release-1.5.1:
 
@@ -2830,9 +2963,11 @@ First release of Scrapy.
 
 
 .. _AJAX crawleable urls: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started?csw=1
+.. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
 .. _Creating a pull request: https://help.github.com/en/articles/creating-a-pull-request
+.. _cryptography: https://cryptography.io/en/latest/
 .. _cssselect: https://github.com/scrapy/cssselect/
 .. _docstrings: https://docs.python.org/glossary.html#term-docstring
 .. _KeyboardInterrupt: https://docs.python.org/library/exceptions.html#KeyboardInterrupt
@@ -2842,11 +2977,18 @@ First release of Scrapy.
 .. _parsel.csstranslator.HTMLTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.HTMLTranslator
 .. _parsel.csstranslator.XPathExpr: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.XPathExpr
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
+.. _Pillow: https://python-pillow.org/
+.. _pyOpenSSL: https://www.pyopenssl.org/en/stable/
 .. _queuelib: https://github.com/scrapy/queuelib
 .. _resource: https://docs.python.org/2/library/resource.html
+.. _robots.txt: http://www.robotstxt.org/
 .. _scrapely: https://github.com/scrapy/scrapely
+.. _service_identity: https://service-identity.readthedocs.io/en/stable/
+.. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.python.org/pypi/tox
+.. _Twisted: https://twistedmatrix.com/trac/
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+.. _zope.interface: https://zopeinterface.readthedocs.io/en/latest/
