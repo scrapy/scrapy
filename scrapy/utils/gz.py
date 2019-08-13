@@ -1,10 +1,6 @@
 import struct
 import six
 import re
-from gzip import GzipFile
-
-from scrapy.utils.decorators import deprecated
-
 
 # - Python>=3.5 GzipFile's read() has issues returning leftover
 #   uncompressed data when input is corrupted
@@ -21,6 +17,10 @@ else:
     from io import BytesIO
     def read1(gzf, size=-1):
         return gzf.read1(size)
+
+from gzip import GzipFile
+
+from scrapy.utils.decorators import deprecated
 
 
 def gunzip(data):
