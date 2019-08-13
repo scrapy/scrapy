@@ -13,6 +13,7 @@ from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
+import mimetypes
 
 try:
     from cStringIO import StringIO as BytesIO
