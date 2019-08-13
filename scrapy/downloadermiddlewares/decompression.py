@@ -7,8 +7,8 @@ import gzip
 import zipfile
 import tarfile
 import logging
-import six
 from tempfile import mktemp
+import six
 if six.PY2:
     from cStringIO import StringIO as BytesIO
 else:
