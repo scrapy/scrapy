@@ -1065,14 +1065,14 @@ In order to use this parser:
 Protego parser
 ~~~~~~~~~~~~~~
 
-`Protego <https://github.com/anubhavp28/protego>`_ is a pure-Python robots.txt_ parser.
+`Protego <https://github.com/scrapy/protego>`_ is a pure-Python robots.txt_ parser.
 The parser is fully compliant with `Google's Robots.txt Specification
 <https://developers.google.com/search/reference/robots_txt>`_ hence supports wildcard 
 matching, and uses the length based rule similar to `Reppy <https://github.com/seomoz/reppy/>`_.
 
 In order to use this parser:
 
-* Install `Protego <https://github.com/anubhavp28/protego>`_ by running ``pip install protego``
+* Install `Protego <https://github.com/scrapy/protego>`_ by running ``pip install protego``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ProtegoRobotParser``
