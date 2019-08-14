@@ -5,8 +5,12 @@ based on different criteria.
 from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from io import StringIO
 import six
+if six.PY2:
+    from cStringIO import StringIO
+else:
+    from io import StringIO
+    
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
