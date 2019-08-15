@@ -257,9 +257,9 @@ scrapy.utils.log module
     Another option when running custom scripts is to manually configure the logging.
     To do this you can use `logging.basicConfig()`_ to set a basic root handler.
 
-    Note that ``scrapy.crawler.CrawlerProcess`` automatically calls ``configure_logging``,
+    Note that :class:`~scrapy.crawler.CrawlerProcess` automatically calls ``configure_logging``,
     so it is recommended to only use `logging.basicConfig()`_ together with
-    ``scrapy.crawler.CrawlerRunner``
+    :class:`~scrapy.crawler.CrawlerRunner`.
 
     This is an example on how to redirect ``INFO`` or higher messages to a file::
 
