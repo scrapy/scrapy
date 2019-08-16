@@ -315,8 +315,21 @@ HttpAuthMiddleware
     This middleware authenticates all requests generated from certain spiders
     using `Basic access authentication`_ (aka. HTTP auth).
 
-    To enable HTTP authentication from certain spiders, set the ``http_user``
-    and ``http_pass`` attributes of those spiders.
+    To enable HTTP authentication for a spider, set the ``http_user`` and
+    ``http_pass`` spider attributes to the authentication data and the
+    ``http_auth_domain`` spider attribute to the domain which requires this
+    authentication (its subdomains will be also handled in the same way).
+    You can set ``http_auth_domain`` to ``None`` to enable the
+    authentication for all requests but usually this is not needed.
+
+    .. warning::
+        In the previous Scrapy versions HttpAuthMiddleware sent the
+        authentication data with all requests, which is a security problem if
+        the spider makes requests to several different domains. Currently if
+        the ``http_auth_domain`` attribute is not set, the middleware will use
+        the domain of the first request, which will work for some spider but
+        not for others. In the future the middleware will produce an error
+        instead.
 
     Example::
 
@@ -326,6 +339,7 @@ HttpAuthMiddleware
 
             http_user = 'someuser'
             http_pass = 'somepass'
+            http_auth_domain = 'intranet.example.com'
             name = 'intranet.example.com'
 
             # .. rest of the spider code omitted ...
