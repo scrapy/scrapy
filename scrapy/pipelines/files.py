@@ -10,6 +10,7 @@ import os.path
 import time
 import logging
 from email.utils import parsedate_tz, mktime_tz
+from ftplib import FTP
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
@@ -31,6 +32,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.ftp import ftp_makedirs_cwd
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +250,42 @@ class GCSFilesStore(object):
         )
 
 
+class FTPFilesStore(object):
+    
+    def __init__(self, uri):
+        assert uri.startswith('ftp://')
+        u = urlparse(uri)
+        self.ftp = FTP()
+        self.ftp.connect(u.hostname, u.port or '21')
+        self.ftp.login(u.username, u.password)
+        self.basedir = u.path + '/'
+        ftp_makedirs_cwd(self.ftp, self.basedir+'full')
+        
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        buf.seek(0)
+        filename = path.split('/')[1]
+        return threads.deferToThread(
+            self.ftp.storbinary,
+            'STOR %s' % filename,
+            buf
+        )
+            
+    def stat_file(self, path, info):
+        def _stat_file(path):
+            try:
+                last_modified = float(self.ftp.voidcmd("MDTM " + self.basedir + '/' + path)[4:].strip())
+                m = hashlib.md5()
+                self.ftp.retrbinary('RETR %s' % self.basedir + path, m.update)
+                return {'last_modified': last_modified, 'checksum': m.hexdigest()}
+            # The file doesn't exist
+            except Exception as e :
+                return {} 
+        return threads.deferToThread(_stat_file, path)
+    
+    def close_connection(self):
+        self.ftp.quit()
+
+
 class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
@@ -274,6 +312,7 @@ class FilesPipeline(MediaPipeline):
         'file': FSFilesStore,
         's3': S3FilesStore,
         'gs': GCSFilesStore,
+        'ftp': FTPFilesStore
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
@@ -284,7 +323,6 @@ class FilesPipeline(MediaPipeline):
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(self._key_for_pipe,
@@ -303,7 +341,6 @@ class FilesPipeline(MediaPipeline):
         self.files_result_field = settings.get(
             resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
-
         super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
 
     @classmethod
@@ -320,7 +357,7 @@ class FilesPipeline(MediaPipeline):
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
-
+        
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
 
@@ -461,3 +498,10 @@ class FilesPipeline(MediaPipeline):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         media_ext = os.path.splitext(request.url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
+    
+    def close_spider(self, spider):
+        try:
+            self.store.close_connection()
+        # If the store doesn't implement this function, pass
+        except AttributeError:
+            pass
