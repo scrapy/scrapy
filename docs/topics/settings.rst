@@ -442,8 +442,27 @@ or even enable client-side authentication (and various other things).
 
 If you do use a custom ContextFactory, make sure its ``__init__`` method
 accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`) and a ``tls_verbose_logging``
-parameter (``bool``).
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
+parameter (``bool``) and a ``tls_ciphers`` parameter (see
+:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
+
+DOWNLOADER_CLIENT_TLS_CIPHERS
+-----------------------------
+
+Default: ``'DEFAULT'``
+
+Use  this setting to customize the TLS/SSL ciphers used by the default
+HTTP/1.1 downloader.
+
+The setting should contain a string in the `OpenSSL cipher list format`_,
+these ciphers will be used as client ciphers. Changing this setting may be
+necessary to access certain HTTPS websites: for example, you may need to use
+``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
+specific cipher that is not included in ``DEFAULT`` if a website requires it.
+
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 

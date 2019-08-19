@@ -3,6 +3,7 @@ import sys, time, random, os, json
 from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 
+from OpenSSL import SSL
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -13,8 +14,8 @@ from twisted.web.util import redirectTo
 from twisted.internet import reactor, ssl
 from twisted.internet.task import deferLater
 
-
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
 
 
 def getarg(request, name, default=None, type=None):
@@ -215,11 +216,17 @@ class MockServer():
         return host + path
 
 
-def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
-    return ssl.DefaultOpenSSLContextFactory(
+def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
+    factory = ssl.DefaultOpenSSLContextFactory(
          os.path.join(os.path.dirname(__file__), keyfile),
          os.path.join(os.path.dirname(__file__), certfile),
          )
+    if cipher_string:
+        ctx = factory.getContext()
+        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        ctx.set_cipher_list(to_bytes(cipher_string))
+    return factory
 
 
 if __name__ == "__main__":

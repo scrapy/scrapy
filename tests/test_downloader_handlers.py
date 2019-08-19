@@ -553,6 +553,47 @@ class Https11InvalidDNSPattern(Https11TestCase):
         super(Https11InvalidDNSPattern, self).setUp()
 
 
+class Https11CustomCiphers(unittest.TestCase):
+    scheme = 'https'
+    download_handler_cls = HTTP11DownloadHandler
+
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
+
+    def setUp(self):
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
+        self.site = server.Site(r, timeout=None)
+        self.wrapper = WrappingFactory(self.site)
+        self.host = 'localhost'
+        self.port = reactor.listenSSL(
+            0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
+            interface=self.host)
+        self.portno = self.port.getHost().port
+        self.download_handler = self.download_handler_cls(
+            Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'}))
+        self.download_request = self.download_handler.download_request
+
+    @defer.inlineCallbacks
+    def tearDown(self):
+        yield self.port.stopListening()
+        if hasattr(self.download_handler, 'close'):
+            yield self.download_handler.close()
+        shutil.rmtree(self.tmpname)
+
+    def getURL(self, path):
+        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+
+    def test_download(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEqual, b"0123456789")
+        return d
+
+
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
 
