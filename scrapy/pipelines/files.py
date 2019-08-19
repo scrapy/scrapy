@@ -260,8 +260,8 @@ class FTPFilesStore(object):
         u = urlparse(uri)
         self.ftp = FTP()
         self.ftp.connect(u.hostname, u.port or '21')
-        username = u.username or FTP_USERNAME
-        password = u.password or FTP_PASSWORD
+        username = u.username or self.FTP_USERNAME
+        password = u.password or self.FTP_PASSWORD
         self.ftp.login(username, password)
         self.basedir = u.path
         
