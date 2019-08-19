@@ -263,7 +263,7 @@ class FTPFilesStore(object):
         username = u.username or self.FTP_USERNAME
         password = u.password or self.FTP_PASSWORD
         self.ftp.login(username, password)
-        self.basedir = u.path
+        self.basedir = u.path.rstrip('/')
         
     def persist_file(self, path, buf, info, meta=None, headers=None):
         buf.seek(0)
@@ -272,7 +272,7 @@ class FTPFilesStore(object):
         # If path is only the file name 'z.ext', then rel_path is
         # the empty string and filename is 'z.ext'
         x = path.rsplit('/',1)
-        rel_path, filename = ('/' + x[0], x[1]) if len(x) > 1 else ('', x[0])
+        rel_path, filename = ('/' + x[0].lstrip('/'), x[1]) if len(x) > 1 else ('', x[0])
         abs_path = self.basedir + rel_path
         ftp_makedirs_cwd(self.ftp, abs_path)
         return threads.deferToThread(
