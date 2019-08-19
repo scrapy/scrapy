@@ -35,6 +35,13 @@ class RobotParser(with_metaclass(ABCMeta)):
         """
         pass
 
+    @abstractmethod
+    def sitemaps(self):
+        """Return a generator yielding URL to sitemaps on the website.
+        If there is no sitemap specified, return an empty generator.
+        This method is optional."""
+        pass
+
 
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
@@ -65,6 +72,16 @@ class PythonRobotParser(RobotParser):
         url = to_native_str(url)
         return self.rp.can_fetch(user_agent, url)
 
+    def sitemaps(self):
+        """RobotFileParser does not support Sitemaps directive."""
+        logger.warning("Failure while retrieving sitemaps from robots.txt file using %(parser)s."
+                       " %(parser)s does not support Sitemaps directive.",
+                       {'parser': "RobotFileParser"},
+                       exc_info=sys.exc_info(),
+                       extra={'spider': self.spider})
+        return
+        yield
+
 
 class ReppyRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
@@ -80,6 +97,9 @@ class ReppyRobotParser(RobotParser):
 
     def allowed(self, url, user_agent):
         return self.rp.allowed(url, user_agent)
+
+    def sitemaps(self):
+        return (sitemap for sitemap in self.rp.sitemaps)
 
 
 class RerpRobotParser(RobotParser):
@@ -110,3 +130,6 @@ class RerpRobotParser(RobotParser):
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
         return self.rp.is_allowed(user_agent, url)
+
+    def sitemaps(self):
+        return (sitemap for sitemap in self.rp.sitemaps)
