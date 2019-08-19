@@ -257,29 +257,32 @@ class FTPFilesStore(object):
     
     def __init__(self, uri):
         assert uri.startswith('ftp://')
-        u = urlparse(uri)
-        self.ftp = FTP()
-        self.ftp.connect(u.hostname, u.port or '21')
-        username = u.username or self.FTP_USERNAME
-        password = u.password or self.FTP_PASSWORD
-        self.ftp.login(username, password)
+        u = urlparse(uri)  
+        self.port = u.port
+        self.host = u.hostname
+        self.port = int(u.port or '21')
+        self.username = u.username or self.FTP_USERNAME
+        self.password = u.password or self.FTP_PASSWORD
         self.basedir = u.path.rstrip('/')
         
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        buf.seek(0)
-        # If the path is like 'x/y/z.ext' the 'x/y' is rel_path and 
-        # 'z.ext' is file name
-        # If path is only the file name 'z.ext', then rel_path is
-        # the empty string and filename is 'z.ext'
-        x = path.rsplit('/',1)
-        rel_path, filename = ('/' + x[0].lstrip('/'), x[1]) if len(x) > 1 else ('', x[0])
-        abs_path = self.basedir + rel_path
-        ftp_makedirs_cwd(self.ftp, abs_path)
-        return threads.deferToThread(
-            self.ftp.storbinary,
-            'STOR %s' % filename,
-            buf
-        )
+        
+        def _persist_file(path, buf):
+            ftp = FTP()
+            ftp.connect(self.host, self.port)
+            ftp.login(self.username, self.password)
+            buf.seek(0)
+            # If the path is like 'x/y/z.ext' the 'x/y' is rel_path and 
+            # 'z.ext' is file name
+            # If path is only the file name 'z.ext', then rel_path is
+            # the empty string and filename is 'z.ext'
+            x = path.rsplit('/',1)
+            rel_path, filename = ('/' + x[0].lstrip('/'), x[1]) if len(x) > 1 else ('', x[0])
+            abs_path = self.basedir + rel_path
+            ftp_makedirs_cwd(ftp, abs_path)
+            ftp.storbinary('STOR %s' % filename, buf)
+
+        return threads.deferToThread(_persist_file, path, buf)
             
     def stat_file(self, path, info):
         def _stat_file(path):
