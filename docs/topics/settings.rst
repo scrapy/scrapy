@@ -1151,6 +1151,18 @@ Default: ``'scrapy.robotstxt.PythonRobotParser'``
 The parser backend to use for parsing ``robots.txt`` files. For more information see
 :ref:`topics-dlmw-robots`.
 
+.. setting:: ROBOTSTXT_USER_AGENT
+
+ROBOTSTXT_USER_AGENT
+^^^^^^^^^^^^^^^^^^^^
+
+Default: ``None``
+
+The user agent string to use for matching in the robots.txt file. If ``None``,
+the User-Agent header you are sending with the request or the
+:setting:`USER_AGENT` setting (in that order) will be used for determining
+the user agent to use in the robots.txt file.
+
 .. setting:: SCHEDULER
 
 SCHEDULER
@@ -1409,7 +1421,9 @@ USER_AGENT
 
 Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
-The default User-Agent to use when crawling, unless overridden.
+The default User-Agent to use when crawling, unless overridden. This user agent is
+also used in robots.txt if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
+there is no overridding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:

@@ -26,6 +26,7 @@ class RobotsTxtMiddleware(object):
         if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
             raise NotConfigured
         self._default_useragent = crawler.settings.get('USER_AGENT', 'Scrapy')
+        self._robotstxt_useragent = crawler.settings.get('ROBOTSTXT_USER_AGENT', None)
         self.crawler = crawler
         self._parsers = {}
         self._parserimpl = load_object(crawler.settings.get('ROBOTSTXT_PARSER'))
@@ -47,7 +48,10 @@ class RobotsTxtMiddleware(object):
     def process_request_2(self, rp, request, spider):
         if rp is None:
             return
-        useragent = request.headers.get(b'User-Agent', self._default_useragent)
+
+        useragent = self._robotstxt_useragent
+        if not useragent:
+            useragent = request.headers.get(b'User-Agent', self._default_useragent)
         if not rp.allowed(request.url, useragent):
             logger.debug("Forbidden by robots.txt: %(request)s",
                          {'request': request}, extra={'spider': spider})

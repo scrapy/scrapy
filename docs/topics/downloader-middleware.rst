@@ -1074,6 +1074,21 @@ implementing the methods described below.
 .. autoclass:: RobotParser
    :members:
 
+RobotsTxtMiddleware Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: ROBOTSTXT_USER_AGENT
+
+ROBOTSTXT_USER_AGENT
+^^^^^^^^^^^^^^^^^^^^
+
+Default: ``None``
+
+The user agent string to use for matching in the robots.txt_ file. If ``None``,
+the User-Agent header you are sending with the request or the
+:setting:`USER_AGENT` setting (in that order) will be used for determining
+the user agent to use in the robots.txt_ file.
+
 .. _robots.txt: http://www.robotstxt.org/
 
 DownloaderStats
