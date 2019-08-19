@@ -251,19 +251,30 @@ class GCSFilesStore(object):
 
 
 class FTPFilesStore(object):
+
+    FTP_USERNAME = None
+    FTP_PASSWORD = None
     
     def __init__(self, uri):
         assert uri.startswith('ftp://')
         u = urlparse(uri)
         self.ftp = FTP()
         self.ftp.connect(u.hostname, u.port or '21')
-        self.ftp.login(u.username, u.password)
-        self.basedir = u.path + '/'
-        ftp_makedirs_cwd(self.ftp, self.basedir+'full')
+        username = u.username or FTP_USERNAME
+        password = u.password or FTP_PASSWORD
+        self.ftp.login(username, password)
+        self.basedir = u.path
         
     def persist_file(self, path, buf, info, meta=None, headers=None):
         buf.seek(0)
-        filename = path.split('/')[1]
+        # If the path is like 'x/y/z.ext' the 'x/y' is rel_path and 
+        # 'z.ext' is file name
+        # If path is only the file name 'z.ext', then rel_path is
+        # the empty string and filename is 'z.ext'
+        x = path.rsplit('/',1)
+        rel_path, filename = ('/' + x[0], x[1]) if len(x) > 1 else ('', x[0])
+        abs_path = self.basedir + rel_path
+        ftp_makedirs_cwd(self.ftp, abs_path)
         return threads.deferToThread(
             self.ftp.storbinary,
             'STOR %s' % filename,
@@ -281,9 +292,6 @@ class FTPFilesStore(object):
             except Exception as e :
                 return {} 
         return threads.deferToThread(_stat_file, path)
-    
-    def close_connection(self):
-        self.ftp.quit()
 
 
 class FilesPipeline(MediaPipeline):
@@ -357,6 +365,10 @@ class FilesPipeline(MediaPipeline):
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
+
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']           # Default is 'anonymous'
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']       # Default is `guest`
         
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
@@ -498,10 +510,3 @@ class FilesPipeline(MediaPipeline):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         media_ext = os.path.splitext(request.url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
-    
-    def close_spider(self, spider):
-        try:
-            self.store.close_connection()
-        # If the store doesn't implement this function, pass
-        except AttributeError:
-            pass
