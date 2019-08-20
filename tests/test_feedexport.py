@@ -7,6 +7,7 @@ from io import BytesIO
 import tempfile
 import shutil
 import string
+from unittest import mock
 from six.moves.urllib.parse import urljoin, urlparse, quote
 from six.moves.urllib.request import pathname2url
 
@@ -15,7 +16,6 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.settings import Settings
-from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 

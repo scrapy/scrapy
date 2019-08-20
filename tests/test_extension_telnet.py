@@ -1,8 +1,3 @@
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
-
 from twisted.trial import unittest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials

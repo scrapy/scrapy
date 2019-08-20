@@ -1,12 +1,12 @@
 import sys
 import unittest
+from unittest import mock
 from warnings import catch_warnings
 
 import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
-from tests import mock
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)

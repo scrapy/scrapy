@@ -3,6 +3,7 @@ import cgi
 import unittest
 import re
 import json
+from unittest import mock
 from urllib.parse import unquote_to_bytes
 import warnings
 
@@ -12,8 +13,6 @@ from six.moves.urllib.parse import urlparse, parse_qs, unquote
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_native_str
-
-from tests import mock
 
 
 class RequestTest(unittest.TestCase):
