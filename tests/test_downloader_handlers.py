@@ -2,11 +2,8 @@ import os
 import six
 import shutil
 import tempfile
+from unittest import mock
 import contextlib
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from testfixtures import LogCapture
 from twisted.trial import unittest

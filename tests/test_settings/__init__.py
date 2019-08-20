@@ -1,10 +1,9 @@
 import six
 import unittest
-import warnings
+from unittest import mock
 
 from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
                              SETTINGS_PRIORITIES, get_settings_priority)
-from tests import mock
 from . import default_settings
 
 
