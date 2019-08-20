@@ -10,7 +10,7 @@ import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import binary_is_text, to_bytes, to_native_str
+from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
 class ResponseTypes(object):
@@ -55,12 +55,12 @@ class ResponseTypes(object):
         header """
         if content_encoding:
             return Response
-        mimetype = to_native_str(content_type).split(';')[0].strip().lower()
+        mimetype = to_unicode(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_native_str(content_disposition,
+            filename = to_unicode(content_disposition,
                 encoding='latin-1', errors='replace').split(';')[1].split('=')[1]
             filename = filename.strip('"\'')
             return self.from_filename(filename)
