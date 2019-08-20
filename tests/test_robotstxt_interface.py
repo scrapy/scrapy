@@ -20,6 +20,13 @@ def rerp_available():
         return False
     return True
 
+def protego_available():
+    # check if robotexclusionrulesparser is installed
+    try:
+        from protego import Protego
+    except ImportError:
+        return False
+    return True
 
 class BaseRobotParserTest:
     def _setUp(self, parser_cls):
@@ -143,7 +150,7 @@ class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
 
 class ProtegoRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not rerp_available():
+    if not protego_available():
         skip = "Protego parser is not installed"
 
     def setUp(self):
