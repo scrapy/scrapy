@@ -90,7 +90,7 @@ def to_unicode(text, encoding=None, errors='strict'):
     if isinstance(text, six.text_type):
         return text
     if not isinstance(text, (bytes, six.text_type)):
-        raise TypeError('to_unicode must receive a bytes, str or unicode '
+        raise TypeError('to_unicode must receive a bytes or str '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
@@ -103,16 +103,16 @@ def to_bytes(text, encoding=None, errors='strict'):
     if isinstance(text, bytes):
         return text
     if not isinstance(text, six.string_types):
-        raise TypeError('to_bytes must receive a unicode, str or bytes '
+        raise TypeError('to_bytes must receive a str or bytes '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
 
 
+@deprecated('to_unicode')
 def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of ``text``
-    (bytes in Python 2.x and unicode in Python 3.x). """
+    """ Return str representation of ``text``. """
     return to_unicode(text, encoding, errors)
 
 
