@@ -5,6 +5,7 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from io import BytesIO
 import os
 import os.path
 import time
@@ -13,11 +14,6 @@ from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 from twisted.internet import defer, threads
 
