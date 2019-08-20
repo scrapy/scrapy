@@ -7,7 +7,7 @@ from w3lib.encoding import resolve_encoding
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 from scrapy.exceptions import NotSupported
 from scrapy.link import Link
 from tests import get_testdata
@@ -204,11 +204,11 @@ class TextResponseTest(BaseResponseTest):
         assert isinstance(resp.url, str)
 
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='utf-8')
-        self.assertEqual(resp.url, to_native_str(b'http://www.example.com/price/\xc2\xa3'))
+        self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=utf-8"]})
-        self.assertEqual(resp.url, to_native_str(b'http://www.example.com/price/\xc2\xa3'))
+        self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
 

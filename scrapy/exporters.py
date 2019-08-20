@@ -12,7 +12,7 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
+from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
 import warnings
@@ -232,7 +232,7 @@ class CsvItemExporter(BaseItemExporter):
     def _build_row(self, values):
         for s in values:
             try:
-                yield to_native_str(s, self.encoding)
+                yield to_unicode(s, self.encoding)
             except TypeError:
                 yield s
 
