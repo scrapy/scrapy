@@ -7,12 +7,11 @@ from unittest import mock
 from urllib.parse import unquote_to_bytes
 import warnings
 
-import six
 from six.moves import xmlrpc_client as xmlrpclib
 from six.moves.urllib.parse import urlparse, parse_qs, unquote
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
-from scrapy.utils.python import to_bytes, to_native_str
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
@@ -349,8 +348,8 @@ class FormRequestTest(RequestTest):
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
-        first = to_native_str(first).split("&")
-        second = to_native_str(second).split("&")
+        first = to_unicode(first).split("&")
+        second = to_unicode(second).split("&")
         return self.assertEqual(sorted(first), sorted(second), msg)
 
     def test_empty_formdata(self):
