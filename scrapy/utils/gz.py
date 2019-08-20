@@ -16,6 +16,7 @@ from scrapy.utils.decorators import deprecated
 #   (regression or bug-fix compared to Python 3.4)
 # - read1(), which fetches data before raising EOFError on next call
 #   works here but is only available from Python>=3.3
+@deprecated('GzipFile.read1')
 def read1(gzf, size=-1):
     return gzf.read1(size)
 
