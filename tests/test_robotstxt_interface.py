@@ -21,7 +21,7 @@ def rerp_available():
     return True
 
 def protego_available():
-    # check if robotexclusionrulesparser is installed
+    # check if protego parser is installed
     try:
         from protego import Protego
     except ImportError:
