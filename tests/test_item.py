@@ -1,10 +1,10 @@
 import sys
 import unittest
+from unittest import mock
 
 import six
 
 from scrapy.item import ABCMeta, Item, ItemMeta, Field
-from tests import mock
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)

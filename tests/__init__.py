@@ -21,11 +21,6 @@ if 'COV_CORE_CONFIG' in os.environ:
     os.environ['COV_CORE_CONFIG'] = os.path.join(_sourceroot,
                                                  os.environ['COV_CORE_CONFIG'])
 
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
-
 tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                              'sample_data')
 

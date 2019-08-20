@@ -1,5 +1,6 @@
 import gzip
 import inspect
+from unittest import mock
 import warnings
 from io import BytesIO
 
@@ -16,8 +17,6 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
-
-from tests import mock
 
 
 class SpiderTest(unittest.TestCase):

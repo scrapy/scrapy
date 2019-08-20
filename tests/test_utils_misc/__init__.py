@@ -1,11 +1,11 @@
 import sys
 import os
 import unittest
+from unittest import mock
 
 from scrapy.item import Item, Field
 from scrapy.utils.misc import arg_to_iter, create_instance, load_object, set_environ, walk_modules
 
-from tests import mock
 
 __doctests__ = ['scrapy.utils.misc']
 
