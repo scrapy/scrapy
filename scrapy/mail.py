@@ -3,12 +3,8 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
+from io import BytesIO
 import logging
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 from email.utils import COMMASPACE, formatdate
 from six.moves.email_mime_multipart import MIMEMultipart

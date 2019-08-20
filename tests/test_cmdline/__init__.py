@@ -1,3 +1,4 @@
+from io import StringIO
 import json
 import os
 import pstats
@@ -7,10 +8,6 @@ from subprocess import Popen, PIPE
 import sys
 import tempfile
 import unittest
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 from scrapy.utils.test import get_testenv
 

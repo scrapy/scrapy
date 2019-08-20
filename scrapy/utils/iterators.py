@@ -1,11 +1,7 @@
 import re
 import csv
-import logging
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 from io import StringIO
+import logging
 import six
 
 from scrapy.http import TextResponse, Response
