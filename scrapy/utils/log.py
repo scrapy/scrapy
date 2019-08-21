@@ -11,6 +11,7 @@ from twisted.python import log as twisted_log
 import scrapy
 from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import is_asyncio_supported
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -148,6 +149,8 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
+    if is_asyncio_supported():
+        logger.debug("Asyncio support enabled")
 
 
 class StreamLogger(object):
