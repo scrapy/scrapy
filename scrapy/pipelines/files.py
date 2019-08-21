@@ -32,7 +32,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
-from scrapy.utils.ftp import ftp_makedirs_cwd
+from scrapy.utils.ftp import ftp_makedirs_cwd, ftp_store_file
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +254,7 @@ class FTPFilesStore(object):
 
     FTP_USERNAME = None
     FTP_PASSWORD = None
+    USE_ACTIVE_MODE = None
     
     def __init__(self, uri):
         assert uri.startswith('ftp://')
@@ -265,31 +266,26 @@ class FTPFilesStore(object):
         self.password = u.password or self.FTP_PASSWORD
         self.basedir = u.path.rstrip('/')
         
-    def persist_file(self, path, buf, info, meta=None, headers=None):
-        
-        def _persist_file(path, buf):
-            ftp = FTP()
-            ftp.connect(self.host, self.port)
-            ftp.login(self.username, self.password)
-            buf.seek(0)
-            # If the path is like 'x/y/z.ext' the 'x/y' is rel_path and 
-            # 'z.ext' is file name
-            # If path is only the file name 'z.ext', then rel_path is
-            # the empty string and filename is 'z.ext'
-            x = path.rsplit('/',1)
-            rel_path, filename = ('/' + x[0].lstrip('/'), x[1]) if len(x) > 1 else ('', x[0])
-            abs_path = self.basedir + rel_path
-            ftp_makedirs_cwd(ftp, abs_path)
-            ftp.storbinary('STOR %s' % filename, buf)
-
-        return threads.deferToThread(_persist_file, path, buf)
+    def persist_file(self, path, buf, info, meta=None, headers=None):     
+        path = '%s/%s' % (self.basedir, path)
+        return threads.deferToThread(
+            ftp_store_file, path,buf,
+            self.host, self.port,self.username,
+            self.password, self.USE_ACTIVE_MODE
+        )
             
     def stat_file(self, path, info):
         def _stat_file(path):
             try:
-                last_modified = float(self.ftp.voidcmd("MDTM " + self.basedir + '/' + path)[4:].strip())
+                ftp = FTP()
+                ftp.connect(self.host, self.port)
+                ftp.login(self.username, self.password)
+                if self.USE_ACTIVE_MODE:
+                    ftp.set_pasv(False)
+                file_path = "%s/%s" % (self.basedir, path)
+                last_modified = float(ftp.voidcmd("MDTM %s" % file_path)[4:].strip())
                 m = hashlib.md5()
-                self.ftp.retrbinary('RETR %s' % self.basedir + path, m.update)
+                ftp.retrbinary('RETR %s' % file_path, m.update)
                 return {'last_modified': last_modified, 'checksum': m.hexdigest()}
             # The file doesn't exist
             except Exception as e :
@@ -372,6 +368,7 @@ class FilesPipeline(MediaPipeline):
         ftp_store = cls.STORE_SCHEMES['ftp']
         ftp_store.FTP_USERNAME = settings['FTP_USER']           # Default is 'anonymous'
         ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']       # Default is `guest`
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
         
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
