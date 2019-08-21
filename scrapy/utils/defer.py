@@ -8,8 +8,9 @@ import inspect
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
-from scrapy import asyncio_supported
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.asyncio import is_asyncio_supported
+
 
 
 def defer_fail(_failure):
@@ -131,7 +132,7 @@ def deferred_from_coro(o):
     if isinstance(o, defer.Deferred):
         return o
     if asyncio.iscoroutine(o) or isfuture(o) or inspect.isawaitable(o):
-        if not asyncio_supported:
+        if not is_asyncio_supported():
             raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
         return defer.Deferred.fromFuture(asyncio.ensure_future(o))
     return o
