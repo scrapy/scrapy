@@ -260,7 +260,7 @@ class FTPFilesStore(object):
         u = urlparse(uri)  
         self.port = u.port
         self.host = u.hostname
-        self.port = int(u.port or '21')
+        self.port = int(u.port or 21)
         self.username = u.username or self.FTP_USERNAME
         self.password = u.password or self.FTP_PASSWORD
         self.basedir = u.path.rstrip('/')
