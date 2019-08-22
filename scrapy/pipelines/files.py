@@ -330,6 +330,7 @@ class FilesPipeline(MediaPipeline):
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
+
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(self._key_for_pipe,
@@ -348,6 +349,7 @@ class FilesPipeline(MediaPipeline):
         self.files_result_field = settings.get(
             resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
+
         super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
 
     @classmethod
@@ -366,8 +368,8 @@ class FilesPipeline(MediaPipeline):
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
         ftp_store = cls.STORE_SCHEMES['ftp']
-        ftp_store.FTP_USERNAME = settings['FTP_USER']           # Default is 'anonymous'
-        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']       # Default is `guest`
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
         ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
         
         store_uri = settings['FILES_STORE']
