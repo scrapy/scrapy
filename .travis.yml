@@ -25,6 +25,8 @@ matrix:
       python: 3.8
     - env: TOXENV=py38-extra-deps
       python: 3.8
+    - env: TOXENV=py38-no-asyncio
+      python: 3.8
     - env: TOXENV=docs
       python: 3.6
 install:
