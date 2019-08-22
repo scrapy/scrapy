@@ -30,6 +30,8 @@ Python `import search path`_.
 
 .. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
 
+.. _populating-settings:
+
 Populating the settings
 =======================
 
@@ -438,9 +440,29 @@ or even enable client-side authentication (and various other things).
     which uses the platform's certificates to validate remote endpoints.
     **This is only available if you use Twisted>=14.0.**
 
-If you do use a custom ContextFactory, make sure it accepts a ``method``
-parameter at init (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`).
+If you do use a custom ContextFactory, make sure its ``__init__`` method
+accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
+parameter (``bool``) and a ``tls_ciphers`` parameter (see
+:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
+
+DOWNLOADER_CLIENT_TLS_CIPHERS
+-----------------------------
+
+Default: ``'DEFAULT'``
+
+Use  this setting to customize the TLS/SSL ciphers used by the default
+HTTP/1.1 downloader.
+
+The setting should contain a string in the `OpenSSL cipher list format`_,
+these ciphers will be used as client ciphers. Changing this setting may be
+necessary to access certain HTTPS websites: for example, you may need to use
+``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
+specific cipher that is not included in ``DEFAULT`` if a website requires it.
+
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -467,6 +489,20 @@ This setting must be one of these string values:
 
     We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
     or above (Twisted>=14.0 if you can).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+-------------------------------------
+
+Default: ``False``
+
+Setting this to ``True`` will enable DEBUG level messages about TLS connection
+parameters after establishing HTTPS connections. The kind of information logged
+depends on the versions of OpenSSL and pyOpenSSL.
+
+This setting is only used for the default
+:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -537,6 +573,8 @@ amount of time between requests, but uses a random interval between 0.5 * :setti
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
+
+.. _spider-download_delay-attribute:
 
 You can also change this setting per spider by setting ``download_delay``
 spider attribute.
@@ -866,6 +904,15 @@ directives.
 
 .. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
 
+.. setting:: LOG_FORMATTER
+
+LOG_FORMATTER
+-------------
+
+Default: :class:`scrapy.logformatter.LogFormatter`
+
+The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
 .. setting:: LOG_LEVEL
 
 LOG_LEVEL
@@ -1112,6 +1159,16 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     While the default value is ``False`` for historical reasons,
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
+
+.. setting:: ROBOTSTXT_PARSER
+
+ROBOTSTXT_PARSER
+----------------
+
+Default: ``'scrapy.robotstxt.PythonRobotParser'``
+
+The parser backend to use for parsing ``robots.txt`` files. For more information see
+:ref:`topics-dlmw-robots`.
 
 .. setting:: SCHEDULER
 

@@ -157,6 +157,8 @@ To access all populated values, just use the typical `dict API`_::
     [('price', 1000), ('name', 'Desktop PC')]
 
 
+.. _copying-items:
+
 Copying items
 -------------
 

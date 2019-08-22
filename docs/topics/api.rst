@@ -31,6 +31,8 @@ how you :ref:`configure the downloader middlewares
 .. autoclass:: Crawler
    :members:
 
+    .. automethod:: stop
+
 .. autoclass:: CrawlerRunner
    :members:
 

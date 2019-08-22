@@ -377,13 +377,18 @@ Crawling rules
 .. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
+   defines how links will be extracted from each crawled page. Each produced link will
+   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   link's text in its ``meta`` dictionary (under the ``link_text`` key).
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
+   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
+   as its first argument and must return either a single instance or an iterable of
+   :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
+   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
+   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   in its ``meta`` dictionary (under the ``link_text`` key)
 
    .. warning:: When writing crawl spider rules, avoid using ``parse`` as
        callback, since the :class:`CrawlSpider` uses the ``parse`` method
@@ -438,6 +443,7 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
             item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+            item['link_text'] = response.meta['link_text']
             return item
 
 

@@ -84,19 +84,6 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-@deprecated("scrapy.utils.python.to_unicode")
-def str_to_unicode(text, encoding=None, errors='strict'):
-    """ This function is deprecated.
-    Please use scrapy.utils.python.to_unicode. """
-    return to_unicode(text, encoding, errors)
-
-
-@deprecated("scrapy.utils.python.to_bytes")
-def unicode_to_str(text, encoding=None, errors='strict'):
-    """ This function is deprecated. Please use scrapy.utils.python.to_bytes """
-    return to_bytes(text, encoding, errors)
-
-
 def to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""

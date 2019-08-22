@@ -52,6 +52,8 @@ as its value.  For example, if you want to disable the user-agent middleware::
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _topics-downloader-middleware-custom:
+
 Writing your own downloader middleware
 ======================================
 
@@ -349,7 +351,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
-    setting. Or you can also implement your own storage backend.
+    setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
 
     Scrapy ships with two HTTP cache policies:
 
@@ -495,6 +497,61 @@ In order to use this storage backend:
 
 .. _LevelDB: https://github.com/google/leveldb
 .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
+
+.. _httpcache-storage-custom:
+
+Writing your own storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement a cache storage backend by creating a Python class that
+defines the methods described below.
+
+.. module:: scrapy.extensions.httpcache
+
+.. class:: CacheStorage
+
+    .. method:: open_spider(spider)
+
+      This method gets called after a spider has been opened for crawling. It handles 
+      the :signal:`open_spider <spider_opened>` signal.
+
+      :param spider: the spider which has been opened
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: close_spider(spider)
+
+      This method gets called after a spider has been closed. It handles 
+      the :signal:`close_spider <spider_closed>` signal. 
+
+      :param spider: the spider which has been closed
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: retrieve_response(spider, request)
+
+      Return response if present in cache, or ``None`` otherwise.
+
+      :param spider: the spider which generated the request
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the request to find cached reponse for
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: store_response(spider, request, response)
+
+      Store the given response in the cache.
+
+      :param spider: the spider for which the response is intended
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the corresponding request the spider generated
+      :type request: :class:`~scrapy.http.Request` object
+
+      :param response: the response to store in the cache
+      :type response: :class:`~scrapy.http.Response` object
+
+In order to use your storage backend, set:
+
+* :setting:`HTTPCACHE_STORAGE` to the Python import path of your custom storage class.
 
 
 HTTPCache middleware settings
@@ -805,6 +862,7 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
+* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
@@ -825,6 +883,15 @@ METAREFRESH_ENABLED
 Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
+
+.. setting:: METAREFRESH_IGNORE_TAGS
+
+METAREFRESH_IGNORE_TAGS
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``['script', 'noscript']``
+
+Meta tags within these tags are ignored.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -896,7 +963,7 @@ precedence over the :setting:`RETRY_TIMES` setting.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 522, 524, 408]``
+Default: ``[500, 502, 503, 504, 522, 524, 408, 429]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
@@ -922,6 +989,17 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
+    This middleware has to be combined with a robots.txt_ parser.
+
+    Scrapy ships with support for the following robots.txt_ parsers:
+
+    * :ref:`RobotFileParser <python-robotfileparser>` (default)
+    * :ref:`Reppy <reppy-parser>`
+    * :ref:`Robotexclusionrulesparser <rerp-parser>`
+
+    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
+    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+
 .. reqmeta:: dont_obey_robotstxt
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` has
@@ -929,6 +1007,74 @@ If :attr:`Request.meta <scrapy.http.Request.meta>` has
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
+.. _python-robotfileparser:
+
+RobotFileParser
+~~~~~~~~~~~~~~~
+
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
+Python's inbuilt ``robots.txt`` parser. The parser is fully compliant with `Martijn Koster's 
+1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
+support for wildcard matching. Scrapy uses this parser by default.
+
+In order to use this parser, set:
+
+* :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
+
+.. _rerp-parser:
+
+Robotexclusionrulesparser
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ is fully compliant
+with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
+with support for wildcard matching.
+
+In order to use this parser:
+
+* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+  ``pip install robotexclusionrulesparser``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.RerpRobotParser``
+
+.. _reppy-parser:
+
+Reppy parser
+~~~~~~~~~~~~
+
+`Reppy <https://github.com/seomoz/reppy/>`_ is a Python wrapper around `Robots Exclusion
+Protocol Parser for C++ <https://github.com/seomoz/rep-cpp>`_. The parser is fully compliant
+with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
+with support for wildcard matching. Unlike
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ and
+`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_, it uses the length based
+rule, in particular for ``Allow`` and ``Disallow`` directives, where the most specific
+rule based on the length of the path trumps the less specific (shorter) rule.
+
+In order to use this parser:
+
+* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.ReppyRobotParser``
+
+.. _support-for-new-robots-parser:
+
+Implementing support for a new parser
+-------------------------------------
+
+You can implement support for a new robots.txt_ parser by subclassing
+the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
+implementing the methods described below.
+
+.. module:: scrapy.robotstxt
+   :synopsis: robots.txt parser interface and implementations
+
+.. autoclass:: RobotParser
+   :members:
+
+.. _robots.txt: http://www.robotstxt.org/
 
 DownloaderStats
 ---------------

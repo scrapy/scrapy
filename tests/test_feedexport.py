@@ -6,7 +6,8 @@ import warnings
 from io import BytesIO
 import tempfile
 import shutil
-from six.moves.urllib.parse import urljoin, urlparse
+import string
+from six.moves.urllib.parse import urljoin, urlparse, quote
 from six.moves.urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
@@ -26,6 +27,7 @@ from scrapy.extensions.feedexport import (
     BlockingFeedStorage)
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
 from scrapy.utils.python import to_native_str
+from scrapy.utils.project import get_project_settings
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -70,6 +72,13 @@ class FileFeedStorageTest(unittest.TestCase):
 
 class FTPFeedStorageTest(unittest.TestCase):
 
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
     def test_store(self):
         uri = os.environ.get('FEEDTEST_FTP_URI')
         path = os.environ.get('FEEDTEST_FTP_PATH')
@@ -79,9 +88,26 @@ class FTPFeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
 
+    def test_store_active_mode(self):
+        uri = os.environ.get('FEEDTEST_FTP_URI')
+        path = os.environ.get('FEEDTEST_FTP_PATH')
+        if not (uri and path):
+            raise unittest.SkipTest("No FTP server available for testing")
+        use_active_mode = {'FEED_STORAGE_FTP_ACTIVE': True}
+        crawler = get_crawler(settings_dict=use_active_mode)
+        st = FTPFeedStorage.from_crawler(crawler, uri)
+        verifyObject(IFeedStorage, st)
+        return self._assert_stores(st, path)
+
+    def test_uri_auth_quote(self):
+        # RFC3986: 3.2.1. User Information
+        pw_quoted = quote(string.punctuation, safe='')
+        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted)
+        self.assertEqual(st.password, string.punctuation)
+
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
-        spider = scrapy.Spider("default")
+        spider = self.get_test_spider()
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
@@ -134,8 +160,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
-    @mock.patch('scrapy.conf.settings', new={'AWS_ACCESS_KEY_ID': 'conf_key',
-                'AWS_SECRET_ACCESS_KEY': 'conf_secret'}, create=True)
+    @mock.patch('scrapy.utils.project.get_project_settings',
+                new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
+                                                 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
+                create=True)
     def test_parse_credentials(self):
         try:
             import boto

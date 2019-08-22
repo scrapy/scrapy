@@ -32,7 +32,8 @@ def request_to_dict(request, spider=None):
         '_encoding': request._encoding,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
-        'flags': request.flags
+        'flags': request.flags,
+        'cb_kwargs': request.cb_kwargs,
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
@@ -64,7 +65,23 @@ def request_from_dict(d, spider=None):
         encoding=d['_encoding'],
         priority=d['priority'],
         dont_filter=d['dont_filter'],
-        flags=d.get('flags'))
+        flags=d.get('flags'),
+        cb_kwargs=d.get('cb_kwargs'),
+    )
+
+
+def _is_private_method(name):
+    return name.startswith('__') and not name.endswith('__')
+
+
+def _mangle_private_name(obj, func, name):
+    qualname = getattr(func, '__qualname__', None)
+    if qualname is None:
+        classname = obj.__class__.__name__.lstrip('_')
+        return '_%s%s' % (classname, name)
+    else:
+        splits = qualname.split('.')
+        return '_%s%s' % (splits[-2], splits[-1])
 
 
 def _find_method(obj, func):
@@ -75,7 +92,10 @@ def _find_method(obj, func):
             pass
         else:
             if func_self is obj:
-                return six.get_method_function(func).__name__
+                name = six.get_method_function(func).__name__
+                if _is_private_method(name):
+                    return _mangle_private_name(obj, func, name)
+                return name
     raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 

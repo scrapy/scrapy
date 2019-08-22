@@ -123,7 +123,6 @@ class ProcessRequestInvalidOutput(ManagerTestCase):
 
     def test_invalid_process_request(self):
         req = Request('http://example.com/index.html')
-        resp = Response('http://example.com/index.html')
 
         class InvalidProcessRequestMiddleware:
             def process_request(self, request, spider):
@@ -143,7 +142,6 @@ class ProcessResponseInvalidOutput(ManagerTestCase):
 
     def test_invalid_process_response(self):
         req = Request('http://example.com/index.html')
-        resp = Response('http://example.com/index.html')
 
         class InvalidProcessResponseMiddleware:
             def process_response(self, request, response, spider):
@@ -163,7 +161,6 @@ class ProcessExceptionInvalidOutput(ManagerTestCase):
 
     def test_invalid_process_exception(self):
         req = Request('http://example.com/index.html')
-        resp = Response('http://example.com/index.html')
 
         class InvalidProcessExceptionMiddleware:
             def process_request(self, request, spider):
