@@ -29,3 +29,8 @@ if six.PY3:
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()
+
+
+@pytest.fixture()
+def reactor_pytest(request):
+    request.cls.reactor_pytest = request.config.getoption("--reactor")

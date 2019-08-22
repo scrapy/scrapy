@@ -1,14 +1,16 @@
 import logging
 import warnings
 
+from pytest import raises, mark
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial import unittest
-from pytest import raises
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
+from scrapy.utils.asyncio import is_asyncio_supported
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
@@ -203,6 +205,15 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
+class AsyncioSpider(scrapy.Spider):
+    name = 'asyncio'
+
+    def start_requests(self):
+        self.logger.info('Asyncio support: %s', is_asyncio_supported())
+        return []
+
+
+@mark.usefixtures('reactor_pytest')
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -245,3 +256,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         yield runner.crawl(NoRequestsSpider)
 
         self.assertEqual(runner.bootstrap_failed, True)
+
+    @defer.inlineCallbacks
+    def test_asyncio_supported(self):
+        runner = CrawlerRunner()
+        with LogCapture() as log:
+            yield runner.crawl(AsyncioSpider)
+            log.check_present(('asyncio', 'INFO', 'Asyncio support: %s' % (self.reactor_pytest == 'asyncio')))
