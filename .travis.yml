@@ -27,6 +27,8 @@ matrix:
       python: 3.7
     - env: TOXENV=py37-extra-deps
       python: 3.7
+    - env: TOXENV=py37-no-asyncio
+      python: 3.7
     - env: TOXENV=docs
       python: 3.6
 install:
