@@ -252,6 +252,10 @@ coverage_ignore_pyobjects = [
 
     # Private exception used by the command-line interface implementation.
     r'^scrapy\.exceptions\.UsageError',
+
+    # Methods of BaseItemExporter subclasses are only documented in
+    # BaseItemExporter.
+    r'^scrapy\.exporters\.(?!BaseItemExporter\b)\w*?\.',
 ]
 
 

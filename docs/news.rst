@@ -1269,8 +1269,8 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     this behavior, update :setting:`ROBOTSTXT_OBEY` in ``settings.py`` file
     after creating a new project.
   - Exporters now work on unicode, instead of bytes by default (:issue:`1080`).
-    If you use ``PythonItemExporter``, you may want to update your code to
-    disable binary mode which is now deprecated.
+    If you use :class:`~scrapy.exporters.PythonItemExporter`, you may want to
+    update your code to disable binary mode which is now deprecated.
   - Accept XML node names containing dots as valid (:issue:`1533`).
   - When uploading files or images to S3 (with ``FilesPipeline`` or
     ``ImagesPipeline``), the default ACL policy is now "private" instead
@@ -1408,8 +1408,8 @@ Bugfixes
 - Fixed bug on ``XMLItemExporter`` with non-string fields in
   items (:issue:`1738`).
 - Fixed startproject command in OS X (:issue:`1635`).
-- Fixed PythonItemExporter and CSVExporter for non-string item
-  types (:issue:`1737`).
+- Fixed :class:`~scrapy.exporters.PythonItemExporter` and CSVExporter for
+  non-string item types (:issue:`1737`).
 - Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
   :issue:`1624`, :issue:`1654`, :issue:`1722`, :issue:`1726` and :issue:`1303`).
 - Fixed bug in ``utils.template.render_templatefile()`` (:issue:`1212`).
