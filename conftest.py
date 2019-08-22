@@ -27,3 +27,7 @@ def pytest_collection_modifyitems(session, config, items):
             items[:] = [item for item in items if isinstance(item, Flake8Item)]
     except ImportError:
         pass
+
+@pytest.fixture()
+def reactor_pytest(request):
+    request.cls.reactor_pytest = request.config.getoption("--reactor")
