@@ -16,6 +16,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
+from tests.test_robotstxt_interface import reppy_available, rerp_available
 
 from tests import mock
 
@@ -424,6 +425,33 @@ Sitemap: /sitemap-relative-url.xml
                           'http://example.com/sitemap-product-index.xml',
                           'http://example.com/sitemap-uppercase.xml',
                           'http://www.example.com/sitemap-relative-url.xml'])
+
+    def test_get_sitemap_urls_from_robotstxt_using_third_party_parsers(self):
+        robots = b"""# Sitemap files
+Sitemap: http://example.com/sitemap.xml
+Sitemap: http://example.com/sitemap-product-index.xml
+Sitemap: HTTP://example.com/sitemap-uppercase.xml
+Sitemap: /sitemap-relative-url.xml
+"""
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+        if reppy_available():
+            class test_spider(self.spider_class):
+                robotstxt_parser = 'scrapy.robotstxt.ReppyRobotParser'
+            spider = test_spider.from_crawler(mock.MagicMock(), 'example.com')
+            self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                             ['http://example.com/sitemap.xml',
+                              'http://example.com/sitemap-product-index.xml',
+                              'http://example.com/sitemap-uppercase.xml',
+                              'http://www.example.com/sitemap-relative-url.xml'])
+        if rerp_available():
+            class test_spider(self.spider_class):
+                robotstxt_parser = 'scrapy.robotstxt.RerpRobotParser'
+            spider = test_spider.from_crawler(mock.MagicMock(), 'example.com')
+            self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                             ['http://example.com/sitemap.xml',
+                              'http://example.com/sitemap-product-index.xml',
+                              'http://example.com/sitemap-uppercase.xml',
+                              'http://www.example.com/sitemap-relative-url.xml'])
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>

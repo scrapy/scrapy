@@ -1,12 +1,13 @@
 import re
 import logging
 import six
+from six.moves.urllib.parse import urlparse, urlunparse, ParseResult
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, gzip_magic_number
-
+from scrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class SitemapSpider(Spider):
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
     sitemap_alternate_links = False
+    robotstxt_parser = None
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
@@ -26,6 +28,9 @@ class SitemapSpider(Spider):
                 c = getattr(self, c)
             self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
+
+        if self.robotstxt_parser:
+            self._parser_impl = load_object(self.robotstxt_parser)
 
     def start_requests(self):
         for url in self.sitemap_urls:
@@ -41,8 +46,20 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
-            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+            if self.robotstxt_parser:
+                rp = self._parser_impl.from_crawler(self.crawler, response.body)
+                for url in rp.sitemaps():
+                    # check if url is incomplete (e.g. - '/sitemaps.xml')
+                    if not urlparse(url).scheme:
+                        response_url_parts = urlparse(response.url)
+                        url = urlparse(url)
+                        url = ParseResult(response_url_parts.scheme, response_url_parts.netloc,
+                                          url.path, url.params, url.query, url.fragment)
+                        url = urlunparse(url)
+                    yield Request(url, callback=self._parse_sitemap)
+            else:
+                for url in sitemap_urls_from_robots(response.text, base_url=response.url):
+                    yield Request(url, callback=self._parse_sitemap)
         else:
             body = self._get_sitemap_body(response)
             if body is None:

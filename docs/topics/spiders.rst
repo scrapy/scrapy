@@ -688,6 +688,13 @@ SitemapSpider
 
         Default is ``sitemap_alternate_links`` disabled.
 
+    .. attribute:: robotstxt_parser
+
+        Import path of the `robots.txt`_ parser to use for extracting sitemaps URLs.
+        If ``None``, Scrapy's in-built logic for extraction will be used.
+
+        Default: ``None``
+
     .. method:: sitemap_filter(entries)
 
         This is a filter funtion that could be overridden to select sitemap entries
