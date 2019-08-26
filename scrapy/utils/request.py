@@ -15,7 +15,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_native_str
 
 
-def request_fingerprint(request, include_headers=None):
+def request_fingerprint(request, include_headers=None, hexadecimal=True):
     """Fills :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` if
     needed and returns the fingerprint of *request*.
 
@@ -24,19 +24,31 @@ def request_fingerprint(request, include_headers=None):
     calculated, assigned to
     :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` and returned.
 
+    .. deprecated:: VERSION
+
+        ``hexadecimal=True`` is deprecated. Future versions will always return
+        the fingerprint as :class:`bytes`. Use ``hexadecimal=False``.
+
     Example::
 
         >>> from scrapy import Request
         >>> request = Request('https://example.com')
         >>> request.fingerprint is None
         True
-        >>> request_fingerprint(request)
-        '6d748741a927b10454c83ac285b002cd239964ea'
+        >>> request_fingerprint(request, hexadecimal=False)
+        b"mt\\x87A\\xa9'\\xb1\\x04T\\xc8:\\xc2\\x85\\xb0\\x02\\xcd#\\x99d\\xea"
         >>> request.fingerprint
-        '6d748741a927b10454c83ac285b002cd239964ea'
+        b"mt\\x87A\\xa9'\\xb1\\x04T\\xc8:\\xc2\\x85\\xb0\\x02\\xcd#\\x99d\\xea"
     """
     def encoded_fingerprint(request):
-        return request.fingerprint.hex()
+        if hexadecimal:
+            return request.fingerprint.hex()
+        return request.fingerprint
+
+    if hexadecimal:
+        warn('`hexadecimal=True` is deprecated. Future versions will always '
+             'return the fingerprint as `bytes`. Use `hexadecimal=False`.',
+             ScrapyDeprecationWarning)
     if request.fingerprint is not None:
         return encoded_fingerprint(request)
     fp = hashlib.sha1()
