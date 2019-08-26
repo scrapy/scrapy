@@ -165,6 +165,7 @@ Solving specific problems
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/request-fingerprinting
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -204,6 +205,9 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
+
+:doc:`topics/request-fingerprinting`
+    Change how your requests are fingerprinted.
 
 .. _extending-scrapy:
 

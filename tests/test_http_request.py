@@ -36,10 +36,10 @@ class RequestTest(unittest.TestCase):
         assert isinstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, self.default_method)
-
         assert isinstance(r.headers, Headers)
         self.assertEqual(r.headers, self.default_headers)
         self.assertEqual(r.meta, self.default_meta)
+        assert r.fingerprint is None
 
         meta = {"lala": "lolo"}
         headers = {b"caca": b"coco"}
@@ -182,6 +182,7 @@ class RequestTest(unittest.TestCase):
                                 callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
         r1.cb_kwargs['key'] = 'value'
+        r1.fingerprint = b'1'
         r2 = r1.copy()
 
         # make sure copy does not propagate callbacks
@@ -204,9 +205,11 @@ class RequestTest(unittest.TestCase):
 
         # make sure headers attribute is shallow copied
         assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
+        assert r1.fingerprint == r2.fingerprint
 
         # Request.body can be identical since it's an immutable object (str)
 
@@ -226,19 +229,33 @@ class RequestTest(unittest.TestCase):
         r1 = self.request_class("http://www.example.com", method='GET')
         hdrs = Headers(r1.headers)
         hdrs[b'key'] = b'value'
+        r1.fingerprint = b'1'
         r2 = r1.replace(method="POST", body="New body", headers=hdrs)
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
         self.assertEqual((r1.body, r2.body), (b'', b"New body"))
         self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
+        assert r2.fingerprint is None
 
         # Empty attributes (which may fail if not compared properly)
         r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
-        r4 = r3.replace(url="http://www.example.com/2", body=b'', meta={}, dont_filter=False)
+        r4 = r3.replace(url="http://www.example.com/2", body=b'', meta={}, dont_filter=False, fingerprint=b'1')
         self.assertEqual(r4.url, "http://www.example.com/2")
         self.assertEqual(r4.body, b'')
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
+        assert r4.fingerprint == b'1'
+
+        # Ensure that only replacing a fingerprint works
+        r5 = self.request_class("http://www.example.com", fingerprint=b'1')
+        r6 = r5.replace(fingerprint=b'2')
+        assert r6.fingerprint == b'2'
+
+        # Ensure that replacing a fingerprint as part of a wider set of changes
+        # works
+        r7 = self.request_class("http://www.example.com", fingerprint=b'1')
+        r8 = r7.replace(url="http://www.example.com/2", fingerprint=b'2')
+        assert r6.fingerprint == b'2'
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")

@@ -270,4 +270,5 @@ coverage_ignore_pyobjects = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
+    'w3lib': ('https://w3lib.readthedocs.io/en/latest', None),
 }

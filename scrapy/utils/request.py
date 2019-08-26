@@ -43,6 +43,8 @@ def request_fingerprint(request, include_headers=None):
     include_headers argument, which is a list of Request headers to include.
 
     """
+    if request.fingerprint is not None:
+        return request.fingeprint.hex()
     if include_headers:
         include_headers = tuple(to_bytes(h.lower())
                                  for h in sorted(include_headers))

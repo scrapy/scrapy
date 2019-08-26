@@ -19,7 +19,8 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, cb_kwargs=None):
+                 dont_filter=False, errback=None, flags=None, cb_kwargs=None,
+                 fingerprint=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
@@ -39,6 +40,7 @@ class Request(object_ref):
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
+        self.fingerprint = fingerprint
 
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
@@ -99,8 +101,11 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs']:
+        if not args and not kwargs:
+            kwargs['fingerprint'] = self.fingerprint
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
+                  'flags', 'encoding', 'priority', 'dont_filter', 'callback',
+                  'errback', 'cb_kwargs']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

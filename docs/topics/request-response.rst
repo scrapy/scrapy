@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, cb_kwargs])
+.. autoclass:: Request
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -129,6 +129,9 @@ Request objects
     :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
     :type cb_kwargs: dict
 
+    :param bytes fingerprint: A hash for request comparison. See
+        :attr:`fingerprint`.
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -181,6 +184,14 @@ Request objects
 
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
+    .. attribute:: fingerprint
+
+        A hash (:class:`bytes`) for request comparison.
+
+        Give it a value to override global request fingerprinting.
+
+        See :ref:`request-fingerprinting`.
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -189,10 +200,15 @@ Request objects
     .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
-       given new values by whichever keyword arguments are specified. The
-       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are shallow
-       copied by default (unless new values are given as arguments). See also
-       :ref:`topics-request-response-ref-request-callback-arguments`.
+       given new values by whichever keyword arguments are specified.
+
+       The :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are
+       shallow copied by default (unless new values are given as arguments).
+       See also :ref:`topics-request-response-ref-request-callback-arguments`.
+
+       :attr:`fingerprint` is set to ``None`` unless no request attribute is
+       changed (:meth:`replace` used as :meth:`copy`) or a custom
+       ``fingerprint`` is given.
 
     .. automethod:: from_curl
 
