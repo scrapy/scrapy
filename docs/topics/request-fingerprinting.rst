@@ -21,13 +21,23 @@ canonical version (:func:`w3lib.url.canonicalize_url`) of
 Continue reading to learn how to change request fingerprinting, for example to
 take into account some headers or compare URLs case-insensitively.
 
-Overriding the fingerprint of a request
-=======================================
+Using global request fingerprinting
+===================================
+
+Code that needs the fingerprint of a request based on global request
+fingerprinting must use :func:`scrapy.utils.request.request_fingerprint` to
+read the fingerprint of a request:
+
+.. autofunction:: scrapy.utils.request.request_fingerprint
+
+
+Overriding the fingerprint of a request manually
+================================================
 
 One way to override how request fingerprints are calculated is to manually
 define the fingerprint of a request::
 
     request.fingerprint = b'custom fingerprint'
 
-If :att:`request.fingerprint <scrapy.http.request.Request.fingerprint>` has a
+If :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` has a
 value, it overrides global request fingerprinting.

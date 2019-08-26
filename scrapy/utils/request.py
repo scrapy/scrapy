@@ -3,65 +3,55 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-from __future__ import print_function
 import hashlib
-import weakref
-from six.moves.urllib.parse import urlunparse
+from warnings import warn
 
+from six.moves.urllib.parse import urlunparse
 from w3lib.http import basic_auth_header
+from w3lib.url import canonicalize_url
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_native_str
 
-from w3lib.url import canonicalize_url
-from scrapy.utils.httpobj import urlparse_cached
 
-
-_fingerprint_cache = weakref.WeakKeyDictionary()
 def request_fingerprint(request, include_headers=None):
+    """Fills :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` if
+    needed and returns the fingerprint of *request*.
+
+    If :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` is already
+    defined, its value is returned. Otherwise, a fingerprint of the request is
+    calculated, assigned to
+    :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` and returned.
+
+    Example::
+
+        >>> from scrapy import Request
+        >>> request = Request('https://example.com')
+        >>> request.fingerprint is None
+        True
+        >>> request_fingerprint(request)
+        '6d748741a927b10454c83ac285b002cd239964ea'
+        >>> request.fingerprint
+        '6d748741a927b10454c83ac285b002cd239964ea'
     """
-    Return the request fingerprint.
-
-    The request fingerprint is a hash that uniquely identifies the resource the
-    request points to. For example, take the following two urls:
-
-    http://www.example.com/query?id=111&cat=222
-    http://www.example.com/query?cat=222&id=111
-
-    Even though those are two different URLs both point to the same resource
-    and are equivalent (ie. they should return the same response).
-
-    Another example are cookies used to store session ids. Suppose the
-    following page is only accesible to authenticated users:
-
-    http://www.example.com/members/offers.html
-
-    Lot of sites use a cookie to store the session id, which adds a random
-    component to the HTTP Request and thus should be ignored when calculating
-    the fingerprint.
-
-    For this reason, request headers are ignored by default when calculating
-    the fingeprint. If you want to include specific headers use the
-    include_headers argument, which is a list of Request headers to include.
-
-    """
+    def encoded_fingerprint(request):
+        return request.fingerprint.hex()
     if request.fingerprint is not None:
-        return request.fingeprint.hex()
+        return encoded_fingerprint(request)
+    fp = hashlib.sha1()
+    fp.update(to_bytes(request.method))
+    fp.update(to_bytes(canonicalize_url(request.url)))
+    fp.update(request.body or b'')
     if include_headers:
-        include_headers = tuple(to_bytes(h.lower())
-                                 for h in sorted(include_headers))
-    cache = _fingerprint_cache.setdefault(request, {})
-    if include_headers not in cache:
-        fp = hashlib.sha1()
-        fp.update(to_bytes(request.method))
-        fp.update(to_bytes(canonicalize_url(request.url)))
-        fp.update(request.body or b'')
-        if include_headers:
-            for hdr in include_headers:
-                if hdr in request.headers:
-                    fp.update(hdr)
-                    for v in request.headers.getlist(hdr):
-                        fp.update(v)
-        cache[include_headers] = fp.hexdigest()
-    return cache[include_headers]
+        for header in sorted(include_headers):
+            header = to_bytes(header.lower())
+            if header in request.headers:
+                fp.update(header)
+                for v in request.headers.getlist(header):
+                    fp.update(v)
+    request.fingerprint = fp.digest()
+    return encoded_fingerprint(request)
 
 
 def request_authenticate(request, username, password):

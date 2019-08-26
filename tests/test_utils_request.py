@@ -1,7 +1,7 @@
 from __future__ import print_function
 import unittest
 from scrapy.http import Request
-from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
+from scrapy.utils.request import request_fingerprint, \
     request_authenticate, request_httprepr
 
 class UtilsRequestTest(unittest.TestCase):
@@ -16,8 +16,8 @@ class UtilsRequestTest(unittest.TestCase):
         r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
         self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2))
 
-        # make sure caching is working
-        self.assertEqual(request_fingerprint(r1), _fingerprint_cache[r1][None])
+        # make sure request.fingerprint is set
+        self.assertEqual(request_fingerprint(r1), r1.fingerprint)
 
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")
