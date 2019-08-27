@@ -952,7 +952,7 @@ LOGSTATS_INTERVAL
 Default: ``60.0``
 
 The interval (in seconds) between each logging printout of the stats 
-by :class:`~extensions.logstats.LogStats`.
+by :class:`~scrapy.extensions.logstats.LogStats`.
 
 .. setting:: MEMDEBUG_ENABLED
 
