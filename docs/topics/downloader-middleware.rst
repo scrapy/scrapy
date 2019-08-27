@@ -996,6 +996,7 @@ RobotsTxtMiddleware
     * :ref:`RobotFileParser <python-robotfileparser>` (default)
     * :ref:`Reppy <reppy-parser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
+    * :ref:`Protego <protego-parser>`
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1013,7 +1014,7 @@ RobotFileParser
 ~~~~~~~~~~~~~~~
 
 `RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
-Python's inbuilt ``robots.txt`` parser. The parser is fully compliant with `Martijn Koster's 
+Python's inbuilt robots.txt_ parser. The parser is fully compliant with `Martijn Koster's 
 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
 support for wildcard matching. Scrapy uses this parser by default.
 
@@ -1058,6 +1059,23 @@ In order to use this parser:
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
+
+.. _protego-parser:
+
+Protego parser
+~~~~~~~~~~~~~~
+
+`Protego <https://github.com/scrapy/protego>`_ is a pure-Python robots.txt_ parser.
+The parser is fully compliant with `Google's Robots.txt Specification
+<https://developers.google.com/search/reference/robots_txt>`_ hence supports wildcard 
+matching, and uses the length based rule similar to `Reppy <https://github.com/seomoz/reppy/>`_.
+
+In order to use this parser:
+
+* Install `Protego <https://github.com/scrapy/protego>`_ by running ``pip install protego``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.ProtegoRobotParser``
 
 .. _support-for-new-robots-parser:
 
