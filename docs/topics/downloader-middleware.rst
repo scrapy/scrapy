@@ -989,6 +989,12 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
+    The :setting:`ROBOTSTXT_USER_AGENT` setting can be used to specify the
+    user agent string to use for matching in the robots.txt_ file. If it
+    is ``None``, the User-Agent header you are sending with the request or the
+    :setting:`USER_AGENT` setting (in that order) will be used for determining
+    the user agent to use in the robots.txt_ file.
+
     This middleware has to be combined with a robots.txt_ parser.
 
     Scrapy ships with support for the following robots.txt_ parsers:
@@ -1073,21 +1079,6 @@ implementing the methods described below.
 
 .. autoclass:: RobotParser
    :members:
-
-RobotsTxtMiddleware Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: ROBOTSTXT_USER_AGENT
-
-ROBOTSTXT_USER_AGENT
-^^^^^^^^^^^^^^^^^^^^
-
-Default: ``None``
-
-The user agent string to use for matching in the robots.txt_ file. If ``None``,
-the User-Agent header you are sending with the request or the
-:setting:`USER_AGENT` setting (in that order) will be used for determining
-the user agent to use in the robots.txt_ file.
 
 .. _robots.txt: http://www.robotstxt.org/
 

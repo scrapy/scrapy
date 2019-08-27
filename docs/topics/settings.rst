@@ -1422,7 +1422,8 @@ USER_AGENT
 Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden. This user agent is
-also used in robots.txt if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
+also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
+if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overridding User-Agent header specified for the request.
 
 
