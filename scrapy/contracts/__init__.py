@@ -92,7 +92,7 @@ class ContractsManager(object):
         @wraps(cb)
         def cb_wrapper(response):
             try:
-                output = cb(response)
+                output = cb(response, **request.cb_kwargs)
                 output = list(iterate_spider_output(output))
             except Exception:
                 case = _create_testcase(method, 'callback')
@@ -133,7 +133,7 @@ class Contract(object):
                 else:
                     results.addSuccess(self.testcase_pre)
                 finally:
-                    return list(iterate_spider_output(cb(response)))
+                    return list(iterate_spider_output(cb(response, **request.cb_kwargs)))
 
             request.callback = wrapper
 
@@ -145,7 +145,7 @@ class Contract(object):
 
             @wraps(cb)
             def wrapper(response):
-                output = list(iterate_spider_output(cb(response)))
+                output = list(iterate_spider_output(cb(response, **request.cb_kwargs)))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
