@@ -247,6 +247,7 @@ RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 ROBOTSTXT_PARSER = 'scrapy.robotstxt.PythonRobotParser'
+ROBOTSTXT_USER_AGENT = None
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
