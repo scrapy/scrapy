@@ -165,9 +165,9 @@ BaseItemExporter
       value unchanged except for ``unicode`` values which are encoded to
       ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
-      :param field: the field being serialized. If a raw dict is being 
+      :param field: the field being serialized. If a raw dict is being
           exported (not :class:`~.Item`) *field* value is an empty dict.
-      :type field: :class:`~scrapy.item.Field` object or an empty dict 
+      :type field: :class:`~scrapy.item.Field` object or an empty dict
 
       :param name: the name of the field being serialized
       :type name: str
@@ -222,6 +222,12 @@ BaseItemExporter
         all items in the same line with no indentation
       * ``indent<=0`` each item on its own line, no indentation
       * ``indent>0`` each item on its own line, indented with the provided numeric value
+
+PythonItemExporter
+------------------
+
+.. autoclass:: PythonItemExporter
+
 
 .. highlight:: none
 
@@ -410,3 +416,8 @@ JsonLinesItemExporter
    this exporter is well suited for serializing large amounts of data.
 
 .. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
+
+MarshalItemExporter
+-------------------
+
+.. autoclass:: MarshalItemExporter
