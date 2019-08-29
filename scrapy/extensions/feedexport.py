@@ -160,7 +160,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         return cls(
             uri,
             crawler.settings['GCS_PROJECT_ID'],
-            crawler.settings['FEED_STORAGE_GCS_ACL']
+            crawler.settings['FEED_STORAGE_GCS_ACL'] or None
         )
 
     def _store_in_thread(self, file):

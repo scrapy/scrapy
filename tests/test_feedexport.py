@@ -206,6 +206,24 @@ class GCSFeedStorageTest(unittest.TestCase):
         assert storage.bucket_name == 'mybucket'
         assert storage.blob_name == 'export.csv'
 
+    @mock.patch('scrapy.conf.settings',
+                new={'GCS_PROJECT_ID': 'conf_id', 'FEED_STORAGE_GCS_ACL': '' }, create=True)
+    def test_parse_empty_acl(self):
+        try:
+            from google.cloud.storage import Client
+        except ImportError:
+            raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
+
+        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': '' }
+        crawler = get_crawler(settings_dict=settings)
+        storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
+        assert storage.acl is None
+
+        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': None }
+        crawler = get_crawler(settings_dict=settings)
+        storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
+        assert storage.acl is None
+
     @defer.inlineCallbacks
     def test_store(self):
         try:
