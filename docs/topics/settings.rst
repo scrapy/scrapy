@@ -944,6 +944,15 @@ Default: ``False``
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
 
+.. setting:: LOG_SCRAPED_ENABLED
+
+LOG_SCRAPED_ENABLED
+-----------
+
+Default: ``True``
+
+Whether to log scraped items when LOG_LEVEL is set to DEBUG.
+
 .. setting:: LOGSTATS_INTERVAL
 
 LOGSTATS_INTERVAL
