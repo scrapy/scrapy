@@ -8,6 +8,7 @@ from scrapy.utils.request import referer_str
 SCRAPEDMSG = u"Scraped from %(src)s" + os.linesep + "%(item)s"
 DROPPEDMSG = u"Dropped: %(exception)s" + os.linesep + "%(item)s"
 CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
+ERRORMSG = u"'Error processing %(item)s'"
 
 
 class LogFormatter(object):
@@ -88,6 +89,16 @@ class LogFormatter(object):
             'msg': DROPPEDMSG,
             'args': {
                 'exception': exception,
+                'item': item,
+            }
+        }
+
+    def error(self, item, exception, response, spider):
+        """Logs a message when an item causes an error while it is passing through the item pipeline."""
+        return {
+            'level': logging.ERROR,
+            'msg': ERRORMSG,
+            'args': {
                 'item': item,
             }
         }
