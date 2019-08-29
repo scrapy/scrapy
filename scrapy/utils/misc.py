@@ -145,4 +145,5 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 
 
 def get_object_attributes_as_dict(obj):
+    """Returns the object attributes (``dir(obj)``) names and values in a ``dict``"""
     return {k: getattr(obj, k) for k in dir(obj)}
