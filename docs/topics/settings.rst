@@ -947,7 +947,7 @@ then it displays the component responsible for the log output
 .. setting:: LOG_SCRAPED_ENABLED
 
 LOG_SCRAPED_ENABLED
------------
+-------------------
 
 Default: ``True``
 
