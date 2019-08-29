@@ -331,16 +331,16 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the request priority based on its depth:
+An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
+a :class:`~scrapy.http.Request` based on its depth.
 
-- if zero (default), no priority adjustment is made from depth
-- **a positive value will decrease the priority, i.e. higher depth
-  requests will be processed later** ; this is commonly used when doing
-  breadth-first crawls (BFO)
-- a negative value will increase priority, i.e., higher depth requests
-  will be processed sooner (DFO)
+The priority of a request is adjusted as follows::
 
-See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
+    request.priority = request.priority - ( depth * DEPTH_PRIORITY )
+
+As depth increases, positive values of ``DEPTH_PRIORITY`` decrease request
+priority (BFO), while negative values increase request priority (DFO). See
+also :ref:`faq-bfo-dfo`.
 
 .. note::
 
@@ -599,7 +599,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: `1073741824` (1024MB)
+Default: ``1073741824`` (1024MB)
 
 The maximum response size (in bytes) that downloader will download.
 
@@ -620,7 +620,7 @@ If you want to disable it set to 0.
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: `33554432` (32MB)
+Default: ``33554432`` (32MB)
 
 The response size (in bytes) that downloader will start to warn.
 
@@ -755,7 +755,7 @@ FEED_STORAGE_GCS_ACL
 --------------------
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
-For more information on how to set this value, please refer to `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
 
 .. setting:: FTP_PASSIVE_MODE
 

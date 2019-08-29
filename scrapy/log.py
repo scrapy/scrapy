@@ -17,7 +17,7 @@ warnings.warn("Module `scrapy.log` has been deprecated, Scrapy now relies on "
               ScrapyDeprecationWarning, stacklevel=2)
 
 
-# Imports and level_names variable kept for backwards-compatibility
+# Imports and level_names variable kept for backward-compatibility
 
 DEBUG = logging.DEBUG
 INFO = logging.INFO

@@ -3,15 +3,222 @@
 Release notes
 =============
 
-Scrapy 1.6.0 (unreleased)
+.. _release-1.6.0:
+
+Scrapy 1.6.0 (2019-01-30)
 -------------------------
 
-Cleanups
-~~~~~~~~
+Highlights:
 
-* Remove deprecated ``CrawlerSettings`` class.
-* Remove deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes.
+* better Windows support;
+* Python 3.7 compatibility;
+* big documentation improvements, including a switch
+  from ``.extract_first()`` + ``.extract()`` API to ``.get()`` + ``.getall()``
+  API;
+* feed exports, FilePipeline and MediaPipeline improvements;
+* better extensibility: :signal:`item_error` and
+  :signal:`request_reached_downloader` signals; ``from_crawler`` support
+  for feed exporters, feed storages and dupefilters.
+* ``scrapy.contracts`` fixes and new features;
+* telnet console security improvements, first released as a
+  backport in :ref:`release-1.5.2`;
+* clean-up of the deprecated code;
+* various bug fixes, small new features and usability improvements across
+  the codebase.
 
+Selector API changes
+~~~~~~~~~~~~~~~~~~~~
+
+While these are not changes in Scrapy itself, but rather in the parsel_
+library which Scrapy uses for xpath/css selectors, these changes are
+worth mentioning here. Scrapy now depends on parsel >= 1.5, and
+Scrapy documentation is updated to follow recent ``parsel`` API conventions.
+
+Most visible change is that ``.get()`` and ``.getall()`` selector
+methods are now preferred over ``.extract_first()`` and ``.extract()``.
+We feel that these new methods result in a more concise and readable code.
+See :ref:`old-extraction-api` for more details.
+
+.. note::
+    There are currently **no plans** to deprecate ``.extract()``
+    and ``.extract_first()`` methods.
+
+Another useful new feature is the introduction of ``Selector.attrib`` and
+``SelectorList.attrib`` properties, which make it easier to get
+attributes of HTML elements. See :ref:`selecting-attributes`.
+
+CSS selectors are cached in parsel >= 1.5, which makes them faster
+when the same CSS path is used many times. This is very common in
+case of Scrapy spiders: callbacks are usually called several times,
+on different pages.
+
+If you're using custom ``Selector`` or ``SelectorList`` subclasses,
+a **backward incompatible** change in parsel may affect your code.
+See `parsel changelog`_ for a detailed description, as well as for the
+full list of improvements.
+
+.. _parsel changelog: https://parsel.readthedocs.io/en/latest/history.html
+
+Telnet console
+~~~~~~~~~~~~~~
+
+**Backward incompatible**: Scrapy's telnet console now requires username
+and password. See :ref:`topics-telnetconsole` for more details. This change
+fixes a **security issue**; see :ref:`release-1.5.2` release notes for details.
+
+New extensibility features
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ``from_crawler`` support is added to feed exporters and feed storages. This,
+  among other things, allows to access Scrapy settings from custom feed
+  storages and exporters (:issue:`1605`, :issue:`3348`).
+* ``from_crawler`` support is added to dupefilters (:issue:`2956`); this allows
+  to access e.g. settings or a spider from a dupefilter.
+* :signal:`item_error` is fired when an error happens in a pipeline
+  (:issue:`3256`);
+* :signal:`request_reached_downloader` is fired when Downloader gets
+  a new Request; this signal can be useful e.g. for custom Schedulers
+  (:issue:`3393`).
+* new SitemapSpider :meth:`~.SitemapSpider.sitemap_filter` method which allows
+  to select sitemap entries based on their attributes in SitemapSpider
+  subclasses (:issue:`3512`).
+* Lazy loading of Downloader Handlers is now optional; this enables better
+  initialization error handling in custom Downloader Handlers (:issue:`3394`).
+
+New FilePipeline and MediaPipeline features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Expose more options for S3FilesStore: :setting:`AWS_ENDPOINT_URL`,
+  :setting:`AWS_USE_SSL`, :setting:`AWS_VERIFY`, :setting:`AWS_REGION_NAME`.
+  For example, this allows to use alternative or self-hosted
+  AWS-compatible providers (:issue:`2609`, :issue:`3548`).
+* ACL support for Google Cloud Storage: :setting:`FILES_STORE_GCS_ACL` and
+  :setting:`IMAGES_STORE_GCS_ACL` (:issue:`3199`).
+
+``scrapy.contracts`` improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Exceptions in contracts code are handled better (:issue:`3377`);
+* ``dont_filter=True`` is used for contract requests, which allows to test
+  different callbacks with the same URL (:issue:`3381`);
+* ``request_cls`` attribute in Contract subclasses allow to use different
+  Request classes in contracts, for example FormRequest (:issue:`3383`).
+* Fixed errback handling in contracts, e.g. for cases where a contract
+  is executed for URL which returns non-200 response (:issue:`3371`).
+
+Usability improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+* more stats for RobotsTxtMiddleware (:issue:`3100`)
+* INFO log level is used to show telnet host/port (:issue:`3115`)
+* a message is added to IgnoreRequest in RobotsTxtMiddleware (:issue:`3113`)
+* better validation of ``url`` argument in ``Response.follow`` (:issue:`3131`)
+* non-zero exit code is returned from Scrapy commands when error happens
+  on spider inititalization (:issue:`3226`)
+* Link extraction improvements: "ftp" is added to scheme list (:issue:`3152`);
+  "flv" is added to common video extensions (:issue:`3165`)
+* better error message when an exporter is disabled (:issue:`3358`);
+* ``scrapy shell --help`` mentions syntax required for local files
+  (``./file.html``) - :issue:`3496`.
+* Referer header value is added to RFPDupeFilter log messages (:issue:`3588`)
+
+Bug fixes
+~~~~~~~~~
+
+* fixed issue with extra blank lines in .csv exports under Windows
+  (:issue:`3039`);
+* proper handling of pickling errors in Python 3 when serializing objects
+  for disk queues (:issue:`3082`)
+* flags are now preserved when copying Requests (:issue:`3342`);
+* FormRequest.from_response clickdata shouldn't ignore elements with
+  ``input[type=image]`` (:issue:`3153`).
+* FormRequest.from_response should preserve duplicate keys (:issue:`3247`)
+
+Documentation improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Docs are re-written to suggest .get/.getall API instead of
+  .extract/.extract_first. Also, :ref:`topics-selectors` docs are updated
+  and re-structured to match latest parsel docs; they now contain more topics,
+  such as :ref:`selecting-attributes` or :ref:`topics-selectors-css-extensions`
+  (:issue:`3390`).
+* :ref:`topics-developer-tools` is a new tutorial which replaces
+  old Firefox and Firebug tutorials (:issue:`3400`).
+* SCRAPY_PROJECT environment variable is documented (:issue:`3518`);
+* troubleshooting section is added to install instructions (:issue:`3517`);
+* improved links to beginner resources in the tutorial
+  (:issue:`3367`, :issue:`3468`);
+* fixed :setting:`RETRY_HTTP_CODES` default values in docs (:issue:`3335`);
+* remove unused ``DEPTH_STATS`` option from docs (:issue:`3245`);
+* other cleanups (:issue:`3347`, :issue:`3350`, :issue:`3445`, :issue:`3544`,
+  :issue:`3605`).
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+Compatibility shims for pre-1.0 Scrapy module names are removed
+(:issue:`3318`):
+
+* ``scrapy.command``
+* ``scrapy.contrib`` (with all submodules)
+* ``scrapy.contrib_exp`` (with all submodules)
+* ``scrapy.dupefilter``
+* ``scrapy.linkextractor``
+* ``scrapy.project``
+* ``scrapy.spider``
+* ``scrapy.spidermanager``
+* ``scrapy.squeue``
+* ``scrapy.stats``
+* ``scrapy.statscol``
+* ``scrapy.utils.decorator``
+
+See :ref:`module-relocations` for more information, or use suggestions
+from Scrapy 1.5.x deprecation warnings to update your code.
+
+Other deprecation removals:
+
+* Deprecated scrapy.interfaces.ISpiderManager is removed; please use
+  scrapy.interfaces.ISpiderLoader.
+* Deprecated ``CrawlerSettings`` class is removed (:issue:`3327`).
+* Deprecated ``Settings.overrides`` and ``Settings.defaults`` attributes
+  are removed (:issue:`3327`, :issue:`3359`).
+
+Other improvements, cleanups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* All Scrapy tests now pass on Windows; Scrapy testing suite is executed
+  in a Windows environment on CI (:issue:`3315`).
+* Python 3.7 support (:issue:`3326`, :issue:`3150`, :issue:`3547`).
+* Testing and CI fixes (:issue:`3526`, :issue:`3538`, :issue:`3308`,
+  :issue:`3311`, :issue:`3309`, :issue:`3305`, :issue:`3210`, :issue:`3299`)
+* ``scrapy.http.cookies.CookieJar.clear`` accepts "domain", "path" and "name"
+  optional arguments (:issue:`3231`).
+* additional files are included to sdist (:issue:`3495`);
+* code style fixes (:issue:`3405`, :issue:`3304`);
+* unneeded .strip() call is removed (:issue:`3519`);
+* collections.deque is used to store MiddlewareManager methods instead
+  of a list (:issue:`3476`)
+
+.. _release-1.5.2:
+
+Scrapy 1.5.2 (2019-01-22)
+-------------------------
+
+* *Security bugfix*: Telnet console extension can be easily exploited by rogue
+  websites POSTing content to http://localhost:6023, we haven't found a way to
+  exploit it from Scrapy, but it is very easy to trick a browser to do so and
+  elevates the risk for local development environment.
+
+  *The fix is backward incompatible*, it enables telnet user-password
+  authentication by default with a random generated password. If you can't
+  upgrade right away, please consider setting :setting:`TELNET_CONSOLE_PORT`
+  out of its default value.
+
+  See :ref:`telnet console <topics-telnetconsole>` documentation for more info
+
+* Backport CI build failure under GCE environemnt due to boto import error.
+
+.. _release-1.5.1:
 
 Scrapy 1.5.1 (2018-07-12)
 -------------------------
@@ -27,6 +234,9 @@ This is a maintenance release with important bug fixes, but no new features:
   :issue:`3123`, :issue:`3127`, :issue:`3189`, :issue:`3224`, :issue:`3280`,
   :issue:`3279`, :issue:`3201`, :issue:`3260`, :issue:`3284`, :issue:`3298`,
   :issue:`3294`).
+
+
+.. _release-1.5.0:
 
 Scrapy 1.5.0 (2017-12-29)
 -------------------------
@@ -46,15 +256,15 @@ Some highlights:
 * Better default handling of HTTP 308, 522 and 524 status codes.
 * Documentation is improved, as usual.
 
-Backwards Incompatible Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Backward Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Scrapy 1.5 drops support for Python 3.3.
 * Default Scrapy User-Agent now uses https link to scrapy.org (:issue:`2983`).
-  **This is technically backwards-incompatible**; override
+  **This is technically backward-incompatible**; override
   :setting:`USER_AGENT` if you relied on old value.
 * Logging of settings overridden by ``custom_settings`` is fixed;
-  **this is technically backwards-incompatible** because the logger
+  **this is technically backward-incompatible** because the logger
   changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``. If you're
   parsing Scrapy logs, please update your log parsers (:issue:`1343`).
 * LinkExtractor now ignores ``m4v`` extension by default, this is change
@@ -91,11 +301,11 @@ Bug fixes
 ~~~~~~~~~
 
 - Fix logging of settings overridden by ``custom_settings``;
-  **this is technically backwards-incompatible** because the logger
+  **this is technically backward-incompatible** because the logger
   changes from ``[scrapy.utils.log]`` to ``[scrapy.crawler]``, so please
   update your log parsers if needed (:issue:`1343`)
 - Default Scrapy User-Agent now uses https link to scrapy.org (:issue:`2983`).
-  **This is technically backwards-incompatible**; override
+  **This is technically backward-incompatible**; override
   :setting:`USER_AGENT` if you relied on old value.
 - Fix PyPy and PyPy3 test failures, support them officially
   (:issue:`2793`, :issue:`2935`, :issue:`2990`, :issue:`3050`, :issue:`2213`,
@@ -139,6 +349,7 @@ Docs
 - Document ``from_crawler`` methods for spider and downloader middlewares
   (:issue:`3019`)
 
+.. _release-1.4.0:
 
 Scrapy 1.4.0 (2017-05-18)
 -------------------------
@@ -204,18 +415,18 @@ offset, using the new :setting:`FEED_EXPORT_INDENT` setting.
 
 Enjoy! (Or read on for the rest of changes in this release.)
 
-Deprecations and Backwards Incompatible Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Deprecations and Backward Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
-  **warning, this is technically backwards-incompatible**
+  **warning, this is technically backward-incompatible**
 - Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
-  **this is technically backwards-incompatible** so please check if you have
+  **this is technically backward-incompatible** so please check if you have
   any non-default ``MEMUSAGE_***`` options set.
 - ``EDITOR`` environment variable now takes precedence over ``EDITOR``
   option defined in settings.py (:issue:`1829`); Scrapy default settings
-  no longer depend on environment variables. **This is technically a backwards
+  no longer depend on environment variables. **This is technically a backward
   incompatible change**.
 - ``Spider.make_requests_from_url`` is deprecated
   (:issue:`1728`, fixes :issue:`1495`).
@@ -325,6 +536,8 @@ Documentation
 - Clarify ``allowed_domains`` example (:issue:`2670`)
 
 
+.. _release-1.3.3:
+
 Scrapy 1.3.3 (2017-03-10)
 -------------------------
 
@@ -337,6 +550,7 @@ Bug fixes
   A new setting is introduced to toggle between warning or exception if needed ;
   see :setting:`SPIDER_LOADER_WARN_ONLY` for details.
 
+.. _release-1.3.2:
 
 Scrapy 1.3.2 (2017-02-13)
 -------------------------
@@ -347,6 +561,8 @@ Bug fixes
 - Preserve request class when converting to/from dicts (utils.reqser) (:issue:`2510`).
 - Use consistent selectors for author field in tutorial (:issue:`2551`).
 - Fix TLS compatibility in Twisted 17+ (:issue:`2558`)
+
+.. _release-1.3.1:
 
 Scrapy 1.3.1 (2017-02-08)
 -------------------------
@@ -396,6 +612,8 @@ Cleanups
 - Remove dead code supporting old Twisted versions (:issue:`2544`).
 
 
+.. _release-1.3.0:
+
 Scrapy 1.3.0 (2016-12-21)
 -------------------------
 
@@ -418,10 +636,10 @@ New Features
   scrapy shell now follow HTTP redirections by default (:issue:`2290`);
   See :command:`fetch` and :command:`shell` for details.
 - ``HttpErrorMiddleware`` now logs errors with ``INFO`` level instead of ``DEBUG``;
-  this is technically **backwards incompatible** so please check your log parsers.
+  this is technically **backward incompatible** so please check your log parsers.
 - By default, logger names now use a long-form path, e.g. ``[scrapy.extensions.logstats]``,
   instead of the shorter "top-level" variant of prior releases (e.g. ``[scrapy]``);
-  this is **backwards incompatible** if you have log parsers expecting the short
+  this is **backward incompatible** if you have log parsers expecting the short
   logger name part. You can switch back to short logger names using :setting:`LOG_SHORT_NAMES`
   set to ``True``.
 
@@ -435,12 +653,15 @@ Dependencies & Cleanups
 - ``ChunkedTransferMiddleware`` is deprecated and removed from the default
   downloader middlewares.
 
+.. _release-1.2.3:
 
 Scrapy 1.2.3 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+
+.. _release-1.2.2:
 
 Scrapy 1.2.2 (2016-12-06)
 -------------------------
@@ -477,6 +698,8 @@ Other changes
 .. _conda-forge: https://anaconda.org/conda-forge/scrapy
 
 
+.. _release-1.2.1:
+
 Scrapy 1.2.1 (2016-10-21)
 -------------------------
 
@@ -500,6 +723,8 @@ Other changes
 
 - Removed ``www.`` from ``start_urls`` in built-in spider templates (:issue:`2299`).
 
+
+.. _release-1.2.0:
 
 Scrapy 1.2.0 (2016-10-03)
 -------------------------
@@ -525,11 +750,11 @@ Bug fixes
 ~~~~~~~~~
 
 - DefaultRequestHeaders middleware now runs before UserAgent middleware
-  (:issue:`2088`). **Warning: this is technically backwards incompatible**,
+  (:issue:`2088`). **Warning: this is technically backward incompatible**,
   though we consider this a bug fix.
 - HTTP cache extension and plugins that use the ``.scrapy`` data directory now
   work outside projects (:issue:`1581`).  **Warning: this is technically
-  backwards incompatible**, though we consider this a bug fix.
+  backward incompatible**, though we consider this a bug fix.
 - ``Selector`` does not allow passing both ``response`` and ``text`` anymore
   (:issue:`2153`).
 - Fixed logging of wrong callback name with ``scrapy parse`` (:issue:`2169`).
@@ -569,12 +794,14 @@ Documentation
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
 
+.. _release-1.1.4:
 
 Scrapy 1.1.4 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+.. _release-1.1.3:
 
 Scrapy 1.1.3 (2016-09-22)
 -------------------------
@@ -592,6 +819,7 @@ Documentation
   rewritten to use http://toscrape.com websites
   (:issue:`2236`, :issue:`2249`, :issue:`2252`).
 
+.. _release-1.1.2:
 
 Scrapy 1.1.2 (2016-08-18)
 -------------------------
@@ -606,6 +834,7 @@ Bug fixes
 - :setting:`IMAGES_EXPIRES` default value set back to 90
   (the regression was introduced in 1.1.1)
 
+.. _release-1.1.1:
 
 Scrapy 1.1.1 (2016-07-13)
 -------------------------
@@ -658,6 +887,7 @@ Tests
 
 - Upgrade py.test requirement on Travis CI and Pin pytest-cov to 2.2.1 (:issue:`2095`)
 
+.. _release-1.1.0:
 
 Scrapy 1.1.0 (2016-05-11)
 -------------------------
@@ -704,13 +934,13 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - Accept XML node names containing dots as valid (:issue:`1533`).
   - When uploading files or images to S3 (with ``FilesPipeline`` or
     ``ImagesPipeline``), the default ACL policy is now "private" instead
-    of "public" **Warning: backwards incompatible!**.
+    of "public" **Warning: backward incompatible!**.
     You can use :setting:`FILES_STORE_S3_ACL` to change it.
   - We've reimplemented ``canonicalize_url()`` for more correct output,
     especially for URLs with non-ASCII characters (:issue:`1947`).
     This could change link extractors output compared to previous scrapy versions.
     This may also invalidate some cache entries you could still have from pre-1.1 runs.
-    **Warning: backwards incompatible!**.
+    **Warning: backward incompatible!**.
 
 Keep reading for more details on other improvements and bug fixes.
 
@@ -743,7 +973,7 @@ Additional New Features and Enhancements
   - Support for bpython and configure preferred Python shell via
     ``SCRAPY_PYTHON_SHELL`` (:issue:`1100`, :issue:`1444`).
   - Support URLs without scheme (:issue:`1498`)
-    **Warning: backwards incompatible!**
+    **Warning: backward incompatible!**
   - Bring back support for relative file path (:issue:`1710`, :issue:`1550`).
 
 - Added :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS` setting to change default check
@@ -826,7 +1056,7 @@ Bugfixes
 ~~~~~~~~
 
 - Scrapy does not retry requests that got a ``HTTP 400 Bad Request``
-  response anymore (:issue:`1289`). **Warning: backwards incompatible!**
+  response anymore (:issue:`1289`). **Warning: backward incompatible!**
 - Support empty password for http_proxy config (:issue:`1274`).
 - Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
 - Support link rel attribute with multiple values (:issue:`1201`).
@@ -847,12 +1077,14 @@ Bugfixes
 - HTTPS+CONNECT tunnels could get mixed up when using multiple proxies
   to same remote host (:issue:`1912`).
 
+.. _release-1.0.7:
 
 Scrapy 1.0.7 (2017-03-03)
 -------------------------
 
 - Packaging fix: disallow unsupported Twisted versions in setup.py
 
+.. _release-1.0.6:
 
 Scrapy 1.0.6 (2016-05-04)
 -------------------------
@@ -862,6 +1094,7 @@ Scrapy 1.0.6 (2016-05-04)
 - DOC: Support for Sphinx 1.4+ (:issue:`1893`)
 - DOC: Consistency in selectors examples (:issue:`1869`)
 
+.. _release-1.0.5:
 
 Scrapy 1.0.5 (2016-02-04)
 -------------------------
@@ -871,6 +1104,7 @@ Scrapy 1.0.5 (2016-02-04)
 - DOC: Fixed typos in tutorial and media-pipeline (:commit:`808a9ea` and :commit:`803bd87`)
 - DOC: Add AjaxCrawlMiddleware to DOWNLOADER_MIDDLEWARES_BASE in settings docs (:commit:`aa94121`)
 
+.. _release-1.0.4:
 
 Scrapy 1.0.4 (2015-12-30)
 -------------------------
@@ -924,11 +1158,15 @@ Scrapy 1.0.4 (2015-12-30)
 - Small grammatical change (:commit:`8752294`)
 - Add openssl version to version command (:commit:`13c45ac`)
 
+.. _release-1.0.3:
+
 Scrapy 1.0.3 (2015-08-11)
 -------------------------
 
 - add service_identity to scrapy install_requires (:commit:`cbc2501`)
 - Workaround for travis#296 (:commit:`66af9cd`)
+
+.. _release-1.0.2:
 
 Scrapy 1.0.2 (2015-08-06)
 -------------------------
@@ -940,6 +1178,8 @@ Scrapy 1.0.2 (2015-08-06)
 - Fixed typos (:commit:`a9ae7b0`)
 - Fix doc reference. (:commit:`7c8a4fe`)
 
+.. _release-1.0.1:
+
 Scrapy 1.0.1 (2015-07-01)
 -------------------------
 
@@ -949,6 +1189,8 @@ Scrapy 1.0.1 (2015-07-01)
 - DOC Bring Ubuntu and Archlinux outside of Windows subsection (:commit:`392233f`)
 - DOC remove version suffix from ubuntu package (:commit:`5303c66`)
 - DOC Update release date for 1.0 (:commit:`c89fa29`)
+
+.. _release-1.0.0:
 
 Scrapy 1.0.0 (2015-06-19)
 -------------------------
@@ -1064,12 +1306,14 @@ until it reaches a stable status.
 
 See more examples for scripts running Scrapy: :ref:`topics-practices`
 
+.. _module-relocations:
+
 Module Relocations
 ~~~~~~~~~~~~~~~~~~
 
 There’s been a large rearrangement of modules trying to improve the general
 structure of Scrapy. Main changes were separating various subpackages into
-new projects and dissolving both `scrapy.contrib` and `scrapy.contrib_exp`
+new projects and dissolving both ``scrapy.contrib`` and ``scrapy.contrib_exp``
 into top level packages. Backward compatibility was kept among internal
 relocations, while importing deprecated modules expect warnings indicating
 their new place.
@@ -1100,7 +1344,7 @@ Outsourced packages
 |                                     | /scrapy-plugins/scrapy-jsonrpc>`_   |
 +-------------------------------------+-------------------------------------+
 
-`scrapy.contrib_exp` and `scrapy.contrib` dissolutions
+``scrapy.contrib_exp`` and ``scrapy.contrib`` dissolutions
 
 +-------------------------------------+-------------------------------------+
 | Old location                        | New location                        |
@@ -1312,7 +1556,7 @@ Code refactoring
   (:issue:`1078`)
 - Pydispatch pep8 (:issue:`992`)
 - Removed unused 'load=False' parameter from walk_modules() (:issue:`871`)
-- For consistency, use `job_dir` helper in `SpiderState` extension.
+- For consistency, use ``job_dir`` helper in ``SpiderState`` extension.
   (:issue:`805`)
 - rename "sflo" local variables to less cryptic "log_observer" (:issue:`775`)
 
@@ -1402,7 +1646,7 @@ Scrapy 0.24.2 (2014-07-08)
 Scrapy 0.24.1 (2014-06-27)
 --------------------------
 
-- Fix deprecated CrawlerSettings and increase backwards compatibility with
+- Fix deprecated CrawlerSettings and increase backward compatibility with
   .defaults attribute (:commit:`8e3f20a`)
 
 
@@ -1425,10 +1669,10 @@ Enhancements
   cache middleware (:issue:`541`, :issue:`500`, :issue:`571`)
 - Expose current crawler in Scrapy shell (:issue:`557`)
 - Improve testsuite comparing CSV and XML exporters (:issue:`570`)
-- New `offsite/filtered` and `offsite/domains` stats (:issue:`566`)
+- New ``offsite/filtered`` and ``offsite/domains`` stats (:issue:`566`)
 - Support process_links as generator in CrawlSpider (:issue:`555`)
 - Verbose logging and new stats counters for DupeFilter (:issue:`553`)
-- Add a mimetype parameter to `MailSender.send()` (:issue:`602`)
+- Add a mimetype parameter to ``MailSender.send()`` (:issue:`602`)
 - Generalize file pipeline log messages (:issue:`622`)
 - Replace unencodeable codepoints with html entities in SGMLLinkExtractor (:issue:`565`)
 - Converted SEP documents to rst format (:issue:`629`, :issue:`630`,
@@ -1447,20 +1691,20 @@ Enhancements
 - Make scrapy.version_info a tuple of integers (:issue:`681`, :issue:`692`)
 - Infer exporter's output format from filename extensions
   (:issue:`546`, :issue:`659`, :issue:`760`)
-- Support case-insensitive domains in `url_is_from_any_domain()` (:issue:`693`)
+- Support case-insensitive domains in ``url_is_from_any_domain()`` (:issue:`693`)
 - Remove pep8 warnings in project and spider templates (:issue:`698`)
-- Tests and docs for `request_fingerprint` function (:issue:`597`)
-- Update SEP-19 for GSoC project `per-spider settings` (:issue:`705`)
+- Tests and docs for ``request_fingerprint`` function (:issue:`597`)
+- Update SEP-19 for GSoC project ``per-spider settings`` (:issue:`705`)
 - Set exit code to non-zero when contracts fails (:issue:`727`)
 - Add a setting to control what class is instanciated as Downloader component
   (:issue:`738`)
-- Pass response in `item_dropped` signal (:issue:`724`)
-- Improve `scrapy check` contracts command (:issue:`733`, :issue:`752`)
-- Document `spider.closed()` shortcut (:issue:`719`)
-- Document `request_scheduled` signal (:issue:`746`)
+- Pass response in ``item_dropped`` signal (:issue:`724`)
+- Improve ``scrapy check`` contracts command (:issue:`733`, :issue:`752`)
+- Document ``spider.closed()`` shortcut (:issue:`719`)
+- Document ``request_scheduled`` signal (:issue:`746`)
 - Add a note about reporting security issues (:issue:`697`)
 - Add LevelDB http cache storage backend (:issue:`626`, :issue:`500`)
-- Sort spider list output of `scrapy list` command (:issue:`742`)
+- Sort spider list output of ``scrapy list`` command (:issue:`742`)
 - Multiple documentation enhancemens and fixes
   (:issue:`575`, :issue:`587`, :issue:`590`, :issue:`596`, :issue:`610`,
   :issue:`617`, :issue:`618`, :issue:`627`, :issue:`613`, :issue:`643`,
@@ -1528,23 +1772,23 @@ Scrapy 0.22.0 (released 2014-01-17)
 Enhancements
 ~~~~~~~~~~~~
 
-- [**Backwards incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
-  To restore old backend set `HTTPCACHE_STORAGE` to `scrapy.contrib.httpcache.DbmCacheStorage`
+- [**Backward incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
+  To restore old backend set ``HTTPCACHE_STORAGE`` to ``scrapy.contrib.httpcache.DbmCacheStorage``
 - Proxy \https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
 - Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
 - Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
 - Selectors register EXSLT namespaces by default (:issue:`472`)
 - Unify item loaders similar to selectors renaming (:issue:`461`)
-- Make `RFPDupeFilter` class easily subclassable (:issue:`533`)
+- Make ``RFPDupeFilter`` class easily subclassable (:issue:`533`)
 - Improve test coverage and forthcoming Python 3 support (:issue:`525`)
 - Promote startup info on settings and middleware to INFO level (:issue:`520`)
-- Support partials in `get_func_args` util (:issue:`506`, issue:`504`)
+- Support partials in ``get_func_args`` util (:issue:`506`, issue:`504`)
 - Allow running indiviual tests via tox (:issue:`503`)
 - Update extensions ignored by link extractors (:issue:`498`)
 - Add middleware methods to get files/images/thumbs paths (:issue:`490`)
 - Improve offsite middleware tests (:issue:`478`)
 - Add a way to skip default Referer header set by RefererMiddleware (:issue:`475`)
-- Do not send `x-gzip` in default `Accept-Encoding` header (:issue:`469`)
+- Do not send ``x-gzip`` in default ``Accept-Encoding`` header (:issue:`469`)
 - Support defining http error handling using settings (:issue:`466`)
 - Use modern python idioms wherever you find legacies (:issue:`497`)
 - Improve and correct documentation
@@ -1555,14 +1799,14 @@ Fixes
 ~~~~~
 
 - Update Selector class imports in CrawlSpider template (:issue:`484`)
-- Fix unexistent reference to `engine.slots` (:issue:`464`)
-- Do not try to call `body_as_unicode()` on a non-TextResponse instance (:issue:`462`)
+- Fix unexistent reference to ``engine.slots`` (:issue:`464`)
+- Do not try to call ``body_as_unicode()`` on a non-TextResponse instance (:issue:`462`)
 - Warn when subclassing XPathItemLoader, previously it only warned on
   instantiation. (:issue:`523`)
 - Warn when subclassing XPathSelector, previously it only warned on
   instantiation. (:issue:`537`)
 - Multiple fixes to memory stats (:issue:`531`, :issue:`530`, :issue:`529`)
-- Fix overriding url in `FormRequest.from_response()` (:issue:`507`)
+- Fix overriding url in ``FormRequest.from_response()`` (:issue:`507`)
 - Fix tests runner under pip 1.5 (:issue:`513`)
 - Fix logging error when spider name is unicode (:issue:`479`)
 
@@ -1589,7 +1833,7 @@ Enhancements
   (modifying them had been deprecated for a long time)
 - :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
 - Sitemap spider can fetch alternate URLs (:issue:`360`)
-- `Selector.remove_namespaces()` now remove namespaces from element's attributes. (:issue:`416`)
+- ``Selector.remove_namespaces()`` now remove namespaces from element's attributes. (:issue:`416`)
 - Paved the road for Python 3.3+ (:issue:`435`, :issue:`436`, :issue:`431`, :issue:`452`)
 - New item exporter using native python types with nesting support (:issue:`366`)
 - Tune HTTP1.1 pool size so it matches concurrency defined by settings (:commit:`b43b5f575`)
@@ -1600,13 +1844,13 @@ Enhancements
 - Mock server (used for tests) can listen for HTTPS requests (:issue:`410`)
 - Remove multi spider support from multiple core components
   (:issue:`422`, :issue:`421`, :issue:`420`, :issue:`419`, :issue:`423`, :issue:`418`)
-- Travis-CI now tests Scrapy changes against development versions of `w3lib` and `queuelib` python packages.
+- Travis-CI now tests Scrapy changes against development versions of ``w3lib`` and ``queuelib`` python packages.
 - Add pypy 2.1 to continuous integration tests (:commit:`ecfa7431`)
 - Pylinted, pep8 and removed old-style exceptions from source (:issue:`430`, :issue:`432`)
 - Use importlib for parametric imports (:issue:`445`)
 - Handle a regression introduced in Python 2.7.5 that affects XmlItemExporter (:issue:`372`)
 - Bugfix crawling shutdown on SIGINT (:issue:`450`)
-- Do not submit `reset` type inputs in FormRequest.from_response (:commit:`b326b87`)
+- Do not submit ``reset`` type inputs in FormRequest.from_response (:commit:`b326b87`)
 - Do not silence download errors when request errback raises an exception (:commit:`684cfc0`)
 
 Bugfixes
@@ -1621,8 +1865,8 @@ Bugfixes
 - Improve request-response docs (:issue:`391`)
 - Improve best practices docs (:issue:`399`, :issue:`400`, :issue:`401`, :issue:`402`)
 - Improve django integration docs (:issue:`404`)
-- Document `bindaddress` request meta (:commit:`37c24e01d7`)
-- Improve `Request` class documentation (:issue:`226`)
+- Document ``bindaddress`` request meta (:commit:`37c24e01d7`)
+- Improve ``Request`` class documentation (:issue:`226`)
 
 Other
 ~~~~~
@@ -1631,7 +1875,7 @@ Other
 - Add `cssselect`_ python package as install dependency
 - Drop libxml2 and multi selector's backend support, `lxml`_ is required from now on.
 - Minimum Twisted version increased to 10.0.0, dropped Twisted 8.0 support.
-- Running test suite now requires `mock` python library (:issue:`390`)
+- Running test suite now requires ``mock`` python library (:issue:`390`)
 
 
 Thanks
@@ -1685,7 +1929,7 @@ Scrapy 0.18.3 (released 2013-10-03)
 Scrapy 0.18.2 (released 2013-09-03)
 -----------------------------------
 
-- Backport `scrapy check` command fixes and backward compatible multi
+- Backport ``scrapy check`` command fixes and backward compatible multi
   crawler process(:issue:`339`)
 
 Scrapy 0.18.1 (released 2013-08-27)
@@ -1714,31 +1958,31 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Handle GET parameters for AJAX crawleable urls (:commit:`3fe2a32`)
 - Use lxml recover option to parse sitemaps (:issue:`347`)
 - Bugfix cookie merging by hostname and not by netloc (:issue:`352`)
-- Support disabling `HttpCompressionMiddleware` using a flag setting (:issue:`359`)
-- Support xml namespaces using `iternodes` parser in `XMLFeedSpider` (:issue:`12`)
-- Support `dont_cache` request meta flag (:issue:`19`)
-- Bugfix `scrapy.utils.gz.gunzip` broken by changes in python 2.7.4 (:commit:`4dc76e`)
-- Bugfix url encoding on `SgmlLinkExtractor` (:issue:`24`)
-- Bugfix `TakeFirst` processor shouldn't discard zero (0) value (:issue:`59`)
+- Support disabling ``HttpCompressionMiddleware`` using a flag setting (:issue:`359`)
+- Support xml namespaces using ``iternodes`` parser in ``XMLFeedSpider`` (:issue:`12`)
+- Support ``dont_cache`` request meta flag (:issue:`19`)
+- Bugfix ``scrapy.utils.gz.gunzip`` broken by changes in python 2.7.4 (:commit:`4dc76e`)
+- Bugfix url encoding on ``SgmlLinkExtractor`` (:issue:`24`)
+- Bugfix ``TakeFirst`` processor shouldn't discard zero (0) value (:issue:`59`)
 - Support nested items in xml exporter (:issue:`66`)
 - Improve cookies handling performance (:issue:`77`)
 - Log dupe filtered requests once (:issue:`105`)
 - Split redirection middleware into status and meta based middlewares (:issue:`78`)
 - Use HTTP1.1 as default downloader handler (:issue:`109` and :issue:`318`)
-- Support xpath form selection on `FormRequest.from_response` (:issue:`185`)
-- Bugfix unicode decoding error on `SgmlLinkExtractor` (:issue:`199`)
+- Support xpath form selection on ``FormRequest.from_response`` (:issue:`185`)
+- Bugfix unicode decoding error on ``SgmlLinkExtractor`` (:issue:`199`)
 - Bugfix signal dispatching on pypi interpreter (:issue:`205`)
 - Improve request delay and concurrency handling (:issue:`206`)
-- Add RFC2616 cache policy to `HttpCacheMiddleware` (:issue:`212`)
+- Add RFC2616 cache policy to ``HttpCacheMiddleware`` (:issue:`212`)
 - Allow customization of messages logged by engine (:issue:`214`)
-- Multiples improvements to `DjangoItem` (:issue:`217`, :issue:`218`, :issue:`221`)
+- Multiples improvements to ``DjangoItem`` (:issue:`217`, :issue:`218`, :issue:`221`)
 - Extend Scrapy commands using setuptools entry points (:issue:`260`)
-- Allow spider `allowed_domains` value to be set/tuple (:issue:`261`)
-- Support `settings.getdict` (:issue:`269`)
-- Simplify internal `scrapy.core.scraper` slot handling (:issue:`271`)
-- Added `Item.copy` (:issue:`290`)
+- Allow spider ``allowed_domains`` value to be set/tuple (:issue:`261`)
+- Support ``settings.getdict`` (:issue:`269`)
+- Simplify internal ``scrapy.core.scraper`` slot handling (:issue:`271`)
+- Added ``Item.copy`` (:issue:`290`)
 - Collect idle downloader slots (:issue:`297`)
-- Add `ftp://` scheme downloader handler (:issue:`329`)
+- Add ``ftp://`` scheme downloader handler (:issue:`329`)
 - Added downloader benchmark webserver and spider tools :ref:`benchmarking`
 - Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - Add scrapy commands using external libraries (:issue:`260`)
@@ -1848,7 +2092,7 @@ Scrapy 0.16.1 (released 2012-10-26)
 -----------------------------------
 
 - fixed LogStats extension, which got broken after a wrong merge before the 0.16 release (:commit:`8c780fd`)
-- better backwards compatibility for scrapy.conf.settings (:commit:`3403089`)
+- better backward compatibility for scrapy.conf.settings (:commit:`3403089`)
 - extended documentation on how to access crawler stats from extensions (:commit:`c4da0b5`)
 - removed .hgtags (no longer needed now that scrapy uses git) (:commit:`d52c188`)
 - fix dashes under rst headers (:commit:`fa4f7f9`)
@@ -1863,13 +2107,13 @@ Scrapy changes:
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
-- major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backwards compatibility is kept on the Stats Collector API and signals.
+- major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
 - documented :ref:`topics-api`
-- `lxml` is now the default selectors backend instead of `libxml2`
+- ``lxml`` is now the default selectors backend instead of ``libxml2``
 - ported FormRequest.from_response() to use `lxml`_ instead of `ClientForm`_
 - removed modules: ``scrapy.xlib.BeautifulSoup`` and ``scrapy.xlib.ClientForm``
 - SitemapSpider: added support for sitemap urls ending in .xml and .xml.gz, even if they advertise a wrong content type (:commit:`10ed28b`)
@@ -1962,16 +2206,16 @@ New features and settings
 - New ``ChunkedTransferMiddleware`` (enabled by default) to support `chunked transfer encoding`_ (:rev:`2769`)
 - Add boto 2.0 support for S3 downloader handler (:rev:`2763`)
 - Added `marshal`_ to formats supported by feed exports (:rev:`2744`)
-- In request errbacks, offending requests are now received in `failure.request` attribute (:rev:`2738`)
+- In request errbacks, offending requests are now received in ``failure.request`` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
       - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, :setting:`CONCURRENT_REQUESTS_PER_IP`
    - check the documentation for more details
 - Added builtin caching DNS resolver (:rev:`2728`)
 - Moved Amazon AWS-related components/extensions (SQS spider queue, SimpleDB stats collector) to a separate project: [scaws](https://github.com/scrapinghub/scaws) (:rev:`2706`, :rev:`2714`)
-- Moved spider queues to scrapyd: `scrapy.spiderqueue` -> `scrapyd.spiderqueue` (:rev:`2708`)
-- Moved sqlite utils to scrapyd: `scrapy.utils.sqlite` -> `scrapyd.sqlite` (:rev:`2781`)
-- Real support for returning iterators on `start_requests()` method. The iterator is now consumed during the crawl when the spider is getting idle (:rev:`2704`)
+- Moved spider queues to scrapyd: ``scrapy.spiderqueue`` -> ``scrapyd.spiderqueue`` (:rev:`2708`)
+- Moved sqlite utils to scrapyd: ``scrapy.utils.sqlite`` -> ``scrapyd.sqlite`` (:rev:`2781`)
+- Real support for returning iterators on ``start_requests()`` method. The iterator is now consumed during the crawl when the spider is getting idle (:rev:`2704`)
 - Added :setting:`REDIRECT_ENABLED` setting to quickly enable/disable the redirect middleware (:rev:`2697`)
 - Added :setting:`RETRY_ENABLED` setting to quickly enable/disable the retry middleware (:rev:`2694`)
 - Added ``CloseSpider`` exception to manually close spiders (:rev:`2691`)
@@ -1979,19 +2223,19 @@ New features and settings
 - Refactored close spider behavior to wait for all downloads to finish and be processed by spiders, before closing the spider (:rev:`2688`)
 - Added ``SitemapSpider`` (see documentation in Spiders page) (:rev:`2658`)
 - Added ``LogStats`` extension for periodically logging basic stats (like crawled pages and scraped items) (:rev:`2657`)
-- Make handling of gzipped responses more robust (#319, :rev:`2643`). Now Scrapy will try and decompress as much as possible from a gzipped response, instead of failing with an `IOError`.
+- Make handling of gzipped responses more robust (#319, :rev:`2643`). Now Scrapy will try and decompress as much as possible from a gzipped response, instead of failing with an ``IOError``.
 - Simplified !MemoryDebugger extension to use stats for dumping memory debugging info (:rev:`2639`)
-- Added new command to edit spiders: ``scrapy edit`` (:rev:`2636`) and `-e` flag to `genspider` command that uses it (:rev:`2653`)
+- Added new command to edit spiders: ``scrapy edit`` (:rev:`2636`) and ``-e`` flag to ``genspider`` command that uses it (:rev:`2653`)
 - Changed default representation of items to pretty-printed dicts. (:rev:`2631`). This improves default logging by making log more readable in the default case, for both Scraped and Dropped lines.
 - Added :signal:`spider_error` signal (:rev:`2628`)
 - Added :setting:`COOKIES_ENABLED` setting (:rev:`2625`)
-- Stats are now dumped to Scrapy log (default value of :setting:`STATS_DUMP` setting has been changed to `True`). This is to make Scrapy users more aware of Scrapy stats and the data that is collected there.
+- Stats are now dumped to Scrapy log (default value of :setting:`STATS_DUMP` setting has been changed to ``True``). This is to make Scrapy users more aware of Scrapy stats and the data that is collected there.
 - Added support for dynamically adjusting download delay and maximum concurrent requests (:rev:`2599`)
 - Added new DBM HTTP cache storage backend (:rev:`2576`)
 - Added ``listjobs.json`` API to Scrapyd (:rev:`2571`)
 - ``CsvItemExporter``: added ``join_multivalued`` parameter (:rev:`2578`)
 - Added namespace support to ``xmliter_lxml`` (:rev:`2552`)
-- Improved cookies middleware by making `COOKIES_DEBUG` nicer and documenting it (:rev:`2579`)
+- Improved cookies middleware by making ``COOKIES_DEBUG`` nicer and documenting it (:rev:`2579`)
 - Several improvements to Scrapyd and Link extractors
 
 Code rearranged and removed
@@ -2005,17 +2249,17 @@ Code rearranged and removed
 - Reduced Scrapy codebase by striping part of Scrapy code into two new libraries:
    - `w3lib`_ (several functions from ``scrapy.utils.{http,markup,multipart,response,url}``, done in :rev:`2584`)
    - `scrapely`_ (was ``scrapy.contrib.ibl``, done in :rev:`2586`)
-- Removed unused function: `scrapy.utils.request.request_info()` (:rev:`2577`)
-- Removed googledir project from `examples/googledir`. There's now a new example project called `dirbot` available on github: https://github.com/scrapy/dirbot
+- Removed unused function: ``scrapy.utils.request.request_info()`` (:rev:`2577`)
+- Removed googledir project from ``examples/googledir``. There's now a new example project called ``dirbot`` available on github: https://github.com/scrapy/dirbot
 - Removed support for default field values in Scrapy items (:rev:`2616`)
 - Removed experimental crawlspider v2 (:rev:`2632`)
-- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe fltering class as before (`DUPEFILTER_CLASS` setting) (:rev:`2640`)
+- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe fltering class as before (``DUPEFILTER_CLASS`` setting) (:rev:`2640`)
 - Removed support for passing urls to ``scrapy crawl`` command (use ``scrapy parse`` instead) (:rev:`2704`)
 - Removed deprecated Execution Queue (:rev:`2704`)
 - Removed (undocumented) spider context extension (from scrapy.contrib.spidercontext) (:rev:`2780`)
 - removed ``CONCURRENT_SPIDERS`` setting (use scrapyd maxproc instead) (:rev:`2789`)
 - Renamed attributes of core components: downloader.sites -> downloader.slots, scraper.sites -> scraper.slots (:rev:`2717`, :rev:`2718`)
-- Renamed setting ``CLOSESPIDER_ITEMPASSED`` to :setting:`CLOSESPIDER_ITEMCOUNT` (:rev:`2655`). Backwards compatibility kept.
+- Renamed setting ``CLOSESPIDER_ITEMPASSED`` to :setting:`CLOSESPIDER_ITEMCOUNT` (:rev:`2655`). Backward compatibility kept.
 
 Scrapy 0.12
 -----------
@@ -2045,13 +2289,13 @@ Scrapyd changes
 - Scrapyd now uses one process per spider
 - It stores one log file per spider run, and rotate them keeping the lastest 5 logs per spider (by default)
 - A minimal web ui was added, available at http://localhost:6800 by default
-- There is now a `scrapy server` command to start a Scrapyd server of the current project
+- There is now a ``scrapy server`` command to start a Scrapyd server of the current project
 
 Changes to settings
 ~~~~~~~~~~~~~~~~~~~
 
-- added `HTTPCACHE_ENABLED` setting (False by default) to enable HTTP cache middleware
-- changed `HTTPCACHE_EXPIRATION_SECS` semantics: now zero means "never expire".
+- added ``HTTPCACHE_ENABLED`` setting (False by default) to enable HTTP cache middleware
+- changed ``HTTPCACHE_EXPIRATION_SECS`` semantics: now zero means "never expire".
 
 Deprecated/obsoleted functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2082,17 +2326,17 @@ New features and improvements
 - Splitted Debian package into two packages - the library and the service (#187)
 - Scrapy log refactoring (#188)
 - New extension for keeping persistent spider contexts among different runs (#203)
-- Added `dont_redirect` request.meta key for avoiding redirects (#233)
-- Added `dont_retry` request.meta key for avoiding retries (#234)
+- Added ``dont_redirect`` request.meta key for avoiding redirects (#233)
+- Added ``dont_retry`` request.meta key for avoiding retries (#234)
 
 Command-line tool changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- New `scrapy` command which replaces the old `scrapy-ctl.py` (#199)
-  - there is only one global `scrapy` command now, instead of one `scrapy-ctl.py` per project
-  - Added `scrapy.bat` script for running more conveniently from Windows
+- New ``scrapy`` command which replaces the old ``scrapy-ctl.py`` (#199)
+  - there is only one global ``scrapy`` command now, instead of one ``scrapy-ctl.py`` per project
+  - Added ``scrapy.bat`` script for running more conveniently from Windows
 - Added bash completion to command-line tool (#210)
-- Renamed command `start` to `runserver` (#209)
+- Renamed command ``start`` to ``runserver`` (#209)
 
 API changes
 ~~~~~~~~~~~
@@ -2112,11 +2356,11 @@ API changes
    - ``scrapy.stats.collector.SimpledbStatsCollector`` to ``scrapy.contrib.statscol.SimpledbStatsCollector``
 - default per-command settings are now specified in the ``default_settings`` attribute of command object class (#201)
 - changed arguments of Item pipeline ``process_item()`` method from ``(spider, item)`` to ``(item, spider)``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - moved ``scrapy.core.signals`` module to ``scrapy.signals``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - moved ``scrapy.core.exceptions`` module to ``scrapy.exceptions``
-   - backwards compatibility kept (with deprecation warning)
+   - backward compatibility kept (with deprecation warning)
 - added ``handles_request()`` class method to ``BaseSpider``
 - dropped ``scrapy.log.exc()`` function (use ``scrapy.log.err()`` instead)
 - dropped ``component`` argument of ``scrapy.log.msg()`` function
@@ -2187,8 +2431,8 @@ New features
 - Added support for HTTP proxies (``HttpProxyMiddleware``) (:rev:`1781`, :rev:`1785`)
 - Offsite spider middleware now logs messages when filtering out requests (:rev:`1841`)
 
-Backwards-incompatible changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Changed ``scrapy.utils.response.get_meta_refresh()`` signature (:rev:`1804`)
 - Removed deprecated ``scrapy.item.ScrapedItem`` class - use ``scrapy.item.Item instead`` (:rev:`1838`)

@@ -1,5 +1,5 @@
 The guidelines for contributing are available here:
-https://doc.scrapy.org/en/master/contributing.html
+https://docs.scrapy.org/en/master/contributing.html
 
 Please do not abuse the issue tracker for support questions.
 If your issue topic can be rephrased to "How to ...?", please use the
