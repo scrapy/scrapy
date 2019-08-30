@@ -365,24 +365,25 @@ HttpCacheMiddleware
 
     You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
+.. module:: scrapy.extensions.httpcache
+   :noindex:
+
 .. _httpcache-policy-dummy:
 
 Dummy policy (default)
 ~~~~~~~~~~~~~~~~~~~~~~
 
-This policy has no awareness of any HTTP Cache-Control directives.
-Every request and its corresponding response are cached.  When the same
-request is seen again, the response is returned without transferring
-anything from the Internet.
+.. class:: DummyPolicy
 
-The Dummy policy is useful for testing spiders faster (without having
-to wait for downloads every time) and for trying your spider offline,
-when an Internet connection is not available. The goal is to be able to
-"replay" a spider run *exactly as it ran before*.
+    This policy has no awareness of any HTTP Cache-Control directives.
+    Every request and its corresponding response are cached.  When the same
+    request is seen again, the response is returned without transferring
+    anything from the Internet.
 
-In order to use this policy, set:
-
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.DummyPolicy``
+    The Dummy policy is useful for testing spiders faster (without having
+    to wait for downloads every time) and for trying your spider offline,
+    when an Internet connection is not available. The goal is to be able to
+    "replay" a spider run *exactly as it ran before*.
 
 
 .. _httpcache-policy-rfc2616:
@@ -390,45 +391,44 @@ In order to use this policy, set:
 RFC2616 policy
 ~~~~~~~~~~~~~~
 
-This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
-Cache-Control awareness, aimed at production and used in continuous
-runs to avoid downloading unmodified data (to save bandwidth and speed up crawls).
+.. class:: RFC2616Policy
 
-what is implemented:
+    This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
+    Cache-Control awareness, aimed at production and used in continuous
+    runs to avoid downloading unmodified data (to save bandwidth and speed up
+    crawls).
 
-* Do not attempt to store responses/requests with ``no-store`` cache-control directive set
-* Do not serve responses from cache if ``no-cache`` cache-control directive is set even for fresh responses
-* Compute freshness lifetime from ``max-age`` cache-control directive
-* Compute freshness lifetime from ``Expires`` response header
-* Compute freshness lifetime from ``Last-Modified`` response header (heuristic used by Firefox)
-* Compute current age from ``Age`` response header
-* Compute current age from ``Date`` header
-* Revalidate stale responses based on ``Last-Modified`` response header
-* Revalidate stale responses based on ``ETag`` response header
-* Set ``Date`` header for any received response missing it
-* Support ``max-stale`` cache-control directive in requests
+    What is implemented:
 
-  This allows spiders to be configured with the full RFC2616 cache policy,
-  but avoid revalidation on a request-by-request basis, while remaining
-  conformant with the HTTP spec.
+    * Do not attempt to store responses/requests with ``no-store`` cache-control directive set
+    * Do not serve responses from cache if ``no-cache`` cache-control directive is set even for fresh responses
+    * Compute freshness lifetime from ``max-age`` cache-control directive
+    * Compute freshness lifetime from ``Expires`` response header
+    * Compute freshness lifetime from ``Last-Modified`` response header (heuristic used by Firefox)
+    * Compute current age from ``Age`` response header
+    * Compute current age from ``Date`` header
+    * Revalidate stale responses based on ``Last-Modified`` response header
+    * Revalidate stale responses based on ``ETag`` response header
+    * Set ``Date`` header for any received response missing it
+    * Support ``max-stale`` cache-control directive in requests
 
-  Example:
+    This allows spiders to be configured with the full RFC2616 cache policy,
+    but avoid revalidation on a request-by-request basis, while remaining
+    conformant with the HTTP spec.
 
-  Add ``Cache-Control: max-stale=600`` to Request headers to accept responses that
-  have exceeded their expiration time by no more than 600 seconds.
+    Example:
 
-  See also: RFC2616, 14.9.3
+    Add ``Cache-Control: max-stale=600`` to Request headers to accept responses that
+    have exceeded their expiration time by no more than 600 seconds.
 
-what is missing:
+    See also: RFC2616, 14.9.3
 
-* ``Pragma: no-cache`` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
-* ``Vary`` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
-* Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
-* ... probably others ..
+    What is missing:
 
-In order to use this policy, set:
-
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.RFC2616Policy``
+    * ``Pragma: no-cache`` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+    * ``Vary`` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+    * Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
+    * ... probably others ..
 
 
 .. _httpcache-storage-fs:
@@ -436,67 +436,68 @@ In order to use this policy, set:
 Filesystem storage backend (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-File system storage backend is available for the HTTP cache middleware.
+.. class:: FilesystemCacheStorage
 
-In order to use this storage backend, set:
+    File system storage backend is available for the HTTP cache middleware.
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.FilesystemCacheStorage``
+    Each request/response pair is stored in a different directory containing
+    the following files:
 
-Each request/response pair is stored in a different directory containing
-the following files:
+    *   ``request_body`` - the plain request body
 
- * ``request_body`` - the plain request body
- * ``request_headers`` - the request headers (in raw HTTP format)
- * ``response_body`` - the plain response body
- * ``response_headers`` - the request headers (in raw HTTP format)
- * ``meta`` - some metadata of this cache resource in Python ``repr()`` format
-   (grep-friendly format)
- * ``pickled_meta`` - the same metadata in ``meta`` but pickled for more
-   efficient deserialization
+    *   ``request_headers`` - the request headers (in raw HTTP format)
 
-The directory name is made from the request fingerprint (see
-``scrapy.utils.request.fingerprint``), and one level of subdirectories is
-used to avoid creating too many files into the same directory (which is
-inefficient in many file systems). An example directory could be::
+    *   ``response_body`` - the plain response body
 
-   /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
+    *   ``response_headers`` - the request headers (in raw HTTP format)
+
+    *   ``meta`` - some metadata of this cache resource in Python ``repr()``
+        format (grep-friendly format)
+
+    *   ``pickled_meta`` - the same metadata in ``meta`` but pickled for more
+        efficient deserialization
+
+    The directory name is made from the request fingerprint (see
+    ``scrapy.utils.request.fingerprint``), and one level of subdirectories is
+    used to avoid creating too many files into the same directory (which is
+    inefficient in many file systems). An example directory could be::
+
+        /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
 
 .. _httpcache-storage-dbm:
 
 DBM storage backend
 ~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.13
+.. class:: DbmCacheStorage
 
-A DBM_ storage backend is also available for the HTTP cache middleware.
+    .. versionadded:: 0.13
 
-By default, it uses the anydbm_ module, but you can change it with the
-:setting:`HTTPCACHE_DBM_MODULE` setting.
+    A DBM_ storage backend is also available for the HTTP cache middleware.
 
-In order to use this storage backend, set:
-
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.DbmCacheStorage``
+    By default, it uses the anydbm_ module, but you can change it with the
+    :setting:`HTTPCACHE_DBM_MODULE` setting.
 
 .. _httpcache-storage-leveldb:
 
 LevelDB storage backend
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.23
+.. class:: LeveldbCacheStorage
 
-A LevelDB_ storage backend is also available for the HTTP cache middleware.
+    .. versionadded:: 0.23
 
-This backend is not recommended for development because only one process can
-access LevelDB databases at the same time, so you can't run a crawl and open
-the scrapy shell in parallel for the same spider.
+    A LevelDB_ storage backend is also available for the HTTP cache middleware.
 
-In order to use this storage backend:
+    This backend is not recommended for development because only one process
+    can access LevelDB databases at the same time, so you can't run a crawl and
+    open the scrapy shell in parallel for the same spider.
 
-* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.LeveldbCacheStorage``
-* install `LevelDB python bindings`_ like ``pip install leveldb``
+    In order to use this storage backend, install the `LevelDB python
+    bindings`_ (e.g. ``pip install leveldb``).
 
-.. _LevelDB: https://github.com/google/leveldb
-.. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
+    .. _LevelDB: https://github.com/google/leveldb
+    .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
 .. _httpcache-storage-custom:
 
