@@ -10,13 +10,10 @@ from contextlib import contextmanager
 from threading import Timer
 
 from twisted.trial import unittest
-from twisted.internet import defer
 
 import scrapy
 from scrapy.utils.python import to_native_str
 from scrapy.utils.test import get_testenv
-from scrapy.utils.testsite import SiteTest
-from scrapy.utils.testproc import ProcessTest
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 
@@ -306,3 +303,80 @@ class BenchCommandTest(CommandTest):
                            '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class RequestfromcurlCommandTest(CommandTest):
+
+    def test_simple_command(self):
+        _, out, _ = self.proc('requestfromcurl', 'curl example.org')
+        self.assertIn("Request(method='GET', url='http://example.org')", out)
+
+    def test_complex_command(self):
+        _, out, _ = self.proc(
+            'requestfromcurl',
+            "curl 'http://example.org/post' -X POST -H 'Cookie: "
+            "_gauges_unique_year=1; _gauges_unique=1' -H  'Accept-Encoding: "
+            "gzip, deflate' -H 'Accept-Language: en-US,en;q=0.9,ru;q=0.8,"
+            "es;q=0.7' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: "
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, "
+            "like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.3202.75 "
+            "Safari/537.36' -H 'Content-Type: "
+            "application/x-www-form-urlencoded' -H 'Accept: text/html,"
+            "application/xhtml+xml,application/xml;q=0.9,image/webp,"
+            "image/apng,*/*;q=0.8' -H 'Cache-Control: max-age=0' -H "
+            "Connection: keep-alive' --data "
+            "custname=John+Smith&custtel=500&custemail=jsmith%40example.org"
+            "&size=small&topping=cheese&topping=onion&delivery=12%3A15"
+            "&comments=' --compressed")
+        self.assertIn(
+            "Request(method='POST', url='http://example.org/post', headers=["
+            "('Accept-Encoding', 'gzip, deflate'), ('Accept-Language', "
+            "'en-US,en;q=0.9,ru;q=0.8,es;q=0.7'), "
+            "('Upgrade-Insecure-Requests', '1'), ('User-Agent', 'Mozilla/5.0 "
+            "(X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Ubuntu Chromium/62.0.3202.75 Chrome/62.0.3202.75 "
+            "Safari/537.36'), ('Content-Type', "
+            "'application/x-www-form-urlencoded'), ('Accept', 'text/html,"
+            "application/xhtml+xml,application/xml;q=0.9,image/webp,"
+            "image/apng,*/*;q=0.8'), ('Cache-Control', 'max-age=0'), "
+            "('Connection', '')], cookies={'_gauges_unique_year': '1', "
+            "'_gauges_unique': '1'})",
+            out
+        )
+
+    def test_bad_command(self):
+        # argument -H empty
+        _, out, err = self.proc(
+            'requestfromcurl', 'curl example.org -H'
+        )
+        self.assertNot(out)
+        self.assertIn('error: ', err)
+
+        # missing closing quotation
+        _, out, err = self.proc(
+            'requestfromcurl', "curl example.org -H 'Connection: keep-alive"
+        )
+        self.assertIn('error: ', err)
+        self.assertNot(out)
+
+    def test_strict(self):
+        curl_command = 'curl example.org --foo'
+        # with strict
+        _, out, err = self.proc('requestfromcurl', '-s', curl_command)
+        self.assertIn('error: Unrecognized options: --foo', err)
+        self.assertNot(out)
+        # without strict
+        _, out, err = self.proc('requestfromcurl', curl_command)
+        self.assertNotIn('error: Unrecognized options: --foo', err)
+        self.assertTrue(out)
+
+    def test_missing_curl_command(self):
+        _, out, _ = self.proc('requestfromcurl')
+        self.assertIn('Usage', out)
+        _, out, _ = self.proc('requestfromcurl', '')
+        self.assertIn('Usage', out)
+
+    def test_more_than_one_curl_command(self):
+        _, out, err = self.proc('requestfromcurl', 'curl example.org', 'curl -X POST example.org')
+        self.assertIn('it must be between quotation marks', err)
+        self.assertNot(out)
