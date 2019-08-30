@@ -535,19 +535,19 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
-JSONRequest
+JsonRequest
 -----------
 
-The JSONRequest class extends the base :class:`Request` class with functionality for
+The JsonRequest class extends the base :class:`Request` class with functionality for
 dealing with JSON requests.
 
-.. class:: JSONRequest(url, [... data, dumps_kwargs])
+.. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JSONRequest` class adds two new argument to the constructor. The
+   The :class:`JsonRequest` class adds two new argument to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
-   Using the :class:`JSONRequest` will set the ``Content-Type`` header to ``application/json``
+   Using the :class:`JsonRequest` will set the ``Content-Type`` header to ``application/json``
    and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
@@ -562,7 +562,7 @@ dealing with JSON requests.
 
 .. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
-JSONRequest usage example
+JsonRequest usage example
 -------------------------
 
 Sending a JSON POST request with a JSON payload::
@@ -571,7 +571,7 @@ Sending a JSON POST request with a JSON payload::
        'name1': 'value1',
        'name2': 'value2',
    }
-   yield JSONRequest(url='http://www.example.com/post/action', data=data)
+   yield JsonRequest(url='http://www.example.com/post/action', data=data)
 
 
 Response objects

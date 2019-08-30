@@ -80,8 +80,8 @@ New features
     provides a cleaner way to pass keyword arguments to callback methods
     (:issue:`1138`, :issue:`3563`)
 
-*   A new :class:`~scrapy.http.JSONRequest` class offers a more convenient way
-    to build JSON requests (:issue:`3504`, :issue:`3505`)
+*   A new :class:`JSONRequest <scrapy.http.JsonRequest>` class offers a more
+    convenient way to build JSON requests (:issue:`3504`, :issue:`3505`)
 
 *   A ``process_request`` callback passed to the :class:`~scrapy.spiders.Rule`
     constructor now receives the :class:`~scrapy.http.Response` object that
