@@ -73,7 +73,6 @@ class Scraper(object):
         self.crawler = crawler
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
-        self.log_scraped_enabled = crawler.settings.getbool('LOG_SCRAPED_ENABLED')
 
     @defer.inlineCallbacks
     def open_spider(self, spider):
@@ -238,9 +237,8 @@ class Scraper(object):
                     signal=signals.item_error, item=item, response=response,
                     spider=spider, failure=output)
         else:
-            if self.log_scraped_enabled:
-                logkws = self.logformatter.scraped(output, response, spider)
-                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+            logkws = self.logformatter.scraped(output, response, spider)
+            logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)
