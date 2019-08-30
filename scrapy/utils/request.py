@@ -15,14 +15,19 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_native_str
 
 
-def request_fingerprint(request, include_headers=None, hexadecimal=True):
+def request_fingerprint(request, include_headers=None, hexadecimal=True,
+                        settings=None):
     """Fills :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` if
     needed and returns the fingerprint of *request*.
 
     If :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` is already
-    defined, its value is returned. Otherwise, a fingerprint of the request is
-    calculated, assigned to
+    defined, its value is returned. Otherwise, the fingerprint of the request
+    is calculated, assigned to
     :attr:`request.fingerprint <scrapy.http.Request.fingerprint>` and returned.
+
+    *settings* must be an instance of :class:`scrapy.settings.Settings`. Most
+    Scrapy components can get one from :attr:`crawler.settings
+    <scrapy.crawler.Crawler.settings>`.
 
     .. deprecated:: VERSION
 
@@ -49,6 +54,11 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True):
         warn('`hexadecimal=True` is deprecated. Future versions will always '
              'return the fingerprint as `bytes`. Use `hexadecimal=False`.',
              ScrapyDeprecationWarning)
+    if settings is None:
+        warn('Calls omitting the `settings` parameter are deprecated. This '
+             'parameter will be required in future versions.',
+             ScrapyDeprecationWarning)
+
     if request.fingerprint is not None:
         return encoded_fingerprint(request)
     fp = hashlib.sha1()
