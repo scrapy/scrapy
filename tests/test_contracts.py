@@ -14,6 +14,7 @@ from scrapy.item import Item, Field
 from scrapy.contracts import ContractsManager, Contract
 from scrapy.contracts.default import (
     UrlContract,
+    CallbackKeywordArgumentsContract,
     ReturnsContract,
     ScrapesContract,
 )
@@ -64,6 +65,37 @@ class TestSpider(Spider):
         return Request('http://scrapy.org', callback=self.returns_item)
 
     def returns_item(self, response):
+        """ method which returns item
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        return TestItem(url=response.url)
+
+    def returns_request_cb_kwargs(self, response, url):
+        """ method which returns request
+        @url https://example.org
+        @cb_kwargs {"url": "http://scrapy.org"}
+        @returns requests 1
+        """
+        return Request(url, callback=self.returns_item_cb_kwargs)
+
+    def returns_item_cb_kwargs(self, response, name):
+        """ method which returns item
+        @url http://scrapy.org
+        @cb_kwargs {"name": "Scrapy"}
+        @returns items 1 1
+        """
+        return TestItem(name=name, url=response.url)
+
+    def returns_item_cb_kwargs_error_unexpected_keyword(self, response):
+        """ method which returns item
+        @url http://scrapy.org
+        @cb_kwargs {"arg": "value"}
+        @returns items 1 1
+        """
+        return TestItem(url=response.url)
+
+    def returns_item_cb_kwargs_error_missing_argument(self, response, arg):
         """ method which returns item
         @url http://scrapy.org
         @returns items 1 1
@@ -172,6 +204,7 @@ class InheritsTestSpider(TestSpider):
 class ContractsManagerTest(unittest.TestCase):
     contracts = [
         UrlContract,
+        CallbackKeywordArgumentsContract,
         ReturnsContract,
         ScrapesContract,
         CustomFormContract,
@@ -210,6 +243,51 @@ class ContractsManagerTest(unittest.TestCase):
         # no request for missing url
         request = self.conman.from_method(spider.parse_no_url, self.results)
         self.assertEqual(request, None)
+
+    def test_cb_kwargs(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        # extract contracts correctly
+        contracts = self.conman.extract_contracts(spider.returns_request_cb_kwargs)
+        self.assertEqual(len(contracts), 3)
+        self.assertEqual(frozenset(type(x) for x in contracts),
+                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+        
+        contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
+        self.assertEqual(len(contracts), 3)
+        self.assertEqual(frozenset(type(x) for x in contracts),
+                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+
+        contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs_error_unexpected_keyword)
+        self.assertEqual(len(contracts), 3)
+        self.assertEqual(frozenset(type(x) for x in contracts),
+                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+
+        contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs_error_missing_argument)
+        self.assertEqual(len(contracts), 2)
+        self.assertEqual(frozenset(type(x) for x in contracts),
+                         frozenset([UrlContract, ReturnsContract]))
+
+        # returns_request
+        request = self.conman.from_method(spider.returns_request_cb_kwargs, self.results)
+        request.callback(response, **request.cb_kwargs)
+        self.should_succeed()
+
+        # returns_item
+        request = self.conman.from_method(spider.returns_item_cb_kwargs, self.results)
+        request.callback(response, **request.cb_kwargs)
+        self.should_succeed()
+
+        # returns_item (error, callback doesn't take keyword arguments)
+        request = self.conman.from_method(spider.returns_item_cb_kwargs_error_unexpected_keyword, self.results)
+        request.callback(response, **request.cb_kwargs)
+        self.should_error()
+
+        # returns_item (error, contract doesn't provide keyword arguments)
+        request = self.conman.from_method(spider.returns_item_cb_kwargs_error_missing_argument, self.results)
+        request.callback(response, **request.cb_kwargs)
+        self.should_error()
 
     def test_returns(self):
         spider = TestSpider()
