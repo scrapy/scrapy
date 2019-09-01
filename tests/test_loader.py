@@ -8,6 +8,8 @@ from scrapy.loader.processors import Join, Identity, TakeFirst, \
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
+from scrapy.loader.processors import TakeFirst
+
 
 # test items
 class NameItem(Item):
@@ -456,7 +458,15 @@ class BasicItemLoaderTest(unittest.TestCase):
             'title': [u'Test item title 3', u'Test item 4'],
         })
 
-        # ItemLoader initialized from loaded item must not reprocess fields
+    # ItemLoader initialized from loaded item must not reprocess fields
+    def test_item_reprocessing(self):
+        class TestItem(Item):
+            title = Field(output_processor=TakeFirst())
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+
+        # Single values
         # Initiate from dict
         input_item = {'title': ['Test item title 5']}
         il = TestItemLoader(item=input_item)
@@ -466,21 +476,21 @@ class BasicItemLoaderTest(unittest.TestCase):
         # Load values
         il = TestItemLoader()
         il.add_value('title', ['Test item title 6'])
-        self.assertEqual(il.load_item(), {'title': ['Test item title 6']})
+        self.assertEqual(il.load_item(), {'title': 'Test item title 6'})
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 6']})
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 6'})
         # Similar for multiple values
         il = TestItemLoader()
         il.add_value('title', ['Test item title 7', 'Test item title 8'])
-        self.assertEqual(il.load_item(), {'title': ['Test item title 7', 'Test item title 8']})
+        self.assertEqual(il.load_item(), {'title': 'Test item title 7'})
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 7', 'Test item title 8']})
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 7'})
         # Load straight values
         il = TestItemLoader()
         il.add_value('title', 'Test item title 9')
-        self.assertEqual(il.load_item(), {'title': ['Test item title 9']})
+        self.assertEqual(il.load_item(), {'title': 'Test item title 9'})
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 9']})
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 9'})
 
     def test_error_input_processor(self):
         class TestItem(Item):
