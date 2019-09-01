@@ -456,6 +456,32 @@ class BasicItemLoaderTest(unittest.TestCase):
             'title': [u'Test item title 3', u'Test item 4'],
         })
 
+        # ItemLoader initialized from loaded item must not reprocess fields
+        # Initiate from dict
+        input_item = {'title': ['Test item title 5']}
+        il = TestItemLoader(item=input_item)
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, {'title': ['Test item title 5']})
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 5']})
+        # Load values
+        il = TestItemLoader()
+        il.add_value('title', ['Test item title 6'])
+        self.assertEqual(il.load_item(), {'title': ['Test item title 6']})
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 6']})
+        # Similar for multiple values
+        il = TestItemLoader()
+        il.add_value('title', ['Test item title 7', 'Test item title 8'])
+        self.assertEqual(il.load_item(), {'title': ['Test item title 7', 'Test item title 8']})
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 7', 'Test item title 8']})
+        # Load straight values
+        il = TestItemLoader()
+        il.add_value('title', 'Test item title 9')
+        self.assertEqual(il.load_item(), {'title': ['Test item title 9']})
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 9']})
+
     def test_error_input_processor(self):
         class TestItem(Item):
             name = Field()

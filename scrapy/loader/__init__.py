@@ -36,6 +36,7 @@ class ItemLoader(object):
         # Preprocess values if item built from dict
         # Values need to be added to item._values if added them from dict (not with add_values)
         for field_name, value in item.items():
+            # self.add_value(field_name, value)
             self._values[field_name] = self._process_input_value(field_name, value)
 
     @property
