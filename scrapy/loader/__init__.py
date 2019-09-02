@@ -37,7 +37,8 @@ class ItemLoader(object):
         # Values need to be added to item._values if added them from dict (not with add_values)
         if isinstance(item, dict):
             for field_name, value in item.items():
-                self._values[field_name] = self._process_input_value(field_name, value)
+                # Convert all single values to lists because of following output processors
+                self._add_value(field_name, value)
 
     @property
     def _values(self):

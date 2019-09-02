@@ -432,17 +432,17 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = TestItemLoader(item=input_item)
         # Getting output value mustn't remove value from item
         self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
+            'title': ['Test item title 1'],
         })
-        self.assertEqual(il.get_output_value('title'), 'Test item title 1')
+        self.assertEqual(il.get_output_value('title'), ['Test item title 1'])
         self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
+            'title': ['Test item title 1'],
         })
 
         input_item = {'title': 'Test item title 2'}
         il = TestItemLoader(item=input_item)
         # Values from dict must be added to item _values
-        self.assertEqual(il._values.get('title'), 'Test item title 2')
+        self.assertEqual(il._values.get('title'), ['Test item title 2'])
 
         input_item = {'title': [u'Test item title 3', u'Test item 4']}
         il = TestItemLoader(item=input_item)
@@ -466,14 +466,13 @@ class BasicItemLoaderTest(unittest.TestCase):
         class TestItemLoader(ItemLoader):
             default_item_class = TestItem
 
-        # Single values
         # Initiate from dict
         input_item = {'title': ['Test item title 5']}
         il = TestItemLoader(item=input_item)
         il_loaded = il.load_item()
         self.assertEqual(il_loaded, {'title': ['Test item title 5']})
         self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 5']})
-        # Load values
+        # Add values
         il = TestItemLoader()
         il.add_value('title', ['Test item title 6'])
         self.assertEqual(il.load_item(), {'title': 'Test item title 6'})
@@ -484,16 +483,67 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('title', ['Test item title 7', 'Test item title 8'])
         self.assertEqual(il.load_item(), {'title': 'Test item title 7'})
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 7'})
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(), {'title': 'Test item title 7'})
         # Load straight values
         il = TestItemLoader()
         il.add_value('title', 'Test item title 9')
         self.assertEqual(il.load_item(), {'title': 'Test item title 9'})
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 9'})
-        # # Initiate from dict and add value
-        # il = TestItemLoader(item=input_item)
-        # il.add_value
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(), {'title': 'Test item title 9'})
+        # Initiate from dict with single values and add value to the same key
+        input_item = {'title': 'Test item title 10'}
+        il = TestItemLoader(item=input_item)
+        il.add_value('title', 'Test item title 11')
+        self.assertEqual(
+            il.load_item(),
+            {'title': ['Test item title 10', 'Test item title 11']})
+        il_loaded = il.load_item()
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(),
+            {'title': ['Test item title 10', 'Test item title 11']})
+        # Initiate from dict with multiple values as list and add value to the same key
+        input_item = {'title': ['Test item title 12', 'Test item title 13']}
+        il = TestItemLoader(item=input_item)
+        il.add_value('title', 'Test item title 14')
+        self.assertEqual(
+            il.load_item(), {
+                'title': [
+                    'Test item title 12', 'Test item title 13',
+                    'Test item title 14'
+                ]
+            })
+        il_loaded = il.load_item()
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(), {
+                'title': [
+                    'Test item title 12', 'Test item title 13',
+                    'Test item title 14'
+                ]
+            })
+        # Initiate from dict with single value and add list value to the same key
+        input_item = {'title': 'Test item title 15'}
+        il = TestItemLoader(item=input_item)
+        il.add_value('title', ['Test item title 16'])
+        self.assertEqual(
+            il.load_item(),
+            {'title': ['Test item title 15', 'Test item title 16']})
+        il_loaded = il.load_item()
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(),
+            {'title': ['Test item title 15', 'Test item title 16']})
+        # Initiate from dict with list value and add list value to the same key
+        input_item = {'title': ['Test item title 17']}
+        il = TestItemLoader(item=input_item)
+        il.add_value('title', ['Test item title 18'])
+        self.assertEqual(
+            il.load_item(),
+            {'title': ['Test item title 17', 'Test item title 18']})
+        il_loaded = il.load_item()
+        self.assertEqual(
+            ItemLoader(il_loaded).load_item(),
+            {'title': ['Test item title 17', 'Test item title 18']})
 
     def test_error_input_processor(self):
         class TestItem(Item):
@@ -830,28 +880,28 @@ class SubselectorLoaderTest(unittest.TestCase):
 
 
 class SelectJmesTestCase(unittest.TestCase):
-        test_list_equals = {
-            'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
-            'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
-            'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'dict': (
-                'foo.bar[*].name',
-                {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
-                ['one', 'two']
-            ),
-            'list': ('[1]', [1, 2], 2)
-        }
+    test_list_equals = {
+        'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
+        'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
+        'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'dict': (
+            'foo.bar[*].name',
+            {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
+            ['one', 'two']
+        ),
+        'list': ('[1]', [1, 2], 2)
+    }
 
-        def test_output(self):
-            for l in self.test_list_equals:
-                expr, test_list, expected = self.test_list_equals[l]
-                test = SelectJmes(expr)(test_list)
-                self.assertEqual(
-                    test,
-                    expected,
-                    msg='test "{}" got {} expected {}'.format(l, test, expected)
-                )
+    def test_output(self):
+        for l in self.test_list_equals:
+            expr, test_list, expected = self.test_list_equals[l]
+            test = SelectJmes(expr)(test_list)
+            self.assertEqual(
+                test,
+                expected,
+                msg='test "{}" got {} expected {}'.format(l, test, expected)
+            )
 
 
 if __name__ == "__main__":
