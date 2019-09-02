@@ -491,6 +491,9 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.load_item(), {'title': 'Test item title 9'})
         il_loaded = il.load_item()
         self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 9'})
+        # # Initiate from dict and add value
+        # il = TestItemLoader(item=input_item)
+        # il.add_value
 
     def test_error_input_processor(self):
         class TestItem(Item):
