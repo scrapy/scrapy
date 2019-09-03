@@ -16,9 +16,6 @@ class UtilsRequestTest(unittest.TestCase):
         r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
         self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2))
 
-        # make sure request.fingerprint is set
-        self.assertEqual(request_fingerprint(r1), r1.fingerprint.hex())
-
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")
         r2.headers['SESSIONID'] = b"somehash"

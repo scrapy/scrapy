@@ -109,7 +109,8 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
         >>> request = Request('https://example.com')
         >>> request.fingerprint is None
         True
-        >>> request_fingerprint(request, hexadecimal=False)
+        >>> from scrapy.settings import Settings
+        >>> request_fingerprint(request, hexadecimal=False, settings=Settings())
         b'\\x87\\xd9\\xb2q\\x8a\\xf8\\xdad%\\xc2i\\x06\\xc6\\x8f\\xbd<1i{\\xf5'
         >>> request.fingerprint
         b'\\x87\\xd9\\xb2q\\x8a\\xf8\\xdad%\\xc2i\\x06\\xc6\\x8f\\xbd<1i{\\xf5'
