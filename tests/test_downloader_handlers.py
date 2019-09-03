@@ -634,7 +634,7 @@ class Http11MockServerTestCase(unittest.TestCase):
         self.assertIsInstance(failure.value, defer.CancelledError)
 
         # See issue https://twistedmatrix.com/trac/ticket/8175
-        raise unittest.SkipTest("xpayload only enabled for PY2")
+        raise unittest.SkipTest("xpayload fails on PY3")
         request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
         request = request.replace(url=self.mockserver.url('/xpayload'))
         yield crawler.crawl(seed=request)
