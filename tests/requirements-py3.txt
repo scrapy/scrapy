@@ -1,5 +1,6 @@
 # Tests requirements
 jmespath
+mitmproxy
 pytest
 pytest-cov
 pytest-twisted
