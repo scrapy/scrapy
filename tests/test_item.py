@@ -1,9 +1,11 @@
 import sys
 import unittest
+from warnings import catch_warnings
 
 import six
 
-from scrapy.item import ABCMeta, Item, ItemMeta, Field
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
 from tests import mock
 
 
@@ -257,6 +259,17 @@ class ItemTest(unittest.TestCase):
         item['tags'].append('tag2')
         assert item['tags'] != copied_item['tags']
 
+    def test_dictitem_deprecation_warning(self):
+        """Make sure the DictItem deprecation warning is not issued for
+        Item"""
+        with catch_warnings(record=True) as warnings:
+            item = Item()
+            self.assertEqual(len(warnings), 0)
+            class SubclassedItem(Item):
+                pass
+            subclassed_item = SubclassedItem()
+            self.assertEqual(len(warnings), 0)
+
 
 class ItemMetaTest(unittest.TestCase):
 
@@ -300,6 +313,21 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super(MyItem, self).__init__(*args, **kwargs)
+
+
+class DictItemTest(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            dict_item = DictItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedDictItem(DictItem):
+                pass
+            subclassed_dict_item = SubclassedDictItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 if __name__ == "__main__":
