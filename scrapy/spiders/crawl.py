@@ -17,7 +17,11 @@ from scrapy.utils.python import get_func_args
 from scrapy.spiders import Spider
 
 
-def _identity(request, response):
+def _identity(x):
+    return x
+
+
+def _identity_process_request(request, response):
     return request
 
 
@@ -36,8 +40,8 @@ class Rule(object):
         self.callback = callback
         self.errback = errback
         self.cb_kwargs = cb_kwargs or {}
-        self.process_links = process_links
-        self.process_request = process_request or _identity
+        self.process_links = process_links or _identity
+        self.process_request = process_request or _identity_process_request
         self.process_request_argcount = None
         self.follow = follow if follow is not None else not callback
 
@@ -90,11 +94,9 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for rule_index, rule in enumerate(self._rules):
-            links = [lnk for lnk in rule.link_extractor.extract_links(response)
-                     if lnk not in seen]
-            if links and rule.process_links:
-                links = rule.process_links(links)
-            for link in links:
+            links = (lnk for lnk in rule.link_extractor.extract_links(response)
+                     if lnk not in seen)
+            for link in rule.process_links(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)
                 yield rule._process_request(request, response)
@@ -122,14 +124,15 @@ class CrawlSpider(Spider):
         if errback:
             results = errback(failure) or ()
             if hasattr(failure.value, 'response'):
-                results = self.process_results(response, results)
+                results = self.process_results(failure.value.response, results)
             for request_or_item in iterate_spider_output(results):
                 yield request_or_item
 
     def _compile_rules(self):
-        self._rules = [copy.copy(r) for r in self.rules]
-        for rule in self._rules:
-            rule._compile(self)
+        self._rules = []
+        for rule in self.rules:
+            self._rules.append(copy.copy(rule))
+            self._rules[-1]._compile(self)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
