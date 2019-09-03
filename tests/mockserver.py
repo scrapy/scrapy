@@ -162,6 +162,12 @@ class Drop(Partial):
             request.finish()
 
 
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
 class Root(Resource):
 
     def __init__(self):
@@ -175,6 +181,7 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
