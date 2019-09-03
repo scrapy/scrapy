@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 import sys
 import time
 
+import pytest
 from six.moves.urllib.parse import urlsplit, urlunsplit
 from testfixtures import LogCapture
 
@@ -81,6 +82,7 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, l)
 
+    @pytest.mark.xfail(reason='mitmproxy gives an error for noconnect requests')
     @defer.inlineCallbacks
     def test_https_noconnect(self):
         proxy = os.environ['https_proxy']
@@ -90,6 +92,7 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, l)
 
+    @pytest.mark.xfail(reason='Python 3 fails this earlier')
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
         crawler = get_crawler(SimpleSpider)
@@ -117,6 +120,7 @@ class ProxyConnectTestCase(TestCase):
         echo = json.loads(crawler.spider.meta['responses'][0].body)
         self.assertTrue('Proxy-Authorization' not in echo['headers'])
 
+    @pytest.mark.xfail(reason='mitmproxy gives an error for noconnect requests')
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
         os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy']) + '?noconnect'
