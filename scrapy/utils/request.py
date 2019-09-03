@@ -3,17 +3,36 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
+from functools import partial
 import hashlib
 import json
 from warnings import warn
 
+from six import string_types
 from six.moves.urllib.parse import urlunparse
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_native_str
+
+
+def _load_object(path_or_object):
+    """"Works as scrapy.utils.misc.load_object unless the input value is
+    already loaded."""
+    if isinstance(path_or_object, string_types):
+        return load_object(path_or_object)
+    return path_or_object
+
+
+def json_serializer(data):
+    return json.dumps(data, sort_keys=True).encode('utf-8')
+
+
+def sha1_hasher(data):
+    return hashlib.sha1(data).digest()
 
 
 def process_request_fingerprint(request, data, url_processor=canonicalize_url,
@@ -52,6 +71,9 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
 
     .. deprecated:: VERSION
 
+        ``include_headers`` is deprecated. Use the
+        :setting:`REQUEST_FINGERPRINT_PROCESSORS` setting instead.
+
         ``hexadecimal=True`` is deprecated. Future versions will always return
         the fingerprint as :class:`bytes`. Use ``hexadecimal=False``.
 
@@ -71,7 +93,11 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
             return fingerprint.hex()
         return fingerprint
 
-    if hexadecimal:
+    if include_headers is not None:
+        warn('`include_headers` is deprecated. Use the '
+             'REQUEST_FINGERPRINT_PROCESSORS setting instead.',
+             ScrapyDeprecationWarning)
+    if hexadecimal is not False:
         warn('`hexadecimal=True` is deprecated. Future versions will always '
              'return the fingerprint as `bytes`. Use `hexadecimal=False`.',
              ScrapyDeprecationWarning)
@@ -80,14 +106,38 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
              'parameter will be required in future versions.',
              ScrapyDeprecationWarning)
 
-    if request.fingerprint is not None and include_headers is None:
+    use_new_behavior = include_headers is None and settings is not None
+    if request.fingerprint is not None and use_new_behavior:
         return encode(request.fingerprint)
-    fingerprint_data = process_request_fingerprint(
-        request, {}, headers=include_headers)
-    data_string = json.dumps(fingerprint_data, sort_keys=True)
-    fingerprint = hashlib.sha1(data_string.encode('utf-8')).digest()
-    if include_headers is None:
+
+    if use_new_behavior:
+        processors = [
+            _load_object(processor) for processor in
+            request.meta.get('fingerprint_processors',
+                             settings.getlist('REQUEST_FINGERPRINT_PROCESSORS',
+                                              [process_request_fingerprint]))]
+        serializer = _load_object(
+            request.meta.get('fingerprint_serializer',
+                             settings.get('REQUEST_FINGERPRINT_SERIALIZER',
+                                          json_serializer)))
+        hasher = _load_object(
+            request.meta.get('fingerprint_hasher',
+                             settings.get('REQUEST_FINGERPRINT_HASHER',
+                                          sha1_hasher)))
+    else:
+        processors = [partial(process_request_fingerprint,
+                              headers=include_headers)]
+        serializer = json_serializer
+        hasher = sha1_hasher
+
+    data = {}
+    for processor in processors:
+        data = processor(request, data)
+    fingerprint = hasher(serializer(data))
+
+    if use_new_behavior:
         request.fingerprint = fingerprint
+
     return encode(fingerprint)
 
 
