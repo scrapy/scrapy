@@ -3,9 +3,9 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-from functools import partial
 import hashlib
 import json
+from functools import partial
 from warnings import warn
 
 from six import string_types
@@ -20,23 +20,57 @@ from scrapy.utils.python import to_bytes, to_native_str
 
 
 def _load_object(path_or_object):
-    """"Works as scrapy.utils.misc.load_object unless the input value is
-    already loaded."""
+    """"It works as scrapy.utils.misc.load_object but it returns the input as
+    is if it is already an object."""
     if isinstance(path_or_object, string_types):
         return load_object(path_or_object)
     return path_or_object
 
 
 def json_serializer(data):
+    """Returns the input :class:`dict` as an UTF-8-encoded JSON structure with
+    sorted object keys."""
     return json.dumps(data, sort_keys=True).encode('utf-8')
 
 
 def sha1_hasher(data):
+    """Returns the SHA1 hash of the input :class:`bytes`, also as
+    :class:`bytes`."""
     return hashlib.sha1(data).digest()
 
 
 def process_request_fingerprint(request, data, url_processor=canonicalize_url,
                                 headers=None, meta=None):
+    """Given a :class:`request <scrapy.http.Request>` and a data :class:`dict`,
+    it returns a :class:`dict` containing data from the request.
+
+    The default output data includes a canonical version
+    (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
+    <scrapy.http.Request.url>` and the values of
+    :attr:`request.method <scrapy.http.Request.method>` and
+    :attr:`request.body <scrapy.http.Request.body>` (as an hexadecimal
+    representation of its binary data).
+
+    Override *url_processor* to change how the :attr:`request.url
+    <scrapy.http.Request.url>` is preprocessed.
+
+    You may use *headers* and *meta* to pass an iterable of keys from
+    :attr:`request.headers <scrapy.http.Request.headers>` and
+    :attr:`request.meta <scrapy.http.Request.meta>` that should be included in
+    the output data as well.
+
+    For example, to take into account the ``splash`` meta key::
+
+        process_request_fingerprint(request, data, meta=['splash'])
+
+    This function can be used in combination with Python’s
+    :func:`~functools.partial` to easily define a processor function for
+    :setting:`REQUEST_FINGERPRINT_PROCESSORS`::
+
+        REQUEST_FINGERPRINT_PROCESSORS = [
+            partial(process_request_fingerprint, meta=['splash']),
+        ]
+    """
     data['method'] = request.method
     data['url'] = url_processor(request.url)
     data['body'] = request.body.hex() or ''
@@ -69,14 +103,6 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
     Scrapy components can get one from :attr:`crawler.settings
     <scrapy.crawler.Crawler.settings>`.
 
-    .. deprecated:: VERSION
-
-        ``include_headers`` is deprecated. Use the
-        :setting:`REQUEST_FINGERPRINT_PROCESSORS` setting instead.
-
-        ``hexadecimal=True`` is deprecated. Future versions will always return
-        the fingerprint as :class:`bytes`. Use ``hexadecimal=False``.
-
     Example::
 
         >>> from scrapy import Request
@@ -87,6 +113,16 @@ def request_fingerprint(request, include_headers=None, hexadecimal=True,
         b'\\x87\\xd9\\xb2q\\x8a\\xf8\\xdad%\\xc2i\\x06\\xc6\\x8f\\xbd<1i{\\xf5'
         >>> request.fingerprint
         b'\\x87\\xd9\\xb2q\\x8a\\xf8\\xdad%\\xc2i\\x06\\xc6\\x8f\\xbd<1i{\\xf5'
+
+    .. deprecated:: VERSION
+
+        ``include_headers``, use the :setting:`REQUEST_FINGERPRINT_PROCESSORS`
+        setting instead
+
+    .. deprecated:: VERSION
+
+        ``hexadecimal=True``, future versions will always return the
+        fingerprint as :class:`bytes`; use ``hexadecimal=False``
     """
     def encode(fingerprint):
         if hexadecimal:
