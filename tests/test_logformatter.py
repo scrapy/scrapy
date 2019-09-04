@@ -1,10 +1,18 @@
 import unittest
+
+from testfixtures import LogCapture
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TwistedTestCase
 import six
 
-from scrapy.spiders import Spider
+from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
 from scrapy.item import Item, Field
 from scrapy.logformatter import LogFormatter
+from scrapy.spiders import Spider
+from tests.mockserver import MockServer
+from tests.spiders import ItemSpider
 
 
 class CustomItem(Item):
@@ -87,6 +95,62 @@ class LogformatterSubclassTest(LoggingContribTest):
 
     def test_flags_in_request(self):
         pass
+
+
+class SkipMessagesLogFormatter(LogFormatter):
+    def crawled(self, *args, **kwargs):
+        return None
+
+    def scraped(self, *args, **kwargs):
+        return None
+
+    def dropped(self, *args, **kwargs):
+        return None
+
+
+class DropSomeItemsPipeline(object):
+    drop = True
+
+    def process_item(self, item, spider):
+        if self.drop:
+            self.drop = False
+            raise DropItem("Ignoring item")
+        else:
+            self.drop = True
+
+class ShowOrSkipMessagesTestCase(TwistedTestCase):
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+        self.base_settings = {
+            'LOG_LEVEL': 'DEBUG',
+            'ITEM_PIPELINES': {
+                __name__ + '.DropSomeItemsPipeline': 300,
+            },
+        }
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_show_messages(self):
+        crawler = CrawlerRunner(self.base_settings).create_crawler(ItemSpider)
+        with LogCapture() as lc:
+            yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIn("Scraped from <200 http://127.0.0.1:", str(lc))
+        self.assertIn("Crawled (200) <GET http://127.0.0.1:", str(lc))
+        self.assertIn("Dropped: Ignoring item", str(lc))
+
+    @defer.inlineCallbacks
+    def test_skip_messages(self):
+        settings = self.base_settings.copy()
+        settings['LOG_FORMATTER'] = __name__ + '.SkipMessagesLogFormatter'
+        crawler = CrawlerRunner(settings).create_crawler(ItemSpider)
+        with LogCapture() as lc:
+            yield crawler.crawl(mockserver=self.mockserver)
+        self.assertNotIn("Scraped from <200 http://127.0.0.1:", str(lc))
+        self.assertNotIn("Crawled (200) <GET http://127.0.0.1:", str(lc))
+        self.assertNotIn("Dropped: Ignoring item", str(lc))
 
 
 if __name__ == "__main__":
