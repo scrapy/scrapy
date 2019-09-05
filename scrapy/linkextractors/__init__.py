@@ -5,16 +5,14 @@ This package contains a collection of Link Extractors.
 
 For more info see docs/topics/link-extractors.rst
 """
+from urllib.parse import urlparse
 import re
 
-from urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.url import (
-    url_is_from_any_domain, url_has_any_extension,
-)
+from scrapy.utils.url import url_is_from_any_domain, url_has_any_extension
 
 
 # common file extensions that are not followed if they occur in links

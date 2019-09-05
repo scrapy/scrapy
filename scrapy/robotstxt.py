@@ -1,11 +1,14 @@
-import sys
-import logging
 from abc import ABCMeta, abstractmethod
+import logging
+import sys
+
 from six import with_metaclass
 
 from scrapy.utils.python import to_native_str, to_unicode
 
+
 logger = logging.getLogger(__name__)
+
 
 def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
     try:

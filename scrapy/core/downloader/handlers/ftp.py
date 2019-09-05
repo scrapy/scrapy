@@ -28,13 +28,13 @@ In case of status 200 request, response.headers will come with two keys:
     'Size' - with size of the downloaded data
 """
 
-import re
 from io import BytesIO
 from urllib.parse import unquote
+import re
 
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator
+from twisted.protocols.ftp import FTPClient, CommandFailed
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes

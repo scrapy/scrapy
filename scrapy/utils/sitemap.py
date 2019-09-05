@@ -4,9 +4,9 @@ Module for processing Sitemaps.
 Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
+from urllib.parse import urljoin
 
 import lxml.etree
-from urllib.parse import urljoin
 
 
 class Sitemap(object):

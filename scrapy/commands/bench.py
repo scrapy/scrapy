@@ -1,12 +1,11 @@
+from urllib.parse import urlencode
+import subprocess
 import sys
 import time
-import subprocess
 
-from urllib.parse import urlencode
-
-import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.linkextractors import LinkExtractor
+import scrapy
 
 
 class Command(ScrapyCommand):

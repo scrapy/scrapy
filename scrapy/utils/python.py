@@ -1,16 +1,16 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import gc
-import os
-import re
-import inspect
-import weakref
-import errno
-import six
 from functools import partial, wraps
 from itertools import chain
+import errno
+import gc
+import inspect
+import os
+import re
+import six
 import sys
+import weakref
 
 from scrapy.utils.decorators import deprecated
 

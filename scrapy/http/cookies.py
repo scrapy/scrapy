@@ -1,5 +1,6 @@
-import time
 from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+import time
+
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_native_str
 

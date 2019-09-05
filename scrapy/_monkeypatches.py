@@ -1,5 +1,6 @@
-import six
 import copyreg
+
+import six
 
 
 if six.PY2:

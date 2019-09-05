@@ -1,17 +1,17 @@
 """
 HTMLParser-based link extractor
 """
-import warnings
-import six
 from html.parser import HTMLParser
 from urllib.parse import urljoin
+import warnings
 
-from w3lib.url import safe_url_string
 from w3lib.html import strip_html5_whitespace
+from w3lib.url import safe_url_string
+import six
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class HtmlParserLinkExtractor(HTMLParser):
