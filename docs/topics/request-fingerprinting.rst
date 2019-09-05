@@ -21,6 +21,8 @@ canonical version (:func:`w3lib.url.canonicalize_url`) of
 Continue reading to learn how to change request fingerprinting, for example to
 take into account some headers or compare URLs case-insensitively.
 
+.. _configuring_request_fingerprinting:
+
 Configuring request fingerprinting
 ==================================
 
@@ -105,8 +107,85 @@ The default value is :func:`~scrapy.utils.request.sha1_hasher`:
 .. autofunction:: scrapy.utils.request.sha1_hasher
 
 
-Using request fingerprinting
-============================
+Request fingerprinting recipes
+==============================
+
+The following sections are recipes of ways to :ref:`configure request
+fingerprinting <configuring_request_fingerprinting>` to get certain behaviors.
+
+Include some headers
+--------------------
+
+::
+
+    from functools import partial
+    from scrapy.utils.request import process_request_fingerprint
+
+    REQUEST_FINGERPRINT_PROCESSORS = [
+        partial(process_request_fingerprint, headers={'X-My-Header'}),
+    ]
+
+
+Compare URLs case-insensitively
+-------------------------------
+
+::
+
+    from functools import partial
+    from w3lib.url import canonicalize_url
+    from scrapy.utils.request import process_request_fingerprint
+
+    def url_processor(url):
+        return canonicalize_url(url).lower()
+
+    REQUEST_FINGERPRINT_PROCESSORS = [
+        partial(process_request_fingerprint, url_processor=url_processor),
+    ]
+
+
+Ignore some query string parameters
+-----------------------------------
+
+::
+
+    from functools import partial
+    from w3lib.url import canonicalize_url, url_query_cleaner
+    from scrapy.utils.request import process_request_fingerprint
+
+    def url_processor(url):
+        url = canonicalize_url(url)
+        parameters = ['parameters', 'to', 'ignore']
+        return url_query_cleaner(url, parameterlist=parameters, remove=True)
+
+    REQUEST_FINGERPRINT_PROCESSORS = [
+        partial(process_request_fingerprint, url_processor=url_processor),
+    ]
+
+
+Reproduce pre-VERSION fingerprints
+----------------------------------
+
+It’s possible to reproduce request fingerprints identical to those that used to
+be generated before Scrapy VERSION::
+
+    import hashlib
+    from w3lib.url import canonicalize_url
+    from scrapy.utils.python import to_bytes
+
+    def old_serializer(request):
+        method = to_bytes(request.method)
+        url = to_bytes(canonicalize_url(request.url))
+        body = request.body or b''
+        return method + url + body
+
+    REQUEST_FINGERPRINT_PROCESSORS = [lambda x, y: x]
+    REQUEST_FINGERPRINT_SERIALIZER = old_serializer
+    REQUEST_FINGERPRINT_HASHER = lambda x: hashlib.sha1(x).hexdigest()
+
+
+
+Using request fingerprints
+==========================
 
 Code that needs the fingerprint of a request must use
 :func:`scrapy.utils.request.request_fingerprint` to read it:

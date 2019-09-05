@@ -224,6 +224,101 @@ class RequestFingerprintTests(unittest.TestCase):
         assert request.fingerprint == fingerprint
 
 
+class RequestFingerprintRecipesTests(unittest.TestCase):
+    """Tests for the recipes at docs/topics/request-fingerprinting.rst"""
+
+    def test_include_some_headers(self):
+        from functools import partial
+        from scrapy.utils.request import process_request_fingerprint
+        meta = {
+            'fingerprint_processors': [
+                partial(process_request_fingerprint, headers={'X-My-Header'})
+            ],
+        }
+        request1 = Request("http://www.example.com/",
+                           headers={'X-My-Header': 1},
+                           meta=meta)
+        request2 = Request("http://www.example.com/",
+                           headers={'X-My-Header': 1},
+                           meta=meta)
+        request3 = Request("http://www.example.com/",
+                           headers={'X-My-Header': 2},
+                           meta=meta)
+        request4 = Request("http://www.example.com/",
+                           meta=meta)
+        kwargs = dict(settings = Settings(), hexadecimal=False)
+        fingerprint1 = request_fingerprint(request1, **kwargs)
+        fingerprint2 = request_fingerprint(request2, **kwargs)
+        fingerprint3 = request_fingerprint(request3, **kwargs)
+        fingerprint4 = request_fingerprint(request4, **kwargs)
+        assert fingerprint1 == fingerprint2
+        assert fingerprint1 != fingerprint3
+        assert fingerprint1 != fingerprint4
+
+    def test_case_insensitive_urls(self):
+        from functools import partial
+        from w3lib.url import canonicalize_url
+        from scrapy.utils.request import process_request_fingerprint
+        def url_processor(url):
+            return canonicalize_url(url).lower()
+        meta = {
+            'fingerprint_processors': [
+                partial(process_request_fingerprint, url_processor=url_processor),
+            ],
+        }
+        request1 = Request("http://www.example.com/", meta=meta)
+        request2 = Request("HTTP://WWW.EXAMPLE.COM/", meta=meta)
+        kwargs = dict(settings = Settings(), hexadecimal=False)
+        fingerprint1 = request_fingerprint(request1, **kwargs)
+        fingerprint2 = request_fingerprint(request2, **kwargs)
+        assert fingerprint1 == fingerprint2
+
+    def test_ignore_some_query_string_parameters(self):
+        from functools import partial
+        from w3lib.url import canonicalize_url, url_query_cleaner
+        from scrapy.utils.request import process_request_fingerprint
+        def url_processor(url):
+            url = canonicalize_url(url)
+            parameters = ['parameters', 'to', 'ignore']
+            return url_query_cleaner(url, parameterlist=parameters, remove=True)
+        meta = {
+            'fingerprint_processors': [
+                partial(process_request_fingerprint, url_processor=url_processor),
+            ],
+        }
+        request1 = Request("http://www.example.com/?count=1&ignore=1",
+                           meta=meta)
+        request2 = Request("http://www.example.com/?count=1&ignore=2",
+                           meta=meta)
+        request3 = Request("http://www.example.com/?count=3&ignore=1",
+                           meta=meta)
+        kwargs = dict(settings = Settings(), hexadecimal=False)
+        fingerprint1 = request_fingerprint(request1, **kwargs)
+        fingerprint2 = request_fingerprint(request2, **kwargs)
+        fingerprint3 = request_fingerprint(request3, **kwargs)
+        assert fingerprint1 == fingerprint2
+        assert fingerprint1 != fingerprint3
+
+    def test_old_behavior(self):
+        import hashlib
+        from w3lib.url import canonicalize_url
+        from scrapy.utils.python import to_bytes
+        def old_serializer(request):
+            method = to_bytes(request.method)
+            url = to_bytes(canonicalize_url(request.url))
+            body = request.body or b''
+            return method + url + body
+        meta = {
+            'fingerprint_processors': [lambda x, y: x],
+            'fingerprint_serializer': old_serializer,
+            'fingerprint_hasher': lambda x: hashlib.sha1(x).hexdigest(),
+        }
+        request1 = Request("https://example.com", meta=meta)
+        kwargs = dict(settings = Settings(), hexadecimal=False)
+        fingerprint = request_fingerprint(request1, **kwargs)
+        assert fingerprint == '6d748741a927b10454c83ac285b002cd239964ea'
+
+
 class UtilsRequestTest(unittest.TestCase):
 
     def test_request_authenticate(self):
