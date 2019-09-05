@@ -14,10 +14,12 @@ from scrapy.utils.request import (
 )
 
 
-def test_json_serializer():
-    serialized = b'{"a": 1, "b": 2}'
-    assert json_serializer({'a': 1, 'b': 2}) == serialized
-    assert json_serializer({'b': 2, 'a': 1}) == serialized
+class JSONSerializerTests(unittest.TestCase):
+
+    def test_json_serializer(self):
+        serialized = b'{"a": 1, "b": 2}'
+        assert json_serializer({'a': 1, 'b': 2}) == serialized
+        assert json_serializer({'b': 2, 'a': 1}) == serialized
 
 
 class ProcessRequestFingerprintTests(unittest.TestCase):
@@ -342,9 +344,11 @@ class UtilsRequestTest(unittest.TestCase):
         request_httprepr(Request("ftp://localhost/tmp/foo.txt"))
 
 
-def test_sha1_hasher():
-    hashed = b'\x17D\xf5>\x00\xfc#\xbd>Q[)\x8eB\x93d\x85\x06\x1d\xba'
-    assert sha1_hasher(b'{"a": 1, "b": 2}') == hashed
+class SHA1HasherTests(unittest.TestCase):
+
+    def test_sha1_hasher(self):
+        hashed = b'\x17D\xf5>\x00\xfc#\xbd>Q[)\x8eB\x93d\x85\x06\x1d\xba'
+        assert sha1_hasher(b'{"a": 1, "b": 2}') == hashed
 
 
 if __name__ == "__main__":
