@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 import parsel
 from w3lib.encoding import html_to_unicode, resolve_encoding, \

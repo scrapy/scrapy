@@ -2,7 +2,7 @@
 
 import weakref
 
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 _urlparse_cache = weakref.WeakKeyDictionary()
 def urlparse_cached(request_or_response):

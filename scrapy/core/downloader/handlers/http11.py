@@ -5,7 +5,7 @@ import logging
 from io import BytesIO
 from time import time
 import warnings
-from six.moves.urllib.parse import urldefrag
+from urllib.parse import urldefrag
 
 from zope.interface import implementer
 from twisted.internet import defer, reactor, protocol

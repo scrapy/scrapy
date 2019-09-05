@@ -1,4 +1,4 @@
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached

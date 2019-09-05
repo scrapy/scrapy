@@ -10,7 +10,7 @@ import os.path
 import time
 import logging
 from email.utils import parsedate_tz, mktime_tz
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 from collections import defaultdict
 import six
 

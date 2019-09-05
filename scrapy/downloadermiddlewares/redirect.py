@@ -1,5 +1,5 @@
 import logging
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 

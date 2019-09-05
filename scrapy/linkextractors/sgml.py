@@ -2,7 +2,7 @@
 SGMLParser-based Link extractors
 """
 import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 import warnings
 from sgmllib import SGMLParser
 

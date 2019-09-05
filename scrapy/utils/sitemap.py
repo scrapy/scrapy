@@ -6,7 +6,7 @@ SitemapSpider, its API is subject to change without notice.
 """
 
 import lxml.etree
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 
 class Sitemap(object):

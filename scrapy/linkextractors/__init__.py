@@ -7,7 +7,7 @@ For more info see docs/topics/link-extractors.rst
 """
 import re
 
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 

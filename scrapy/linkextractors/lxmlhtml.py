@@ -2,7 +2,7 @@
 Link extractor based on lxml.html
 """
 import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace

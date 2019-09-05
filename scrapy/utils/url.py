@@ -7,7 +7,7 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
+from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code

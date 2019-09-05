@@ -2,7 +2,7 @@ import sys
 import time
 import subprocess
 
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 import scrapy
 from scrapy.commands import ScrapyCommand
