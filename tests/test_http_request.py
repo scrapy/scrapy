@@ -43,12 +43,20 @@ class RequestTest(unittest.TestCase):
 
         meta = {"lala": "lolo"}
         headers = {b"caca": b"coco"}
-        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body")
+        fingerprint = b'a'
+        r = self.request_class(
+            "http://www.example.com",
+            meta=meta,
+            headers=headers,
+            body="a body",
+            fingerprint=fingerprint,
+        )
 
         assert r.meta is not meta
         self.assertEqual(r.meta, meta)
         assert r.headers is not headers
         self.assertEqual(r.headers[b"caca"], b"coco")
+        assert r.fingerprint == fingerprint
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')

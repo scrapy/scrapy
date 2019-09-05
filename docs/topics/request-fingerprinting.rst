@@ -21,7 +21,6 @@ canonical version (:func:`w3lib.url.canonicalize_url`) of
 Continue reading to learn how to change request fingerprinting, for example to
 take into account some headers or compare URLs case-insensitively.
 
-
 Configuring request fingerprinting
 ==================================
 
@@ -67,6 +66,7 @@ with Scrapy’s :func:`~scrapy.utils.request.process_request_fingerprint`:
           return something other than a :class:`dict` if other request
           fingerprinting settings are modified accordingly.
 
+
 .. setting:: REQUEST_FINGERPRINT_SERIALIZER
 .. reqmeta:: fingerprint_serializer
 
@@ -84,6 +84,7 @@ representation of its data.
 The default value is :func:`~scrapy.utils.request.json_serializer`:
 
 .. autofunction:: scrapy.utils.request.json_serializer
+
 
 .. setting:: REQUEST_FINGERPRINT_HASHER
 .. reqmeta:: fingerprint_hasher
@@ -111,7 +112,6 @@ Code that needs the fingerprint of a request must use
 :func:`scrapy.utils.request.request_fingerprint` to read it:
 
 .. autofunction:: scrapy.utils.request.request_fingerprint
-
 
 
 .. _override-request-fingerprinting:

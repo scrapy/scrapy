@@ -170,9 +170,9 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
         with warnings.catch_warnings(record=True) as w:
             runner = CrawlerRunner(Settings())
             spiders = runner.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("CrawlerRunner.spiders", str(w[0].message))
-            self.assertIn("CrawlerRunner.spider_loader", str(w[0].message))
+            message = ('CrawlerRunner.spiders attribute is renamed to '
+                       'CrawlerRunner.spider_loader.')
+            assert message in set(str(warning.message) for warning in w)
             sl_cls = load_object(runner.settings['SPIDER_LOADER_CLASS'])
             self.assertIsInstance(spiders, sl_cls)
 
