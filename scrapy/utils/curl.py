@@ -2,7 +2,7 @@ import argparse
 import warnings
 from shlex import split
 
-from six.moves.http_cookies import SimpleCookie
+from http.cookies import SimpleCookie
 from urllib.parse import urlparse
 from six import string_types, iteritems
 from w3lib.http import basic_auth_header

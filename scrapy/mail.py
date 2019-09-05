@@ -12,9 +12,9 @@ except ImportError:
 import six
 
 from email.utils import COMMASPACE, formatdate
-from six.moves.email_mime_multipart import MIMEMultipart
-from six.moves.email_mime_text import MIMEText
-from six.moves.email_mime_base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
 if six.PY2:
     from email.MIMENonMultipart import MIMENonMultipart
     from email import Encoders

@@ -1,5 +1,5 @@
 import six
-from six.moves import copyreg
+import copyreg
 
 
 if six.PY2:

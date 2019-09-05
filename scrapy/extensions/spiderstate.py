@@ -1,5 +1,5 @@
 import os
-from six.moves import cPickle as pickle
+import pickle
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured

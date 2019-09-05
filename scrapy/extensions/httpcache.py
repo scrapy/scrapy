@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 import gzip
 import logging
-from six.moves import cPickle as pickle
+import pickle
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary

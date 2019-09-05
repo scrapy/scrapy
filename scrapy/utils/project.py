@@ -1,5 +1,5 @@
 import os
-from six.moves import cPickle as pickle
+import pickle
 import warnings
 
 from importlib import import_module

@@ -8,7 +8,7 @@ import sys
 import pprint
 import marshal
 import six
-from six.moves import cPickle as pickle
+import pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
