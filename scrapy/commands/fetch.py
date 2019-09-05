@@ -1,12 +1,14 @@
-from __future__ import print_function
-import sys, six
+import sys
+
 from w3lib.url import is_url
+import six
 
 from scrapy.commands import ScrapyCommand
-from scrapy.http import Request
 from scrapy.exceptions import UsageError
+from scrapy.http import Request
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+
 
 class Command(ScrapyCommand):
 

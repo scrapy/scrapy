@@ -1,8 +1,8 @@
-from __future__ import print_function
 import json
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
+
 
 class Command(ScrapyCommand):
 

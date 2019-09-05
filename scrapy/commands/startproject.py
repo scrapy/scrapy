@@ -1,15 +1,14 @@
-from __future__ import print_function
-import re
-import os
-import string
 from importlib import import_module
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
+import os
+import re
+import string
 
-import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
+from scrapy.utils.template import render_templatefile, string_camelcase
+import scrapy
 
 
 TEMPLATES_TO_RENDER = (

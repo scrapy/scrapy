@@ -9,11 +9,11 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
-from __future__ import print_function
-import weakref
-from time import time
-from operator import itemgetter
 from collections import defaultdict
+from operator import itemgetter
+from time import time
+import weakref
+
 import six
 
 

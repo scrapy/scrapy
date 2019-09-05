@@ -3,7 +3,6 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
 
 import os
 import signal
@@ -19,12 +18,12 @@ from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 from scrapy.utils.console import start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
 class Shell(object):

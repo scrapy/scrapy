@@ -1,19 +1,18 @@
-from __future__ import print_function
-import sys
-import os
-import optparse
 import cProfile
 import inspect
+import optparse
+import os
 import pkg_resources
+import sys
 
-import scrapy
-from scrapy.crawler import CrawlerProcess
 from scrapy.commands import ScrapyCommand
+from scrapy.crawler import CrawlerProcess
 from scrapy.exceptions import UsageError
+from scrapy.settings.deprecated import check_deprecated_settings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
-from scrapy.settings.deprecated import check_deprecated_settings
+import scrapy
 
 
 def _iter_command_classes(module_name):

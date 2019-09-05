@@ -1,13 +1,12 @@
-from __future__ import print_function
-import time
-import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
+import sys
+import time
 
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.misc import load_object, set_environ
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.misc import load_object, set_environ
 
 
 class TextTestResult(_TextTestResult):
