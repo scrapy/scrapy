@@ -374,7 +374,7 @@ CrawlSpider
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None, errback=None)
+.. autoclass:: Rule
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page. Each produced link will
