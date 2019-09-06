@@ -1,18 +1,18 @@
-from __future__ import print_function
-import time
-import tempfile
-import shutil
-import unittest
-import email.utils
 from contextlib import contextmanager
+import email.utils
+import shutil
+import tempfile
+import time
+import unittest
+
 import pytest
 
-from scrapy.http import Response, HtmlResponse, Request
-from scrapy.spiders import Spider
-from scrapy.settings import Settings
-from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.test import get_crawler
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
+from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Response, HtmlResponse, Request
+from scrapy.settings import Settings
+from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
 
 
 class _BaseTest(unittest.TestCase):

@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-import sys
 import logging
+import sys
 import unittest
 
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
+from scrapy.extensions import telnet
 from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
                               LogCounterHandler, StreamLogger)
 from scrapy.utils.test import get_crawler
-from scrapy.extensions import telnet
 
 
 class FailureToExcInfoTest(unittest.TestCase):

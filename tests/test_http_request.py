@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import unquote_to_bytes
+from urllib.parse import urlparse, parse_qs, unquote
 import cgi
-import unittest
-import re
 import json
+import re
+import unittest
 import warnings
+import xmlrpc.client as xmlrpclib
 
 import six
-from six.moves import xmlrpc_client as xmlrpclib
-from six.moves.urllib.parse import urlparse, parse_qs, unquote
-if six.PY3:
-    from urllib.parse import unquote_to_bytes
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_native_str

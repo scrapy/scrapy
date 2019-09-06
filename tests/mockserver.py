@@ -1,18 +1,21 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
+import json
+import os
+import random
+import sys
+import time
 
 from OpenSSL import SSL
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
-from twisted.web.static import File
-from twisted.web.test.test_webclient import PayloadResource
-from twisted.web.server import GzipEncoderFactory
-from twisted.web.resource import EncodingResourceWrapper
-from twisted.web.util import redirectTo
 from twisted.internet import reactor, ssl
 from twisted.internet.task import deferLater
+from twisted.web.resource import EncodingResourceWrapper
+from twisted.web.resource import Resource
+from twisted.web.server import GzipEncoderFactory
+from twisted.web.server import Site, NOT_DONE_YET
+from twisted.web.static import File
+from twisted.web.test.test_webclient import PayloadResource
+from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3

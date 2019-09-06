@@ -1,3 +1,4 @@
+from urllib.parse import urlencode
 import json
 import logging
 
@@ -5,12 +6,14 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
+from scrapy.utils.engine import get_engine_status
 from scrapy.utils.python import to_unicode
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
+
 from tests.mockserver import MockServer
+from tests.spiders import (BrokenStartRequestsSpider, DelaySpider, DuplicateStartRequestsSpider,
+                           FollowAllSpider, SimpleSpider, SingleRequestSpider)
 
 
 class CrawlTestCase(TestCase):
@@ -140,7 +143,6 @@ class CrawlTestCase(TestCase):
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
-        from six.moves.urllib.parse import urlencode
         query = urlencode({'raw': '''\
 HTTP/1.1 200 OK
 Server: Apache-Coyote/1.1
@@ -213,7 +215,6 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_engine_status(self):
-        from scrapy.utils.engine import get_engine_status
         est = []
 
         def cb(response):

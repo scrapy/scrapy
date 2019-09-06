@@ -1,23 +1,22 @@
-from __future__ import absolute_import
-import re
+from datetime import datetime
+from io import BytesIO
 import json
 import marshal
+import pickle
+import re
 import tempfile
 import unittest
-from io import BytesIO
-from datetime import datetime
-from six.moves import cPickle as pickle
 
 import lxml.etree
 import six
 
-from scrapy.item import Item, Field
-from scrapy.utils.python import to_unicode
 from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
     XmlItemExporter, JsonLinesItemExporter, JsonItemExporter,
     PythonItemExporter, MarshalItemExporter
 )
+from scrapy.item import Item, Field
+from scrapy.utils.python import to_unicode
 
 
 class TestItem(Item):

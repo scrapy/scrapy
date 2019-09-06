@@ -10,24 +10,26 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-from __future__ import print_function
-import sys, os, re
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
+import os
+import re
+import sys
 
+from pydispatch import dispatcher
 from twisted.internet import reactor, defer
-from twisted.web import server, static, util
 from twisted.trial import unittest
+from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.test import get_crawler
-from pydispatch import dispatcher
-from tests import tests_datadir
-from scrapy.spiders import Spider
+from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
-from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.test import get_crawler
+
+from tests import tests_datadir
 
 
 class TestItem(Item):

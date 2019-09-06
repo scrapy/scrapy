@@ -1,12 +1,11 @@
-from six.moves.urllib.parse import urlparse
 from unittest import TestCase
+from urllib.parse import urlparse
 import warnings
 
+from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.settings import Settings
-from scrapy.spiders import Spider
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.spidermiddlewares.referer import RefererMiddleware, \
     POLICY_NO_REFERRER, POLICY_NO_REFERRER_WHEN_DOWNGRADE, \
     POLICY_SAME_ORIGIN, POLICY_ORIGIN, POLICY_ORIGIN_WHEN_CROSS_ORIGIN, \
@@ -17,6 +16,7 @@ from scrapy.spidermiddlewares.referer import RefererMiddleware, \
     OriginWhenCrossOriginPolicy, OriginPolicy, \
     StrictOriginWhenCrossOriginPolicy, StrictOriginPolicy, \
     SameOriginPolicy, UnsafeUrlPolicy, ReferrerPolicy
+from scrapy.spiders import Spider
 
 
 class TestRefererMiddleware(TestCase):

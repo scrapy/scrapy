@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
-                                                    logger as mw_module_logger)
+
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware, logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
+
 from tests import mock
 from tests.test_robotstxt_interface import rerp_available, reppy_available
 

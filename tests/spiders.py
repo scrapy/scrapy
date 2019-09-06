@@ -2,19 +2,20 @@
 Some spiders used for testing and benchmarking
 """
 
+from urllib.parse import urlencode
 import time
-from six.moves.urllib.parse import urlencode
 
-from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Spider
 
 
 class MockServerSpider(Spider):
     def __init__(self, mockserver=None, *args, **kwargs):
         super(MockServerSpider, self).__init__(*args, **kwargs)
         self.mockserver = mockserver
+
 
 class MetaSpider(MockServerSpider):
 
