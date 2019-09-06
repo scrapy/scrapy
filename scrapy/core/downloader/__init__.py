@@ -1,19 +1,18 @@
-from __future__ import absolute_import
+from collections import deque
+from datetime import datetime
+from time import time
 import random
 import warnings
-from time import time
-from datetime import datetime
-from collections import deque
 
-import six
 from twisted.internet import reactor, defer, task
+import six
 
+from scrapy import signals
+from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.resolver import dnscache
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.resolver import dnscache
-from scrapy import signals
-from .middleware import DownloaderMiddlewareManager
-from .handlers import DownloadHandlers
 
 
 class Slot(object):

@@ -1,10 +1,10 @@
-from __future__ import absolute_import
-
 import warnings
+
+from twisted.internet import endpoints
+from twisted.web import client
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 
-from twisted.web import client
-from twisted.internet import endpoints
 
 Agent = client.Agent  # since < 11.1
 ProxyAgent = client.ProxyAgent  # since 11.1

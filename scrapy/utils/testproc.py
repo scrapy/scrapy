@@ -1,6 +1,5 @@
-from __future__ import absolute_import
-import sys
 import os
+import sys
 
 from twisted.internet import reactor, defer, protocol
 
