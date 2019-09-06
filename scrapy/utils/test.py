@@ -3,6 +3,7 @@ This module contains some assorted functions used in tests
 """
 
 from __future__ import absolute_import
+from posixpath import split
 import os
 
 from importlib import import_module
@@ -61,6 +62,23 @@ def get_gcs_content_and_delete(bucket, path):
     bucket.delete_blob(path)
     return content, acl, blob
 
+def get_ftp_content_and_delete(path, host ,port,
+        username, password, use_active_mode=False):
+    from ftplib import FTP
+    ftp = FTP()
+    ftp.connect(host, port)
+    ftp.login(username, password)
+    if use_active_mode:
+        ftp.set_pasv(False)
+    ftp_data = []
+    def buffer_data(data):
+        ftp_data.append(data)
+    ftp.retrbinary('RETR %s' % path, buffer_data)
+    dirname, filename = split(path)
+    ftp.cwd(dirname)
+    ftp.delete(filename)
+    return "".join(ftp_data)
+    
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
