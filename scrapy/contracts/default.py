@@ -1,3 +1,5 @@
+import json
+
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
@@ -15,6 +17,20 @@ class UrlContract(Contract):
 
     def adjust_request_args(self, args):
         args['url'] = self.args[0]
+        return args
+
+
+class CallbackKeywordArgumentsContract(Contract):
+    """ Contract to set the keyword arguments for the request.
+        The value should be a JSON-encoded dictionary, e.g.:
+
+        @cb_kwargs {"arg1": "some value"}
+    """
+
+    name = 'cb_kwargs'
+
+    def adjust_request_args(self, args):
+        args['cb_kwargs'] = json.loads(' '.join(self.args))
         return args
 
 
