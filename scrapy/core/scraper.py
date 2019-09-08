@@ -225,20 +225,20 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
-                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+                logger.log(*logformatter_adapter(logkws), extra={'spider': spider, 'item': item})
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
             else:
                 logger.error('Error processing %(item)s', {'item': item},
                              exc_info=failure_to_exc_info(output),
-                             extra={'spider': spider})
+                             extra={'spider': spider, 'item': item})
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_error, item=item, response=response,
                     spider=spider, failure=output)
         else:
             logkws = self.logformatter.scraped(output, response, spider)
-            logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+            logger.log(*logformatter_adapter(logkws), extra={'spider': spider, 'item': item})
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)
