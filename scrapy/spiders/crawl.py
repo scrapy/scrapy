@@ -94,8 +94,8 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for rule_index, rule in enumerate(self._rules):
-            links = (lnk for lnk in rule.link_extractor.extract_links(response)
-                     if lnk not in seen)
+            links = [lnk for lnk in rule.link_extractor.extract_links(response)
+                     if lnk not in seen]
             for link in rule.process_links(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)
@@ -123,8 +123,6 @@ class CrawlSpider(Spider):
     def _handle_failure(self, failure, errback):
         if errback:
             results = errback(failure) or ()
-            if hasattr(failure.value, 'response'):
-                results = self.process_results(failure.value.response, results)
             for request_or_item in iterate_spider_output(results):
                 yield request_or_item
 
