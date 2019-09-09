@@ -15,4 +15,4 @@ service_identity>=16.0.0
 six>=1.10.0
 Twisted>=16.0.0
 zope.interface>=4.1.3
-protego
+protego>=0.1.15
