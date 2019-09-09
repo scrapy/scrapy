@@ -1021,7 +1021,7 @@ RobotFileParser
 ~~~~~~~~~~~~~~~
 
 `RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is
-Python's inbuilt robots.txt_ parser. The parser is fully compliant with `Martijn Koster's
+Python's built-in robots.txt_ parser. The parser is fully compliant with `Martijn Koster's
 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
 support for wildcard matching.
 
