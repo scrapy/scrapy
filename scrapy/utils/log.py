@@ -13,6 +13,7 @@ from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.versions import scrapy_components_versions
 
+import graypy
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,21 @@ def install_scrapy_root_handler(settings):
     logging.root.setLevel(logging.NOTSET)
     _scrapy_root_handler = _get_handler(settings)
     logging.root.addHandler(_scrapy_root_handler)
+
+    handlers = [_scrapy_root_handler]
+
+    graylog = settings.get('GRAYLOG_CONF')
+    if graylog:
+        graylog_handler = getattr(graypy, graylog['forwading_method'])(*graylog['parameters'])
+        handlers.append(graylog_handler)
+
+    root_handler_cls = tuple({type(h) for h in logging.root.handlers})
+
+    for handler in handlers:
+        if not isinstance(handler, root_handler_cls):
+            logging.root.addHandler(handler)
+
+    
 
 
 def get_scrapy_root_handler():
