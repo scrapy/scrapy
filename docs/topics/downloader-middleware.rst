@@ -513,7 +513,7 @@ defines the methods described below.
 
     .. method:: open_spider(spider)
 
-      This method gets called after a spider has been opened for crawling. It handles 
+      This method gets called after a spider has been opened for crawling. It handles
       the :signal:`open_spider <spider_opened>` signal.
 
       :param spider: the spider which has been opened
@@ -521,8 +521,8 @@ defines the methods described below.
 
     .. method:: close_spider(spider)
 
-      This method gets called after a spider has been closed. It handles 
-      the :signal:`close_spider <spider_closed>` signal. 
+      This method gets called after a spider has been closed. It handles
+      the :signal:`close_spider <spider_closed>` signal.
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.spiders.Spider` object
@@ -1020,10 +1020,10 @@ the request will be ignored by this middleware even if
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
-Python's inbuilt robots.txt_ parser. The parser is fully compliant with `Martijn Koster's 
+`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is
+Python's inbuilt robots.txt_ parser. The parser is fully compliant with `Martijn Koster's
 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
-support for wildcard matching. Scrapy uses this parser by default.
+support for wildcard matching.
 
 In order to use this parser, set:
 
@@ -1074,12 +1074,11 @@ Protego parser
 
 `Protego <https://github.com/scrapy/protego>`_ is a pure-Python robots.txt_ parser.
 The parser is fully compliant with `Google's Robots.txt Specification
-<https://developers.google.com/search/reference/robots_txt>`_ hence supports wildcard 
+<https://developers.google.com/search/reference/robots_txt>`_ hence supports wildcard
 matching, and uses the length based rule similar to `Reppy <https://github.com/seomoz/reppy/>`_.
+Scrapy uses this parser by default.
 
 In order to use this parser:
-
-* Install `Protego <https://github.com/scrapy/protego>`_ by running ``pip install protego``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ProtegoRobotParser``
