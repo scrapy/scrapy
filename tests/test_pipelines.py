@@ -1,3 +1,5 @@
+import asyncio
+
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.trial import unittest
@@ -29,6 +31,13 @@ class DeferredPipeline:
 class AsyncDefPipeline:
     async def process_item(self, item, spider):
         await defer.succeed(42)
+        item['pipeline_passed'] = True
+        return item
+
+
+class AsyncDefAsyncioPipeline:
+    async def process_item(self, item, spider):
+        await asyncio.sleep(0.2)
         item['pipeline_passed'] = True
         return item
 
@@ -80,5 +89,11 @@ class PipelineTestCase(unittest.TestCase):
     @defer.inlineCallbacks
     def test_asyncdef_pipeline(self):
         crawler = self._create_crawler(AsyncDefPipeline)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(len(self.items), 1)
+
+    @defer.inlineCallbacks
+    def test_asyncdef_asyncio_pipeline(self):
+        crawler = self._create_crawler(AsyncDefAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 1)
