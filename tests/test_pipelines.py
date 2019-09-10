@@ -26,6 +26,13 @@ class DeferredPipeline:
         return d
 
 
+class AsyncDefPipeline:
+    async def process_item(self, item, spider):
+        await defer.succeed(42)
+        item['pipeline_passed'] = True
+        return item
+
+
 class ItemSpider(Spider):
     name = 'itemspider'
 
@@ -67,5 +74,11 @@ class PipelineTestCase(unittest.TestCase):
     @defer.inlineCallbacks
     def test_deferred_pipeline(self):
         crawler = self._create_crawler(DeferredPipeline)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(len(self.items), 1)
+
+    @defer.inlineCallbacks
+    def test_asyncdef_pipeline(self):
+        crawler = self._create_crawler(AsyncDefPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 1)
