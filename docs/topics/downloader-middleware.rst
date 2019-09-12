@@ -1015,7 +1015,7 @@ If :attr:`Request.meta <scrapy.http.Request.meta>` has
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
-Parsers varies in several aspects:
+Parsers vary in several aspects:
 
 * Language of implementation
 
