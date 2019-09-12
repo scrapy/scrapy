@@ -464,7 +464,7 @@ class FilesPipeline(MediaPipeline):
         media_ext = os.path.splitext(request.url)[1]
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
-        if media_ext not in mimetypes.types_map.keys():
+        if media_ext not in mimetypes.types_map:
             media_ext = ''
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
