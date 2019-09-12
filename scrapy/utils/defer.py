@@ -127,3 +127,20 @@ def deferred_from_coro(o):
             raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
         return defer.Deferred.fromFuture(asyncio.ensure_future(o))
     return o
+
+
+def maybeDeferred_coro(f, *args, **kw):
+    """ Like defer.maybeDeferred, but also converts coroutines to Deferreds. """
+    try:
+        result = f(*args, **kw)
+    except:
+        return defer.fail(failure.Failure(captureVars=defer.Deferred.debug))
+
+    if isinstance(result, defer.Deferred):
+        return result
+    elif asyncio.iscoroutine(result) or isfuture(result) or inspect.isawaitable(result):
+        return deferred_from_coro(result)
+    elif isinstance(result, failure.Failure):
+        return defer.fail(result)
+    else:
+        return defer.succeed(result)

@@ -1,3 +1,5 @@
+import asyncio
+
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
@@ -54,7 +56,7 @@ class SendCatchLogDeferredTest(SendCatchLogTest):
         return send_catch_log_deferred(signal, *a, **kw)
 
 
-class SendCatchLogDeferredTest2(SendCatchLogTest):
+class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -63,8 +65,24 @@ class SendCatchLogDeferredTest2(SendCatchLogTest):
         reactor.callLater(0, d.callback, "OK")
         return d
 
-    def _get_result(self, signal, *a, **kw):
-        return send_catch_log_deferred(signal, *a, **kw)
+
+class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
+
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == 'test'
+        await defer.succeed(42)
+        return "OK"
+
+
+class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
+
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == 'test'
+        await asyncio.sleep(0.2)
+        return "OK"
+
 
 class SendCatchLogTest2(unittest.TestCase):
 
