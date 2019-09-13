@@ -15,6 +15,7 @@ import re
 import sys
 from urllib.parse import urlparse
 
+from pytest import mark
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
 from twisted.trial import unittest
@@ -81,6 +82,11 @@ class ItemZeroDivisionErrorSpider(TestSpider):
             "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
         }
     }
+
+
+class StartRequestsAsyncDefSpider(TestSpider):
+    async def start_requests(self):
+        return [Request(url, dont_filter=True) for url in self.start_urls]
 
 
 def start_test_site(debug=False):
@@ -200,6 +206,13 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncdef(self):
+        self.run = CrawlerRun(StartRequestsAsyncDefSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",

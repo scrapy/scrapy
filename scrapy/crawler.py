@@ -1,3 +1,4 @@
+import inspect
 import logging
 import pprint
 import signal
@@ -21,6 +22,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
     get_scrapy_root_handler,
@@ -84,7 +86,10 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
+            if inspect.iscoroutinefunction(self.spider.start_requests):
+                start_requests = yield deferred_from_coro(self.spider.start_requests())
+            else:
+                start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
