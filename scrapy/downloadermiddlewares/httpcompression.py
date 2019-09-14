@@ -18,6 +18,10 @@ except ImportError:
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+
+    HEADERS_KEEP = setting.getbool('HEADERS_KEEP')
+
+    
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
@@ -45,8 +49,9 @@ class HttpCompressionMiddleware(object):
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
                 response = response.replace(**kwargs)
-                if not content_encoding:
-                    del response.headers['Content-Encoding']
+                if not HEADERS_KEEP:
+                    if not content_encoding:
+                        del response.headers['Content-Encoding']
 
         return response
 
