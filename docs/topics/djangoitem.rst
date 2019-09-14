@@ -8,7 +8,7 @@ DjangoItem
 Django model, you simply create a :class:`DjangoItem` and specify what Django
 model it relates to.
 
-Besides of getting the model fields defined on your item, :class:`DjangoItem`
+Besides getting the model fields defined in your item, :class:`DjangoItem`
 provides a method to create and populate a Django model instance with the item
 data.
 
