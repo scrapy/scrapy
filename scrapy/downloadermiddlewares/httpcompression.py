@@ -19,9 +19,8 @@ class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    HEADERS_KEEP = setting.getbool('HEADERS_KEEP')
+    HEADERS_KEEP = settings.getbool('HEADERS_KEEP')
 
-    
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
