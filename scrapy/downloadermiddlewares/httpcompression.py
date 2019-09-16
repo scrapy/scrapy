@@ -19,7 +19,10 @@ class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    HEADERS_KEEP = settings.getbool('HEADERS_KEEP')
+    def __int__(self, settings):
+        #setting to decide to keep or discard encoding header
+        #stored in default_settings.py
+        self.keep_encoding_header = setting.getbool('HTTPCOMPRESSION_HEADERS_KEEP')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -48,7 +51,7 @@ class HttpCompressionMiddleware(object):
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
                 response = response.replace(**kwargs)
-                if not HEADERS_KEEP:
+                if not self.keep_encoding_header:
                     if not content_encoding:
                         del response.headers['Content-Encoding']
 
