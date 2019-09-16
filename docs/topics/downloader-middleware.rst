@@ -1023,7 +1023,7 @@ Parsers varies in several aspects:
 
 * Support for wildcard matching
 
-* usage of length based rule: in particular for ``Allow`` and
+* Usage of length based rule: in particular for ``Allow`` and
   ``Disallow`` directives, where the most specific rule based on the length of
   the path trumps the less specific (shorter) rule
 
@@ -1033,7 +1033,7 @@ Parsers varies in several aspects:
 Protego parser
 ~~~~~~~~~~~~~~
 
-based on `Protego <https://github.com/scrapy/protego>`_:
+Based on `Protego <https://github.com/scrapy/protego>`_:
 
 * implemented in Python
 
@@ -1042,7 +1042,7 @@ based on `Protego <https://github.com/scrapy/protego>`_:
 
 * supports wildcard matching
 
-* uses the length based rule,
+* uses the length based rule
 
 Scrapy uses this parser by default.
 
@@ -1051,7 +1051,7 @@ Scrapy uses this parser by default.
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-based on `RobotFileParser
+Based on `RobotFileParser
 <https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
 
 * is Python's built-in robots.txt_ parser.
@@ -1061,7 +1061,7 @@ based on `RobotFileParser
 
 * lacks support for wildcard matching.
 
-* doesn't use the length based rule,
+* doesn't use the length based rule
 
 It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0 .
 
@@ -1074,7 +1074,7 @@ In order to use this parser, set:
 Reppy parser
 ~~~~~~~~~~~~
 
-based on `Reppy <https://github.com/seomoz/reppy/>`_:
+Based on `Reppy <https://github.com/seomoz/reppy/>`_:
 
 * is a Python wrapper around `Robots Exclusion Protocol Parser for C++
   <https://github.com/seomoz/rep-cpp>`_.
@@ -1084,7 +1084,7 @@ based on `Reppy <https://github.com/seomoz/reppy/>`_:
 
 * supports wildcard matching
 
-* uses the length based rule,
+* uses the length based rule
 
 Native implementation provides better speed than Protego.
 
@@ -1100,7 +1100,7 @@ In order to use this parser:
 Robotexclusionrulesparser
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 * implemented in Python
 
@@ -1109,7 +1109,7 @@ based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 * supports wildcard matching
 
-* doesn't use the length based rule,
+* doesn't use the length based rule
 
 In order to use this parser:
 
