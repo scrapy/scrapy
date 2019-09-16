@@ -29,6 +29,10 @@ class LogFormatter(object):
     *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``.
         The final log message is computed as ``msg % args``.
 
+    Users can define their own ``LogFormatter`` class if they want to customise how
+    each action is logged or if they want to omit it entirely. In order to omit
+    logging an action the method must return ``None``.
+
     Here is an example on how to create a custom log formatter to lower the severity level of
     the log message when an item is dropped from the pipeline::
 
