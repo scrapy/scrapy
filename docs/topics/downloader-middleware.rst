@@ -1089,7 +1089,7 @@ Based on `Reppy <https://github.com/seomoz/reppy/>`_:
 
 * uses the length based rule
 
-Native implementation provides better speed than Protego.
+Native implementation, provides better speed than Protego.
 
 In order to use this parser:
 
