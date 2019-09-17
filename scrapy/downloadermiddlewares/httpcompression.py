@@ -20,15 +20,13 @@ class HttpCompressionMiddleware(object):
     sent/received from web sites"""
 
     def __int__(self, settings):
-        #setting to decide to keep or discard encoding header
-        #stored in default_settings.py
         self.keep_encoding_header = settings.getbool('HTTPCOMPRESSION_HEADERS_KEEP')
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls()
+        return cls(crawler.settings)
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
@@ -54,6 +52,9 @@ class HttpCompressionMiddleware(object):
                 if not self.keep_encoding_header:
                     if not content_encoding:
                         del response.headers['Content-Encoding']
+                #else:
+                    #flags_plus_one = response.flags.append(#encoding-value#)
+                    #response.replace(flags=glags_plus_one)
 
         return response
 
