@@ -19,7 +19,7 @@ class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __int__(self, settings):
+    def __init__(self, settings):
         self.keep_encoding_header = settings.getbool('HTTPCOMPRESSION_HEADERS_KEEP')
 
     @classmethod
