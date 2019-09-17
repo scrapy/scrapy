@@ -11,7 +11,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
-
+from scrapy.utils.test import get_crawler
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
