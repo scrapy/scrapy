@@ -1028,6 +1028,9 @@ Parsers vary in several aspects:
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
 
+Performance comparison of different parsers is available at `the following link
+<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+
 .. _protego-parser:
 
 Protego parser
