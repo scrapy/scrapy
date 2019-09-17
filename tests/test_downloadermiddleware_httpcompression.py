@@ -28,7 +28,7 @@ class HttpCompressionTest(TestCase):
 
     def setUp(self):
         self.spider = Spider('foo')
-        self.mw = HttpCompressionMiddleware.from_crawler(crawler)
+        self.mw = HttpCompressionMiddleware(self.spider.settings)
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
