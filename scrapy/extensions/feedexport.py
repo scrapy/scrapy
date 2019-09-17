@@ -242,7 +242,7 @@ class FeedExporter(object):
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
-            return
+            return defer.maybeDeferred(slot.storage.store, slot.file)
         if self._exporting:
             slot.exporter.finish_exporting()
             self._exporting = False
