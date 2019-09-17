@@ -51,7 +51,6 @@ value of one of their fields::
         def close_spider(self, spider):
             for exporter in self.year_to_exporter.values():
                 exporter.finish_exporting()
-                exporter.file.close()
 
         def _exporter_for_item(self, item):
             year = item['year']
