@@ -1054,12 +1054,12 @@ RobotFileParser
 Based on `RobotFileParser
 <https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
 
-* is Python's built-in robots.txt_ parser.
+* is Python's built-in robots.txt_ parser
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_.
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
 
-* lacks support for wildcard matching.
+* lacks support for wildcard matching
 
 * doesn't use the length based rule
 
@@ -1077,10 +1077,10 @@ Reppy parser
 Based on `Reppy <https://github.com/seomoz/reppy/>`_:
 
 * is a Python wrapper around `Robots Exclusion Protocol Parser for C++
-  <https://github.com/seomoz/rep-cpp>`_.
+  <https://github.com/seomoz/rep-cpp>`_
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_.
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1105,7 +1105,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 * implemented in Python
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_.
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
