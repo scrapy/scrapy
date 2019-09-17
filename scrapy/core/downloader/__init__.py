@@ -10,7 +10,6 @@ from twisted.internet import reactor, defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.resolver import dnscache
 from scrapy import signals
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
@@ -99,28 +98,33 @@ class Downloader(object):
     def needs_backout(self):
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request, spider):
-        key = self._get_slot_key(request, spider)
-        if key not in self.slots:
-            conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
-            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
-            self.slots[key] = Slot(conc, delay, self.randomize_delay)
+    def _enqueue_request(self, request, spider):
+        d = defer.maybeDeferred(self._get_slot_key, request)
+        d.addCallback(self._slot_request, request, spider)
+        return d
 
-        return key, self.slots[key]
-
-    def _get_slot_key(self, request, spider):
+    def _get_slot_key(self, request):
         if self.DOWNLOAD_SLOT in request.meta:
             return request.meta[self.DOWNLOAD_SLOT]
-
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
-            key = dnscache.get(key, key)
-
+            d = reactor.resolve(key)
+            def fallback(failure):
+                return 'unknown_ip_address'
+            d.addErrback(fallback)
+            return d
         return key
 
-    def _enqueue_request(self, request, spider):
-        key, slot = self._get_slot(request, spider)
-        request.meta[self.DOWNLOAD_SLOT] = key
+    def _slot_request(self, slot_key, request, spider):
+        if slot_key not in self.slots:
+            concurrency = self.ip_concurrency or self.domain_concurrency
+            concurrency, delay = _get_concurrency_delay(concurrency, spider,
+                                                        self.settings)
+            self.slots[slot_key] = Slot(concurrency, delay,
+                                        self.randomize_delay)
+
+        slot = self.slots[slot_key]
+        request.meta[self.DOWNLOAD_SLOT] = slot_key
 
         def _deactivate(response):
             slot.active.remove(request)

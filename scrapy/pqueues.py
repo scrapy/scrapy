@@ -126,7 +126,7 @@ class DownloaderInterface(object):
                 for slot in possible_slots]
 
     def get_slot_key(self, request):
-        return self.downloader._get_slot_key(request, None)
+        return self.downloader._get_slot_key(request)
 
     def _active_downloads(self, slot):
         """ Return a number of requests in a Downloader for a given slot """
