@@ -1023,10 +1023,10 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of length based rule: in particular for ``Allow`` and
-  ``Disallow`` directives, where the most specific rule based on the length of
-  the path trumps the less specific (shorter) rule
-
+* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+  in particular for ``Allow`` and ``Disallow`` directives, where the most
+  specific rule based on the length of the path trumps the less specific
+  (shorter) rule
 
 .. _protego-parser:
 
