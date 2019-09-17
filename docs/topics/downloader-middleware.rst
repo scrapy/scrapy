@@ -1066,7 +1066,7 @@ Based on `RobotFileParser
 
 * doesn't use the length based rule
 
-It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0 .
+It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
 
 In order to use this parser, set:
 
