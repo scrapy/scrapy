@@ -28,7 +28,7 @@ class HttpCompressionTest(TestCase):
 
     def setUp(self):
         #need to find way to access settings here
-        crawler = get_crawler(Spider,{'HTTPCOMPRESSION_HEADERS_KEEP':False,
+        crawler = get_crawler(Spider,{'HTTPCOMPRESSION_HEADERS_KEEP':True,
                                       'COMPRESSION_ENABLED':True})
         self.spider = crawler._create_spider('foo')
         self.mw = HttpCompressionMiddleware.from_crawler(crawler)

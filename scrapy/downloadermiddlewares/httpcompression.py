@@ -48,17 +48,11 @@ class HttpCompressionMiddleware(object):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
-
                 if self.keep_encoding_header:
-                    #check encoding of outgoing response
-                    #dont know if i can do this with a RespinceTypes object
-                    out_encoding = TextResponse(respcls)._body_inferred_encoding()
-                    kwargs['flags'] = out_encoding
-                    
+                    kwargs['flags'] = [encoding]
                 response = response.replace(**kwargs)
-                if not self.keep_encoding_header:
-                    if not content_encoding:
-                        del response.headers['Content-Encoding']
+                if not content_encoding:
+                    del response.headers['Content-Encoding']
         return response
 
     def _decode(self, body, encoding):
