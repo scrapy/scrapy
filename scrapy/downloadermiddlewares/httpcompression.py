@@ -51,7 +51,8 @@ class HttpCompressionMiddleware(object):
 
                 if self.keep_encoding_header:
                     #check encoding of outgoing response
-                    out_encoding = TextResponse(response)._body_inferred_encoding()
+                    #dont know if i can do this with a RespinceTypes object
+                    out_encoding = TextResponse(respcls)._body_inferred_encoding()
                     kwargs['flags'] = out_encoding
                     
                 response = response.replace(**kwargs)
