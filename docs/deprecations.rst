@@ -3,9 +3,9 @@
 Deprecations
 ============
 
-This document outlines the Scrapy deprecation policy, and lists when various
-pieces of Scrapy have been removed or altered in a backward incompatible way,
-following their deprecation.
+This document outlines the Scrapy deprecation policy, how to handle deprecation
+warnings, and lists when various pieces of Scrapy have been removed or altered
+in a backward incompatible way, following their deprecation.
 
 .. _deprecation-policy:
 
@@ -40,9 +40,9 @@ Scrapy deprecation warnings use the following :ref:`warning category
 Filtering out deprecation warnings
 ''''''''''''''''''''''''''''''''''
 
-Filtering out Scrapy warnings only it not easy due to a `Python issue`_.
+Filtering out only Scrapy warnings is not easy due to a `Python issue`_.
 
-If you do not mind filtering out all warnings, and not just Scrapy deprecation
+If you do not mind filtering out all warnings, not only Scrapy deprecation
 warnings, apply the ``ignore`` :ref:`warning filter <python:warning-filter>`
 with :python:option:`-W` or :python:envvar:`PYTHONWARNINGS`. For example::
 
@@ -81,14 +81,8 @@ Applicable since 1.1.0
     ``scrapy.utils.python.binary_is_text`` instead, but mind that it
     returns the inverse value (``isbinarytext() == not binary_is_text()``).
 
--   In ``scrapy.utils.python``, the ``str_to_unicode`` and
-    ``unicode_to_str`` functions are replaced by ``to_unicode`` and
-    ``to_bytes``, respectively.
-
 -   In ``scrapy.utils.datatypes``, the ``MultiValueDictKeyError`` exception
     and classes ``MultiValueDict`` and ``SiteNode`` are removed.
-
--   The ``scrapy.telnet`` module is moved to ``scrapy.extensions.telnet``.
 
 -   The previously bundled ``scrapy.xlib.pydispatch`` library is replaced by
     `pydispatcher <https://pypi.python.org/pypi/PyDispatcher>`_.
@@ -96,13 +90,6 @@ Applicable since 1.1.0
 
 Applicable since 1.0.0
 ''''''''''''''''''''''
-
--   The ``scrapy.log`` module is replaced by Python’s `logging
-    <https://docs.python.org/library/logging.html>`_ module. See
-    :ref:`topics-logging`.
-
--   The ``SPIDER_MANAGER_CLASS`` setting is renamed to
-    :setting:`SPIDER_LOADER_CLASS`.
 
 -   The following classes are removed in favor of
     :class:`~scrapy.linkextractors.LinkExtractor`::
@@ -113,11 +100,110 @@ Applicable since 1.0.0
 
 -   The ``scrapy.crawler.Crawler.spiders`` is removed, use
     :attr:`CrawlerRunner.spider_loader
-    <scrapy.crawler.CrawlerRunner.spider_loader>` or instantiate :class:`~scrapy.spiderloader.SpiderLoader` with your settings.
+    <scrapy.crawler.CrawlerRunner.spider_loader>` or instantiate
+    :class:`~scrapy.spiderloader.SpiderLoader` with your settings.
+
+
+.. _deprecations-1.7.0:
+
+1.7.0
+-----
+
+-   ``429`` is part of the :setting:`RETRY_HTTP_CODES` setting by default.
+
+-   :class:`~scrapy.crawler.Crawler`,
+    :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>` and
+    :class:`CrawlerRunner.create_crawler <scrapy.crawler.CrawlerRunner.create_crawler>`
+    do not accept a :class:`~scrapy.spiders.Spider` subclass instance, use a
+    :class:`~scrapy.spiders.Spider` subclass.
+
+-   Custom scheduler priority queues (see :setting:`SCHEDULER_PRIORITY_QUEUE`)
+    must handle :class:`~scrapy.http.Request` objects instead of arbitrary
+    Python data structures.
+
+-   The ``scrapy.log`` module is replaced by Python’s `logging
+    <https://docs.python.org/library/logging.html>`_ module. See
+    :ref:`topics-logging`.
+
+-   The ``SPIDER_MANAGER_CLASS`` setting is renamed to
+    :setting:`SPIDER_LOADER_CLASS`.
+
+-   In ``scrapy.utils.python``, the ``str_to_unicode`` and
+    ``unicode_to_str`` functions are replaced by ``to_unicode`` and
+    ``to_bytes``, respectively.
 
 -   ``scrapy.spiders.spiders`` is removed, instantiate
-    :class:`~scrapy.spiderloader.SpiderLoader` with your settings instead.
+    :class:`~scrapy.spiderloader.SpiderLoader` with your settings.
 
+-   The ``scrapy.telnet`` module is moved to ``scrapy.extensions.telnet``.
+
+-   The ``scrapy.conf`` module is removed, use :attr:`Crawler.settings
+    <scrapy.crawler.Crawler.settings>`.
+
+-   In ``scrapy.core.downloader.handlers``, ``http.HttpDownloadHandler`` is
+    removed, use ``http10.HTTP10DownloadHandler``.
+
+-   In ``scrapy.loader.ItemLoader``, ``_get_values`` is removed, use
+    ``_get_xpathvalues``.
+
+-   In ``scrapy.loader``, ``XPathItemLoader`` is removed, use
+    :class:`~scrapy.loader.ItemLoader`.
+
+-   In ``scrapy.pipelines.files.FilesPipeline``, ``file_key`` is removed, use
+    ``file_path``.
+
+-   In ``scrapy.pipelines.images.ImagesPipeline``:
+
+    -   ``file_key`` is removed, use ``file_path``
+
+    -   ``image_key`` is removed, use ``file_path``
+
+    -   ``thumb_key`` is removed, use ``thumb_path``
+
+-   In both ``scrapy.selector`` and ``scrapy.selector.lxmlsel``,
+    ``HtmlXPathSelector``, ``XmlXPathSelector``, ``XPathSelector``, and
+    ``XPathSelectorList`` are removed, use :class:`~scrapy.selector.Selector`.
+
+-   In ``scrapy.selector.csstranslator``:
+
+    -   ``ScrapyGenericTranslator`` is removed, use
+        ``parsel.csstranslator.GenericTranslator_``
+
+    -   ``ScrapyHTMLTranslator`` is removed, use
+        ``parsel.csstranslator.HTMLTranslator_``
+
+    -   ``ScrapyXPathExpr`` is removed, use
+        ``parsel.csstranslator.XPathExpr_``
+
+-   In :class:`~scrapy.selector.Selector`:
+
+    -   ``_root``, both the constructor argument and the object property, are
+        removed; , use ``root``
+
+    -   ``extract_unquoted`` is removed, use ``getall``
+
+    -   ``select`` is removed, use ``xpath``
+
+-   In :class:`~scrapy.selector.SelectorList`:
+
+    -   ``extract_unquoted`` is removed, use ``getall``
+
+    -   ``select`` is removed, use ``xpath``
+
+    -   ``x`` is removed, use ``xpath``
+
+-   ``scrapy.spiders.BaseSpider`` is removed, use
+    :class:`~scrapy.spiders.Spider`
+
+-   In :class:`~scrapy.spiders.Spider` and subclasses:
+
+    -   ``DOWNLOAD_DELAY`` is removed, use :ref:`download_delay
+        <spider-download_delay-attribute>`
+
+    -   ``set_crawler`` is removed, use
+        :meth:`~scrapy.spiders.Spider.from_crawler`
+
+-   ``scrapy.utils.response.body_or_str`` is removed
 
 
 .. _deprecations-1.6.0:
