@@ -148,6 +148,27 @@ Where:
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
 
+FTP server storage
+------------------
+
+.. setting:: FTP_USER
+.. setting:: FTP_PASSWORD
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a FTP server.
+Scrapy will automatically upload the files to the server.
+
+:setting:`FILES_STORE` value: should be written in the form 
+`ftp://username:password@address:port/path` or `ftp://address:port/path`. In
+the second case, the `username` and `password` are taken from `FTP_USER` and
+`FTP_PASSWORD` settings respectively.
+
+.. note::
+  The `path` can be left empty
+
+FTP supports two different connection modes: active or passive. Scrapy uses
+the passive connection mode by default. To use the active connection mode instead,
+set the `FEED_STORAGE_FTP_ACTIVE` setting to True.
+
 Amazon S3 storage
 -----------------
 
