@@ -110,14 +110,9 @@ def install_scrapy_root_handler(settings):
         logging.root.removeHandler(_scrapy_root_handler)
     logging.root.setLevel(logging.NOTSET)
     _scrapy_root_handler = _get_handler(settings)
-    logging.root.addHandler(_scrapy_root_handler)
+    graylog_handler = _get_graylog_handler(settings)
 
-    handlers = [_scrapy_root_handler]
-
-    graylog = settings.get('GRAYLOG_CONF')
-    if graylog:
-        graylog_handler = getattr(graypy, graylog['forwading_method'])(*graylog['parameters'])
-        handlers.append(graylog_handler)
+    handlers = [_scrapy_root_handler,graylog_handler]
 
     root_handler_cls = tuple({type(h) for h in logging.root.handlers})
 
@@ -125,8 +120,21 @@ def install_scrapy_root_handler(settings):
         if not isinstance(handler, root_handler_cls):
             logging.root.addHandler(handler)
 
-    
+def _get_graylog_handler(settings):
+    graylog_enabled = settings.get('GRAYLOG_ENABLED')
+    if bool(graylog_enabled):
+        graylog_method = settings.get('GRAYLOG_METHOD')
+        graylog_url = settings.get('GRAYLOG_URL')
+        graylog_port = settings.get('GRAYLOG_PORT')
+        if graylog_method and graylog_url and graylog_port:
+            handler = getattr(graypy, graylog_method)(graylog_url,int(graylog_port))
+        else:
+            handler = logging.NullHandler()
+    else:
+        handler = logging.NullHandler()
+    handler.setLevel(settings.get('LOG_LEVEL'))
 
+    return handler
 
 def get_scrapy_root_handler():
     return _scrapy_root_handler
