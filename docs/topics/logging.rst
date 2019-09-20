@@ -244,18 +244,22 @@ If you run this spider again then INFO messages from
 Graylog settings
 ----------------
 
-If you'd like Scrapy to send all its logs to a [Graylog](http://docs.graylog.org/) 
+If you'd like Scrapy to send all its logs to a Graylog_ 
 server, you must add the following settings:
+
 * :setting:`GRAYLOG_ENABLED`
 * :setting:`GRAYLOG_METHOD`
 * :setting:`GRAYLOG_URL`
 * :setting:`GRAYLOG_PORT`
 
-The first setting is False if unset and casted to a boolean type variable if set. 
-:setting:`GRAYLOG_METHOD` should be one of forwarding methods from the [graypy](https://graypy.readthedocs.io) 
+The first setting is ``False`` if unset and casted to a boolean type variable if set. 
+:setting:`GRAYLOG_METHOD` should be one of forwarding methods from the graypy_
 library, for example 'GELFUDPHandler'. Make sure to launch the appropriate input 
 in the Graylog server. Next you are required to define the host and port of the server. 
 If any of these are unset no graylog handler is created.
+
+.. _graypy: https://graypy.readthedocs.io/
+.. _Graylog: http://docs.graylog.org/
 
 scrapy.utils.log module
 =======================
