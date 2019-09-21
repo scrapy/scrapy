@@ -26,12 +26,20 @@ FORMAT = {
 
 class HttpCompressionTest(TestCase):
 
-    def setUp(self):
+    def create_spider_mw(self ,compression_enabled, compression_headers):
+        crawler = get_crawler(Spider,
+                              {'COMPRESSION_ENABLED':
+                               compression_enabled,
+                              'COMPRESSION_KEEP_ENCODING_HEADERS':
+                               compression_header})
+        spider = crawler._create_spider('foo')
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        return spider, mw
+                            
+    def setUp(self, spider, mw):
         #need to find way to access settings here
-        crawler = get_crawler(Spider,{'HTTPCOMPRESSION_HEADERS_KEEP':True,
-                                      'COMPRESSION_ENABLED':True})
-        self.spider = crawler._create_spider('foo')
-        self.mw = HttpCompressionMiddleware.from_crawler(crawler)
+        self.spider = spider
+        self.mw = mw
 
     def _getresponse(self, coding):
         if coding not in FORMAT:

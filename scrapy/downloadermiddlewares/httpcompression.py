@@ -20,7 +20,8 @@ class HttpCompressionMiddleware(object):
     sent/received from web sites"""
 
     def __init__(self, settings):
-        self.keep_encoding_header = settings.getbool('HTTPCOMPRESSION_HEADERS_KEEP')
+        self.keep_encoding_header = settings.getbool(
+            'COMPRESSION_KEEP_ENCODING_HEADERS')
 
     @classmethod
     def from_crawler(cls, crawler):
