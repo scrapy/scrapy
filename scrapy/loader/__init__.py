@@ -33,12 +33,10 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
-        # Preprocess values if item built from dict
-        # Values need to be added to item._values if added them from dict (not with add_values)
-        if isinstance(item, dict):
-            for field_name, value in item.items():
-                # Convert all single values to lists because of following output processors
-                self._add_value(field_name, value)
+        # values from initial item
+        process = isinstance(item, dict)
+        for field_name, value in item.items():
+            self._add_value(field_name, value, process=process)
 
     @property
     def _values(self):
@@ -90,11 +88,14 @@ class ItemLoader(object):
         else:
             self._replace_value(field_name, value)
 
-    def _add_value(self, field_name, value):
+    def _add_value(self, field_name, value, process=True):
         value = arg_to_iter(value)
-        processed_value = self._process_input_value(field_name, value)
-        if processed_value:
-            self._values[field_name] += arg_to_iter(processed_value)
+        if process:
+            processed_value = self._process_input_value(field_name, value)
+            if processed_value:
+                self._values[field_name] += arg_to_iter(processed_value)
+        elif value:
+            self._values[field_name] += value
 
     def _replace_value(self, field_name, value):
         self._values.pop(field_name, None)

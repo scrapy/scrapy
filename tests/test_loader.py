@@ -31,6 +31,10 @@ class TestNestedItem(Item):
 
 
 # test item loaders
+class DictItemLoader(ItemLoader):
+    default_item_class = dict
+
+
 class NameItemLoader(ItemLoader):
     default_item_class = TestItem
 
@@ -63,7 +67,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         item = il.load_item()
         assert item is i
-        self.assertEqual(item['summary'], u'lala')
+        self.assertEqual(item['summary'], [u'lala'])
         self.assertEqual(item['name'], [u'marta'])
 
     def test_load_item_using_custom_loader(self):
@@ -421,130 +425,6 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], u'rabbit.hole')
         self.assertEqual(item['summary'], u'rabbithole')
 
-    def test_create_item_from_dict(self):
-        class TestItem(Item):
-            title = Field()
-
-        class TestItemLoader(ItemLoader):
-            default_item_class = TestItem
-
-        input_item = {'title': 'Test item title 1'}
-        il = TestItemLoader(item=input_item)
-        # Getting output value mustn't remove value from item
-        self.assertEqual(il.load_item(), {
-            'title': ['Test item title 1'],
-        })
-        self.assertEqual(il.get_output_value('title'), ['Test item title 1'])
-        self.assertEqual(il.load_item(), {
-            'title': ['Test item title 1'],
-        })
-
-        input_item = {'title': 'Test item title 2'}
-        il = TestItemLoader(item=input_item)
-        # Values from dict must be added to item _values
-        self.assertEqual(il._values.get('title'), ['Test item title 2'])
-
-        input_item = {'title': [u'Test item title 3', u'Test item 4']}
-        il = TestItemLoader(item=input_item)
-        # Same rules must work for lists
-        self.assertEqual(il._values.get('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-        self.assertEqual(il.get_output_value('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-
-    # ItemLoader initialized from loaded item must not reprocess fields
-    def test_item_reprocessing(self):
-        class TestItem(Item):
-            title = Field(output_processor=TakeFirst())
-
-        class TestItemLoader(ItemLoader):
-            default_item_class = TestItem
-
-        # Initiate from dict
-        input_item = {'title': ['Test item title 5']}
-        il = TestItemLoader(item=input_item)
-        il_loaded = il.load_item()
-        self.assertEqual(il_loaded, {'title': ['Test item title 5']})
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': ['Test item title 5']})
-        # Add values
-        il = TestItemLoader()
-        il.add_value('title', ['Test item title 6'])
-        self.assertEqual(il.load_item(), {'title': 'Test item title 6'})
-        il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(il_loaded).load_item(), {'title': 'Test item title 6'})
-        # Similar for multiple values
-        il = TestItemLoader()
-        il.add_value('title', ['Test item title 7', 'Test item title 8'])
-        self.assertEqual(il.load_item(), {'title': 'Test item title 7'})
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(), {'title': 'Test item title 7'})
-        # Load straight values
-        il = TestItemLoader()
-        il.add_value('title', 'Test item title 9')
-        self.assertEqual(il.load_item(), {'title': 'Test item title 9'})
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(), {'title': 'Test item title 9'})
-        # Initiate from dict with single values and add value to the same key
-        input_item = {'title': 'Test item title 10'}
-        il = TestItemLoader(item=input_item)
-        il.add_value('title', 'Test item title 11')
-        self.assertEqual(
-            il.load_item(),
-            {'title': ['Test item title 10', 'Test item title 11']})
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(),
-            {'title': ['Test item title 10', 'Test item title 11']})
-        # Initiate from dict with multiple values as list and add value to the same key
-        input_item = {'title': ['Test item title 12', 'Test item title 13']}
-        il = TestItemLoader(item=input_item)
-        il.add_value('title', 'Test item title 14')
-        self.assertEqual(
-            il.load_item(), {
-                'title': [
-                    'Test item title 12', 'Test item title 13',
-                    'Test item title 14'
-                ]
-            })
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(), {
-                'title': [
-                    'Test item title 12', 'Test item title 13',
-                    'Test item title 14'
-                ]
-            })
-        # Initiate from dict with single value and add list value to the same key
-        input_item = {'title': 'Test item title 15'}
-        il = TestItemLoader(item=input_item)
-        il.add_value('title', ['Test item title 16'])
-        self.assertEqual(
-            il.load_item(),
-            {'title': ['Test item title 15', 'Test item title 16']})
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(),
-            {'title': ['Test item title 15', 'Test item title 16']})
-        # Initiate from dict with list value and add list value to the same key
-        input_item = {'title': ['Test item title 17']}
-        il = TestItemLoader(item=input_item)
-        il.add_value('title', ['Test item title 18'])
-        self.assertEqual(
-            il.load_item(),
-            {'title': ['Test item title 17', 'Test item title 18']})
-        il_loaded = il.load_item()
-        self.assertEqual(
-            ItemLoader(il_loaded).load_item(),
-            {'title': ['Test item title 17', 'Test item title 18']})
-
     def test_error_input_processor(self):
         class TestItem(Item):
             name = Field()
@@ -580,6 +460,203 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = TestItemLoader()
         self.assertRaises(ValueError, il.add_value, 'name',
                           [u'marta', u'other'], Compose(float))
+
+
+class InitializationTestMixin(object):
+
+    item_class = None
+
+    def test_keep_single_value(self):
+        """Loaded item should contain values from the initial item"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo']})
+
+    def test_keep_list(self):
+        """Loaded item should contain values from the initial item"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+
+    def test_add_value_singlevalue_singlevalue(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        il.add_value('name', 'bar')
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+
+    def test_add_value_singlevalue_list(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        il.add_value('name', ['item', 'loader'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'item', 'loader']})
+
+    def test_add_value_list_singlevalue(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        il.add_value('name', 'qwerty')
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'qwerty']})
+
+    def test_add_value_list_list(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        il.add_value('name', ['item', 'loader'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'item', 'loader']})
+
+    def test_get_output_value_singlevalue(self):
+        """Getting output value must not remove value from item"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il.get_output_value('name'), ['foo'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(loaded_item, dict({'name': ['foo']}))
+
+    def test_get_output_value_list(self):
+        """Getting output value must not remove value from item"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il.get_output_value('name'), ['foo', 'bar'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(loaded_item, dict({'name': ['foo', 'bar']}))
+
+    def test_values_single(self):
+        """Values from initial item must be added to loader._values"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il._values.get('name'), ['foo'])
+
+    def test_values_list(self):
+        """Values from initial item must be added to loader._values"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il._values.get('name'), ['foo', 'bar'])
+
+
+class InitializationFromDictTest(InitializationTestMixin, unittest.TestCase):
+    item_class = dict
+
+
+class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
+    item_class = NameItem
+
+
+class NoReprocessingFromDictTest(unittest.TestCase):
+    """
+    Loaders initialized from loaded items must not reprocess fields (dict instances)
+    """
+    def test_avoid_reprocessing_with_initial_values_single(self):
+        il = DictItemLoader(item=dict(title='foo'))
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo']})
+
+    def test_avoid_reprocessing_with_initial_values_list(self):
+        il = DictItemLoader(item=dict(title=['foo', 'bar']))
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo', 'bar']})
+
+    def test_avoid_reprocessing_without_initial_values_single(self):
+        il = DictItemLoader()
+        il.add_value('title', 'foo')
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo']})
+
+    def test_avoid_reprocessing_without_initial_values_list(self):
+        il = DictItemLoader()
+        il.add_value('title', ['foo', 'bar'])
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo', 'bar']})
+
+
+class NoReprocessingItem(Item):
+    title = Field(output_processor=TakeFirst())
+
+
+class NoReprocessingItemLoader(ItemLoader):
+    default_item_class = NoReprocessingItem
+
+
+class NoReprocessingFromItemTest(unittest.TestCase):
+    """
+    Loaders initialized from loaded items must not reprocess fields (BaseItem instances)
+    """
+    def test_avoid_reprocessing_with_initial_values_single(self):
+        il = NoReprocessingItemLoader(item=NoReprocessingItem(title='foo'))
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+    def test_avoid_reprocessing_with_initial_values_list(self):
+        il = NoReprocessingItemLoader(item=NoReprocessingItem(title=['foo', 'bar']))
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+    def test_avoid_reprocessing_without_initial_values_single(self):
+        il = NoReprocessingItemLoader()
+        il.add_value('title', 'foo')
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+    def test_avoid_reprocessing_without_initial_values_list(self):
+        il = NoReprocessingItemLoader()
+        il.add_value('title', ['foo', 'bar'])
+        il_loaded = il.load_item()
+        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+
+class TestOutputProcessorDict(unittest.TestCase):
+    def test_output_processor(self):
+
+        class TempDict(dict):
+            def __init__(self, *args, **kwargs):
+                super(TempDict, self).__init__(self, *args, **kwargs)
+                self.setdefault('temp', 0.3)
+
+        class TempLoader(ItemLoader):
+            default_item_class = TempDict
+            default_input_processor = Identity()
+            default_output_processor = Compose(TakeFirst())
+
+        loader = TempLoader()
+        item = loader.load_item()
+        self.assertIsInstance(item, TempDict)
+        self.assertEqual(dict(item), {'temp': 0.3})
+
+
+class TestOutputProcessorItem(unittest.TestCase):
+    def test_output_processor(self):
+
+        class TempItem(Item):
+            temp = Field()
+
+            def __init__(self, *args, **kwargs):
+                super(TempItem, self).__init__(self, *args, **kwargs)
+                self.setdefault('temp', 0.3)
+
+        class TempLoader(ItemLoader):
+            default_item_class = TempItem
+            default_input_processor = Identity()
+            default_output_processor = Compose(TakeFirst())
+
+        loader = TempLoader()
+        item = loader.load_item()
+        self.assertIsInstance(item, TempItem)
+        self.assertEqual(dict(item), {'temp': 0.3})
 
 
 class ProcessorsTest(unittest.TestCase):
