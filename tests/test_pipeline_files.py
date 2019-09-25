@@ -57,6 +57,12 @@ class FilesPipelineTestCase(unittest.TestCase):
                                    response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
+                         'full/76c00cef2ef669ae65052661f68d451162829507')
+        self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
+                                    //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
+                         'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
+                         
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)

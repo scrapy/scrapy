@@ -12,9 +12,10 @@ import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
-from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.python import get_func_args
+from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.utils.python import get_func_args
+from scrapy.utils.spider import iterate_spider_output
 
 
 def _identity(request, response):
@@ -28,10 +29,13 @@ def _get_method(method, spider):
         return getattr(spider, method, None)
 
 
+_default_link_extractor = LinkExtractor()
+
+
 class Rule(object):
 
-    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
-        self.link_extractor = link_extractor
+    def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
+        self.link_extractor = link_extractor or _default_link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links
