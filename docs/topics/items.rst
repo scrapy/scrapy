@@ -263,3 +263,9 @@ Field objects
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 
+Other classes related to Item
+=============================
+
+.. autoclass:: BaseItem
+
+.. autoclass:: ItemMeta
