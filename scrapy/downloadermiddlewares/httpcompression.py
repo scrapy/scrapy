@@ -34,7 +34,6 @@ class HttpCompressionMiddleware(object):
                                    b",".join(ACCEPTED_ENCODINGS))
 
     def process_response(self, request, response, spider):
-
         if request.method == 'HEAD':
             return response
         if isinstance(response, Response):
@@ -50,10 +49,16 @@ class HttpCompressionMiddleware(object):
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
                 if self.keep_encoding_header:
-                    kwargs['flags'] = [encoding]
+                    if isinstance(kwargs['flags'], list):
+                        kwargs['flags'].append(b'decoded')
+                    elif isinstance(kwargs['flags'], bytes):
+                        kwargs['flags'] = [kwargs['flags'], b'decoded']
+                    else:
+                        kwargs['flags'] = [b'decoded']
                 response = response.replace(**kwargs)
-                if not content_encoding:
-                    del response.headers['Content-Encoding']
+                if not self.keep_encoding_header:
+                    if not content_encoding:
+                        del response.headers['Content-Encoding']
         return response
 
     def _decode(self, body, encoding):
