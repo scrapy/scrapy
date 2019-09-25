@@ -1,14 +1,14 @@
-import unittest
-import six
 from functools import partial
+import unittest
 
-from scrapy.loader import ItemLoader
-from scrapy.loader.processors import Join, Identity, TakeFirst, \
-    Compose, MapCompose, SelectJmes
-from scrapy.item import Item, Field
-from scrapy.selector import Selector
+import six
+
 from scrapy.http import HtmlResponse
-from scrapy.loader.processors import TakeFirst
+from scrapy.item import Item, Field
+from scrapy.loader import ItemLoader
+from scrapy.loader.processors import (Compose, Identity, Join,
+                                      MapCompose, SelectJmes, TakeFirst)
+from scrapy.selector import Selector
 
 
 # test items
@@ -33,6 +33,8 @@ class TestNestedItem(Item):
 # test item loaders
 class DictItemLoader(ItemLoader):
     default_item_class = dict
+    foo_in = MapCompose(lambda x: x + 1)
+    foo_out = TakeFirst()
 
 
 class NameItemLoader(ItemLoader):
@@ -557,66 +559,76 @@ class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
     item_class = NameItem
 
 
-class NoReprocessingFromDictTest(unittest.TestCase):
+class NoInputReprocessingFromDictTest(unittest.TestCase):
     """
     Loaders initialized from loaded items must not reprocess fields (dict instances)
     """
     def test_avoid_reprocessing_with_initial_values_single(self):
-        il = DictItemLoader(item=dict(title='foo'))
+        il = DictItemLoader(item=dict(foo=0))
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo']})
+        self.assertEqual(il_loaded, dict(foo=0))
+        self.assertEqual(DictItemLoader(item=il_loaded).load_item(), dict(foo=0))
 
     def test_avoid_reprocessing_with_initial_values_list(self):
-        il = DictItemLoader(item=dict(title=['foo', 'bar']))
+        il = DictItemLoader(item=dict(foo=[0, 5]))
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo', 'bar']})
+        self.assertEqual(il_loaded, dict(foo=0))
+        self.assertEqual(DictItemLoader(item=il_loaded).load_item(), dict(foo=0))
 
     def test_avoid_reprocessing_without_initial_values_single(self):
         il = DictItemLoader()
-        il.add_value('title', 'foo')
+        il.add_value('foo', 0)
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo']})
+        self.assertEqual(il_loaded, dict(foo=1))
+        self.assertEqual(DictItemLoader(item=il_loaded).load_item(), dict(foo=1))
 
     def test_avoid_reprocessing_without_initial_values_list(self):
         il = DictItemLoader()
-        il.add_value('title', ['foo', 'bar'])
+        il.add_value('foo', [0, 5])
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': ['foo', 'bar']})
+        self.assertEqual(il_loaded, dict(foo=1))
+        self.assertEqual(DictItemLoader(item=il_loaded).load_item(), dict(foo=1))
 
 
-class NoReprocessingItem(Item):
-    title = Field(output_processor=TakeFirst())
+class NoInputReprocessingItem(Item):
+    title = Field()
 
 
-class NoReprocessingItemLoader(ItemLoader):
-    default_item_class = NoReprocessingItem
+class NoInputReprocessingItemLoader(ItemLoader):
+    default_item_class = NoInputReprocessingItem
+    title_in = MapCompose(str.upper)
+    title_out = TakeFirst()
 
 
-class NoReprocessingFromItemTest(unittest.TestCase):
+class NoInputReprocessingFromItemTest(unittest.TestCase):
     """
     Loaders initialized from loaded items must not reprocess fields (BaseItem instances)
     """
     def test_avoid_reprocessing_with_initial_values_single(self):
-        il = NoReprocessingItemLoader(item=NoReprocessingItem(title='foo'))
+        il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title='foo'))
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+        self.assertEqual(il_loaded, {'title': 'foo'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
 
     def test_avoid_reprocessing_with_initial_values_list(self):
-        il = NoReprocessingItemLoader(item=NoReprocessingItem(title=['foo', 'bar']))
+        il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title=['foo', 'bar']))
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+        self.assertEqual(il_loaded, {'title': 'foo'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
 
     def test_avoid_reprocessing_without_initial_values_single(self):
-        il = NoReprocessingItemLoader()
-        il.add_value('title', 'foo')
+        il = NoInputReprocessingItemLoader()
+        il.add_value('title', 'FOO')
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+        self.assertEqual(il_loaded, {'title': 'FOO'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'FOO'})
 
     def test_avoid_reprocessing_without_initial_values_list(self):
-        il = NoReprocessingItemLoader()
+        il = NoInputReprocessingItemLoader()
         il.add_value('title', ['foo', 'bar'])
         il_loaded = il.load_item()
-        self.assertEqual(ItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+        self.assertEqual(il_loaded, {'title': 'FOO'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'FOO'})
 
 
 class TestOutputProcessorDict(unittest.TestCase):

@@ -34,9 +34,8 @@ class ItemLoader(object):
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
         # values from initial item
-        process = isinstance(item, dict)
         for field_name, value in item.items():
-            self._add_value(field_name, value, process=process)
+            self._values[field_name] += arg_to_iter(value)
 
     @property
     def _values(self):
@@ -88,14 +87,11 @@ class ItemLoader(object):
         else:
             self._replace_value(field_name, value)
 
-    def _add_value(self, field_name, value, process=True):
+    def _add_value(self, field_name, value):
         value = arg_to_iter(value)
-        if process:
-            processed_value = self._process_input_value(field_name, value)
-            if processed_value:
-                self._values[field_name] += arg_to_iter(processed_value)
-        elif value:
-            self._values[field_name] += value
+        processed_value = self._process_input_value(field_name, value)
+        if processed_value:
+            self._values[field_name] += arg_to_iter(processed_value)
 
     def _replace_value(self, field_name, value):
         self._values.pop(field_name, None)
