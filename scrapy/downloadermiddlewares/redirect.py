@@ -73,7 +73,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             return response
 
         location = safe_url_string(response.headers['location'])
-        if response.headers['location'].decode().startswith('/', 1):
+        if response.headers['location'].decode("latin1").startswith('/', 1):
             request_scheme = urlparse(request.url).scheme
             location = request_scheme + '://' + re.sub('^/*', '', location)
 
