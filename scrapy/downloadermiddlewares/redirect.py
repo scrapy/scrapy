@@ -1,7 +1,5 @@
 import logging
-import re
-from six.moves.urllib.parse import urljoin
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
 
@@ -73,9 +71,9 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             return response
 
         location = safe_url_string(response.headers['location'])
-        if response.headers['location'].decode("latin1").startswith('/', 1):
+        if response.headers['location'].startswith(b'//'):
             request_scheme = urlparse(request.url).scheme
-            location = request_scheme + '://' + re.sub('^/*', '', location)
+            location = request_scheme + '://' + location.lstrip('/')
 
         redirected_url = urljoin(request.url, location)
 
