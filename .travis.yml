@@ -8,7 +8,7 @@ branches:
 matrix:
   include:
     - env: TOXENV=flake8
-      python: 3.5
+      python: 3.7
     - env: TOXENV=py27
       python: 2.7
     - env: TOXENV=py27-pinned
