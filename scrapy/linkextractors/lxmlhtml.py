@@ -117,6 +117,14 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
                                                 restrict_text=restrict_text)
 
     def extract_links(self, response):
+        """Returns a list of :class:`~scrapy.link.Link` objects from the
+        specified :class:`response <scrapy.http.Response>`.
+
+        Only links that match the settings passed to the link extractor
+        constructor are returned.
+
+        Duplicate links are omitted.
+        """
         base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [subdoc
