@@ -160,7 +160,7 @@ following forms::
     ftp://username:password@address:port/path
     ftp://address:port/path
     
-If ``username`` and ``password`` are not provided, they are taken from :setting:`FTP_USER` and
+If ``username`` and ``password`` are not provided, they are taken from the :setting:`FTP_USER` and
 :setting:`FTP_PASSWORD` settings respectively.
 
 FTP supports two different connection modes: active or passive. Scrapy uses
