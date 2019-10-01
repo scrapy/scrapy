@@ -8,6 +8,7 @@ import sys
 import pprint
 import marshal
 import six
+import logging
 from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
@@ -21,6 +22,9 @@ import warnings
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseItemExporter(object):
@@ -220,6 +224,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._is_data_loss_warning_displayed = False
+        self._fail_on_dataloss_warned = False
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._join_if_needed)
@@ -253,12 +259,23 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
+                self._is_data_loss_warning_displayed = True
                 if isinstance(item, dict):
                     # for dicts try using fields of the first item
                     self.fields_to_export = list(item.keys())
                 else:
                     # use fields declared in Item
                     self.fields_to_export = list(item.fields.keys())
+            elif not self._fail_on_dataloss_warned:
+                if isinstance(item, dict):
+                    if len(item.keys()) > self.fields_to_export:
+                        self._is_data_loss_warning_displayed = True
+                else:
+                    if len(item.fields.keys()) > self.fields_to_export:
+                        self._is_data_loss_warning_displayed = True
+            if self._is_data_loss_warning_displayed and not self._fail_on_dataloss_warned:
+                logger.warning("Possible chance of data loss detected -- This message won't be shown in further requests")
+                self._fail_on_dataloss_warned = True
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
 
