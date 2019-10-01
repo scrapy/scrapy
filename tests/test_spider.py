@@ -345,6 +345,8 @@ class CrawlSpiderTest(SpiderTest):
                              ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
                               'http://EXAMPLE.ORG/ABOUT.HTML',
                               'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+            for warn in cw:
+                print(warn)
             self.assertEqual(len(cw), 1)
             self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
 
