@@ -4,6 +4,7 @@ import logging
 from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.ssl import Certificate
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
@@ -343,3 +344,30 @@ with multiples lines
         self.assertIn("Got response 200", str(log))
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
+
+    def test_response_ssl_certificate_none(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=False)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta['responses'][0].certificate)
+
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")
+
+    @mark.xfail(reason="Responses with no body return early and contain no certificate")
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate_empty_response(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/status?n=200", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")
