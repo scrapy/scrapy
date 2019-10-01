@@ -5,6 +5,7 @@ import string
 
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
+from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -61,6 +62,13 @@ class Command(ScrapyCommand):
             raise UsageError()
 
         name, domain = args[0:2]
+
+        parsed_url = urlparse(domain)
+
+        # Automatically it is prepended 'http' if the scheme is missing
+        if not parsed_url.scheme:
+            parsed_url = urlparse('http://' + domain)
+
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
@@ -79,11 +87,11 @@ class Command(ScrapyCommand):
                 return
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, domain, opts.template, template_file)
+            self._genspider(module, name, parsed_url.netloc, parsed_url.geturl(), opts.template, template_file)
             if opts.edit:
                 self.exitcode = os.system('scrapy edit "%s"' % name)
 
-    def _genspider(self, module, name, domain, template_name, template_file):
+    def _genspider(self, module, name, domain, url, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
             'project_name': self.settings.get('BOT_NAME'),
@@ -91,6 +99,7 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
+            'url': url,
             'classname': '%sSpider' % ''.join(s.capitalize() \
                 for s in module.split('_'))
         }
