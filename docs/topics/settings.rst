@@ -951,7 +951,7 @@ LOGSTATS_INTERVAL
 
 Default: ``60.0``
 
-The interval (in seconds) between each logging printout of the stats 
+The interval (in seconds) between each logging printout of the stats
 by :class:`~scrapy.extensions.logstats.LogStats`.
 
 .. setting:: MEMDEBUG_ENABLED
@@ -1165,7 +1165,7 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
 ROBOTSTXT_PARSER
 ----------------
 
-Default: ``'scrapy.robotstxt.PythonRobotParser'``
+Default: ``'scrapy.robotstxt.ProtegoRobotParser'``
 
 The parser backend to use for parsing ``robots.txt`` files. For more information see
 :ref:`topics-dlmw-robots`.

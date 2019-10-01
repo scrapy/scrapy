@@ -513,7 +513,7 @@ defines the methods described below.
 
     .. method:: open_spider(spider)
 
-      This method gets called after a spider has been opened for crawling. It handles 
+      This method gets called after a spider has been opened for crawling. It handles
       the :signal:`open_spider <spider_opened>` signal.
 
       :param spider: the spider which has been opened
@@ -521,8 +521,8 @@ defines the methods described below.
 
     .. method:: close_spider(spider)
 
-      This method gets called after a spider has been closed. It handles 
-      the :signal:`close_spider <spider_closed>` signal. 
+      This method gets called after a spider has been closed. It handles
+      the :signal:`close_spider <spider_closed>` signal.
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.spiders.Spider` object
@@ -1000,10 +1000,10 @@ RobotsTxtMiddleware
 
     Scrapy ships with support for the following robots.txt_ parsers:
 
-    * :ref:`RobotFileParser <python-robotfileparser>` (default)
+    * :ref:`Protego <protego-parser>` (default)
+    * :ref:`RobotFileParser <python-robotfileparser>`
     * :ref:`Reppy <reppy-parser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
-    * :ref:`Protego <protego-parser>`
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1015,50 +1015,81 @@ If :attr:`Request.meta <scrapy.http.Request.meta>` has
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
+Parsers vary in several aspects:
+
+* Language of implementation
+
+* Supported specification
+
+* Support for wildcard matching
+
+* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+  in particular for ``Allow`` and ``Disallow`` directives, where the most
+  specific rule based on the length of the path trumps the less specific
+  (shorter) rule
+
+Performance comparison of different parsers is available at `the following link
+<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+
+.. _protego-parser:
+
+Protego parser
+~~~~~~~~~~~~~~
+
+Based on `Protego <https://github.com/scrapy/protego>`_:
+
+* implemented in Python
+
+* is compliant with `Google's Robots.txt Specification
+  <https://developers.google.com/search/reference/robots_txt>`_
+
+* supports wildcard matching
+
+* uses the length based rule
+
+Scrapy uses this parser by default.
+
 .. _python-robotfileparser:
 
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ is 
-Python's inbuilt robots.txt_ parser. The parser is fully compliant with `Martijn Koster's 
-1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_. It lacks
-support for wildcard matching. Scrapy uses this parser by default.
+Based on `RobotFileParser
+<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+
+* is Python's built-in robots.txt_ parser
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
+
+* lacks support for wildcard matching
+
+* doesn't use the length based rule
+
+It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
 
 In order to use this parser, set:
 
 * :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
-
-.. _rerp-parser:
-
-Robotexclusionrulesparser
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ is fully compliant
-with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
-with support for wildcard matching.
-
-In order to use this parser:
-
-* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
-  ``pip install robotexclusionrulesparser``
-
-* Set :setting:`ROBOTSTXT_PARSER` setting to
-  ``scrapy.robotstxt.RerpRobotParser``
 
 .. _reppy-parser:
 
 Reppy parser
 ~~~~~~~~~~~~
 
-`Reppy <https://github.com/seomoz/reppy/>`_ is a Python wrapper around `Robots Exclusion
-Protocol Parser for C++ <https://github.com/seomoz/rep-cpp>`_. The parser is fully compliant
-with `Martijn Koster's 1996 draft specification <http://www.robotstxt.org/norobots-rfc.txt>`_,
-with support for wildcard matching. Unlike
-`RobotFileParser <https://docs.python.org/3.7/library/urllib.robotparser.html>`_ and
-`Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_, it uses the length based
-rule, in particular for ``Allow`` and ``Disallow`` directives, where the most specific
-rule based on the length of the path trumps the less specific (shorter) rule.
+Based on `Reppy <https://github.com/seomoz/reppy/>`_:
+
+* is a Python wrapper around `Robots Exclusion Protocol Parser for C++
+  <https://github.com/seomoz/rep-cpp>`_
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
+
+* supports wildcard matching
+
+* uses the length based rule
+
+Native implementation, provides better speed than Protego.
 
 In order to use this parser:
 
@@ -1067,22 +1098,29 @@ In order to use this parser:
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
 
-.. _protego-parser:
+.. _rerp-parser:
 
-Protego parser
-~~~~~~~~~~~~~~
+Robotexclusionrulesparser
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Protego <https://github.com/scrapy/protego>`_ is a pure-Python robots.txt_ parser.
-The parser is fully compliant with `Google's Robots.txt Specification
-<https://developers.google.com/search/reference/robots_txt>`_ hence supports wildcard 
-matching, and uses the length based rule similar to `Reppy <https://github.com/seomoz/reppy/>`_.
+Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+
+* implemented in Python
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <http://www.robotstxt.org/norobots-rfc.txt>`_
+
+* supports wildcard matching
+
+* doesn't use the length based rule
 
 In order to use this parser:
 
-* Install `Protego <https://github.com/scrapy/protego>`_ by running ``pip install protego``
+* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+  ``pip install robotexclusionrulesparser``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
-  ``scrapy.robotstxt.ProtegoRobotParser``
+  ``scrapy.robotstxt.RerpRobotParser``
 
 .. _support-for-new-robots-parser:
 

@@ -77,6 +77,7 @@ setup(
         'six>=1.10.0',
         'w3lib>=1.17.0',
         'zope.interface>=4.1.3',
+        'protego>=0.1.15',
     ],
     extras_require=extras_require,
 )
