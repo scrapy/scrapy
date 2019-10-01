@@ -23,13 +23,13 @@ class CustomItem(Item):
         return "name: %s" % self['name']
 
 
-class LoggingFormatterTest(unittest.TestCase):
+class LogFormatterTestCase(unittest.TestCase):
 
     def setUp(self):
         self.formatter = LogFormatter()
         self.spider = Spider('default')
 
-    def test_crawled(self):
+    def test_crawled_with_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -37,6 +37,7 @@ class LoggingFormatterTest(unittest.TestCase):
         self.assertEqual(logline,
             "Crawled (200) <GET http://www.example.com> (referer: None)")
 
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com", headers={'referer': 'http://example.com'})
         res = Response("http://www.example.com", flags=['cached'])
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -98,10 +99,26 @@ class LogFormatterSubclass(LogFormatter):
         }
 
 
-class LogformatterSubclassTest(unittest.TestCase):
+class LogformatterSubclassTest(LogFormatterTestCase):
     def setUp(self):
         self.formatter = LogFormatterSubclass()
         self.spider = Spider('default')
+
+    def test_crawled_with_referer(self):
+        req = Request("http://www.example.com")
+        res = Response("http://www.example.com")
+        logkws = self.formatter.crawled(req, res, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline,
+            "Crawled (200) <GET http://www.example.com> (referer: None) []")
+
+    def test_crawled_without_referer(self):
+        req = Request("http://www.example.com", headers={'referer': 'http://example.com'}, flags=['cached'])
+        res = Response("http://www.example.com")
+        logkws = self.formatter.crawled(req, res, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline,
+            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
     def test_flags_in_request(self):
         req = Request("http://www.example.com", flags=['test','flag'])
