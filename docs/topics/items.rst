@@ -240,6 +240,10 @@ Item objects
     Items replicate the standard `dict API`_, including its constructor. The
     only additional attribute provided by Items is:
 
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
+
     .. attribute:: fields
 
         A dictionary containing *all declared fields* for this Item, not only

@@ -796,6 +796,7 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
 FTP_PASSWORD
@@ -814,6 +815,7 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://tools.ietf.org/html/rfc1635
 
+.. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
 FTP_USER
