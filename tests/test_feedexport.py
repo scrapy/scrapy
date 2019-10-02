@@ -653,8 +653,8 @@ class FeedExportTest(unittest.TestCase):
         # When dicts are used, only keys from the first row are used as
         # a header for CSV, and all fields are used for JSON Lines.
         items = [
-            {'foo': 'bar', 'egg': 'spam'},
             {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
+            {'foo': 'bar', 'egg': 'spam'},
         ]
         with mock.patch('logging.Logger.warning') as logs:
             settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
