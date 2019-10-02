@@ -268,7 +268,7 @@ class CsvItemExporter(BaseItemExporter):
                 self._is_data_loss_warning_displayed = True
                 self.fields_to_export = fields
             elif not self._fail_on_dataloss_warned:
-                if len(fields) > len(self.fields_to_export):
+                if fields != self.fields_to_export:
                     self._is_data_loss_warning_displayed = True
             if self._is_data_loss_warning_displayed and not self._fail_on_dataloss_warned:
                 logger.warning("Possible chance of data loss detected -- This message won't be shown in further requests")
