@@ -143,6 +143,8 @@ class BaseResponseTest(unittest.TestCase):
             r.css('body')
             r.xpath('//body')
 
+    # Response.follow
+
     def test_follow_url_absolute(self):
         self._assert_followed_url('http://foo.example.com',
                                   'http://foo.example.com')
@@ -166,12 +168,78 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
+
+    # Response.follow_all
+
+    def test_follow_all_absolute(self):
+        url_list = ['http://example.org', 'http://www.example.org',
+                    'http://example.com', 'http://www.example.com']
+        self._assert_followed_all_urls(url_list, url_list)
+
+    def test_follow_all_relative(self):
+        relative = ['foo', 'bar', 'foo/bar', 'bar/foo']
+        absolute = [
+            'http://example.com/foo',
+            'http://example.com/bar',
+            'http://example.com/foo/bar',
+            'http://example.com/bar/foo',
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    def test_follow_all_links(self):
+        absolute = [
+            'http://example.com/foo',
+            'http://example.com/bar',
+            'http://example.com/foo/bar',
+            'http://example.com/bar/foo',
+        ]
+        links = map(Link, absolute)
+        self._assert_followed_all_urls(links, absolute)
+
+    def test_follow_all_invalid(self):
+        r = self.response_class("http://example.com")
+        with self.assertRaises(TypeError):
+            list(r.follow_all(None))
+        with self.assertRaises(TypeError):
+            list(r.follow_all(12345))
+        with self.assertRaises(ValueError):
+            list(r.follow_all([None]))
+
+    def test_follow_all_whitespace(self):
+        relative = ['foo ', 'bar ', 'foo/bar ', 'bar/foo ']
+        absolute = [
+            'http://example.com/foo%20',
+            'http://example.com/bar%20',
+            'http://example.com/foo/bar%20',
+            'http://example.com/bar/foo%20',
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    def test_follow_all_whitespace_links(self):
+        absolute = [
+            'http://example.com/foo ',
+            'http://example.com/bar ',
+            'http://example.com/foo/bar ',
+            'http://example.com/bar/foo ',
+        ]
+        links = map(Link, absolute)
+        expected = [u.replace(' ', '%20') for u in absolute]
+        self._assert_followed_all_urls(links, expected)
+
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
         req = response.follow(follow_obj)
         self.assertEqual(req.url, target_url)
         return req
+
+    def _assert_followed_all_urls(self, follow_obj, target_urls, response=None):
+        if response is None:
+            response = self._links_response()
+        followed = response.follow_all(follow_obj)
+        for req, target in zip(followed, target_urls):
+            self.assertEqual(req.url, target)
+            yield req
 
     def _links_response(self):
         body = get_testdata('link_extractor', 'sgml_linkextractor.html')
@@ -482,6 +550,29 @@ class TextResponseTest(BaseResponseTest):
             response=resp2,
         )
         self.assertEqual(req.encoding, 'cp1251')
+
+    def test_follow_all_css(self):
+        expected = [
+            'http://example.com/sample3.html',
+            'http://example.com/innertag.html',
+        ]
+        response = self._links_response()
+        extracted = [r.url for r in response.follow_all(css='a[href*="example.com"]')]
+        self.assertEqual(expected, extracted)
+
+    def test_follow_all_xpath(self):
+        expected = [
+            'http://example.com/sample3.html',
+            'http://example.com/innertag.html',
+        ]
+        response = self._links_response()
+        extracted = response.follow_all(xpath='//a[contains(@href, "example.com")]')
+        self.assertEqual(expected, [r.url for r in extracted])
+
+    def test_follow_all_exception(self):
+        response = self._links_response()
+        with self.assertRaises(ValueError):
+            response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')
 
 
 class HtmlResponseTest(TextResponseTest):

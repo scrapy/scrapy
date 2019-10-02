@@ -113,8 +113,8 @@ class Response(object_ref):
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be a relative URL or a ``scrapy.link.Link`` object,
         not only an absolute URL.
-        
-        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow` 
+
+        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
         """
@@ -123,14 +123,51 @@ class Response(object_ref):
         elif url is None:
             raise ValueError("url can't be None")
         url = self.urljoin(url)
-        return Request(url, callback,
-                       method=method,
-                       headers=headers,
-                       body=body,
-                       cookies=cookies,
-                       meta=meta,
-                       encoding=encoding,
-                       priority=priority,
-                       dont_filter=dont_filter,
-                       errback=errback,
-                       cb_kwargs=cb_kwargs)
+        return Request(
+            url=url,
+            callback=callback,
+            method=method,
+            headers=headers,
+            body=body,
+            cookies=cookies,
+            meta=meta,
+            encoding=encoding,
+            priority=priority,
+            dont_filter=dont_filter,
+            errback=errback,
+            cb_kwargs=cb_kwargs,
+        )
+
+    def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
+                   cookies=None, meta=None, encoding='utf-8', priority=0,
+                   dont_filter=False, errback=None, cb_kwargs=None):
+        # type: (...) -> Generator[Request, None, None]
+        """
+        Return an iterable of :class:`~.Request` instance to follow all links
+        in ``urls``. It accepts the same arguments as ``Request.__init__`` method,
+        but elements of ``urls`` can be relative URLs or ``scrapy.link.Link`` objects
+        not only absolute URLs.
+
+        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow_all`
+        method which supports selectors in addition to absolute/relative URLs
+        and Link objects.
+        """
+        if not hasattr(urls, '__iter__'):
+            raise TypeError("'urls' argument must be an iterable")
+        return (
+            self.follow(
+                url=url,
+                callback=callback,
+                method=method,
+                headers=headers,
+                body=body,
+                cookies=cookies,
+                meta=meta,
+                encoding=encoding,
+                priority=priority,
+                dont_filter=dont_filter,
+                errback=errback,
+                cb_kwargs=cb_kwargs,
+            )
+            for url in urls
+        )
