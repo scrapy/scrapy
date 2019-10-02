@@ -246,7 +246,7 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
-ROBOTSTXT_PARSER = 'scrapy.robotstxt.PythonRobotParser'
+ROBOTSTXT_PARSER = 'scrapy.robotstxt.ProtegoRobotParser'
 ROBOTSTXT_USER_AGENT = None
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
@@ -291,6 +291,7 @@ TELNETCONSOLE_PASSWORD = None
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
     'scrapy.contracts.default.UrlContract': 1,
+    'scrapy.contracts.default.CallbackKeywordArgumentsContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,
 }

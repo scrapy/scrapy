@@ -177,6 +177,26 @@ class CrawlSpiderTest(SpiderTest):
     </body></html>"""
     spider_class = CrawlSpider
 
+    def test_rule_without_link_extractor(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+
     def test_process_links(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)

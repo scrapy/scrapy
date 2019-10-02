@@ -1,21 +1,11 @@
-import glob
 import six
 import pytest
-from twisted import version as twisted_version
-
-
-def _py_files(folder):
-    return glob.glob(folder + "/*.py") + glob.glob(folder + "/*/*.py")
 
 
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
-
 ]
-
-if (twisted_version.major, twisted_version.minor, twisted_version.micro) >= (15, 5, 0):
-    collect_ignore += _py_files("scrapy/xlib/tx")
 
 
 if six.PY3:

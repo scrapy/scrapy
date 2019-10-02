@@ -262,6 +262,9 @@ coverage_ignore_pyobjects = [
     # details that are not documented.
     r'^scrapy\.extensions\.[a-z]\w*?\.[A-Z]\w*?\.',  # methods
     r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
+
+    # Never documented before, and deprecated now.
+    r'^scrapy\.item\.DictItem$',
 ]
 
 

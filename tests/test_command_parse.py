@@ -108,6 +108,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '-a', 'test_arg=1',
                                            '-c', 'parse',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -117,12 +118,14 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--meta', raw_json_string,
                                            '-c', 'parse_request_with_meta',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '-m', raw_json_string,
                                            '-c', 'parse_request_with_meta',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -132,6 +135,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--cbkwargs', raw_json_string,
                                            '-c', 'parse_request_with_cb_kwargs',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -139,6 +143,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_request_without_meta(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                           '-c', 'parse_request_without_meta',
+                                          '--nolinks',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -148,6 +153,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--pipelines',
                                            '-c', 'parse',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("INFO: It Works!", _textmode(stderr))
 
