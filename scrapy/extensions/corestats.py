@@ -1,14 +1,16 @@
 """
 Extension for collecting core stats like items scraped and start/finish times
 """
-import datetime
+from datetime import datetime
 
 from scrapy import signals
+
 
 class CoreStats(object):
 
     def __init__(self, stats):
         self.stats = stats
+        self.start_time = None
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -21,11 +23,12 @@ class CoreStats(object):
         return o
 
     def spider_opened(self, spider):
-        self.stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
+        self.start_time = datetime.utcnow()
+        self.stats.set_value('start_time', self.start_time, spider=spider)
 
     def spider_closed(self, spider, reason):
-        finish_time = datetime.datetime.utcnow()
-        elapsed_time = finish_time - self.stats.get_value('start_time')
+        finish_time = datetime.utcnow()
+        elapsed_time = finish_time - self.start_time
         elapsed_time_seconds = elapsed_time.total_seconds()
         self.stats.set_value('elapsed_time_seconds', elapsed_time_seconds, spider=spider)
         self.stats.set_value('finish_time', finish_time, spider=spider)
