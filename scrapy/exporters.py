@@ -224,8 +224,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
-        self._is_data_loss_warning_displayed = False
-        self._fail_on_dataloss_warned = False
+        self._show_data_loss_warning = False
+        self._data_loss_already_warned = False
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._join_if_needed)
@@ -265,14 +265,14 @@ class CsvItemExporter(BaseItemExporter):
                 # use fields declared in Item
                 fields = list(item.fields.keys())
             if not self.fields_to_export:
-                self._is_data_loss_warning_displayed = True
+                self._show_data_loss_warning = True
                 self.fields_to_export = fields
-            elif not self._fail_on_dataloss_warned:
+            elif not self._data_loss_already_warned:
                 if set(fields) != set(self.fields_to_export):
-                    self._is_data_loss_warning_displayed = True
-            if self._is_data_loss_warning_displayed and not self._fail_on_dataloss_warned:
-                logger.warning("Possible chance of data loss detected -- This message won't be shown in further requests")
-                self._fail_on_dataloss_warned = True
+                    self._show_data_loss_warning = True
+            if self._show_data_loss_warning and not self._data_loss_already_warned:
+                logger.warning("Data loss detected when exporting items -- This message won't be shown in further items")
+                self._data_loss_already_warned = True
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
 

@@ -633,7 +633,7 @@ class FeedExportTest(unittest.TestCase):
         with mock.patch('logging.Logger.warning') as logs:
             settings = {'FEED_FORMAT': 'csv'}
             yield self.exported_data(items, settings)
-        logs.assert_called_with("Possible chance of data loss detected -- This message won't be shown in further requests")
+        logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown in further items")
 
     @defer.inlineCallbacks
     def test_export_dicts_no_warning(self):
@@ -659,8 +659,19 @@ class FeedExportTest(unittest.TestCase):
         with mock.patch('logging.Logger.warning') as logs:
             settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
             yield self.exported_data(items, settings)
-        logs.assert_called_with("Possible chance of data loss detected -- This message won't be shown in further requests")
+        logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown in further items")
     
+    @defer.inlineCallbacks
+    def test_export_item_warning(self):
+        for item_cls in [self.MyItem, dict]:
+            items = [
+                item_cls({'foo': 'bar1', 'egg': 'spam1'})
+            ]
+            with mock.patch('logging.Logger.warning') as logs:
+                settings = {'FEED_FORMAT': 'csv'}
+                yield self.exported_data(items, settings)
+            logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown in further items")
+
     @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
         # FEED_EXPORT_FIELDS option allows to order export fields
