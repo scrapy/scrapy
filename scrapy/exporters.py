@@ -258,21 +258,18 @@ class CsvItemExporter(BaseItemExporter):
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
+            if isinstance(item, dict):
+                # for dicts try using fields of the first item
+                fields = list(item.keys())
+            else:
+                # use fields declared in Item
+                fields = list(item.fields.keys())
             if not self.fields_to_export:
                 self._is_data_loss_warning_displayed = True
-                if isinstance(item, dict):
-                    # for dicts try using fields of the first item
-                    self.fields_to_export = list(item.keys())
-                else:
-                    # use fields declared in Item
-                    self.fields_to_export = list(item.fields.keys())
+                self.fields_to_export = fields
             elif not self._fail_on_dataloss_warned:
-                if isinstance(item, dict):
-                    if len(item.keys()) > self.fields_to_export:
-                        self._is_data_loss_warning_displayed = True
-                else:
-                    if len(item.fields.keys()) > self.fields_to_export:
-                        self._is_data_loss_warning_displayed = True
+                if len(fields) > len(self.fields_to_export):
+                    self._is_data_loss_warning_displayed = True
             if self._is_data_loss_warning_displayed and not self._fail_on_dataloss_warned:
                 logger.warning("Possible chance of data loss detected -- This message won't be shown in further requests")
                 self._fail_on_dataloss_warned = True

@@ -630,11 +630,23 @@ class FeedExportTest(unittest.TestCase):
             {'foo': 'bar', 'egg': 'spam'},
             {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
         ]
-        with self.assertLogs('scrapy.exporters', level='WARNING') as logs:
-            settings = {}
-            settings.update({'FEED_FORMAT': 'csv'})
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_FORMAT': 'csv'}
             yield self.exported_data(items, settings)
-        self.assertEqual(logs.output, ['WARNING:scrapy.exporters:Possible chance of data loss detected -- This message won\'t be shown in further requests'])
+        logs.assert_called_with("Possible chance of data loss detected -- This message won't be shown in further requests")
+
+    @defer.inlineCallbacks
+    def test_export_dicts_no_warning(self):
+        # When dicts are used, only keys from the first row are used as
+        # a header for CSV, and all fields are used for JSON Lines.
+        items = [
+            {'foo': 'bar', 'egg': 'spam'},
+            {'foo': 'bar', 'egg': 'spam'},
+        ]
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
+            yield self.exported_data(items, settings)
+        logs.assert_not_called()
     
     @defer.inlineCallbacks
     def test_export_dicts_with_settings_warning(self):
@@ -644,11 +656,10 @@ class FeedExportTest(unittest.TestCase):
             {'foo': 'bar', 'egg': 'spam'},
             {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
         ]
-        with self.assertLogs('scrapy.exporters', level='WARNING') as logs:
-            settings = {}
-            settings.update({'FEED_FORMAT': 'csv', 'FIELD_EXPORT_FIELDS': ['foo', 'egg']})
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
             yield self.exported_data(items, settings)
-        self.assertEqual(logs.output, ['WARNING:scrapy.exporters:Possible chance of data loss detected -- This message won\'t be shown in further requests'])
+        logs.assert_called_with("Possible chance of data loss detected -- This message won't be shown in further requests")
     
     @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
