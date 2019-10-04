@@ -34,13 +34,25 @@ def _pickle_serialize(obj):
         raise ValueError(str(e))
 
 
-PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue,
-    _pickle_serialize, pickle.loads)
-PickleLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue,
-    _pickle_serialize, pickle.loads)
-MarshalFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue,
-    marshal.dumps, marshal.loads)
-MarshalLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue,
-    marshal.dumps, marshal.loads)
+PickleFifoDiskQueue = _serializable_queue(
+    queue_class=queue.FifoDiskQueue,
+    serialize=_pickle_serialize,
+    deserialize=pickle.loads
+)
+PickleLifoDiskQueue = _serializable_queue(
+    queue_class=queue.LifoDiskQueue,
+    serialize=_pickle_serialize,
+    deserialize=pickle.loads
+)
+MarshalFifoDiskQueue = _serializable_queue(
+    queue_class=queue.FifoDiskQueue,
+    serialize=marshal.dumps,
+    deserialize=marshal.loads
+)
+MarshalLifoDiskQueue = _serializable_queue(
+    queue_class=queue.LifoDiskQueue,
+    serialize=marshal.dumps,
+    deserialize=marshal.loads
+)
 FifoMemoryQueue = queue.FifoMemoryQueue
 LifoMemoryQueue = queue.LifoMemoryQueue

@@ -1,14 +1,15 @@
+from random import shuffle
+import collections
 import shutil
 import tempfile
 import unittest
-import collections
 
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import TestCase as TwistedTestCase
 
-from scrapy.crawler import Crawler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
+from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
@@ -302,7 +303,7 @@ class StartUrlsSpider(Spider):
         pass
 
 
-class TestIntegrationWithDownloaderAwareInMemory(TestCase):
+class TestIntegrationWithDownloaderAwareInMemory(TwistedTestCase):
     def setUp(self):
         self.crawler = get_crawler(
                     StartUrlsSpider,
@@ -340,3 +341,119 @@ class TestIncompatibility(unittest.TestCase):
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
             self._incompatible()
+
+
+class _TestSpider(Spider):
+    name = 'testspider'
+
+
+class _WontPickle(object):
+    def __getstate__(self):
+        raise ValueError('Nope')
+
+
+def _get_open_scheduler(crawler):
+    scheduler = Scheduler.from_crawler(crawler)
+    spider = _TestSpider.from_crawler(crawler)
+    scheduler.open(spider)
+    return scheduler
+
+
+class MemoryOrDiskPreferenceTest(TwistedTestCase):
+
+    maxDiff = None
+
+    def test_request_only_memory(self):
+        """
+        Only use a memory queue
+        """
+        crawler = get_crawler(settings_dict=dict(JOBDIR=None, SCHEDULER_PREFER_MEMORY_QUEUE=True))
+        scheduler = _get_open_scheduler(crawler)
+        # push requests with different priorities in a random order
+        priorities = list(range(20))
+        priorities.extend(range(10, 30))
+        shuffle(priorities)
+        for prio in priorities:
+            req = Request('https://example.org/memory-{}'.format(prio), priority=prio, dont_filter=True)
+            scheduler.enqueue_request(req)
+        # check all requests are retrieved in the intended order
+        # expected priorities are reversed to put the highest one first
+        expected = sorted(priorities, reverse=True)
+        retrieved = []
+        while scheduler.has_pending_requests():
+            req = scheduler.next_request()
+            retrieved.append(req.priority)
+        self.assertEqual(retrieved, expected)
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/memory'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/disk'), None)
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/memory'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/disk'), None)
+
+    def test_request_prefer_memory(self):
+        """
+        Memory-enqueued requests should be retrieved first
+        """
+        jobdir = tempfile.mkdtemp()
+        crawler = get_crawler(settings_dict=dict(JOBDIR=jobdir, SCHEDULER_PREFER_MEMORY_QUEUE=True))
+        scheduler = _get_open_scheduler(crawler)
+        # push requests with different priorities in a random order
+        memory_priorities = [('memory', i) for i in range(20)]
+        disk_priorities = [('disk', i) for i in range(10, 30)]
+        priorities = memory_priorities + disk_priorities
+        shuffle(priorities)
+        for queue, prio in priorities:
+            url = 'https://example.org/{}-{}'.format(queue, prio)
+            req = Request(url=url, meta={'queue': queue}, priority=prio, dont_filter=True)
+            if queue == 'memory':
+                req.meta['pickle'] = _WontPickle()  # make sure the request goes to memory
+            scheduler.enqueue_request(req)
+        # check all requests are retrieved in the intended order
+        # expected priorities are reversed to put the highest one first
+        expected = sorted(priorities, key=lambda x: (1 if x[0] == 'memory' else 0, x[1]), reverse=True)
+        retrieved = []
+        while scheduler.has_pending_requests():
+            req = scheduler.next_request()
+            retrieved.append((req.meta['queue'], req.priority))
+        self.assertEqual(retrieved, expected)
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/memory'), len(memory_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/disk'), len(disk_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/memory'), len(memory_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/disk'), len(disk_priorities))
+        shutil.rmtree(jobdir, ignore_errors=True)
+
+    def test_request_global_priorities(self):
+        """
+        No preference for memory-enqueued requests, only priority is considered
+        """
+        jobdir = tempfile.mkdtemp()
+        crawler = get_crawler(settings_dict=dict(JOBDIR=jobdir, SCHEDULER_PREFER_MEMORY_QUEUE=False))
+        scheduler = _get_open_scheduler(crawler)
+        # push requests with different priorities in a random order
+        memory_priorities = [('memory', i) for i in range(20)]
+        disk_priorities = [('disk', i) for i in range(10, 30)]
+        priorities = memory_priorities + disk_priorities
+        shuffle(priorities)
+        for queue, prio in priorities:
+            url = 'https://example.org/{}-{}'.format(queue, prio)
+            req = Request(url=url, meta={'queue': queue}, priority=prio, dont_filter=True)
+            if queue == 'memory':
+                req.meta['pickle'] = _WontPickle()  # make sure the request goes to memory
+            scheduler.enqueue_request(req)
+        # check all requests are retrieved in the intended order
+        expected = sorted(priorities, key=lambda x: (x[1], 1 if x[0] == 'memory' else 0), reverse=True)
+        retrieved = []
+        while scheduler.has_pending_requests():
+            req = scheduler.next_request()
+            retrieved.append((req.meta['queue'], req.priority))
+        self.assertEqual(retrieved, expected)
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/memory'), len(memory_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/enqueued/disk'), len(disk_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued'), len(priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/memory'), len(memory_priorities))
+        self.assertEqual(crawler.stats.get_value('scheduler/dequeued/disk'), len(disk_priorities))
+        shutil.rmtree(jobdir, ignore_errors=True)

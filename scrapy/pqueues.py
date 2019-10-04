@@ -1,6 +1,7 @@
 import hashlib
 import logging
 from collections import namedtuple
+from operator import attrgetter
 
 from queuelib import PriorityQueue
 
@@ -59,8 +60,13 @@ class _SlotPriorityQueues(object):
         """
         self.pqfactory = pqfactory
         self.pqueues = {}  # slot -> priority queue
+        self.curprio = None
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(startprios)
+            if self.curprio and startprios:
+                self.curprio = min(self.curprio, min(startprios))
+            elif startprios:
+                self.curprio = min(startprios)
 
     def pop_slot(self, slot):
         """ Pop an object from a priority queue for this slot """
@@ -68,6 +74,10 @@ class _SlotPriorityQueues(object):
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+        if self.pqueues:
+            self.curprio = min(self.pqueues.values(), key=attrgetter('curprio'))
+        else:
+            self.curprio = None
         return request
 
     def push_slot(self, slot, obj, priority):
@@ -76,6 +86,7 @@ class _SlotPriorityQueues(object):
             self.pqueues[slot] = self.pqfactory()
         queue = self.pqueues[slot]
         queue.push(obj, priority)
+        self.curprio = min(self.pqueues.values(), key=attrgetter('curprio'))
 
     def close(self):
         active = {slot: queue.close()
@@ -136,9 +147,9 @@ class DownloaderInterface(object):
 
 
 class DownloaderAwarePriorityQueue(object):
-    """ PriorityQueue which takes Downlaoder activity in account:
-    domains (slots) with the least amount of active downloads are dequeued
-    first.
+    """
+    PriorityQueue which takes Downloader activity into account: domains (slots)
+    with the least amount of active downloads are dequeued first.
     """
 
     @classmethod
@@ -168,6 +179,10 @@ class DownloaderAwarePriorityQueue(object):
         self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
         self.serialize = serialize
         self._downloader_interface = DownloaderInterface(crawler)
+
+    @property
+    def curprio(self):
+        return self._slot_pqueues.curprio
 
     def pop(self):
         stats = self._downloader_interface.stats(self._slot_pqueues.pqueues)
