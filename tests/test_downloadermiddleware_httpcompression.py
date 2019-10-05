@@ -290,6 +290,6 @@ class HttpCompressionTest(TestCase):
         self.assertIsNot(newresponse, response)
         self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
         self.assertIn('Content-Encoding', newresponse.headers)
-        self.assertIn('decoded',newresponse.flags)
+        self.assertIn(b'decoded',newresponse.flags)
 
 
