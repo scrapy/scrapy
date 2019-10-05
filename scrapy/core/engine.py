@@ -112,6 +112,7 @@ class ExecutionEngine(object):
 
     def _next_request(self, spider):
         slot = self.slot
+        reason = "finished"
         if not slot:
             return
 
@@ -127,11 +128,11 @@ class ExecutionEngine(object):
                 request = next(slot.start_requests)
             except StopIteration:
                 slot.start_requests = None
-            except Exception as e:
+            except Exception as exception:
                 slot.start_requests = None
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
-                reason = str(e)
+                reason = str(exception)
             else:
                 self.crawl(request, spider)
 
