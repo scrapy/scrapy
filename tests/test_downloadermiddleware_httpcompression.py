@@ -262,3 +262,34 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
         self.assertEqual(response.body, b'')
+
+    def test_process_response_gzip_keep_headers(self):
+        self.spider, self.mw = self.create_spider_mw(
+            compression_enabled=True,
+            compression_header=True)
+        response = self._getresponse('gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b'<!DOCTYPE')
+        assert 'Content-Encoding' in newresponse.headers
+        assert 'decoded' in response.flags
+
+    def test_process_response_gzip_binary_octetstream_contenttype(self):
+        self.spider, self.mw = self.create_spider_mw(
+            compression_enabled=True,
+            compression_header=True)
+
+        response = self._getresponse('x-gzip')
+        response.headers['Content-Type'] = 'binary/octet-stream'
+        request = response.request
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertIn('Content-Encoding', newresponse.headers)
+        self.assertIn('decoded',newresponse.flags)
+
+
