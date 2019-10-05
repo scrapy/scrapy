@@ -275,7 +275,7 @@ class HttpCompressionTest(TestCase):
         assert newresponse is not response
         assert newresponse.body.startswith(b'<!DOCTYPE')
         assert 'Content-Encoding' in newresponse.headers
-        assert 'decoded' in response.flags
+        assert 'decoded' in newresponse.flags
 
     def test_process_response_gzip_binary_octetstream_contenttype(self):
         self.spider, self.mw = self.create_spider_mw(
