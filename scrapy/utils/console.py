@@ -56,8 +56,8 @@ def _embed_standard_shell(namespace={}, banner=''):
     return wrapper
 
 DEFAULT_PYTHON_SHELLS = OrderedDict([
-    ('ptpython', _embed_ptpython_shell),
     ('ipython', _embed_ipython_shell),
+    ('ptpython', _embed_ptpython_shell),
     ('bpython', _embed_bpython_shell),
     ('python', _embed_standard_shell),
 ])
