@@ -2590,7 +2590,7 @@ Code rearranged and removed
    - `w3lib`_ (several functions from ``scrapy.utils.{http,markup,multipart,response,url}``, done in :rev:`2584`)
    - `scrapely`_ (was ``scrapy.contrib.ibl``, done in :rev:`2586`)
 - Removed unused function: ``scrapy.utils.request.request_info()`` (:rev:`2577`)
-- Removed googledir project from ``examples/googledir``. There's now a new example project called ``dirbot`` available on github: https://github.com/scrapy/dirbot
+- Removed googledir project from ``examples/googledir``. There's now a new example project called ``dirbot`` available on GitHub: https://github.com/scrapy/dirbot
 - Removed support for default field values in Scrapy items (:rev:`2616`)
 - Removed experimental crawlspider v2 (:rev:`2632`)
 - Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe fltering class as before (``DUPEFILTER_CLASS`` setting) (:rev:`2640`)
