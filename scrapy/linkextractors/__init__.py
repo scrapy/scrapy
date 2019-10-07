@@ -35,7 +35,7 @@ IGNORED_EXTENSIONS = [
     'odp',
 
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar',
+    'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar', 'dmg', 'iso', 'apk'
 ]
 
 
