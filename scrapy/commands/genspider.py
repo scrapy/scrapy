@@ -5,7 +5,7 @@ import string
 
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
-from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -65,9 +65,8 @@ class Command(ScrapyCommand):
 
         parsed_url = urlparse(domain)
 
-        # Automatically it is prepended 'http' if the scheme is missing
         if not parsed_url.scheme:
-            parsed_url = urlparse('http://' + domain)
+            parsed_url._replace(scheme='http')
 
         module = sanitize_module_name(name)
 
