@@ -198,12 +198,20 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_follow_all_invalid(self):
         r = self.response_class("http://example.com")
-        with self.assertRaises(TypeError):
-            list(r.follow_all(None))
-        with self.assertRaises(TypeError):
-            list(r.follow_all(12345))
-        with self.assertRaises(ValueError):
-            list(r.follow_all([None]))
+        if self.response_class == Response:
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=None))
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=12345))
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=[None]))
+        else:
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=None))
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=12345))
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=[None]))
 
     def test_follow_all_whitespace(self):
         relative = ['foo ', 'bar ', 'foo/bar ', 'bar/foo ']
@@ -243,6 +251,11 @@ class BaseResponseTest(unittest.TestCase):
 
     def _links_response(self):
         body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        resp = self.response_class('http://example.com/index', body=body)
+        return resp
+
+    def _links_response_no_href(self):
+        body = get_testdata('link_extractor', 'sgml_linkextractor_no_href.html')
         resp = self.response_class('http://example.com/index', body=body)
         return resp
 
@@ -560,6 +573,16 @@ class TextResponseTest(BaseResponseTest):
         extracted = [r.url for r in response.follow_all(css='a[href*="example.com"]')]
         self.assertEqual(expected, extracted)
 
+    def test_follow_all_css_skip_invalid(self):
+        expected = [
+            'http://example.com/page/1/',
+            'http://example.com/page/3/',
+            'http://example.com/page/4/',
+        ]
+        response = self._links_response_no_href()
+        extracted = [r.url for r in response.follow_all(css='.pagination a')]
+        self.assertEqual(expected, extracted)
+
     def test_follow_all_xpath(self):
         expected = [
             'http://example.com/sample3.html',
@@ -569,7 +592,17 @@ class TextResponseTest(BaseResponseTest):
         extracted = response.follow_all(xpath='//a[contains(@href, "example.com")]')
         self.assertEqual(expected, [r.url for r in extracted])
 
-    def test_follow_all_exception(self):
+    def test_follow_all_xpath_skip_invalid(self):
+        expected = [
+            'http://example.com/page/1/',
+            'http://example.com/page/3/',
+            'http://example.com/page/4/',
+        ]
+        response = self._links_response_no_href()
+        extracted = [r.url for r in response.follow_all(xpath='//div[@id="pagination"]/a')]
+        self.assertEqual(expected, extracted)
+
+    def test_follow_all_too_many_arguments(self):
         response = self._links_response()
         with self.assertRaises(ValueError):
             response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')

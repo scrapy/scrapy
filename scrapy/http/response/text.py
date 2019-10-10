@@ -180,13 +180,27 @@ class TextResponse(Response):
 
         In addition, ``css`` and ``xpath`` arguments are accepted to perform the link extraction
         within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` are accepted).
+
+        Note that when using the ``css`` or ``xpath`` parameters, this method will not produce
+        requests for selectors from which links cannot be obtained (for instance, anchor tags
+        without ``href`` attribute)
         """
-        if len(list(filter(None, (urls, css, xpath)))) > 1:
-            raise ValueError('Please supply only one of the following arguments: {urls, css, xpath}')
-        if css:
-            urls = self.css(css)
-        elif xpath:
-            urls = self.xpath(xpath)
+        arg_count = len(list(filter(None, (urls, css, xpath))))
+        if arg_count != 1:
+            raise ValueError('Please supply exactly one of the following arguments: {urls, css, xpath}')
+        if not urls:
+            urls = []
+            if css:
+                selector_method = getattr(self, 'css')
+                expression = css
+            elif xpath:
+                selector_method = getattr(self, 'xpath')
+                expression = xpath
+            for selector in selector_method(expression):
+                try:
+                    urls.append(_url_from_selector(selector))
+                except ValueError:
+                    pass
         return (
             self.follow(
                 url=url,
