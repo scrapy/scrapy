@@ -247,7 +247,7 @@ class CsvItemExporter(BaseItemExporter):
         serialized_fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
         fields = self._get_fields_from_item(item)
-        if set(fields) != set(self.fields_to_export) and not self._data_loss_already_warned:
+        if (self.fields_to_export == None or set(fields) != set(self.fields_to_export)) and not self._data_loss_already_warned:
             logger.warning("Data loss detected when exporting items -- This message won't be shown in further items")
         values = list(self._build_row(x for _, x in serialized_fields))
         self.csv_writer.writerow(values)
