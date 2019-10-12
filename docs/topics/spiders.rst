@@ -692,7 +692,7 @@ SitemapSpider
 
     .. method:: sitemap_filter(entries)
 
-        This is a filter funtion that could be overridden to select sitemap entries
+        This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
         For example::
