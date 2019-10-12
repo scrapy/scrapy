@@ -244,9 +244,12 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='',
+        serialized_fields = self._get_serialized_fields(item, default_value='',
                                              include_empty=True)
-        values = list(self._build_row(x for _, x in fields))
+        fields = self._get_fields_from_item(item)
+        if set(fields) != set(self.fields_to_export) and not self._data_loss_already_warned:
+            logger.warning("Data loss detected when exporting items -- This message won't be shown in further items")
+        values = list(self._build_row(x for _, x in serialized_fields))
         self.csv_writer.writerow(values)
 
     def _build_row(self, values):
@@ -258,12 +261,7 @@ class CsvItemExporter(BaseItemExporter):
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
-            if isinstance(item, dict):
-                # for dicts try using fields of the first item
-                fields = list(item.keys())
-            else:
-                # use fields declared in Item
-                fields = list(item.fields.keys())
+            fields = self._get_fields_from_item(item)
             if not self.fields_to_export:
                 self._show_data_loss_warning = True
                 self.fields_to_export = fields
@@ -275,6 +273,15 @@ class CsvItemExporter(BaseItemExporter):
                 self._data_loss_already_warned = True
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
+
+    def _get_fields_from_item(self, item):
+        if isinstance(item, dict):
+            # for dicts try using fields of the first item
+            fields = list(item.keys())
+        else:
+            # use fields declared in Item
+            fields = list(item.fields.keys())
+        return fields
 
 
 class PickleItemExporter(BaseItemExporter):
