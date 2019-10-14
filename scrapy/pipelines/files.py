@@ -298,7 +298,13 @@ class FilesPipeline(MediaPipeline):
             settings = Settings(settings)
 
         cls_name = "FilesPipeline"
+        self.store = None
         self.urifmt = urifmt
+        if '%' not in self.urifmt:
+            # simple heuristic to check if urifmt is a template (requires spider attributes)
+            # if it is not a template, load the store ASAP to avoid incompatibility issues
+            self.store = self._get_store(self.urifmt)
+
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
@@ -354,9 +360,10 @@ class FilesPipeline(MediaPipeline):
             cls.STORAGES[scheme] = load_object(storage_cls)
 
     def open_spider(self, spider):
-        attributes = get_object_attributes_as_dict(spider)
-        store_uri = self.urifmt % attributes
-        self.store = self._get_store(store_uri)
+        if not self.store:
+            attributes = get_object_attributes_as_dict(spider)
+            store_uri = self.urifmt % attributes
+            self.store = self._get_store(store_uri)
         super(FilesPipeline, self).open_spider(spider)
 
     def _get_store(self, uri):
