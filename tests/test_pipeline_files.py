@@ -27,10 +27,18 @@ def _mocked_download_func(request, info):
     response = request.meta.get('response')
     return response() if callable(response) else response
 
+
 class StoreMock(object):
 
     def __init__(self, store_uri):
         self.store_uri = store_uri
+
+
+class DummyPipeline(FilesPipeline):
+
+    STORE_SCHEMES = {
+        'test': 'tests.test_pipeline_files.StoreMock'
+    }
 
 
 class FilesPipelineTestCase(unittest.TestCase):
@@ -52,6 +60,19 @@ class FilesPipelineTestCase(unittest.TestCase):
         pipeline.open_spider(SpiderMock())
 
         self.assertEqual(pipeline.store.store_uri, 'test://foo:bar:80/foobar')
+
+    def test_store_schemes_backward_compatibility(self):
+        class SpiderMock(object):
+            pass
+
+        settings = Settings({
+            'FILES_STORE': 'test://my_custom_storage'
+        })
+
+        pipeline = DummyPipeline.from_settings(settings)
+        pipeline.open_spider(SpiderMock())
+
+        self.assertEqual(pipeline.store.store_uri, 'test://my_custom_storage')
 
 
 class FilesPipelineFSFileStoreTestCase(unittest.TestCase):

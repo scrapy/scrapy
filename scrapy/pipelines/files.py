@@ -14,7 +14,7 @@ from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
-
+import warnings
 
 try:
     from cStringIO import StringIO as BytesIO
@@ -288,6 +288,8 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_RESULT_FIELD = 'files'
     STORAGES = {}
 
+    STORE_SCHEMES = {}
+
     def __init__(self, urifmt, download_func=None, settings=None):
         if not urifmt:
             raise NotConfigured
@@ -339,6 +341,16 @@ class FilesPipeline(MediaPipeline):
     def _load_storages(cls, settings):
         storages = settings.getwithbase('FILES_STORAGES')
         for (scheme, storage_cls) in storages.items():
+            cls.STORAGES[scheme] = load_object(storage_cls)
+
+        if cls.STORE_SCHEMES:
+            warnings.warn(
+                'FilesPipeline.STORE_SCHEMES is deprecated and will be removed in the future.'
+                'Please upgrade to FILES_STORAGES setting.',
+                DeprecationWarning
+            )
+
+        for (scheme, storage_cls) in cls.STORE_SCHEMES.items():
             cls.STORAGES[scheme] = load_object(storage_cls)
 
     def open_spider(self, spider):
