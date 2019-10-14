@@ -145,7 +145,7 @@ class Response(object_ref):
         """
         Return an iterable of :class:`~.Request` instances to follow all links
         in ``urls``. It accepts the same arguments as ``Request.__init__`` method,
-        but elements of ``urls`` can be relative URLs or ``scrapy.link.Link`` objects
+        but elements of ``urls`` can be relative URLs or :class:`~scrapy.link.Link` objects,
         not only absolute URLs.
 
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow_all`
