@@ -70,7 +70,6 @@ class FilesPipelineTestCase(unittest.TestCase):
         })
 
         pipeline = DummyPipeline.from_settings(settings)
-        pipeline.open_spider(SpiderMock())
 
         self.assertEqual(pipeline.store.store_uri, 'test://my_custom_storage')
 
