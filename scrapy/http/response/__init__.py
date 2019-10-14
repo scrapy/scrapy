@@ -143,7 +143,7 @@ class Response(object_ref):
                    dont_filter=False, errback=None, cb_kwargs=None):
         # type: (...) -> Generator[Request, None, None]
         """
-        Return an iterable of :class:`~.Request` instance to follow all links
+        Return an iterable of :class:`~.Request` instances to follow all links
         in ``urls``. It accepts the same arguments as ``Request.__init__`` method,
         but elements of ``urls`` can be relative URLs or ``scrapy.link.Link`` objects
         not only absolute URLs.
