@@ -179,7 +179,7 @@ class TextResponse(Response):
           ``response.css('a.my_link')[0]``.
 
         In addition, ``css`` and ``xpath`` arguments are accepted to perform the link extraction
-        within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` are accepted).
+        within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` is accepted).
 
         Note that when using the ``css`` or ``xpath`` parameters, this method will not produce
         requests for selectors from which links cannot be obtained (for instance, anchor tags
