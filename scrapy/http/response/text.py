@@ -129,13 +129,14 @@ class TextResponse(Response):
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be not only an absolute URL, but also
 
-        * a relative URL;
-        * a scrapy.link.Link object (e.g. a link extractor result);
-        * an attribute Selector (not SelectorList) - e.g.
+        * a relative URL
+        * a :class:`~scrapy.link.Link` object, e.g. the result of
+          :ref:`topics-link-extractors`
+        * a :class:`~scrapy.selector.Selector` object for a ``<link>`` or ``<a>`` element, e.g.
+          ``response.css('a.my_link')[0]``
+        * an attribute :class:`~scrapy.selector.Selector` (not SelectorList), e.g.
           ``response.css('a::attr(href)')[0]`` or
-          ``response.xpath('//img/@src')[0]``.
-        * a Selector for ``<a>`` or ``<link>`` element, e.g.
-          ``response.css('a.my_link')[0]``.
+          ``response.xpath('//img/@src')[0]``
 
         See :ref:`response-follow-example` for usage examples.
         """
@@ -170,13 +171,14 @@ class TextResponse(Response):
         initializer, except that each ``urls`` element does not need to be an absolute
         URL, it can be any of the following:
 
-        * a relative URL;
-        * a scrapy.link.Link object (e.g. a link extractor result);
-        * an attribute Selector (not SelectorList) - e.g.
+        * a relative URL
+        * a :class:`~scrapy.link.Link` object, e.g. the result of
+          :ref:`topics-link-extractors`
+        * a :class:`~scrapy.selector.Selector` object for a ``<link>`` or ``<a>`` element, e.g.
+          ``response.css('a.my_link')[0]``
+        * an attribute :class:`~scrapy.selector.Selector` (not SelectorList), e.g.
           ``response.css('a::attr(href)')[0]`` or
-          ``response.xpath('//img/@src')[0]``.
-        * a Selector for ``<a>`` or ``<link>`` element, e.g.
-          ``response.css('a.my_link')[0]``.
+          ``response.xpath('//img/@src')[0]``
 
         In addition, ``css`` and ``xpath`` arguments are accepted to perform the link extraction
         within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` is accepted).
@@ -187,7 +189,7 @@ class TextResponse(Response):
         """
         arg_count = len(list(filter(None, (urls, css, xpath))))
         if arg_count != 1:
-            raise ValueError('Please supply exactly one of the following arguments: {urls, css, xpath}')
+            raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
         if not urls:
             urls = []
             if css:
