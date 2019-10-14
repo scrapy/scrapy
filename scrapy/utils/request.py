@@ -30,7 +30,7 @@ def request_fingerprint(request, include_headers=None):
     and are equivalent (ie. they should return the same response).
 
     Another example are cookies used to store session ids. Suppose the
-    following page is only accesible to authenticated users:
+    following page is only accessible to authenticated users:
 
     http://www.example.com/members/offers.html
 

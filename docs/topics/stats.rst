@@ -75,8 +75,7 @@ available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
 default Stats Collector used is the :class:`MemoryStatsCollector`. 
 
-.. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
+.. currentmodule:: scrapy.statscollectors
 
 MemoryStatsCollector
 --------------------

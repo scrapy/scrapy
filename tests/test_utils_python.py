@@ -9,9 +9,21 @@ import six
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
-    without_none_values)
+    without_none_values, MutableChain)
 
 __doctests__ = ['scrapy.utils.python']
+
+
+class MutableChainTest(unittest.TestCase):
+    def test_mutablechain(self):
+        m = MutableChain(range(2), [2, 3], (4, 5))
+        m.extend(range(6, 7))
+        m.extend([7, 8])
+        m.extend([9, 10], (11, 12))
+        self.assertEqual(next(m), 0)
+        self.assertEqual(m.next(), 1)
+        self.assertEqual(m.__next__(), 2)
+        self.assertEqual(list(m), list(range(3, 13)))
 
 
 class ToUnicodeTest(unittest.TestCase):

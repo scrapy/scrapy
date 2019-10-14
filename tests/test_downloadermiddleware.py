@@ -3,6 +3,7 @@ from twisted.python.failure import Failure
 
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
+from scrapy.exceptions import _InvalidOutput
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_bytes
@@ -115,3 +116,63 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
 
         self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
+
+
+class ProcessRequestInvalidOutput(ManagerTestCase):
+    """Invalid return value for process_request method should raise an exception"""
+
+    def test_invalid_process_request(self):
+        req = Request('http://example.com/index.html')
+
+        class InvalidProcessRequestMiddleware:
+            def process_request(self, request, spider):
+                return 1
+
+        self.mwman._add_middleware(InvalidProcessRequestMiddleware())
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self.assertIsInstance(results[0], Failure)
+        self.assertIsInstance(results[0].value, _InvalidOutput)
+
+
+class ProcessResponseInvalidOutput(ManagerTestCase):
+    """Invalid return value for process_response method should raise an exception"""
+
+    def test_invalid_process_response(self):
+        req = Request('http://example.com/index.html')
+
+        class InvalidProcessResponseMiddleware:
+            def process_response(self, request, response, spider):
+                return 1
+
+        self.mwman._add_middleware(InvalidProcessResponseMiddleware())
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self.assertIsInstance(results[0], Failure)
+        self.assertIsInstance(results[0].value, _InvalidOutput)
+
+
+class ProcessExceptionInvalidOutput(ManagerTestCase):
+    """Invalid return value for process_exception method should raise an exception"""
+
+    def test_invalid_process_exception(self):
+        req = Request('http://example.com/index.html')
+
+        class InvalidProcessExceptionMiddleware:
+            def process_request(self, request, spider):
+                raise Exception()
+
+            def process_exception(self, request, exception, spider):
+                return 1
+
+        self.mwman._add_middleware(InvalidProcessExceptionMiddleware())
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self.assertIsInstance(results[0], Failure)
+        self.assertIsInstance(results[0].value, _InvalidOutput)

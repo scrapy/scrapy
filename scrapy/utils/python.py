@@ -9,6 +9,7 @@ import weakref
 import errno
 import six
 from functools import partial, wraps
+from itertools import chain
 import sys
 
 from scrapy.utils.decorators import deprecated
@@ -83,22 +84,9 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-@deprecated("scrapy.utils.python.to_unicode")
-def str_to_unicode(text, encoding=None, errors='strict'):
-    """ This function is deprecated.
-    Please use scrapy.utils.python.to_unicode. """
-    return to_unicode(text, encoding, errors)
-
-
-@deprecated("scrapy.utils.python.to_bytes")
-def unicode_to_str(text, encoding=None, errors='strict'):
-    """ This function is deprecated. Please use scrapy.utils.python.to_bytes """
-    return to_bytes(text, encoding, errors)
-
-
 def to_unicode(text, encoding=None, errors='strict'):
-    """Return the unicode representation of a bytes object `text`. If `text`
-    is already an unicode object, return it as-is."""
+    """Return the unicode representation of a bytes object ``text``. If
+    ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, six.text_type):
         return text
     if not isinstance(text, (bytes, six.text_type)):
@@ -110,7 +98,7 @@ def to_unicode(text, encoding=None, errors='strict'):
 
 
 def to_bytes(text, encoding=None, errors='strict'):
-    """Return the binary representation of `text`. If `text`
+    """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
@@ -123,7 +111,7 @@ def to_bytes(text, encoding=None, errors='strict'):
 
 
 def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of `text`
+    """ Return str representation of ``text``
     (bytes in Python 2.x and unicode in Python 3.x). """
     if six.PY2:
         return to_bytes(text, encoding, errors)
@@ -189,7 +177,7 @@ def isbinarytext(text):
 
 
 def binary_is_text(data):
-    """ Returns `True` if the given ``data`` argument (a ``bytes`` object)
+    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
@@ -314,7 +302,7 @@ class WeakKeyCache(object):
 @deprecated
 def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     """Return a (new) dict with unicode keys (and values when "keys_only" is
-    False) of the given dict converted to strings. `dct_or_tuples` can be a
+    False) of the given dict converted to strings. ``dct_or_tuples`` can be a
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
@@ -357,10 +345,10 @@ def retry_on_eintr(function, *args, **kw):
 
 
 def without_none_values(iterable):
-    """Return a copy of `iterable` with all `None` entries removed.
+    """Return a copy of ``iterable`` with all ``None`` entries removed.
 
-    If `iterable` is a mapping, return a dictionary where all pairs that have
-    value `None` have been removed.
+    If ``iterable`` is a mapping, return a dictionary where all pairs that have
+    value ``None`` have been removed.
     """
     try:
         return {k: v for k, v in six.iteritems(iterable) if v is not None}
@@ -387,3 +375,22 @@ if hasattr(sys, "pypy_version_info"):
 else:
     def garbage_collect():
         gc.collect()
+
+
+class MutableChain(object):
+    """
+    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
+    """
+    def __init__(self, *args):
+        self.data = chain(*args)
+
+    def extend(self, *iterables):
+        self.data = chain(self.data, *iterables)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+    def __next__(self):
+        return next(self.data)
+
+    next = __next__

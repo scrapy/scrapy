@@ -97,7 +97,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href',), canonicalize=False,
                  unique=True, process_value=None, deny_extensions=None, restrict_css=(),
-                 strip=True):
+                 strip=True, restrict_text=None):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
@@ -111,9 +111,10 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         )
 
         super(LxmlLinkExtractor, self).__init__(lx, allow=allow, deny=deny,
-            allow_domains=allow_domains, deny_domains=deny_domains,
-            restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
-            canonicalize=canonicalize, deny_extensions=deny_extensions)
+                                                allow_domains=allow_domains, deny_domains=deny_domains,
+                                                restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
+                                                canonicalize=canonicalize, deny_extensions=deny_extensions,
+                                                restrict_text=restrict_text)
 
     def extract_links(self, response):
         base_url = get_base_url(response)

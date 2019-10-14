@@ -233,8 +233,8 @@ for k, args in enumerate ([
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
-for k, args in enumerate ([
-            ('C:\absolute\path\to\a\file.html',     'file://',
+for k, args in enumerate([
+            (r'C:\absolute\path\to\a\file.html', 'file://',
              'Windows filepath are not supported for scrapy shell'),
         ], start=1):
     t_method = create_skipped_scheme_t(args)

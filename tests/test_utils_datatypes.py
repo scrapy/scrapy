@@ -1,10 +1,17 @@
 import copy
 import unittest
-from collections import Mapping, MutableMapping
+
+import six
+if six.PY2:
+    from collections import Mapping, MutableMapping
+else:
+    from collections.abc import Mapping, MutableMapping
 
 from scrapy.utils.datatypes import CaselessDict, SequenceExclude
 
+
 __doctests__ = ['scrapy.utils.datatypes']
+
 
 class CaselessDictTest(unittest.TestCase):
 

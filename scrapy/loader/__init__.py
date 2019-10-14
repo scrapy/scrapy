@@ -8,8 +8,6 @@ import six
 
 from scrapy.item import Item
 from scrapy.selector import Selector
-from scrapy.utils.decorators import deprecated
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 
@@ -35,6 +33,10 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
+        # Preprocess values if item built from dict
+        # Values need to be added to item._values if added them from dict (not with add_values)
+        for field_name, value in item.items():
+            self._values[field_name] = self._process_input_value(field_name, value)
 
     @property
     def _values(self):
@@ -105,8 +107,14 @@ class ItemLoader(object):
         for proc in processors:
             if value is None:
                 break
+            _proc = proc
             proc = wrap_loader_context(proc, self.context)
-            value = proc(value)
+            try:
+                value = proc(value)
+            except Exception as e:
+                raise ValueError("Error with processor %s value=%r error='%s: %s'" %
+                                 (_proc.__class__.__name__, value,
+                                  type(e).__name__, str(e)))
         return value
 
     def load_item(self):
@@ -146,8 +154,15 @@ class ItemLoader(object):
 
     def _process_input_value(self, field_name, value):
         proc = self.get_input_processor(field_name)
+        _proc = proc
         proc = wrap_loader_context(proc, self.context)
-        return proc(value)
+        try:
+            return proc(value)
+        except Exception as e:
+            raise ValueError(
+                "Error with input processor %s: field=%r value=%r "
+                "error='%s: %s'" % (_proc.__class__.__name__, field_name,
+                                    value, type(e).__name__, str(e)))
 
     def _get_item_field_attr(self, field_name, key, default=None):
         if isinstance(self.item, Item):
@@ -174,10 +189,6 @@ class ItemLoader(object):
         values = self._get_xpathvalues(xpath, **kw)
         return self.get_value(values, *processors, **kw)
 
-    @deprecated(use_instead='._get_xpathvalues()')
-    def _get_values(self, xpaths, **kw):
-        return self._get_xpathvalues(xpaths, **kw)
-
     def _get_xpathvalues(self, xpaths, **kw):
         self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
@@ -199,5 +210,3 @@ class ItemLoader(object):
         self._check_selector_method()
         csss = arg_to_iter(csss)
         return flatten(self.selector.css(css).getall() for css in csss)
-
-XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)

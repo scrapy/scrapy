@@ -5,11 +5,13 @@ import unittest
 from scrapy.item import Item, Field
 from scrapy.utils.misc import (arg_to_iter, create_instance,
                                get_object_attributes_as_dict, load_object,
-                               walk_modules)
+                               set_environ, walk_modules)
+
 
 from tests import mock
 
 __doctests__ = ['scrapy.utils.misc']
+
 
 class UtilsMiscTestCase(unittest.TestCase):
 
@@ -144,6 +146,18 @@ class UtilsMiscTestCase(unittest.TestCase):
 
         self.assertEqual(attributes['some_class_attribute'], 'foo')
         self.assertEqual(attributes['some_object_attribute'], 'bar')
+
+    def test_set_environ(self):
+        assert os.environ.get('some_test_environ') is None
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') is None
+
+        os.environ['some_test_environ'] = 'test'
+        assert os.environ.get('some_test_environ') == 'test'
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') == 'test'
 
 
 if __name__ == "__main__":

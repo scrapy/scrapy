@@ -205,7 +205,7 @@ Extracting data
 ---------------
 
 The best way to learn how to extract data with Scrapy is trying selectors
-using the shell :ref:`Scrapy shell <topics-shell>`. Run::
+using the :ref:`Scrapy shell <topics-shell>`. Run::
 
     scrapy shell 'http://quotes.toscrape.com/page/1/'
 
@@ -296,8 +296,8 @@ expressions`_::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools to inspect the HTML and come up
-with a selector (see section about :ref:`topics-developer-tools`).
+You can use your browser's developer tools to inspect the HTML and come up
+with a selector (see :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
@@ -379,11 +379,11 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
 
-Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text::text").get()
-    >>> title
+    >>> text = quote.css("span.text::text").get()
+    >>> text
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
     >>> author = quote.css("small.author::text").get()
     >>> author
@@ -511,7 +511,7 @@ We can try extracting it in the shell::
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
-Scrapy supports a CSS extension that let's you select the attribute contents,
+Scrapy supports a CSS extension that lets you select the attribute contents,
 like this::
 
     >>> response.css('li.next a::attr(href)').get()
