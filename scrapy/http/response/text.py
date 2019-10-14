@@ -183,7 +183,7 @@ class TextResponse(Response):
 
         Note that when using the ``css`` or ``xpath`` parameters, this method will not produce
         requests for selectors from which links cannot be obtained (for instance, anchor tags
-        without ``href`` attribute)
+        without an ``href`` attribute)
         """
         arg_count = len(list(filter(None, (urls, css, xpath))))
         if arg_count != 1:
