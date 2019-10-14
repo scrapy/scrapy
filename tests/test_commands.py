@@ -9,8 +9,6 @@ from tempfile import mkdtemp
 from contextlib import contextmanager
 from threading import Timer
 
-import importlib
-
 from twisted.trial import unittest
 from twisted.internet import defer
 
