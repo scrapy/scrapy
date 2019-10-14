@@ -9,6 +9,8 @@ from tempfile import mkdtemp
 from contextlib import contextmanager
 from threading import Timer
 
+import importlib
+
 from twisted.trial import unittest
 from twisted.internet import defer
 
@@ -137,6 +139,102 @@ class GenspiderCommandTest(CommandTest):
         # pass two arguments <name> <domain>. spider script should be created
         self.assertEqual(0, self.call('genspider', 'test_name', 'test.com'))
         assert exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
+
+    def test_domain_as_a_second_argument(self):
+        spname = 'test_spider'
+        domain = 'test.com'
+
+        p, out, err = self.proc('genspider', spname, domain)
+        spider_path = join(self.proj_mod_path, 'spiders', '{}.py'.format(spname))
+        self.assertTrue(exists(spider_path))
+
+        allowed_domains_line = ''
+        start_urls_line = ''
+        with open(spider_path, 'r') as spider:
+            for line in spider:
+                if line.find('allowed_domains') != -1:
+                    allowed_domains_line = line.strip()
+                if line.find('start_urls') != -1:
+                    start_urls_line = line.strip()
+                    break
+
+        self.assertTrue(allowed_domains_line.startswith('allowed_domains'))
+        self.assertTrue(allowed_domains_line.endswith("['{}']".format(domain)))
+
+        self.assertTrue(start_urls_line.startswith('start_urls'))
+        self.assertTrue(start_urls_line.endswith("['http://{}']".format(domain)))
+
+    def test_url_as_a_second_argument(self):
+        spname = 'test_spider'
+        domain = 'https://test.com'
+
+        p, out, err = self.proc('genspider', spname, domain)
+        spider_path = join(self.proj_mod_path, 'spiders', '{}.py'.format(spname))
+        self.assertTrue(exists(spider_path))
+
+        allowed_domains_line = ''
+        start_urls_line = ''
+        with open(spider_path, 'r') as spider:
+            for line in spider:
+                if line.find('allowed_domains') != -1:
+                    allowed_domains_line = line.strip()
+                if line.find('start_urls') != -1:
+                    start_urls_line = line.strip()
+                    break
+
+        self.assertTrue(allowed_domains_line.startswith('allowed_domains'))
+        self.assertTrue(allowed_domains_line.endswith("['test.com']"))
+
+        self.assertTrue(start_urls_line.startswith('start_urls'))
+        self.assertTrue(start_urls_line.endswith("['https://test.com']"))
+
+    def test_second_argument_like_urlparse_recognizes_netloc(self):
+        spname = 'test_spider'
+        domain = '//test.com'
+
+        p, out, err = self.proc('genspider', spname, domain)
+        spider_path = join(self.proj_mod_path, 'spiders', '{}.py'.format(spname))
+        self.assertTrue(exists(spider_path))
+
+        allowed_domains_line = ''
+        start_urls_line = ''
+        with open(spider_path, 'r') as spider:
+            for line in spider:
+                if line.find('allowed_domains') != -1:
+                    allowed_domains_line = line.strip()
+                if line.find('start_urls') != -1:
+                    start_urls_line = line.strip()
+                    break
+
+        self.assertTrue(allowed_domains_line.startswith('allowed_domains'))
+        self.assertTrue(allowed_domains_line.endswith("['test.com']"))
+
+        self.assertTrue(start_urls_line.startswith('start_urls'))
+        self.assertTrue(start_urls_line.endswith("['http://test.com']"))
+
+    def test_second_argument_like_is_not_a_scheme_included_in_is_url_method(self):
+        spname = 'test_spider'
+        domain = 'shttp://test.com'
+
+        p, out, err = self.proc('genspider', spname, domain)
+        spider_path = join(self.proj_mod_path, 'spiders', '{}.py'.format(spname))
+        self.assertTrue(exists(spider_path))
+
+        allowed_domains_line = ''
+        start_urls_line = ''
+        with open(spider_path, 'r') as spider:
+            for line in spider:
+                if line.find('allowed_domains') != -1:
+                    allowed_domains_line = line.strip()
+                if line.find('start_urls') != -1:
+                    start_urls_line = line.strip()
+                    break
+
+        self.assertTrue(allowed_domains_line.startswith('allowed_domains'))
+        self.assertFalse(allowed_domains_line.endswith("['test.com']"))
+
+        self.assertTrue(start_urls_line.startswith('start_urls'))
+        self.assertFalse(start_urls_line.endswith("['shttp://test.com']"))
 
     def test_template(self, tplname='crawl'):
         args = ['--template=%s' % tplname] if tplname else []

@@ -226,10 +226,14 @@ Usage example::
 genspider
 ---------
 
-* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Syntax: ``scrapy genspider [-t template] <name> <domain|url>``
 * Requires project: *no*
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+Create a new spider in the current folder or in the current project's ``spiders``
+folder, if called from inside a project. The ``<name>`` parameter is set as the
+spider's ``name``, while ``<domain|url>`` is used to generate the ``allowed_domains``
+and ``start_urls`` spider's attributes, which if HTTP is not specified it would
+be automatically prepended in the ``start_urls`` spider's attribute.
 
 Usage example::
 
@@ -458,7 +462,7 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.

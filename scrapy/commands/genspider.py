@@ -6,6 +6,7 @@ import string
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
 from six.moves.urllib.parse import urlparse
+from w3lib.url import is_url
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -27,10 +28,10 @@ def sanitize_module_name(module_name):
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {'LOG_ENABLED': True}
 
     def syntax(self):
-        return "[options] <name> <domain>"
+        return "[options] <name> <domain|url>"
 
     def short_desc(self):
         return "Generate new spider using pre-defined templates"
@@ -63,10 +64,10 @@ class Command(ScrapyCommand):
 
         name, domain = args[0:2]
 
-        parsed_url = urlparse(domain)
+        if not is_url(domain) and not domain.startswith('//'):
+            domain = '//' + domain
 
-        if not parsed_url.scheme:
-            parsed_url._replace(scheme='http')
+        parsed_url = urlparse(domain.rstrip('/'), scheme='http')
 
         module = sanitize_module_name(name)
 
