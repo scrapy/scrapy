@@ -191,14 +191,12 @@ class TextResponse(Response):
         if arg_count != 1:
             raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
         if not urls:
-            urls = []
             if css:
-                selector_method = getattr(self, 'css')
-                expression = css
-            elif xpath:
-                selector_method = getattr(self, 'xpath')
-                expression = xpath
-            for selector in selector_method(expression):
+                selector_list = self.css(css)
+            if xpath:
+                selector_list = self.xpath(xpath)
+            urls = []
+            for selector in selector_list:
                 try:
                     urls.append(_url_from_selector(selector))
                 except ValueError:
