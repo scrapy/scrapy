@@ -534,7 +534,7 @@ defines the methods described below.
       :param spider: the spider which generated the request
       :type spider: :class:`~scrapy.spiders.Spider` object
 
-      :param request: the request to find cached reponse for
+      :param request: the request to find cached response for
       :type request: :class:`~scrapy.http.Request` object
 
     .. method:: store_response(spider, request, response)
