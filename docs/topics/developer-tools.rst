@@ -262,7 +262,7 @@ to identifying the correct request and replicating it in your spider.
 
 .. _Developer Tools: https://en.wikipedia.org/wiki/Web_development_tools
 .. _quotes.toscrape.com: http://quotes.toscrape.com
-.. _quotes.toscrape.com/scroll: quotes.toscrape.com/scroll/
+.. _quotes.toscrape.com/scroll: http://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
 
