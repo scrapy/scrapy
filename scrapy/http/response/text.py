@@ -201,22 +201,19 @@ class TextResponse(Response):
                     urls.append(_url_from_selector(selector))
                 except ValueError:
                     pass
-        return (
-            self.follow(
-                url=url,
-                callback=callback,
-                method=method,
-                headers=headers,
-                body=body,
-                cookies=cookies,
-                meta=meta,
-                encoding=encoding,
-                priority=priority,
-                dont_filter=dont_filter,
-                errback=errback,
-                cb_kwargs=cb_kwargs,
-            )
-            for url in urls
+        return super(TextResponse, self).follow_all(
+            urls=urls,
+            callback=callback,
+            method=method,
+            headers=headers,
+            body=body,
+            cookies=cookies,
+            meta=meta,
+            encoding=encoding,
+            priority=priority,
+            dont_filter=dont_filter,
+            errback=errback,
+            cb_kwargs=cb_kwargs,
         )
 
 
