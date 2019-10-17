@@ -23,26 +23,19 @@ FORMAT = {
         'br': ('html-br.bin', 'br')
         }
 
-
 class HttpCompressionTest(TestCase):
 
-    def create_spider_mw(self
-                         ,compression_enabled=True
-                         ,compression_header=False):
-        crawler = get_crawler(Spider,
-                              {'COMPRESSION_ENABLED':
-                               compression_enabled,
-                              'COMPRESSION_KEEP_ENCODING_HEADERS':
-                               compression_header})
+    def create_spider_mw(self, compression_enabled=True, compression_header=False):
+        settings = {'COMPRESSION_ENABLED': compression_enabled,
+                    'COMPRESSION_KEEP_ENCODING_HEADERS': compression_header}
+        crawler = get_crawler(Spider, settings)
         spider = crawler._create_spider('foo')
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         return spider, mw
                             
     def setUp(self):
-        #need to find way to access settings here
         self.spider, self.mw = self.create_spider_mw()
 
-        
     def _getresponse(self, coding):
         if coding not in FORMAT:
             raise ValueError()
@@ -264,29 +257,28 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.body, b'')
 
     def test_process_response_gzip_keep_headers(self):
-        self.spider, self.mw = self.create_spider_mw(
+        test_spider, test_mw = self.create_spider_mw(
             compression_enabled=True,
             compression_header=True)
         response = self._getresponse('gzip')
         request = response.request
 
         self.assertEqual(response.headers['Content-Encoding'], b'gzip')
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = test_mw.process_response(request, response, test_spider)
         assert newresponse is not response
         assert newresponse.body.startswith(b'<!DOCTYPE')
         assert 'Content-Encoding' in newresponse.headers
         assert b'decoded' in newresponse.flags
 
     def test_process_response_gzip_binary_octetstream_contenttype(self):
-        self.spider, self.mw = self.create_spider_mw(
+        test_spider, test_mw = self.create_spider_mw(
             compression_enabled=True,
             compression_header=True)
-
         response = self._getresponse('x-gzip')
         response.headers['Content-Type'] = 'binary/octet-stream'
         request = response.request
 
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = test_mw.process_response(request, response, test_spider)
         self.assertIsNot(newresponse, response)
         self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
         self.assertIn('Content-Encoding', newresponse.headers)

@@ -49,12 +49,10 @@ class HttpCompressionMiddleware(object):
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
                 if self.keep_encoding_header:
-                    kwargs['flags'] = response.flags
-                    kwargs['flags'].append(b'decoded')
+                    kwargs['flags'] = response.flags +[b'decoded']
                 response = response.replace(**kwargs)
-                if not self.keep_encoding_header:
-                    if not content_encoding:
-                        del response.headers['Content-Encoding']
+                if not (self.keep_encoding_header and not content_encoding:
+                    del response.headers['Content-Encoding']
         return response
 
     def _decode(self, body, encoding):
