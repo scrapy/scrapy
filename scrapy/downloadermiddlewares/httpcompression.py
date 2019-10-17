@@ -51,7 +51,7 @@ class HttpCompressionMiddleware(object):
                 if self.keep_encoding_header:
                     kwargs['flags'] = response.flags +[b'decoded']
                 response = response.replace(**kwargs)
-                if not (self.keep_encoding_header and not content_encoding:
+                if not self.keep_encoding_header and not content_encoding:
                     del response.headers['Content-Encoding']
         return response
 
