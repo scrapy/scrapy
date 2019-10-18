@@ -71,7 +71,7 @@ New features
 ~~~~~~~~~~~~
 
 *   A new scheduler priority queue,
-    :class:`scrapy.pqueues.DownloaderAwarePriorityQueue`, may be
+    ``scrapy.pqueues.DownloaderAwarePriorityQueue``, may be
     :ref:`enabled <broad-crawls-scheduler-priority-queue>` for a significant
     scheduling improvement on crawls targetting multiple web domains, at the
     cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
@@ -150,9 +150,9 @@ Bug fixes
     :setting:`AWS_REGION_NAME`, :setting:`AWS_USE_SSL`, :setting:`AWS_VERIFY`
     (:issue:`3625`)
 
-*   Fixed a memory leak in :class:`~scrapy.pipelines.media.MediaPipeline`
-    affecting, for example, non-200 responses and exceptions from custom
-    middlewares (:issue:`3813`)
+*   Fixed a memory leak in ``scrapy.pipelines.media.MediaPipeline`` affecting,
+    for example, non-200 responses and exceptions from custom middlewares
+    (:issue:`3813`)
 
 *   Requests with private callbacks are now correctly unserialized from disk
     (:issue:`3790`)
@@ -301,7 +301,7 @@ Deprecations
 
 *   The ``queuelib.PriorityQueue`` value for the
     :setting:`SCHEDULER_PRIORITY_QUEUE` setting is deprecated. Use
-    :class:`scrapy.pqueues.ScrapyPriorityQueue` instead.
+    ``scrapy.pqueues.ScrapyPriorityQueue`` instead.
 
 *   ``process_request`` callbacks passed to :class:`~scrapy.spiders.Rule` that
     do not accept two arguments are deprecated.
@@ -551,7 +551,7 @@ Scrapy 1.5.2 (2019-01-22)
 
   *The fix is backward incompatible*, it enables telnet user-password
   authentication by default with a random generated password. If you can't
-  upgrade right away, please consider setting :setting:`TELNET_CONSOLE_PORT`
+  upgrade right away, please consider setting :setting:`TELNETCONSOLE_PORT`
   out of its default value.
 
   See :ref:`telnet console <topics-telnetconsole>` documentation for more info
@@ -758,7 +758,9 @@ Enjoy! (Or read on for the rest of changes in this release.)
 Deprecations and Backward Incompatible Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Default to ``canonicalize=False`` in :class:`scrapy.linkextractors.LinkExtractor`
+- Default to ``canonicalize=False`` in
+  :class:`scrapy.linkextractors.LinkExtractor
+  <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
   (:issue:`2537`, fixes :issue:`1941` and :issue:`1982`):
   **warning, this is technically backward-incompatible**
 - Enable memusage extension by default (:issue:`2539`, fixes :issue:`2187`);
@@ -794,10 +796,13 @@ New Features
 - New ``data:`` URI download handler (:issue:`2334`, fixes :issue:`2156`)
 - Log cache directory when HTTP Cache is used (:issue:`2611`, fixes :issue:`2604`)
 - Warn users when project contains duplicate spider names (fixes :issue:`2181`)
-- :class:`CaselessDict` now accepts ``Mapping`` instances and not only dicts (:issue:`2646`)
-- :ref:`Media downloads <topics-media-pipeline>`, with :class:`FilesPipelines`
-  or :class:`ImagesPipelines`, can now optionally handle HTTP redirects
-  using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting (:issue:`2616`, fixes :issue:`2004`)
+- ``scrapy.utils.datatypes.CaselessDict`` now accepts ``Mapping`` instances and
+  not only dicts (:issue:`2646`)
+- :ref:`Media downloads <topics-media-pipeline>`, with
+  :class:`~scrapy.pipelines.files.FilesPipeline` or
+  :class:`~scrapy.pipelines.images.ImagesPipeline`, can now optionally handle
+  HTTP redirects using the new :setting:`MEDIA_ALLOW_REDIRECTS` setting
+  (:issue:`2616`, fixes :issue:`2004`)
 - Accept non-complete responses from websites using a new
   :setting:`DOWNLOAD_FAIL_ON_DATALOSS` setting (:issue:`2590`, fixes :issue:`2586`)
 - Optional pretty-printing of JSON and XML items via
@@ -817,8 +822,8 @@ Bug fixes
 
 - LinkExtractor now strips leading and trailing whitespaces from attributes
   (:issue:`2547`, fixes :issue:`1614`)
-- Properly handle whitespaces in action attribute in :class:`FormRequest`
-  (:issue:`2548`)
+- Properly handle whitespaces in action attribute in
+  :class:`~scrapy.http.FormRequest` (:issue:`2548`)
 - Buffer CONNECT response bytes from proxy until all HTTP headers are received
   (:issue:`2495`, fixes :issue:`2491`)
 - FTP downloader now works on Python 3, provided you use Twisted>=17.1
@@ -851,7 +856,8 @@ Cleanups & Refactoring
   fixes :issue:`2560`)
 - Add omitted ``self`` arguments in default project middleware template (:issue:`2595`)
 - Remove redundant ``slot.add_request()`` call in ExecutionEngine (:issue:`2617`)
-- Catch more specific ``os.error`` exception in :class:`FSFilesStore` (:issue:`2644`)
+- Catch more specific ``os.error`` exception in
+  ``scrapy.pipelines.files.FSFilesStore`` (:issue:`2644`)
 - Change "localhost" test server certificate (:issue:`2720`)
 - Remove unused ``MEMUSAGE_REPORT`` setting (:issue:`2576`)
 
@@ -868,7 +874,8 @@ Documentation
   (:issue:`2477`, fixes :issue:`2475`)
 - FAQ: rewrite note on Python 3 support on Windows (:issue:`2690`)
 - Rearrange selector sections (:issue:`2705`)
-- Remove ``__nonzero__`` from :class:`SelectorList` docs (:issue:`2683`)
+- Remove ``__nonzero__`` from :class:`~scrapy.selector.SelectorList`
+  docs (:issue:`2683`)
 - Mention how to disable request filtering in documentation of
   :setting:`DUPEFILTER_CLASS` setting (:issue:`2714`)
 - Add sphinx_rtd_theme to docs setup readme (:issue:`2668`)
@@ -2327,7 +2334,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - Add scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
-- Added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- Added :meth:`XPathSelector.remove_namespaces <scrapy.selector.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
@@ -2448,7 +2455,7 @@ Scrapy changes:
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
-- added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
+- added :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
@@ -2609,7 +2616,8 @@ The numbers like #NNN reference tickets in the old issue tracker (Trac) which is
 New features and improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Passed item is now sent in the ``item`` argument of the :signal:`item_passed` (#273)
+- Passed item is now sent in the ``item`` argument of the :signal:`item_passed
+  <item_scraped>` (#273)
 - Added verbose option to ``scrapy version`` command, useful for bug reports (#298)
 - HTTP cache now stored by default in the project data dir (#279)
 - Added project data storage directory (#276, #277)
