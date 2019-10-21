@@ -548,11 +548,11 @@ class SelectortemLoaderTest(unittest.TestCase):
     </html>
     """)
 
-    def test_constructor(self):
+    def test_init_method(self):
         l = TestItemLoader()
         self.assertEqual(l.selector, None)
 
-    def test_constructor_errors(self):
+    def test_init_method_errors(self):
         l = TestItemLoader()
         self.assertRaises(RuntimeError, l.add_xpath, 'url', '//a/@href')
         self.assertRaises(RuntimeError, l.replace_xpath, 'url', '//a/@href')
@@ -561,7 +561,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertRaises(RuntimeError, l.replace_css, 'name', '#name::text')
         self.assertRaises(RuntimeError, l.get_css, '#name::text')
 
-    def test_constructor_with_selector(self):
+    def test_init_method_with_selector(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
@@ -569,7 +569,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_selector_css(self):
+    def test_init_method_with_selector_css(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
@@ -577,14 +577,14 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_response(self):
+    def test_init_method_with_response(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_response_css(self):
+    def test_init_method_with_response_css(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 

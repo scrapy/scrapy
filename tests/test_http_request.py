@@ -25,7 +25,7 @@ class RequestTest(unittest.TestCase):
     default_meta = {}
 
     def test_init(self):
-        # Request requires url in the constructor
+        # Request requires url in the __init__ method
         self.assertRaises(Exception, self.request_class)
 
         # url argument must be basestring
@@ -500,7 +500,7 @@ class FormRequestTest(RequestTest):
                 formdata=(('foo', 'bar'), ('foo', 'baz')))
         self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
         self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
-    
+
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
             """<form action="get.php" method="POST">
@@ -657,7 +657,7 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response, dont_click=True)
         fs = _qs(req)
         self.assertEqual(fs, {b'i1': [b'i1v'], b'i2': [b'i2v']})
-    
+
     def test_from_response_clickdata_does_not_ignore_image(self):
         response = _buildresponse(
             """<form>

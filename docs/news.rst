@@ -84,12 +84,12 @@ New features
     convenient way to build JSON requests (:issue:`3504`, :issue:`3505`)
 
 *   A ``process_request`` callback passed to the :class:`~scrapy.spiders.Rule`
-    constructor now receives the :class:`~scrapy.http.Response` object that
+    ``__init__`` method now receives the :class:`~scrapy.http.Response` object that
     originated the request as its second argument (:issue:`3682`)
 
 *   A new ``restrict_text`` parameter for the
     :attr:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
-    constructor allows filtering links by linking text (:issue:`3622`,
+    ``__init__`` method allows filtering links by linking text (:issue:`3622`,
     :issue:`3635`)
 
 *   A new :setting:`FEED_STORAGE_S3_ACL` setting allows defining a custom ACL
@@ -255,7 +255,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From :class:`~scrapy.selector.Selector`:
 
-    *   ``_root`` (both the constructor argument and the object property, use
+    *   ``_root`` (both the ``__init__`` method argument and the object property, use
         ``root``)
 
     *   ``extract_unquoted`` (use ``getall``)
@@ -2479,7 +2479,7 @@ Scrapy changes:
 - removed ``ENCODING_ALIASES`` setting, as encoding auto-detection has been moved to the `w3lib`_ library
 - promoted :ref:`topics-djangoitem` to main contrib
 - LogFormatter method now return dicts(instead of strings) to support lazy formatting (:issue:`164`, :commit:`dcef7b0`)
-- downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the constructor
+- downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the ``__init__`` method
 - replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
 - removed signal: ``scrapy.mail.mail_sent``
 - removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
@@ -2693,7 +2693,7 @@ API changes
 - ``Request.copy()`` and ``Request.replace()`` now also copies their ``callback`` and ``errback`` attributes (#231)
 - Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default)
 - Offsite middelware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
-- Removed Spider Manager ``load()`` method. Now spiders are loaded in the constructor itself.
+- Removed Spider Manager ``load()`` method. Now spiders are loaded in the ``__init__`` method itself.
 - Changes to Scrapy Manager (now called "Crawler"):
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
    - ``scrapy.core.manager.scrapymanager`` singleton moved to ``scrapy.project.crawler``

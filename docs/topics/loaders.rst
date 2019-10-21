@@ -26,7 +26,7 @@ Using Item Loaders to populate items
 
 To use an Item Loader, you must first instantiate it. You can either
 instantiate it with a dict-like object (e.g. Item or dict) or without one, in
-which case an Item is automatically instantiated in the Item Loader constructor
+which case an Item is automatically instantiated in the Item Loader ``__init__`` method
 using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
@@ -265,7 +265,7 @@ There are several ways to modify Item Loader context values:
       loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
-   constructor are stored in the Item Loader context)::
+   ``__init__`` methodare stored in the Item Loader context)::
 
       loader = ItemLoader(product, unit='cm')
 
@@ -494,7 +494,7 @@ ItemLoader objects
     .. attribute:: default_item_class
 
         An Item class (or factory), used to instantiate items when not given in
-        the constructor.
+        the `__init__` method
 
     .. attribute:: default_input_processor
 
@@ -509,15 +509,15 @@ ItemLoader objects
     .. attribute:: default_selector_class
 
         The class used to construct the :attr:`selector` of this
-        :class:`ItemLoader`, if only a response is given in the constructor.
-        If a selector is given in the constructor this attribute is ignored.
+        :class:`ItemLoader`, if only a response is given in the `__init__` method
+        If a selector is given in the `__init__` method this attribute is ignored.
         This attribute is sometimes overridden in subclasses.
 
     .. attribute:: selector
 
         The :class:`~scrapy.selector.Selector` object to extract data from.
-        It's either the selector given in the constructor or one created from
-        the response given in the constructor using the
+        It's either the selector given in the `__init__` methodor one created from
+        the response given in the `__init__` methodusing the
         :attr:`default_selector_class`. This attribute is meant to be
         read-only.
 
@@ -642,7 +642,7 @@ Here is a list of all built-in processors:
 .. class:: Identity
 
     The simplest processor, which doesn't do anything. It returns the original
-    values unchanged. It doesn't receive any constructor arguments, nor does it
+    values unchanged. It doesn't receive any `__init__` method arguments, nor does it
     accept Loader contexts.
 
     Example::
@@ -656,7 +656,7 @@ Here is a list of all built-in processors:
 
     Returns the first non-null/non-empty value from the values received,
     so it's typically used as an output processor to single-valued fields.
-    It doesn't receive any constructor arguments, nor does it accept Loader contexts.
+    It doesn't receive any `__init__` methodarguments, nor does it accept Loader contexts.
 
     Example::
 
@@ -667,7 +667,7 @@ Here is a list of all built-in processors:
 
 .. class:: Join(separator=u' ')
 
-    Returns the values joined with the separator given in the constructor, which
+    Returns the values joined with the separator given in the `__init__` method which
     defaults to ``u' '``. It doesn't accept Loader contexts.
 
     When using the default separator, this processor is equivalent to the
@@ -705,7 +705,7 @@ Here is a list of all built-in processors:
     those which do, this processor will pass the currently active :ref:`Loader
     context <topics-loaders-context>` through that parameter.
 
-    The keyword arguments passed in the constructor are used as the default
+    The keyword arguments passed in the `__init__` methodare used as the default
     Loader context values passed to each function call. However, the final
     Loader context values passed to functions are overridden with the currently
     active Loader context accessible through the :meth:`ItemLoader.context`
@@ -749,12 +749,12 @@ Here is a list of all built-in processors:
         ['HELLO, 'THIS', 'IS', 'SCRAPY']
 
     As with the Compose processor, functions can receive Loader contexts, and
-    constructor keyword arguments are used as default context values. See
+    `__init__` method keyword arguments are used as default context values. See
     :class:`Compose` processor for more info.
 
 .. class:: SelectJmes(json_path)
 
-    Queries the value using the json path provided to the constructor and returns the output.
+    Queries the value using the json path provided to the `__init__` methodand returns the output.
     Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
     This processor takes only one input at a time.
 
