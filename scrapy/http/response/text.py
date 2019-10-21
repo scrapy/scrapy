@@ -167,9 +167,9 @@ class TextResponse(Response):
         # type: (...) -> Generator[Request, None, None]
         """
         A generator that produces :class:`~.Request` instances to follow all
-        links in ``urls``. It accepts the same arguments as the :class:`~.Request`
-        initializer, except that each ``urls`` element does not need to be an absolute
-        URL, it can be any of the following:
+        links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s
+        ``__init__`` method, except that each ``urls`` element does not need to be
+        an absolute URL, it can be any of the following:
 
         * a relative URL
         * a :class:`~scrapy.link.Link` object, e.g. the result of
