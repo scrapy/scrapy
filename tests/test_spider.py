@@ -42,12 +42,12 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(list(start_requests), [])
 
     def test_spider_args(self):
-        """__init__ method arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         spider = self.spider_class('example.com', foo='bar')
         self.assertEqual(spider.foo, 'bar')
 
     def test_spider_without_name(self):
-        """__init__ method arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         self.assertRaises(ValueError, self.spider_class)
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
 

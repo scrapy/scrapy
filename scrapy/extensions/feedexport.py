@@ -106,7 +106,7 @@ class S3FeedStorage(BlockingFeedStorage):
                 warnings.warn(
                     "Initialising `scrapy.extensions.feedexport.S3FeedStorage` "
                     "without AWS keys is deprecated. Please supply credentials or "
-                    "use the `from_crawler()` __init__ method.",
+                    "use the `from_crawler()` ``__init__`` method.",
                     category=ScrapyDeprecationWarning,
                     stacklevel=2
                 )

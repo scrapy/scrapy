@@ -144,7 +144,7 @@ BaseItemExporter
    defining what fields to export, whether to export empty fields, or which
    encoding to use.
 
-   These features can be configured through the `__init__` method arguments which
+   These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
@@ -246,8 +246,8 @@ XmlItemExporter
    :param item_element: The name of each item element in the exported XML.
    :type item_element: str
 
-   The additional keyword arguments of this `__init__` method are passed to the
-   :class:`BaseItemExporter` `__init__` method
+   The additional keyword arguments of this ``__init__`` method are passed to the
+   :class:`BaseItemExporter` ``__init__`` method
 
    A typical output of this exporter would be::
 
@@ -306,9 +306,9 @@ CsvItemExporter
       multi-valued fields, if found.
    :type include_headers_line: str
 
-   The additional keyword arguments of this `__init__` method are passed to the
-   :class:`BaseItemExporter` `__init__` method, and the leftover arguments to the
-   `csv.writer`_ `__init__` method, so you can use any ``csv.writer`` `__init__` method
+   The additional keyword arguments of this ``__init__`` method are passed to the
+   :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
+   `csv.writer`_ ``__init__`` method, so you can use any ``csv.writer`` ``__init__`` method
    argument to customize this exporter.
 
    A typical output of this exporter would be::
@@ -334,8 +334,8 @@ PickleItemExporter
 
    For more information, refer to the `pickle module documentation`_.
 
-   The additional keyword arguments of this `__init__` method are passed to the
-   :class:`BaseItemExporter` `__init__` method.
+   The additional keyword arguments of this ``__init__`` method are passed to the
+   :class:`BaseItemExporter` ``__init__`` method.
 
    Pickle isn't a human readable format, so no output examples are provided.
 
@@ -351,8 +351,8 @@ PprintItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   The additional keyword arguments of this `__init__` method are passed to the
-   :class:`BaseItemExporter` `__init__` method
+   The additional keyword arguments of this ``__init__`` method are passed to the
+   :class:`BaseItemExporter` ``__init__`` method
 
    A typical output of this exporter would be::
 
@@ -367,10 +367,10 @@ JsonItemExporter
 .. class:: JsonItemExporter(file, \**kwargs)
 
    Exports Items in JSON format to the specified file-like object, writing all
-   objects as a list of objects. The additional `__init__` method arguments are
-   passed to the :class:`BaseItemExporter` `__init__` method, and the leftover
-   arguments to the `JSONEncoder`_ `__init__` method, so you can use any
-   `JSONEncoder`_ `__init__` method argument to customize this exporter.
+   objects as a list of objects. The additional ``__init__`` method arguments are
+   passed to the :class:`BaseItemExporter` ``__init__`` method, and the leftover
+   arguments to the `JSONEncoder`_ ``__init__`` method, so you can use any
+   `JSONEncoder`_ ``__init__`` method argument to customize this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -398,10 +398,10 @@ JsonLinesItemExporter
 .. class:: JsonLinesItemExporter(file, \**kwargs)
 
    Exports Items in JSON format to the specified file-like object, writing one
-   JSON-encoded item per line. The additional `__init__` method arguments are passed
-   to the :class:`BaseItemExporter` `__init__` method and the leftover arguments to
-   the `JSONEncoder`_ `__init__` method, so you can use any `JSONEncoder`_
-   `__init__` method argument to customize this exporter.
+   JSON-encoded item per line. The additional ``__init__`` method arguments are passed
+   to the :class:`BaseItemExporter` ``__init__`` method and the leftover arguments to
+   the `JSONEncoder`_ ``__init__`` method, so you can use any `JSONEncoder`_
+   ``__init__`` method argument to customize this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)

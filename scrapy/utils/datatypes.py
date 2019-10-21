@@ -246,7 +246,7 @@ class CaselessDict(dict):
 class MergeDict(object):
     """
     A simple class for creating new "virtual" dictionaries that actually look
-    up values in more than one dictionary, passed in the __init__ method.
+    up values in more than one dictionary, passed in the ``__init__`` method.
 
     If a key appears in more than one of the given dictionaries, only the
     first occurrence will be used.

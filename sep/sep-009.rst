@@ -55,7 +55,7 @@ singletons members of that object, as explained below:
      ``STATS_CLASS`` setting)
    - **crawler.log**: Logger class with methods replacing the current
      ``scrapy.log`` functions. Logging would be started (if enabled) on
-     ``Crawler`` __init__ method, so no log starting functions are required.
+     ``Crawler`` ``__init__`` method, so no log starting functions are required.
 
       - ``crawler.log.msg``
    - **crawler.signals**: signal handling
