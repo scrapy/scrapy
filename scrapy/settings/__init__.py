@@ -105,10 +105,9 @@ class BaseSettings(MutableMapping):
         Get a setting value without affecting its original type.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         return self[name] if self[name] is not None else default
 
@@ -123,10 +122,9 @@ class BaseSettings(MutableMapping):
         ``'0'`` will return ``False`` when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         got = self.get(name, default)
         try:
@@ -145,10 +143,9 @@ class BaseSettings(MutableMapping):
         Get a setting value as an int.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         return int(self.get(name, default))
 
@@ -157,10 +154,9 @@ class BaseSettings(MutableMapping):
         Get a setting value as a float.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         return float(self.get(name, default))
 
@@ -173,10 +169,9 @@ class BaseSettings(MutableMapping):
         ``'one,two'`` will return a list ['one', 'two'] when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         value = self.get(name, default or [])
         if isinstance(value, six.string_types):
@@ -194,10 +189,9 @@ class BaseSettings(MutableMapping):
         and losing all information about priority and mutability.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
         """
         value = self.get(name, default or {})
         if isinstance(value, six.string_types):
@@ -209,7 +203,7 @@ class BaseSettings(MutableMapping):
         counterpart.
 
         :param name: name of the dictionary-like setting
-        :type name: string
+        :type name: str
         """
         compbs = BaseSettings()
         compbs.update(self[name + '_BASE'])
@@ -222,7 +216,7 @@ class BaseSettings(MutableMapping):
         the given ``name`` does not exist.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
         """
         if name not in self:
             return None
@@ -252,14 +246,13 @@ class BaseSettings(MutableMapping):
         otherwise they won't have any effect.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param value: the value to associate with the setting
-        :type value: any
 
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
         priority = get_settings_priority(priority)
@@ -283,11 +276,11 @@ class BaseSettings(MutableMapping):
         uppercase variable of ``module`` with the provided ``priority``.
 
         :param module: the module or the path of the module
-        :type module: module object or string
+        :type module: types.ModuleType or str
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
         if isinstance(module, six.string_types):
@@ -316,7 +309,7 @@ class BaseSettings(MutableMapping):
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
         if isinstance(values, six.string_types):

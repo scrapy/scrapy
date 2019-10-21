@@ -17,7 +17,7 @@ class SignalManager(object):
         section.
 
         :param receiver: the function to be connected
-        :type receiver: callable
+        :type receiver: collections.abc.Callable
 
         :param signal: the signal to connect to
         :type signal: object

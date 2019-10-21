@@ -63,10 +63,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :type smtpport: int
 
     :param smtptls: enforce using SMTP STARTTLS
-    :type smtptls: boolean
+    :type smtptls: bool
 
     :param smtpssl: enforce using a secure SSL connection
-    :type smtpssl: boolean
+    :type smtpssl: bool
 
     .. classmethod:: from_settings(settings)
 
@@ -81,13 +81,13 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: str or list of str
+        :type to: str or list
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: str or list of str
+        :type cc: str or list
 
         :param body: the e-mail body
         :type body: str
@@ -97,7 +97,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
           appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
           attachment and ``file_object`` is a readable file object with the
           contents of the attachment
-        :type attachs: iterable
+        :type attachs: collections.abc.Iterable
 
         :param mimetype: the MIME type of the e-mail
         :type mimetype: str

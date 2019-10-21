@@ -31,7 +31,7 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
-    :type url: string
+    :type url: str
 
     :param callback: the function that will be called with the response of this
        request (once its downloaded) as its first parameter. For more information
@@ -40,10 +40,10 @@ Request objects
        :meth:`~scrapy.spiders.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
-    :type callback: callable
+    :type callback: collections.abc.Callable
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
-    :type method: string
+    :type method: str
 
     :param meta: the initial values for the :attr:`Request.meta` attribute. If
        given, the dict passed in this parameter will be shallow copied.
@@ -54,7 +54,7 @@ Request objects
       ``body`` is not given, an empty string is stored. Regardless of the
       type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
-    :type body: str or unicode
+    :type body: str
 
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
@@ -105,7 +105,7 @@ Request objects
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
        body to ``str`` (if given as ``unicode``).
-    :type encoding: string
+    :type encoding: str
 
     :param priority: the priority of this request (defaults to ``0``).
        The priority is used by the scheduler to define the order used to process
@@ -117,7 +117,7 @@ Request objects
        the scheduler. This is used when you want to perform an identical
        request multiple times, to ignore the duplicates filter. Use it with
        care, or you will get into crawling loops. Default to ``False``.
-    :type dont_filter: boolean
+    :type dont_filter: bool
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
@@ -125,7 +125,7 @@ Request objects
        as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
-    :type errback: callable
+    :type errback: collections.abc.Callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
@@ -407,7 +407,7 @@ fields with form data from :class:`Response` objects.
     :param formdata: is a dictionary (or iterable of (key, value) tuples)
        containing HTML Form data which will be url-encoded and assigned to the
        body of the request.
-    :type formdata: dict or iterable of tuples
+    :type formdata: dict or collections.abc.Iterable
 
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
@@ -439,20 +439,20 @@ fields with form data from :class:`Response` objects.
        :type response: :class:`Response` object
 
        :param formname: if given, the form with name attribute set to this value will be used.
-       :type formname: string
+       :type formname: str
 
        :param formid: if given, the form with id attribute set to this value will be used.
-       :type formid: string
+       :type formid: str
 
        :param formxpath: if given, the first form that matches the xpath will be used.
-       :type formxpath: string
+       :type formxpath: str
 
        :param formcss: if given, the first form that matches the css selector will be used.
-       :type formcss: string
+       :type formcss: str
 
        :param formnumber: the number of form to use, when the response contains
           multiple forms. The first one (and also the default) is ``0``.
-       :type formnumber: integer
+       :type formnumber: int
 
        :param formdata: fields to override in the form data. If a field was
           already present in the response ``<form>`` element, its value is
@@ -470,7 +470,7 @@ fields with form data from :class:`Response` objects.
 
        :param dont_click: If True, the form data will be submitted without
          clicking in any element.
-       :type dont_click: boolean
+       :type dont_click: bool
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
@@ -558,7 +558,7 @@ dealing with JSON requests.
       if :attr:`Request.body` argument is provided this parameter will be ignored.
       if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
       set to ``'POST'`` automatically.
-   :type data: JSON serializable object
+   :type data: object
 
    :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
        data into JSON format.
@@ -587,10 +587,10 @@ Response objects
     downloaded (by the Downloader) and fed to the Spiders for processing.
 
     :param url: the URL of this response
-    :type url: string
+    :type url: str
 
     :param status: the HTTP status of the response. Defaults to ``200``.
-    :type status: integer
+    :type status: int
 
     :param headers: the headers of this response. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers).
@@ -730,7 +730,7 @@ TextResponse objects
        body, it will be encoded using this encoding (remember the body attribute
        is always a string). If ``encoding`` is ``None`` (default value), the
        encoding will be looked up in the response headers and body instead.
-    :type encoding: string
+    :type encoding: str
 
     :class:`TextResponse` objects support the following attributes in addition
     to the standard :class:`Response` ones:

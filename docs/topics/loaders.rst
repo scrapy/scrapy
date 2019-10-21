@@ -320,7 +320,7 @@ ItemLoader objects
         :param re: a regular expression to use for extracting data from the
             given value using :meth:`~scrapy.utils.misc.extract_regex` method,
             applied before processors
-        :type re: str or compiled regex
+        :type re: str or typing.Pattern
 
         Examples::
 
@@ -365,7 +365,7 @@ ItemLoader objects
 
         :param re: a regular expression to use for extracting data from the
             selected XPath region
-        :type re: str or compiled regex
+        :type re: str or typing.Pattern
 
         Examples::
 
@@ -408,7 +408,7 @@ ItemLoader objects
 
         :param re: a regular expression to use for extracting data from the
             selected CSS region
-        :type re: str or compiled regex
+        :type re: str or typing.Pattern
 
         Examples::
 

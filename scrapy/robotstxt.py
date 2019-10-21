@@ -43,10 +43,10 @@ class RobotParser(with_metaclass(ABCMeta)):
         """Return ``True`` if  ``user_agent`` is allowed to crawl ``url``, otherwise return ``False``.
 
         :param url: Absolute URL
-        :type url: string
+        :type url: str
 
         :param user_agent: User agent
-        :type user_agent: string
+        :type user_agent: str
         """
         pass
 

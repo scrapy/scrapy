@@ -300,7 +300,7 @@ CsvItemExporter
    :param include_headers_line: If enabled, makes the exporter output a header
       line with the field names taken from
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
-   :type include_headers_line: boolean
+   :type include_headers_line: bool
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
