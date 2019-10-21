@@ -419,43 +419,6 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], u'rabbit.hole')
         self.assertEqual(item['summary'], u'rabbithole')
 
-    def test_create_item_from_dict(self):
-        class TestItem(Item):
-            title = Field()
-
-        class TestItemLoader(ItemLoader):
-            default_item_class = TestItem
-
-        input_item = {'title': 'Test item title 1'}
-        il = TestItemLoader(item=input_item)
-        # Getting output value mustn't remove value from item
-        self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
-        })
-        self.assertEqual(il.get_output_value('title'), 'Test item title 1')
-        self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
-        })
-
-        input_item = {'title': 'Test item title 2'}
-        il = TestItemLoader(item=input_item)
-        # Values from dict must be added to item _values
-        self.assertEqual(il._values.get('title'), 'Test item title 2')
-
-        input_item = {'title': [u'Test item title 3', u'Test item 4']}
-        il = TestItemLoader(item=input_item)
-        # Same rules must work for lists
-        self.assertEqual(il._values.get('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-        self.assertEqual(il.get_output_value('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-
     def test_error_input_processor(self):
         class TestItem(Item):
             name = Field()
