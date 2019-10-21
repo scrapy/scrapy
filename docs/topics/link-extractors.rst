@@ -6,9 +6,9 @@ Link Extractors
 
 A link extractor is an object that extracts links from responses.
 
-The constructor of :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`
-takes settings that determine which links may be extracted.
-:class:`LxmlLinkExtractor.extract_links
+The ``__init__`` method of
+:class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` takes settings that
+determine which links may be extracted. :class:`LxmlLinkExtractor.extract_links
 <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` returns a
 list of matching :class:`scrapy.link.Link` objects from a
 :class:`~scrapy.http.Response` object.

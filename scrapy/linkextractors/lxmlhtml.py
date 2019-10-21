@@ -120,8 +120,8 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         """Returns a list of :class:`~scrapy.link.Link` objects from the
         specified :class:`response <scrapy.http.Response>`.
 
-        Only links that match the settings passed to the link extractor
-        constructor are returned.
+        Only links that match the settings passed to the ``__init__`` method of
+        the link extractor are returned.
 
         Duplicate links are omitted.
         """
