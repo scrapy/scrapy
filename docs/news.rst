@@ -6,6 +6,18 @@ Release notes
 .. note:: Scrapy 1.x will be the last series supporting Python 2. Scrapy 2.0,
           planned for Q4 2019 or Q1 2020, will support **Python 3 only**.
 
+Scrapy 1.7.4 (2019-10-21)
+-------------------------
+
+Revert the fix for :issue:`3804` (:issue:`3819`), which has a few undesired
+side effects (:issue:`3897`, :issue:`3976`).
+
+As a result, when an item loader is initialized with an item,
+:meth:`ItemLoader.load_item() <scrapy.loader.ItemLoader.load_item>` once again
+makes later calls to :meth:`ItemLoader.get_output_value()
+<scrapy.loader.ItemLoader.get_output_value>` or :meth:`ItemLoader.load_item()
+<scrapy.loader.ItemLoader.load_item>` return empty data.
+
 Scrapy 1.7.3 (2019-08-01)
 -------------------------
 
