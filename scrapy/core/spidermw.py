@@ -60,15 +60,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 return _failure
             method_list = islice(self.methods['process_spider_exception'], start_index, None)
             for method_index, method in enumerate(method_list, start=start_index):
-                if method is None:
+                if method is None or result is None:
                     continue
                 result = method(response=response, exception=exception, spider=spider)
                 if _isiterable(result):
                     # stop exception handling by handing control over to the
                     # process_spider_output chain if an iterable has been returned
                     return process_spider_output(result, method_index+1)
-                elif result is None:
-                    continue
                 else:
                     raise _InvalidOutput('Middleware {} must return None or an iterable, got {}' \
                                          .format(fname(method), type(result)))
