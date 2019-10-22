@@ -29,6 +29,8 @@ from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get
 from scrapy.utils.python import to_native_str
 from scrapy.utils.project import get_project_settings
 
+from Pathlib import Path
+
 
 class FileFeedStorageTest(unittest.TestCase):
 
@@ -843,3 +845,17 @@ class FeedExportTest(unittest.TestCase):
         yield self.exported_data({}, settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+
+    @defer.inlineCallbacks
+    def test_pathlib_uri(self):
+        tmpdir = tempfile.mkdtemp()
+        feed_uri = Path(tmpdir) / 'res'
+        settings = {
+            'FEED_FORMAT': 'csv',
+            'FEED_STORE_EMPTY': True,
+            'FEED_URI': feed_uri,
+        }
+        
+    data = yield self.exported_no_data(settings)
+    self.assertEqual(data, b'')
+    shutil.rmtree(tmpdir, ignore_errors=True)
