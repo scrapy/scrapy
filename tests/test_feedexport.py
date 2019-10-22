@@ -856,6 +856,6 @@ class FeedExportTest(unittest.TestCase):
             'FEED_URI': feed_uri,
         }
         
-    data = yield self.exported_no_data(settings)
-    self.assertEqual(data, b'')
-    shutil.rmtree(tmpdir, ignore_errors=True)
+        data = yield self.exported_no_data(settings)
+        self.assertEqual(data, b'')
+        shutil.rmtree(tmpdir, ignore_errors=True)
