@@ -850,7 +850,7 @@ class FeedExportTest(unittest.TestCase):
     def test_pathlib_uri(self):
         tmpdir = tempfile.mkdtemp()
         feed_uri = Path(tmpdir) / 'res'
-        feed_uri=str(feeduri)
+        feed_uri=str(feed_uri)
         res_uri = urljoin('file:', pathname2url(feed_uri))
         settings = {
             'FEED_FORMAT': 'csv',
