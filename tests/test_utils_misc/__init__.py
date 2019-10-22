@@ -109,11 +109,11 @@ class UtilsMiscTestCase(unittest.TestCase):
             else:
                 mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct __init__ method using four mocks:
-        #   1. with no alternative __init__ methods
-        #   2. with from_settings() __init__ method
-        #   3. with from_crawler() __init__ method
-        #   4. with from_settings() and from_crawler() __init__ method
+        # Check usage of correct constructor using four mocks:
+        #   1. with no alternative constructors
+        #   2. with from_settings() constructor
+        #   3. with from_crawler() constructor
+        #   4. with from_settings() and from_crawler() constructor
         spec_sets = ([], ['from_settings'], ['from_crawler'],
                      ['from_settings', 'from_crawler'])
         for specs in spec_sets:
