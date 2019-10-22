@@ -7,6 +7,8 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
+    - env: TOXENV=pylint
+      python: 3.7
     - env: TOXENV=py27
       python: 2.7
     - env: TOXENV=py27-pinned
