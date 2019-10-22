@@ -80,13 +80,13 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
         Send email to the given recipients.
 
-        :param to: the e-mail recipients
+        :param to: the e-mail recipients as a string or as a list of strings
         :type to: str or list
 
         :param subject: the subject of the e-mail
         :type subject: str
 
-        :param cc: the e-mails to CC
+        :param cc: the e-mails to CC as a string or as a list of strings
         :type cc: str or list
 
         :param body: the e-mail body
