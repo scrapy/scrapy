@@ -247,7 +247,7 @@ XmlItemExporter
    :type item_element: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
-   :class:`BaseItemExporter` ``__init__`` method
+   :class:`BaseItemExporter` ``__init__`` method.
 
    A typical output of this exporter would be::
 
@@ -352,7 +352,7 @@ PprintItemExporter
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
    The additional keyword arguments of this ``__init__`` method are passed to the
-   :class:`BaseItemExporter` ``__init__`` method
+   :class:`BaseItemExporter` ``__init__`` method.
 
    A typical output of this exporter would be::
 
@@ -399,7 +399,7 @@ JsonLinesItemExporter
 
    Exports Items in JSON format to the specified file-like object, writing one
    JSON-encoded item per line. The additional ``__init__`` method arguments are passed
-   to the :class:`BaseItemExporter` ``__init__`` method and the leftover arguments to
+   to the :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to
    the `JSONEncoder`_ ``__init__`` method, so you can use any `JSONEncoder`_
    ``__init__`` method argument to customize this exporter.
 
