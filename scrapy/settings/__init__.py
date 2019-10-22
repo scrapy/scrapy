@@ -108,6 +108,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         return self[name] if self[name] is not None else default
 
@@ -125,6 +126,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         got = self.get(name, default)
         try:
@@ -146,6 +148,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         return int(self.get(name, default))
 
@@ -157,6 +160,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         return float(self.get(name, default))
 
@@ -172,6 +176,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         value = self.get(name, default or [])
         if isinstance(value, six.string_types):
@@ -192,6 +197,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param default: the value to return if no setting is found
+        :type default: object
         """
         value = self.get(name, default or {})
         if isinstance(value, six.string_types):
@@ -249,6 +255,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param value: the value to associate with the setting
+        :type default: object
 
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
