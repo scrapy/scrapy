@@ -730,6 +730,13 @@ HttpCompressionMiddleware
    This middleware also supports decoding `brotli-compressed`_ responses,
    provided `brotlipy`_ is installed.
 
+   If an exception is raised while trying to decompress the response body,
+   we encapsulate the exception in ``response.meta['_http_compression_exc']``
+   and return the original ``scrapy.Response``. The ``RetryMiddleware`` will
+   check for this exception and try to reprocess the ``scrapy.Request`` if
+   the captured exception is specified in the
+   ``RetryMiddleware.EXCEPTIONS_TO_RETRY`` tuple.
+
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
 .. _brotlipy: https://pypi.python.org/pypi/brotlipy
 

@@ -36,7 +36,11 @@ class HttpCompressionMiddleware(object):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding:
                 encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                try:
+                    decoded_body = self._decode(response.body, encoding.lower())
+                except Exception as exc:
+                    response.meta['_http_compression_exc'] = exc
+                    return response
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url, body=decoded_body)
                 kwargs = dict(cls=respcls, body=decoded_body)

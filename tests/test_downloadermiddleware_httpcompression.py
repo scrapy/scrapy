@@ -17,6 +17,7 @@ SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
         'gzip': ('html-gzip.bin', 'gzip'),
+        'invalid-gzip': ('html-invalid-gzip.bin', 'gzip'),
         'x-gzip': ('html-gzip.bin', 'gzip'),
         'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
@@ -67,6 +68,15 @@ class HttpCompressionTest(TestCase):
         assert newresponse is not response
         assert newresponse.body.startswith(b'<!DOCTYPE')
         assert 'Content-Encoding' not in newresponse.headers
+
+    def test_process_response_invalid_gzip(self):
+        response = self._getresponse('invalid-gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertEqual(newresponse, response)
+        self.assertIsInstance(response.meta['_http_compression_exc'], OSError)
 
     def test_process_response_br(self):
         try:
