@@ -29,7 +29,7 @@ from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get
 from scrapy.utils.python import to_native_str
 from scrapy.utils.project import get_project_settings
 
-from Pathlib import Path
+from pathlib import Path
 
 
 class FileFeedStorageTest(unittest.TestCase):
