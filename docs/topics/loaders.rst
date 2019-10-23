@@ -485,6 +485,8 @@ ItemLoader objects
     .. attribute:: item
 
         The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
+        This is mostly used as a property so when attempting to override this
+        value, you may want to check out :attr:`default_item_class` first.
 
     .. attribute:: context
 
