@@ -205,9 +205,8 @@ class MockServer():
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.proc.communicate()  # Close the stdout PIPE
         self.proc.kill()
-        self.proc.wait()
+        self.proc.communicate()
         time.sleep(0.2)
 
     def url(self, path, is_secure=False):
