@@ -102,11 +102,6 @@ just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
 
-Python virtualenvs can be created to use Python 2 by default, or Python 3 by default.
-
-* If you want to install scrapy with Python 3, install scrapy within a Python 3 virtualenv.
-* And if you want to install scrapy with Python 2, install scrapy within a Python 2 virtualenv.
-
 .. _virtualenv: https://virtualenv.pypa.io
 .. _virtualenv installation instructions: https://virtualenv.pypa.io/en/stable/installation/
 .. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/install.html
