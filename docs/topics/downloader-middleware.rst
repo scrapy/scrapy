@@ -747,18 +747,18 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 RETRY_HTTP_COMPRESSION_ERRORS
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Default: ``False``
 
 Whether we should retry requests when an exception is raised while trying
-to decompress it.
+to decompress its response body.
 
 If an exception is raised while trying to decompress the response body,
-we store the exception in the response's meta (``response.meta['_http_compression_exc']``
-and return the original ``scrapy.Response``. If the ``RetryMiddleware`` is enabled,
-it will check for this exception and try to reprocess the ``scrapy.Request`` if
-the captured exception is specified in the
+we store it in the request meta under the ``_http_compression_exc`` key and
+return the original ``scrapy.Response`` object. If the ``RetryMiddleware`` is
+enabled, it will check for this key and try to reprocess the ``scrapy.Request``
+if the captured exception is specified in the
 ``RetryMiddleware.EXCEPTIONS_TO_RETRY`` tuple.
 
 

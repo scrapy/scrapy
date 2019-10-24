@@ -51,8 +51,8 @@ class RetryMiddleware(object):
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
-        if '_http_compression_exc' in response.meta:
-            exc = response.meta.pop('_http_compression_exc')
+        if '_http_compression_exc' in request.meta:
+            exc = request.meta.pop('_http_compression_exc')
             if isinstance(exc, self.EXCEPTIONS_TO_RETRY):
                 reason = 'HttpCompressionMiddleware/{exc_name}'.format(
                     exc_name=type(exc).__name__
