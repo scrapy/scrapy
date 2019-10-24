@@ -207,7 +207,6 @@ class MockServer():
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.communicate()
-        time.sleep(0.2)
 
     def url(self, path, is_secure=False):
         host = self.http_address.replace('0.0.0.0', '127.0.0.1')
