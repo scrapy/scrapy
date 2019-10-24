@@ -1,7 +1,6 @@
 import logging
 import warnings
 
-from six import text_type
 from twisted.internet import defer
 from twisted.trial import unittest
 from pytest import raises
@@ -15,9 +14,6 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
-
-
-logger = logging.getLogger(__name__)
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -35,15 +31,6 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_deprecated_attribute_spiders(self):
         with warnings.catch_warnings(record=True) as w:
             spiders = self.crawler.spiders
-
-            # Log unexpected extra warnings that are randomly captured.
-            # e.g. https://travis-ci.org/scrapy/scrapy/jobs/585543449
-            if len(w) > 1:
-                logger.error(
-                    'Too many warnings captured (known error that happens '
-                    'randomly, #4014):\n%s',
-                    '\n'.join(text_type(warning) for warning in w))
-
             self.assertEqual(len(w), 1)
             self.assertIn("Crawler.spiders", str(w[0].message))
             sl_cls = load_object(self.crawler.settings['SPIDER_LOADER_CLASS'])
@@ -183,15 +170,6 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
         with warnings.catch_warnings(record=True) as w:
             runner = CrawlerRunner(Settings())
             spiders = runner.spiders
-
-            # Log unexpected extra warnings that are randomly captured.
-            # e.g. https://travis-ci.org/scrapy/scrapy/jobs/601196450
-            if len(w) > 1:
-                logger.error(
-                    'Too many warnings captured (known error that happens '
-                    'randomly, #4014):\n%s',
-                    '\n'.join(text_type(warning) for warning in w))
-
             self.assertEqual(len(w), 1)
             self.assertIn("CrawlerRunner.spiders", str(w[0].message))
             self.assertIn("CrawlerRunner.spider_loader", str(w[0].message))
