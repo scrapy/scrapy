@@ -751,7 +751,7 @@ RETRY_HTTP_COMPRESSION_ERRORS
 
 Default: ``False``
 
-Whether we should retry requests when an exception is raised while trying
+Whether or not a request should be retried when an exception is raised while trying
 to decompress its response body.
 
 If an exception is raised while trying to decompress the response body,
