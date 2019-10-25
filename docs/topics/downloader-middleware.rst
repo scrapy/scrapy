@@ -737,7 +737,6 @@ HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. setting:: COMPRESSION_ENABLED
-.. setting:: RETRY_HTTP_COMPRESSION_ERRORS
 
 COMPRESSION_ENABLED
 ^^^^^^^^^^^^^^^^^^^
@@ -745,6 +744,8 @@ COMPRESSION_ENABLED
 Default: ``True``
 
 Whether the Compression middleware will be enabled.
+
+.. setting:: RETRY_HTTP_COMPRESSION_ERRORS
 
 RETRY_HTTP_COMPRESSION_ERRORS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
