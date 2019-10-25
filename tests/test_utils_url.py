@@ -195,13 +195,6 @@ def create_guess_scheme_t(args):
                 args[0], url, args[1])
     return do_expected
 
-def create_skipped_scheme_t(args):
-    def do_expected(self):
-        raise unittest.SkipTest(args[2])
-        url = guess_scheme(args[0])
-        assert url.startswith(args[1])
-    return do_expected
-
 for k, args in enumerate ([
             ('/index',                              'file://'),
             ('/index.html',                         'file://'),
@@ -232,13 +225,11 @@ for k, args in enumerate ([
     t_method.__name__ = 'test_uri_%03d' % k
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
-# TODO: the following tests do not pass with current implementation
-for k, args in enumerate([
+for j, args in enumerate([
             (r'C:\absolute\path\to\a\file.html', 'file://',
              'Windows filepath are not supported for scrapy shell'),
-        ], start=1):
-    t_method = create_skipped_scheme_t(args)
-    t_method.__name__ = 'test_uri_skipped_%03d' % k
+        ], start=k+1):
+    t_method.__name__ = 'test_uri_%03d' % j
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
 
