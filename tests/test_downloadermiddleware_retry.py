@@ -74,7 +74,7 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable') == 2
         assert self.crawler.stats.get_value('retry/count') == 2
 
-    def test_http_compression_exception_without_retry(self):
+    def test_http_compression_exception(self):
         req = Request('http://www.scrapytest.org/')
 
         # first retry
