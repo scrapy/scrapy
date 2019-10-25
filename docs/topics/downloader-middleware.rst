@@ -755,7 +755,7 @@ Whether or not a request should be retried when an exception is raised while try
 to decompress its response body.
 
 If an exception is raised while trying to decompress a response body,
-we store it in the request meta under the ``_http_compression_exc`` key and
+that exception is stored in the request :attr:`~scrapy.http.Request.meta` under the ``_http_compression_exc`` key and
 return the original ``scrapy.Response`` object. If the ``RetryMiddleware`` is
 enabled, it will check for this key and try to reprocess the ``scrapy.Request``
 if the captured exception is specified in the
