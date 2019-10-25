@@ -752,14 +752,15 @@ RETRY_HTTP_COMPRESSION_ERRORS
 
 Default: ``False``
 
-Whether or not a request should be retried when an exception is raised while trying
-to decompress its response body.
+Whether or not a request should be retried when an exception is raised while
+trying to decompress its response body.
 
 If an exception is raised while trying to decompress a response body,
-that exception is stored in the request :attr:`~scrapy.http.Request.meta` under the ``_http_compression_exc`` key and
-return the original ``scrapy.Response`` object. If the ``RetryMiddleware`` is
-enabled, it will check for this key and try to reprocess the :class:`~scrapy.http.Request`
-if the captured exception is specified in the
+that exception is stored in the request :attr:`~scrapy.http.Request.meta`
+under the ``_http_compression_exc`` key and return the original
+``scrapy.Response`` object. If the ``RetryMiddleware`` is
+enabled, it will check for this key and try to reprocess the
+:class:`~scrapy.http.Request` if the captured exception is specified in the
 ``RetryMiddleware.EXCEPTIONS_TO_RETRY`` tuple.
 
 
