@@ -1250,7 +1250,7 @@ SCHEDULER_PREFER_MEMORY_QUEUE
 Default: ``True``
 
 Whether or not the scheduler will try to get the next request from the memory queue even if there
-are higher priority requests in the disk queue. Defaults to ``True`` for backwards compatibility.
+are higher priority requests in the disk queue. Defaults to ``True`` for backward compatibility.
 
 .. setting:: SPIDER_CONTRACTS
 
