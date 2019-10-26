@@ -290,5 +290,5 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _zsh: https://www.zsh.org/
 .. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
-.. _Miniconda: https://conda.io/docs/user-guide/install/index.html
+.. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 .. _conda-forge: https://conda-forge.org/
