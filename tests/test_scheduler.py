@@ -44,15 +44,16 @@ class MockDownloader(object):
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls, jobdir):
+    def __init__(self, priority_queue_cls, jobdir, prefer_memory_queue=True):
 
         settings = dict(
                 LOG_UNSERIALIZABLE_REQUESTS=False,
                 SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
                 SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                SCHEDULER_PREFER_MEMORY_QUEUE=prefer_memory_queue,
                 SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
                 JOBDIR=jobdir,
-                DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter'
+                DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
                 )
         super(MockCrawler, self).__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -359,7 +360,7 @@ def _get_open_scheduler(crawler):
     return scheduler
 
 
-class MemoryOrDiskPreferenceTest(TestCase):
+class MemoryOrDiskPreferenceTestMixin(object):
 
     maxDiff = None
 
@@ -367,7 +368,11 @@ class MemoryOrDiskPreferenceTest(TestCase):
         """
         Only use a memory queue
         """
-        crawler = get_crawler(settings_dict=dict(JOBDIR=None, SCHEDULER_PREFER_MEMORY_QUEUE=True))
+        crawler = MockCrawler(
+            priority_queue_cls=self.priority_queue_cls,
+            jobdir=None,
+            prefer_memory_queue=True,
+        )
         scheduler = _get_open_scheduler(crawler)
         # push requests with different priorities in a random order
         priorities = list(range(20))
@@ -396,7 +401,11 @@ class MemoryOrDiskPreferenceTest(TestCase):
         Memory-enqueued requests should be retrieved first
         """
         jobdir = tempfile.mkdtemp()
-        crawler = get_crawler(settings_dict=dict(JOBDIR=jobdir, SCHEDULER_PREFER_MEMORY_QUEUE=True))
+        crawler = MockCrawler(
+            priority_queue_cls=self.priority_queue_cls,
+            jobdir=jobdir,
+            prefer_memory_queue=True,
+        )
         scheduler = _get_open_scheduler(crawler)
         # push requests with different priorities in a random order
         memory_priorities = [('memory', i) for i in range(20)]
@@ -430,7 +439,11 @@ class MemoryOrDiskPreferenceTest(TestCase):
         No preference for memory-enqueued requests, only priority is considered
         """
         jobdir = tempfile.mkdtemp()
-        crawler = get_crawler(settings_dict=dict(JOBDIR=jobdir, SCHEDULER_PREFER_MEMORY_QUEUE=False))
+        crawler = MockCrawler(
+            priority_queue_cls=self.priority_queue_cls,
+            jobdir=jobdir,
+            prefer_memory_queue=False,
+        )
         scheduler = _get_open_scheduler(crawler)
         # push requests with different priorities in a random order
         memory_priorities = [('memory', i) for i in range(20)]
@@ -457,3 +470,11 @@ class MemoryOrDiskPreferenceTest(TestCase):
         self.assertEqual(crawler.stats.get_value('scheduler/dequeued/memory'), len(memory_priorities))
         self.assertEqual(crawler.stats.get_value('scheduler/dequeued/disk'), len(disk_priorities))
         shutil.rmtree(jobdir, ignore_errors=True)
+
+
+class DefaultPriorityQueueMemoryOrDiskPreferenceTest(MemoryOrDiskPreferenceTestMixin, TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+
+class DownloaderAwarePriorityQueueMemoryOrDiskPreferenceTest(MemoryOrDiskPreferenceTestMixin, TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'

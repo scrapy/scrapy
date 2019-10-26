@@ -75,7 +75,7 @@ class _SlotPriorityQueues(object):
         if len(queue) == 0:
             del self.pqueues[slot]
         if self.pqueues:
-            self.curprio = min(self.pqueues.values(), key=attrgetter('curprio'))
+            self.curprio = min(pq.curprio for pq in self.pqueues.values())
         else:
             self.curprio = None
         return request
@@ -86,7 +86,7 @@ class _SlotPriorityQueues(object):
             self.pqueues[slot] = self.pqfactory()
         queue = self.pqueues[slot]
         queue.push(obj, priority)
-        self.curprio = min(self.pqueues.values(), key=attrgetter('curprio'))
+        self.curprio = min(pq.curprio for pq in self.pqueues.values())
 
     def close(self):
         active = {slot: queue.close()
