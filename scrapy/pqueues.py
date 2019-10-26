@@ -1,7 +1,6 @@
 import hashlib
 import logging
 from collections import namedtuple
-from operator import attrgetter
 
 from queuelib import PriorityQueue
 
