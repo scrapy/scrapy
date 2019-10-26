@@ -147,9 +147,9 @@ class DownloaderInterface(object):
 
 
 class DownloaderAwarePriorityQueue(object):
-    """
-    PriorityQueue which takes Downloader activity into account: domains (slots)
-    with the least amount of active downloads are dequeued first.
+    """ PriorityQueue which takes Downloader activity into account:
+    domains (slots) with the least amount of active downloads are dequeued
+    first.
     """
 
     @classmethod

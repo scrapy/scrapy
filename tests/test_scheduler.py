@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TwistedTestCase
+from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
@@ -303,7 +303,7 @@ class StartUrlsSpider(Spider):
         pass
 
 
-class TestIntegrationWithDownloaderAwareInMemory(TwistedTestCase):
+class TestIntegrationWithDownloaderAwareInMemory(TestCase):
     def setUp(self):
         self.crawler = get_crawler(
                     StartUrlsSpider,
@@ -359,7 +359,7 @@ def _get_open_scheduler(crawler):
     return scheduler
 
 
-class MemoryOrDiskPreferenceTest(TwistedTestCase):
+class MemoryOrDiskPreferenceTest(TestCase):
 
     maxDiff = None
 
