@@ -104,6 +104,7 @@ class _BaseTest(unittest.TestCase):
 
 class DefaultStorageTest(_BaseTest):
 
+    @pytest.mark.xfail(reason='leveldb not supported in python 3.8')
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
@@ -154,7 +155,6 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
 
-@pytest.mark.xfail(reason='leveldb not supported in python 3.8')
 class LeveldbStorageTest(DefaultStorageTest):
 
     pytest.importorskip('leveldb')
