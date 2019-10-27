@@ -90,7 +90,7 @@ class _BaseTest(unittest.TestCase):
         assert any(h in request2.headers for h in (b'If-None-Match', b'If-Modified-Since'))
         self.assertEqual(request1.body, request2.body)
 
-    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=RuntimeError, reason='leveldb not supported in python 3.8')
+    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=SystemError, reason='leveldb not supported in python 3.8')
     def test_dont_cache(self):
         with self._middleware() as mw:
             self.request.meta['dont_cache'] = True
@@ -106,7 +106,7 @@ class _BaseTest(unittest.TestCase):
 
 class DefaultStorageTest(_BaseTest):
 
-    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=RuntimeError, reason='leveldb not supported in python 3.8')
+    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=SystemError, reason='leveldb not supported in python 3.8')
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
@@ -120,7 +120,7 @@ class DefaultStorageTest(_BaseTest):
             time.sleep(2)  # wait for cache to expire
             assert storage.retrieve_response(self.spider, request2) is None
 
-    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=RuntimeError, reason='leveldb not supported in python 3.8')
+    @pytest.mark.xfail(sys.version_info >= (3, 8), raises=SystemError, reason='leveldb not supported in python 3.8')
     def test_storage_never_expire(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
