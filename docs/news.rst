@@ -13,7 +13,8 @@ Scrapy 1.8.0 (2019-08-NN)
 
 Highlights:
 
-* Dropped Python 3.4 support and updated minimum requirements
+* Dropped Python 3.4 support and updated minimum requirements; made Python 3.8
+  support official
 * New :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class method
 * New :setting:`ROBOTSTXT_PARSER` and :setting:`ROBOTSTXT_USER_AGENT` settings
 * New :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
@@ -37,10 +38,30 @@ Backward-incompatible changes
 
     (:issue:`3892`)
 
+*   ``JSONRequest`` is now called :class:`~scrapy.http.JsonRequest` for
+    consistency with similar classes (:issue:`3929`, :issue:`3982`)
+
 *   If you are using a custom context factory
-    (:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`), its constructor must accept
-    two new parameters: ``tls_verbose_logging`` and ``tls_ciphers``
+    (:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`), its ``__init__`` method must
+    accept two new parameters: ``tls_verbose_logging`` and ``tls_ciphers``
     (:issue:`2111`, :issue:`3392`, :issue:`3442`, :issue:`3450`)
+
+*   :class:`~scrapy.loader.ItemLoader` now turns the values of its input item
+    into lists::
+
+        >>> item = MyItem()
+        >>> item['field'] = 'value1'
+        >>> loader = ItemLoader(item=item)
+        >>> item['field']
+        ['value1']
+
+    This is needed to allow adding values to existing fields
+    (``loader.add_value('field', 'value2')``).
+
+    (:issue:`3804`, :issue:`3819`, :issue:`3897`, :issue:`3976`, :issue:`3998`,
+    :issue:`4036`)
+
+See also :ref:`1.8-deprecation-removals` below.
 
 
 New features
@@ -52,16 +73,20 @@ New features
 
 *   A new :setting:`ROBOTSTXT_PARSER` setting allows choosing which robots.txt_
     parser to use. It includes built-in support for
-    :ref:`RobotFileParser <python-robotfileparser>` (default),
-    :ref:`Protego <protego-parser>`, :ref:`Reppy <reppy-parser>`, and
+    :ref:`RobotFileParser <python-robotfileparser>`,
+    :ref:`Protego <protego-parser>` (default), :ref:`Reppy <reppy-parser>`, and
     :ref:`Robotexclusionrulesparser <rerp-parser>`, and allows you to
     :ref:`implement support for additional parsers
     <support-for-new-robots-parser>` (:issue:`754`, :issue:`2669`,
-    :issue:`3796`, :issue:`3935`)
+    :issue:`3796`, :issue:`3935`, :issue:`3969`, :issue:`4006`)
 
 *   A new :setting:`ROBOTSTXT_USER_AGENT` setting allows defining a separate
     user agent string to use for robots.txt_ parsing (:issue:`3931`,
     :issue:`3966`)
+
+*   :class:`~scrapy.spiders.Rule` no longer requires a :class:`LinkExtractor
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` parameter
+    (:issue:`781`, :issue:`4016`)
 
 *   Use the new :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` setting to customize
     the TLS/SSL ciphers used by the default HTTP/1.1 downloader (:issue:`3392`,
@@ -71,13 +96,43 @@ New features
     ``True`` to enable debug-level messages about TLS connection parameters
     after establishing HTTPS connections (:issue:`2111`, :issue:`3450`)
 
-*   All missing fields are now reported when a :class:`@scrapes
-    <scrapy.contracts.default.ScrapesContract>` spider contract fails
-    (:issue:`766`, :issue:`3939`)
+*   Callbacks that receive keyword arguments
+    (see :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>`) can now be
+    tested using the new :class:`@cb_kwargs
+    <scrapy.contracts.default.CallbackKeywordArgumentsContract>`
+    :ref:`spider contract <topics-contracts>` (:issue:`3985`, :issue:`3988`)
+
+*   When a :class:`@scrapes <scrapy.contracts.default.ScrapesContract>` spider
+    contract fails, all missing fields are now reported (:issue:`766`,
+    :issue:`3939`)
+
+*   :ref:`Custom log formats <custom-log-formats>` can now drop messages by
+    having the corresponding methods of the configured :setting:`LOG_FORMATTER`
+    return ``None`` (:issue:`3984`, :issue:`3987`)
+
+*   A much improved completion definition is now available for Zsh_
+    (:issue:`4069`)
 
 
 Bug fixes
 ~~~~~~~~~
+
+*   :meth:`ItemLoader.load_item() <scrapy.loader.ItemLoader.load_item>` no
+    longer makes later calls to :meth:`ItemLoader.get_output_value()
+    <scrapy.loader.ItemLoader.get_output_value>` or
+    :meth:`ItemLoader.load_item() <scrapy.loader.ItemLoader.load_item>` return
+    empty data (:issue:`3804`, :issue:`3819`, :issue:`3897`, :issue:`3976`,
+    :issue:`3998`, :issue:`4036`)
+
+*   Fixed :class:`~scrapy.statscollectors.DummyStatsCollector` raising a
+    :exc:`TypeError` exception (:issue:`4007`, :issue:`4052`)
+
+*   :meth:`FilesPipeline.file_path
+    <scrapy.pipelines.files.FilesPipeline.file_path>` and
+    :meth:`ImagesPipeline.file_path
+    <scrapy.pipelines.images.ImagesPipeline.file_path>` no longer choose
+    file extensions that are not `registered with IANA`_ (:issue:`1287`,
+    :issue:`3953`, :issue:`3954`)
 
 *   When using botocore_ to persist files in S3, all botocore-supported headers
     are properly mapped now (:issue:`3904`, :issue:`3905`)
@@ -98,14 +153,37 @@ Documentation
 *   API documentation added for :class:`~scrapy.exporters.MarshalItemExporter`
     and :class:`~scrapy.exporters.PythonItemExporter` (:issue:`3973`)
 
-*   Minor documentation fixes (:issue:`3894`, :issue:`3934`, :issue:`3978`)
+*   API documentation added for :class:`~scrapy.item.BaseItem` and
+    :class:`~scrapy.item.ItemMeta` (:issue:`3999`)
+
+*   Minor documentation fixes (:issue:`2998`, :issue:`3398`, :issue:`3597`,
+    :issue:`3894`, :issue:`3934`, :issue:`3978`, :issue:`3993`, :issue:`4022`,
+    :issue:`4028`, :issue:`4033`, :issue:`4046`, :issue:`4050`, :issue:`4055`,
+    :issue:`4056`, :issue:`4061`, :issue:`4072`, :issue:`4071`, :issue:`4079`,
+    :issue:`4081`, :issue:`4089`, :issue:`4093`)
+
+
+.. _1.8-deprecation-removals:
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   ``scrapy.xlib`` has been removed (:issue:`4015`)
 
 
 Deprecations
 ~~~~~~~~~~~~
 
+*   The LevelDB_ storage backend
+    (``scrapy.extensions.httpcache.LeveldbCacheStorage``) of
+    :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` is
+    deprecated (:issue:`4085`, :issue:`4092`)
+
 *   Use of the undocumented ``SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE`` environment
     variable is deprecated (:issue:`3910`)
+
+*   ``scrapy.item.DictItem`` is deprecated, use :class:`~scrapy.item.Item`
+    instead (:issue:`3999`)
 
 
 Other changes
@@ -120,12 +198,13 @@ Other changes
     Lower versions of these optional requirements may work, but it is not
     guaranteed (:issue:`3892`)
 
-*   Github templates for bug reports and feature requests (:issue:`3126`,
+*   GitHub templates for bug reports and feature requests (:issue:`3126`,
     :issue:`3471`, :issue:`3749`, :issue:`3754`)
 
 *   Continuous integration fixes (:issue:`3923`)
 
-*   Code cleanup (:issue:`3907`, :issue:`3946`, :issue:`3950`)
+*   Code cleanup (:issue:`3391`, :issue:`3907`, :issue:`3946`, :issue:`3950`,
+    :issue:`4023`, :issue:`4031`)
 
 
 .. _release-1.7.4:
@@ -2971,6 +3050,7 @@ First release of Scrapy.
 .. _cssselect: https://github.com/scrapy/cssselect/
 .. _docstrings: https://docs.python.org/glossary.html#term-docstring
 .. _KeyboardInterrupt: https://docs.python.org/library/exceptions.html#KeyboardInterrupt
+.. _LevelDB: https://github.com/google/leveldb
 .. _lxml: http://lxml.de/
 .. _marshal: https://docs.python.org/2/library/marshal.html
 .. _parsel.csstranslator.GenericTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.GenericTranslator
@@ -2980,6 +3060,7 @@ First release of Scrapy.
 .. _Pillow: https://python-pillow.org/
 .. _pyOpenSSL: https://www.pyopenssl.org/en/stable/
 .. _queuelib: https://github.com/scrapy/queuelib
+.. _registered with IANA: https://www.iana.org/assignments/media-types/media-types.xhtml
 .. _resource: https://docs.python.org/2/library/resource.html
 .. _robots.txt: http://www.robotstxt.org/
 .. _scrapely: https://github.com/scrapy/scrapely
@@ -2992,3 +3073,4 @@ First release of Scrapy.
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
 .. _zope.interface: https://zopeinterface.readthedocs.io/en/latest/
+.. _Zsh: https://www.zsh.org/

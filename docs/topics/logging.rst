@@ -198,8 +198,9 @@ to override some of the Scrapy settings regarding logging.
 Custom Log Formats
 ------------------
 
-A custom log format can be set for different actions by extending :class:`~scrapy.logformatter.LogFormatter` class
-and making :setting:`LOG_FORMATTER` point to your new class.
+A custom log format can be set for different actions by extending
+:class:`~scrapy.logformatter.LogFormatter` class and making
+:setting:`LOG_FORMATTER` point to your new class.
  
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:
