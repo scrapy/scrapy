@@ -34,7 +34,7 @@ _default_link_extractor = LinkExtractor()
 
 class Rule(object):
 
-    def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None):
+    def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None, priority=None):
         self.link_extractor = link_extractor or _default_link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
@@ -42,6 +42,7 @@ class Rule(object):
         self.process_request = process_request or _identity
         self.process_request_argcount = None
         self.follow = follow if follow is not None else not callback
+        self.request_priority = priority or 0
 
     def _compile(self, spider):
         self.callback = _get_method(self.callback, spider)
@@ -57,6 +58,7 @@ class Rule(object):
         Wrapper around the request processing function to maintain backward
         compatibility with functions that do not take a Response object
         """
+        request.priority = self.request_priority
         args = [request] if self.process_request_argcount == 1 else [request, response]
         return self.process_request(*args)
 
