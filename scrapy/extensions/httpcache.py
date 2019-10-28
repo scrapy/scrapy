@@ -6,7 +6,8 @@ from six.moves import cPickle as pickle
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
-from email.utils import mktime_tz, parsedate_tz
+from email.utils import formatdate, mktime_tz, parsedate_tz
+
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
@@ -17,6 +18,9 @@ from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
 
 
 logger = logging.getLogger(__name__)
+
+
+TIMESTAMP_HEADER = b'X-Scrapy-Cache-Timestamp'
 
 
 class DummyPolicy(object):
@@ -233,9 +237,11 @@ class DbmCacheStorage(object):
         data = self._read_data(spider, request)
         if data is None:
             return  # not cached
+        data, ts = data
         url = data['url']
         status = data['status']
         headers = Headers(data['headers'])
+        headers[TIMESTAMP_HEADER] = epoch_to_rfc2822(ts)
         body = data['body']
         respcls = responsetypes.from_args(headers=headers, url=url)
         response = respcls(url=url, headers=headers, status=status, body=body)
@@ -259,11 +265,11 @@ class DbmCacheStorage(object):
         if tkey not in db:
             return  # not found
 
-        ts = db[tkey]
-        if 0 < self.expiration_secs < time() - float(ts):
+        ts = float(db[tkey])
+        if 0 < self.expiration_secs < time() - ts:
             return  # expired
 
-        return pickle.loads(db['%s_data' % key])
+        return pickle.loads(db['%s_data' % key]), ts
 
     def _request_key(self, request):
         return request_fingerprint(request)
@@ -297,6 +303,7 @@ class FilesystemCacheStorage(object):
         url = metadata.get('response_url')
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
+        headers[TIMESTAMP_HEADER] = epoch_to_rfc2822(metadata.get('timestamp'))
         respcls = responsetypes.from_args(headers=headers, url=url)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
@@ -368,9 +375,11 @@ class LeveldbCacheStorage(object):
         data = self._read_data(spider, request)
         if data is None:
             return  # not cached
+        data, ts = data
         url = data['url']
         status = data['status']
         headers = Headers(data['headers'])
+        headers[TIMESTAMP_HEADER] = epoch_to_rfc2822(ts)
         body = data['body']
         respcls = responsetypes.from_args(headers=headers, url=url)
         response = respcls(url=url, headers=headers, status=status, body=body)
@@ -392,11 +401,11 @@ class LeveldbCacheStorage(object):
     def _read_data(self, spider, request):
         key = self._request_key(request)
         try:
-            ts = self.db.Get(key + b'_time')
+            ts = float(self.db.Get(key + b'_time'))
         except KeyError:
             return  # not found or invalid entry
 
-        if 0 < self.expiration_secs < time() - float(ts):
+        if 0 < self.expiration_secs < time() - ts:
             return  # expired
 
         try:
@@ -404,7 +413,7 @@ class LeveldbCacheStorage(object):
         except KeyError:
             return  # invalid entry
         else:
-            return pickle.loads(data)
+            return pickle.loads(data), ts
 
     def _request_key(self, request):
         return to_bytes(request_fingerprint(request))
@@ -437,3 +446,7 @@ def rfc1123_to_epoch(date_str):
         return mktime_tz(parsedate_tz(date_str))
     except Exception:
         return None
+
+
+def epoch_to_rfc2822(time_float):
+    return formatdate(time_float)
