@@ -161,7 +161,7 @@ class LeveldbStorageTest(DefaultStorageTest):
         pytest.importorskip('leveldb')
     except SystemError:
         # Happens in python 3.8
-        pytestmark = pytest.skip("'SystemError: bad call flags' occurs on Python 3.8")
+        pytestmark = pytest.mark.skip("'SystemError: bad call flags' occurs on Python 3.8")
     storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
