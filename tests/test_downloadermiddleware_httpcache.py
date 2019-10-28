@@ -6,7 +6,6 @@ import unittest
 import email.utils
 from contextlib import contextmanager
 import pytest
-import sys
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
@@ -161,10 +160,7 @@ class LeveldbStorageTest(DefaultStorageTest):
         pytest.importorskip('leveldb')
     except SystemError:
         # Happens in python 3.8
-        pytest.mark.skipif(
-            sys.version_info >= (3, 8),
-            reason='leveldb not supported in python 3.8',
-        )
+        pytest.skip("'SystemError: bad call flags' occurs on Python 3.8")
     storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
