@@ -102,15 +102,16 @@ class CrawlSpider(Spider):
         return self._parse_response(response, rule.callback, rule.cb_kwargs, rule.follow)
 
     def _parse_response(self, response, callback, cb_kwargs, follow=True):
-        if callback:
-            cb_res = callback(response, **cb_kwargs) or ()
-            cb_res = self.process_results(response, cb_res)
-            for requests_or_item in iterate_spider_output(cb_res):
-                yield requests_or_item
-
-        if follow and self._follow_links:
-            for request_or_item in self._requests_to_follow(response):
-                yield request_or_item
+        try:
+            if callback:
+                cb_res = callback(response, **cb_kwargs) or ()
+                cb_res = self.process_results(response, cb_res)
+                for requests_or_item in iterate_spider_output(cb_res):
+                    yield requests_or_item
+        finally:
+            if follow and self._follow_links:
+                for request_or_item in self._requests_to_follow(response):
+                    yield request_or_item
 
     def _compile_rules(self):
         self._rules = [copy.copy(r) for r in self.rules]
