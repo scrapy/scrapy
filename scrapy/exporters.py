@@ -244,11 +244,13 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        serialized_fields = self._get_serialized_fields(item, default_value='',
-                                             include_empty=True)
+        serialized_fields = self._get_serialized_fields(item, default_value='', include_empty=True)
         fields = self._get_fields_from_item(item)
-        if (self.fields_to_export == None or set(fields) != set(self.fields_to_export)) and not self._data_loss_already_warned:
-            logger.warning("Data loss detected when exporting items -- This message won't be shown in further items")
+        if not self._data_loss_already_warned:
+            if self.fields_to_export is None:
+                logger.warning("Data loss detected when exporting items -- This message won't be shown for further items")
+            elif set(fields) != set(self.fields_to_export):
+                logger.info("Data loss detected when exporting items -- This message won't be shown for further items")
         values = list(self._build_row(x for _, x in serialized_fields))
         self.csv_writer.writerow(values)
 
@@ -269,7 +271,7 @@ class CsvItemExporter(BaseItemExporter):
                 if set(fields) != set(self.fields_to_export):
                     self._show_data_loss_warning = True
             if self._show_data_loss_warning and not self._data_loss_already_warned:
-                logger.warning("Data loss detected when exporting items -- This message won't be shown in further items")
+                logger.warning("Data loss detected when exporting items -- This message won't be shown for further items")
                 self._data_loss_already_warned = True
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
