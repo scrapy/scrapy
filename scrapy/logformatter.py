@@ -29,7 +29,7 @@ class LogFormatter(object):
     *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``.
         The final log message is computed as ``msg % args``.
 
-    Users can define their own ``LogFormatter`` class if they want to customise how
+    Users can define their own ``LogFormatter`` class if they want to customize how
     each action is logged or if they want to omit it entirely. In order to omit
     logging an action the method must return ``None``.
 
