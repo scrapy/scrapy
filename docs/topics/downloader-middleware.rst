@@ -348,7 +348,6 @@ HttpCacheMiddleware
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
-        * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
     setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
@@ -477,27 +476,6 @@ DBM storage backend
 
     By default, it uses the anydbm_ module, but you can change it with the
     :setting:`HTTPCACHE_DBM_MODULE` setting.
-
-.. _httpcache-storage-leveldb:
-
-LevelDB storage backend
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. class:: LeveldbCacheStorage
-
-    .. versionadded:: 0.23
-
-    A LevelDB_ storage backend is also available for the HTTP cache middleware.
-
-    This backend is not recommended for development because only one process
-    can access LevelDB databases at the same time, so you can't run a crawl and
-    open the scrapy shell in parallel for the same spider.
-
-    In order to use this storage backend, install the `LevelDB python
-    bindings`_ (e.g. ``pip install leveldb``).
-
-    .. _LevelDB: https://github.com/google/leveldb
-    .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
 .. _httpcache-storage-custom:
 
