@@ -8,7 +8,7 @@ Release notes
 
 .. _release-1.8.0:
 
-Scrapy 1.8.0 (2019-08-NN)
+Scrapy 1.8.0 (2019-10-28)
 -------------------------
 
 Highlights:
