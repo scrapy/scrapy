@@ -133,11 +133,15 @@ class RedirectMiddlewareTest(unittest.TestCase):
         req2 = self.mw.process_response(req1, rsp1, self.spider)
         rsp2 = Response('http://scrapytest.org/redirected', headers={'Location': '/redirected2'}, status=302)
         req3 = self.mw.process_response(req2, rsp2, self.spider)
+        rsp3 = Response('http://scrapytest.org/redirected', headers={'Location': 'http://scrapytest.org?k=v'}, status=302)
+        req4 = self.mw.process_response(req3, rsp3, self.spider)
 
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+        self.assertEqual(req4.url, 'http://scrapytest.org/?k=v')
+        self.assertEqual(req4.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected', 'http://scrapytest.org/redirected2'])
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')
