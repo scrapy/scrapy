@@ -42,6 +42,11 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
     the fingeprint. If you want to include specific headers use the
     include_headers argument, which is a list of Request headers to include.
 
+    Also, servers usually ignore fragments in urls when handling requests,
+    so they are also ignored by default when calculating the fingerprint.
+    If you want to include them, set the keep_fragments argument to True
+    (for instance when handling requests with a headless browser).
+
     """
     if include_headers:
         include_headers = tuple(to_bytes(h.lower())
