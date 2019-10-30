@@ -417,7 +417,7 @@ class FeedExportTest(unittest.TestCase):
                 content = f.read()
 
         finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+            shutil.rmtree(tmpdir)
 
         defer.returnValue(content)
 

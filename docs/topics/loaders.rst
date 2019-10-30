@@ -35,6 +35,12 @@ Then, you start collecting values into the Item Loader, typically using
 the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
 
+.. note:: Collected data is internally stored as lists,
+   allowing to add several values to the same field.
+   If an ``item`` argument is passed when creating a loader,
+   each of the item's values will be stored as-is if it's already
+   an iterable, or wrapped with a list if it's a single value.
+
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`::
@@ -128,9 +134,9 @@ So what happens is:
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
-accept one (and only one) positional argument, which will be an iterator.
+accept one (and only one) positional argument, which will be an iterable.
 
-.. note:: Both input and output processors must receive an iterator as their
+.. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
    input processors will be appended to an internal list (in the Loader)
    containing the collected values (for that field). The result of the output

@@ -226,8 +226,7 @@ BOT_NAME
 Default: ``'scrapybot'``
 
 The name of the bot implemented by this Scrapy project (also known as the
-project name). This will be used to construct the User-Agent by default, and
-also for logging.
+project name). This name will be used for the logging too.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
@@ -793,6 +792,7 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
 FTP_PASSWORD
@@ -811,6 +811,7 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://tools.ietf.org/html/rfc1635
 
+.. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
 FTP_USER
@@ -948,7 +949,7 @@ LOGSTATS_INTERVAL
 
 Default: ``60.0``
 
-The interval (in seconds) between each logging printout of the stats 
+The interval (in seconds) between each logging printout of the stats
 by :class:`~scrapy.extensions.logstats.LogStats`.
 
 .. setting:: MEMDEBUG_ENABLED
@@ -1162,7 +1163,7 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
 ROBOTSTXT_PARSER
 ----------------
 
-Default: ``'scrapy.robotstxt.PythonRobotParser'``
+Default: ``'scrapy.robotstxt.ProtegoRobotParser'``
 
 The parser backend to use for parsing ``robots.txt`` files. For more information see
 :ref:`topics-dlmw-robots`.

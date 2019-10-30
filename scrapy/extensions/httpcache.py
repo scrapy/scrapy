@@ -1,6 +1,7 @@
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
+from warnings import warn
 from weakref import WeakKeyDictionary
 import gzip
 import logging
@@ -9,6 +10,7 @@ import pickle
 
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
@@ -346,6 +348,8 @@ class FilesystemCacheStorage(object):
 class LeveldbCacheStorage(object):
 
     def __init__(self, settings):
+        warn("The LevelDB storage backend is deprecated.",
+             ScrapyDeprecationWarning, stacklevel=2)
         import leveldb
         self._leveldb = leveldb
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
@@ -409,7 +413,6 @@ class LeveldbCacheStorage(object):
 
     def _request_key(self, request):
         return to_bytes(request_fingerprint(request))
-
 
 
 def parse_cachecontrol(header):

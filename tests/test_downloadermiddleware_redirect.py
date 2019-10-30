@@ -106,6 +106,22 @@ class RedirectMiddlewareTest(unittest.TestCase):
         del rsp.headers['Location']
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
+    def test_redirect_302_relative(self):
+        url = 'http://www.example.com/302'
+        url2 = '///i8n.example2.com/302'
+        url3 = 'http://i8n.example2.com/302'
+        req = Request(url, method='HEAD')
+        rsp = Response(url, headers={'Location': url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, url3)
+        self.assertEqual(req2.method, 'HEAD')
+
+        # response without Location header but with status code is 3XX should be ignored
+        del rsp.headers['Location']
+        assert self.mw.process_response(req, rsp, self.spider) is rsp
+
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1

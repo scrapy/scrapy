@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, cb_kwargs])
+.. autoclass:: Request
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -400,7 +400,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new argument to the constructor. The
+    The :class:`FormRequest` class adds a new keyword parameter to the constructor. The
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
@@ -547,7 +547,7 @@ dealing with JSON requests.
 
 .. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JsonRequest` class adds two new argument to the constructor. The
+   The :class:`JsonRequest` class adds two new keyword parameters to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
@@ -581,7 +581,7 @@ Sending a JSON POST request with a JSON payload::
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
+.. autoclass:: Response
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
