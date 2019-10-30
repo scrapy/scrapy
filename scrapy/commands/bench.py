@@ -3,9 +3,9 @@ import subprocess
 import sys
 import time
 
+import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.linkextractors import LinkExtractor
-import scrapy
 
 
 class Command(ScrapyCommand):

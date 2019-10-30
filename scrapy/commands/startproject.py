@@ -5,10 +5,10 @@ import os
 import re
 import string
 
+import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
-import scrapy
 
 
 TEMPLATES_TO_RENDER = (
