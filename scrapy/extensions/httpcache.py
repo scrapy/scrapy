@@ -1,19 +1,24 @@
 from __future__ import print_function
-import os
+
 import gzip
 import logging
-from six.moves import cPickle as pickle
+import os
+from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
+from warnings import warn
 from weakref import WeakKeyDictionary
-from email.utils import mktime_tz, parsedate_tz
+
+from six.moves import cPickle as pickle
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
+from scrapy.utils.request import request_fingerprint
 
 
 logger = logging.getLogger(__name__)
@@ -345,6 +350,8 @@ class FilesystemCacheStorage(object):
 class LeveldbCacheStorage(object):
 
     def __init__(self, settings):
+        warn("The LevelDB storage backend is deprecated.",
+             ScrapyDeprecationWarning, stacklevel=2)
         import leveldb
         self._leveldb = leveldb
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)

@@ -6,6 +6,7 @@ import unittest
 import email.utils
 from contextlib import contextmanager
 import pytest
+import sys
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
@@ -154,9 +155,13 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
 
+
 class LeveldbStorageTest(DefaultStorageTest):
 
-    pytest.importorskip('leveldb')
+    try:
+        pytest.importorskip('leveldb')
+    except SystemError:
+        pytestmark = pytest.mark.skip("Test module skipped - 'SystemError: bad call flags' occurs when >= Python 3.8")
     storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
