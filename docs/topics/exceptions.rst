@@ -36,7 +36,7 @@ CloseSpider
 For example::
 
     def parse_page(self, response):
-        if b'Bandwidth exceeded' in response.body:
+        if 'Bandwidth exceeded' in re  sponse.text:
             raise CloseSpider('bandwidth_exceeded')
 
 DontCloseSpider
