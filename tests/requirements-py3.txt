@@ -1,6 +1,5 @@
 # Tests requirements
 jmespath
-leveldb; sys_platform != "win32"
 pytest
 pytest-cov
 pytest-twisted
