@@ -12,6 +12,7 @@ matrix:
     - env: TOXENV=flake8
       python: 3.8
     - env: TOXENV=pypy3
+      python: pypy3
     - env: TOXENV=py35
       python: 3.5
     - env: TOXENV=pinned
@@ -31,14 +32,6 @@ matrix:
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
 install:
-  - |
-      if [ "$TOXENV" = "pypy3" ]; then
-        export PYPY_VERSION="pypy3.5-5.9-beta-linux_x86_64-portable"
-        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
-        tar -jxf ${PYPY_VERSION}.tar.bz2
-        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
-        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-      fi
   - pip install -U tox twine wheel codecov
 
 script: tox
