@@ -156,15 +156,6 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
 
 
-class LeveldbStorageTest(DefaultStorageTest):
-
-    try:
-        pytest.importorskip('leveldb')
-    except SystemError:
-        pytestmark = pytest.mark.skip("Test module skipped - 'SystemError: bad call flags' occurs when >= Python 3.8")
-    storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
-
-
 class DummyPolicyTest(_BaseTest):
 
     policy_class = 'scrapy.extensions.httpcache.DummyPolicy'
