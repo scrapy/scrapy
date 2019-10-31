@@ -171,7 +171,7 @@ policy::
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
-Because Scrapy uses ``boto`` / ``botocore`` internally you can also use other S3-like storages. Storages like
+Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like
 self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::
 
     AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
