@@ -474,7 +474,7 @@ DBM storage backend
 
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
-    By default, it uses the dbm_ module, but you can change it with the
+    By default, it uses the `dbm module`_, but you can change it with the
     :setting:`HTTPCACHE_DBM_MODULE` setting.
 
 .. _httpcache-storage-custom:
@@ -1202,4 +1202,4 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
-.. _dbm: https://docs.python.org/3/library/dbm.html
+.. _dbm module: https://docs.python.org/3/library/dbm.html
