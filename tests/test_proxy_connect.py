@@ -92,7 +92,7 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, l)
 
-    @pytest.mark.xfail(reason='Python 3 fails this earlier')
+    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info.minor >= 6)
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
         crawler = get_crawler(SimpleSpider)
