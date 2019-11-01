@@ -46,17 +46,27 @@ class LogStats:
                     'items': self.items, 'itemrate': self.irate}
         logger.info(msg, log_args, extra={'spider': spider})
 
-    def spider_closed(self, spider, reason):
-        if self.task and self.task.running:
-            self.task.stop()
-
-        self.calculate_stats()
-        self.stats.set_value('items_per_minute', self.irate)
-        self.stats.set_value('requests_per_minute', self.prate)
-
     def calculate_stats(self):
         self.items = self.stats.get_value('item_scraped_count', 0)
         self.pages = self.stats.get_value('response_received_count', 0)
         self.irate = (self.items - self.itemsprev) * self.multiplier
         self.prate = (self.pages - self.pagesprev) * self.multiplier
         self.pagesprev, self.itemsprev = self.pages, self.items
+
+    def spider_closed(self, spider, reason):
+        if self.task and self.task.running:
+            self.task.stop()
+
+        rpm_final, ipm_final = self.calculate_final_stats()
+        self.stats.set_value('responses_per_minute', rpm_final)
+        self.stats.set_value('items_per_minute', ipm_final)
+
+    def calculate_final_stats(self, spider):
+        start_time = self.stats.get_value('start_time')
+        finished_time = self.stats.get_value('finished_time')
+        mins_elapsed = (finished_time - start_time) / 1000 / 60
+
+        items = self.stats.get_value('item_scraped_count', 0)
+        pages = self.stats.get_value('response_received_count', 0)
+
+        return (pages / mins_elapsed), (items / mins_elapsed)
