@@ -51,8 +51,8 @@ class LogStats:
             self.task.stop()
 
         self.calculate_stats()
-        self.stats.set_value('IPM', self.irate)
-        self.stats.set_value('RPM', self.prate)
+        self.stats.set_value('items_per_minute', self.irate)
+        self.stats.set_value('requests_per_minute', self.prate)
 
     def calculate_stats(self):
         self.items = self.stats.get_value('item_scraped_count', 0)
