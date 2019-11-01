@@ -117,7 +117,7 @@ class ProxyConnectTestCase(TestCase):
         with LogCapture() as l:
             yield crawler.crawl(seed=request)
         self._assert_got_response_code(200, l)
-        echo = json.loads(crawler.spider.meta['responses'][0].body.decode('utf-8'))
+        echo = json.loads(crawler.spider.meta['responses'][0].text)
         self.assertTrue('Proxy-Authorization' not in echo['headers'])
 
     @pytest.mark.xfail(reason='mitmproxy gives an error for noconnect requests')
