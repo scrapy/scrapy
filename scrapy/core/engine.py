@@ -132,7 +132,7 @@ class ExecutionEngine(object):
                 slot.start_requests = None
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
-                reason = str(exception)
+                reason = repr(exception)
             else:
                 self.crawl(request, spider)
 

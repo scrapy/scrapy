@@ -28,6 +28,7 @@ from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
+from scrapy.exceptions import CloseSpider
 
 
 class TestItem(Item):
@@ -81,6 +82,12 @@ class ItemZeroDivisionErrorSpider(TestSpider):
         }
     }
 
+class ErrorInStartRequestsSpider(TestSpider):
+    def start_requests(self):
+        yield self._raise_error()
+    
+    def _raise_error(self):
+        raise CloseSpider("Error raised from start_requests method")
 
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
@@ -296,7 +303,12 @@ class EngineTest(unittest.TestCase):
         yield e.close()
         self.assertFalse(e.running)
         self.assertEqual(len(e.open_spiders), 0)
-
+    
+    @defer.inlineCallbacks
+    def test_crawler_with_error_in_start_requests(self):
+         self.run = CrawlerRun(ErrorInStartRequestsSpider)
+         yield self.run.run()
+         self.assertEqual(self.run.crawler.stats.get_stats()['finish_reason'], "CloseSpider('Error raised from start_requests method')")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
