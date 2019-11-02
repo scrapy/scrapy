@@ -309,7 +309,10 @@ class EngineTest(unittest.TestCase):
          self.run = CrawlerRun(ErrorInStartRequestsSpider)
          yield self.run.run()
          print(type(self.run.crawler.stats.get_stats()['finish_reason']))
-         self.assertEqual(self.run.crawler.stats.get_stats()['finish_reason'], "Exception('Error raised from start_requests method')")
+         # Check both as the latter one is produced for Python < 3.7
+         # https://bugs.python.org/issue30399 
+         self.assertIn(self.run.crawler.stats.get_stats()['finish_reason'], 
+         ["Exception('Error raised from start_requests method')", "Exception('Error raised from start_requests method',)"])
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
