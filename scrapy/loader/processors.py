@@ -3,10 +3,13 @@ This module provides some commonly used processors for Item Loaders.
 
 See documentation in docs/topics/loaders.rst
 """
+try:
+    from collections import ChainMap
+except ImportError:
+    from scrapy.utils.datatypes import MergeDict as ChainMap
 
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.datatypes import MergeDict
-from .common import wrap_loader_context
+from scrapy.loader.common import wrap_loader_context
 
 
 class MapCompose(object):
@@ -18,14 +21,20 @@ class MapCompose(object):
     def __call__(self, value, loader_context=None):
         values = arg_to_iter(value)
         if loader_context:
-            context = MergeDict(loader_context, self.default_loader_context)
+            context = ChainMap(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
         wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             next_values = []
             for v in values:
-                next_values += arg_to_iter(func(v))
+                try:
+                    next_values += arg_to_iter(func(v))
+                except Exception as e:
+                    raise ValueError("Error in MapCompose with "
+                                     "%s value=%r error='%s: %s'" %
+                                     (str(func), value, type(e).__name__,
+                                      str(e)))
             values = next_values
         return values
 
@@ -39,14 +48,19 @@ class Compose(object):
 
     def __call__(self, value, loader_context=None):
         if loader_context:
-            context = MergeDict(loader_context, self.default_loader_context)
+            context = ChainMap(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
         wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             if value is None and self.stop_on_none:
                 break
-            value = func(value)
+            try:
+                value = func(value)
+            except Exception as e:
+                raise ValueError("Error in Compose with "
+                                 "%s value=%r error='%s: %s'" %
+                                 (str(func), value, type(e).__name__, str(e)))
         return value
 
 

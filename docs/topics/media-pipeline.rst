@@ -132,7 +132,7 @@ For example, the following image URL::
 
     http://www.example.com/image.jpg
 
-Whose `SHA1 hash` is::
+Whose ``SHA1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 
@@ -171,7 +171,7 @@ policy::
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
-Because Scrapy uses ``boto`` / ``botocore`` internally you can also use other S3-like storages. Storages like
+Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like
 self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::
 
     AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
@@ -392,6 +392,36 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
+   .. method:: file_path(request, response, info)
+
+      This method is called once per downloaded item. It returns the
+      download path of the file originating from the specified
+      :class:`response <scrapy.http.Response>`.
+
+      In addition to ``response``, this method receives the original
+      :class:`request <scrapy.Request>` and
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+
+      You can override this method to customize the download path of each file.
+
+      For example, if file URLs end like regular paths (e.g.
+      ``https://example.com/a/b/c/foo.png``), you can use the following
+      approach to download all files into the ``files`` folder with their
+      original filenames (e.g. ``files/foo.png``)::
+
+        import os
+        from urllib.parse import urlparse
+
+        from scrapy.pipelines.files import FilesPipeline
+
+        class MyFilesPipeline(FilesPipeline):
+
+            def file_path(self, request, response, info):
+                return 'files/' + os.path.basename(urlparse(request.url).path)
+
+      By default the :meth:`file_path` method returns
+      ``full/<request URL hash>.<extension>``.
+
    .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
@@ -474,6 +504,36 @@ See here the methods that you can override in your custom Images Pipeline:
 
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
+
+   .. method:: file_path(request, response, info)
+
+      This method is called once per downloaded item. It returns the
+      download path of the file originating from the specified
+      :class:`response <scrapy.http.Response>`.
+
+      In addition to ``response``, this method receives the original
+      :class:`request <scrapy.Request>` and
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+
+      You can override this method to customize the download path of each file.
+
+      For example, if file URLs end like regular paths (e.g.
+      ``https://example.com/a/b/c/foo.png``), you can use the following
+      approach to download all files into the ``files`` folder with their
+      original filenames (e.g. ``files/foo.png``)::
+
+        import os
+        from urllib.parse import urlparse
+
+        from scrapy.pipelines.images import ImagesPipeline
+
+        class MyImagesPipeline(ImagesPipeline):
+
+            def file_path(self, request, response, info):
+                return 'files/' + os.path.basename(urlparse(request.url).path)
+
+      By default the :meth:`file_path` method returns
+      ``full/<request URL hash>.<extension>``.
 
    .. method:: ImagesPipeline.get_media_requests(item, info)
 

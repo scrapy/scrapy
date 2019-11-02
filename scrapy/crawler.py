@@ -7,6 +7,7 @@ import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
+from scrapy import Spider
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
@@ -27,6 +28,10 @@ logger = logging.getLogger(__name__)
 class Crawler(object):
 
     def __init__(self, spidercls, settings=None):
+        if isinstance(spidercls, Spider):
+            raise ValueError(
+                'The spidercls argument must be a class, not an object')
+
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
@@ -34,14 +39,15 @@ class Crawler(object):
         self.settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)r", {'settings': d})
-
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
+
+        d = dict(overridden_settings(self.settings))
+        logger.info("Overridden settings: %(settings)r", {'settings': d})
+
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
@@ -106,6 +112,8 @@ class Crawler(object):
 
     @defer.inlineCallbacks
     def stop(self):
+        """Starts a graceful stop of the crawler and returns a deferred that is
+        fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
@@ -153,7 +161,7 @@ class CrawlerRunner(object):
         It will call the given Crawler's :meth:`~Crawler.crawl` method, while
         keeping track of it so it can be stopped later.
 
-        If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
+        If ``crawler_or_spidercls`` isn't a :class:`~scrapy.crawler.Crawler`
         instance, this method will try to create one using this parameter as
         the spider class given to it.
 
@@ -168,6 +176,10 @@ class CrawlerRunner(object):
 
         :param dict kwargs: keyword arguments to initialize the spider
         """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
@@ -188,13 +200,17 @@ class CrawlerRunner(object):
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
 
-        * If `crawler_or_spidercls` is a Crawler, it is returned as-is.
-        * If `crawler_or_spidercls` is a Spider subclass, a new Crawler
+        * If ``crawler_or_spidercls`` is a Crawler, it is returned as-is.
+        * If ``crawler_or_spidercls`` is a Spider subclass, a new Crawler
           is constructed for it.
-        * If `crawler_or_spidercls` is a string, this function finds
+        * If ``crawler_or_spidercls`` is a string, this function finds
           a spider with this name in a Scrapy project (using spider loader),
           then creates a Crawler instance for it.
         """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
         if isinstance(crawler_or_spidercls, Crawler):
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
@@ -273,7 +289,7 @@ class CrawlerProcess(CrawlerRunner):
         :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
         on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
 
-        If `stop_after_crawl` is True, the reactor will be stopped after all
+        If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
 
         :param boolean stop_after_crawl: stop or not the reactor when all
@@ -317,14 +333,7 @@ class CrawlerProcess(CrawlerRunner):
 
 def _get_spider_loader(settings):
     """ Get SpiderLoader instance from settings """
-    if settings.get('SPIDER_MANAGER_CLASS'):
-        warnings.warn(
-            'SPIDER_MANAGER_CLASS option is deprecated. '
-            'Please use SPIDER_LOADER_CLASS.',
-            category=ScrapyDeprecationWarning, stacklevel=2
-        )
-    cls_path = settings.get('SPIDER_MANAGER_CLASS',
-                            settings.get('SPIDER_LOADER_CLASS'))
+    cls_path = settings.get('SPIDER_LOADER_CLASS')
     loader_cls = load_object(cls_path)
     try:
         verifyClass(ISpiderLoader, loader_cls)

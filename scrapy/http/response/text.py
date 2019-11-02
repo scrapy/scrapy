@@ -123,7 +123,7 @@ class TextResponse(Response):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None):
+               dont_filter=False, errback=None, cb_kwargs=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -154,7 +154,8 @@ class TextResponse(Response):
             encoding=encoding,
             priority=priority,
             dont_filter=dont_filter,
-            errback=errback
+            errback=errback,
+            cb_kwargs=cb_kwargs,
         )
 
 
