@@ -10,7 +10,6 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-from __future__ import print_function
 import sys, os, re
 from six.moves.urllib.parse import urlparse
 

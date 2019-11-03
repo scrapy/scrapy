@@ -1,4 +1,3 @@
-from __future__ import print_function
 import unittest
 from scrapy.http import Request
 from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
