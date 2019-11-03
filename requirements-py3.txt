@@ -2,7 +2,6 @@ parsel>=1.5.0
 PyDispatcher>=2.0.5
 Twisted>=17.9.0
 w3lib>=1.17.0
-protego>=0.1.15
 
 pyOpenSSL>=16.2.0  # Earlier versions fail with "AttributeError: module 'lib' has no attribute 'SSL_ST_INIT'"
 queuelib>=1.4.2    # Earlier versions fail with "AttributeError: '...QueueTest' object has no attribute 'qpath'"
