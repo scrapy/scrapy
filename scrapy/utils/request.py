@@ -3,7 +3,6 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-from __future__ import print_function
 import hashlib
 import weakref
 from six.moves.urllib.parse import urlunparse

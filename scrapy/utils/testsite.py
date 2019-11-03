@@ -1,4 +1,3 @@
-from __future__ import print_function
 from six.moves.urllib.parse import urljoin
 
 from twisted.internet import reactor

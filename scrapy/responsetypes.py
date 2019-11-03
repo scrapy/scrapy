@@ -2,7 +2,6 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO

@@ -2,7 +2,6 @@
 pprint and pformat wrappers with colorization support
 """
 
-from __future__ import print_function
 import sys
 from pprint import pformat as pformat_
 

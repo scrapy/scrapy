@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.versions import scrapy_components_versions

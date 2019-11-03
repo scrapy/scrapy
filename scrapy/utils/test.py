@@ -2,7 +2,6 @@
 This module contains some assorted functions used in tests
 """
 
-from __future__ import absolute_import
 import os
 
 from importlib import import_module
