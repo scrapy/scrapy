@@ -1,11 +1,12 @@
 import sys
 import logging
 from abc import ABCMeta, abstractmethod
-from six import with_metaclass
 
 from scrapy.utils.python import to_unicode
 
+
 logger = logging.getLogger(__name__)
+
 
 def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
     try:
@@ -23,7 +24,8 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
         robotstxt_body = ''
     return robotstxt_body
 
-class RobotParser(with_metaclass(ABCMeta)):
+
+class RobotParser(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def from_crawler(cls, crawler, robotstxt_body):
