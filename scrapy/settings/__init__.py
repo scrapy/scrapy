@@ -317,10 +317,10 @@ class BaseSettings(MutableMapping):
             values = json.loads(values)
         if values is not None:
             if isinstance(values, BaseSettings):
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, values.getpriority(name))
             else:
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, priority)
 
     def delete(self, name, priority='project'):
@@ -377,7 +377,7 @@ class BaseSettings(MutableMapping):
 
     def _to_dict(self):
         return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in six.iteritems(self)}
+                for k, v in self.items()}
 
     def copy_to_dict(self):
         """
@@ -445,7 +445,7 @@ class Settings(BaseSettings):
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name, val in six.iteritems(self):
+        for name, val in self.items():
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)

@@ -10,7 +10,7 @@ from . import default_settings
 class SettingsGlobalFuncsTest(unittest.TestCase):
 
     def test_get_settings_priority(self):
-        for prio_str, prio_num in six.iteritems(SETTINGS_PRIORITIES):
+        for prio_str, prio_num in SETTINGS_PRIORITIES.items():
             self.assertEqual(get_settings_priority(prio_str), prio_num)
         self.assertEqual(get_settings_priority(99), 99)
 
@@ -148,10 +148,10 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.setmodule(
             'tests.test_settings.default_settings', 10)
 
-        self.assertCountEqual(six.iterkeys(self.settings.attributes),
-                              six.iterkeys(ctrl_attributes))
+        self.assertCountEqual(self.settings.attributes.keys(),
+                              ctrl_attributes.keys())
 
-        for key in six.iterkeys(ctrl_attributes):
+        for key in ctrl_attributes.keys():
             attr = self.settings.attributes[key]
             ctrl_attr = ctrl_attributes[key]
             self.assertEqual(attr.value, ctrl_attr.value)
@@ -227,7 +227,7 @@ class BaseSettingsTest(unittest.TestCase):
         }
         settings = self.settings
         settings.attributes = {key: SettingsAttribute(value, 0) for key, value
-                               in six.iteritems(test_configuration)}
+                               in test_configuration.items()}
 
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))

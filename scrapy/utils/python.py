@@ -300,7 +300,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
-    for k, v in six.iteritems(dict(dct_or_tuples)):
+    for k, v in dict(dct_or_tuples).items():
         k = k.encode(encoding) if isinstance(k, six.text_type) else k
         if not keys_only:
             v = v.encode(encoding) if isinstance(v, six.text_type) else v
@@ -345,7 +345,7 @@ def without_none_values(iterable):
     value ``None`` have been removed.
     """
     try:
-        return {k: v for k, v in six.iteritems(iterable) if v is not None}
+        return {k: v for k, v in iterable.items() if v is not None}
     except AttributeError:
         return type(iterable)((v for v in iterable if v is not None))
 

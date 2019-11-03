@@ -7,10 +7,7 @@ This module must not depend on any module outside the Standard Library.
 
 import copy
 import collections
-from collections.abc import Mapping
 import warnings
-
-import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -151,7 +148,7 @@ class MultiValueDict(dict):
                         self.setlistdefault(key, []).append(value)
                 except TypeError:
                     raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             self.setlistdefault(key, []).append(value)
 
 
@@ -226,7 +223,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     def update(self, seq):
-        seq = seq.items() if isinstance(seq, Mapping) else seq
+        seq = seq.items() if isinstance(seq, collections.abc.Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super(CaselessDict, self).update(iseq)
 

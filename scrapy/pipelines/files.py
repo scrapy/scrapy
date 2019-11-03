@@ -8,14 +8,12 @@ import hashlib
 import logging
 import mimetypes
 import os
-import os.path
 import time
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from io import BytesIO
 from urllib.parse import urlparse
 
-import six
 from twisted.internet import defer, threads
 
 from scrapy.pipelines.media import MediaPipeline
@@ -28,6 +26,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -153,14 +152,14 @@ class S3FilesStore(object):
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
+                Metadata={k: str(v) for k, v in (meta or {}).items()},
                 ACL=self.POLICY,
                 **extra)
         else:
             b = self._get_boto_bucket()
             k = b.new_key(key_name)
             if meta:
-                for metakey, metavalue in six.iteritems(meta):
+                for metakey, metavalue in meta.items():
                     k.set_metadata(metakey, str(metavalue))
             h = self.HEADERS.copy()
             if headers:
@@ -201,7 +200,7 @@ class S3FilesStore(object):
             'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
         })
         extra = {}
-        for key, value in six.iteritems(headers):
+        for key, value in headers.items():
             try:
                 kwarg = mapping[key]
             except KeyError:
@@ -249,7 +248,7 @@ class GCSFilesStore(object):
     def persist_file(self, path, buf, info, meta=None, headers=None):
         blob = self.bucket.blob(self.prefix + path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in six.iteritems(meta or {})}
+        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),

@@ -5,8 +5,6 @@ See documentation in docs/topics/loaders.rst
 """
 from collections import defaultdict
 
-import six
-
 from scrapy.item import Item
 from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
@@ -72,7 +70,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._add_value(k, v)
         else:
             self._add_value(field_name, value)
@@ -82,7 +80,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._replace_value(k, v)
         else:
             self._replace_value(field_name, value)

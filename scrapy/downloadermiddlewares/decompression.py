@@ -4,15 +4,14 @@ and extract the potentially compressed responses that may arrive.
 
 import bz2
 import gzip
-from io import BytesIO
 import zipfile
 import tarfile
 import logging
+from io import BytesIO
 from tempfile import mktemp
 
-import six
-
 from scrapy.responsetypes import responsetypes
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ class DecompressionMiddleware(object):
         if not response.body:
             return response
 
-        for fmt, func in six.iteritems(self._formats):
+        for fmt, func in self._formats.items():
             new_response = func(response)
             if new_response:
                 logger.debug('Decompressed response with format: %(responsefmt)s',

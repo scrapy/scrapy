@@ -62,9 +62,9 @@ class BaseItemExporter(object):
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
             if include_empty and not isinstance(item, dict):
-                field_iter = six.iterkeys(item.fields)
+                field_iter = item.fields.keys()
             else:
-                field_iter = six.iterkeys(item)
+                field_iter = item.keys()
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -326,7 +326,7 @@ class PythonItemExporter(BaseItemExporter):
         return value
 
     def _serialize_dict(self, value):
-        for key, val in six.iteritems(value):
+        for key, val in value.items():
             key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 

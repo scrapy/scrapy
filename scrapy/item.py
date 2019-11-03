@@ -78,7 +78,7 @@ class DictItem(MutableMapping, BaseItem):
     def __init__(self, *args, **kwargs):
         self._values = {}
         if args or kwargs:  # avoid creating dict for most common case
-            for k, v in six.iteritems(dict(*args, **kwargs)):
+            for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
     def __getitem__(self, key):
