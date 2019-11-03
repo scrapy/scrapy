@@ -8,7 +8,7 @@ import sys
 import pprint
 import marshal
 import warnings
-from import pickle
+import pickle
 from xml.sax.saxutils import XMLGenerator
 
 import six
