@@ -19,7 +19,7 @@ class Headers(CaselessDict):
         """Normalize values to bytes"""
         if value is None:
             value = []
-        elif isinstance(value, (six.text_type, bytes)):
+        elif isinstance(value, (str, bytes)):
             value = [value]
         elif not hasattr(value, '__iter__'):
             value = [value]
@@ -29,10 +29,10 @@ class Headers(CaselessDict):
     def _tobytes(self, x):
         if isinstance(x, bytes):
             return x
-        elif isinstance(x, six.text_type):
+        elif isinstance(x, str):
             return x.encode(self.encoding)
         elif isinstance(x, int):
-            return six.text_type(x).encode(self.encoding)
+            return str(x).encode(self.encoding)
         else:
             raise TypeError('Unsupported value type: {}'.format(type(x)))
 

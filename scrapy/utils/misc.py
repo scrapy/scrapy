@@ -13,7 +13,7 @@ from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
-_ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
+_ITERABLE_SINGLE_VALUES = dict, BaseItem, str, bytes
 
 
 def arg_to_iter(arg):
@@ -83,7 +83,7 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, six.string_types):
+    if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
 
     try:
@@ -92,7 +92,7 @@ def extract_regex(regex, text, encoding='utf-8'):
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])

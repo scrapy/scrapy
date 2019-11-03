@@ -182,7 +182,7 @@ class XmlItemExporter(BaseItemExporter):
             for value in serialized_value:
                 self._export_xml_field('value', value, depth=depth+1)
             self._beautify_indent(depth=depth)
-        elif isinstance(serialized_value, six.text_type):
+        elif isinstance(serialized_value, str):
             self.xg.characters(serialized_value)
         else:
             self.xg.characters(str(serialized_value))
@@ -321,7 +321,7 @@ class PythonItemExporter(BaseItemExporter):
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
-        if isinstance(value, (six.text_type, bytes)):
+        if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 

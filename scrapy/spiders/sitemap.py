@@ -22,7 +22,7 @@ class SitemapSpider(Spider):
         super(SitemapSpider, self).__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
-            if isinstance(c, six.string_types):
+            if isinstance(c, str):
                 c = getattr(self, c)
             self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
@@ -86,7 +86,7 @@ class SitemapSpider(Spider):
 
 
 def regex(x):
-    if isinstance(x, six.string_types):
+    if isinstance(x, str):
         return re.compile(x)
     return x
 

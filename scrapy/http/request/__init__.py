@@ -60,7 +60,7 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if not isinstance(url, six.string_types):
+        if not isinstance(url, str):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
         s = safe_url_string(url, self.encoding)

@@ -60,7 +60,7 @@ class _StreamReader(object):
             self._text, self.encoding = obj.body, obj.encoding
         else:
             self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, six.text_type)
+        self._is_unicode = isinstance(self._text, str)
 
     def read(self, n=65535):
         self.read = self._read_unicode if self._is_unicode else self._read_string
@@ -125,7 +125,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    expected_types = (Response, six.text_type, six.binary_type)
+    expected_types = (Response, str, bytes)
     assert isinstance(obj, expected_types), \
         "obj must be %s, not %s" % (
             " or ".join(t.__name__ for t in expected_types),
@@ -137,7 +137,7 @@ def _body_or_str(obj, unicode=True):
             return obj.text
         else:
             return obj.body.decode('utf-8')
-    elif isinstance(obj, six.text_type):
+    elif isinstance(obj, str):
         return obj if unicode else obj.encode('utf-8')
     else:
         return obj.decode('utf-8') if unicode else obj

@@ -31,14 +31,14 @@ class TextResponse(Response):
         super(TextResponse, self).__init__(*args, **kwargs)
 
     def _set_url(self, url):
-        if isinstance(url, six.text_type):
+        if isinstance(url, str):
             self._url = to_unicode(url, self.encoding)
         else:
             super(TextResponse, self)._set_url(url)
 
     def _set_body(self, body):
         self._body = b''  # used by encoding detection
-        if isinstance(body, six.text_type):
+        if isinstance(body, str):
             if self._encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
                     type(self).__name__)
@@ -158,7 +158,7 @@ class TextResponse(Response):
 
 def _url_from_selector(sel):
     # type: (parsel.Selector) -> str
-    if isinstance(sel.root, six.string_types):
+    if isinstance(sel.root, str):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):

@@ -68,7 +68,7 @@ def is_listlike(x):
     >>> is_listlike(range(5))
     True
     """
-    return hasattr(x, "__iter__") and not isinstance(x, (six.text_type, bytes))
+    return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
 def unique(list_, key=lambda x: x):
@@ -87,9 +87,9 @@ def unique(list_, key=lambda x: x):
 def to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return text
-    if not isinstance(text, (bytes, six.text_type)):
+    if not isinstance(text, (bytes, str)):
         raise TypeError('to_unicode must receive a bytes or str '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -102,7 +102,7 @@ def to_bytes(text, encoding=None, errors='strict'):
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
-    if not isinstance(text, six.string_types):
+    if not isinstance(text, str):
         raise TypeError('to_bytes must receive a str or bytes '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -138,7 +138,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    if isinstance(pattern, six.string_types):
+    if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
@@ -301,9 +301,9 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     """
     d = {}
     for k, v in dict(dct_or_tuples).items():
-        k = k.encode(encoding) if isinstance(k, six.text_type) else k
+        k = k.encode(encoding) if isinstance(k, str) else k
         if not keys_only:
-            v = v.encode(encoding) if isinstance(v, six.text_type) else v
+            v = v.encode(encoding) if isinstance(v, str) else v
         d[k] = v
     return d
 
