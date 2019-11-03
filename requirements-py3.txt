@@ -13,5 +13,4 @@ cryptography>=2.0  # Earlier versions would fail to install
 cssselect>=0.9.1
 lxml>=3.5.0
 service_identity>=16.0.0
-six>=1.10.0
 zope.interface>=4.1.3
