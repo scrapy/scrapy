@@ -102,7 +102,7 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r4.flags, [])
 
     def _assert_response_values(self, response, encoding, body):
-        if isinstance(body, six.text_type):
+        if isinstance(body, str):
             body_unicode = body
             body_bytes = body.encode(encoding)
         else:
@@ -110,7 +110,7 @@ class BaseResponseTest(unittest.TestCase):
             body_bytes = body
 
         assert isinstance(response.body, bytes)
-        assert isinstance(response.text, six.text_type)
+        assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
         self.assertEqual(response.body_as_unicode(), body_unicode)
@@ -220,11 +220,11 @@ class TextResponseTest(BaseResponseTest):
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
 
         # check body_as_unicode
-        self.assertTrue(isinstance(r1.body_as_unicode(), six.text_type))
+        self.assertTrue(isinstance(r1.body_as_unicode(), str))
         self.assertEqual(r1.body_as_unicode(), unicode_string)
 
         # check response.text
-        self.assertTrue(isinstance(r1.text, six.text_type))
+        self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):

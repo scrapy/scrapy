@@ -169,8 +169,8 @@ class UtilsPythonTestCase(unittest.TestCase):
         d2 = stringify_dict(d, keys_only=False)
         self.assertEqual(d, d2)
         self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
+        self.assertFalse(any(isinstance(x, str) for x in d2.keys()))
+        self.assertFalse(any(isinstance(x, str) for x in d2.values()))
 
     @unittest.skipUnless(six.PY2, "deprecated function")
     def test_stringify_dict_tuples(self):
@@ -179,8 +179,8 @@ class UtilsPythonTestCase(unittest.TestCase):
         d2 = stringify_dict(tuples, keys_only=False)
         self.assertEqual(d, d2)
         self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
+        self.assertFalse(any(isinstance(x, str) for x in d2.keys()), d2.keys())
+        self.assertFalse(any(isinstance(x, str) for x in d2.values()))
 
     @unittest.skipUnless(six.PY2, "deprecated function")
     def test_stringify_dict_keys_only(self):
@@ -188,7 +188,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d2 = stringify_dict(d)
         self.assertEqual(d, d2)
         self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
+        self.assertFalse(any(isinstance(x, str) for x in d2.keys()))
 
     def test_get_func_args(self):
         def f1(a, b, c):
@@ -227,12 +227,12 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         if platform.python_implementation() == 'CPython':
             # TODO: how do we fix this to return the actual argument names?
-            self.assertEqual(get_func_args(six.text_type.split), [])
+            self.assertEqual(get_func_args(str.split), [])
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
             self.assertEqual(
-                get_func_args(six.text_type.split, True), ['sep', 'maxsplit'])
+                get_func_args(str.split, True), ['sep', 'maxsplit'])
             self.assertEqual(get_func_args(" ".join, True), ['list'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), True), ['obj'])

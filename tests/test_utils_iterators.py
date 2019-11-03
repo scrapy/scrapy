@@ -255,8 +255,8 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assertTrue(all((isinstance(k, six.text_type) for k in result_row.keys())))
-            self.assertTrue(all((isinstance(v, six.text_type) for v in result_row.values())))
+            self.assertTrue(all((isinstance(k, str) for k in result_row.keys())))
+            self.assertTrue(all((isinstance(v, str) for v in result_row.values())))
 
     def test_csviter_delimiter(self):
         body = get_testdata('feeds', 'feed-sample3.csv').replace(b',', b'\t')
