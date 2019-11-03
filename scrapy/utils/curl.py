@@ -4,7 +4,6 @@ from shlex import split
 from http.cookies import SimpleCookie
 from urllib.parse import urlparse
 
-from six import string_types, iteritems
 from w3lib.http import basic_auth_header
 
 
@@ -76,7 +75,7 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
         name = name.strip()
         val = val.strip()
         if name.title() == 'Cookie':
-            for name, morsel in iteritems(SimpleCookie(val)):
+            for name, morsel in SimpleCookie(val).items():
                 cookies[name] = morsel.value
         else:
             headers.append((name, val))

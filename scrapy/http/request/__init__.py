@@ -4,7 +4,6 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-import six
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers

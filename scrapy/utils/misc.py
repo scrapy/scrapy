@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
 
-import six
 from w3lib.html import replace_entities
 
 from scrapy.utils.python import flatten, to_unicode

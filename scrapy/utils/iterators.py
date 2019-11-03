@@ -1,12 +1,12 @@
-import re
 import csv
-from io import StringIO
 import logging
-import six
+import re
+from io import StringIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
+
 
 logger = logging.getLogger(__name__)
 

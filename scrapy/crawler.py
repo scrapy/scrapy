@@ -1,9 +1,8 @@
-import six
-import signal
 import logging
+import signal
+import sys
 import warnings
 
-import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
@@ -21,6 +20,7 @@ from scrapy.utils.log import (
     LogCounterHandler, configure_logging, log_scrapy_info,
     get_scrapy_root_handler, install_scrapy_root_handler)
 from scrapy import signals
+
 
 logger = logging.getLogger(__name__)
 

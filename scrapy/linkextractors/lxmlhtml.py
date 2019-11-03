@@ -3,7 +3,6 @@ Link extractor based on lxml.html
 """
 from urllib.parse import urljoin
 
-import six
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url

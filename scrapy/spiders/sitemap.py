@@ -1,6 +1,5 @@
 import re
 import logging
-import six
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse

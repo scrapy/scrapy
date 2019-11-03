@@ -11,8 +11,6 @@ import warnings
 import pickle
 from xml.sax.saxutils import XMLGenerator
 
-import six
-
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem

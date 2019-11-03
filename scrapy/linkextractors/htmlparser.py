@@ -5,7 +5,6 @@ import warnings
 from html.parser import HTMLParser
 from urllib.parse import urljoin
 
-import six
 from w3lib.url import safe_url_string
 from w3lib.html import strip_html5_whitespace
 

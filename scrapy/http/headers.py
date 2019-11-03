@@ -1,4 +1,3 @@
-import six
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.python import to_unicode
@@ -68,9 +67,6 @@ class Headers(CaselessDict):
         self[key] = lst
 
     def items(self):
-        return list(self.iteritems())
-
-    def iteritems(self):
         return ((k, self.getlist(k)) for k in self.keys())
 
     def values(self):

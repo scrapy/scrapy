@@ -1,4 +1,3 @@
-import six
 import json
 import copy
 from collections.abc import MutableMapping

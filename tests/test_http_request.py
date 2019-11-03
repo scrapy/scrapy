@@ -62,7 +62,7 @@ class RequestTest(unittest.TestCase):
         # headers must not be unicode
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
-        for k, v in h.iteritems():
+        for k, v in h.items():
             self.assertIsInstance(k, bytes)
             for s in v:
                 self.assertIsInstance(s, bytes)

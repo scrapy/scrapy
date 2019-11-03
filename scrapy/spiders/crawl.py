@@ -8,8 +8,6 @@ See documentation in docs/topics/spiders.rst
 import copy
 import warnings
 
-import six
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
