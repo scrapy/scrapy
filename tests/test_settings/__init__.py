@@ -1,4 +1,3 @@
-import six
 import unittest
 from unittest import mock
 
@@ -43,14 +42,14 @@ class SettingsAttributeTest(unittest.TestCase):
         new_dict = {'three': 11, 'four': 21}
         attribute.set(new_dict, 10)
         self.assertIsInstance(attribute.value, BaseSettings)
-        six.assertCountEqual(self, attribute.value, new_dict)
-        six.assertCountEqual(self, original_settings, original_dict)
+        self.assertCountEqual(attribute.value, new_dict)
+        self.assertCountEqual(original_settings, original_dict)
 
         new_settings = BaseSettings({'five': 12}, 0)
         attribute.set(new_settings, 0)  # Insufficient priority
-        six.assertCountEqual(self, attribute.value, new_dict)
+        self.assertCountEqual(attribute.value, new_dict)
         attribute.set(new_settings, 10)
-        six.assertCountEqual(self, attribute.value, new_settings)
+        self.assertCountEqual(attribute.value, new_settings)
 
     def test_repr(self):
         self.assertEqual(repr(self.attribute),
@@ -276,9 +275,8 @@ class BaseSettingsTest(unittest.TestCase):
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
                           'HASNOBASE': BaseSettings({3: 3000}, 'default')})
         s['TEST'].set(2, 200, 'cmdline')
-        six.assertCountEqual(self, s.getwithbase('TEST'),
-                             {1: 1, 2: 200, 3: 30})
-        six.assertCountEqual(self, s.getwithbase('HASNOBASE'), s['HASNOBASE'])
+        self.assertCountEqual(s.getwithbase('TEST'), {1: 1, 2: 200, 3: 30})
+        self.assertCountEqual(s.getwithbase('HASNOBASE'), s['HASNOBASE'])
         self.assertEqual(s.getwithbase('NONEXISTENT'), {})
 
     def test_maxpriority(self):
