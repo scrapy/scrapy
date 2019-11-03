@@ -7,15 +7,16 @@ import io
 import sys
 import pprint
 import marshal
-import six
-from six.moves import cPickle as pickle
+import warnings
+from import pickle
 from xml.sax.saxutils import XMLGenerator
+
+import six
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
-import warnings
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',

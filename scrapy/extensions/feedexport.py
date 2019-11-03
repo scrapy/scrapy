@@ -10,7 +10,7 @@ import logging
 import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-from six.moves.urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote
 from ftplib import FTP
 
 from zope.interface import Interface, implementer

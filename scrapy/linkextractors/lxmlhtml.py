@@ -1,9 +1,9 @@
 """
 Link extractor based on lxml.html
 """
-import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
+import six
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url

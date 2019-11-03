@@ -1,11 +1,11 @@
 """
 SGMLParser-based Link extractors
 """
-import six
-from six.moves.urllib.parse import urljoin
 import warnings
+from urllib.parse import urljoin
 from sgmllib import SGMLParser
 
+import six
 from w3lib.url import safe_url_string, canonicalize_url
 from w3lib.html import strip_html5_whitespace
 

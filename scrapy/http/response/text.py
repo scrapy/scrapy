@@ -5,10 +5,10 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 import parsel
+import six
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from w3lib.html import strip_html5_whitespace

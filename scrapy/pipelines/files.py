@@ -5,17 +5,17 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
-from io import BytesIO
+import logging
 import mimetypes
 import os
 import os.path
 import time
-import logging
-from email.utils import parsedate_tz, mktime_tz
-from six.moves.urllib.parse import urlparse
 from collections import defaultdict
-import six
+from email.utils import parsedate_tz, mktime_tz
+from io import BytesIO
+from urllib.parse import urlparse
 
+import six
 from twisted.internet import defer, threads
 
 from scrapy.pipelines.media import MediaPipeline

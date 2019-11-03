@@ -1,4 +1,4 @@
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util

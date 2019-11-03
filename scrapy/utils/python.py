@@ -65,7 +65,7 @@ def is_listlike(x):
     True
     >>> is_listlike((x for x in range(3)))
     True
-    >>> is_listlike(six.moves.xrange(5))
+    >>> is_listlike(range(5))
     True
     """
     return hasattr(x, "__iter__") and not isinstance(x, (six.text_type, bytes))

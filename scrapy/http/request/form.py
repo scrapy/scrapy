@@ -5,10 +5,10 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import six
-from six.moves.urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode
 
 import lxml.html
+import six
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
