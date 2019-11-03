@@ -37,8 +37,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def scrape_response(self, scrape_func, response, request, spider):
         fname = lambda f:'%s.%s' % (
-                six.get_method_self(f).__class__.__name__,
-                six.get_method_function(f).__name__)
+                f.__self__.__class__.__name__,
+                f.__func__.__name__)
 
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:

@@ -38,7 +38,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield method(request=request, spider=spider)
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_request must return None, Response or Request, got %s' % \
-                                         (six.get_method_self(method).__class__.__name__, response.__class__.__name__))
+                                         (method.__self__.__class__.__name__, response.__class__.__name__))
                 if response:
                     defer.returnValue(response)
             defer.returnValue((yield download_func(request=request, spider=spider)))
@@ -53,7 +53,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield method(request=request, response=response, spider=spider)
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_response must return Response or Request, got %s' % \
-                                         (six.get_method_self(method).__class__.__name__, type(response)))
+                                         (method.__self__.__class__.__name__, type(response)))
                 if isinstance(response, Request):
                     defer.returnValue(response)
             defer.returnValue(response)
@@ -65,7 +65,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield method(request=request, exception=exception, spider=spider)
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput('Middleware %s.process_exception must return None, Response or Request, got %s' % \
-                                         (six.get_method_self(method).__class__.__name__, type(response)))
+                                         (method.__self__.__class__.__name__, type(response)))
                 if response:
                     defer.returnValue(response)
             defer.returnValue(_failure)
