@@ -3,12 +3,10 @@ import cgi
 import unittest
 import re
 import json
-from unittest import mock
-from urllib.parse import unquote_to_bytes
+import xmlrpc.client as xmlrpclib
 import warnings
-
-from six.moves import xmlrpc_client as xmlrpclib
-from six.moves.urllib.parse import urlparse, parse_qs, unquote
+from unittest import mock
+from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_unicode

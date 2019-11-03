@@ -2,13 +2,13 @@ import os
 import csv
 import json
 import warnings
-from io import BytesIO
 import tempfile
 import shutil
 import string
+from io import BytesIO
 from unittest import mock
-from six.moves.urllib.parse import urljoin, urlparse, quote
-from six.moves.urllib.request import pathname2url
+from urllib.parse import urljoin, urlparse, quote
+from urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
