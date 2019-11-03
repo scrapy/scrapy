@@ -1,8 +1,6 @@
 from functools import partial
 import unittest
 
-import six
-
 from scrapy.http import HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader

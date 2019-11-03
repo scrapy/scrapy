@@ -5,7 +5,6 @@ See documentation in docs/topics/spider-middleware.rst
 """
 from itertools import chain, islice
 
-import six
 from twisted.python.failure import Failure
 from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
-import six
+
 from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter, _body_or_str, xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
+
 
 FOOBAR_NL = u"foo\nbar"
 

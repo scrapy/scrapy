@@ -3,8 +3,6 @@ Downloader Middleware manager
 
 See documentation in docs/topics/downloader-middleware.rst
 """
-import six
-
 from twisted.internet import defer
 
 from scrapy.exceptions import _InvalidOutput

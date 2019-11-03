@@ -1,5 +1,5 @@
 from unittest import TestCase
-import six
+
 import scrapy
 
 

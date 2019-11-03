@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
 from w3lib.encoding import resolve_encoding
 
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,

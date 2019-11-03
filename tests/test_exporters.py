@@ -8,7 +8,6 @@ from io import BytesIO
 from datetime import datetime
 
 import lxml.etree
-import six
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode

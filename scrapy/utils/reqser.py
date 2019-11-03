@@ -1,8 +1,6 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
-import six
-
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object

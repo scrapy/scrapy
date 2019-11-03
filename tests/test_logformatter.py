@@ -3,7 +3,6 @@ import unittest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
-import six
 
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import DropItem

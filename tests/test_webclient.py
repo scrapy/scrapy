@@ -3,7 +3,6 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
-import six
 import shutil
 
 import OpenSSL.SSL

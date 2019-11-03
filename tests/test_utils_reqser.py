@@ -2,8 +2,6 @@
 import unittest
 import sys
 
-import six
-
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
 from scrapy.utils.reqser import request_to_dict, request_from_dict, _is_private_method, _mangle_private_name
