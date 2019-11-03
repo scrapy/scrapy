@@ -1,5 +1,4 @@
 import os
-import six
 import shutil
 import tempfile
 from unittest import mock
@@ -630,18 +629,16 @@ class Http11MockServerTestCase(unittest.TestCase):
         # download_maxsize < 100, hence the CancelledError
         self.assertIsInstance(failure.value, defer.CancelledError)
 
-        if six.PY2:
-            request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-            request = request.replace(url=self.mockserver.url('/xpayload'))
-            yield crawler.crawl(seed=request)
-            # download_maxsize = 50 is enough for the gzipped response
-            failure = crawler.spider.meta.get('failure')
-            self.assertTrue(failure == None)
-            reason = crawler.spider.meta['close_reason']
-            self.assertTrue(reason, 'finished')
-        else:
-            # See issue https://twistedmatrix.com/trac/ticket/8175
-            raise unittest.SkipTest("xpayload only enabled for PY2")
+        # See issue https://twistedmatrix.com/trac/ticket/8175
+        raise unittest.SkipTest("xpayload fails on PY3")
+        request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+        request = request.replace(url=self.mockserver.url('/xpayload'))
+        yield crawler.crawl(seed=request)
+        # download_maxsize = 50 is enough for the gzipped response
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure == None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
 
 
 class UriResource(resource.Resource):
