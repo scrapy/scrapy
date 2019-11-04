@@ -315,8 +315,9 @@ class LocalCache(collections.OrderedDict):
         self.limit = limit
 
     def __setitem__(self, key, value):
-        while len(self) >= self.limit:
-            self.popitem(last=False)
+        if self.limit:
+            while len(self) >= self.limit:
+                self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
 
 

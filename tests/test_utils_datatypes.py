@@ -7,7 +7,7 @@ if six.PY2:
 else:
     from collections.abc import Mapping, MutableMapping
 
-from scrapy.utils.datatypes import CaselessDict, SequenceExclude
+from scrapy.utils.datatypes import CaselessDict, SequenceExclude, LocalCache
 
 
 __doctests__ = ['scrapy.utils.datatypes']
@@ -242,6 +242,31 @@ class SequenceExcludeTest(unittest.TestCase):
         for v in [-3, "test", 1.1]:
             self.assertNotIn(v, d)
 
+
+class LocalCacheTest(unittest.TestCase):
+
+    def test_cache_with_limit(self):
+        cache = LocalCache(limit=2)
+        cache['a'] = 1
+        cache['b'] = 2
+        cache['c'] = 3
+        self.assertEqual(len(cache), 2)
+        self.assertNotIn('a', cache)
+        self.assertIn('b', cache)
+        self.assertIn('c', cache)
+        self.assertEqual(cache['b'], 2)
+        self.assertEqual(cache['c'], 3)
+
+    def test_cache_without_limit(self):
+        max = 10**4
+        cache = LocalCache()
+        for x in range(max):
+            cache[str(x)] = x
+        self.assertEqual(len(cache), max)
+        for x in range(max):
+            self.assertIn(str(x), cache)
+            self.assertEqual(cache[str(x)], x)
+
+
 if __name__ == "__main__":
     unittest.main()
-
