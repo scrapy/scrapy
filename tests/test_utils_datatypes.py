@@ -7,7 +7,7 @@ if six.PY2:
 else:
     from collections.abc import Mapping, MutableMapping
 
-from scrapy.utils.datatypes import CaselessDict, SequenceExclude, LocalCache
+from scrapy.utils.datatypes import CaselessDict, LocalCache, SequenceExclude
 
 
 __doctests__ = ['scrapy.utils.datatypes']
