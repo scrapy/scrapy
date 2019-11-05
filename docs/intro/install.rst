@@ -275,7 +275,9 @@ AttributeError: 'module' object has no attribute 'OP_NO_TLSv1_1'
 ----------------------------------------------------------------
 
 After you install or upgrade Scrapy, Twisted or pyOpenSSL, you may get an
-exception with the following traceback::
+exception with the following traceback:
+
+.. code-block:: python
 
     […]
       File "[…]/site-packages/twisted/protocols/tls.py", line 63, in <module>
