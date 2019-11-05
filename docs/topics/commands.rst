@@ -89,7 +89,9 @@ under ``[settings]`` in your ``scrapy.cfg`` file::
 
 By default, the ``scrapy`` command-line tool will use the ``default`` settings.
 Use the ``SCRAPY_PROJECT`` environment variable to specify a different project
-for ``scrapy`` to use::
+for ``scrapy`` to use:
+
+.. code-block:: bash
 
     $ scrapy settings --get BOT_NAME
     Project 1 Bot
@@ -102,7 +104,9 @@ Using the ``scrapy`` tool
 =========================
 
 You can start by running the Scrapy tool with no arguments and it will print
-some usage help and the available commands::
+some usage help and the available commands:
+
+.. code-block:: bash
 
     Scrapy X.Y - no active project
 
@@ -116,7 +120,9 @@ some usage help and the available commands::
 
 The first line will print the currently active project if you're inside a
 Scrapy project. In this example it was run from outside a project. If run from inside
-a project it would have printed something like this::
+a project it would have printed something like this:
+
+.. code-block:: bash
 
     Scrapy X.Y - project: myproject
 
@@ -129,14 +135,18 @@ Creating projects
 -----------------
 
 The first thing you typically do with the ``scrapy`` tool is create your Scrapy
-project::
+project:
+
+.. code-block:: bash
 
     scrapy startproject myproject [project_dir]
 
 That will create a Scrapy project under the ``project_dir`` directory.
 If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
 
-Next, you go inside the new project directory::
+Next, you go inside the new project directory:
+
+.. code-block:: bash
 
     cd project_dir
 
@@ -149,7 +159,9 @@ Controlling projects
 You use the ``scrapy`` tool from inside your projects to control and manage
 them.
 
-For example, to create a new spider::
+For example, to create a new spider:
+
+.. code-block:: bash
 
     scrapy genspider mydomain mydomain.com
 
@@ -171,11 +183,15 @@ Available tool commands
 
 This section contains a list of the available built-in commands with a
 description and some usage examples. Remember, you can always get more info
-about each command by running::
+about each command by running:
+
+.. code-block:: bash
 
     scrapy <command> -h
 
-And you can see all available commands with::
+And you can see all available commands with:
+
+.. code-block:: bash
 
     scrapy -h
 
@@ -217,7 +233,9 @@ Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
 If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy startproject myproject
 
@@ -231,7 +249,9 @@ genspider
 
 Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy genspider -l
     Available templates:
@@ -261,7 +281,9 @@ crawl
 
 Start crawling using a spider.
 
-Usage examples::
+Usage examples:
+
+.. code-block:: bash
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
@@ -277,7 +299,9 @@ check
 
 Run contract checks.
 
-Usage examples::
+Usage examples:
+
+.. code-block:: bash
 
     $ scrapy check -l
     first_spider
@@ -305,7 +329,9 @@ list
 List all available spiders in the current project. The output is one spider per
 line.
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy list
     spider1
@@ -326,7 +352,9 @@ This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug spiders.
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy edit spider1
 
@@ -358,7 +386,9 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
-Usage examples::
+Usage examples:
+
+.. code-block:: bash
 
     $ scrapy fetch --nolog http://www.example.com/some/page.html
     [ ... html content here ... ]
@@ -392,7 +422,9 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy view http://www.example.com/some/page.html
     [ ... browser starts ... ]
@@ -420,7 +452,9 @@ Supported options:
   this only affects the URL you may pass as argument on the command line;
   once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy shell http://www.example.com/some/page.html
     [ ... scrapy shell starts ... ]
@@ -481,7 +515,9 @@ Supported options:
 
 * ``--verbose`` or ``-v``: display information for each depth level
 
-Usage example::
+Usage example:
+
+.. code-block:: bash
 
     $ scrapy parse http://www.example.com/ -c parse_item
     [ ... scrapy log lines crawling example.com spider ... ]
@@ -509,7 +545,9 @@ Get the value of a Scrapy setting.
 If used inside a project it'll show the project setting value, otherwise it'll
 show the default Scrapy value for that setting.
 
-Example usage::
+Example usage:
+
+.. code-block:: bash
 
     $ scrapy settings --get BOT_NAME
     scrapybot
@@ -527,7 +565,9 @@ runspider
 Run a spider self-contained in a Python file, without having to create a
 project.
 
-Example usage::
+Example usage:
+
+.. code-block:: bash
 
     $ scrapy runspider myspider.py
     [ ... spider starts crawling ... ]
@@ -588,7 +628,9 @@ You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``
 file.
 
-The following example adds ``my_command`` command::
+The following example adds ``my_command`` command:
+
+.. code-block:: python
 
   from setuptools import setup, find_packages
 
