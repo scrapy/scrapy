@@ -143,7 +143,9 @@ To put our spider to work, go to the project's top level directory and run:
 
 This command runs the spider with name ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
-similar to this::
+similar to this:
+
+.. code-block:: bash
 
     ... (omitted for brevity)
     2016-12-16 21:24:05 [scrapy.core.engine] INFO: Spider opened
@@ -213,9 +215,10 @@ Extracting data
 ---------------
 
 The best way to learn how to extract data with Scrapy is trying selectors
-using the :ref:`Scrapy shell <topics-shell>`. Run::
+using the :ref:`Scrapy shell <topics-shell>`. Run:
 
 .. code-block:: bash
+
     scrapy shell 'http://quotes.toscrape.com/page/1/'
 
 .. note::
@@ -224,11 +227,15 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
    command-line, otherwise urls containing arguments (ie. ``&`` character)
    will not work.
 
-   On Windows, use double quotes instead::
+   On Windows, use double quotes instead:
+
+.. code-block:: bash
 
        scrapy shell "http://quotes.toscrape.com/page/1/"
 
-You will see something like::
+You will see something like:
+
+.. code-block:: bash
 
     [ ... Scrapy log here ... ]
     2016-09-19 12:09:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
@@ -388,13 +395,13 @@ like this:
     </div>
 
 Let's open up scrapy shell and play a bit to find out how to extract the data
-we want::
+we want:
 
 .. code-block:: bash
 
     $ scrapy shell 'http://quotes.toscrape.com'
 
-We get a list of selectors for the quote HTML elements with::
+We get a list of selectors for the quote HTML elements with:
 
 .. code-block:: python
 
@@ -475,7 +482,9 @@ in the callback, as you can see below:
                     'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
-If you run this spider, it will output the extracted data with the log::
+If you run this spider, it will output the extracted data with the log:
+
+.. code-block:: bash
 
     2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
     {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
@@ -502,7 +511,7 @@ For historic reasons, Scrapy appends to a given file instead of overwriting
 its contents. If you run this command twice without removing the file
 before the second time, you'll end up with a broken JSON file.
 
-You can also use other formats, like `JSON Lines`_::
+You can also use other formats, like `JSON Lines`_:
 
 .. code-block:: bash
 
