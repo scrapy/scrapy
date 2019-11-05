@@ -12,11 +12,15 @@ to get an idea of how Scrapy performs in your hardware, in order to have a
 common baseline for comparisons. It uses a simple spider that does nothing and
 just follows links.
 
-To run it use::
+To run it use:
+
+.. code-block:: python
 
     scrapy bench
 
-You should see an output like this::
+You should see an output like this:
+
+.. code-block:: python
 
     2016-12-16 21:18:48 [scrapy.utils.log] INFO: Scrapy 1.2.2 started (bot: quotesbot)
     2016-12-16 21:18:48 [scrapy.utils.log] INFO: Overridden settings: {'CLOSESPIDER_TIMEOUT': 10, 'ROBOTSTXT_OBEY': True, 'SPIDER_MODULES': ['quotesbot.spiders'], 'LOGSTATS_INTERVAL': 1, 'BOT_NAME': 'quotesbot', 'LOG_LEVEL': 'INFO', 'NEWSPIDER_MODULE': 'quotesbot.spiders'}
