@@ -24,6 +24,14 @@ matrix:
     - env: TOXENV=docs
       python: 3.6
 install:
+  # For some reason the same PyPy3 version straight from Travis CI causes a
+  # test failure, so we install it manually here
+  - |
+      export PYPY_VERSION="pypy3.6-7.1.1-beta-linux_x86_64-portable"
+      wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+      tar -jxf ${PYPY_VERSION}.tar.bz2
+      virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
+      source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
   - pip install -U tox twine wheel codecov
 
 script: tox
