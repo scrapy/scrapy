@@ -5,7 +5,9 @@ Debugging Spiders
 =================
 
 This document explains the most common techniques for debugging spiders.
-Consider the following scrapy spider below::
+Consider the following scrapy spider below:
+
+.. code-block:: python
 
     import scrapy
     from myproject.items import MyItem
@@ -48,7 +50,9 @@ The most basic way of checking the output of your spider is to use the
 of the spider at the method level. It has the advantage of being flexible and
 simple to use, but does not allow debugging code inside a method.
 
-In order to see the item scraped from a specific url::
+In order to see the item scraped from a specific url:
+
+.. code-block:: bash
 
     $ scrapy parse --spider=myspider -c parse_item -d 2 <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
@@ -60,7 +64,9 @@ In order to see the item scraped from a specific url::
     # Requests  -----------------------------------------------------------------
     []
 
-Using the ``--verbose`` or ``-v`` option we can see the status at each depth level::
+Using the ``--verbose`` or ``-v`` option we can see the status at each depth level:
+
+.. code-block:: bash
 
     $ scrapy parse --spider=myspider -c parse_item -d 2 -v <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
@@ -81,7 +87,9 @@ Using the ``--verbose`` or ``-v`` option we can see the status at each depth lev
     []
 
 Checking items scraped from a single start_url, can also be easily achieved
-using::
+using:
+
+.. code-block:: bash
 
     $ scrapy parse --spider=myspider -d 3 'http://example.com/page1'
 
@@ -95,7 +103,9 @@ showing the response received and the output. How to debug the situation when
 ``parse_details`` sometimes receives no item?
 
 Fortunately, the :command:`shell` is your bread and butter in this case (see
-:ref:`topics-shell-inspect-response`)::
+:ref:`topics-shell-inspect-response`):
+
+.. code-block:: python
 
     from scrapy.shell import inspect_response
 
@@ -113,7 +123,9 @@ Open in browser
 
 Sometimes you just want to see how a certain response looks in a browser, you
 can use the ``open_in_browser`` function for that. Here is an example of how
-you would use it::
+you would use it:
+
+.. code-block:: python
 
     from scrapy.utils.response import open_in_browser
 
@@ -130,7 +142,9 @@ Logging
 
 Logging is another useful option for getting information about your spider run.
 Although not as convenient, it comes with the advantage that the logs will be
-available in all future runs should they be necessary again::
+available in all future runs should they be necessary again:
+
+.. code-block:: python
 
     def parse_details(self, response, item=None):
         if item:
