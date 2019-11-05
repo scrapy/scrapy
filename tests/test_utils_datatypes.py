@@ -258,12 +258,12 @@ class LocalCacheTest(unittest.TestCase):
         self.assertEqual(cache['c'], 3)
 
     def test_cache_without_limit(self):
-        max = 10**4
+        maximum = 10**4
         cache = LocalCache()
-        for x in range(max):
+        for x in range(maximum):
             cache[str(x)] = x
-        self.assertEqual(len(cache), max)
-        for x in range(max):
+        self.assertEqual(len(cache), maximum)
+        for x in range(maximum):
             self.assertIn(str(x), cache)
             self.assertEqual(cache[str(x)], x)
 
