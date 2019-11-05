@@ -204,6 +204,7 @@ class FeedExporter(object):
             raise NotConfigured
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
+        self.export_compression = settings.get('FEED_EXPORT_COMPRESSION', False)
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
         if not self._storage_supported(self.urifmt):
@@ -232,6 +233,9 @@ class FeedExporter(object):
         uri = self.urifmt % self._get_uri_params(spider)
         storage = self._get_storage(uri)
         file = storage.open(spider)
+        if self.export_compression:
+            import gzip
+            file = gzip.GzipFile(fileobj=file)
         exporter = self._get_exporter(file, fields_to_export=self.export_fields,
             encoding=self.export_encoding, indent=self.indent)
         if self.store_empty:

@@ -219,6 +219,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_ENCODING`
+ * :setting:`FEED_EXPORT_COMPRESSION`
  * :setting:`FEED_EXPORT_FIELDS`
  * :setting:`FEED_EXPORT_INDENT`
 
@@ -257,6 +258,15 @@ If unset or set to ``None`` (default) it uses UTF-8 for everything except JSON o
 which uses safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``utf-8`` if you want UTF-8 for JSON too.
+
+.. setting:: FEED_EXPORT_COMPRESSION
+
+FEED_EXPORT_COMPRESSION
+--------------------
+
+Default: ``False``
+
+Set to ``True`` to enable GZip compression.
 
 .. setting:: FEED_EXPORT_FIELDS
 
