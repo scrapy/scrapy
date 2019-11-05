@@ -14,12 +14,16 @@ If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
 and OS X.
 
-To install Scrapy using ``conda``, run::
+To install Scrapy using ``conda``, run:
+
+.. code-block:: bash
 
   conda install -c conda-forge scrapy
 
 Alternatively, if you’re already familiar with installation of Python packages,
-you can install Scrapy and its dependencies from PyPI with::
+you can install Scrapy and its dependencies from PyPI with:
+
+.. code-block:: bash
 
     pip install Scrapy
 
@@ -88,7 +92,9 @@ and still install packages normally with ``pip`` (without ``sudo`` and the likes
 
 To get started with virtual environments, see `virtualenv installation instructions`_.
 To install it globally (having it globally installed actually helps here),
-it should be a matter of running::
+it should be a matter of running:
+
+.. code-block:: bash
 
     $ [sudo] pip install virtualenv
 
@@ -125,7 +131,9 @@ Though it's possible to install Scrapy on Windows using pip, we recommend you
 to install `Anaconda`_ or `Miniconda`_ and use the package from the
 `conda-forge`_ channel, which will avoid most installation issues.
 
-Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
+Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with:
+
+.. code-block:: bash
 
   conda install -c conda-forge scrapy
 
@@ -145,7 +153,9 @@ typically too old and slow to catch up with latest Scrapy.
 
 
 To install scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
-these dependencies::
+these dependencies:
+
+.. code-block:: bash
 
     sudo apt-get install python3 python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
 
@@ -154,7 +164,9 @@ these dependencies::
 - ``libssl-dev`` and ``libffi-dev`` are required for ``cryptography``
 
 Inside a :ref:`virtualenv <intro-using-virtualenv>`,
-you can install Scrapy with ``pip`` after that::
+you can install Scrapy with ``pip`` after that:
+
+.. code-block:: bash
 
     pip install scrapy
 
@@ -171,7 +183,9 @@ Mac OS X
 Building Scrapy's dependencies requires the presence of a C compiler and
 development headers. On OS X this is typically provided by Apple’s Xcode
 development tools. To install the Xcode command line tools open a terminal
-window and run::
+window and run:
+
+.. code-block:: bash
 
     xcode-select --install
 
@@ -188,20 +202,28 @@ solutions:
 
   * Update your ``PATH`` variable to state that homebrew packages should be
     used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
-    if you're using `zsh`_ as default shell)::
+    if you're using `zsh`_ as default shell):
+
+  .. code-block:: bash
 
       echo "export PATH=/usr/local/bin:/usr/local/sbin:$PATH" >> ~/.bashrc
 
-  * Reload ``.bashrc`` to ensure the changes have taken place::
+  * Reload ``.bashrc`` to ensure the changes have taken place:
+
+  .. code-block:: bash
 
       source ~/.bashrc
 
-  * Install python::
+  * Install python:
+
+  .. code-block:: bash
 
       brew install python
 
   * Latest versions of python have ``pip`` bundled with them so you won't need
-    to install it separately. If this is not the case, upgrade python::
+    to install it separately. If this is not the case, upgrade python:
+
+  .. code-block:: bash
 
       brew update; brew upgrade python
 
@@ -214,7 +236,9 @@ solutions:
   We recommended reading a tutorial like
   http://docs.python-guide.org/en/latest/dev/virtualenvs/ to get started.
 
-After any of these workarounds you should be able to install Scrapy::
+After any of these workarounds you should be able to install Scrapy:
+
+.. code-block:: bash
 
   pip install Scrapy
 
@@ -264,7 +288,9 @@ The reason you get this exception is that your system or virtual environment
 has a version of pyOpenSSL that your version of Twisted does not support.
 
 To install a version of pyOpenSSL that your version of Twisted supports,
-reinstall Twisted with the :code:`tls` extra option::
+reinstall Twisted with the :code:`tls` extra option:
+
+.. code-block:: bash
 
     pip install twisted[tls]
 
