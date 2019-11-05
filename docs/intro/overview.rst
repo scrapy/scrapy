@@ -20,8 +20,10 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-http://quotes.toscrape.com, following the pagination::
+http://quotes.toscrape.com, following the pagination:
 
+.. code-block:: python
+    
     import scrapy
 
 
@@ -44,28 +46,34 @@ http://quotes.toscrape.com, following the pagination::
 
 
 Put this in a text file, name it to something like ``quotes_spider.py``
-and run the spider using the :command:`runspider` command::
+and run the spider using the :command:`runspider` command:
+
+.. code-block:: bash
 
     scrapy runspider quotes_spider.py -o quotes.json
 
 
 When this finishes you will have in the ``quotes.json`` file a list of the
 quotes in JSON format, containing text and author, looking like this (reformatted
-here for better readability)::
+here for better readability):
 
-    [{
-        "author": "Jane Austen",
-        "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"
-    },
-    {
-        "author": "Groucho Marx",
-        "text": "\u201cOutside of a dog, a book is man's best friend. Inside of a dog it's too dark to read.\u201d"
-    },
-    {
-        "author": "Steve Martin",
-        "text": "\u201cA day without sunshine is like, you know, night.\u201d"
-    },
-    ...]
+.. code-block:: javascript
+
+    [
+        {
+            "author": "Jane Austen",
+            "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"
+        },
+        {
+            "author": "Groucho Marx",
+            "text": "\u201cOutside of a dog, a book is man's best friend. Inside of a dog it's too dark to read.\u201d"
+        },
+        {
+            "author": "Steve Martin",
+            "text": "\u201cA day without sunshine is like, you know, night.\u201d"
+        },
+        ...
+    ]
 
 
 What just happened?
