@@ -30,7 +30,6 @@ from scrapy.spiders import Spider
 from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
@@ -45,6 +44,10 @@ class DummyDH(object):
     def __init__(self, crawler):
         pass
 
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
 
 class DummyLazyDH(object):
     # Default is lazy for backward compatibility
@@ -52,12 +55,20 @@ class DummyLazyDH(object):
     def __init__(self, crawler):
         pass
 
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
 
 class OffDH(object):
     lazy = False
 
     def __init__(self, crawler):
         raise NotConfigured
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
 
 class LoadTestCase(unittest.TestCase):
@@ -106,7 +117,7 @@ class FileTestCase(unittest.TestCase):
         self.tmpname = self.mktemp()
         with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
-        self.download_request = FileDownloadHandler(Settings()).download_request
+        self.download_request = FileDownloadHandler().download_request
 
     def tearDown(self):
         os.unlink(self.tmpname + '^')
@@ -239,7 +250,7 @@ class HttpTestCase(unittest.TestCase):
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls(Settings())
+        self.download_handler = self.download_handler_cls(get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -479,9 +490,9 @@ class Http11TestCase(HttpTestCase):
         return self.test_download_broken_content_allow_data_loss('broken-chunked')
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
-        download_handler = self.download_handler_cls(Settings({
-            'DOWNLOAD_FAIL_ON_DATALOSS': False,
-        }))
+        download_handler = self.download_handler_cls(
+            get_crawler(settings_dict={'DOWNLOAD_FAIL_ON_DATALOSS': False})
+        )
         request = Request(self.getURL(url))
         d = download_handler.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.flags)
@@ -499,9 +510,9 @@ class Https11TestCase(Http11TestCase):
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
-        download_handler = self.download_handler_cls(Settings({
-            'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True,
-        }))
+        download_handler = self.download_handler_cls(
+            get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True})
+        )
         try:
             with LogCapture() as log_capture:
                 request = Request(self.getURL('file'))
@@ -569,7 +580,8 @@ class Https11CustomCiphers(unittest.TestCase):
             interface=self.host)
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(
-            Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'}))
+            get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        )
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -665,7 +677,7 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls(Settings())
+        self.download_handler = self.download_handler_cls(get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -738,9 +750,10 @@ class S3AnonTestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        self.s3reqh = S3DownloadHandler(Settings(),
-                httpdownloadhandler=HttpDownloadHandlerMock,
-                #anon=True, # is implicit
+        self.s3reqh = S3DownloadHandler(
+            crawler=get_crawler(),
+            httpdownloadhandler=HttpDownloadHandlerMock,
+            #anon=True, # is implicit
         )
         self.download_request = self.s3reqh.download_request
         self.spider = Spider('foo')
@@ -766,9 +779,12 @@ class S3TestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID,
-                self.AWS_SECRET_ACCESS_KEY,
-                httpdownloadhandler=HttpDownloadHandlerMock)
+        s3reqh = S3DownloadHandler(
+            get_crawler(),
+            self.AWS_ACCESS_KEY_ID,
+            self.AWS_SECRET_ACCESS_KEY,
+            httpdownloadhandler=HttpDownloadHandlerMock,
+        )
         self.download_request = s3reqh.download_request
         self.spider = Spider('foo')
 
@@ -788,7 +804,7 @@ class S3TestCase(unittest.TestCase):
 
     def test_extra_kw(self):
         try:
-            S3DownloadHandler(Settings(), extra_kw=True)
+            S3DownloadHandler(get_crawler(), extra_kw=True)
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
@@ -928,7 +944,7 @@ class BaseFTPTestCase(unittest.TestCase):
         self.factory = FTPFactory(portal=p)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(Settings())
+        self.download_handler = FTPDownloadHandler(get_crawler())
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1042,7 +1058,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
                                   userAnonymous=self.username)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(Settings())
+        self.download_handler = FTPDownloadHandler(get_crawler())
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1052,7 +1068,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
 
     def setUp(self):
-        self.download_handler = DataURIDownloadHandler(Settings())
+        self.download_handler = DataURIDownloadHandler()
         self.download_request = self.download_handler.download_request
         self.spider = Spider('foo')
 

@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 class HTTP11DownloadHandler(object):
     lazy = False
 
-    def __init__(self, settings):
+    def __init__(self, crawler):
+        settings = crawler.settings
+
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -42,7 +44,7 @@ class HTTP11DownloadHandler(object):
             self._contextFactory = create_instance(
                 self._contextFactoryClass,
                 settings=settings,
-                crawler=None,
+                crawler=crawler,
                 method=self._sslMethod,
             )
         except TypeError:
@@ -50,7 +52,7 @@ class HTTP11DownloadHandler(object):
             self._contextFactory = create_instance(
                 self._contextFactoryClass,
                 settings=settings,
-                crawler=None,
+                crawler=crawler,
             )
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
@@ -62,6 +64,10 @@ class HTTP11DownloadHandler(object):
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
         self._disconnect_timeout = 1
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""

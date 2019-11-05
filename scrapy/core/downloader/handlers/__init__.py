@@ -5,7 +5,7 @@ from twisted.internet import defer
 import six
 from scrapy.exceptions import NotSupported, NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
 from scrapy import signals
 
@@ -48,7 +48,11 @@ class DownloadHandlers(object):
             dhcls = load_object(path)
             if skip_lazy and getattr(dhcls, 'lazy', True):
                 return None
-            dh = dhcls(self._crawler.settings)
+            dh = create_instance(
+                dhcls,
+                self._crawler.settings,
+                self._crawler,
+            )
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
             return None

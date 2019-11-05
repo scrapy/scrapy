@@ -59,6 +59,7 @@ class ReceivedDataProtocol(Protocol):
     def close(self):
         self.body.close() if self.filename else self.body.seek(0)
 
+
 _CODE_RE = re.compile(r"\d+")
 
 
@@ -70,10 +71,14 @@ class FTPDownloadHandler(object):
         "default": 503,
     }
 
-    def __init__(self, settings):
-        self.default_user = settings['FTP_USER']
-        self.default_password = settings['FTP_PASSWORD']
-        self.passive_mode = settings['FTP_PASSIVE_MODE']
+    def __init__(self, crawler):
+        self.default_user = crawler.settings['FTP_USER']
+        self.default_password = crawler.settings['FTP_PASSWORD']
+        self.passive_mode = crawler.settings['FTP_PASSIVE_MODE']
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def download_request(self, request, spider):
         parsed_url = urlparse_cached(request)
