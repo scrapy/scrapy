@@ -262,7 +262,7 @@ Use ``utf-8`` if you want UTF-8 for JSON too.
 .. setting:: FEED_EXPORT_COMPRESSION
 
 FEED_EXPORT_COMPRESSION
---------------------
+-----------------------
 
 Default: ``False``
 
