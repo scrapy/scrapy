@@ -35,8 +35,9 @@ for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
-Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
 
+.. code-block:: python
 
     from bs4 import BeautifulSoup
     import scrapy
@@ -181,7 +182,9 @@ Can I run a spider without creating a project?
 ----------------------------------------------
 
 Yes. You can use the :command:`runspider` command. For example, if you have a
-spider written in a ``my_spider.py`` file you can run it with::
+spider written in a ``my_spider.py`` file you can run it with:
+
+.. code-block:: bash
 
     scrapy runspider my_spider.py
 
@@ -223,7 +226,9 @@ What does the response status code 999 means?
 
 999 is a custom response status code used by Yahoo sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider::
+higher) in your spider:
+
+.. code-block:: python
 
     class MySpider(CrawlSpider):
 
@@ -248,15 +253,21 @@ For more info see :ref:`topics-shell-inspect-response`.
 Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 -------------------------------------------------------------------
 
-To dump into a JSON file::
+To dump into a JSON file:
+
+.. code-block:: bash
 
     scrapy crawl myspider -o items.json
 
-To dump into a CSV file::
+To dump into a CSV file:
+
+.. code-block:: bash
 
     scrapy crawl myspider -o items.csv
 
-To dump into a XML file::
+To dump into a XML file:
+
+.. code-block:: bash
 
     scrapy crawl myspider -o items.xml
 
@@ -338,7 +349,9 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this puspose. For example::
+method for this puspose. For example:
+
+.. code-block:: python
 
     from copy import deepcopy
 

@@ -38,7 +38,9 @@ the end of the exporting process
 
 Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
-value of one of their fields::
+value of one of their fields:
+
+.. code-block:: python
 
     from scrapy.exporters import XmlItemExporter
 
@@ -91,7 +93,9 @@ If you use :class:`~.Item` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be 
 a callable which receives a value and returns its serialized form.
 
-Example::
+Example:
+
+.. code-block:: python
 
     import scrapy
 
@@ -112,7 +116,9 @@ customize how your field value will be exported.
 Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
 after your custom code.
 
-Example::
+Example:
+
+.. code-block:: python
 
       from scrapy.exporter import XmlItemExporter
 
@@ -129,7 +135,9 @@ Built-in Item Exporters reference
 =================================
 
 Here is a list of the Item Exporters bundled with Scrapy. Some of them contain
-output examples, which assume you're exporting these two items::
+output examples, which assume you're exporting these two items:
+
+.. code-block:: python
 
     Item(name='Color TV', price='1200')
     Item(name='DVD player', price='200')
@@ -249,7 +257,9 @@ XmlItemExporter
    The additional keyword arguments of this constructor are passed to the
    :class:`BaseItemExporter` constructor.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+.. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -269,9 +279,13 @@ XmlItemExporter
 
    For example, the item::
 
+.. code-block:: python
+
         Item(name=['John', 'Doe'], age='23')
 
-   Would be serialized as::
+   Would be serialized as:
+
+.. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -354,7 +368,9 @@ PprintItemExporter
    The additional keyword arguments of this constructor are passed to the
    :class:`BaseItemExporter` constructor.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+.. code-block:: javascript
 
         {'name': 'Color TV', 'price': '1200'}
         {'name': 'DVD player', 'price': '200'}
@@ -375,7 +391,9 @@ JsonItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+.. code-block:: javascript
 
         [{"name": "Color TV", "price": "1200"},
         {"name": "DVD player", "price": "200"}]
@@ -406,7 +424,9 @@ JsonLinesItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+.. code-block:: javascript
 
         {"name": "Color TV", "price": "1200"}
         {"name": "DVD player", "price": "200"}

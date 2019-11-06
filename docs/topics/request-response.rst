@@ -63,12 +63,14 @@ Request objects
 
     :param cookies: the request cookies. These can be sent in two forms.
 
-        1. Using a dict::
+        1. Using a dict:
+        .. code-block:: python
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'})
 
-        2. Using a list of dicts::
+        2. Using a list of dicts:
+        .. code-block:: python
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies=[{'name': 'currency',
@@ -91,7 +93,8 @@ Request objects
         in :attr:`request.meta <scrapy.http.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
-        cookie storage::
+        cookie storage:
+        .. code-block:: python
 
             Request(
                 url="http://www.example.com",
@@ -209,7 +212,9 @@ The callback of a request is a function that will be called when the response
 of that request is downloaded. The callback function will be called with the
 downloaded :class:`Response` object as its first argument.
 
-Example::
+Example:
+
+.. code-block:: python
 
     def parse_page1(self, response):
         return scrapy.Request("http://www.example.com/some_page.html",
@@ -224,7 +229,7 @@ functions so you can receive the arguments later, in the second callback.
 The following example shows how to achieve this by using the
 :attr:`Request.cb_kwargs` attribute:
 
-::
+.. code-block:: python
 
     def parse(self, response):
         request = scrapy.Request('http://www.example.com/index.html',
@@ -258,7 +263,9 @@ It receives a `Twisted Failure`_ instance as first parameter and can be
 used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
-errors if needed::
+errors if needed:
+
+.. code-block:: python
 
     import scrapy
 
@@ -495,7 +502,9 @@ Using FormRequest to send data via HTTP POST
 
 If you want to simulate a HTML Form POST in your spider and send a couple of
 key-value fields, you can return a :class:`FormRequest` object (from your
-spider) like this::
+spider) like this:
+
+.. code-block:: python
 
    return [FormRequest(url="http://www.example.com/post/action",
                        formdata={'name': 'John Doe', 'age': '27'},
@@ -511,8 +520,9 @@ type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
 user name and password. You can use the :meth:`FormRequest.from_response`
-method for this job. Here's an example spider which uses it::
+method for this job. Here's an example spider which uses it:
 
+.. code-block:: python
 
     import scrapy
 
@@ -569,7 +579,9 @@ dealing with JSON requests.
 JsonRequest usage example
 -------------------------
 
-Sending a JSON POST request with a JSON payload::
+Sending a JSON POST request with a JSON payload:
+
+.. code-block:: python
 
    data = {
        'name1': 'value1',

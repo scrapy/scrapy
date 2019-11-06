@@ -37,7 +37,9 @@ Link extractors classes bundled with Scrapy are provided in the
 :mod:`scrapy.linkextractors` module.
 
 The default link extractor is ``LinkExtractor``, which is the same as
-:class:`~.LxmlLinkExtractor`::
+:class:`~.LxmlLinkExtractor`:
+
+.. code-block:: python
 
     from scrapy.linkextractors import LinkExtractor
 
@@ -128,13 +130,17 @@ LxmlLinkExtractor
 
         .. highlight:: html
 
-        For example, to extract links from this code::
+        For example, to extract links from this code:
+
+        .. code-block:: html
 
             <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
 
         .. highlight:: python
 
-        You can use the following function in ``process_value``::
+        You can use the following function in ``process_value``:
+
+        .. code-block:: python
 
             def process_value(value):
                 m = re.search("javascript:goToPage\('(.*?)'", value)

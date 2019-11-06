@@ -40,14 +40,18 @@ How to log messages
 ===================
 
 Here's a quick example of how to log a message using the ``logging.WARNING``
-level::
+level:
+
+.. code-block:: python
 
     import logging
     logging.warning("This is a warning")
 
 There are shortcuts for issuing log messages on any of the standard 5 levels,
 and there's also a general ``logging.log`` method which takes a given level as
-argument.  If needed, the last example could be rewritten as::
+argument.  If needed, the last example could be rewritten as:
+
+.. code-block:: python
 
     import logging
     logging.log(logging.WARNING, "This is a warning")
@@ -60,14 +64,18 @@ constructions.
 The previous examples use the root logger behind the scenes, which is a top level
 logger where all messages are propagated to (unless otherwise specified). Using
 ``logging`` helpers is merely a shortcut for getting the root logger
-explicitly, so this is also an equivalent of the last snippets::
+explicitly, so this is also an equivalent of the last snippets:
+
+.. code-block:: python
 
     import logging
     logger = logging.getLogger()
     logger.warning("This is a warning")
 
 You can use a different logger just by getting its name with the
-``logging.getLogger`` function::
+``logging.getLogger`` function:
+
+.. code-block:: python
 
     import logging
     logger = logging.getLogger('mycustomlogger')
@@ -75,7 +83,9 @@ You can use a different logger just by getting its name with the
 
 Finally, you can ensure having a custom logger for any module you're working on
 by using the ``__name__`` variable, which is populated with current module's
-path::
+path:
+
+.. code-block:: python
 
     import logging
     logger = logging.getLogger(__name__)
@@ -95,7 +105,9 @@ Logging from Spiders
 ====================
 
 Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider
-instance, which can be accessed and used like this::
+instance, which can be accessed and used like this:
+
+.. code-block:: python
 
     import scrapy
 
@@ -108,7 +120,9 @@ instance, which can be accessed and used like this::
             self.logger.info('Parse function called on %s', response.url)
 
 That logger is created using the Spider's name, but you can use any custom
-Python logger you want. For example::
+Python logger you want. For example:
+
+.. code-block:: python
 
     import logging
     import scrapy
@@ -212,7 +226,9 @@ Because Scrapy uses stdlib logging module, you can customize logging using
 all features of stdlib logging.
 
 For example, let's say you're scraping a website which returns many
-HTTP 404 and 500 responses, and you want to hide all messages like this::
+HTTP 404 and 500 responses, and you want to hide all messages like this:
+
+.. code-block:: python
 
     2016-12-16 22:00:06 [scrapy.spidermiddlewares.httperror] INFO: Ignoring
     response <500 http://quotes.toscrape.com/page/1-34/>: HTTP status code
@@ -226,7 +242,9 @@ the crawl.
 Next, we can see that the message has INFO level. To hide it
 we should set logging level for ``scrapy.spidermiddlewares.httperror``
 higher than INFO; next level after INFO is WARNING. It could be done
-e.g. in the spider's ``__init__`` method::
+e.g. in the spider's ``__init__`` method:
+
+.. code-block:: python
 
     import logging
     import scrapy
@@ -261,7 +279,9 @@ scrapy.utils.log module
 
     To get you started on manually configuring logging's output, you can use
     `logging.basicConfig()`_ to set a basic root handler. This is an example
-    on how to redirect ``INFO`` or higher messages to a file::
+    on how to redirect ``INFO`` or higher messages to a file:
+
+    .. code-block:: python
 
         import logging
         from scrapy.utils.log import configure_logging

@@ -50,7 +50,9 @@ Sometimes you need to inspect the source code of a webpage (not the
 :ref:`DOM <topics-livedom>`) to determine where some desired data is located.
 
 Use Scrapy’s :command:`fetch` command to download the webpage contents as seen
-by Scrapy::
+by Scrapy:
+
+.. code-block:: bash
 
     scrapy fetch --nolog https://example.com > response.html
 
@@ -116,14 +118,18 @@ data from it depends on the type of response:
     <topics-selectors>` as usual.
 
 -   If the response is JSON, use `json.loads`_ to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`::
+    :attr:`response.text <scrapy.http.TextResponse.text>`:
+
+.. code-block:: python
 
         data = json.loads(response.text)
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
     :class:`~scrapy.selector.Selector` and then
-    :ref:`use it <topics-selectors>` as usual::
+    :ref:`use it <topics-selectors>` as usual:
+
+.. code-block:: python
 
         selector = Selector(data['html'])
 
@@ -172,7 +178,9 @@ data from it:
     data in JSON format, which you can then parse with `json.loads`_.
 
     For example, if the JavaScript code contains a separate line like
-    ``var data = {"field": "value"};`` you can extract that data as follows::
+    ``var data = {"field": "value"};`` you can extract that data as follows:
+
+.. code-block:: python
 
         >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
         >>> json_data = response.css('script::text').re_first(pattern)
@@ -183,7 +191,9 @@ data from it:
     that you can parse using :ref:`selectors <topics-selectors>`.
 
     For example, if the JavaScript code contains
-    ``var data = {field: "value"};`` you can extract that data as follows::
+    ``var data = {field: "value"};`` you can extract that data as follows:
+
+.. code-block:: python
 
         >>> import js2xml
         >>> import lxml.etree

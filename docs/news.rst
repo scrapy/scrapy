@@ -47,7 +47,9 @@ Backward-incompatible changes
     (:issue:`2111`, :issue:`3392`, :issue:`3442`, :issue:`3450`)
 
 *   :class:`~scrapy.loader.ItemLoader` now turns the values of its input item
-    into lists::
+    into lists:
+
+.. code-block:: python
 
         >>> item = MyItem()
         >>> item['field'] = 'value1'

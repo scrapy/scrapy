@@ -154,7 +154,9 @@ scrapy.Spider
 
        If you want to change the Requests used to start scraping a domain, this is
        the method to override. For example, if you need to start by logging in using
-       a POST request, you could do::
+       a POST request, you could do:
+
+       .. code-block:: python
 
            class MySpider(scrapy.Spider):
                name = 'myspider'
@@ -196,7 +198,9 @@ scrapy.Spider
        Called when the spider closes. This method provides a shortcut to
        signals.connect() for the :signal:`spider_closed` signal.
 
-Let's see an example::
+Let's see an example:
+
+.. code-block:: python
 
     import scrapy
 
@@ -213,7 +217,9 @@ Let's see an example::
         def parse(self, response):
             self.logger.info('A response from %s just arrived!', response.url)
 
-Return multiple Requests and items from a single callback::
+Return multiple Requests and items from a single callback:
+
+.. code-block:: python
 
     import scrapy
 
@@ -234,7 +240,9 @@ Return multiple Requests and items from a single callback::
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
-to give data more structure you can use :ref:`topics-items`::
+to give data more structure you can use :ref:`topics-items`:
+
+.. code-block:: python
 
     import scrapy
     from myproject.items import MyItem
@@ -266,11 +274,15 @@ certain sections of the site, but they can be used to configure any
 functionality of the spider.
 
 Spider arguments are passed through the :command:`crawl` command using the
-``-a`` option. For example::
+``-a`` option. For example:
+
+.. code-block:: bash
 
     scrapy crawl myspider -a category=electronics
 
-Spiders can access arguments in their `__init__` methods::
+Spiders can access arguments in their `__init__` methods:
+
+.. code-block:: python
 
     import scrapy
 
@@ -284,7 +296,9 @@ Spiders can access arguments in their `__init__` methods::
 
 The default `__init__` method will take any spider arguments
 and copy them to the spider as attributes.
-The above example can also be written as follows::
+The above example can also be written as follows:
+
+.. code-block:: python
 
     import scrapy
 
@@ -309,7 +323,9 @@ resulting in each character being seen as a separate url.
 A valid use case is to set the http auth credentials
 used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
 or the user agent
-used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
+used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`:
+
+.. code-block:: bash
 
     scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
 
@@ -327,7 +343,9 @@ common scraping cases, like following all links on a site based on certain
 rules, crawling from `Sitemaps`_, or parsing an XML/CSV feed.
 
 For the examples used in the following spiders, we'll assume you have a project
-with a ``TestItem`` declared in a ``myproject.items`` module::
+with a ``TestItem`` declared in a ``myproject.items`` module:
+
+.. code-block:: python
 
     import scrapy
 
@@ -417,7 +435,9 @@ Crawling rules
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
 
-Let's now take a look at an example CrawlSpider with rules::
+Let's now take a look at an example CrawlSpider with rules:
+
+.. code-block:: python
 
     import scrapy
     from scrapy.spiders import CrawlSpider, Rule
@@ -540,7 +560,9 @@ XMLFeedSpider
 XMLFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
 
-These spiders are pretty easy to use, let's have a look at one example::
+These spiders are pretty easy to use, let's have a look at one example:
+
+.. code-block:: python
 
     from scrapy.spiders import XMLFeedSpider
     from myproject.items import TestItem
@@ -599,7 +621,9 @@ CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
 
 Let's see an example similar to the previous one, but using a
-:class:`CSVFeedSpider`::
+:class:`CSVFeedSpider`:
+
+.. code-block:: python
 
     from scrapy.spiders import CSVFeedSpider
     from myproject.items import TestItem
@@ -737,7 +761,9 @@ SitemapSpider examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Simplest example: process all urls discovered through sitemaps using the
-``parse`` callback::
+``parse`` callback:
+
+.. code-block:: python
 
     from scrapy.spiders import SitemapSpider
 
@@ -748,7 +774,9 @@ Simplest example: process all urls discovered through sitemaps using the
             pass # ... scrape item here ...
 
 Process some urls with certain callback and other urls with a different
-callback::
+callback:
+
+.. code-block:: python
 
     from scrapy.spiders import SitemapSpider
 
@@ -766,7 +794,9 @@ callback::
             pass # ... scrape category ...
 
 Follow sitemaps defined in the `robots.txt`_ file and only follow sitemaps
-whose url contains ``/sitemap_shop``::
+whose url contains ``/sitemap_shop``:
+
+.. code-block:: python
 
     from scrapy.spiders import SitemapSpider
 
@@ -780,7 +810,9 @@ whose url contains ``/sitemap_shop``::
         def parse_shop(self, response):
             pass # ... scrape shop here ...
 
-Combine SitemapSpider with other sources of urls::
+Combine SitemapSpider with other sources of urls:
+
+.. code-block:: python
 
     from scrapy.spiders import SitemapSpider
 

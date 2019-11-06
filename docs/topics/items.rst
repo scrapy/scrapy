@@ -32,7 +32,9 @@ Declaring Items
 ===============
 
 Items are declared using a simple class definition syntax and :class:`Field`
-objects. Here is an example::
+objects. Here is an example:
+
+.. code-block:: python
 
     import scrapy
 
@@ -84,7 +86,7 @@ notice the API is very similar to the `dict API`_.
 Creating items
 --------------
 
-::
+.. code-block:: python
 
     >>> product = Product(name='Desktop PC', price=1000)
     >>> print(product)
@@ -93,7 +95,7 @@ Creating items
 Getting field values
 --------------------
 
-::
+.. code-block:: python
 
     >>> product['name']
     Desktop PC
@@ -134,7 +136,7 @@ Getting field values
 Setting field values
 --------------------
 
-::
+.. code-block:: python
 
     >>> product['last_updated'] = 'today'
     >>> product['last_updated']
@@ -148,7 +150,9 @@ Setting field values
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_::
+To access all populated values, just use the typical `dict API`_:
+
+.. code-block:: python
 
     >>> product.keys()
     ['price', 'name']
@@ -194,12 +198,16 @@ To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
 Other common tasks
 ------------------
 
-Creating dicts from items::
+Creating dicts from items:
+
+.. code-block:: python
 
     >>> dict(product) # create a dict from all populated values
     {'price': 1000, 'name': 'Desktop PC'}
 
-Creating items from dicts::
+Creating items from dicts:
+
+.. code-block:: python
 
     >>> Product({'name': 'Laptop PC', 'price': 1500})
     Product(price=1500, name='Laptop PC')
@@ -215,14 +223,18 @@ Extending Items
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
 
-For example::
+For example:
+
+.. code-block:: python
 
     class DiscountedProduct(Product):
         discount_percent = scrapy.Field(serializer=str)
         discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
-appending more values, or changing existing values, like this::
+appending more values, or changing existing values, like this:
+
+.. code-block:: python
 
     class SpecificProduct(Product):
         name = scrapy.Field(Product.fields['name'], serializer=my_serializer)

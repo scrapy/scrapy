@@ -47,7 +47,9 @@ Launch the shell
 ================
 
 To launch the Scrapy shell you can use the :command:`shell` command like
-this::
+this:
+
+.. code-block:: bash
 
     scrapy shell <url>
 
@@ -55,7 +57,9 @@ Where the ``<url>`` is the URL you want to scrape.
 
 :command:`shell` also works for local files. This can be handy if you want
 to play around with a local copy of a web page. :command:`shell` understands
-the following syntaxes for local files::
+the following syntaxes for local files:
+
+.. code-block:: bash
 
     # UNIX-style
     scrapy shell ./path/to/file.html
@@ -73,7 +77,9 @@ the following syntaxes for local files::
     Because :command:`shell` favors HTTP URLs over File URIs,
     and ``index.html`` being syntactically similar to ``example.com``,
     :command:`shell` will treat ``index.html`` as a domain name and trigger
-    a DNS lookup error::
+    a DNS lookup error:
+
+.. code-block:: bash
 
         $ scrapy shell index.html
         [ ... scrapy shell starts ... ]
@@ -152,13 +158,17 @@ as those pages are not static and could have changed by the time you test this.
 The only purpose of this example is to get you familiarized with how the Scrapy
 shell works.
 
-First, we launch the shell::
+First, we launch the shell:
+
+.. code-block:: bash
 
     scrapy shell 'https://scrapy.org' --nolog
 
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
-all start with the ``[s]`` prefix)::
+all start with the ``[s]`` prefix):
+
+.. code-block:: bash
 
     [s] Available Scrapy objects:
     [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
@@ -177,7 +187,9 @@ all start with the ``[s]`` prefix)::
     >>>
 
 
-After that, we can start playing with the objects::
+After that, we can start playing with the objects:
+
+.. code-block:: python
 
     >>> response.xpath('//title/text()').get()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
@@ -231,7 +243,9 @@ getting there.
 
 This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
-Here's an example of how you would call it from your spider::
+Here's an example of how you would call it from your spider:
+
+.. code-block:: python
 
     import scrapy
 

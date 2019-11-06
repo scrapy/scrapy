@@ -78,7 +78,9 @@ Price validation and dropping items with no prices
 Let's take a look at the following hypothetical pipeline that adjusts the
 ``price`` attribute for those items that do not include VAT
 (``price_excludes_vat`` attribute), and drops those items which don't
-contain a price::
+contain a price:
+
+.. code-block:: python
 
     from scrapy.exceptions import DropItem
 
@@ -100,7 +102,9 @@ Write items to a JSON file
 
 The following pipeline stores all scraped items (from all spiders) into a
 single ``items.jl`` file, containing one item per line serialized in JSON
-format::
+format:
+
+.. code-block:: python
 
    import json
 
@@ -129,7 +133,9 @@ MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
 The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.::
+method and how to clean up the resources properly.:
+
+.. code-block:: python
 
     import pymongo
 
@@ -171,7 +177,7 @@ It uses Splash_ to render screenshot of item url. Pipeline
 makes request to locally running instance of Splash_. After request is downloaded
 and Deferred callback fires, it saves item to a file and adds filename to an item.
 
-::
+.. code-block:: python
 
     import scrapy
     import hashlib
@@ -216,8 +222,9 @@ Duplicates filter
 
 A filter that looks for duplicate items, and drops those items that were
 already processed. Let's say that our items have a unique id, but our spider
-returns multiples items with the same id::
+returns multiples items with the same id:
 
+.. code-block:: python
 
     from scrapy.exceptions import DropItem
 
@@ -238,7 +245,9 @@ Activating an Item Pipeline component
 =====================================
 
 To activate an Item Pipeline component you must add its class to the
-:setting:`ITEM_PIPELINES` setting, like in the following example::
+:setting:`ITEM_PIPELINES` setting, like in the following example:
+
+.. code-block:: python
 
    ITEM_PIPELINES = {
        'myproject.pipelines.PricePipeline': 300,

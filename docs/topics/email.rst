@@ -21,17 +21,23 @@ Quick example
 =============
 
 There are two ways to instantiate the mail sender. You can instantiate it using
-the standard constructor::
+the standard constructor:
+
+.. code-block:: python
 
     from scrapy.mail import MailSender
     mailer = MailSender()
 
 Or you can instantiate it passing a Scrapy settings object, which will respect
-the :ref:`settings <topics-email-settings>`::
+the :ref:`settings <topics-email-settings>`:
+
+.. code-block:: python
 
     mailer = MailSender.from_settings(settings)
 
-And here is how to use it to send an e-mail (without attachments)::
+And here is how to use it to send an e-mail (without attachments):
+
+.. code-block:: python
 
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 

@@ -30,12 +30,16 @@ a *single* job.
 How to use it
 =============
 
-To start a spider with persistence support enabled, run it like this::
+To start a spider with persistence support enabled, run it like this:
+
+.. code-block:: bash
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
 Then, you can stop the spider safely at any time (by pressing Ctrl-C or sending
 a signal), and resume it later by issuing the same command::
+
+.. code-block:: bash
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
@@ -49,7 +53,9 @@ loading that attribute from the job directory, when the spider starts and
 stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is omitted for brevity)::
+is omitted for brevity):
+
+.. code-block:: python
 
     def parse_item(self, response):
         # parse item here
@@ -77,7 +83,9 @@ to work, so you should make sure that your requests are serializable.
 The most common issue here is to use ``lambda`` functions on request callbacks that
 can't be persisted.
 
-So, for example, this won't work::
+So, for example, this won't work:
+
+.. code-block:: python
 
     def some_callback(self, response):
         somearg = 'test'
@@ -87,7 +95,9 @@ So, for example, this won't work::
     def other_callback(self, response, somearg):
         print("the argument passed is: %s" % somearg)
 
-But this will::
+But this will:
+
+.. code-block:: python
 
     def some_callback(self, response):
         somearg = 'test'

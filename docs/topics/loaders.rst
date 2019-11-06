@@ -43,7 +43,9 @@ using a proper processing function.
 
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
-chapter <topics-items>`::
+chapter <topics-items>`:
+
+.. code-block:: python
 
     from scrapy.loader import ItemLoader
     from myproject.items import Product
@@ -94,7 +96,9 @@ processor). The result of the output processor is the final value that gets
 assigned to the item.
 
 Let's see an example to illustrate how the input and output processors are
-called for a particular field (the same applies for any other field)::
+called for a particular field (the same applies for any other field):
+
+.. code-block:: python
 
     l = ItemLoader(Product(), some_selector)
     l.add_xpath('name', xpath1) # (1)
@@ -143,7 +147,9 @@ accept one (and only one) positional argument, which will be an iterable.
    processors is the value that will be finally assigned to the item.
 
 If you want to use a plain function as a processor, make sure it receives
-``self`` as the first argument::
+``self`` as the first argument:
+
+.. code-block:: python
 
     def lowercase_processor(self, values):
         for v in values:
@@ -169,7 +175,9 @@ Declaring Item Loaders
 ======================
 
 Item Loaders are declared like Items, by using a class definition syntax. Here
-is an example::
+is an example:
+
+.. code-block:: python
 
     from scrapy.loader import ItemLoader
     from scrapy.loader.processors import TakeFirst, MapCompose, Join
@@ -200,7 +208,9 @@ As seen in the previous section, input and output processors can be declared in
 the Item Loader definition, and it's very common to declare input processors
 this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
-metadata. Here is an example::
+metadata. Here is an example:
+
+.. code-block:: python
 
     import scrapy
     from scrapy.loader.processors import Join, MapCompose, TakeFirst
@@ -220,7 +230,7 @@ metadata. Here is an example::
             output_processor=TakeFirst(),
         )
 
-::
+.. code-block:: python
 
     >>> from scrapy.loader import ItemLoader
     >>> il = ItemLoader(item=Product())
@@ -250,7 +260,9 @@ declaring, instantiating or using Item Loader. They are used to modify the
 behaviour of the input/output processors.
 
 For example, suppose you have a function ``parse_length`` which receives a text
-value and extracts a length from it::
+value and extracts a length from it:
+
+.. code-block:: python
 
     def parse_length(text, loader_context):
         unit = loader_context.get('unit', 'm')
@@ -265,19 +277,24 @@ function (``parse_length`` in this case) can thus use them.
 There are several ways to modify Item Loader context values:
 
 1. By modifying the currently active Item Loader context
-   (:attr:`~ItemLoader.context` attribute)::
+   (:attr:`~ItemLoader.context` attribute):
 
+.. code-block:: python
       loader = ItemLoader(product)
       loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
-   constructor are stored in the Item Loader context)::
+   constructor are stored in the Item Loader context):
+
+.. code-block:: python
 
       loader = ItemLoader(product, unit='cm')
 
 3. On Item Loader declaration, for those input/output processors that support
    instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them::
+   them:
+
+.. code-block:: python
 
        class ProductLoader(ItemLoader):
            length_out = MapCompose(parse_length, unit='cm')
@@ -328,7 +345,8 @@ ItemLoader objects
             applied before processors
         :type re: str or compiled regex
 
-        Examples::
+        Examples:
+        .. code-block:: python
 
             >>> from scrapy.loader.processors import TakeFirst
             >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
@@ -348,7 +366,9 @@ ItemLoader objects
         multiple fields may be added. And the processed value should be a dict
         with field_name mapped to values.
 
-        Examples::
+        Examples:
+
+        .. code-block:: python
 
             loader.add_value('name', u'Color TV')
             loader.add_value('colours', [u'white', u'blue'])
@@ -536,7 +556,9 @@ When parsing related values from a subsection of a document, it can be
 useful to create nested loaders.  Imagine you're extracting details from
 a footer of a page that looks something like:
 
-Example::
+Example:
+
+.. code-block:: html
 
     <footer>
         <a class="social" href="https://facebook.com/whatever">Like Us</a>
@@ -547,7 +569,9 @@ Example::
 Without nested loaders, you need to specify the full xpath (or css) for each value
 that you wish to extract.
 
-Example::
+Example:
+
+.. code-block:: python
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
@@ -559,7 +583,9 @@ Instead, you can create a nested loader with the footer selector and add values
 relative to the footer.  The functionality is the same but you avoid repeating
 the footer selector.
 
-Example::
+Example:
+
+.. code-block:: python
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
@@ -594,7 +620,9 @@ three dashes (e.g. ``---Plasma TV---``) and you don't want to end up scraping
 those dashes in the final product names.
 
 Here's how you can remove those dashes by reusing and extending the default
-Product Item Loader (``ProductLoader``)::
+Product Item Loader (``ProductLoader``):
+
+.. code-block:: python
 
     from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
@@ -607,7 +635,9 @@ Product Item Loader (``ProductLoader``)::
 
 Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
-want to remove ``CDATA`` occurrences. Here's an example of how to do it::
+want to remove ``CDATA`` occurrences. Here's an example of how to do it:
+
+.. code-block:: python
 
     from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
@@ -651,7 +681,9 @@ Here is a list of all built-in processors:
     values unchanged. It doesn't receive any constructor arguments, nor does it
     accept Loader contexts.
 
-    Example::
+    Example:
+
+    .. code-block:: python
 
         >>> from scrapy.loader.processors import Identity
         >>> proc = Identity()
@@ -664,7 +696,8 @@ Here is a list of all built-in processors:
     so it's typically used as an output processor to single-valued fields.
     It doesn't receive any constructor arguments, nor does it accept Loader contexts.
 
-    Example::
+    Example:
+    .. code-block:: python
 
         >>> from scrapy.loader.processors import TakeFirst
         >>> proc = TakeFirst()
@@ -679,7 +712,8 @@ Here is a list of all built-in processors:
     When using the default separator, this processor is equivalent to the
     function: ``u' '.join``
 
-    Examples::
+    Examples:
+    .. code-block:: python
 
         >>> from scrapy.loader.processors import Join
         >>> proc = Join()
@@ -700,7 +734,8 @@ Here is a list of all built-in processors:
     By default, stop process on ``None`` value. This behaviour can be changed by
     passing keyword argument ``stop_on_none=False``.
 
-    Example::
+    Example:
+    .. code-block:: python
 
         >>> from scrapy.loader.processors import Compose
         >>> proc = Compose(lambda v: v[0], str.upper)
@@ -744,7 +779,8 @@ Here is a list of all built-in processors:
     :meth:`~scrapy.selector.Selector.extract` method of :ref:`selectors
     <topics-selectors>`, which returns a list of unicode strings.
 
-    The example below should clarify how it works::
+    The example below should clarify how it works:
+    .. code-block:: python
 
         >>> def filter_world(x):
         ...     return None if x == 'world' else x
@@ -764,7 +800,8 @@ Here is a list of all built-in processors:
     Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
     This processor takes only one input at a time.
 
-    Example::
+    Example:
+    .. code-block:: python
 
         >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
         >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
@@ -773,7 +810,8 @@ Here is a list of all built-in processors:
         >>> proc({'foo': {'bar': 'baz'}})
         {'bar': 'baz'}
 
-    Working with Json::
+    Working with Json:
+    .. code-block:: python
 
         >>> import json
         >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))

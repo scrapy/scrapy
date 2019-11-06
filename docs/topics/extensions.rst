@@ -32,7 +32,9 @@ code must be performed in the class constructor (``__init__`` method).
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example::
+by a string: the full Python path to the extension's class name. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': 500,
@@ -65,7 +67,9 @@ Disabling an extension
 
 In order to disable an extension that comes enabled by default (ie. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example::
+``None``. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': None,
@@ -99,7 +103,9 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension::
+Here is the code of such extension:
+
+.. code-block:: python
 
     import logging
     from scrapy import signals
@@ -352,7 +358,9 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 
 1. By pressing Ctrl-\ while a Scrapy process is running (Linux only?)
 2. By running this command (assuming ``<pid>`` is the process id of the Scrapy
-   process)::
+   process):
+
+.. code-block:: bash
 
     kill -QUIT <pid>
 

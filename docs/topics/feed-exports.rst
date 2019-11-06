@@ -355,7 +355,9 @@ Default::
 A dict containing the built-in feed storage backends supported by Scrapy. You
 can disable any of these backends by assigning ``None`` to their URI scheme in
 :setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
-(without replacement), place this in your ``settings.py``::
+(without replacement), place this in your ``settings.py``:
+
+.. code-block:: python
 
     FEED_STORAGES = {
         'ftp': None,
@@ -391,7 +393,9 @@ Default::
 A dict containing the built-in feed exporters supported by Scrapy. You can
 disable any of these exporters by assigning ``None`` to their serialization
 format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
-(without replacement), place this in your ``settings.py``::
+(without replacement), place this in your ``settings.py``:
+
+.. code-block:: python
 
     FEED_EXPORTERS = {
         'csv': None,
