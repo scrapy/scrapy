@@ -9,8 +9,7 @@ from twisted.python.failure import Failure
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter, load_object
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
@@ -38,6 +37,7 @@ class MediaPipeline(object):
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
+        self.build_key = load_object(settings['REQUEST_KEY_BUILDER'])
         self._handle_statuses(self.allow_redirects)
 
     def _handle_statuses(self, allow_redirects):
@@ -82,29 +82,29 @@ class MediaPipeline(object):
         return dfd.addCallback(self.item_completed, item, info)
 
     def _process_request(self, request, info):
-        fp = request_fingerprint(request)
+        key = self.build_key(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
         request.callback = None
         request.errback = None
 
         # Return cached result if request was already seen
-        if fp in info.downloaded:
-            return defer_result(info.downloaded[fp]).addCallbacks(cb, eb)
+        if key in info.downloaded:
+            return defer_result(info.downloaded[key]).addCallbacks(cb, eb)
 
         # Otherwise, wait for result
         wad = Deferred().addCallbacks(cb, eb)
-        info.waiting[fp].append(wad)
+        info.waiting[key].append(wad)
 
         # Check if request is downloading right now to avoid doing it twice
-        if fp in info.downloading:
+        if key in info.downloading:
             return wad
 
         # Download request checking media_to_download hook output first
-        info.downloading.add(fp)
+        info.downloading.add(key)
         dfd = mustbe_deferred(self.media_to_download, request, info)
         dfd.addCallback(self._check_media_to_download, request, info)
-        dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
+        dfd.addBoth(self._cache_result_and_execute_waiters, key, info)
         dfd.addErrback(lambda f: logger.error(
             f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
         )
@@ -133,7 +133,7 @@ class MediaPipeline(object):
                 errback=self.media_failed, errbackArgs=(request, info))
         return dfd
 
-    def _cache_result_and_execute_waiters(self, result, fp, info):
+    def _cache_result_and_execute_waiters(self, result, key, info):
         if isinstance(result, Failure):
             # minimize cached information for failure
             result.cleanFailure()
@@ -163,9 +163,9 @@ class MediaPipeline(object):
             if isinstance(context, _DefGen_Return):
                 setattr(result.value, '__context__', None)
 
-        info.downloading.remove(fp)
-        info.downloaded[fp] = result  # cache result
-        for wad in info.waiting.pop(fp):
+        info.downloading.remove(key)
+        info.downloaded[key] = result  # cache result
+        for wad in info.waiting.pop(key):
             defer_result(result).chainDeferred(wad)
 
     ### Overridable Interface

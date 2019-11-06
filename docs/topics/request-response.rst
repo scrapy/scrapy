@@ -308,6 +308,93 @@ errors if needed::
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
 
+
+.. _request-keys:
+
+Request keys
+------------
+
+There are some aspects of scraping, such as filtering out duplicate requests
+(see :setting:`DUPEFILTER_CLASS`) or caching responses (see
+:class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`), where you
+need the ability to generate a unique key from a :attr:`~scrapy.http.Request`
+object, so that you can check if two different ``Request`` objects match.
+
+You often do not need to worry about request keys, the default request
+key builder (see :setting:`REQUEST_KEY_BUILDER`) works for most projects.
+
+However, there is no universal way to generate a unique key from a request,
+because different situations require comparing requests differently. For
+example, sometimes you may need to compare URLs case-insensitively, include URL
+fragments, exclude certain URL query parameters, include some or all headers,
+etc.
+
+To change how the key of your requests is built, use the
+:setting:`REQUEST_KEY_BUILDER` setting. If you need to get a request key in
+your own code, for example in a middleware, make sure you use the function from
+the :setting:`REQUEST_KEY_BUILDER` setting.
+
+.. setting:: REQUEST_KEY_BUILDER
+
+REQUEST_KEY_BUILDER
+~~~~~~~~~~~~~~~~~~~
+
+Default: ``'scrapy.utils.request.default_request_key_builder'``
+
+The import path of a callable that receives a :attr:`~scrapy.http.Request`
+object as its only argument, and must return :class:`bytes` that uniquely
+identify that request.
+
+The default request key builder takes into account a canonical version
+(:func:`w3lib.url.canonicalize_url`) of
+:attr:`request.url <scrapy.http.Request.url>` and the values of
+:attr:`request.method <scrapy.http.Request.method>` and
+:attr:`request.body <scrapy.http.Request.body>`. It then generates an
+`SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash of the
+:mod:`pickle`-serialized result, which means there is a real but
+`extremely small <https://stackoverflow.com/a/1867252>`_ chance of two
+requests with different keys being considered the same.
+
+If you want to customize your request key builder, for most use cases you can
+use :class:`~scrapy.utils.request.RequestKeyBuilder`. For example::
+
+    # my_project/settings.py
+    REQUEST_KEY_BUILDER = 'my_project.utils.request_key_builder'
+
+    # my_project/utils.py
+    request_key_builder = RequestKeyBuilder(headers=['X-ID'])
+
+You can also use a regular function. For example, to take into account
+only the URL of a request, without any prior URL canonicalization::
+
+    def request_key_builder(request):
+        return request.url.encode()
+
+However, using a :func:`callable` object that uses a
+:class:`~weakref.WeakKeyDictionary` to cache request keys would be more
+efficient.
+
+If you need to be able to override the request key generation for arbitrary
+requests from your spider callbacks, you may implement a request key builder
+that reads keys from :attr:`request.meta <scrapy.http.Request.meta>` when
+available, and then falls back to the default request key builder. For
+example::
+
+    fallback_request_key_builder = RequestKeyBuilder()
+
+    def request_key_builder(request):
+        if 'key' in request.meta:
+            return request.meta['key']
+        return fallback_request_key_builder(request)
+
+:class:`~scrapy.utils.request.RequestKeyBuilder` is a helper that helps
+customizing :setting:`REQUEST_KEY_BUILDER` in most use cases:
+
+.. autoclass:: scrapy.utils.request.RequestKeyBuilder
+
+.. autofunction:: scrapy.utils.request.default_request_key_hasher
+
+
 .. _topics-request-meta:
 
 Request.meta special keys

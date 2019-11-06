@@ -1,9 +1,9 @@
-from __future__ import print_function
-import os
 import logging
+import os
 
 from scrapy.utils.job import job_dir
-from scrapy.utils.request import referer_str, request_fingerprint
+from scrapy.utils.misc import load_object
+
 
 class BaseDupeFilter(object):
 
@@ -24,35 +24,51 @@ class BaseDupeFilter(object):
         pass
 
 
+def _escape_line_breaks(data):
+    """Returns `data` with escaped line breaks"""
+    return data.replace(b'\\', b'\\\\').replace(b'\n', b'\\n')
+
+
+def _unescape_line_breaks(data):
+    """Performs the reverse process of
+    :func:`scrapy.dupefilters._escape_line_breaks`."""
+    return data.replace(b'\\n', b'\n').replace(b'\\\\', b'\\')
+
+
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
-    def __init__(self, path=None, debug=False):
+    def __init__(self, path=None, debug=False, key_builder=None):
         self.file = None
-        self.fingerprints = set()
+        self.build_key = key_builder
+        self.keys = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = open(os.path.join(path, 'requests.seen'), 'a+')
+            self.file = open(os.path.join(path, 'requests.seen'), 'ab+')
             self.file.seek(0)
-            self.fingerprints.update(x.rstrip() for x in self.file)
+            for escaped_key in self.file:
+                try:
+                    key = _unescape_line_breaks(escaped_key[:-1])
+                except ValueError:
+                    pass
+                else:
+                    self.keys.add(key)
 
     @classmethod
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
-        return cls(job_dir(settings), debug)
+        key_builder = load_object(settings['REQUEST_KEY_BUILDER'])
+        return cls(job_dir(settings), debug, key_builder)
 
     def request_seen(self, request):
-        fp = self.request_fingerprint(request)
-        if fp in self.fingerprints:
+        key = self.build_key(request)
+        if key in self.keys:
             return True
-        self.fingerprints.add(fp)
+        self.keys.add(key)
         if self.file:
-            self.file.write(fp + os.linesep)
-
-    def request_fingerprint(self, request):
-        return request_fingerprint(request)
+            self.file.write(_escape_line_breaks(key) + b'\n')
 
     def close(self, reason):
         if self.file:
