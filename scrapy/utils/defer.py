@@ -131,7 +131,7 @@ def deferred_from_coro(o):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):
         return o
-    if asyncio.iscoroutine(o) or isfuture(o) or inspect.isawaitable(o):
+    if isfuture(o) or inspect.isawaitable(o):
         if not is_asyncio_supported():
             raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
         return defer.Deferred.fromFuture(asyncio.ensure_future(o))
