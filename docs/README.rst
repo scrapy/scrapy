@@ -9,11 +9,11 @@ This file provides a quick guide on how to compile the Scrapy documentation.
 
 Setup the environment
 ---------------------
+.. highlight:: bash
 
 To compile the documentation you need Sphinx Python library. To install it
 and all its dependencies run the following command from this dir
-
-.. code-block:: bash
+::
 
     pip install -r requirements.txt
 
@@ -23,8 +23,7 @@ Compile the documentation
 
 To compile the documentation (to classic HTML output) run the following command
 from this dir:
-
-.. code-block:: bash
+::
 
     make html
 
@@ -35,8 +34,7 @@ View the documentation
 ----------------------
 
 To view the documentation run the following command:
-
-.. code-block:: bash
+::
 
     make htmlview
 
@@ -48,8 +46,7 @@ Start over
 ----------
 
 To cleanup all generated documentation files and start from scratch run:
-
-.. code-block:: bash
+::
 
     make clean
 
@@ -61,7 +58,6 @@ Recreating documentation on the fly
 
 There is a way to recreate the doc automatically when you make changes, you
 need to install watchdog (``pip install watchdog``) and then use:
-
-.. code-block:: bash
+::
 
     make watch
