@@ -244,4 +244,3 @@ class Scraper(object):
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)
-
