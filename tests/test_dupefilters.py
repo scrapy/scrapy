@@ -1,4 +1,3 @@
-import hashlib
 import tempfile
 import unittest
 import shutil
@@ -7,7 +6,6 @@ from testfixtures import LogCapture
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 from scrapy.core.scheduler import Scheduler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import RequestKeyBuilder
 from scrapy.utils.test import get_crawler

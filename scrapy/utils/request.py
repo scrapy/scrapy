@@ -15,7 +15,8 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-_noop_processor = lambda *args: args[0]
+def _noop_processor(*args):
+    return args[0]
 
 
 def default_request_key_hasher(data, request):
