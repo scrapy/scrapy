@@ -53,12 +53,7 @@ class RFPDupeFilter(BaseDupeFilter):
             self.file = open(os.path.join(path, 'requests.seen'), 'ab+')
             self.file.seek(0)
             for escaped_key in self.file:
-                try:
-                    key = _unescape_line_breaks(escaped_key[:-1])
-                except ValueError:
-                    pass
-                else:
-                    self.keys.add(key)
+                self.keys.add(_unescape_line_breaks(escaped_key[:-1]))
 
     @classmethod
     def from_settings(cls, settings):
