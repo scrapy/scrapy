@@ -9,6 +9,7 @@ from scrapy.http import Request
 from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.job import job_dir
+from scrapy.utils.request import RequestKeyBuilder
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -97,11 +98,35 @@ class RFPDupeFilterTest(unittest.TestCase):
         finally:
             shutil.rmtree(path)
 
-    def test_request_fingerprint(self):
-        """Test if customization of request_fingerprint method will change
-        output of request_seen.
+    def test_dupefilter_path_line_breaks(self):
+        """Ensure that request keys containing line breaks are not a problem"""
+        r1 = Request('http://scrapytest.org/1')
+        r2 = Request('http://scrapytest.org/2')
 
-        """
+        def key_builder(request):
+            url = request.url.encode('utf8')
+            return b'\n\\n\\\\\\' + url + b'\n\\n\\\\\\' + url + b'\\\\\\\\n\n'
+
+        path = tempfile.mkdtemp()
+        try:
+            df = RFPDupeFilter(path, key_builder=key_builder)
+            df.open()
+            assert not df.request_seen(r1)
+            assert df.request_seen(r1)
+            df.close('finished')
+
+            df2 = RFPDupeFilter(path, key_builder=key_builder)
+            df2.open()
+            assert df2.request_seen(r1)
+            assert not df2.request_seen(r2)
+            assert df2.request_seen(r2)
+            df2.close('finished')
+        finally:
+            shutil.rmtree(path)
+
+    def test_custom_request_key_builder(self):
+        """Test if a custom value of the :setting:`REQUEST_KEY_BUILDER` setting
+        changes the output of request_seen."""
         r1 = Request('http://scrapytest.org/index.html')
         r2 = Request('http://scrapytest.org/INDEX.html')
 
@@ -113,14 +138,8 @@ class RFPDupeFilterTest(unittest.TestCase):
 
         dupefilter.close('finished')
 
-        class CaseInsensitiveRFPDupeFilter(RFPDupeFilter):
-
-            def request_fingerprint(self, request):
-                fp = hashlib.sha1()
-                fp.update(to_bytes(request.url.lower()))
-                return fp.hexdigest()
-
-        case_insensitive_dupefilter = CaseInsensitiveRFPDupeFilter()
+        key_builder = RequestKeyBuilder(url_processor=str.lower)
+        case_insensitive_dupefilter = RFPDupeFilter(key_builder=key_builder)
         case_insensitive_dupefilter.open()
 
         assert not case_insensitive_dupefilter.request_seen(r1)

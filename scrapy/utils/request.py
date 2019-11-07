@@ -76,7 +76,11 @@ class RequestKeyBuilder:
                  meta=None, post_processor=default_request_key_hasher):
         self._cache = WeakKeyDictionary()
         self._headers = headers
+        if self._headers:
+            self._headers = sorted(self._headers)
         self._meta = meta
+        if self._meta:
+            self._meta = sorted(self._meta)
         self._post_processor = post_processor or _noop_processor
         self._url_processor = url_processor or _noop_processor
 

@@ -1,8 +1,10 @@
 import logging
 import os
+import re
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import load_object
+from scrapy.utils.request import default_request_key_builder, referer_str
 
 
 class BaseDupeFilter(object):
@@ -32,13 +34,15 @@ def _escape_line_breaks(data):
 def _unescape_line_breaks(data):
     """Performs the reverse process of
     :func:`scrapy.dupefilters._escape_line_breaks`."""
-    return data.replace(b'\\n', b'\n').replace(b'\\\\', b'\\')
+    value = re.sub(b'(^|[^\\\\])((?:\\\\\\\\)*?)\\\\n', b'\\1\\2\n', data)
+    return value.replace(b'\\\\', b'\\')
 
 
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
-    def __init__(self, path=None, debug=False, key_builder=None):
+    def __init__(self, path=None, debug=False,
+                 key_builder=default_request_key_builder):
         self.file = None
         self.build_key = key_builder
         self.keys = set()
