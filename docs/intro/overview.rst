@@ -21,9 +21,8 @@ example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
 http://quotes.toscrape.com, following the pagination:
+::
 
-.. code-block:: python
-    
     import scrapy
 
 
@@ -72,7 +71,7 @@ here for better readability):
             "author": "Steve Martin",
             "text": "\u201cA day without sunshine is like, you know, night.\u201d"
         },
-        ...
+        # ...
     ]
 
 
