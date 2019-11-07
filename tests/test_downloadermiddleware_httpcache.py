@@ -6,6 +6,7 @@ import unittest
 import email.utils
 from contextlib import contextmanager
 import pytest
+import sys
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
@@ -153,11 +154,6 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
     def _get_settings(self, **new_settings):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
-
-class LeveldbStorageTest(DefaultStorageTest):
-
-    pytest.importorskip('leveldb')
-    storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
 class DummyPolicyTest(_BaseTest):

@@ -596,8 +596,8 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. To access the decoded text as str (unicode
-       in Python 2) you can use ``response.text`` from an encoding-aware
+    :param body: the response body. To access the decoded text as str you can use
+       ``response.text`` from an encoding-aware
        :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
        such as :class:`TextResponse`.
     :type body: bytes

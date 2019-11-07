@@ -16,5 +16,3 @@ class ChunkedTest(unittest.TestCase):
             "This is the data in the first chunk\r\n" +
             "and this is the second one\r\n" +
             "consequence")
-
-

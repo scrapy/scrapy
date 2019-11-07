@@ -7,16 +7,10 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
+    - env: TOXENV=flake8
+      python: 3.8
     - env: TOXENV=pylint
-      python: 3.7
-    - env: TOXENV=py27
-      python: 2.7
-    - env: TOXENV=py27-pinned
-      python: 2.7
-    - env: TOXENV=py27-extra-deps
-      python: 2.7
-    - env: TOXENV=pypy
-      python: 2.7
+      python: 3.8
     - env: TOXENV=pypy3
       python: 3.5
     - env: TOXENV=py35
@@ -27,19 +21,14 @@ matrix:
       python: 3.6
     - env: TOXENV=py37
       python: 3.7
-    - env: TOXENV=py37-extra-deps
-      python: 3.7
+    - env: TOXENV=py38
+      python: 3.8
+    - env: TOXENV=py38-extra-deps
+      python: 3.8
     - env: TOXENV=docs
       python: 3.6
 install:
   - |
-      if [ "$TOXENV" = "pypy" ]; then
-        export PYPY_VERSION="pypy-6.0.0-linux_x86_64-portable"
-        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
-        tar -jxf ${PYPY_VERSION}.tar.bz2
-        virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
-        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-      fi
       if [ "$TOXENV" = "pypy3" ]; then
         export PYPY_VERSION="pypy3.5-5.9-beta-linux_x86_64-portable"
         wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
@@ -70,4 +59,4 @@ deploy:
   on:
     tags: true
     repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"
+    condition: "$TOXENV == py37 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"

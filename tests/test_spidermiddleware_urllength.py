@@ -18,4 +18,3 @@ class TestUrlLengthMiddleware(TestCase):
         spider = Spider('foo')
         out = list(mw.process_spider_output(res, reqs, spider))
         self.assertEqual(out, [short_url_req])
-
