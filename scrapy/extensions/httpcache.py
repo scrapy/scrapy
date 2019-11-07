@@ -301,8 +301,6 @@ class FilesystemCacheStorage(object):
                 seen_subdirectories.add(subdirectory)
                 request_path = os.path.join(hash_path, subdirectory)
                 key_path = os.path.join(request_path, 'key')
-                if not os.path.exists(key_path):
-                    continue
                 with open(key_path, 'rb') as key_file:
                     found_key = key_file.read()
                 if key == found_key:
@@ -328,8 +326,6 @@ class FilesystemCacheStorage(object):
             return None
 
         metadata_path = os.path.join(request_path, 'pickled_meta')
-        if not os.path.exists(metadata_path):
-            return None
 
         mtime = os.stat(metadata_path).st_mtime
         if 0 < self.expiration_secs < time() - mtime:

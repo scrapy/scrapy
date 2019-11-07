@@ -10,20 +10,6 @@ from scrapy.utils.request import (
 
 class DefaultRequestKeyBuilderTest(unittest.TestCase):
 
-    def test_attributes_no_value(self):
-        r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78132,199')
-        r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
-        self.assertNotEqual(default_request_key_builder(r1),
-                            default_request_key_builder(r2))
-
-    def test_attributes_order(self):
-        r1 = Request("http://www.example.com/query?id=111&cat=222")
-        r2 = Request("http://www.example.com/query?cat=222&id=111")
-        self.assertEqual(default_request_key_builder(r1),
-                         default_request_key_builder(r1))
-        self.assertEqual(default_request_key_builder(r1),
-                         default_request_key_builder(r2))
-
     def test_body(self):
         r1 = Request("http://www.example.com")
         r2 = Request("http://www.example.com", body=b'request body')
@@ -60,6 +46,20 @@ class DefaultRequestKeyBuilderTest(unittest.TestCase):
         self.assertNotEqual(default_request_key_builder(r1),
                             default_request_key_builder(r2))
 
+    def test_query_arguments_no_value(self):
+        r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78132,199')
+        r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
+        self.assertNotEqual(default_request_key_builder(r1),
+                            default_request_key_builder(r2))
+
+    def test_query_arguments_order(self):
+        r1 = Request("http://www.example.com/query?id=111&cat=222")
+        r2 = Request("http://www.example.com/query?cat=222&id=111")
+        self.assertEqual(default_request_key_builder(r1),
+                         default_request_key_builder(r1))
+        self.assertEqual(default_request_key_builder(r1),
+                         default_request_key_builder(r2))
+
 
 class RequestKeyBuilderTest(unittest.TestCase):
 
@@ -89,6 +89,14 @@ class RequestKeyBuilderTest(unittest.TestCase):
         r2 = r1.replace(url="http://www.example.com/2")
         self.assertNotEqual(default_request_key_builder(r1),
                             default_request_key_builder(r2))
+
+    def test_headers_all(self):
+        r1 = Request("http://www.example.com/")
+        r2 = r1.replace(headers={'a': 'b'})
+
+        builder = RequestKeyBuilder(headers=True)
+
+        self.assertNotEqual(builder(r1), builder(r2))
 
     def test_headers_builder_order(self):
         request = Request("http://www.example.com/",
@@ -133,6 +141,14 @@ class RequestKeyBuilderTest(unittest.TestCase):
 
         self.assertEqual(builder1(request), builder2(request))
 
+    def test_meta_all(self):
+        r1 = Request("http://www.example.com/")
+        r2 = r1.replace(meta={'a': 'b'})
+
+        builder = RequestKeyBuilder(meta=True)
+
+        self.assertNotEqual(builder(r1), builder(r2))
+
     def test_meta_builder_order(self):
         request = Request("http://www.example.com/",
                           meta={'a': 'b', 'c': 'd'})
@@ -176,6 +192,11 @@ class RequestKeyBuilderTest(unittest.TestCase):
 
         self.assertEqual(builder1(request), builder2(request))
 
+    def test_post_processor_none(self):
+        request = Request("https://example.com")
+        builder = RequestKeyBuilder(post_processor=None)
+        self.assertNotIsInstance(builder(request), bytes)
+
     def test_url_processor_fragments(self):
         r1 = Request("http://www.example.com/test.html")
         r2 = Request("http://www.example.com/test.html#fragment")
@@ -187,6 +208,15 @@ class RequestKeyBuilderTest(unittest.TestCase):
 
         self.assertEqual(default_request_key_builder(r1), builder(r1))
         self.assertNotEqual(default_request_key_builder(r2), builder(r2))
+        self.assertNotEqual(builder(r1), builder(r2))
+
+    def test_url_processor_none(self):
+        r1 = Request("http://www.example.com/query?id=111&cat=222")
+        r2 = Request("http://www.example.com/query?cat=222&id=111")
+
+        builder = RequestKeyBuilder(url_processor=None)
+
+        self.assertEqual(builder(r1), builder(r1))
         self.assertNotEqual(builder(r1), builder(r2))
 
 
