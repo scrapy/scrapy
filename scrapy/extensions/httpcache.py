@@ -314,7 +314,7 @@ class FilesystemCacheStorage(object):
             subdirectory = str(number)
             if subdirectory in seen_subdirectories:
                 continue
-            request_path = os.path.join(hash_path, number)
+            request_path = os.path.join(hash_path, subdirectory)
             os.makedirs(request_path)
             key_path = os.path.join(request_path, 'key')
             with open(key_path, 'wb') as key_file:
@@ -327,7 +327,7 @@ class FilesystemCacheStorage(object):
         if request_path is None:
             return None
 
-        metadata_path = os.path.join(request_path, 'metadata.pickle')
+        metadata_path = os.path.join(request_path, 'pickled_meta')
         if not os.path.exists(metadata_path):
             return None
 

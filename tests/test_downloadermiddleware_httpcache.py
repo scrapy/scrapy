@@ -1,12 +1,15 @@
-from __future__ import print_function
-import time
-import tempfile
-import shutil
-import unittest
 import email.utils
-from contextlib import contextmanager
-import pytest
+import os
+import shutil
 import sys
+import tempfile
+import time
+import unittest
+from contextlib import contextmanager
+from hashlib import md5
+from unittest.mock import patch
+
+import pytest
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
@@ -146,8 +149,58 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
 
 class FilesystemStorageTest(DefaultStorageTest):
-
     storage_class = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+    def test_hash_collision_handling(self):
+        class ConstantMD5:
+
+            hash_string = '0123456789'
+
+            def __init__(self, data):
+                pass
+
+            def hexdigest(self):
+                return self.hash_string
+
+        with self._storage() as storage:
+            with patch('scrapy.extensions.httpcache.md5', ConstantMD5):
+                request1 = Request('https://example.com/1')
+                request2 = Request('https://example.com/2')
+
+                assert storage.retrieve_response(self.spider, request1) is None
+                assert storage.retrieve_response(self.spider, request2) is None
+
+                response1 = Response(request1.url, body=b'1')
+                response2 = Response(request2.url, body=b'2')
+
+                storage.store_response(self.spider, request1, response1)
+                storage.store_response(self.spider, request2, response2)
+
+                self.assertEqualResponse(
+                    response1,
+                    storage.retrieve_response(self.spider, request1))
+                self.assertEqualResponse(
+                    response2,
+                    storage.retrieve_response(self.spider, request2))
+
+                self.assertTrue(os.path.isdir(self.tmpdir))
+                spider_path = os.path.join(self.tmpdir, self.spider.name)
+                self.assertTrue(os.path.isdir(spider_path))
+                hash_base_path = os.path.join(spider_path,
+                                              ConstantMD5.hash_string[:2])
+                self.assertTrue(os.path.isdir(hash_base_path))
+                hash_path = os.path.join(hash_base_path,
+                                         ConstantMD5.hash_string)
+                self.assertTrue(os.path.isdir(hash_path))
+                for number in range(2):
+                    request_path = os.path.join(hash_path, str(number))
+                    from logging import getLogger
+                    logger = getLogger(__name__)
+                    logger.error(request_path)
+                    self.assertTrue(os.path.isdir(request_path))
+                    key_path = os.path.join(request_path, 'key')
+                    self.assertTrue(os.path.isfile(key_path))
+
 
 class FilesystemStorageGzipTest(FilesystemStorageTest):
 
