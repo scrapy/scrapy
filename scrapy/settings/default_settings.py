@@ -49,6 +49,8 @@ COOKIES_DEBUG = False
 
 DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
 
+DEFAULT_MAIL_SENDER_CLASS = 'scrapy.mail.MailSender'
+
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'en',

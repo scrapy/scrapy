@@ -8,38 +8,26 @@ Sending e-mail
    :synopsis: Email sending facility
 
 Although Python makes sending e-mails relatively easy via the `smtplib`_
-library, Scrapy provides its own facility for sending e-mails which is very
-easy to use and it's implemented using `Twisted non-blocking IO`_, to avoid
-interfering with the non-blocking IO of the crawler. It also provides a
-simple API for sending attachments and it's very easy to configure, with a few
-:ref:`settings <topics-email-settings>`.
+library, Scrapy provides two methods for sending e-mails which are very
+easy to use: SMTP (:class:`scrapy.mail.MailSender`) and `Amazon Simple Email Service`_
+(:class:`scrapy.mail.SESMailSender`)
+
+It also provides a simple API for sending attachments and it's very easy to
+configure, with a few :ref:`settings <topics-email-settings>`.
 
 .. _smtplib: https://docs.python.org/2/library/smtplib.html
+
+Mail Sender Classes
+===================
+
+MailSender
+----------
+
+MailSender is the default class to use for sending emails from Scrapy. It
+uses `Twisted non-blocking IO`_, to avoid interfering with the non-blocking IO
+of the crawler.
+
 .. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
-
-Quick example
-=============
-
-There are two ways to instantiate the mail sender. You can instantiate it using
-the standard constructor::
-
-    from scrapy.mail import MailSender
-    mailer = MailSender()
-
-Or you can instantiate it passing a Scrapy settings object, which will respect
-the :ref:`settings <topics-email-settings>`::
-
-    mailer = MailSender.from_settings(settings)
-
-And here is how to use it to send an e-mail (without attachments)::
-
-    mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
-
-MailSender class reference
-==========================
-
-MailSender is the preferred class to use for sending emails from Scrapy, as it
-uses `Twisted non-blocking IO`_, like the rest of the framework.
 
 .. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
 
@@ -68,6 +56,14 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpssl: enforce using a secure SSL connection
     :type smtpssl: boolean
 
+    .. classmethod:: from_crawler(cls, crawler)
+
+        If present, this classmethod is called to create a mail sender instance
+        from a :class:`scrapy.crawler.Crawler`.
+
+        :param crawler: crawler that uses this class
+        :type crawler: :class:`scrapy.crawler.Crawler` object
+
     .. classmethod:: from_settings(settings)
 
         Instantiate using a Scrapy settings object, which will respect
@@ -80,7 +76,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
         Send email to the given recipients.
 
-        :param to: the e-mail recipients
+        :param to: list of e-mail recipients or comma separated list of e-mail recipients
         :type to: str or list of str
 
         :param subject: the subject of the e-mail
@@ -106,13 +102,98 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         :type charset: str
 
 
+SESMailSender
+-------------
+
+SESMailSender provides an easy API for sending emails from Scrapy using `Amazon Simple Email Service`_. The AWS credentials can be passed in the class constructor, or they can be
+passed through the following settings (if initialized using `from_crawler` method):
+
+ * :setting:`AWS_ACCESS_KEY_ID`
+ * :setting:`AWS_SECRET_ACCESS_KEY`
+ * :setting:`AWS_REGION`
+
+`boto3`_ external library must be installed to use this class.
+
+.. _Amazon Simple Email Service: https://aws.amazon.com/pt/ses/
+.. _boto3: https://pypi.org/project/boto3/
+
+.. class:: SESMailSender(aws_access_key, aws_secret_key, aws_region, mailfrom='scrapy@localhost')
+
+    :param aws_access_key: AWS Access Key
+    :type aws_access_key: str
+
+    :param aws_secret_key: AWS Secret Key
+    :type aws_secret_key: str
+
+    :param aws_region: AWS Region
+    :type aws_region: str
+
+    :param mailfrom: the address used to send emails (in the ``From:`` header).
+      If omitted, the :setting:`MAIL_FROM` setting will be used.
+    :type mailfrom: str
+
+    .. classmethod:: from_crawler(cls, crawler)
+
+        If present, this classmethod is called to create a mail sender instance
+        from a :class:`scrapy.crawler.Crawler`.
+
+        :param crawler: crawler that uses this class
+        :type crawler: :class:`scrapy.crawler.Crawler` object
+
+    .. classmethod:: from_settings(settings)
+
+        Instantiate using a Scrapy settings object, which will respect
+        :ref:`these Scrapy settings <topics-email-settings>`.
+
+        :param settings: the e-mail recipients
+        :type settings: :class:`scrapy.settings.Settings` object
+
+    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
+
+        Send email to the given recipients.
+
+        :param to: list of e-mail recipients or comma separated list of e-mail recipients
+        :type to: str or list of str
+
+        :param subject: the subject of the e-mail
+        :type subject: str
+
+        :param cc: the e-mails to CC
+        :type cc: str or list of str
+
+        :param body: the e-mail body
+        :type body: str
+
+        :param attachs: an iterable of tuples ``(attach_name, mimetype,
+          file_object)`` where  ``attach_name`` is a string with the name that will
+          appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
+          attachment and ``file_object`` is a readable file object with the
+          contents of the attachment
+        :type attachs: iterable
+
+        :param mimetype: the MIME type of the e-mail
+        :type mimetype: str
+
+        :param charset: the character encoding to use for the e-mail contents
+        :type charset: str
+
 .. _topics-email-settings:
 
 Mail settings
 =============
 
-These settings define the default constructor values of the :class:`MailSender`
-class, and can be used to configure e-mail notifications in your project without
+.. setting:: DEFAULT_MAIL_SENDER_CLASS
+
+DEFAULT_MAIL_SENDER_CLASS
+-------------------------
+
+Default: ``'scrapy.mail.MailSender'``
+
+Default class for email sending (it can be used by extensions and code that needs
+email functionality like :class:`scrapy.extensions.memusage.MemoryUsage`)
+
+The following settings define the default constructor values of the :class:`MailSender`
+class, and can be used to configure email notifications in your project without
 writing any code (for those extensions and code that uses :class:`MailSender`).
 
 .. setting:: MAIL_FROM

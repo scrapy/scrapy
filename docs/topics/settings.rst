@@ -182,6 +182,16 @@ such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
 .. setting:: AWS_ENDPOINT_URL
 
+.. setting:: AWS_REGION
+
+AWS_REGION
+----------
+
+Default: ``None``
+
+The AWS region used by code that requires access to `Amazon Web services`_,
+such as the :ref:`e-mail services <topics-email>`.
+
 AWS_ENDPOINT_URL
 ----------------
 

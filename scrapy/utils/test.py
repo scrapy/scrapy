@@ -26,6 +26,13 @@ def assert_gcs_environ():
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
+def is_module_installed(module_name):
+    try:
+        return __import__(module_name)
+    except ImportError:
+        return False
+
+
 def skip_if_no_boto():
     try:
         is_botocore()
