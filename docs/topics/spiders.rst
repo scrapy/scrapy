@@ -196,6 +196,13 @@ scrapy.Spider
        Called when the spider closes. This method provides a shortcut to
        signals.connect() for the :signal:`spider_closed` signal.
 
+   .. attribute:: sticky_meta_keys
+
+      Keys to be stickied in ``meta`` dictionary.
+
+      For more information about stickied meta parameters see:
+      :class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`
+
 Let's see an example::
 
     import scrapy
