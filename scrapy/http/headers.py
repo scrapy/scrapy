@@ -87,5 +87,3 @@ class Headers(CaselessDict):
     def __copy__(self):
         return self.__class__(self)
     copy = __copy__
-
-

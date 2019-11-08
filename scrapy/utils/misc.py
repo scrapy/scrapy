@@ -135,7 +135,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     if settings is None:
         if crawler is None:
-            raise ValueError("Specifiy at least one of settings and crawler.")
+            raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
     if crawler and hasattr(objcls, 'from_crawler'):
         return objcls.from_crawler(crawler, *args, **kwargs)

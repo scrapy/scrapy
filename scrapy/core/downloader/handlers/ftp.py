@@ -112,4 +112,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=to_bytes(message))
         raise result.type(result.value)
-
