@@ -47,8 +47,9 @@ class TestStickyMetaParamsMiddleware(TestCase):
         response = Response(self.test_url, request=request)
         result = [
             Request(self.test_url),
-            MockItem(name='dummy')  # Add a item just to increase the test coverage
+            MockItem(name='dummy')
         ]
-        for result in middleware.process_spider_output(response, result, spider):
+        results = middleware.process_spider_output(response, result, spider)
+        for result in results:
             if isinstance(result, Request):
                 self.assertEqual(result.meta, {'param2': 'Stickied!'})
