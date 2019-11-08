@@ -120,7 +120,7 @@ data from it depends on the type of response:
 -   If the response is JSON, use `json.loads`_ to load the desired data from
     :attr:`response.text <scrapy.http.TextResponse.text>`:
 
-.. code-block:: python
+::
 
         data = json.loads(response.text)
 
@@ -129,7 +129,7 @@ data from it depends on the type of response:
     :class:`~scrapy.selector.Selector` and then
     :ref:`use it <topics-selectors>` as usual:
 
-.. code-block:: python
+::
 
         selector = Selector(data['html'])
 
@@ -180,7 +180,7 @@ data from it:
     For example, if the JavaScript code contains a separate line like
     ``var data = {"field": "value"};`` you can extract that data as follows:
 
-.. code-block:: python
+::
 
         >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
         >>> json_data = response.css('script::text').re_first(pattern)
@@ -193,7 +193,7 @@ data from it:
     For example, if the JavaScript code contains
     ``var data = {field: "value"};`` you can extract that data as follows:
 
-.. code-block:: python
+::
 
         >>> import js2xml
         >>> import lxml.etree

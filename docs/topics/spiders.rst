@@ -156,7 +156,7 @@ scrapy.Spider
        the method to override. For example, if you need to start by logging in using
        a POST request, you could do:
 
-       .. code-block:: python
+       ::
 
            class MySpider(scrapy.Spider):
                name = 'myspider'
@@ -200,7 +200,7 @@ scrapy.Spider
 
 Let's see an example:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -219,7 +219,7 @@ Let's see an example:
 
 Return multiple Requests and items from a single callback:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -242,7 +242,7 @@ Return multiple Requests and items from a single callback:
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
 to give data more structure you can use :ref:`topics-items`:
 
-.. code-block:: python
+::
 
     import scrapy
     from myproject.items import MyItem
@@ -282,7 +282,7 @@ Spider arguments are passed through the :command:`crawl` command using the
 
 Spiders can access arguments in their `__init__` methods:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -298,7 +298,7 @@ The default `__init__` method will take any spider arguments
 and copy them to the spider as attributes.
 The above example can also be written as follows:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -345,7 +345,7 @@ rules, crawling from `Sitemaps`_, or parsing an XML/CSV feed.
 For the examples used in the following spiders, we'll assume you have a project
 with a ``TestItem`` declared in a ``myproject.items`` module:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -437,7 +437,7 @@ CrawlSpider example
 
 Let's now take a look at an example CrawlSpider with rules:
 
-.. code-block:: python
+::
 
     import scrapy
     from scrapy.spiders import CrawlSpider, Rule
@@ -562,7 +562,7 @@ XMLFeedSpider example
 
 These spiders are pretty easy to use, let's have a look at one example:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import XMLFeedSpider
     from myproject.items import TestItem
@@ -623,7 +623,7 @@ CSVFeedSpider example
 Let's see an example similar to the previous one, but using a
 :class:`CSVFeedSpider`:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import CSVFeedSpider
     from myproject.items import TestItem
@@ -763,7 +763,7 @@ SitemapSpider examples
 Simplest example: process all urls discovered through sitemaps using the
 ``parse`` callback:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import SitemapSpider
 
@@ -776,7 +776,7 @@ Simplest example: process all urls discovered through sitemaps using the
 Process some urls with certain callback and other urls with a different
 callback:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import SitemapSpider
 
@@ -796,7 +796,7 @@ callback:
 Follow sitemaps defined in the `robots.txt`_ file and only follow sitemaps
 whose url contains ``/sitemap_shop``:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import SitemapSpider
 
@@ -812,7 +812,7 @@ whose url contains ``/sitemap_shop``:
 
 Combine SitemapSpider with other sources of urls:
 
-.. code-block:: python
+::
 
     from scrapy.spiders import SitemapSpider
 

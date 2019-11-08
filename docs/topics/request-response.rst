@@ -64,13 +64,13 @@ Request objects
     :param cookies: the request cookies. These can be sent in two forms.
 
         1. Using a dict:
-        .. code-block:: python
+        ::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'})
 
         2. Using a list of dicts:
-        .. code-block:: python
+        ::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies=[{'name': 'currency',
@@ -94,7 +94,7 @@ Request objects
 
         Example of a request that sends manually-defined cookies and ignores
         cookie storage:
-        .. code-block:: python
+        ::
 
             Request(
                 url="http://www.example.com",
@@ -214,7 +214,7 @@ downloaded :class:`Response` object as its first argument.
 
 Example:
 
-.. code-block:: python
+::
 
     def parse_page1(self, response):
         return scrapy.Request("http://www.example.com/some_page.html",
@@ -229,7 +229,7 @@ functions so you can receive the arguments later, in the second callback.
 The following example shows how to achieve this by using the
 :attr:`Request.cb_kwargs` attribute:
 
-.. code-block:: python
+::
 
     def parse(self, response):
         request = scrapy.Request('http://www.example.com/index.html',
@@ -265,7 +265,7 @@ used to track connection establishment timeouts, DNS errors etc.
 Here's an example spider logging all errors and catching some specific
 errors if needed:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -504,7 +504,7 @@ If you want to simulate a HTML Form POST in your spider and send a couple of
 key-value fields, you can return a :class:`FormRequest` object (from your
 spider) like this:
 
-.. code-block:: python
+::
 
    return [FormRequest(url="http://www.example.com/post/action",
                        formdata={'name': 'John Doe', 'age': '27'},
@@ -522,7 +522,7 @@ automatically pre-populated and only override a couple of them, such as the
 user name and password. You can use the :meth:`FormRequest.from_response`
 method for this job. Here's an example spider which uses it:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -581,7 +581,7 @@ JsonRequest usage example
 
 Sending a JSON POST request with a JSON payload:
 
-.. code-block:: python
+::
 
    data = {
        'name1': 'value1',

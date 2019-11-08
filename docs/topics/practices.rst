@@ -25,7 +25,7 @@ the one used by all Scrapy commands.
 
 Here's an example showing how to run a single spider with it.
 
-.. code-block:: python
+::
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
@@ -54,7 +54,7 @@ instance with your project settings.
 What follows is a working example of how to do that, using the `testspiders`_
 project as example.
 
-.. code-block:: python
+::
 
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
@@ -83,7 +83,7 @@ returned by the :meth:`CrawlerRunner.crawl
 Here's an example of its usage, along with a callback to manually stop the
 reactor after ``MySpider`` has finished running.
 
-.. code-block:: python
+::
 
     from twisted.internet import reactor
     import scrapy
@@ -114,7 +114,7 @@ the :ref:`internal API <topics-api>`.
 
 Here is an example that runs multiple spiders simultaneously:
 
-.. code-block:: python
+::
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
@@ -134,7 +134,7 @@ Here is an example that runs multiple spiders simultaneously:
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
-.. code-block:: python
+::
 
     import scrapy
     from twisted.internet import reactor
@@ -160,7 +160,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
 Same example but running the spiders sequentially by chaining the deferreds:
 
-.. code-block:: python
+::
 
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner

@@ -15,7 +15,7 @@ and check various constraints for how the callback processes the response. Each
 contract is prefixed with an ``@`` and included in the docstring. See the
 following example:
 
-.. code-block:: python
+::
 
     def parse(self, response):
         """ This function parses a sample response. Some contracts are mingled
@@ -70,7 +70,7 @@ If you find you need more power than the built-in scrapy contracts you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting:
 
-.. code-block:: python
+::
 
     SPIDER_CONTRACTS = {
         'myproject.contracts.ResponseCheck': 10,
@@ -119,7 +119,7 @@ Raise :class:`~scrapy.exceptions.ContractFail` from
 Here is a demo contract which checks the presence of a custom header in the
 response received:
 
-.. code-block:: python
+::
 
     from scrapy.contracts import Contract
     from scrapy.exceptions import ContractFail
@@ -145,7 +145,7 @@ When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
 set to the ``true`` string. You can use `os.environ`_ to perform any change to
 your spiders or your settings when ``scrapy check`` is used:
 
-.. code-block:: python
+::
 
     import os
     import scrapy

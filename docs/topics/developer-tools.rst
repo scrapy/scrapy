@@ -116,7 +116,7 @@ With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using 
 the `has-class-extension`_:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//span[has-class("text")]/text()').getall()
    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
@@ -231,7 +231,7 @@ on the request and open ``Open in new tab`` to get a better overview.
 With this response we can now easily parse the JSON-object and 
 also request each page to get every quote on the site:
 
-.. code-block:: python
+::
 
     import scrapy
     import json
@@ -271,7 +271,7 @@ format, by right-clicking on each of them in the network tool and using the
 :meth:`~scrapy.http.Request.from_curl()` method to generate an equivalent
 request:
 
-.. code-block:: python
+::
 
     from scrapy import Request
 

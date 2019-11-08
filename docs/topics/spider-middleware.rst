@@ -250,7 +250,7 @@ specify which response codes the spider is able to handle using the
 For example, if you want your spider to handle 404 responses you can do
 this:
 
-.. code-block:: python
+::
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]

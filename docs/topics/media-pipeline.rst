@@ -91,13 +91,13 @@ To enable your media pipeline you must first add it to your project
 
 For Images Pipeline, use:
 
-.. code-block:: python
+::
 
     ITEM_PIPELINES = {'scrapy.pipelines.images.ImagesPipeline': 1}
 
 For Files Pipeline, use:
 
-.. code-block:: python
+::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
@@ -241,7 +241,7 @@ put the results under respective key (``files`` or ``images``).
 If you prefer to use :class:`~.Item`, then define a custom item with the
 necessary fields, like in this example for Images Pipeline:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -321,7 +321,7 @@ where the keys are the thumbnail names and the values are their dimensions.
 
 For example:
 
-.. code-block:: python
+::
 
    IMAGES_THUMBS = {
        'small': (50, 50),
@@ -417,7 +417,7 @@ See here the methods that you can override in your custom Files Pipeline:
       approach to download all files into the ``files`` folder with their
       original filenames (e.g. ``files/foo.png``):
 
-      .. code-block:: python
+      ::
 
         import os
         from urllib.parse import urlparse
@@ -439,7 +439,7 @@ See here the methods that you can override in your custom Files Pipeline:
       :meth:`~get_media_requests` method and return a Request for each
       file URL:
 
-      .. code-block:: python
+      ::
 
          def get_media_requests(self, item, info):
              for file_url in item['file_urls']:
@@ -471,7 +471,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
       Here's a typical value of the ``results`` argument:
 
-      .. code-block:: python
+      ::
 
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
@@ -497,7 +497,7 @@ See here the methods that you can override in your custom Files Pipeline:
       store the downloaded file paths (passed in results) in the ``file_paths``
       item field, and we drop the item if it doesn't contain any files:
 
-      .. code-block:: python
+      ::
 
           from scrapy.exceptions import DropItem
 
@@ -538,7 +538,7 @@ See here the methods that you can override in your custom Images Pipeline:
       approach to download all files into the ``files`` folder with their
       original filenames (e.g. ``files/foo.png``):
 
-      .. code-block:: python
+      ::
 
         import os
         from urllib.parse import urlparse
@@ -578,7 +578,7 @@ Custom Images pipeline example
 Here is a full example of the Images Pipeline whose methods are examplified
 above:
 
-.. code-block:: python
+::
 
     import scrapy
     from scrapy.pipelines.images import ImagesPipeline

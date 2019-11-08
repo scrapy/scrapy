@@ -34,7 +34,7 @@ To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
 by a string: the full Python path to the extension's class name. For example:
 
-.. code-block:: python
+::
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': 500,
@@ -69,7 +69,7 @@ In order to disable an extension that comes enabled by default (ie. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 ``None``. For example:
 
-.. code-block:: python
+::
 
     EXTENSIONS = {
         'scrapy.extensions.corestats.CoreStats': None,
@@ -105,7 +105,7 @@ number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
 Here is the code of such extension:
 
-.. code-block:: python
+::
 
     import logging
     from scrapy import signals

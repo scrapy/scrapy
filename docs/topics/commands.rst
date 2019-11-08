@@ -630,7 +630,7 @@ file.
 
 The following example adds ``my_command`` command:
 
-.. code-block:: python
+::
 
   from setuptools import setup, find_packages
 

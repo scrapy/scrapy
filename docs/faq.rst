@@ -37,7 +37,7 @@ and extract whatever data you need from it.
 
 Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
 
-.. code-block:: python
+::
 
     from bs4 import BeautifulSoup
     import scrapy
@@ -228,7 +228,7 @@ What does the response status code 999 means?
 Try slowing down the crawling speed by using a download delay of ``2`` (or
 higher) in your spider:
 
-.. code-block:: python
+::
 
     class MySpider(CrawlSpider):
 
@@ -351,7 +351,7 @@ instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
 method for this puspose. For example:
 
-.. code-block:: python
+::
 
     from copy import deepcopy
 

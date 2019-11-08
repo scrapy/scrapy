@@ -35,7 +35,7 @@ CloseSpider
 
 For example:
 
-.. code-block:: python
+::
 
     def parse_page(self, response):
         if 'Bandwidth exceeded' in response.body:

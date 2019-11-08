@@ -55,7 +55,7 @@ stops.
 Here's an example of a callback that uses the spider state (other spider code
 is omitted for brevity):
 
-.. code-block:: python
+::
 
     def parse_item(self, response):
         # parse item here
@@ -85,7 +85,7 @@ can't be persisted.
 
 So, for example, this won't work:
 
-.. code-block:: python
+::
 
     def some_callback(self, response):
         somearg = 'test'
@@ -97,7 +97,7 @@ So, for example, this won't work:
 
 But this will:
 
-.. code-block:: python
+::
 
     def some_callback(self, response):
         somearg = 'test'

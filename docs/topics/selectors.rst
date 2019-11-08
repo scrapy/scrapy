@@ -53,7 +53,7 @@ Constructing selectors
 Response objects expose a :class:`~scrapy.selector.Selector` instance
 on ``.selector`` attribute:
 
-.. code-block:: python
+::
 
     >>> response.selector.xpath('//span/text()').get()
     'good'
@@ -61,7 +61,7 @@ on ``.selector`` attribute:
 Querying responses using XPath and CSS is so common that responses include two
 more shortcuts: ``response.xpath()`` and ``response.css()``:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//span/text()').get()
     'good'
@@ -80,7 +80,7 @@ you can also ensure the response body is parsed only once.
 But if required, it is possible to use ``Selector`` directly.
 Constructing from text:
 
-.. code-block:: python
+::
 
     >>> from scrapy.selector import Selector
     >>> body = '<html><body><span>good</span></body></html>'
@@ -90,7 +90,7 @@ Constructing from text:
 Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
 :class:`~scrapy.http.TextResponse` subclasses:
 
-.. code-block:: python
+::
 
     >>> from scrapy.selector import Selector
     >>> from scrapy.http import HtmlResponse
@@ -141,7 +141,7 @@ page, let's construct an XPath for selecting the text inside the title tag::
 To actually extract the textual data, you must call the selector ``.get()``
 or ``.getall()`` methods, as follows:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//title/text()').getall()
     ['Example website']
@@ -155,7 +155,7 @@ is returned. ``.getall()`` returns a list with all results.
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements:
 
-.. code-block:: python
+::
 
     >>> response.css('title::text').get()
     'Example website'
@@ -164,7 +164,7 @@ As you can see, ``.xpath()`` and ``.css()`` methods return a
 :class:`~scrapy.selector.SelectorList` instance, which is a list of new
 selectors. This API can be used for quickly selecting nested data:
 
-.. code-block:: python
+::
 
     >>> response.css('img').xpath('@src').getall()
     ['image1_thumb.jpg',
@@ -177,14 +177,14 @@ If you want to extract only the first matched element, you can call the
 selector ``.get()`` (or its alias ``.extract_first()`` commonly used in
 previous Scrapy versions):
 
-.. code-block:: python
+::
 
     >>> response.xpath('//div[@id="images"]/a/text()').get()
     'Name: My image 1 '
 
 It returns ``None`` if no element was found:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//div[@id="not-exists"]/text()').get() is None
     True
@@ -198,7 +198,7 @@ of ``None``:
 Instead of using e.g. ``'@src'`` XPath it is possible to query for attributes
 using ``.attrib`` property of a :class:`~scrapy.selector.Selector`:
 
-.. code-block:: python
+::
 
     >>> [img.attrib['src'] for img in response.css('img')]
     ['image1_thumb.jpg',
@@ -210,7 +210,7 @@ using ``.attrib`` property of a :class:`~scrapy.selector.Selector`:
 As a shortcut, ``.attrib`` is also available on SelectorList directly;
 it returns attributes for the first matching element:
 
-.. code-block:: python
+::
 
     >>> response.css('img').attrib['src']
     'image1_thumb.jpg'
@@ -218,14 +218,14 @@ it returns attributes for the first matching element:
 This is most useful when only a single result is expected, e.g. when selecting
 by id, or selecting unique elements on a web page:
 
-.. code-block:: python
+::
 
     >>> response.css('base').attrib['href']
     'http://example.com/'
 
 Now we're going to get the base URL and some image links:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//base/@href').get()
     'http://example.com/'
@@ -289,14 +289,14 @@ Examples:
 
 * ``title::text`` selects children text nodes of a descendant ``<title>`` element:
 
-.. code-block:: python
+::
 
     >>> response.css('title::text').get()
     'Example website'
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
-.. code-block:: python
+::
 
     >>> response.css('#images *::text').getall()
     ['\n   ',
@@ -314,7 +314,7 @@ Examples:
 * ``foo::text`` returns no results if ``foo`` element exists, but contains
   no text (i.e. text is empty):
 
-  .. code-block:: python
+  ::
 
     >>> response.css('img::text').getall()
     []
@@ -322,7 +322,7 @@ Examples:
   This means ``.css('foo::text').get()`` could return None even if an element
   exists. Use ``default=''`` if you always want a string:
 
-  .. code-block:: python
+  ::
 
     >>> response.css('img::text').get()
     >>> response.css('img::text').get(default='')
@@ -330,7 +330,7 @@ Examples:
 
 * ``a::attr(href)`` selects the *href* attribute value of descendant links:
 
-.. code-block:: python
+::
 
     >>> response.css('a::attr(href)').getall()
     ['image1.html',
@@ -358,7 +358,7 @@ The selection methods (``.xpath()`` or ``.css()``) return a list of selectors
 of the same type, so you can call the selection methods for those selectors
 too. Here's an example:
 
-.. code-block:: python
+::
 
     >>> links = response.xpath('//a[contains(@href, "image")]')
     >>> links.getall()
@@ -386,7 +386,7 @@ Selecting element attributes
 There are several ways to get a value of an attribute. First, one can use
 XPath syntax:
 
-.. code-block:: python
+::
 
     >>> response.xpath("//a/@href").getall()
     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
@@ -398,7 +398,7 @@ it is possible to filter by attribute value.
 Scrapy also provides an extension to CSS selectors (``::attr(...)``)
 which allows to get attribute values:
 
-.. code-block:: python
+::
 
     >>> response.css('a::attr(href)').getall()
     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
@@ -407,7 +407,7 @@ In addition to that, there is a ``.attrib`` property of Selector.
 You can use it if you prefer to lookup attributes in Python
 code, without using XPaths or CSS extensions:
 
-.. code-block:: python
+::
 
     >>> [a.attrib['href'] for a in response.css('a')]
     ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
@@ -417,7 +417,7 @@ with attributes of a first matching element. It is convenient to use when
 a selector is expected to give a single result (e.g. when selecting by element
 ID, or when selecting an unique element on a page):
 
-.. code-block:: python
+::
 
     >>> response.css('base').attrib
     {'href': 'http://example.com/'}
@@ -426,7 +426,7 @@ ID, or when selecting an unique element on a page):
 
 ``.attrib`` property of an empty SelectorList is empty:
 
-.. code-block:: python
+::
 
     >>> response.css('foo').attrib
     {}
@@ -442,7 +442,7 @@ can't construct nested ``.re()`` calls.
 Here's an example used to extract image names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     ['My image 1',
@@ -455,7 +455,7 @@ There's an additional helper reciprocating ``.get()`` (and its
 alias ``.extract_first()``) for ``.re()``, named ``.re_first()``.
 Use it to extract just the first matching string:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
     'My image 1'
@@ -478,7 +478,7 @@ The following examples show how these methods map to each other.
 
 1. ``SelectorList.get()`` is the same as ``SelectorList.extract_first()``:
 
-.. code-block:: python
+::
 
      >>> response.css('a::attr(href)').get()
      'image1.html'
@@ -487,7 +487,7 @@ The following examples show how these methods map to each other.
 
 2. ``SelectorList.getall()`` is the same as ``SelectorList.extract()``:
 
-.. code-block:: python
+::
 
      >>> response.css('a::attr(href)').getall()
      ['image1.html', 'image2.html', 'image3.html', 'image4.html', 'image5.html']
@@ -496,7 +496,7 @@ The following examples show how these methods map to each other.
 
 3. ``Selector.get()`` is the same as ``Selector.extract()``:
 
-.. code-block:: python
+::
 
      >>> response.css('a::attr(href)')[0].get()
      'image1.html'
@@ -505,7 +505,7 @@ The following examples show how these methods map to each other.
 
 4. For consistency, there is also ``Selector.getall()``, which returns a list:
 
-.. code-block:: python
+::
 
     >>> response.css('a::attr(href)')[0].getall()
     ['image1.html']
@@ -545,7 +545,7 @@ with ``/``, that XPath will be absolute to the document and not relative to the
 For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements:
 
-.. code-block:: python
+::
 
     >>> divs = response.xpath('//div')
 
@@ -553,21 +553,21 @@ At first, you may be tempted to use the following approach, which is wrong, as
 it actually extracts all ``<p>`` elements from the document, not only those
 inside ``<div>`` elements:
 
-.. code-block:: python
+::
 
     >>> for p in divs.xpath('//p'):  # this is wrong - gets all <p> from the whole document
     ...     print(p.get())
 
 This is the proper way to do it (note the dot prefixing the ``.//p`` XPath):
 
-.. code-block:: python
+::
 
     >>> for p in divs.xpath('.//p'):  # extracts all <p> inside
     ...     print(p.get())
 
 Another common case would be to extract all direct ``<p>`` children:
 
-.. code-block:: python
+::
 
     >>> for p in divs.xpath('p'):
     ...     print(p.get())
@@ -593,7 +593,7 @@ class name that shares the string ``someclass``.
 As it turns out, Scrapy selectors allow you to chain selectors, so most of the time
 you can just select by class using CSS and then switch to XPath when needed:
 
-.. code-block:: python
+::
 
     >>> from scrapy import Selector
     >>> sel = Selector(text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>')
@@ -612,7 +612,7 @@ Beware of the difference between //node[1] and (//node)[1]
 
 Example:
 
-.. code-block:: python
+::
 
     >>> from scrapy import Selector
     >>> sel = Selector(text="""
@@ -630,28 +630,28 @@ Example:
 
 This gets all first ``<li>``  elements under whatever it is its parent:
 
-.. code-block:: python
+::
 
     >>> xp("//li[1]")
     ['<li>1</li>', '<li>4</li>']
 
 And this gets the first ``<li>``  element in the whole document:
 
-.. code-block:: python
+::
 
     >>> xp("(//li)[1]")
     ['<li>1</li>']
 
 This gets all first ``<li>``  elements under an ``<ul>``  parent:
 
-.. code-block:: python
+::
 
     >>> xp("//ul/li[1]")
     ['<li>1</li>', '<li>4</li>']
 
 And this gets the first ``<li>``  element under an ``<ul>``  parent in the whole document:
 
-.. code-block:: python
+::
 
     >>> xp("(//ul/li)[1]")
     ['<li>1</li>']
@@ -668,14 +668,14 @@ a string function like ``contains()`` or ``starts-with()``, it results in the te
 
 Example:
 
-.. code-block:: python
+::
 
     >>> from scrapy import Selector
     >>> sel = Selector(text='<a href="#">Click here to go to the <strong>Next Page</strong></a>')
 
 Converting a *node-set* to string:
 
-.. code-block:: python
+::
 
     >>> sel.xpath('//a//text()').getall() # take a peek at the node-set
     ['Click here to go to the ', 'Next Page']
@@ -684,7 +684,7 @@ Converting a *node-set* to string:
 
 A *node* converted to a string, however, puts together the text of itself plus of all its descendants:
 
-.. code-block:: python
+::
 
     >>> sel.xpath("//a[1]").getall() # select the first node
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
@@ -693,14 +693,14 @@ A *node* converted to a string, however, puts together the text of itself plus o
 
 So, using the ``.//text()`` node-set won't select anything in this case:
 
-.. code-block:: python
+::
 
     >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").getall()
     []
 
 But using the ``.`` to mean the node, works:
 
-.. code-block:: python
+::
 
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
@@ -721,7 +721,7 @@ which are then substituted with values passed with the query.
 Here's an example to match an element based on its "id" attribute value,
 without hard-coding it (that was shown previously):
 
-.. code-block:: python
+::
 
     >>> # `$val` used in the expression, a `val` argument needs to be passed
     >>> response.xpath('//div[@id=$val]/a/text()', val='images').get()
@@ -730,7 +730,7 @@ without hard-coding it (that was shown previously):
 Here's another example, to find the "id" attribute of a ``<div>`` tag containing
 five ``<a>`` children (here we pass the value ``5`` as an integer):
 
-.. code-block:: python
+::
 
     >>> response.xpath('//div[count(a)=$cnt]/@id', cnt=5).get()
     'images'
@@ -787,7 +787,7 @@ You can see several namespace declarations including a default
 Once in the shell we can try selecting all ``<link>`` objects and see that it
 doesn't work (because the Atom XML namespace is obfuscating those nodes):
 
-.. code-block:: python
+::
 
     >>> response.xpath("//link")
     []
@@ -795,7 +795,7 @@ doesn't work (because the Atom XML namespace is obfuscating those nodes):
 But once we call the :meth:`Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names:
 
-.. code-block:: python
+::
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
@@ -838,7 +838,7 @@ The ``test()`` function, for example, can prove quite useful when XPath's
 
 Example selecting links in list item with a "class" attribute ending with a digit:
 
-.. code-block:: python
+::
 
     >>> from scrapy import Selector
     >>> doc = u"""
@@ -873,7 +873,7 @@ extracting text elements for example.
 Example extracting microdata (sample content taken from http://schema.org/Product)
 with groups of itemscopes and corresponding itemprops:
 
-.. code-block:: python
+::
 
     >>> doc = u"""
     ... <div itemscope itemtype="http://schema.org/Product">
@@ -1107,7 +1107,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
 
 3. Iterate over all ``<p>`` tags and print their class attribute:
 
-.. code-block:: python
+::
 
       for node in sel.xpath("//p"):
           print(node.attrib['class'])

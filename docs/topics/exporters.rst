@@ -40,7 +40,7 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
 value of one of their fields:
 
-.. code-block:: python
+::
 
     from scrapy.exporters import XmlItemExporter
 
@@ -95,7 +95,7 @@ a callable which receives a value and returns its serialized form.
 
 Example:
 
-.. code-block:: python
+::
 
     import scrapy
 
@@ -118,7 +118,7 @@ after your custom code.
 
 Example:
 
-.. code-block:: python
+::
 
       from scrapy.exporter import XmlItemExporter
 
@@ -137,7 +137,7 @@ Built-in Item Exporters reference
 Here is a list of the Item Exporters bundled with Scrapy. Some of them contain
 output examples, which assume you're exporting these two items:
 
-.. code-block:: python
+::
 
     Item(name='Color TV', price='1200')
     Item(name='DVD player', price='200')
@@ -279,7 +279,7 @@ XmlItemExporter
 
    For example, the item::
 
-.. code-block:: python
+::
 
         Item(name=['John', 'Doe'], age='23')
 

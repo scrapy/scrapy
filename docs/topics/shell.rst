@@ -189,7 +189,7 @@ all start with the ``[s]`` prefix):
 
 After that, we can start playing with the objects:
 
-.. code-block:: python
+::
 
     >>> response.xpath('//title/text()').get()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
@@ -245,7 +245,7 @@ This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
 Here's an example of how you would call it from your spider:
 
-.. code-block:: python
+::
 
     import scrapy
 

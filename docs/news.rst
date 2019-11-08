@@ -49,7 +49,7 @@ Backward-incompatible changes
 *   :class:`~scrapy.loader.ItemLoader` now turns the values of its input item
     into lists:
 
-.. code-block:: python
+::
 
         >>> item = MyItem()
         >>> item['field'] = 'value1'

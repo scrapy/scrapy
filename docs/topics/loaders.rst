@@ -45,7 +45,7 @@ Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`:
 
-.. code-block:: python
+::
 
     from scrapy.loader import ItemLoader
     from myproject.items import Product
@@ -98,7 +98,7 @@ assigned to the item.
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field):
 
-.. code-block:: python
+::
 
     l = ItemLoader(Product(), some_selector)
     l.add_xpath('name', xpath1) # (1)
@@ -149,7 +149,7 @@ accept one (and only one) positional argument, which will be an iterable.
 If you want to use a plain function as a processor, make sure it receives
 ``self`` as the first argument:
 
-.. code-block:: python
+::
 
     def lowercase_processor(self, values):
         for v in values:
@@ -177,7 +177,7 @@ Declaring Item Loaders
 Item Loaders are declared like Items, by using a class definition syntax. Here
 is an example:
 
-.. code-block:: python
+::
 
     from scrapy.loader import ItemLoader
     from scrapy.loader.processors import TakeFirst, MapCompose, Join
@@ -210,7 +210,7 @@ this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example:
 
-.. code-block:: python
+::
 
     import scrapy
     from scrapy.loader.processors import Join, MapCompose, TakeFirst
@@ -230,7 +230,7 @@ metadata. Here is an example:
             output_processor=TakeFirst(),
         )
 
-.. code-block:: python
+::
 
     >>> from scrapy.loader import ItemLoader
     >>> il = ItemLoader(item=Product())
@@ -262,7 +262,7 @@ behaviour of the input/output processors.
 For example, suppose you have a function ``parse_length`` which receives a text
 value and extracts a length from it:
 
-.. code-block:: python
+::
 
     def parse_length(text, loader_context):
         unit = loader_context.get('unit', 'm')
@@ -279,14 +279,14 @@ There are several ways to modify Item Loader context values:
 1. By modifying the currently active Item Loader context
    (:attr:`~ItemLoader.context` attribute):
 
-.. code-block:: python
+::
       loader = ItemLoader(product)
       loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
    constructor are stored in the Item Loader context):
 
-.. code-block:: python
+::
 
       loader = ItemLoader(product, unit='cm')
 
@@ -294,7 +294,7 @@ There are several ways to modify Item Loader context values:
    instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
    them:
 
-.. code-block:: python
+::
 
        class ProductLoader(ItemLoader):
            length_out = MapCompose(parse_length, unit='cm')
@@ -346,7 +346,7 @@ ItemLoader objects
         :type re: str or compiled regex
 
         Examples:
-        .. code-block:: python
+        ::
 
             >>> from scrapy.loader.processors import TakeFirst
             >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
@@ -368,7 +368,7 @@ ItemLoader objects
 
         Examples:
 
-        .. code-block:: python
+        ::
 
             loader.add_value('name', u'Color TV')
             loader.add_value('colours', [u'white', u'blue'])
@@ -571,7 +571,7 @@ that you wish to extract.
 
 Example:
 
-.. code-block:: python
+::
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
@@ -585,7 +585,7 @@ the footer selector.
 
 Example:
 
-.. code-block:: python
+::
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
@@ -622,7 +622,7 @@ those dashes in the final product names.
 Here's how you can remove those dashes by reusing and extending the default
 Product Item Loader (``ProductLoader``):
 
-.. code-block:: python
+::
 
     from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
@@ -637,7 +637,7 @@ Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
 want to remove ``CDATA`` occurrences. Here's an example of how to do it:
 
-.. code-block:: python
+::
 
     from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
@@ -683,7 +683,7 @@ Here is a list of all built-in processors:
 
     Example:
 
-    .. code-block:: python
+    ::
 
         >>> from scrapy.loader.processors import Identity
         >>> proc = Identity()
@@ -697,7 +697,7 @@ Here is a list of all built-in processors:
     It doesn't receive any constructor arguments, nor does it accept Loader contexts.
 
     Example:
-    .. code-block:: python
+    ::
 
         >>> from scrapy.loader.processors import TakeFirst
         >>> proc = TakeFirst()
@@ -713,7 +713,7 @@ Here is a list of all built-in processors:
     function: ``u' '.join``
 
     Examples:
-    .. code-block:: python
+    ::
 
         >>> from scrapy.loader.processors import Join
         >>> proc = Join()
@@ -735,7 +735,7 @@ Here is a list of all built-in processors:
     passing keyword argument ``stop_on_none=False``.
 
     Example:
-    .. code-block:: python
+    ::
 
         >>> from scrapy.loader.processors import Compose
         >>> proc = Compose(lambda v: v[0], str.upper)
@@ -780,7 +780,7 @@ Here is a list of all built-in processors:
     <topics-selectors>`, which returns a list of unicode strings.
 
     The example below should clarify how it works:
-    .. code-block:: python
+    ::
 
         >>> def filter_world(x):
         ...     return None if x == 'world' else x
@@ -801,7 +801,7 @@ Here is a list of all built-in processors:
     This processor takes only one input at a time.
 
     Example:
-    .. code-block:: python
+    ::
 
         >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
         >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
@@ -811,7 +811,7 @@ Here is a list of all built-in processors:
         {'bar': 'baz'}
 
     Working with Json:
-    .. code-block:: python
+    ::
 
         >>> import json
         >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
