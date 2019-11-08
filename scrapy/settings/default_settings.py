@@ -263,6 +263,7 @@ SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
     'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+    'scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware': 600,
     'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
     'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
     'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
