@@ -4,7 +4,6 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import sys
 import pprint
 import marshal
 import warnings

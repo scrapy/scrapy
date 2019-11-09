@@ -1,6 +1,5 @@
 import logging
 import signal
-import sys
 import warnings
 
 from twisted.internet import reactor, defer
