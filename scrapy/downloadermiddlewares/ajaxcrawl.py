@@ -2,7 +2,6 @@
 import re
 import logging
 
-import six
 from w3lib import html
 
 from scrapy.exceptions import NotConfigured
@@ -66,7 +65,7 @@ class AjaxCrawlMiddleware(object):
 
 
 # XXX: move it to w3lib?
-_ajax_crawlable_re = re.compile(six.u(r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'))
+_ajax_crawlable_re = re.compile(r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>')
 def _has_ajaxcrawlable_meta(text):
     """
     >>> _has_ajaxcrawlable_meta('<html><head><meta name="fragment"  content="!"/></head><body></body></html>')

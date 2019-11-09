@@ -7,7 +7,6 @@ import re
 import inspect
 import weakref
 import errno
-import six
 from functools import partial, wraps
 from itertools import chain
 import sys
@@ -162,7 +161,7 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 @deprecated("scrapy.utils.python.binary_is_text")

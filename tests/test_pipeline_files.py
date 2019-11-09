@@ -1,12 +1,12 @@
 import os
 import random
 import time
+from io import BytesIO
 from tempfile import mkdtemp
 from shutil import rmtree
 from unittest import mock
 from urllib.parse import urlparse
 
-from six import BytesIO
 from twisted.trial import unittest
 from twisted.internet import defer
 

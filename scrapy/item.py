@@ -10,8 +10,6 @@ from copy import deepcopy
 from pprint import pformat
 from warnings import warn
 
-import six
-
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
@@ -130,6 +128,5 @@ class DictItem(MutableMapping, BaseItem):
         return deepcopy(self)
 
 
-@six.add_metaclass(ItemMeta)
-class Item(DictItem):
+class Item(DictItem, metaclass=ItemMeta):
     pass

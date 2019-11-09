@@ -6,7 +6,7 @@ import json
 import xmlrpc.client as xmlrpclib
 import warnings
 from unittest import mock
-from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlparse
+from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_unicode
