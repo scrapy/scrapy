@@ -4,6 +4,7 @@ pytest
 pytest-cov
 pytest-twisted
 pytest-xdist
+sybil
 testfixtures
 
 # optional for shell wrapper tests

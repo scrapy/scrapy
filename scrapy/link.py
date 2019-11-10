@@ -39,4 +39,3 @@ class Link(object):
     def __repr__(self):
         return 'Link(url=%r, text=%r, fragment=%r, nofollow=%r)' % \
             (self.url, self.text, self.fragment, self.nofollow)
-
