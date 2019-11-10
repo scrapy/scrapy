@@ -187,9 +187,7 @@ all start with the ``[s]`` prefix):
     >>>
 
 
-After that, we can start playing with the objects:
-
-::
+After that, we can start playing with the objects::
 
     >>> response.xpath('//title/text()').get()
     'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
@@ -243,9 +241,7 @@ getting there.
 
 This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
-Here's an example of how you would call it from your spider:
-
-::
+Here's an example of how you would call it from your spider::
 
     import scrapy
 

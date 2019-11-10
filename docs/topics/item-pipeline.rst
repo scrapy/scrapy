@@ -78,9 +78,7 @@ Price validation and dropping items with no prices
 Let's take a look at the following hypothetical pipeline that adjusts the
 ``price`` attribute for those items that do not include VAT
 (``price_excludes_vat`` attribute), and drops those items which don't
-contain a price:
-
-::
+contain a price::
 
     from scrapy.exceptions import DropItem
 
@@ -102,9 +100,7 @@ Write items to a JSON file
 
 The following pipeline stores all scraped items (from all spiders) into a
 single ``items.jl`` file, containing one item per line serialized in JSON
-format:
-
-::
+format::
 
    import json
 
@@ -133,9 +129,7 @@ MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
 The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.:
-
-::
+method and how to clean up the resources properly.::
 
     import pymongo
 
@@ -175,9 +169,7 @@ Take screenshot of item
 This example demonstrates how to return Deferred_ from :meth:`process_item` method.
 It uses Splash_ to render screenshot of item url. Pipeline
 makes request to locally running instance of Splash_. After request is downloaded
-and Deferred callback fires, it saves item to a file and adds filename to an item.
-
-::
+and Deferred callback fires, it saves item to a file and adds filename to an item::
 
     import scrapy
     import hashlib
@@ -222,9 +214,7 @@ Duplicates filter
 
 A filter that looks for duplicate items, and drops those items that were
 already processed. Let's say that our items have a unique id, but our spider
-returns multiples items with the same id:
-
-::
+returns multiples items with the same id::
 
     from scrapy.exceptions import DropItem
 
@@ -245,9 +235,7 @@ Activating an Item Pipeline component
 =====================================
 
 To activate an Item Pipeline component you must add its class to the
-:setting:`ITEM_PIPELINES` setting, like in the following example:
-
-::
+:setting:`ITEM_PIPELINES` setting, like in the following example::
 
    ITEM_PIPELINES = {
        'myproject.pipelines.PricePipeline': 300,

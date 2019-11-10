@@ -17,9 +17,7 @@ To activate a downloader middleware component, add it to the
 :setting:`DOWNLOADER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class paths and their values are the middleware orders.
 
-Here's an example:
-
-::
+Here's an example::
 
     DOWNLOADER_MIDDLEWARES = {
         'myproject.middlewares.CustomDownloaderMiddleware': 543,
@@ -44,9 +42,7 @@ previous (or subsequent) middleware being applied.
 If you want to disable a built-in middleware (the ones defined in
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
 in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None``
-as its value.  For example, if you want to disable the user-agent middleware:
-
-::
+as its value.  For example, if you want to disable the user-agent middleware::
 
     DOWNLOADER_MIDDLEWARES = {
         'myproject.middlewares.CustomDownloaderMiddleware': 543,
@@ -222,18 +218,14 @@ There is support for keeping multiple cookie sessions per spider by using the
 :reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
 (session), but you can pass an identifier to use different ones.
 
-For example:
-
-::
+For example::
 
     for i, url in enumerate(urls):
         yield scrapy.Request(url, meta={'cookiejar': i},
             callback=self.parse_page)
 
 Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
-passing it along on subsequent requests. For example:
-
-::
+passing it along on subsequent requests. For example::
 
     def parse_page(self, response):
         # do some processing
@@ -328,9 +320,7 @@ HttpAuthMiddleware
     To enable HTTP authentication from certain spiders, set the ``http_user``
     and ``http_pass`` attributes of those spiders.
 
-    Example:
-
-    ::
+    Example::
 
         from scrapy.spiders import CrawlSpider
 
@@ -807,9 +797,7 @@ If you want to handle some redirect status codes in your spider, you can
 specify these in the ``handle_httpstatus_list`` spider attribute.
 
 For example, if you want the redirect middleware to ignore 301 and 302
-responses (and pass them through to your spider) you can do this:
-
-::
+responses (and pass them through to your spider) you can do this::
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [301, 302]

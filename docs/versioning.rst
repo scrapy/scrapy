@@ -48,4 +48,3 @@ same way.
 
 
 .. _odd-numbered versions for development releases: https://en.wikipedia.org/wiki/Software_versioning#Odd-numbered_versions_for_development_releases
-

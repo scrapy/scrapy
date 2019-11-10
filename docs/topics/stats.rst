@@ -30,9 +30,7 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats:
-
-::
+attribute. Here is an example of an extension that access stats::
 
     class ExtensionThatAccessStats(object):
 
@@ -43,40 +41,28 @@ attribute. Here is an example of an extension that access stats:
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
-Set stat value:
-
-::
+Set stat value::
 
     stats.set_value('hostname', socket.gethostname())
 
-Increment stat value:
-
-::
+Increment stat value::
 
     stats.inc_value('custom_count')
 
-Set stat value only if greater than previous:
-
-::
+Set stat value only if greater than previous::
 
     stats.max_value('max_items_scraped', value)
 
-Set stat value only if lower than previous:
-
-::
+Set stat value only if lower than previous::
 
     stats.min_value('min_free_memory_percent', value)
 
-Get stat value:
-
-::
+Get stat value::
 
     >>> stats.get_value('custom_count')
     1
 
-Get all stats:
-
-::
+Get all stats::
 
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
@@ -118,4 +104,3 @@ DummyStatsCollector
     setting, to disable stats collect in order to improve performance. However,
     the performance penalty of stats collection is usually marginal compared to
     other Scrapy workload like parsing pages.
-

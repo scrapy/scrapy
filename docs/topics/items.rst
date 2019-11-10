@@ -32,9 +32,7 @@ Declaring Items
 ===============
 
 Items are declared using a simple class definition syntax and :class:`Field`
-objects. Here is an example:
-
-::
+objects. Here is an example::
 
     import scrapy
 
@@ -150,9 +148,7 @@ Setting field values
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_:
-
-::
+To access all populated values, just use the typical `dict API`_::
 
     >>> product.keys()
     ['price', 'name']
@@ -198,16 +194,12 @@ To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
 Other common tasks
 ------------------
 
-Creating dicts from items:
-
-::
+Creating dicts from items::
 
     >>> dict(product) # create a dict from all populated values
     {'price': 1000, 'name': 'Desktop PC'}
 
-Creating items from dicts:
-
-::
+Creating items from dicts::
 
     >>> Product({'name': 'Laptop PC', 'price': 1500})
     Product(price=1500, name='Laptop PC')
@@ -223,18 +215,14 @@ Extending Items
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
 
-For example:
-
-::
+For example::
 
     class DiscountedProduct(Product):
         discount_percent = scrapy.Field(serializer=str)
         discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
-appending more values, or changing existing values, like this:
-
-::
+appending more values, or changing existing values, like this::
 
     class SpecificProduct(Product):
         name = scrapy.Field(Product.fields['name'], serializer=my_serializer)

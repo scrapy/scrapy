@@ -53,9 +53,7 @@ loading that attribute from the job directory, when the spider starts and
 stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is omitted for brevity):
-
-::
+is omitted for brevity)::
 
     def parse_item(self, response):
         # parse item here
@@ -83,9 +81,7 @@ to work, so you should make sure that your requests are serializable.
 The most common issue here is to use ``lambda`` functions on request callbacks that
 can't be persisted.
 
-So, for example, this won't work:
-
-::
+So, for example, this won't work::
 
     def some_callback(self, response):
         somearg = 'test'
@@ -95,9 +91,7 @@ So, for example, this won't work:
     def other_callback(self, response, somearg):
         print("the argument passed is: %s" % somearg)
 
-But this will:
-
-::
+But this will::
 
     def some_callback(self, response):
         somearg = 'test'

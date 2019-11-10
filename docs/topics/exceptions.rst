@@ -33,9 +33,7 @@ CloseSpider
     :param reason: the reason for closing
     :type reason: str
 
-For example:
-
-::
+For example::
 
     def parse_page(self, response):
         if 'Bandwidth exceeded' in response.body:
@@ -78,4 +76,3 @@ NotSupported
 .. exception:: NotSupported
 
 This exception is raised to indicate an unsupported feature.
-

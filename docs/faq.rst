@@ -35,9 +35,7 @@ for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
-Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
-
-::
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
 
     from bs4 import BeautifulSoup
     import scrapy
@@ -226,9 +224,7 @@ What does the response status code 999 means?
 
 999 is a custom response status code used by Yahoo sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider:
-
-::
+higher) in your spider::
 
     class MySpider(CrawlSpider):
 
@@ -349,9 +345,7 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this puspose. For example:
-
-::
+method for this puspose. For example::
 
     from copy import deepcopy
 

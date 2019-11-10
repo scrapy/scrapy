@@ -89,15 +89,11 @@ Enabling your Media Pipeline
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
 
-For Images Pipeline, use:
-
-::
+For Images Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.images.ImagesPipeline': 1}
 
-For Files Pipeline, use:
-
-::
+For Files Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
@@ -239,9 +235,7 @@ Then, if a spider returns a dict with the URLs key (``file_urls`` or
 put the results under respective key (``files`` or ``images``).
 
 If you prefer to use :class:`~.Item`, then define a custom item with the
-necessary fields, like in this example for Images Pipeline:
-
-::
+necessary fields, like in this example for Images Pipeline::
 
     import scrapy
 
@@ -319,9 +313,7 @@ images.
 In order to use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
 where the keys are the thumbnail names and the values are their dimensions.
 
-For example:
-
-::
+For example::
 
    IMAGES_THUMBS = {
        'small': (50, 50),
@@ -415,9 +407,7 @@ See here the methods that you can override in your custom Files Pipeline:
       For example, if file URLs end like regular paths (e.g.
       ``https://example.com/a/b/c/foo.png``), you can use the following
       approach to download all files into the ``files`` folder with their
-      original filenames (e.g. ``files/foo.png``):
-
-      ::
+      original filenames (e.g. ``files/foo.png``)::
 
         import os
         from urllib.parse import urlparse
@@ -437,9 +427,7 @@ See here the methods that you can override in your custom Files Pipeline:
       As seen on the workflow, the pipeline will get the URLs of the images to
       download from the item. In order to do this, you can override the
       :meth:`~get_media_requests` method and return a Request for each
-      file URL:
-
-      ::
+      file URL::
 
          def get_media_requests(self, item, info):
              for file_url in item['file_urls']:
@@ -469,9 +457,7 @@ See here the methods that you can override in your custom Files Pipeline:
       guaranteed to retain the same order of the requests returned from the
       :meth:`~get_media_requests` method.
 
-      Here's a typical value of the ``results`` argument:
-
-      ::
+      Here's a typical value of the ``results`` argument::
 
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
@@ -495,9 +481,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
       Here is an example of the :meth:`~item_completed` method where we
       store the downloaded file paths (passed in results) in the ``file_paths``
-      item field, and we drop the item if it doesn't contain any files:
-
-      ::
+      item field, and we drop the item if it doesn't contain any files::
 
           from scrapy.exceptions import DropItem
 
@@ -536,9 +520,7 @@ See here the methods that you can override in your custom Images Pipeline:
       For example, if file URLs end like regular paths (e.g.
       ``https://example.com/a/b/c/foo.png``), you can use the following
       approach to download all files into the ``files`` folder with their
-      original filenames (e.g. ``files/foo.png``):
-
-      ::
+      original filenames (e.g. ``files/foo.png``)::
 
         import os
         from urllib.parse import urlparse
@@ -576,9 +558,7 @@ Custom Images pipeline example
 ==============================
 
 Here is a full example of the Images Pipeline whose methods are examplified
-above:
-
-::
+above::
 
     import scrapy
     from scrapy.pipelines.images import ImagesPipeline

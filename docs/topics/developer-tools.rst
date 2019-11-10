@@ -114,9 +114,7 @@ see each quote:
 
 With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using 
-the `has-class-extension`_:
-
-::
+the `has-class-extension`_::
 
     >>> response.xpath('//span[has-class("text")]/text()').getall()
    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
@@ -229,9 +227,7 @@ on the request and open ``Open in new tab`` to get a better overview.
    :alt: JSON-object returned from the quotes.toscrape API
 
 With this response we can now easily parse the JSON-object and 
-also request each page to get every quote on the site:
-
-::
+also request each page to get every quote on the site::
 
     import scrapy
     import json
@@ -269,9 +265,7 @@ requests, as we could need to add ``headers`` or ``cookies`` to make it work.
 In those cases you can export the requests in `cURL <https://curl.haxx.se/>`_
 format, by right-clicking on each of them in the network tool and using the
 :meth:`~scrapy.http.Request.from_curl()` method to generate an equivalent
-request:
-
-::
+request::
 
     from scrapy import Request
 
@@ -299,4 +293,3 @@ to identifying the correct request and replicating it in your spider.
 .. _quotes.toscrape.com/scroll: http://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
-

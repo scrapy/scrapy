@@ -47,9 +47,7 @@ Backward-incompatible changes
     (:issue:`2111`, :issue:`3392`, :issue:`3442`, :issue:`3450`)
 
 *   :class:`~scrapy.loader.ItemLoader` now turns the values of its input item
-    into lists:
-
-::
+    into lists::
 
         >>> item = MyItem()
         >>> item['field'] = 'value1'
@@ -1779,9 +1777,7 @@ Declaring and returning Scrapy Items is no longer necessary to collect the
 scraped data from your spider, you can now return explicit dictionaries
 instead.
 
-*Classic version*
-
-::
+*Classic version*::
 
     class MyItem(scrapy.Item):
         url = scrapy.Field()
@@ -1790,9 +1786,7 @@ instead.
         def parse(self, response):
             return MyItem(url=response.url)
 
-*New version*
-
-::
+*New version*::
 
     class MySpider(scrapy.Spider):
         def parse(self, response):
@@ -1826,16 +1820,12 @@ as default logging system. We’re maintaining backward compatibility for most
 of the old custom interface to call logging functions, but you’ll get
 warnings to switch to the Python logging API entirely.
 
-*Old version*
-
-::
+*Old version*::
 
     from scrapy import log
     log.msg('MESSAGE', log.INFO)
 
-*New version*
-
-::
+*New version*::
 
     import logging
     logging.info('MESSAGE')
@@ -1843,9 +1833,7 @@ warnings to switch to the Python logging API entirely.
 Logging with spiders remains the same, but on top of the
 :meth:`~scrapy.spiders.Spider.log` method you’ll have access to a custom
 :attr:`~scrapy.spiders.Spider.logger` created for the spider to issue log
-events:
-
-::
+events::
 
     class MySpider(scrapy.Spider):
         def parse(self, response):
@@ -1862,9 +1850,7 @@ in: :ref:`topics-api`
 
 A common situation where you will face these changes is while running Scrapy
 from scripts. Here’s a quick example of how to run a Spider manually with the
-new API:
-
-::
+new API::
 
     from scrapy.crawler import CrawlerProcess
 

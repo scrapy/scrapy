@@ -38,9 +38,7 @@ the end of the exporting process
 
 Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
-value of one of their fields:
-
-::
+value of one of their fields::
 
     from scrapy.exporters import XmlItemExporter
 
@@ -93,9 +91,7 @@ If you use :class:`~.Item` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be 
 a callable which receives a value and returns its serialized form.
 
-Example:
-
-::
+Example::
 
     import scrapy
 
@@ -116,9 +112,7 @@ customize how your field value will be exported.
 Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
 after your custom code.
 
-Example:
-
-::
+Example::
 
       from scrapy.exporter import XmlItemExporter
 
@@ -135,9 +129,7 @@ Built-in Item Exporters reference
 =================================
 
 Here is a list of the Item Exporters bundled with Scrapy. Some of them contain
-output examples, which assume you're exporting these two items:
-
-::
+output examples, which assume you're exporting these two items::
 
     Item(name='Color TV', price='1200')
     Item(name='DVD player', price='200')
@@ -279,9 +271,7 @@ XmlItemExporter
 
    For example, the item::
 
-::
-
-        Item(name=['John', 'Doe'], age='23')
+      Item(name=['John', 'Doe'], age='23')
 
    Would be serialized as:
 

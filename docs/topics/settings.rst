@@ -69,9 +69,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute:
-
-::
+do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -105,9 +103,7 @@ module and documented in the :ref:`topics-settings-ref` section.
 How to access settings
 ======================
 
-In a spider, the settings are available through ``self.settings``:
-
-::
+In a spider, the settings are available through ``self.settings``::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -124,9 +120,7 @@ In a spider, the settings are available through ``self.settings``:
 
 Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions, middlewares and item pipelines:
-
-::
+extensions, middlewares and item pipelines::
 
     class MyExtension(object):
         def __init__(self, log_is_enabled=False):

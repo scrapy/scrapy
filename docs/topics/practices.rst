@@ -23,9 +23,7 @@ The first utility you can use to run your spiders is
 for you, configuring the logging and setting shutdown handlers. This class is
 the one used by all Scrapy commands.
 
-Here's an example showing how to run a single spider with it.
-
-::
+Here's an example showing how to run a single spider with it.:
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
@@ -52,9 +50,7 @@ use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
 instance with your project settings.
 
 What follows is a working example of how to do that, using the `testspiders`_
-project as example.
-
-::
+project as example.:
 
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
@@ -81,9 +77,7 @@ returned by the :meth:`CrawlerRunner.crawl
 <scrapy.crawler.CrawlerRunner.crawl>` method.
 
 Here's an example of its usage, along with a callback to manually stop the
-reactor after ``MySpider`` has finished running.
-
-::
+reactor after ``MySpider`` has finished running.:
 
     from twisted.internet import reactor
     import scrapy
@@ -112,9 +106,7 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
-Here is an example that runs multiple spiders simultaneously:
-
-::
+Here is an example that runs multiple spiders simultaneously::
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
@@ -132,9 +124,7 @@ Here is an example that runs multiple spiders simultaneously:
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
 
-Same example using :class:`~scrapy.crawler.CrawlerRunner`:
-
-::
+Same example using :class:`~scrapy.crawler.CrawlerRunner`::
 
     import scrapy
     from twisted.internet import reactor
@@ -158,9 +148,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
     reactor.run() # the script will block here until all crawling jobs are finished
 
-Same example but running the spiders sequentially by chaining the deferreds:
-
-::
+Same example but running the spiders sequentially by chaining the deferreds::
 
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner

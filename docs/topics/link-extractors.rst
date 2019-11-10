@@ -37,9 +37,7 @@ Link extractors classes bundled with Scrapy are provided in the
 :mod:`scrapy.linkextractors` module.
 
 The default link extractor is ``LinkExtractor``, which is the same as
-:class:`~.LxmlLinkExtractor`:
-
-::
+:class:`~.LxmlLinkExtractor`::
 
     from scrapy.linkextractors import LinkExtractor
 
@@ -138,9 +136,7 @@ LxmlLinkExtractor
 
         .. highlight:: python
 
-        You can use the following function in ``process_value``:
-
-        ::
+        You can use the following function in ``process_value``::
 
             def process_value(value):
                 m = re.search("javascript:goToPage\('(.*?)'", value)

@@ -85,9 +85,7 @@ optionally how to follow links in the pages, and how to parse the downloaded
 page content to extract data.
 
 This is the code for our first Spider. Save it in a file named
-``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project:
-
-::
+``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
 
     import scrapy
 
@@ -184,9 +182,7 @@ that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
 you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
 of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
-for your spider:
-
-::
+for your spider::
 
     import scrapy
 
@@ -254,9 +250,7 @@ You will see something like:
     >>>
 
 Using the shell, you can try selecting elements using `CSS`_ with the response
-object:
-
-::
+object::
 
     >>> response.css('title')
     [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
@@ -267,9 +261,7 @@ The result of running ``response.css('title')`` is a list-like object called
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
-To extract the text from the title above, you can do:
-
-::
+To extract the text from the title above, you can do::
 
     >>> response.css('title::text').getall()
     ['Quotes to Scrape']
@@ -277,25 +269,19 @@ To extract the text from the title above, you can do:
 There are two things to note here: one is that we've added ``::text`` to the
 CSS query, to mean we want to select only the text elements directly inside
 ``<title>`` element.  If we don't specify ``::text``, we'd get the full title
-element, including its tags:
-
-::
+element, including its tags::
 
     >>> response.css('title').getall()
     ['<title>Quotes to Scrape</title>']
 
 The other thing is that the result of calling ``.getall()`` is a list: it is
 possible that a selector returns more than one result, so we extract them all.
-When you know you just want the first result, as in this case, you can do:
-
-::
+When you know you just want the first result, as in this case, you can do::
 
     >>> response.css('title::text').get()
     'Quotes to Scrape'
 
-As an alternative, you could've written:
-
-::
+As an alternative, you could've written::
 
     >>> response.css('title::text')[0].get()
     'Quotes to Scrape'
@@ -311,9 +297,7 @@ to be scraped, you can at least get **some** data.
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
 the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_:
-
-::
+expressions`_::
 
     >>> response.css('title::text').re(r'Quotes.*')
     ['Quotes to Scrape']
@@ -337,9 +321,7 @@ visually selected elements, which works in many browsers.
 XPath: a brief intro
 ^^^^^^^^^^^^^^^^^^^^
 
-Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:
-
-::
+Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
 
     >>> response.xpath('//title')
     [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
@@ -401,24 +383,18 @@ we want:
 
     $ scrapy shell 'http://quotes.toscrape.com'
 
-We get a list of selectors for the quote HTML elements with:
-
-::
+We get a list of selectors for the quote HTML elements with::
 
     >>> response.css("div.quote")
 
 Each of the selectors returned by the query above allows us to run further
 queries over their sub-elements. Let's assign the first selector to a
-variable, so that we can run our CSS selectors directly on a particular quote:
-
-::
+variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
 
 Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
-using the ``quote`` object we just created:
-
-::
+using the ``quote`` object we just created::
 
     >>> text = quote.css("span.text::text").get()
     >>> text
@@ -428,18 +404,14 @@ using the ``quote`` object we just created:
     'Albert Einstein'
 
 Given that the tags are a list of strings, we can use the ``.getall()`` method
-to get all of them:
-
-::
+to get all of them::
 
     >>> tags = quote.css("div.tags a.tag::text").getall()
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
 Having figured out how to extract each bit, we can now iterate over all the
-quotes elements and put them together into a Python dictionary:
-
-::
+quotes elements and put them together into a Python dictionary::
 
     >>> for quote in response.css("div.quote"):
     ...     text = quote.css("span.text::text").get()
@@ -460,9 +432,7 @@ extraction logic above into our spider.
 
 A Scrapy spider typically generates many dictionaries containing the data
 extracted from the page. To do that, we use the ``yield`` Python keyword
-in the callback, as you can see below:
-
-::
+in the callback, as you can see below::
 
     import scrapy
 
@@ -555,34 +525,26 @@ markup:
         </li>
     </ul>
 
-We can try extracting it in the shell:
-
-::
+We can try extracting it in the shell::
 
     >>> response.css('li.next a').get()
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
 Scrapy supports a CSS extension that lets you select the attribute contents,
-like this:
-
-::
+like this::
 
     >>> response.css('li.next a::attr(href)').get()
     '/page/2/'
 
 There is also an ``attrib`` property available
-(see :ref:`selecting-attributes` for more):
-
-::
+(see :ref:`selecting-attributes` for more)::
 
     >>> response.css('li.next a').attrib['href']
     '/page/2'
 
 Let's see now our spider modified to recursively follow the link to the next
-page, extracting data from it:
-
-::
+page, extracting data from it::
 
     import scrapy
 
@@ -633,9 +595,7 @@ A shortcut for creating Requests
 --------------------------------
 
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.TextResponse.follow>`:
-
-::
+:meth:`response.follow <scrapy.http.TextResponse.follow>`::
 
     import scrapy
 
@@ -663,17 +623,13 @@ need to call urljoin. Note that ``response.follow`` just returns a Request
 instance; you still have to yield this Request.
 
 You can also pass a selector to ``response.follow`` instead of a string;
-this selector should extract necessary attributes:
-
-::
+this selector should extract necessary attributes::
 
     for href in response.css('li.next a::attr(href)'):
         yield response.follow(href, callback=self.parse)
 
 For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
-attribute automatically. So the code can be shortened further:
-
-::
+attribute automatically. So the code can be shortened further::
 
     for a in response.css('li.next a'):
         yield response.follow(a, callback=self.parse)
@@ -689,9 +645,7 @@ More examples and patterns
 --------------------------
 
 Here is another spider that illustrates callbacks and following links,
-this time for scraping author information:
-
-::
+this time for scraping author information::
 
     import scrapy
 
@@ -765,9 +719,7 @@ spider attributes by default.
 
 In this example, the value provided for the ``tag`` argument will be available
 via ``self.tag``. You can use this to make your spider fetch only quotes
-with a specific tag, building the URL based on the argument:
-
-::
+with a specific tag, building the URL based on the argument::
 
     import scrapy
 

@@ -248,9 +248,7 @@ specify which response codes the spider is able to handle using the
 :setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
-this:
-
-::
+this::
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]
@@ -452,4 +450,3 @@ UrlLengthMiddleware
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
-

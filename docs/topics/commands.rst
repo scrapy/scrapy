@@ -628,9 +628,7 @@ You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``
 file.
 
-The following example adds ``my_command`` command:
-
-::
+The following example adds ``my_command`` command::
 
   from setuptools import setup, find_packages
 

@@ -118,18 +118,14 @@ data from it depends on the type of response:
     <topics-selectors>` as usual.
 
 -   If the response is JSON, use `json.loads`_ to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`:
-
-::
+    :attr:`response.text <scrapy.http.TextResponse.text>`::
 
         data = json.loads(response.text)
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
     :class:`~scrapy.selector.Selector` and then
-    :ref:`use it <topics-selectors>` as usual:
-
-::
+    :ref:`use it <topics-selectors>` as usual::
 
         selector = Selector(data['html'])
 
@@ -178,9 +174,7 @@ data from it:
     data in JSON format, which you can then parse with `json.loads`_.
 
     For example, if the JavaScript code contains a separate line like
-    ``var data = {"field": "value"};`` you can extract that data as follows:
-
-::
+    ``var data = {"field": "value"};`` you can extract that data as follows::
 
         >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
         >>> json_data = response.css('script::text').re_first(pattern)
@@ -191,9 +185,7 @@ data from it:
     that you can parse using :ref:`selectors <topics-selectors>`.
 
     For example, if the JavaScript code contains
-    ``var data = {field: "value"};`` you can extract that data as follows:
-
-::
+    ``var data = {field: "value"};`` you can extract that data as follows::
 
         >>> import js2xml
         >>> import lxml.etree

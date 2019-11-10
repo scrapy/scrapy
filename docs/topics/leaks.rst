@@ -100,9 +100,7 @@ A real example
 --------------
 
 Let's see a concrete example of a hypothetical case of memory leaks.
-Suppose we have some spider with a line similar to this one:
-
-::
+Suppose we have some spider with a line similar to this one::
 
     return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
                    callback=self.parse, cb_kwargs={'referer': response})
@@ -134,9 +132,7 @@ and check the code of the spider to discover the nasty line that is
 generating the leaks (passing response references inside requests).
 
 Sometimes extra information about live objects can be helpful.
-Let's check the oldest response:
-
-::
+Let's check the oldest response::
 
     >>> from scrapy.utils.trackref import get_oldest
     >>> r = get_oldest('HtmlResponse')
@@ -144,9 +140,7 @@ Let's check the oldest response:
     'http://www.somenastyspider.com/product.php?pid=123'
 
 If you want to iterate over all objects, instead of getting the oldest one, you
-can use the :func:`scrapy.utils.trackref.iter_all` function:
-
-::
+can use the :func:`scrapy.utils.trackref.iter_all` function::
 
     >>> from scrapy.utils.trackref import iter_all
     >>> [r.url for r in iter_all('HtmlResponse')]
@@ -161,9 +155,7 @@ If your project has too many spiders executed in parallel,
 the output of :func:`prefs()` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclases). For
-example, this won't show any live references to spiders:
-
-::
+example, this won't show any live references to spiders::
 
     >>> from scrapy.spiders import Spider
     >>> prefs(ignore=Spider)
@@ -224,9 +216,7 @@ If you use ``pip``, you can install Guppy with the following command:
 
 The telnet console also comes with a built-in shortcut (``hpy``) for accessing
 Guppy heap objects. Here's an example to view all Python objects available in
-the heap using Guppy:
-
-::
+the heap using Guppy::
 
     >>> x = hpy.heap()
     >>> x.bytype
@@ -245,9 +235,7 @@ the heap using Guppy:
     <1676 more rows. Type e.g. '_.more' to view.>
 
 You can see that most space is used by dicts. Then, if you want to see from
-which attribute those dicts are referenced, you could do:
-
-::
+which attribute those dicts are referenced, you could do::
 
     >>> x.bytype[0].byvia
     Partition of a set of 22307 objects. Total size = 16423880 bytes.
@@ -285,9 +273,7 @@ If you use ``pip``, you can install muppy with the following command:
     pip install Pympler
 
 Here's an example to view all Python objects available in
-the heap using muppy:
-
-::
+the heap using muppy::
 
     >>> from pympler import muppy
     >>> all_objects = muppy.get_objects()

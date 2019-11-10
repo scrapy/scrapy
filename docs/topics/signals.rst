@@ -16,9 +16,7 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
-Here is a simple example showing how you can catch signals and perform some action:
-
-::
+Here is a simple example showing how you can catch signals and perform some action::
 
     from scrapy import signals
     from scrapy import Spider
