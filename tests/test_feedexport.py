@@ -415,7 +415,7 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(res_path, 'rb') as f:
+            with open(res_uri, 'rb') as f:
                 content = f.read()
 
         finally:
@@ -850,12 +850,12 @@ class FeedExportTest(unittest.TestCase):
     def test_pathlib_uri(self):
         tmpdir = tempfile.mkdtemp()
         feed_uri = Path(tmpdir) / 'res'
-        feed_uri=str(feed_uri)
         res_uri = urljoin('file:', pathname2url(feed_uri))
         settings = {
             'FEED_FORMAT': 'csv',
             'FEED_STORE_EMPTY': True,
-            'FEED_URI': res_uri,
+            'FEED_URI': feed_uri,
+            'FEED_URI_ISPATH' : True
         }
         
         data = yield self.exported_no_data(settings)
