@@ -201,7 +201,7 @@ class FeedExporter(object):
         self.settings = settings
         if not settings['FEED_URI']:
             raise NotConfigured
-        self.urifmt=str(settings['FEED_URI'])
+        self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')
