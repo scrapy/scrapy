@@ -855,7 +855,6 @@ class FeedExportTest(unittest.TestCase):
             'FEED_FORMAT': 'csv',
             'FEED_STORE_EMPTY': True,
             'FEED_URI': feed_uri,
-            'FEED_URI_ISPATH' : True
         }
         
         data = yield self.exported_no_data(settings)
