@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags, cb_kwargs])
+.. autoclass:: Request
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -83,17 +83,21 @@ Request objects
         .. reqmeta:: dont_merge_cookies
 
         When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests. That's
-        the typical behaviour of any regular web browser. However, if, for some
-        reason, you want to avoid merging with existing cookies you can instruct
-        Scrapy to do so by setting the ``dont_merge_cookies`` key to True in the
-        :attr:`Request.meta`.
+        cookies for that domain and will be sent again in future requests.
+        That's the typical behaviour of any regular web browser.
 
-        Example of request without merging cookies::
+        To create a request that does not send stored cookies and does not
+        store received cookies, set the ``dont_merge_cookies`` key to ``True``
+        in :attr:`request.meta <scrapy.http.Request.meta>`.
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={'currency': 'USD', 'country': 'UY'},
-                                           meta={'dont_merge_cookies': True})
+        Example of a request that sends manually-defined cookies and ignores
+        cookie storage::
+
+            Request(
+                url="http://www.example.com",
+                cookies={'currency': 'USD', 'country': 'UY'},
+                meta={'dont_merge_cookies': True},
+            )
 
         For more info see :ref:`cookies-mw`.
     :type cookies: dict or list
@@ -396,7 +400,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new argument to the constructor. The
+    The :class:`FormRequest` class adds a new keyword parameter to the constructor. The
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
@@ -535,19 +539,19 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
-JSONRequest
+JsonRequest
 -----------
 
-The JSONRequest class extends the base :class:`Request` class with functionality for
+The JsonRequest class extends the base :class:`Request` class with functionality for
 dealing with JSON requests.
 
-.. class:: JSONRequest(url, [... data, dumps_kwargs])
+.. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JSONRequest` class adds two new argument to the constructor. The
+   The :class:`JsonRequest` class adds two new keyword parameters to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
-   Using the :class:`JSONRequest` will set the ``Content-Type`` header to ``application/json``
+   Using the :class:`JsonRequest` will set the ``Content-Type`` header to ``application/json``
    and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
@@ -562,7 +566,7 @@ dealing with JSON requests.
 
 .. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
-JSONRequest usage example
+JsonRequest usage example
 -------------------------
 
 Sending a JSON POST request with a JSON payload::
@@ -571,13 +575,13 @@ Sending a JSON POST request with a JSON payload::
        'name1': 'value1',
        'name2': 'value2',
    }
-   yield JSONRequest(url='http://www.example.com/post/action', data=data)
+   yield JsonRequest(url='http://www.example.com/post/action', data=data)
 
 
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
+.. autoclass:: Response
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -592,8 +596,8 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. To access the decoded text as str (unicode
-       in Python 2) you can use ``response.text`` from an encoding-aware
+    :param body: the response body. To access the decoded text as str you can use
+       ``response.text`` from an encoding-aware
        :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
        such as :class:`TextResponse`.
     :type body: bytes

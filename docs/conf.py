@@ -253,6 +253,19 @@ coverage_ignore_pyobjects = [
 
     # Private exception used by the command-line interface implementation.
     r'^scrapy\.exceptions\.UsageError',
+
+    # Methods of BaseItemExporter subclasses are only documented in
+    # BaseItemExporter.
+    r'^scrapy\.exporters\.(?!BaseItemExporter\b)\w*?\.',
+
+    # Extension behavior is only modified through settings. Methods of
+    # extension classes, as well as helper functions, are implementation
+    # details that are not documented.
+    r'^scrapy\.extensions\.[a-z]\w*?\.[A-Z]\w*?\.',  # methods
+    r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
+
+    # Never documented before, and deprecated now.
+    r'^scrapy\.item\.DictItem$',
 ]
 
 

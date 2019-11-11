@@ -164,6 +164,15 @@ Disallow: /some/randome/page.html
         d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
         return d
 
+    def test_robotstxt_user_agent_setting(self):
+        crawler = self._get_successful_crawler()
+        crawler.settings.set('ROBOTSTXT_USER_AGENT', 'Examplebot')
+        crawler.settings.set('USER_AGENT', 'Mozilla/5.0 (X11; Linux x86_64)')
+        middleware = RobotsTxtMiddleware(crawler)
+        rp = mock.MagicMock(return_value=True)
+        middleware.process_request_2(rp, Request('http://site.local/allowed'), None)
+        rp.allowed.assert_called_once_with('http://site.local/allowed', 'Examplebot')
+
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
         dfd = maybeDeferred(middleware.process_request, request, spider)

@@ -69,11 +69,11 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 and Python 3.5+
+Scrapy is supported under Python 3.5+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
 PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
+Python 2 support was dropped in Scrapy 2.0.
 
 .. note::
     For Python 3 support on Windows, it is recommended to use

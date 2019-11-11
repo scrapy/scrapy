@@ -11,7 +11,7 @@ from six.moves.urllib.parse import urlparse, parse_qs, unquote
 if six.PY3:
     from urllib.parse import unquote_to_bytes
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, JSONRequest, Headers, HtmlResponse
+from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_native_str
 
 from tests import mock
@@ -1246,14 +1246,14 @@ class XmlRpcRequestTest(RequestTest):
         self._test_request(params=(u'pas£',), encoding='latin1')
 
 
-class JSONRequestTest(RequestTest):
-    request_class = JSONRequest
+class JsonRequestTest(RequestTest):
+    request_class = JsonRequest
     default_method = 'GET'
     default_headers = {b'Content-Type': [b'application/json'], b'Accept': [b'application/json, text/javascript, */*; q=0.01']}
 
     def setUp(self):
         warnings.simplefilter("always")
-        super(JSONRequestTest, self).setUp()
+        super(JsonRequestTest, self).setUp()
 
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")
@@ -1407,7 +1407,7 @@ class JSONRequestTest(RequestTest):
 
     def tearDown(self):
         warnings.resetwarnings()
-        super(JSONRequestTest, self).tearDown()
+        super(JsonRequestTest, self).tearDown()
 
 
 if __name__ == "__main__":
