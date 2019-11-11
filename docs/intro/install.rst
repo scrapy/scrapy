@@ -257,6 +257,7 @@ exception with the following traceback:
 
 .. code-block:: python
 
+    […]
       File "[…]/site-packages/twisted/protocols/tls.py", line 63, in <module>
         from twisted.internet._sslverify import _setAcceptableProtocols
       File "[…]/site-packages/twisted/internet/_sslverify.py", line 38, in <module>
