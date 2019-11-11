@@ -416,7 +416,7 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(defaults['FEED_PATH'], 'rb') as f:
+            with open(str(defaults['FEED_PATH']), 'rb') as f:
                 content = f.read()
 
         finally:
