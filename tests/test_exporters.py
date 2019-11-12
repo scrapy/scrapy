@@ -340,10 +340,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
     def test_multivalued_fields(self):
 
         outputs = [
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
-                b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></root>',
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><person><name><value>John\xc2\xa3</value><value>Doe</value></name></person></items>'
-            ]
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
+            b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></root>',
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><person><name><value>John\xc2\xa3</value><value>Doe</value></name></person></items>'
+        ]
 
         arguments = [{}, {'root_element': 'root'}, {'item_element': 'person'}]
 
@@ -354,10 +354,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
     def test_multivalued_field_custom_name(self):
         outputs = [
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><data>John\xc2\xa3</data><data>Doe</data></name></item></items>',
-                b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><field>John\xc2\xa3</field><field>Doe</field></name></item></root>',
-            ]
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><data>John\xc2\xa3</data><data>Doe</data></name></item></items>',
+            b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><field>John\xc2\xa3</field><field>Doe</field></name></item></root>',
+        ]
 
         arguments = [{}, {'default_key': 'data'}, {'serialized_keys': {'name': 'field'}}]
 
@@ -368,31 +368,18 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
     def test_derive_name(self):
         self.assertExportResult(
-                TestDeriveItem(names=[u'John\xa3', u'Doe']),
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><names><name>John\xc2\xa3</name><name>Doe</name></names></item></items>',
-                **{'enable_derive': True}
-            )
+            TestDeriveItem(names=[u'John\xa3', u'Doe']),
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><names><name>John\xc2\xa3</name><name>Doe</name></names></item></items>',
+            **{'enable_derive': True}
+        )
 
     def test_nested_item(self):
         i1 = TestItem(name=u'foo\xa3hoo', age='22')
         i2 = dict(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
 
-        self.assertExportResult(
-                i3,
-                b'<?xml version="1.0" encoding="utf-8"?>\n'
-                b'<items>'
-                    b'<item>'
-                        b'<age>'
-                            b'<age>'
-                                b'<age>22</age>'
-                                b'<name>foo\xc2\xa3hoo</name>'
-                            b'</age>'
-                            b'<name>bar</name>'
-                        b'</age>'
-                        b'<name>buz</name>'
-                    b'</item>'
-                b'</items>'
+        self.assertExportResult(i3,
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age><age><age>22</age><name>foo\xc2\xa3hoo</name></age><name>bar</name></age><name>buz</name></item></items>'
             )
 
     def test_nested_list_item(self):
