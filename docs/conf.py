@@ -237,7 +237,7 @@ coverage_ignore_pyobjects = [
     r'\bContractsManager\b$',
 
     # For default contracts we only want to document their general purpose in
-    # their constructor, the methods they reimplement to achieve that purpose
+    # their __init__ method, the methods they reimplement to achieve that purpose
     # should be irrelevant to developers using those contracts.
     r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
 
