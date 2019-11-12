@@ -177,20 +177,19 @@ Documentation policies
 ======================
 
 For reference documentation of API members (classes, methods, etc.) use
-docstrings and make sure that the Sphinx documentation uses the autodoc_
-extension to pull the docstrings. API reference documentation should follow
-docstring conventions (`PEP 257`_) and be IDE-friendly: short, to the point,
-and it may provide short examples.
+docstrings and make sure that the Sphinx documentation uses the
+:mod:`~sphinx.ext.autodoc` extension to pull the docstrings. API reference
+documentation should follow docstring conventions (`PEP 257`_) and be
+IDE-friendly: short, to the point, and it may provide short examples.
 
 Other types of documentation, such as tutorials or topics, should be covered in
 files within the ``docs/`` directory. This includes documentation that is
 specific to an API member, but goes beyond API reference documentation.
 
-In any case, if something is covered in a docstring, use the autodoc_
-extension to pull the docstring into the documentation instead of duplicating
-the docstring in files within the ``docs/`` directory.
-
-.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+In any case, if something is covered in a docstring, use the
+:mod:`~sphinx.ext.autodoc` extension to pull the docstring into the
+documentation instead of duplicating the docstring in files within the
+``docs/`` directory.
 
 Tests
 =====
