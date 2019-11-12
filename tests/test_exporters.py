@@ -25,6 +25,10 @@ class TestItem(Item):
     age = Field()
 
 
+class TestDeriveItem(Item):
+    names = Field()
+
+
 class BaseItemExporterTest(unittest.TestCase):
 
     def setUp(self):
@@ -319,9 +323,9 @@ class XmlItemExporterTest(BaseItemExporterTest):
             return xmltuple(doc)
         return self.assertEqual(xmlsplit(first), xmlsplit(second), msg)
 
-    def assertExportResult(self, item, expected_value):
+    def assertExportResult(self, item, expected_value, **kwargs):
         fp = BytesIO()
-        ie = XmlItemExporter(fp)
+        ie = XmlItemExporter(fp, **kwargs)
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
@@ -330,12 +334,41 @@ class XmlItemExporterTest(BaseItemExporterTest):
     def _check_output(self):
         expected_value = b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
         self.assertXmlEquivalent(self.output.getvalue(), expected_value)
-
+    
     def test_multivalued_fields(self):
+       
+        outputs = [
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
+                b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></root>',
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><person><name><value>John\xc2\xa3</value><value>Doe</value></name></person></items>'
+            ]
+
+        arguments = [{},{'root_element':'root'},{'item_element':'person'}]
+
+        for output, argument in zip(outputs, arguments):
+            with self.subTest(output=output, argument=argument):
+                self.assertExportResult(TestItem(name=[u'John\xa3', u'Doe']),
+                                        output,**argument)
+    
+    def test_multivalued_field_custom_name(self):
+        outputs = [
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><data>John\xc2\xa3</data><data>Doe</data></name></item></items>',
+                b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><field>John\xc2\xa3</field><field>Doe</field></name></item></root>',
+            ]
+
+        arguments = [{},{'default_key':'data'},{'serialized_keys':{'name':'field'}}]
+
+        for output, argument in zip(outputs, arguments):
+            with self.subTest(output=output, argument=argument):
+                self.assertExportResult(TestItem(name=[u'John\xa3', u'Doe']),
+                                        output,**argument)
+    def test_derive_name(self):
         self.assertExportResult(
-            TestItem(name=[u'John\xa3', u'Doe']),
-            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
-        )
+                TestDeriveItem(names=[u'John\xa3', u'Doe']),
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><names><name>John\xc2\xa3</name><name>Doe</name></names></item></items>',
+                **{'enable_derive':True}
+            )
 
     def test_nested_item(self):
         i1 = TestItem(name=u'foo\xa3hoo', age='22')
