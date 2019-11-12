@@ -311,6 +311,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         return XmlItemExporter(self.output, **kwargs)
 
     def assertXmlEquivalent(self, first, second, msg=None):
+
         def xmltuple(elem):
             children = list(elem.iterchildren())
             if children:
@@ -318,6 +319,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)
@@ -334,22 +336,22 @@ class XmlItemExporterTest(BaseItemExporterTest):
     def _check_output(self):
         expected_value = b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
         self.assertXmlEquivalent(self.output.getvalue(), expected_value)
-    
+
     def test_multivalued_fields(self):
-       
+
         outputs = [
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
                 b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></root>',
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items><person><name><value>John\xc2\xa3</value><value>Doe</value></name></person></items>'
             ]
 
-        arguments = [{},{'root_element':'root'},{'item_element':'person'}]
+        arguments = [{}, {'root_element': 'root'}, {'item_element': 'person'}]
 
         for output, argument in zip(outputs, arguments):
             with self.subTest(output=output, argument=argument):
                 self.assertExportResult(TestItem(name=[u'John\xa3', u'Doe']),
-                                        output,**argument)
-    
+                                        output, **argument)
+
     def test_multivalued_field_custom_name(self):
         outputs = [
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>',
@@ -357,17 +359,18 @@ class XmlItemExporterTest(BaseItemExporterTest):
                 b'<?xml version="1.0" encoding="utf-8"?>\n<root><item><name><field>John\xc2\xa3</field><field>Doe</field></name></item></root>',
             ]
 
-        arguments = [{},{'default_key':'data'},{'serialized_keys':{'name':'field'}}]
+        arguments = [{}, {'default_key': 'data'}, {'serialized_keys': {'name': 'field'}}]
 
         for output, argument in zip(outputs, arguments):
             with self.subTest(output=output, argument=argument):
                 self.assertExportResult(TestItem(name=[u'John\xa3', u'Doe']),
-                                        output,**argument)
+                                        output, **argument)
+
     def test_derive_name(self):
         self.assertExportResult(
                 TestDeriveItem(names=[u'John\xa3', u'Doe']),
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><names><name>John\xc2\xa3</name><name>Doe</name></names></item></items>',
-                **{'enable_derive':True}
+                **{'enable_derive': True}
             )
 
     def test_nested_item(self):
@@ -375,21 +378,22 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
 
-        self.assertExportResult(i3,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<age>'
+        self.assertExportResult(
+                i3,
+                b'<?xml version="1.0" encoding="utf-8"?>\n'
+                b'<items>'
+                    b'<item>'
                         b'<age>'
-                            b'<age>22</age>'
-                            b'<name>foo\xc2\xa3hoo</name>'
+                            b'<age>'
+                                b'<age>22</age>'
+                                b'<name>foo\xc2\xa3hoo</name>'
+                            b'</age>'
+                            b'<name>bar</name>'
                         b'</age>'
-                        b'<name>bar</name>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
-            b'</items>'
-        )
+                        b'<name>buz</name>'
+                    b'</item>'
+                b'</items>'
+            )
 
     def test_nested_list_item(self):
         i1 = TestItem(name=u'foo')

@@ -136,9 +136,9 @@ class XmlItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
         self.root_element = kwargs.pop('root_element', 'items')
-        self.serialized_keys = kwargs.pop('serialized_keys',dict())
-        self.default_key = kwargs.pop('default_key','value')
-        self.enable_derive = kwargs.pop('enable_derive',False)
+        self.serialized_keys = kwargs.pop('serialized_keys', dict())
+        self.default_key = kwargs.pop('default_key', 'value')
+        self.enable_derive = kwargs.pop('enable_derive', False)
         self._configure(kwargs, dont_fail=True)
         if not self.encoding:
             self.encoding = 'utf-8'
@@ -187,7 +187,7 @@ class XmlItemExporter(BaseItemExporter):
                     self._export_xml_field(self.serialized_keys[name], value,
                                            depth=depth+1)
                 # derives a name
-                elif self.enable_derive and  name[-1].lower() == 's':
+                elif self.enable_derive and name[-1].lower() == 's':
                     self._export_xml_field(name[:-1], value, depth=depth+1)
                 else:
                     self._export_xml_field(self.default_key, value, depth=depth+1)
@@ -226,7 +226,7 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
         ) if six.PY3 else file
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
