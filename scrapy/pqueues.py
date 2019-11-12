@@ -86,9 +86,6 @@ class _SlotPriorityQueues(object):
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
 
-    def __contains__(self, slot):
-        return slot in self.pqueues
-
 
 class ScrapyPriorityQueue(PriorityQueue):
     """
