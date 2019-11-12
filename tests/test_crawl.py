@@ -1,6 +1,7 @@
 import json
 import logging
 
+from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -10,7 +11,8 @@ from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
-                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback)
+                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
+                           AsyncDefSpider, AsyncDefAsyncioSpider)
 
 
 class CrawlTestCase(TestCase):
@@ -308,3 +310,19 @@ with multiples lines
         self.assertIn("[callback] status 201", str(log))
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
+
+    @defer.inlineCallbacks
+    def test_async_def_parse(self):
+        self.runner.crawl(AsyncDefSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield self.runner.join()
+        self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse(self):
+        runner = CrawlerRunner({"ASYNCIO_REACTOR": True})
+        runner.crawl(AsyncDefAsyncioSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield runner.join()
+        self.assertIn("Got response 200", str(log))
