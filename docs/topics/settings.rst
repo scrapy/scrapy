@@ -1241,6 +1241,14 @@ Type of priority queue used by the scheduler. Another available type is
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
+.. setting:: SCRAPER
+
+SCRAPER
+-------
+Default: ``'scrapy.core.scraper.Scraper'``
+
+The scraper to use for crawling.
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS

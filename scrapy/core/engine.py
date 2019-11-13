@@ -11,7 +11,6 @@ from twisted.internet import defer, task
 from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
@@ -67,7 +66,7 @@ class ExecutionEngine(object):
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
-        self.scraper = Scraper(crawler)
+        self.scraper = load_object(self.settings['SCRAPER'])(crawler)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks

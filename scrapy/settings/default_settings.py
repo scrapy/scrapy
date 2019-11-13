@@ -254,6 +254,8 @@ SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
 
+SCRAPER = 'scrapy.core.scraper.Scraper'
+
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
 
