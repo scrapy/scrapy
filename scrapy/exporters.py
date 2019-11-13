@@ -136,10 +136,7 @@ class XmlItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
         self.root_element = kwargs.pop('root_element', 'items')
-        self.serialized_keys = kwargs.pop('serialized_keys', dict())
-        self.default_key = kwargs.pop('default_key', 'value')
-        self.enable_derive = kwargs.pop('enable_derive', False)
-        self._configure(kwargs, dont_fail=True)
+        self._configure(kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
@@ -171,6 +168,11 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
 
+    def _export_listlike(self, listlike_serialized_value, depth=None):
+        self._beautify_newline()
+        for value in listlike_serialized_value:
+            self._export_xml_field('value', value, depth=depth+1)
+
     def _export_xml_field(self, name, serialized_value, depth=None):
         self._beautify_indent(depth=depth)
         self.xg.startElement(name, {})
@@ -180,17 +182,7 @@ class XmlItemExporter(BaseItemExporter):
                 self._export_xml_field(subname, value, depth=depth+1)
             self._beautify_indent(depth=depth)
         elif is_listlike(serialized_value):
-            self._beautify_newline()
-            for value in serialized_value:
-                # looks for the name of the iterable in the dict
-                if name in self.serialized_keys:
-                    self._export_xml_field(self.serialized_keys[name], value,
-                                           depth=depth+1)
-                # derives a name
-                elif self.enable_derive and name[-1].lower() == 's':
-                    self._export_xml_field(name[:-1], value, depth=depth+1)
-                else:
-                    self._export_xml_field(self.default_key, value, depth=depth+1)
+            self._export_listlike(serialized_value, depth=depth)
             self._beautify_indent(depth=depth)
         elif isinstance(serialized_value, six.text_type):
             self._xg_characters(serialized_value)
