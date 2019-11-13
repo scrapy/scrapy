@@ -20,9 +20,6 @@ class BaseDupeFilter(object):
     def close(self, reason):  # can return a deferred
         pass
 
-    def log(self, request, spider):  # log that a request has been filtered
-        pass
-
 
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
