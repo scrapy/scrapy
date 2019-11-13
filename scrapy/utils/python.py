@@ -388,9 +388,7 @@ class MutableChain(object):
         self.data = chain(self.data, *iterables)
 
     def __iter__(self):
-        return self.data.__iter__()
+        return self
 
     def __next__(self):
         return next(self.data)
-
-    next = __next__
