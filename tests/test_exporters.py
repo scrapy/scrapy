@@ -350,9 +350,9 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'buz', age=i2)
 
         self.assertExportResult(
-                i3,
-                b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age><age><age>22</age><name>foo\xc2\xa3hoo</name></age><name>bar</name></age><name>buz</name></item></items>'
-            )
+            i3,
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age><age><age>22</age><name>foo\xc2\xa3hoo</name></age><name>bar</name></age><name>buz</name></item></items>'
+        )
 
     def test_nested_list_item(self):
         i1 = TestItem(name=u'foo')
@@ -361,16 +361,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
         self.assertExportResult(
             i3,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<age>'
-                        b'<value><name>foo</name></value>'
-                        b'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
-            b'</items>'
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age><value><name>foo</name></value><value><name>bar</name><v2><egg><value>spam</value></egg></v2></value></age><name>buz</name></item></items>'
         )
 
     def test_nonstring_types_item(self):
