@@ -21,7 +21,7 @@ class UtilsConsoleTestCase(unittest.TestCase):
         shell = get_shell_embed_func(['invalid'])
         self.assertEqual(shell, None)
 
-        shell = get_shell_embed_func(['invalid','python'])
+        shell = get_shell_embed_func(['invalid', 'python'])
         self.assertTrue(callable(shell))
         self.assertEqual(shell.__name__, '_embed_standard_shell')
 

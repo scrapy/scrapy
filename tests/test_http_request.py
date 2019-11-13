@@ -56,7 +56,7 @@ class RequestTest(unittest.TestCase):
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {b'Accept':'gzip', b'Custom-Header':'nothing to tell you'}
+        headers = {b'Accept': 'gzip', b'Custom-Header': 'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -816,7 +816,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="1">
             <input type="hidden" name="two" value="2">
             </form>""")
-        r1 = self.request_class.from_response(response, formdata={'two':'3'})
+        r1 = self.request_class.from_response(response, formdata={'two': '3'})
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], b'application/x-www-form-urlencoded')
         fs = _qs(r1)

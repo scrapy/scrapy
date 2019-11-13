@@ -45,7 +45,7 @@ class LoggingContribTest(unittest.TestCase):
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
     def test_flags_in_request(self):
-        req = Request("http://www.example.com", flags=['test','flag'])
+        req = Request("http://www.example.com", flags=['test', 'flag'])
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
