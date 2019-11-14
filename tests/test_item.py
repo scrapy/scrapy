@@ -241,7 +241,7 @@ class ItemTest(unittest.TestCase):
     def test_copy(self):
         class TestItem(Item):
             name = Field()
-        item = TestItem({'name':'lower'})
+        item = TestItem({'name': 'lower'})
         copied_item = item.copy()
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
