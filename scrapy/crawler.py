@@ -3,7 +3,6 @@ import signal
 import logging
 import warnings
 
-import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
