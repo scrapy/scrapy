@@ -8,7 +8,7 @@ import six
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
+    WeakKeyCache, get_func_args, to_bytes, to_unicode,
     without_none_values, MutableChain)
 
 __doctests__ = ['scrapy.utils.python']

@@ -3,7 +3,6 @@ import os
 import re
 from subprocess import Popen, PIPE
 import sys
-import time
 
 import pytest
 from six.moves.urllib.parse import urlsplit, urlunsplit
@@ -31,7 +30,7 @@ sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-            'keys', 'mitmproxy-ca.pem')
+                                 'keys', 'mitmproxy-ca.pem')
         self.proc = Popen([sys.executable,
                            '-c', script,
                            '--listen-host', '127.0.0.1',
@@ -40,7 +39,7 @@ sys.exit(mitmdump())
                            '--certs', cert_path,
                            '--ssl-insecure',
                            ],
-                           stdout=PIPE, env=get_testenv())
+                          stdout=PIPE, env=get_testenv())
         line = self.proc.stdout.readline().decode('utf-8')
         host_port = re.search(r'listening at http://([^:]+:\d+)', line).group(1)
         address = 'http://%s:%s@%s' % (self.auth_user, self.auth_pass, host_port)
