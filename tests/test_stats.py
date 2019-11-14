@@ -1,10 +1,6 @@
 from datetime import datetime
 import unittest
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider

@@ -1,6 +1,5 @@
 # coding=utf-8
 from twisted.trial import unittest
-from scrapy.utils.python import to_native_str
 
 
 def reppy_available():

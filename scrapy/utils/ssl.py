@@ -3,7 +3,7 @@
 import OpenSSL
 import OpenSSL._util as pyOpenSSLutil
 
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 
 
 # The OpenSSL symbol is present since 1.1.1 but it's not currently supported in any version of pyOpenSSL.
@@ -12,7 +12,7 @@ SSL_OP_NO_TLSv1_3 = getattr(pyOpenSSLutil.lib, 'SSL_OP_NO_TLSv1_3', 0)
 
 
 def ffi_buf_to_string(buf):
-    return to_native_str(pyOpenSSLutil.ffi.string(buf))
+    return to_unicode(pyOpenSSLutil.ffi.string(buf))
 
 
 def x509name_to_string(x509name):

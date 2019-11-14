@@ -1,3 +1,5 @@
+from unittest import mock
+
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
@@ -7,7 +9,6 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_bytes
-from tests import mock
 
 
 class ManagerTestCase(TestCase):

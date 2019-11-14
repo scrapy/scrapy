@@ -174,7 +174,7 @@ def tunnel_request_data(host, port, proxy_auth_header=None):
     r"""
     Return binary content of a CONNECT request.
 
-    >>> from scrapy.utils.python import to_native_str as s
+    >>> from scrapy.utils.python import to_unicode as s
     >>> s(tunnel_request_data("example.com", 8080))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
     >>> s(tunnel_request_data("example.com", 8080, b"123"))

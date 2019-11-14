@@ -3,18 +3,15 @@ import cgi
 import unittest
 import re
 import json
+from unittest import mock
+from urllib.parse import unquote_to_bytes
 import warnings
 
-import six
 from six.moves import xmlrpc_client as xmlrpclib
 from six.moves.urllib.parse import urlparse, parse_qs, unquote
-if six.PY3:
-    from urllib.parse import unquote_to_bytes
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
-from scrapy.utils.python import to_bytes, to_native_str
-
-from tests import mock
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
@@ -351,8 +348,8 @@ class FormRequestTest(RequestTest):
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
-        first = to_native_str(first).split("&")
-        second = to_native_str(second).split("&")
+        first = to_unicode(first).split("&")
+        second = to_unicode(second).split("&")
         return self.assertEqual(sorted(first), sorted(second), msg)
 
     def test_empty_formdata(self):
@@ -1064,8 +1061,7 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs, {})
 
         xpath = u"//form[@name='\u03b1']"
-        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
-        self.assertRaisesRegex(ValueError, re.escape(encoded),
+        self.assertRaisesRegex(ValueError, re.escape(xpath),
                                self.request_class.from_response,
                                response, formxpath=xpath)
 
@@ -1208,10 +1204,7 @@ def _qs(req, encoding='utf-8', to_unicode=False):
         qs = req.body
     else:
         qs = req.url.partition('?')[2]
-    if six.PY2:
-        uqs = unquote(to_native_str(qs, encoding))
-    elif six.PY3:
-        uqs = unquote_to_bytes(qs)
+    uqs = unquote_to_bytes(qs)
     if to_unicode:
         uqs = uqs.decode(encoding)
     return parse_qs(uqs, True)

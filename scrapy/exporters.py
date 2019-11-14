@@ -4,7 +4,6 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import sys
 import pprint
 import marshal
 import six
@@ -12,7 +11,7 @@ from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
+from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
 import warnings
@@ -143,11 +142,11 @@ class XmlItemExporter(BaseItemExporter):
 
     def _beautify_newline(self, new_item=False):
         if self.indent is not None and (self.indent > 0 or new_item):
-            self._xg_characters('\n')
+            self.xg.characters('\n')
 
     def _beautify_indent(self, depth=1):
         if self.indent:
-            self._xg_characters(' ' * self.indent * depth)
+            self.xg.characters(' ' * self.indent * depth)
 
     def start_exporting(self):
         self.xg.startDocument()
@@ -182,25 +181,11 @@ class XmlItemExporter(BaseItemExporter):
                 self._export_xml_field('value', value, depth=depth+1)
             self._beautify_indent(depth=depth)
         elif isinstance(serialized_value, six.text_type):
-            self._xg_characters(serialized_value)
+            self.xg.characters(serialized_value)
         else:
-            self._xg_characters(str(serialized_value))
+            self.xg.characters(str(serialized_value))
         self.xg.endElement(name)
         self._beautify_newline()
-
-    # Workaround for https://bugs.python.org/issue17606
-    # Before Python 2.7.4 xml.sax.saxutils required bytes;
-    # since 2.7.4 it requires unicode. The bug is likely to be
-    # fixed in 2.7.6, but 2.7.6 will still support unicode,
-    # and Python 3.x will require unicode, so ">= 2.7.4" should be fine.
-    if sys.version_info[:3] >= (2, 7, 4):
-        def _xg_characters(self, serialized_value):
-            if not isinstance(serialized_value, six.text_type):
-                serialized_value = serialized_value.decode(self.encoding)
-            return self.xg.characters(serialized_value)
-    else:  # pragma: no cover
-        def _xg_characters(self, serialized_value):
-            return self.xg.characters(serialized_value)
 
 
 class CsvItemExporter(BaseItemExporter):
@@ -216,7 +201,7 @@ class CsvItemExporter(BaseItemExporter):
             write_through=True,
             encoding=self.encoding,
             newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
-        ) if six.PY3 else file
+        )
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
@@ -246,7 +231,7 @@ class CsvItemExporter(BaseItemExporter):
     def _build_row(self, values):
         for s in values:
             try:
-                yield to_native_str(s, self.encoding)
+                yield to_unicode(s, self.encoding)
             except TypeError:
                 yield s
 
