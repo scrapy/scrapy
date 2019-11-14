@@ -21,9 +21,8 @@ class MutableChainTest(unittest.TestCase):
         m.extend([7, 8])
         m.extend([9, 10], (11, 12))
         self.assertEqual(next(m), 0)
-        self.assertEqual(m.next(), 1)
-        self.assertEqual(m.__next__(), 2)
-        self.assertEqual(list(m), list(range(3, 13)))
+        self.assertEqual(m.__next__(), 1)
+        self.assertEqual(list(m), list(range(2, 13)))
 
 
 class ToUnicodeTest(unittest.TestCase):
