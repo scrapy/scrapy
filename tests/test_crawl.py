@@ -30,25 +30,44 @@ class CrawlTestCase(TestCase):
         self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
 
     @defer.inlineCallbacks
-    def test_delay(self):
-        # short to long delays
-        yield self._test_delay(0.2, False)
-        yield self._test_delay(1, False)
-        # randoms
-        yield self._test_delay(0.2, True)
-        yield self._test_delay(1, True)
+    def test_fixed_delay(self):
+        yield self._test_delay(total=3, delay=0.1)
 
     @defer.inlineCallbacks
-    def _test_delay(self, delay, randomize):
-        settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
+    def test_randomized_delay(self):
+        yield self._test_delay(total=3, delay=0.1, randomize=True)
+
+    @defer.inlineCallbacks
+    def _test_delay(self, total, delay, randomize=False):
+        crawl_kwargs = dict(
+            maxlatency=delay * 2,
+            mockserver=self.mockserver,
+            total=total,
+        )
+        tolerance = (1 - (0.6 if randomize else 0.2))
+
+        settings = {"DOWNLOAD_DELAY": delay,
+                    'RANDOMIZE_DOWNLOAD_DELAY': randomize}
         crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
-        yield crawler.crawl(maxlatency=delay * 2, mockserver=self.mockserver)
-        t = crawler.spider.times
-        totaltime = t[-1] - t[0]
-        avgd = totaltime / (len(t) - 1)
-        tolerance = 0.6 if randomize else 0.2
-        self.assertTrue(avgd > delay * (1 - tolerance),
-                        "download delay too small: %s" % avgd)
+        yield crawler.crawl(**crawl_kwargs)
+        times = crawler.spider.times
+        total_time = times[-1] - times[0]
+        average = total_time / (len(times) - 1)
+        self.assertTrue(average > delay * tolerance,
+                        "download delay too small: %s" % average)
+
+        # Ensure that the same test parameters would cause a failure if no
+        # download delay is set. Otherwise, it means we are using a combination
+        # of ``total`` and ``delay`` values that are too small for the test
+        # code above to have any meaning.
+        settings["DOWNLOAD_DELAY"] = 0
+        crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
+        yield crawler.crawl(**crawl_kwargs)
+        times = crawler.spider.times
+        total_time = times[-1] - times[0]
+        average = total_time / (len(times) - 1)
+        self.assertFalse(average > delay / tolerance,
+                         "test total or delay values are too small")
 
     @defer.inlineCallbacks
     def test_timeout_success(self):
