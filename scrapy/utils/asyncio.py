@@ -1,6 +1,3 @@
-#coding: utf-8
-
-
 def install_asyncio_reactor():
     """ Tries to install AsyncioSelectorReactor
     """

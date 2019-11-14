@@ -9,7 +9,7 @@ import pkg_resources
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_supported
+from scrapy.utils.asyncio import install_asyncio_reactor
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
