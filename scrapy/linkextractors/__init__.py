@@ -21,7 +21,7 @@ from scrapy.utils.url import (
 IGNORED_EXTENSIONS = [
     # archives
     '7z', '7zip', 'bz2', 'rar', 'tar', 'tar.gz', 'xz', 'zip',
-    
+
     # images
     'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif',
     'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg', 'cdr', 'ico',
