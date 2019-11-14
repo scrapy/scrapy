@@ -19,9 +19,12 @@ from scrapy.utils.url import (
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
+    # archives
+    '7z', '7zip', 'bz2', 'rar', 'tar', 'tar.gz', 'xz', 'zip',
+    
     # images
     'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif',
-    'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg',
+    'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg', 'cdr', 'ico',
 
     # audio
     'mp3', 'wma', 'ogg', 'wav', 'ra', 'aac', 'mid', 'au', 'aiff',
@@ -35,7 +38,7 @@ IGNORED_EXTENSIONS = [
     'odp',
 
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar', 'dmg', 'iso', 'apk', 'xz'
+    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk'
 ]
 
 
