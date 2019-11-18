@@ -392,3 +392,7 @@ class MutableChain(object):
 
     def __next__(self):
         return next(self.data)
+
+    @deprecated("scrapy.utils.python.MutableChain.__next__")
+    def next(self):
+        return self.__next__()

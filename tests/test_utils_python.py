@@ -5,6 +5,7 @@ import unittest
 from itertools import count
 import platform
 import six
+from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
@@ -22,7 +23,12 @@ class MutableChainTest(unittest.TestCase):
         m.extend([9, 10], (11, 12))
         self.assertEqual(next(m), 0)
         self.assertEqual(m.__next__(), 1)
-        self.assertEqual(list(m), list(range(2, 13)))
+        with catch_warnings(record=True) as warnings:
+            self.assertEqual(m.next(), 2)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn('scrapy.utils.python.MutableChain.__next__',
+                          str(warnings[0].message))
+        self.assertEqual(list(m), list(range(3, 13)))
 
 
 class ToUnicodeTest(unittest.TestCase):
