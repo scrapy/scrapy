@@ -21,7 +21,7 @@ Quick example
 =============
 
 There are two ways to instantiate the mail sender. You can instantiate it using
-the standard constructor::
+the standard ``__init__`` method::
 
     from scrapy.mail import MailSender
     mailer = MailSender()
@@ -111,7 +111,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 Mail settings
 =============
 
-These settings define the default constructor values of the :class:`MailSender`
+These settings define the default ``__init__`` method values of the :class:`MailSender`
 class, and can be used to configure e-mail notifications in your project without
 writing any code (for those extensions and code that uses :class:`MailSender`).
 

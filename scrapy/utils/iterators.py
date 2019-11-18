@@ -1,11 +1,7 @@
 import re
 import csv
-import logging
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 from io import StringIO
+import logging
 import six
 
 from scrapy.http import TextResponse, Response
@@ -102,11 +98,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     def row_to_unicode(row_):
         return [to_unicode(field, encoding) for field in row_]
 
-    # Python 3 csv reader input object needs to return strings
-    if six.PY3:
-        lines = StringIO(_body_or_str(obj, unicode=True))
-    else:
-        lines = BytesIO(_body_or_str(obj, unicode=False))
+    lines = StringIO(_body_or_str(obj, unicode=True))
 
     kwargs = {}
     if delimiter: kwargs["delimiter"] = delimiter

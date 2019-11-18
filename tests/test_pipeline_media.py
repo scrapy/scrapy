@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-import sys
-
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
@@ -144,10 +142,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and if we're running on Python 3 ...
-        if sys.version_info.major >= 3:
-            # ... it should have the returnValue exception set as its context
-            self.assertEqual(failure.value.__context__, def_gen_return_exc)
+        # ... and it should have the returnValue exception set as its context
+        self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
         fp = request_fingerprint(request)
