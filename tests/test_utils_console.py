@@ -14,6 +14,7 @@ try:
 except ImportError:
     ipy = False
 
+
 class UtilsConsoleTestCase(unittest.TestCase):
 
     def test_get_shell_embed_func(self):

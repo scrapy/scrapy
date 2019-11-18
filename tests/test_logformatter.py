@@ -118,6 +118,7 @@ class DropSomeItemsPipeline(object):
         else:
             self.drop = True
 
+
 class ShowOrSkipMessagesTestCase(TwistedTestCase):
     def setUp(self):
         self.mockserver = MockServer()
