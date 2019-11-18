@@ -703,19 +703,20 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RFPDupeFilter``) filters based on request fingerprint using
-the ``scrapy.utils.request.request_fingerprint`` function. In order to change
-the way duplicates are checked you could subclass ``RFPDupeFilter`` and
-override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.http.Request` object and return its fingerprint
-(a string).
+The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters out requests
+that have the same (canonical) :attr:`~scrapy.http.Request.url`,
+:attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
 
-You can disable filtering of duplicate requests by setting
-:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
-Be very careful about this however, because you can get into crawling loops.
-It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.http.Request` that should not be
-filtered.
+To change how duplicates are checked you can subclass
+:class:`~scrapy.dupefilters.RFPDupeFilter` and override its
+:meth:`~scrapy.dupefilters.RFPDupeFilter.request_fingerprint` method using the
+:func:`scrapy.utils.request.request_fingerprint` helper function.
+
+To disable duplicate request filtering set :setting:`DUPEFILTER_CLASS` to
+``'scrapy.dupefilters.BaseDupeFilter'``. Note that not filtering out duplicate
+requests may cause crawling loops. It is usually better to set
+the ``dont_filter`` parameter to ``True`` on the ``__init__`` method of a
+specific :class:`~scrapy.http.Request` object that should not be filtered out.
 
 A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
 interface::
@@ -748,11 +749,19 @@ interface::
             It is called right after a call to :meth:`request_seen` that
             returns ``True``.
 
-            If :meth:`request_seen` always returns false, such as in the case
-            of :class:`~scrapy.dupefilters.BaseDupeFilter`, this method does
-            not need to be implemented at all.
+            If :meth:`request_seen` always returns ``False``, such as in the
+            case of :class:`~scrapy.dupefilters.BaseDupeFilter`, this method
+            may be omitted.
             """
             pass
+
+.. autoclass:: scrapy.dupefilters.BaseDupeFilter
+
+.. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
+   .. automethod:: request_fingerprint
+
+.. autofunction:: scrapy.utils.request.request_fingerprint
 
 
 .. setting:: DUPEFILTER_DEBUG

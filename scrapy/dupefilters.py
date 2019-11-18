@@ -1,12 +1,13 @@
-import os
 import logging
+import os
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
 
 
-class BaseDupeFilter(object):
-    """Does not filter out any request"""
+class BaseDupeFilter:
+    """Dummy duplicate request filtering class (:setting:`DUPEFILTER_CLASS`)
+    that does not filter out any request."""
 
     @classmethod
     def from_settings(cls, settings):
@@ -23,7 +24,11 @@ class BaseDupeFilter(object):
 
 
 class RFPDupeFilter(BaseDupeFilter):
-    """Request Fingerprint duplicates filter"""
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    filters out requests with the canonical
+    (:func:`w3lib.url.canonicalize_url`) :attr:`~scrapy.http.Request.url`,
+    :attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
+    """
 
     def __init__(self, path=None, debug=False):
         self.file = None
@@ -50,6 +55,7 @@ class RFPDupeFilter(BaseDupeFilter):
             self.file.write(fp + os.linesep)
 
     def request_fingerprint(self, request):
+        """Returns a string that uniquely identifies the specified request."""
         return request_fingerprint(request)
 
     def close(self, reason):
