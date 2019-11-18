@@ -6,6 +6,7 @@ from scrapy.utils.request import referer_str, request_fingerprint
 
 
 class BaseDupeFilter(object):
+    """Does not filter out any request"""
 
     @classmethod
     def from_settings(cls, settings):
@@ -14,10 +15,10 @@ class BaseDupeFilter(object):
     def request_seen(self, request):
         return False
 
-    def open(self):  # can return deferred
+    def open(self):
         pass
 
-    def close(self, reason):  # can return a deferred
+    def close(self, reason):
         pass
 
 
