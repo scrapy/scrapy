@@ -3,7 +3,7 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-import pickle
+import pickle  # nosec
 from hashlib import sha1
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
