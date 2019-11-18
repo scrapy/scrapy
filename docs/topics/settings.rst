@@ -717,6 +717,44 @@ It's usually a better idea to set the ``dont_filter`` parameter to
 ``True`` on the specific :class:`~scrapy.http.Request` that should not be
 filtered.
 
+A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
+interface::
+
+    class MyDupeFilter:
+
+        @classmethod
+        def from_settings(cls, settings):
+            """Returns an instance of this duplicate request filtering class
+            based on the current crawl settings."""
+            return cls()
+
+        def request_seen(self, request):
+            """Returns ``True`` if *request* is a duplicate of another request
+            seen in a previous call to :meth:`request_seen`, or ``False``
+            otherwise."""
+            return False
+
+        def open(self):
+            """Called before the spider opens. It may return a deferred."""
+            pass
+
+        def close(self, reason):
+            """Called before the spider closes. It may return a deferred."""
+            pass
+
+        def log(self, request, spider):
+            """Logs that a request has been filtered out.
+
+            It is called right after a call to :meth:`request_seen` that
+            returns ``True``.
+
+            If :meth:`request_seen` always returns false, such as in the case
+            of :class:`~scrapy.dupefilters.BaseDupeFilter`, this method does
+            not need to be implemented at all.
+            """
+            pass
+
+
 .. setting:: DUPEFILTER_DEBUG
 
 DUPEFILTER_DEBUG
