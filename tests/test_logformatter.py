@@ -62,7 +62,7 @@ class LogFormatterTestCase(unittest.TestCase):
         lines = logline.splitlines()
         assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
-    
+
     def test_error(self):
         # In practice, the complete traceback is shown by passing the
         # 'exc_info' argument to the logging function
@@ -121,7 +121,7 @@ class LogformatterSubclassTest(LogFormatterTestCase):
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
     def test_flags_in_request(self):
-        req = Request("http://www.example.com", flags=['test','flag'])
+        req = Request("http://www.example.com", flags=['test', 'flag'])
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
