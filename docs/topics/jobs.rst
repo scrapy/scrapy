@@ -71,34 +71,11 @@ on cookies.
 Request serialization
 ---------------------
 
-Requests must be serializable by the ``pickle`` module, in order for persistence
-to work, so you should make sure that your requests are serializable.
-
-The most common issue here is to use ``lambda`` functions on request callbacks that
-can't be persisted.
-
-So, for example, this won't work::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com',
-                              callback=lambda r: self.other_callback(r, somearg))
-
-    def other_callback(self, response, somearg):
-        print("the argument passed is: %s" % somearg)
-
-But this will::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com',
-                              callback=self.other_callback, cb_kwargs={'somearg': somearg})
-
-    def other_callback(self, response, somearg):
-        print("the argument passed is: %s" % somearg)
+For persistence to work, :class:`~scrapy.http.Request` objects must be
+serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
+values passed to their ``__init__`` method, which must be methods of the
+runnning :class:`~scrapy.spiders.Spider` class.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
-
-.. _pickle: https://docs.python.org/library/pickle.html

@@ -614,7 +614,7 @@ class Http11MockServerTestCase(unittest.TestCase):
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=Request(url=self.mockserver.url('')))
         failure = crawler.spider.meta.get('failure')
-        self.assertTrue(failure == None)
+        self.assertTrue(failure is None)
         reason = crawler.spider.meta['close_reason']
         self.assertTrue(reason, 'finished')
 
@@ -636,7 +636,7 @@ class Http11MockServerTestCase(unittest.TestCase):
         yield crawler.crawl(seed=request)
         # download_maxsize = 50 is enough for the gzipped response
         failure = crawler.spider.meta.get('failure')
-        self.assertTrue(failure == None)
+        self.assertTrue(failure is None)
         reason = crawler.spider.meta['close_reason']
         self.assertTrue(reason, 'finished')
 

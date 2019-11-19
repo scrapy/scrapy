@@ -6,6 +6,7 @@ import tempfile
 import shutil
 import string
 from io import BytesIO
+from pathlib import Path
 from unittest import mock
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
@@ -403,6 +404,7 @@ class FeedExportTest(unittest.TestCase):
         defaults = {
             'FEED_URI': res_uri,
             'FEED_FORMAT': 'csv',
+            'FEED_PATH': res_path
         }
         defaults.update(settings or {})
         try:
@@ -411,7 +413,7 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(res_path, 'rb') as f:
+            with open(str(defaults['FEED_PATH']), 'rb') as f:
                 content = f.read()
 
         finally:
@@ -841,3 +843,17 @@ class FeedExportTest(unittest.TestCase):
         yield self.exported_data({}, settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+
+    @defer.inlineCallbacks
+    def test_pathlib_uri(self):
+        tmpdir = tempfile.mkdtemp()
+        feed_uri = Path(tmpdir) / 'res'
+        settings = {
+            'FEED_FORMAT': 'csv',
+            'FEED_STORE_EMPTY': True,
+            'FEED_URI': feed_uri,
+            'FEED_PATH': feed_uri
+        }
+        data = yield self.exported_no_data(settings)
+        self.assertEqual(data, b'')
+        shutil.rmtree(tmpdir, ignore_errors=True)

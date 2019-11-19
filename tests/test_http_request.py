@@ -3,7 +3,7 @@ import cgi
 import unittest
 import re
 import json
-import xmlrpc.client as xmlrpclib
+import xmlrpc.client
 import warnings
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
@@ -20,7 +20,7 @@ class RequestTest(unittest.TestCase):
     default_meta = {}
 
     def test_init(self):
-        # Request requires url in the constructor
+        # Request requires url in the __init__ method
         self.assertRaises(Exception, self.request_class)
 
         # url argument must be basestring
@@ -47,11 +47,13 @@ class RequestTest(unittest.TestCase):
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
+        self.assertRaises(ValueError, self.request_class, '/foo/')
+        self.assertRaises(ValueError, self.request_class, '/foo:bar')
 
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {b'Accept':'gzip', b'Custom-Header':'nothing to tell you'}
+        headers = {b'Accept': 'gzip', b'Custom-Header': 'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -495,7 +497,7 @@ class FormRequestTest(RequestTest):
                 formdata=(('foo', 'bar'), ('foo', 'baz')))
         self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
         self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
-    
+
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
             """<form action="get.php" method="POST">
@@ -652,7 +654,7 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response, dont_click=True)
         fs = _qs(req)
         self.assertEqual(fs, {b'i1': [b'i1v'], b'i2': [b'i2v']})
-    
+
     def test_from_response_clickdata_does_not_ignore_image(self):
         response = _buildresponse(
             """<form>
@@ -811,7 +813,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="1">
             <input type="hidden" name="two" value="2">
             </form>""")
-        r1 = self.request_class.from_response(response, formdata={'two':'3'})
+        r1 = self.request_class.from_response(response, formdata={'two': '3'})
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], b'application/x-www-form-urlencoded')
         fs = _qs(r1)
@@ -1218,7 +1220,7 @@ class XmlRpcRequestTest(RequestTest):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers[b'Content-Type'], b'text/xml')
         self.assertEqual(r.body,
-                         to_bytes(xmlrpclib.dumps(**kwargs),
+                         to_bytes(xmlrpc.client.dumps(**kwargs),
                                   encoding=kwargs.get('encoding', 'utf-8')))
         self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))

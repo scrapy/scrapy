@@ -205,10 +205,10 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
             self.assertEqual(
-                get_func_args(str.split, True), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, True), ['list'])
+                get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
-                get_func_args(operator.itemgetter(2), True), ['obj'])
+                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
 
     def test_without_none_values(self):

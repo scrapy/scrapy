@@ -532,7 +532,7 @@ class XmlResponseTest(TextResponseTest):
         r2 = self.response_class("http://www.example.com", body=body)
         self._assert_response_values(r2, 'iso-8859-1', body)
 
-        # make sure replace() preserves the explicit encoding passed in the constructor
+        # make sure replace() preserves the explicit encoding passed in the __init__ method
         body = b"""<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r3 = self.response_class("http://www.example.com", body=body, encoding='utf-8')
         body2 = b"New body"

@@ -35,7 +35,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self.methods['process_spider_exception'].appendleft(getattr(mw, 'process_spider_exception', None))
 
     def scrape_response(self, scrape_func, response, request, spider):
-        fname = lambda f:'%s.%s' % (
+        fname = lambda f: '%s.%s' % (
                 f.__self__.__class__.__name__,
                 f.__func__.__name__)
 

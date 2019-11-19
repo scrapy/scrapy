@@ -296,7 +296,7 @@ class WeakKeyCache(object):
 def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     """Return a (new) dict with unicode keys (and values when "keys_only" is
     False) of the given dict converted to strings. ``dct_or_tuples`` can be a
-    dict or a list of tuples, like any dict constructor supports.
+    dict or a list of tuples, like any dict ``__init__`` method supports.
     """
     d = {}
     for k, v in dict(dct_or_tuples).items():

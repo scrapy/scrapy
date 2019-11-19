@@ -43,6 +43,6 @@ class LinkTest(unittest.TestCase):
         l2 = eval(repr(l1))
         self._assert_same_links(l1, l2)
 
-    def test_non_str_url_py2(self):
+    def test_bytes_url(self):
         with self.assertRaises(TypeError):
             Link(b"http://www.example.com/\xc2\xa3")

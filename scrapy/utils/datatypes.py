@@ -5,9 +5,10 @@ Python Standard Library.
 This module must not depend on any module outside the Standard Library.
 """
 
-import copy
 import collections
+import copy
 import warnings
+from collections.abc import Mapping
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -223,7 +224,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     def update(self, seq):
-        seq = seq.items() if isinstance(seq, collections.abc.Mapping) else seq
+        seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super(CaselessDict, self).update(iseq)
 
@@ -247,8 +248,9 @@ class LocalCache(collections.OrderedDict):
         self.limit = limit
 
     def __setitem__(self, key, value):
-        while len(self) >= self.limit:
-            self.popitem(last=False)
+        if self.limit:
+            while len(self) >= self.limit:
+                self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
 
 

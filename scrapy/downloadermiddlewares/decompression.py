@@ -4,9 +4,9 @@ and extract the potentially compressed responses that may arrive.
 
 import bz2
 import gzip
-import zipfile
-import tarfile
 import logging
+import tarfile
+import zipfile
 from io import BytesIO
 from tempfile import mktemp
 

@@ -7,6 +7,8 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
+    - env: TOXENV=security
+      python: 3.8
     - env: TOXENV=flake8
       python: 3.8
     - env: TOXENV=pypy3
