@@ -250,12 +250,12 @@ class BaseResponseTest(unittest.TestCase):
             yield req
 
     def _links_response(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        body = get_testdata('link_extractor', 'linkextractor.html')
         resp = self.response_class('http://example.com/index', body=body)
         return resp
 
     def _links_response_no_href(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor_no_href.html')
+        body = get_testdata('link_extractor', 'linkextractor_no_href.html')
         resp = self.response_class('http://example.com/index', body=body)
         return resp
 
