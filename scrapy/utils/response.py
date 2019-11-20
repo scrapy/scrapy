@@ -8,7 +8,7 @@ import webbrowser
 import tempfile
 
 from twisted.web import http
-from scrapy.utils.python import to_bytes, to_native_str
+from scrapy.utils.python import to_bytes, to_unicode
 from w3lib import html
 
 
@@ -36,7 +36,7 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
     """
     message = http.RESPONSES.get(int(status), "Unknown Status")
-    return '%s %s' % (status, to_native_str(message))
+    return '%s %s' % (status, to_unicode(message))
 
 
 def response_httprepr(response):

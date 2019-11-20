@@ -260,7 +260,7 @@ knowledge about Python internals. For more info about Guppy, refer to the
 
 Debugging memory leaks with muppy
 =================================
-If you're using Python 3, you can use muppy from `Pympler`_.
+You can use muppy from `Pympler`_.
 
 .. _Pympler: https://pypi.org/project/Pympler/
 

@@ -1,13 +1,7 @@
-import struct
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 from gzip import GzipFile
-
-import six
+from io import BytesIO
 import re
+import struct
 
 from scrapy.utils.decorators import deprecated
 
@@ -17,14 +11,9 @@ from scrapy.utils.decorators import deprecated
 #   (regression or bug-fix compared to Python 3.4)
 # - read1(), which fetches data before raising EOFError on next call
 #   works here but is only available from Python>=3.3
-# - scrapy does not support Python 3.2
-# - Python 2.7 GzipFile works fine with standard read() + extrabuf
-if six.PY2:
-    def read1(gzf, size=-1):
-        return gzf.read(size)
-else:
-    def read1(gzf, size=-1):
-        return gzf.read1(size)
+@deprecated('GzipFile.read1')
+def read1(gzf, size=-1):
+    return gzf.read1(size)
 
 
 def gunzip(data):
@@ -37,7 +26,7 @@ def gunzip(data):
     chunk = b'.'
     while chunk:
         try:
-            chunk = read1(f, 8196)
+            chunk = f.read1(8196)
             output_list.append(chunk)
         except (IOError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise

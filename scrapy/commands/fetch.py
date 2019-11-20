@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys, six
+import sys
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
@@ -45,8 +45,7 @@ class Command(ScrapyCommand):
             self._print_bytes(response.body)
 
     def _print_bytes(self, bytes_):
-        bytes_writer = sys.stdout if six.PY2 else sys.stdout.buffer
-        bytes_writer.write(bytes_ + b'\n')
+        sys.stdout.buffer.write(bytes_ + b'\n')
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):

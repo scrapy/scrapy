@@ -1,17 +1,16 @@
 import os
 from os.path import join, abspath
-from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 from tests.test_commands import CommandTest
 
 
 def _textmode(bstr):
     """Normalize input the same as writing to a file
     and reading from it in text mode"""
-    return to_native_str(bstr).replace(os.linesep, '\n')
+    return to_unicode(bstr).replace(os.linesep, '\n')
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
