@@ -111,7 +111,7 @@ class BaseSgmlLinkExtractorTestCase(unittest.TestCase):
 class HtmlParserLinkExtractorTestCase(unittest.TestCase):
 
     def setUp(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        body = get_testdata('link_extractor', 'linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_extraction(self):
@@ -183,7 +183,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
     # than it should be.
 
     def setUp(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        body = get_testdata('link_extractor', 'linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_extraction(self):
