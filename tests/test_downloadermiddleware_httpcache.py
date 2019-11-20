@@ -148,6 +148,7 @@ class FilesystemStorageTest(DefaultStorageTest):
 
     storage_class = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
+
 class FilesystemStorageGzipTest(FilesystemStorageTest):
 
     def _get_settings(self, **new_settings):

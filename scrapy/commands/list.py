@@ -1,5 +1,6 @@
 from scrapy.commands import ScrapyCommand
 
+
 class Command(ScrapyCommand):
 
     requires_project = True

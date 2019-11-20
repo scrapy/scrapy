@@ -27,6 +27,7 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'hoverxref.extension',
     'notfound.extension',
     'scrapydocs',
     'sphinx.ext.autodoc',
@@ -275,5 +276,6 @@ coverage_ignore_pyobjects = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'sphinx': ('https://www.sphinx-doc.org/en/stable', None),
+    'sphinx': ('https://www.sphinx-doc.org/en/master', None),
+    'twisted': ('https://twistedmatrix.com/documents/current', None),
 }

@@ -3,6 +3,7 @@ import json
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
 
+
 class Command(ScrapyCommand):
 
     requires_project = False

@@ -2,6 +2,7 @@
 
 from time import time # used in global tests code
 
+
 def get_engine_status(engine):
     """Return a report of the current engine status"""
     tests = [
@@ -31,6 +32,7 @@ def get_engine_status(engine):
 
     return checks
 
+
 def format_engine_status(engine=None):
     checks = get_engine_status(engine)
     s = "Execution engine status\n\n"
@@ -39,6 +41,7 @@ def format_engine_status(engine=None):
     s += "\n"
 
     return s
+
 
 def print_engine_status(engine):
     print(format_engine_status(engine))

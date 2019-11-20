@@ -15,6 +15,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
+
+
 def request_fingerprint(request, include_headers=None, keep_fragments=False):
     """
     Return the request fingerprint.

@@ -52,6 +52,7 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEqual(out, reqs)
 
+
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
     def _get_spider(self):

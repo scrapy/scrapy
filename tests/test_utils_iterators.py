@@ -236,6 +236,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
         i = self.xmliter(42, 'product')
         self.assertRaises(TypeError, next, i)
 
+
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
     sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')

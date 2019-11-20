@@ -164,6 +164,7 @@ def memoizemethod_noargs(method):
 _BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
+
 @deprecated("scrapy.utils.python.binary_is_text")
 def isbinarytext(text):
     """ This function is deprecated.
@@ -381,9 +382,11 @@ class MutableChain(object):
         self.data = chain(self.data, *iterables)
 
     def __iter__(self):
-        return self.data.__iter__()
+        return self
 
     def __next__(self):
         return next(self.data)
 
-    next = __next__
+    @deprecated("scrapy.utils.python.MutableChain.__next__")
+    def next(self):
+        return self.__next__()

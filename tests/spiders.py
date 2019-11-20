@@ -16,6 +16,7 @@ class MockServerSpider(Spider):
         super(MockServerSpider, self).__init__(*args, **kwargs)
         self.mockserver = mockserver
 
+
 class MetaSpider(MockServerSpider):
 
     name = 'meta'
