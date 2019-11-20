@@ -93,6 +93,10 @@ class ScrapyHTTPPageGetter(HTTPClient):
                 (self.factory.url, self.factory.timeout)))
 
 
+# This class used to inherit from Twisted’s
+# twisted.web.client.HTTPClientFactory. When that class was deprecated in
+# Twisted (https://github.com/twisted/twisted/pull/643), we merged its
+# non-overriden code into this class.
 class ScrapyHTTPClientFactory(ClientFactory):
 
     protocol = ScrapyHTTPPageGetter
