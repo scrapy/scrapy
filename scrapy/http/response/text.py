@@ -5,17 +5,18 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import six
-from six.moves.urllib.parse import urljoin
+from contextlib import suppress
 
 import parsel
-from w3lib.encoding import html_to_unicode, resolve_encoding, \
-    html_body_declared_encoding, http_content_type_encoding
+import six
+from six.moves.urllib.parse import urljoin
+from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
+                            http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.response import Response
-from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs, to_native_str
+from scrapy.utils.response import get_base_url
 
 
 class TextResponse(Response):
@@ -197,10 +198,8 @@ class TextResponse(Response):
                 selector_list = self.xpath(xpath)
             urls = []
             for selector in selector_list:
-                try:
+                with suppress(_InvalidSelector):
                     urls.append(_url_from_selector(selector))
-                except ValueError:
-                    pass
         return super(TextResponse, self).follow_all(
             urls=urls,
             callback=callback,
@@ -217,18 +216,24 @@ class TextResponse(Response):
         )
 
 
+class _InvalidSelector(ValueError):
+    """
+    Raised when a URL cannot be obtained from a Selector
+    """
+
+
 def _url_from_selector(sel):
     # type: (parsel.Selector) -> str
     if isinstance(sel.root, six.string_types):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
-        raise ValueError("Unsupported selector: %s" % sel)
+        raise _InvalidSelector("Unsupported selector: %s" % sel)
     if sel.root.tag not in ('a', 'link'):
-        raise ValueError("Only <a> and <link> elements are supported; got <%s>" %
-                         sel.root.tag)
+        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" %
+                               sel.root.tag)
     href = sel.root.get('href')
     if href is None:
-        raise ValueError("<%s> element has no href attribute: %s" %
-                         (sel.root.tag, sel))
+        raise _InvalidSelector("<%s> element has no href attribute: %s" %
+                               (sel.root.tag, sel))
     return strip_html5_whitespace(href)
