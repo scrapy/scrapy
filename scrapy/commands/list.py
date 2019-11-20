@@ -1,6 +1,7 @@
 from __future__ import print_function
 from scrapy.commands import ScrapyCommand
 
+
 class Command(ScrapyCommand):
 
     requires_project = True

@@ -19,6 +19,8 @@ def render_templatefile(path, **kwargs):
 
 
 CAMELCASE_INVALID_CHARS = re.compile(r'[^a-zA-Z\d]')
+
+
 def string_camelcase(string):
     """ Convert a word  to its CamelCase version and remove invalid chars
 

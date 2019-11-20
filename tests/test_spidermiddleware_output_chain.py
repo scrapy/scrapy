@@ -34,6 +34,7 @@ class RecoverySpider(Spider):
         if not response.meta.get('dont_fail'):
             raise TabError()
 
+
 class RecoveryMiddleware:
     def process_spider_exception(self, response, exception, spider):
         spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
@@ -49,6 +50,7 @@ class FailProcessSpiderInputMiddleware:
     def process_spider_input(self, response, spider):
         spider.logger.info('Middleware: will raise IndexError')
         raise IndexError()
+
 
 class ProcessSpiderInputSpiderWithoutErrback(Spider):
     name = 'ProcessSpiderInputSpiderWithoutErrback'
@@ -177,6 +179,7 @@ class GeneratorRecoverMiddleware:
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         yield {'processed': [method]}
 
+
 class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
     pass
 
@@ -246,6 +249,7 @@ class NotGeneratorRecoverMiddleware:
         method = '{}.process_spider_exception'.format(self.__class__.__name__)
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         return [{'processed': [method]}]
+
 
 class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddleware):
     pass

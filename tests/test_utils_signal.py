@@ -66,6 +66,7 @@ class SendCatchLogDeferredTest2(SendCatchLogTest):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
 
+
 class SendCatchLogTest2(unittest.TestCase):
 
     def test_error_logged_if_deferred_not_supported(self):

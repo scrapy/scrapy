@@ -1,6 +1,7 @@
 from functools import wraps
 from collections import OrderedDict
 
+
 def _embed_ipython_shell(namespace={}, banner=''):
     """Start an IPython Shell"""
     try:
@@ -23,6 +24,7 @@ def _embed_ipython_shell(namespace={}, banner=''):
         shell()
     return wrapper
 
+
 def _embed_bpython_shell(namespace={}, banner=''):
     """Start a bpython shell"""
     import bpython
@@ -30,6 +32,7 @@ def _embed_bpython_shell(namespace={}, banner=''):
     def wrapper(namespace=namespace, banner=''):
         bpython.embed(locals_=namespace, banner=banner)
     return wrapper
+
 
 def _embed_ptpython_shell(namespace={}, banner=''):
     """Start a ptpython shell"""
@@ -39,6 +42,7 @@ def _embed_ptpython_shell(namespace={}, banner=''):
         print(banner)
         ptpython.repl.embed(locals=namespace)
     return wrapper
+
 
 def _embed_standard_shell(namespace={}, banner=''):
     """Start a standard python shell"""
@@ -55,12 +59,14 @@ def _embed_standard_shell(namespace={}, banner=''):
         code.interact(banner=banner, local=namespace)
     return wrapper
 
+
 DEFAULT_PYTHON_SHELLS = OrderedDict([
     ('ptpython', _embed_ptpython_shell),
     ('ipython', _embed_ipython_shell),
     ('bpython', _embed_bpython_shell),
     ('python', _embed_standard_shell),
 ])
+
 
 def get_shell_embed_func(shells=None, known_shells=None):
     """Return the first acceptable shell-embed function
@@ -78,6 +84,7 @@ def get_shell_embed_func(shells=None, known_shells=None):
                 return known_shells[shell]()
             except ImportError:
                 continue
+
 
 def start_python_console(namespace=None, banner='', shells=None):
     """Start Python console bound to the given namespace.

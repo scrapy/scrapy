@@ -165,6 +165,7 @@ def memoizemethod_noargs(method):
 _BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
+
 @deprecated("scrapy.utils.python.binary_is_text")
 def isbinarytext(text):
     """ This function is deprecated.
