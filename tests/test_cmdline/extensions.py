@@ -12,4 +12,3 @@ class TestExtension(object):
 
 class DummyExtension(object):
     pass
-

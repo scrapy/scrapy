@@ -6,10 +6,6 @@ Spiders Contracts
 
 .. versionadded:: 0.15
 
-.. note:: This is a new feature (introduced in Scrapy 0.15) and may be subject
-   to minor functionality/API updates. Check the :ref:`release notes <news>` to
-   be notified of updates.
-
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.

@@ -34,4 +34,3 @@ def decode_chunked_transfer(chunked_body):
         body += t[:size]
         t = t[size+2:]
     return body
-

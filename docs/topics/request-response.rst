@@ -137,7 +137,7 @@ Request objects
 
         A string containing the URL of this request. Keep in mind that this
         attribute contains the escaped URL, so it can differ from the URL passed in
-        the constructor.
+        the ``__init__`` method.
 
         This attribute is read-only. To change the URL of a Request use
         :meth:`replace`.
@@ -400,7 +400,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new keyword parameter to the constructor. The
+    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
@@ -473,7 +473,7 @@ fields with form data from :class:`Response` objects.
        :type dont_click: boolean
 
        The other parameters of this class method are passed directly to the
-       :class:`FormRequest` constructor.
+       :class:`FormRequest` ``__init__`` method.
 
        .. versionadded:: 0.10.3
           The ``formname`` parameter.
@@ -547,7 +547,7 @@ dealing with JSON requests.
 
 .. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JsonRequest` class adds two new keyword parameters to the constructor. The
+   The :class:`JsonRequest` class adds two new keyword parameters to the ``__init__`` method. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
@@ -556,7 +556,7 @@ dealing with JSON requests.
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
       if :attr:`Request.body` argument is provided this parameter will be ignored.
-      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be 
+      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
@@ -596,8 +596,8 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. To access the decoded text as str (unicode
-       in Python 2) you can use ``response.text`` from an encoding-aware
+    :param body: the response body. To access the decoded text as str you can use
+       ``response.text`` from an encoding-aware
        :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
        such as :class:`TextResponse`.
     :type body: bytes
@@ -723,7 +723,7 @@ TextResponse objects
     :class:`Response` class, which is meant to be used only for binary data,
     such as images, sounds or any media file.
 
-    :class:`TextResponse` objects support a new constructor argument, in
+    :class:`TextResponse` objects support a new ``__init__`` method argument, in
     addition to the base :class:`Response` objects. The remaining functionality
     is the same as for the :class:`Response` class and is not documented here.
 
@@ -757,7 +757,7 @@ TextResponse objects
        A string with the encoding of this response. The encoding is resolved by
        trying the following mechanisms, in order:
 
-       1. the encoding passed in the constructor ``encoding`` argument
+       1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (ie. unknown), it is ignored and the next

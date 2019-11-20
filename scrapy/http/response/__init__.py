@@ -88,7 +88,7 @@ class Response(object_ref):
     @property
     def text(self):
         """For subclasses of TextResponse, this will return the body
-        as text (unicode object in Python 2 and str in Python 3)
+        as str
         """
         raise AttributeError("Response content isn't text")
 

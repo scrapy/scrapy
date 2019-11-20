@@ -5,12 +5,8 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from io import BytesIO
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 from PIL import Image
 
