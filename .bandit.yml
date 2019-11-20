@@ -7,7 +7,7 @@ skips:
 - B311
 - B320
 - B321
-- B402
+- B402  # https://github.com/scrapy/scrapy/issues/4180
 - B404
 - B406
 - B410
