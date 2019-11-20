@@ -441,8 +441,9 @@ See here the methods that you can override in your custom Files Pipeline:
       * ``success`` is a boolean which is ``True`` if the image was downloaded
         successfully or ``False`` if it failed for some reason
 
-      * ``file_info_or_error`` is a dict containing the following keys (if success
-        is ``True``) or a `Twisted Failure`_ if there was a problem.
+      * ``file_info_or_error`` is a dict containing the following keys (if
+        success is ``True``) or a :exc:`~twisted.python.failure.Failure` if
+        there was a problem.
 
         * ``url`` - the url where the file was downloaded from. This is the url of
           the request returned from the :meth:`~get_media_requests`
@@ -577,5 +578,4 @@ above::
             item['image_paths'] = image_paths
             return item
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
