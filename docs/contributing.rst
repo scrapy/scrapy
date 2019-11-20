@@ -202,17 +202,9 @@ tests requires `tox`_.
 Running tests
 -------------
 
-Make sure you have a recent enough `tox`_ installation:
+To run all tests::
 
-    ``tox --version``
-
-If your version is older than 1.7.0, please update it first:
-
-    ``pip install -U tox``
-
-To run all tests go to the root directory of Scrapy source code and run:
-
-    ``tox``
+    tox
 
 To run a specific test (say ``tests/test_loader.py``) use:
 
@@ -227,7 +219,7 @@ environment name from ``tox.ini``. For example, to run the tests with Python
 You can also specify a comma-separated list of environmets, and use `tox’s
 parallel mode`_ to run the tests on multiple environments in parallel::
 
-    tox -e py27,py36 -p auto
+    tox -e py37,py38 -p auto
 
 To pass command-line options to pytest_, add them after ``--`` in your call to
 tox_. Using ``--`` overrides the default positional arguments defined in
