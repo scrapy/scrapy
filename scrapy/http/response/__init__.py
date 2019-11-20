@@ -4,6 +4,8 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+from typing import Generator
+
 from six.moves.urllib.parse import urljoin
 
 from scrapy.http.request import Request
@@ -41,8 +43,8 @@ class Response(object_ref):
         if isinstance(url, str):
             self._url = url
         else:
-            raise TypeError('%s url must be str, got %s:' % (type(self).__name__,
-                type(url).__name__))
+            raise TypeError('%s url must be str, got %s:' %
+                            (type(self).__name__, type(url).__name__))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
