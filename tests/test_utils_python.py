@@ -5,6 +5,7 @@ import unittest
 from itertools import count
 import platform
 import six
+from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
@@ -21,8 +22,12 @@ class MutableChainTest(unittest.TestCase):
         m.extend([7, 8])
         m.extend([9, 10], (11, 12))
         self.assertEqual(next(m), 0)
-        self.assertEqual(m.next(), 1)
-        self.assertEqual(m.__next__(), 2)
+        self.assertEqual(m.__next__(), 1)
+        with catch_warnings(record=True) as warnings:
+            self.assertEqual(m.next(), 2)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn('scrapy.utils.python.MutableChain.__next__',
+                          str(warnings[0].message))
         self.assertEqual(list(m), list(range(3, 13)))
 
 
@@ -231,12 +236,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
-            stripself = not six.PY2  # PyPy3 exposes them as methods
             self.assertEqual(
-                get_func_args(six.text_type.split, stripself), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself), ['list'])
+                get_func_args(six.text_type.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself), ['obj'])
+                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
 
     def test_without_none_values(self):

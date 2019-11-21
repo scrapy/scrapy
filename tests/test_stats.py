@@ -1,8 +1,53 @@
+from datetime import datetime
 import unittest
+from unittest import mock
 
+from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector, DummyStatsCollector
 from scrapy.utils.test import get_crawler
+
+
+class CoreStatsExtensionTest(unittest.TestCase):
+
+    def setUp(self):
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('foo')
+
+    @mock.patch('scrapy.extensions.corestats.datetime')
+    def test_core_stats_default_stats_collector(self, mock_datetime):
+        fixed_datetime = datetime(2019, 12, 1, 11, 38)
+        mock_datetime.utcnow = mock.Mock(return_value=fixed_datetime)
+        self.crawler.stats = StatsCollector(self.crawler)
+        ext = CoreStats.from_crawler(self.crawler)
+        ext.spider_opened(self.spider)
+        ext.item_scraped({}, self.spider)
+        ext.response_received(self.spider)
+        ext.item_dropped({}, self.spider, ZeroDivisionError())
+        ext.spider_closed(self.spider, 'finished')
+        self.assertEqual(
+            ext.stats._stats,
+            {
+                'start_time': fixed_datetime,
+                'finish_time': fixed_datetime,
+                'item_scraped_count': 1,
+                'response_received_count': 1,
+                'item_dropped_count': 1,
+                'item_dropped_reasons_count/ZeroDivisionError': 1,
+                'finish_reason': 'finished',
+                'elapsed_time_seconds': 0.0,
+            }
+        )
+
+    def test_core_stats_dummy_stats_collector(self):
+        self.crawler.stats = DummyStatsCollector(self.crawler)
+        ext = CoreStats.from_crawler(self.crawler)
+        ext.spider_opened(self.spider)
+        ext.item_scraped({}, self.spider)
+        ext.response_received(self.spider)
+        ext.item_dropped({}, self.spider, ZeroDivisionError())
+        ext.spider_closed(self.spider, 'finished')
+        self.assertEqual(ext.stats._stats, {})
 
 
 class StatsCollectorTest(unittest.TestCase):

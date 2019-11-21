@@ -101,7 +101,7 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
-.. seealso:: `Twisted Reactor Overview`_.
+.. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
 
@@ -220,4 +220,3 @@ crawl::
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

@@ -1,14 +1,4 @@
-import six
 from six.moves import copyreg
-
-
-if six.PY2:
-    from urlparse import urlparse
-    
-    # workaround for https://bugs.python.org/issue9374 - Python < 2.7.4
-    if urlparse('s3://bucket/key?key=value').query != 'key=value':
-        from urlparse import uses_query
-        uses_query.append('s3')
 
 
 # Undo what Twisted's perspective broker adds to pickle register

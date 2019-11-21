@@ -28,7 +28,7 @@ Loading & activating extensions
 
 Extensions are loaded and activated at startup by instantiating a single
 instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class constructor (``__init__`` method).
+code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
