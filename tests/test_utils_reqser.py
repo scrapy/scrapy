@@ -29,6 +29,7 @@ class RequestSerializationTest(unittest.TestCase):
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},
+            cb_kwargs={'k': 'v'},
             flags=['testFlag'])
         self._assert_serializes_ok(r, spider=self.spider)
 
@@ -55,6 +56,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.cookies, r2.cookies)
         self.assertEqual(r1.meta, r2.meta)
+        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
         self.assertEqual(r1._encoding, r2._encoding)
         self.assertEqual(r1.priority, r2.priority)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
@@ -78,8 +80,6 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r, spider=self.spider)
 
     def test_mixin_private_callback_serialization(self):
-        if sys.version_info[0] < 3:
-            return
         r = Request("http://www.example.com",
                     callback=self.spider._TestSpiderMixin__mixin_callback,
                     errback=self.spider.handle_error)
@@ -117,9 +117,8 @@ class RequestSerializationTest(unittest.TestCase):
     def test_private_name_mangling(self):
         self._assert_mangles_to(
             self.spider, '_TestSpider__parse_item_private')
-        if sys.version_info[0] >= 3:
-            self._assert_mangles_to(
-                self.spider, '_TestSpiderMixin__mixin_callback')
+        self._assert_mangles_to(
+            self.spider, '_TestSpiderMixin__mixin_callback')
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)

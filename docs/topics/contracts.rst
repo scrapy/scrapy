@@ -6,10 +6,6 @@ Spiders Contracts
 
 .. versionadded:: 0.15
 
-.. note:: This is a new feature (introduced in Scrapy 0.15) and may be subject
-   to minor functionality/API updates. Check the :ref:`release notes <news>` to
-   be notified of updates.
-
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
@@ -35,11 +31,19 @@ This callback is tested using three built-in contracts:
 
 .. class:: UrlContract
 
-    This contract (``@url``) sets the sample url used when checking other
+    This contract (``@url``) sets the sample URL used when checking other
     contract conditions for this spider. This contract is mandatory. All
     callbacks lacking this contract are ignored when running the checks::
 
     @url url
+
+.. class:: CallbackKeywordArgumentsContract
+
+    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.http.Request.cb_kwargs>`
+    attribute for the sample request. It must be a valid JSON dictionary.
+    ::
+
+    @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
 
 .. class:: ReturnsContract
 
@@ -69,7 +73,7 @@ create and load your own contracts in the project by using the
         'myproject.contracts.ItemValidate': 10,
     }
 
-Each contract must inherit from :class:`scrapy.contracts.Contract` and can
+Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
 .. module:: scrapy.contracts
@@ -102,9 +106,14 @@ override three methods:
         This allows processing the output of the callback. Iterators are
         converted listified before being passed to this hook.
 
+Raise :class:`~scrapy.exceptions.ContractFail` from
+:class:`~scrapy.contracts.Contract.pre_process` or
+:class:`~scrapy.contracts.Contract.post_process` if expectations are not met:
+
+.. autoclass:: scrapy.exceptions.ContractFail
+
 Here is a demo contract which checks the presence of a custom header in the
-response received. Raise :class:`scrapy.exceptions.ContractFail` in order to
-get the failures pretty printed::
+response received::
 
     from scrapy.contracts import Contract
     from scrapy.exceptions import ContractFail
@@ -121,6 +130,7 @@ get the failures pretty printed::
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
 
+.. _detecting-contract-check-runs:
 
 Detecting check runs
 ====================

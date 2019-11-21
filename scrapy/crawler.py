@@ -3,7 +3,6 @@ import signal
 import logging
 import warnings
 
-import sys
 from twisted.internet import reactor, defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
@@ -39,14 +38,15 @@ class Crawler(object):
         self.settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)r", {'settings': d})
-
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
+
+        d = dict(overridden_settings(self.settings))
+        logger.info("Overridden settings: %(settings)r", {'settings': d})
+
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
@@ -87,20 +87,9 @@ class Crawler(object):
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
-            # In Python 2 reraising an exception after yield discards
-            # the original traceback (see https://bugs.python.org/issue7563),
-            # so sys.exc_info() workaround is used.
-            # This workaround also works in Python 3, but it is not needed,
-            # and it is slower, so in Python 3 we use native `raise`.
-            if six.PY2:
-                exc_info = sys.exc_info()
-
             self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
-
-            if six.PY2:
-                six.reraise(*exc_info)
             raise
 
     def _create_spider(self, *args, **kwargs):
@@ -111,6 +100,8 @@ class Crawler(object):
 
     @defer.inlineCallbacks
     def stop(self):
+        """Starts a graceful stop of the crawler and returns a deferred that is
+        fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
@@ -119,7 +110,7 @@ class Crawler(object):
 class CrawlerRunner(object):
     """
     This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
+    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
 
     The CrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -242,12 +233,13 @@ class CrawlerProcess(CrawlerRunner):
     A class to run multiple scrapy crawlers in a process simultaneously.
 
     This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
-    for starting a Twisted `reactor`_ and handling shutdown signals, like the
-    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
+    signals, like the keyboard interrupt command Ctrl-C. It also configures
+    top-level logging.
 
     This utility should be a better fit than
     :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
-    Twisted `reactor`_ within your application.
+    :mod:`~twisted.internet.reactor` within your application.
 
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -282,9 +274,9 @@ class CrawlerProcess(CrawlerRunner):
 
     def start(self, stop_after_crawl=True):
         """
-        This method starts a Twisted `reactor`_, adjusts its pool size to
-        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
-        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
+        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
+        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -330,14 +322,7 @@ class CrawlerProcess(CrawlerRunner):
 
 def _get_spider_loader(settings):
     """ Get SpiderLoader instance from settings """
-    if settings.get('SPIDER_MANAGER_CLASS'):
-        warnings.warn(
-            'SPIDER_MANAGER_CLASS option is deprecated. '
-            'Please use SPIDER_LOADER_CLASS.',
-            category=ScrapyDeprecationWarning, stacklevel=2
-        )
-    cls_path = settings.get('SPIDER_MANAGER_CLASS',
-                            settings.get('SPIDER_LOADER_CLASS'))
+    cls_path = settings.get('SPIDER_LOADER_CLASS')
     loader_cls = load_object(cls_path)
     try:
         verifyClass(ISpiderLoader, loader_cls)

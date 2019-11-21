@@ -1,7 +1,7 @@
 import six
 import unittest
+from unittest import mock
 from scrapy.utils import trackref
-from tests import mock
 
 
 class Foo(trackref.object_ref):

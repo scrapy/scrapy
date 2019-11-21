@@ -3,18 +3,15 @@ import cgi
 import unittest
 import re
 import json
+from unittest import mock
+from urllib.parse import unquote_to_bytes
 import warnings
 
-import six
 from six.moves import xmlrpc_client as xmlrpclib
 from six.moves.urllib.parse import urlparse, parse_qs, unquote
-if six.PY3:
-    from urllib.parse import unquote_to_bytes
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, JSONRequest, Headers, HtmlResponse
-from scrapy.utils.python import to_bytes, to_native_str
-
-from tests import mock
+from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
@@ -25,7 +22,7 @@ class RequestTest(unittest.TestCase):
     default_meta = {}
 
     def test_init(self):
-        # Request requires url in the constructor
+        # Request requires url in the __init__ method
         self.assertRaises(Exception, self.request_class)
 
         # url argument must be basestring
@@ -52,11 +49,13 @@ class RequestTest(unittest.TestCase):
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
+        self.assertRaises(ValueError, self.request_class, '/foo/')
+        self.assertRaises(ValueError, self.request_class, '/foo:bar')
 
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {b'Accept':'gzip', b'Custom-Header':'nothing to tell you'}
+        headers = {b'Accept': 'gzip', b'Custom-Header': 'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -181,6 +180,7 @@ class RequestTest(unittest.TestCase):
         r1 = self.request_class("http://www.example.com", flags=['f1', 'f2'],
                                 callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
+        r1.cb_kwargs['key'] = 'value'
         r2 = r1.copy()
 
         # make sure copy does not propagate callbacks
@@ -192,6 +192,10 @@ class RequestTest(unittest.TestCase):
         # make sure flags list is shallow copied
         assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
         self.assertEqual(r1.flags, r2.flags)
+
+        # make sure cb_kwargs dict is shallow copied
+        assert r1.cb_kwargs is not r2.cb_kwargs, "cb_kwargs must be a shallow copy, not identical"
+        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
@@ -264,14 +268,90 @@ class RequestTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.request_class('http://example.com', a_function, errback='a_function')
 
+    def test_from_curl(self):
+        # Note: more curated tests regarding curl conversion are in
+        # `test_utils_curl.py`
+        curl_command = (
+            "curl 'http://httpbin.org/post' -X POST -H 'Cookie: _gauges_unique"
+            "_year=1; _gauges_unique=1; _gauges_unique_month=1; _gauges_unique"
+            "_hour=1; _gauges_unique_day=1' -H 'Origin: http://httpbin.org' -H"
+            " 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: en-US,en;q"
+            "=0.9,ru;q=0.8,es;q=0.7' -H 'Upgrade-Insecure-Requests: 1' -H 'Use"
+            "r-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTM"
+            "L, like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.3202.75 S"
+            "afari/537.36' -H 'Content-Type: application /x-www-form-urlencode"
+            "d' -H 'Accept: text/html,application/xhtml+xml,application/xml;q="
+            "0.9,image/webp,image/apng,*/*;q=0.8' -H 'Cache-Control: max-age=0"
+            "' -H 'Referer: http://httpbin.org/forms/post' -H 'Connection: kee"
+            "p-alive' --data 'custname=John+Smith&custtel=500&custemail=jsmith"
+            "%40example.org&size=small&topping=cheese&topping=onion&delivery=1"
+            "2%3A15&comments=' --compressed"
+        )
+        r = self.request_class.from_curl(curl_command)
+        self.assertEqual(r.method, "POST")
+        self.assertEqual(r.url, "http://httpbin.org/post")
+        self.assertEqual(r.body,
+                         b"custname=John+Smith&custtel=500&custemail=jsmith%40"
+                         b"example.org&size=small&topping=cheese&topping=onion"
+                         b"&delivery=12%3A15&comments=")
+        self.assertEqual(r.cookies, {
+            '_gauges_unique_year': '1',
+            '_gauges_unique': '1',
+            '_gauges_unique_month': '1',
+            '_gauges_unique_hour': '1',
+            '_gauges_unique_day': '1'
+        })
+        self.assertEqual(r.headers, {
+            b'Origin': [b'http://httpbin.org'],
+            b'Accept-Encoding': [b'gzip, deflate'],
+            b'Accept-Language': [b'en-US,en;q=0.9,ru;q=0.8,es;q=0.7'],
+            b'Upgrade-Insecure-Requests': [b'1'],
+            b'User-Agent': [b'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.'
+                            b'36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202'
+                            b'.75 Chrome/62.0.3202.75 Safari/537.36'],
+            b'Content-Type': [b'application /x-www-form-urlencoded'],
+            b'Accept': [b'text/html,application/xhtml+xml,application/xml;q=0.'
+                        b'9,image/webp,image/apng,*/*;q=0.8'],
+            b'Cache-Control': [b'max-age=0'],
+            b'Referer': [b'http://httpbin.org/forms/post'],
+            b'Connection': [b'keep-alive']})
+
+    def test_from_curl_with_kwargs(self):
+        r = self.request_class.from_curl(
+            'curl -X PATCH "http://example.org"',
+            method="POST",
+            meta={'key': 'value'}
+        )
+        self.assertEqual(r.method, "POST")
+        self.assertEqual(r.meta, {"key": "value"})
+
+    def test_from_curl_ignore_unknown_options(self):
+        # By default: it works and ignores the unknown options: --foo and -z
+        with warnings.catch_warnings():  # avoid warning when executing tests
+            warnings.simplefilter('ignore')
+            r = self.request_class.from_curl(
+                'curl -X DELETE "http://example.org" --foo -z',
+            )
+            self.assertEqual(r.method, "DELETE")
+
+        # If `ignore_unknon_options` is set to `False` it raises an error with
+        # the unknown options: --foo and -z
+        self.assertRaises(
+            ValueError,
+            lambda: self.request_class.from_curl(
+                'curl -X PATCH "http://example.org" --foo -z',
+                ignore_unknown_options=False,
+            ),
+        )
+
 
 class FormRequestTest(RequestTest):
 
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
-        first = to_native_str(first).split("&")
-        second = to_native_str(second).split("&")
+        first = to_unicode(first).split("&")
+        second = to_unicode(second).split("&")
         return self.assertEqual(sorted(first), sorted(second), msg)
 
     def test_empty_formdata(self):
@@ -419,7 +499,7 @@ class FormRequestTest(RequestTest):
                 formdata=(('foo', 'bar'), ('foo', 'baz')))
         self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
         self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
-    
+
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
             """<form action="get.php" method="POST">
@@ -576,7 +656,7 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response, dont_click=True)
         fs = _qs(req)
         self.assertEqual(fs, {b'i1': [b'i1v'], b'i2': [b'i2v']})
-    
+
     def test_from_response_clickdata_does_not_ignore_image(self):
         response = _buildresponse(
             """<form>
@@ -735,7 +815,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="1">
             <input type="hidden" name="two" value="2">
             </form>""")
-        r1 = self.request_class.from_response(response, formdata={'two':'3'})
+        r1 = self.request_class.from_response(response, formdata={'two': '3'})
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], b'application/x-www-form-urlencoded')
         fs = _qs(r1)
@@ -983,10 +1063,9 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs, {})
 
         xpath = u"//form[@name='\u03b1']"
-        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
-        self.assertRaisesRegexp(ValueError, re.escape(encoded),
-                                self.request_class.from_response,
-                                response, formxpath=xpath)
+        self.assertRaisesRegex(ValueError, re.escape(xpath),
+                               self.request_class.from_response,
+                               response, formxpath=xpath)
 
     def test_from_response_button_submit(self):
         response = _buildresponse(
@@ -1100,6 +1179,20 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formcss="input[name='abc']")
 
+    def test_from_response_valid_form_methods(self):
+        body = """<form action="post.php" method="%s">
+            <input type="hidden" name="one" value="1">
+            </form>"""
+
+        for method in self.request_class.valid_form_methods:
+            response = _buildresponse(body % method)
+            r = self.request_class.from_response(response)
+            self.assertEqual(r.method, method)
+
+        response = _buildresponse(body % 'UNKNOWN')
+        r = self.request_class.from_response(response)
+        self.assertEqual(r.method, 'GET')
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
@@ -1113,10 +1206,7 @@ def _qs(req, encoding='utf-8', to_unicode=False):
         qs = req.body
     else:
         qs = req.url.partition('?')[2]
-    if six.PY2:
-        uqs = unquote(to_native_str(qs, encoding))
-    elif six.PY3:
-        uqs = unquote_to_bytes(qs)
+    uqs = unquote_to_bytes(qs)
     if to_unicode:
         uqs = uqs.decode(encoding)
     return parse_qs(uqs, True)
@@ -1151,14 +1241,14 @@ class XmlRpcRequestTest(RequestTest):
         self._test_request(params=(u'pas£',), encoding='latin1')
 
 
-class JSONRequestTest(RequestTest):
-    request_class = JSONRequest
+class JsonRequestTest(RequestTest):
+    request_class = JsonRequest
     default_method = 'GET'
     default_headers = {b'Content-Type': [b'application/json'], b'Accept': [b'application/json, text/javascript, */*; q=0.01']}
 
     def setUp(self):
         warnings.simplefilter("always")
-        super(JSONRequestTest, self).setUp()
+        super(JsonRequestTest, self).setUp()
 
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")
@@ -1312,7 +1402,7 @@ class JSONRequestTest(RequestTest):
 
     def tearDown(self):
         warnings.resetwarnings()
-        super(JSONRequestTest, self).tearDown()
+        super(JsonRequestTest, self).tearDown()
 
 
 if __name__ == "__main__":

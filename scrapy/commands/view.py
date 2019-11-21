@@ -1,6 +1,7 @@
 from scrapy.commands import fetch, ScrapyCommand
 from scrapy.utils.response import open_in_browser
 
+
 class Command(fetch.Command):
 
     def short_desc(self):

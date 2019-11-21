@@ -28,6 +28,7 @@ def iter_spider_classes(module):
            getattr(obj, 'name', None):
             yield obj
 
+
 def spidercls_for_request(spider_loader, request, default_spidercls=None,
                           log_none=False, log_multiple=False):
     """Return a spider class that handles the given Request.

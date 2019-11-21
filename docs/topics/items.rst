@@ -16,12 +16,12 @@ especially in a larger project with many spiders.
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields. 
+their available fields.
 
-Various Scrapy components use extra information provided by Items: 
+Various Scrapy components use extra information provided by Items:
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help find memory leaks 
+tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -157,6 +157,8 @@ To access all populated values, just use the typical `dict API`_::
     [('price', 1000), ('name', 'Desktop PC')]
 
 
+.. _copying-items:
+
 Copying items
 -------------
 
@@ -235,8 +237,12 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    Items replicate the standard `dict API`_, including its ``__init__`` method, and
+    also provide the following additional API members:
+
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
 
     .. attribute:: fields
 
@@ -261,3 +267,9 @@ Field objects
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 
+Other classes related to Item
+=============================
+
+.. autoclass:: BaseItem
+
+.. autoclass:: ItemMeta

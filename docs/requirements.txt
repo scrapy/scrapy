@@ -1,2 +1,5 @@
+-r ../requirements-py3.txt
 Sphinx>=2.1
+sphinx-hoverxref
+sphinx-notfound-page
 sphinx_rtd_theme

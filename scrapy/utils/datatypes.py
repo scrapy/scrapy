@@ -6,9 +6,11 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import copy
-import six
+import collections
+from collections.abc import Mapping
 import warnings
-from collections import OrderedDict, Mapping
+
+import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -239,12 +241,18 @@ class CaselessDict(dict):
 class MergeDict(object):
     """
     A simple class for creating new "virtual" dictionaries that actually look
-    up values in more than one dictionary, passed in the constructor.
+    up values in more than one dictionary, passed in the ``__init__`` method.
 
     If a key appears in more than one of the given dictionaries, only the
     first occurrence will be used.
     """
     def __init__(self, *dicts):
+        warnings.warn(
+            "scrapy.utils.datatypes.MergeDict is deprecated in favor "
+            "of collections.ChainMap (introduced in Python 3.3)",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.dicts = dicts
 
     def __getitem__(self, key):
@@ -289,7 +297,7 @@ class MergeDict(object):
         return self.__copy__()
 
 
-class LocalCache(OrderedDict):
+class LocalCache(collections.OrderedDict):
     """Dictionary with a finite number of keys.
 
     Older items expires first.
@@ -301,8 +309,9 @@ class LocalCache(OrderedDict):
         self.limit = limit
 
     def __setitem__(self, key, value):
-        while len(self) >= self.limit:
-            self.popitem(last=False)
+        if self.limit:
+            while len(self) >= self.limit:
+                self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
 
 

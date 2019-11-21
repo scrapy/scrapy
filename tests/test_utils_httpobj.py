@@ -4,6 +4,7 @@ from six.moves.urllib.parse import urlparse
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 
+
 class HttpobjUtilsTest(unittest.TestCase):
 
     def test_urlparse_cached(self):

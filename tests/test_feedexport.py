@@ -6,7 +6,9 @@ import warnings
 from io import BytesIO
 import tempfile
 import shutil
-from six.moves.urllib.parse import urljoin, urlparse
+import string
+from unittest import mock
+from six.moves.urllib.parse import urljoin, urlparse, quote
 from six.moves.urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
@@ -14,7 +16,6 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.settings import Settings
-from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
@@ -25,7 +26,9 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage, StdoutFeedStorage,
     BlockingFeedStorage)
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
+
+from pathlib import Path
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -70,6 +73,13 @@ class FileFeedStorageTest(unittest.TestCase):
 
 class FTPFeedStorageTest(unittest.TestCase):
 
+    def get_test_spider(self, settings=None):
+        class TestSpider(scrapy.Spider):
+            name = 'test_spider'
+        crawler = get_crawler(settings_dict=settings)
+        spider = TestSpider.from_crawler(crawler)
+        return spider
+
     def test_store(self):
         uri = os.environ.get('FEEDTEST_FTP_URI')
         path = os.environ.get('FEEDTEST_FTP_PATH')
@@ -79,9 +89,26 @@ class FTPFeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
 
+    def test_store_active_mode(self):
+        uri = os.environ.get('FEEDTEST_FTP_URI')
+        path = os.environ.get('FEEDTEST_FTP_PATH')
+        if not (uri and path):
+            raise unittest.SkipTest("No FTP server available for testing")
+        use_active_mode = {'FEED_STORAGE_FTP_ACTIVE': True}
+        crawler = get_crawler(settings_dict=use_active_mode)
+        st = FTPFeedStorage.from_crawler(crawler, uri)
+        verifyObject(IFeedStorage, st)
+        return self._assert_stores(st, path)
+
+    def test_uri_auth_quote(self):
+        # RFC3986: 3.2.1. User Information
+        pw_quoted = quote(string.punctuation, safe='')
+        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted)
+        self.assertEqual(st.password, string.punctuation)
+
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
-        spider = scrapy.Spider("default")
+        spider = self.get_test_spider()
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
@@ -134,8 +161,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
-    @mock.patch('scrapy.conf.settings', new={'AWS_ACCESS_KEY_ID': 'conf_key',
-                'AWS_SECRET_ACCESS_KEY': 'conf_secret'}, create=True)
+    @mock.patch('scrapy.utils.project.get_project_settings',
+                new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
+                                                 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
+                create=True)
     def test_parse_credentials(self):
         try:
             import boto
@@ -377,6 +406,7 @@ class FeedExportTest(unittest.TestCase):
         defaults = {
             'FEED_URI': res_uri,
             'FEED_FORMAT': 'csv',
+            'FEED_PATH': res_path
         }
         defaults.update(settings or {})
         try:
@@ -385,11 +415,11 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(res_path, 'rb') as f:
+            with open(str(defaults['FEED_PATH']), 'rb') as f:
                 content = f.read()
 
         finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+            shutil.rmtree(tmpdir)
 
         defer.returnValue(content)
 
@@ -428,7 +458,7 @@ class FeedExportTest(unittest.TestCase):
         settings.update({'FEED_FORMAT': 'csv'})
         data = yield self.exported_data(items, settings)
 
-        reader = csv.DictReader(to_native_str(data).splitlines())
+        reader = csv.DictReader(to_unicode(data).splitlines())
         got_rows = list(reader)
         if ordered:
             self.assertEqual(reader.fieldnames, header)
@@ -442,7 +472,7 @@ class FeedExportTest(unittest.TestCase):
         settings = settings or {}
         settings.update({'FEED_FORMAT': 'jl'})
         data = yield self.exported_data(items, settings)
-        parsed = [json.loads(to_native_str(line)) for line in data.splitlines()]
+        parsed = [json.loads(to_unicode(line)) for line in data.splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
@@ -815,3 +845,17 @@ class FeedExportTest(unittest.TestCase):
         yield self.exported_data({}, settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+
+    @defer.inlineCallbacks
+    def test_pathlib_uri(self):
+        tmpdir = tempfile.mkdtemp()
+        feed_uri = Path(tmpdir) / 'res'
+        settings = {
+            'FEED_FORMAT': 'csv',
+            'FEED_STORE_EMPTY': True,
+            'FEED_URI': feed_uri,
+            'FEED_PATH': feed_uri
+        }
+        data = yield self.exported_no_data(settings)
+        self.assertEqual(data, b'')
+        shutil.rmtree(tmpdir, ignore_errors=True)

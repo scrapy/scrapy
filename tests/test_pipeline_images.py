@@ -118,63 +118,6 @@ class DeprecatedImagesPipeline(ImagesPipeline):
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
 
 
-class DeprecatedImagesPipelineTestCase(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = mkdtemp()
-
-    def init_pipeline(self, pipeline_class):
-        self.pipeline = pipeline_class(self.tempdir, download_func=_mocked_download_func)
-        self.pipeline.open_spider(None)
-
-    def test_default_file_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.gif"),
-                             'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_default_image_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.image_key("https://dev.mydeco.com/mydeco.gif"),
-                             'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_overridden_file_key_method(self):
-        self.init_pipeline(DeprecatedImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-                             'empty/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_default_thumb_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.thumb_key("file:///tmp/foo.jpg", 50),
-                             'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
-
-    def test_overridden_thumb_key_method(self):
-        self.init_pipeline(DeprecatedImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.thumb_path(Request("file:///tmp/foo.jpg"), 50),
-                             'thumbsup/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
-
-    def tearDown(self):
-        rmtree(self.tempdir)
-
-
 class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):

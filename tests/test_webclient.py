@@ -6,6 +6,7 @@ import os
 import six
 import shutil
 
+import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
 from twisted.internet import reactor, defer
@@ -15,8 +16,12 @@ from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import webclient as client
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Request, Headers
+from scrapy.settings import Settings
+from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes, to_unicode
+from tests.mockserver import ssl_context_factory
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -72,26 +77,6 @@ class ParseUrlTestCase(unittest.TestCase):
             test = tuple(
                 to_bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEqual(client._parse(url), test, url)
-
-    def test_externalUnicodeInterference(self):
-        """
-        L{client._parse} should return C{str} for the scheme, host, and path
-        elements of its return tuple, even when passed an URL which has
-        previously been passed to L{urlparse} as a C{unicode} string.
-        """
-        if not six.PY2:
-            raise unittest.SkipTest(
-                "Applies only to Py2, as urls can be ONLY unicode on Py3")
-        badInput = u'http://example.com/path'
-        goodInput = badInput.encode('ascii')
-        self._parse(badInput)  # cache badInput in urlparse_cached
-        scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, str))
-        self.assertTrue(isinstance(netloc, str))
-        self.assertTrue(isinstance(host, str))
-        self.assertTrue(isinstance(path, str))
-        self.assertTrue(isinstance(port, int))
-
 
 
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
@@ -363,3 +348,55 @@ class WebClientTestCase(unittest.TestCase):
         self.assertEqual(content_encoding, EncodingResource.out_encoding)
         self.assertEqual(
             response.body.decode(content_encoding), to_unicode(original_body))
+
+
+class WebClientSSLTestCase(unittest.TestCase):
+    context_factory = None
+
+    def _listen(self, site):
+        return reactor.listenSSL(
+            0, site,
+            contextFactory=self.context_factory or ssl_context_factory(),
+            interface="127.0.0.1")
+
+    def getURL(self, path):
+        return "https://127.0.0.1:%d/%s" % (self.portno, path)
+
+    def setUp(self):
+        self.tmpname = self.mktemp()
+        os.mkdir(self.tmpname)
+        FilePath(self.tmpname).child("file").setContent(b"0123456789")
+        r = static.File(self.tmpname)
+        r.putChild(b"payload", PayloadResource())
+        self.site = server.Site(r, timeout=None)
+        self.wrapper = WrappingFactory(self.site)
+        self.port = self._listen(self.wrapper)
+        self.portno = self.port.getHost().port
+
+    @inlineCallbacks
+    def tearDown(self):
+        yield self.port.stopListening()
+        shutil.rmtree(self.tmpname)
+
+    def testPayload(self):
+        s = "0123456789" * 10
+        return getPage(self.getURL("payload"), body=s).addCallback(
+            self.assertEqual, to_bytes(s))
+
+
+class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
+    # we try to use a cipher that is not enabled by default in OpenSSL
+    custom_ciphers = 'CAMELLIA256-SHA'
+    context_factory = ssl_context_factory(cipher_string=custom_ciphers)
+
+    def testPayload(self):
+        s = "0123456789" * 10
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': self.custom_ciphers})
+        client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
+        return getPage(self.getURL("payload"), body=s,
+                       contextFactory=client_context_factory).addCallback(self.assertEqual, to_bytes(s))
+
+    def testPayloadDefaultCiphers(self):
+        s = "0123456789" * 10
+        d = getPage(self.getURL("payload"), body=s, contextFactory=ScrapyClientContextFactory())
+        return self.assertFailure(d, OpenSSL.SSL.Error)

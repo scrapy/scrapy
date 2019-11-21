@@ -95,7 +95,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
 class ScrapyHTTPClientFactory(HTTPClientFactory):
     """Scrapy implementation of the HTTPClientFactory overwriting the
-    serUrl method to make use of our Url object that cache the parse
+    setUrl method to make use of our Url object that cache the parse
     result.
     """
 
@@ -157,4 +157,3 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
-

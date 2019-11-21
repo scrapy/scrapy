@@ -1,10 +1,10 @@
+from configparser import ConfigParser
 import os
 import sys
 import numbers
 from operator import itemgetter
 
 import six
-from six.moves.configparser import SafeConfigParser
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
@@ -92,9 +92,9 @@ def init_env(project='default', set_syspath=True):
 
 
 def get_config(use_closest=True):
-    """Get Scrapy config file as a SafeConfigParser"""
+    """Get Scrapy config file as a ConfigParser"""
     sources = get_sources(use_closest)
-    cfg = SafeConfigParser()
+    cfg = ConfigParser()
     cfg.read(sources)
     return cfg
 
