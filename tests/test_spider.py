@@ -15,7 +15,6 @@ from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
 
 

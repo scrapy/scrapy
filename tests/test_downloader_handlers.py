@@ -543,7 +543,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
     def setUp(self):
         try:
-            from service_identity.exceptions import CertificateError
+            from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("cryptography lib is too old")
         self.tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
@@ -778,7 +778,7 @@ class S3TestCase(unittest.TestCase):
     @contextlib.contextmanager
     def _mocked_date(self, date):
         try:
-            import botocore.auth
+            import botocore.auth  # noqa: F401
         except ImportError:
             yield
         else:
@@ -843,8 +843,10 @@ class S3TestCase(unittest.TestCase):
                 b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
-        try: import botocore
-        except ImportError: pass
+        try:
+            import botocore  # noqa: F401
+        except ImportError:
+            pass
         else:
             raise unittest.SkipTest(
                 'botocore does not support overriding date with x-amz-date')
