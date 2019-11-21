@@ -49,6 +49,8 @@ class RequestTest(unittest.TestCase):
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
+        self.assertRaises(ValueError, self.request_class, '/foo/')
+        self.assertRaises(ValueError, self.request_class, '/foo:bar')
 
     def test_headers(self):
         # Different ways of setting headers attribute

@@ -96,5 +96,3 @@ class (which they all inherit from).
 
 .. autoclass:: StatsCollector
   :members:
-
-.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
