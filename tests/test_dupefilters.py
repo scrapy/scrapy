@@ -11,6 +11,7 @@ from scrapy.utils.request import RequestKeyBuilder
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
+
 class FromCrawlerRFPDupeFilter(RFPDupeFilter):
 
     @classmethod

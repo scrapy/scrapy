@@ -187,6 +187,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
 class GuessSchemeTest(unittest.TestCase):
     pass
 
+
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
@@ -194,6 +195,7 @@ def create_guess_scheme_t(args):
             'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
                 args[0], url, args[1])
     return do_expected
+
 
 def create_skipped_scheme_t(args):
     def do_expected(self):

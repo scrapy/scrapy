@@ -7,6 +7,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.request import default_request_key_builder, referer_str
 
 
+
 class BaseDupeFilter(object):
 
     @classmethod

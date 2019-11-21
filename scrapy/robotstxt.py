@@ -5,7 +5,9 @@ from six import with_metaclass
 
 from scrapy.utils.python import to_unicode
 
+
 logger = logging.getLogger(__name__)
+
 
 def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
     try:
@@ -22,6 +24,7 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
                        extra={'spider': spider})
         robotstxt_body = ''
     return robotstxt_body
+
 
 class RobotParser(with_metaclass(ABCMeta)):
     @classmethod

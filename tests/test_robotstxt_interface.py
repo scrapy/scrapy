@@ -19,6 +19,7 @@ def rerp_available():
         return False
     return True
 
+
 def protego_available():
     # check if protego parser is installed
     try:
@@ -26,6 +27,7 @@ def protego_available():
     except ImportError:
         return False
     return True
+
 
 class BaseRobotParserTest:
     def _setUp(self, parser_cls):
