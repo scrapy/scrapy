@@ -1,5 +1,4 @@
 import random
-import warnings
 from time import time
 from datetime import datetime
 from collections import deque

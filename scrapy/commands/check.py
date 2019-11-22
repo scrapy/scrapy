@@ -1,5 +1,4 @@
 import time
-import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
 

@@ -2,7 +2,6 @@ import json
 import os
 import random
 import sys
-import time
 from subprocess import Popen, PIPE
 from urllib.parse import urlencode
 

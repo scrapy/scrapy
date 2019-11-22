@@ -5,17 +5,15 @@ import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
-from warnings import warn
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
-from scrapy.utils.python import to_bytes, to_unicode, garbage_collect
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.request import request_fingerprint
 
 

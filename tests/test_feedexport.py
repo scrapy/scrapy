@@ -165,7 +165,7 @@ class S3FeedStorageTest(unittest.TestCase):
                 create=True)
     def test_parse_credentials(self):
         try:
-            import boto
+            import boto  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("S3FeedStorage requires boto")
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
@@ -266,7 +266,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
@@ -286,7 +286,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 

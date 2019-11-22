@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-import cgi
 import unittest
 import re
 import json

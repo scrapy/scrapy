@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
-from urllib.parse import urlparse
 
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme,
-                              parse_url, strip_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url)
 
 
 __doctests__ = ['scrapy.utils.url']

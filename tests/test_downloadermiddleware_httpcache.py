@@ -4,8 +4,6 @@ import shutil
 import unittest
 import email.utils
 from contextlib import contextmanager
-import pytest
-import sys
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
