@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
 import unittest
-import sys
-
-import six
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider

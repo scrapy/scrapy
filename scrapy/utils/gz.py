@@ -45,6 +45,7 @@ def gunzip(data):
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search
 
+
 @deprecated
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""

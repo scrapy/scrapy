@@ -121,8 +121,8 @@ Request objects
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
-       with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
-       as first parameter.
+       with 404 HTTP errors and such. It receives a
+       :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
@@ -254,8 +254,8 @@ Using errbacks to catch exceptions in request processing
 The errback of a request is a function that will be called when an exception
 is raise while processing it.
 
-It receives a `Twisted Failure`_ instance as first parameter and can be
-used to track connection establishment timeouts, DNS errors etc.
+It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
+be used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
 errors if needed::
@@ -820,5 +820,4 @@ XmlResponse objects
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241

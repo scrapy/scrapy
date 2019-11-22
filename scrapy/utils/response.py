@@ -13,6 +13,8 @@ from w3lib import html
 
 
 _baseurl_cache = weakref.WeakKeyDictionary()
+
+
 def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
@@ -23,6 +25,8 @@ def get_base_url(response):
 
 
 _metaref_cache = weakref.WeakKeyDictionary()
+
+
 def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
