@@ -1,9 +1,11 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
+import json
+import os
+import random
+import sys
 from subprocess import Popen, PIPE
 
 from OpenSSL import SSL
+from six.moves.urllib.parse import urlencode
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
