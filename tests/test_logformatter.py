@@ -71,7 +71,7 @@ class LogFormatterTestCase(unittest.TestCase):
         response = Response("http://www.example.com")
         logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline, u"'Error processing {'key': 'value'}'")
+        self.assertEqual(logline, u"Error processing {'key': 'value'}")
 
     def test_scraped(self):
         item = CustomItem()
