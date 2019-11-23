@@ -87,6 +87,24 @@ class LogFormatterTestCase(unittest.TestCase):
             "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
         )
 
+    def test_download_error_short(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com")
+        logkws = self.formatter.download_error(failure, request, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline, "Error downloading <GET http://www.example.com>")
+
+    def test_download_error_long(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com")
+        logkws = self.formatter.download_error(failure, request, self.spider, "Some message")
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline, "Error downloading <GET http://www.example.com>: Some message")
+
     def test_scraped(self):
         item = CustomItem()
         item['name'] = u'\xa3'

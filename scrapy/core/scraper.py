@@ -200,19 +200,23 @@ class Scraper(object):
         """Log and silence errors that come from the engine (typically download
         errors that got propagated thru here)
         """
-        if (isinstance(download_failure, Failure) and
-                not download_failure.check(IgnoreRequest)):
+        if isinstance(download_failure, Failure) and not download_failure.check(IgnoreRequest):
             if download_failure.frames:
-                logger.error('Error downloading %(request)s',
-                             {'request': request},
-                             exc_info=failure_to_exc_info(download_failure),
-                             extra={'spider': spider})
+                logkws = self.logformatter.download_error(download_failure, request, spider)
+                logger.log(
+                    *logformatter_adapter(logkws),
+                    extra={'spider': spider},
+                    exc_info=failure_to_exc_info(download_failure),
+                )
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
-                    logger.error('Error downloading %(request)s: %(errmsg)s',
-                                 {'request': request, 'errmsg': errmsg},
-                                 extra={'spider': spider})
+                    logkws = self.logformatter.download_error(
+                        download_failure, request, spider, errmsg)
+                    logger.log(
+                        *logformatter_adapter(logkws),
+                        extra={'spider': spider},
+                    )
 
         if spider_failure is not download_failure:
             return spider_failure

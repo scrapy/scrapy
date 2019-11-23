@@ -10,6 +10,8 @@ DROPPEDMSG = "Dropped: %(exception)s" + os.linesep + "%(item)s"
 CRAWLEDMSG = "Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
 ITEMERRORMSG = "Error processing %(item)s"
 SPIDERERRORMSG = "Spider error processing %(request)s (referer: %(referer)s)"
+DOWNLOADERRORMSG_SHORT = "Error downloading %(request)s"
+DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 
 
 class LogFormatter(object):
@@ -113,6 +115,20 @@ class LogFormatter(object):
                 'request': request,
                 'referer': referer_str(request),
             }
+        }
+
+    def download_error(self, failure, request, spider, errmsg=None):
+        """Logs a download error message from a spider (typically coming from the engine)."""
+        args = {'request': request}
+        if errmsg:
+            msg = DOWNLOADERRORMSG_LONG
+            args['errmsg'] = errmsg
+        else:
+            msg = DOWNLOADERRORMSG_SHORT
+        return {
+            'level': logging.ERROR,
+            'msg': msg,
+            'args': args,
         }
 
     @classmethod
