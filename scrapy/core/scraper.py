@@ -16,7 +16,7 @@ from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.utils.request import referer_str
+
 
 logger = logging.getLogger(__name__)
 
@@ -152,9 +152,9 @@ class Scraper(object):
         if isinstance(exc, CloseSpider):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
-        logger.error(
-            "Spider error processing %(request)s (referer: %(referer)s)",
-            {'request': request, 'referer': referer_str(request)},
+        logkws = self.logformatter.spider_error(_failure, request, response, spider)
+        logger.log(
+            *logformatter_adapter(logkws),
             exc_info=failure_to_exc_info(_failure),
             extra={'spider': spider}
         )

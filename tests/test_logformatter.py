@@ -2,6 +2,7 @@ import unittest
 
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TwistedTestCase
 import six
 
@@ -72,6 +73,19 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         self.assertEqual(logline, u"Error processing {'key': 'value'}")
+
+    def test_spider_error(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com", headers={'Referer': 'http://example.org'})
+        response = Response("http://www.example.com", request=request)
+        logkws = self.formatter.spider_error(failure, request, response, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(
+            logline,
+            "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
+        )
 
     def test_scraped(self):
         item = CustomItem()
