@@ -63,13 +63,13 @@ class LogFormatterTestCase(unittest.TestCase):
         assert all(isinstance(x, six.text_type) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
 
-    def test_error(self):
+    def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
         # 'exc_info' argument to the logging function
         item = {'key': 'value'}
         exception = Exception()
         response = Response("http://www.example.com")
-        logkws = self.formatter.error(item, exception, response, self.spider)
+        logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         self.assertEqual(logline, u"'Error processing {'key': 'value'}'")
 

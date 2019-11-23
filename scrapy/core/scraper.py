@@ -231,7 +231,7 @@ class Scraper(object):
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
             else:
-                logkws = self.logformatter.error(item, ex, response, spider)
+                logkws = self.logformatter.item_error(item, ex, response, spider)
                 logger.log(*logformatter_adapter(logkws), extra={'spider': spider},
                            exc_info=failure_to_exc_info(output))
                 return self.signals.send_catch_log_deferred(
