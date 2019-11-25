@@ -11,8 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import inspect
 import sys
-from os import path
+from os import environ, path
+from os.path import relpath, dirname
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -33,7 +35,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.linkcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -283,7 +285,67 @@ intersphinx_mapping = {
 }
 
 
-# Options for sphinx-hoverxref options
-# ------------------------------------
+# Options for the sphinx-hoverxref extension
+# ------------------------------------------
 
 hoverxref_auto_ref = True
+
+
+# Options for the linkcode extension
+# ----------------------------------
+
+# Based on numpy’s:
+# https://github.com/numpy/numpy/blob/dedc4178fc334329de9872ab42df870d2ac7a270/doc/source/conf.py#L313
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    # strip decorators, which would resolve to the source of the decorator
+    # possibly an upstream bug in getsourcefile, bpo-1764286
+    try:
+        unwrap = inspect.unwrap
+    except AttributeError:
+        pass
+    else:
+        obj = unwrap(obj)
+
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+
+    if lineno:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+    else:
+        linespec = ""
+
+    fn = relpath(fn, start=dirname(scrapy.__file__))
+
+    rtd_version = environ.get('READTHEDOCS_VERSION')
+    is_a_local_build = not rtd_version
+    if is_a_local_build or rtd_version == 'master':
+        return "https://github.com/scrapy/scrapy/blob/master/scrapy/%s%s" % (
+           fn, linespec)
+    return "https://github.com/scrapy/scrapy/blob/%s/scrapy/%s%s" % (
+        scrapy.__version__, fn, linespec)
