@@ -8,20 +8,19 @@ Frequently Asked Questions
 How does Scrapy compare to BeautifulSoup or lxml?
 -------------------------------------------------
 
-`BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is
-an application framework for writing web spiders that crawl web sites and
-extract data from them.
+:doc:`BeautifulSoup <bs4:index>` and `lxml`_ are libraries for parsing HTML and
+XML. Scrapy is an application framework for writing web spiders that crawl web
+sites and extract data from them.
 
 Scrapy provides a built-in mechanism for extracting data (called
-:ref:`selectors <topics-selectors>`) but you can easily use `BeautifulSoup`_
-(or `lxml`_) instead, if you feel more comfortable working with them. After
-all, they're just parsing libraries which can be imported and used from any
-Python code.
+:ref:`selectors <topics-selectors>`) but you can easily use BeautifulSoup (or
+`lxml`_) instead, if you feel more comfortable working with them. After all,
+they're just parsing libraries which can be imported and used from any Python
+code.
 
-In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
+In other words, comparing BeautifulSoup (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
-.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _jinja2: http://jinja.pocoo.org/
 .. _Django: https://www.djangoproject.com/
@@ -30,8 +29,8 @@ Can I use Scrapy with BeautifulSoup?
 ------------------------------------
 
 Yes, you can.
-As mentioned :ref:`above <faq-scrapy-bs-cmp>`, `BeautifulSoup`_ can be used
-for parsing HTML responses in Scrapy callbacks.
+As mentioned :ref:`above <faq-scrapy-bs-cmp>`, :doc:`BeautifulSoup <bs4:index>`
+can be used for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
@@ -59,10 +58,9 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 
 .. note::
 
-    ``BeautifulSoup`` supports several HTML/XML parsers.
-    See `BeautifulSoup's official documentation`_ on which ones are available.
+    ``BeautifulSoup`` supports :ref:`several HTML/XML parsers
+    <bs4:parser-installation>`.
 
-.. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
 .. _faq-python-versions:
 

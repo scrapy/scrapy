@@ -31,8 +31,9 @@ For spiders, the scraping cycle goes through something like this:
    response handled by the specified callback.
 
 3. In callback functions, you parse the page contents, typically using
-   :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
-   mechanism you prefer) and generate items with the parsed data.
+   :ref:`topics-selectors` (but you can also use
+   :doc:`BeautifulSoup <bs4:index>`, lxml or whatever mechanism you prefer) and
+   generate items with the parsed data.
 
 4. Finally, the items returned from the spider will be typically persisted to a
    database (in some :ref:`Item Pipeline <topics-item-pipeline>`) or written to

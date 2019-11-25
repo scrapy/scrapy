@@ -8,10 +8,10 @@ When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
 achieve this, such as:
 
- * `BeautifulSoup`_ is a very popular web scraping library among Python
-   programmers which constructs a Python object based on the structure of the
-   HTML code and also deals with bad markup reasonably well, but it has one
-   drawback: it's slow.
+ * :doc:`BeautifulSoup <bs4:index>` is a very popular web scraping library
+   among Python programmers which constructs a Python object based on the
+   structure of the HTML code and also deals with bad markup reasonably well,
+   but it has one drawback: it's slow.
 
  * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
    API based on `ElementTree`_. (lxml is not part of the Python standard
@@ -34,7 +34,6 @@ defines selectors to associate those styles with specific HTML elements.
     easy API on top of lxml API. It means Scrapy selectors are very similar
     in speed and parsing accuracy to lxml.
 
-.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
 .. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/

@@ -1449,7 +1449,8 @@ Documentation
 - Add information and example on errbacks (:issue:`1995`)
 - Use "url" variable in downloader middleware example (:issue:`2015`)
 - Grammar fixes (:issue:`2054`, :issue:`2120`)
-- New FAQ entry on using BeautifulSoup in spider callbacks (:issue:`2048`)
+- New FAQ entry on using :doc:`BeautifulSoup <bs4:index>` in spider callbacks
+  (:issue:`2048`)
 - Add notes about scrapy not working on Windows with Python 3 (:issue:`2060`)
 - Encourage complete titles in pull requests (:issue:`2026`)
 

@@ -275,6 +275,8 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'bs4': ('https://www.crummy.com/software/BeautifulSoup/bs4/doc', None),
+    'coverage': ('https://coverage.readthedocs.io/en/stable', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
