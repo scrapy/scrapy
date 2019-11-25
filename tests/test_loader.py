@@ -992,5 +992,53 @@ class SelectJmesTestCase(unittest.TestCase):
             )
 
 
+# Functions as processors
+
+def function_processor_strip(iterable):
+    return [x.strip() for x in iterable]
+
+
+def function_processor_upper(iterable):
+    return [x.upper() for x in iterable]
+
+
+class FunctionProcessorItem(Item):
+    foo = Field(
+        input_processor=function_processor_strip,
+        output_processor=function_processor_upper,
+    )
+
+
+class FunctionProcessorItemLoader(ItemLoader):
+    default_item_class = FunctionProcessorItem
+
+
+class FunctionProcessorDictLoader(ItemLoader):
+    default_item_class = dict
+    foo_in = function_processor_strip
+    foo_out = function_processor_upper
+
+
+class FunctionProcessorTestCase(unittest.TestCase):
+
+    def test_processor_defined_in_item(self):
+        lo = FunctionProcessorItemLoader()
+        lo.add_value('foo', '  bar  ')
+        lo.add_value('foo', ['  asdf  ', '  qwerty  '])
+        self.assertEqual(
+            dict(lo.load_item()),
+            {'foo': ['BAR', 'ASDF', 'QWERTY']}
+        )
+
+    def test_processor_defined_in_item_loader(self):
+        lo = FunctionProcessorDictLoader()
+        lo.add_value('foo', '  bar  ')
+        lo.add_value('foo', ['  asdf  ', '  qwerty  '])
+        self.assertEqual(
+            dict(lo.load_item()),
+            {'foo': ['BAR', 'ASDF', 'QWERTY']}
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
