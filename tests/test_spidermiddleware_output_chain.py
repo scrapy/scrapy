@@ -6,7 +6,6 @@ from twisted.internet import defer
 from scrapy import Spider, Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import MockServerSpider
 
 
 class LogExceptionMiddleware:

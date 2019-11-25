@@ -2,7 +2,6 @@ from six.moves.urllib.parse import urlparse
 from unittest import TestCase
 import warnings
 
-from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider

@@ -4,8 +4,7 @@ Item Loader
 See documentation in docs/topics/loaders.rst
 """
 from collections import defaultdict
-
-import six
+from contextlib import suppress
 
 from scrapy.item import Item
 from scrapy.loader.common import wrap_loader_context
@@ -13,6 +12,17 @@ from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
+
+
+def unbound_method(method):
+    """
+    Allow to use single-argument functions as input or output processors
+    (no need to define an unused first 'self' argument)
+    """
+    with suppress(AttributeError):
+        if '.' not in method.__qualname__:
+            return method.__func__
+    return method
 
 
 class ItemLoader(object):
@@ -72,7 +82,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._add_value(k, v)
         else:
             self._add_value(field_name, value)
@@ -82,7 +92,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._replace_value(k, v)
         else:
             self._replace_value(field_name, value)
@@ -142,14 +152,14 @@ class ItemLoader(object):
         if not proc:
             proc = self._get_item_field_attr(field_name, 'input_processor',
                                              self.default_input_processor)
-        return proc
+        return unbound_method(proc)
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
             proc = self._get_item_field_attr(field_name, 'output_processor',
                                              self.default_output_processor)
-        return proc
+        return unbound_method(proc)
 
     def _process_input_value(self, field_name, value):
         proc = self.get_input_processor(field_name)

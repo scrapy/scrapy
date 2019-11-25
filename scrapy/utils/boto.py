@@ -7,7 +7,7 @@ from scrapy.exceptions import NotConfigured
 
 def is_botocore():
     try:
-        import botocore
+        import botocore  # noqa: F401
         return True
     except ImportError:
         raise NotConfigured('missing botocore library')
