@@ -42,7 +42,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = b'\n'
 
     def connectionMade(self):
-        self.headers = Headers() # bucket for response headers
+        self.headers = Headers()  # bucket for response headers
 
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
