@@ -687,16 +687,6 @@ class HttpProxyTestCase(unittest.TestCase):
         request = Request('http://example.com', meta={'proxy': http_proxy})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'https://example.com')
-
-        http_proxy = '%s?noconnect' % self.getURL('')
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        return self.download_request(request, Spider('foo')).addCallback(_test)
-
     def test_download_without_proxy(self):
         def _test(response):
             self.assertEqual(response.status, 200)

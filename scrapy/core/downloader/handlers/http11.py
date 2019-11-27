@@ -16,6 +16,7 @@ from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.client import Agent, ResponseDone, HTTPConnectionPool, ResponseFailed, URI
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
@@ -285,6 +286,12 @@ class ScrapyAgent(object):
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
+            if omitConnectTunnel:
+                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
+                              "If you use Crawlera, it doesn't require this mode anymore, "
+                              "so you should update scrapy-crawlera to 1.3.0+ "
+                              "and remove '?noconnect' from the Crawlera URL.",
+                              ScrapyDeprecationWarning)
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
