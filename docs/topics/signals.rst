@@ -73,7 +73,7 @@ engine_started
 
     Sent when the Scrapy engine has started crawling.
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
 .. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
     depending on how the spider was started. So **don't** rely on this signal
@@ -88,7 +88,7 @@ engine_stopped
     Sent when the Scrapy engine is stopped (for example, when a crawling
     process has finished).
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
 item_scraped
 ------------
@@ -99,7 +99,7 @@ item_scraped
     Sent when an item has been scraped, after it has passed all the
     :ref:`topics-item-pipeline` stages (without being dropped).
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
     :param item: the item scraped
     :type item: dict or :class:`~scrapy.item.Item` object
@@ -119,7 +119,7 @@ item_dropped
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: dict or :class:`~scrapy.item.Item` object
@@ -144,7 +144,7 @@ item_error
     Sent when a :ref:`topics-item-pipeline` generates an error (ie. raises
     an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: dict or :class:`~scrapy.item.Item` object
@@ -158,6 +158,23 @@ item_error
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
 
+bytes_received
+--------------
+
+.. signal:: bytes_received
+.. function:: bytes_received(data, request)
+
+    Sent by the HTTP 1.1 download handler when a group of bytes is
+    received for a specific request.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param data: the data received by the download handler
+    :type spider: :class:`bytes` object
+
+    :param request: the request that generated the response
+    :type request: :class:`~scrapy.http.Request` object
+
 spider_closed
 -------------
 
@@ -167,7 +184,7 @@ spider_closed
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -191,7 +208,7 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
-    This signal supports returning deferreds from their handlers.
+    This signal supports returning deferreds from its handlers.
 
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -215,7 +232,7 @@ spider_idle
     You may raise a :exc:`~scrapy.exceptions.DontCloseSpider` exception to
     prevent the spider from being closed.
 
-    This signal does not support returning deferreds from their handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -234,7 +251,7 @@ spider_error
 
     Sent when a spider callback generates an error (ie. raises an exception).
 
-    This signal does not support returning deferreds from their handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
@@ -254,7 +271,7 @@ request_scheduled
     Sent when the engine schedules a :class:`~scrapy.http.Request`, to be
     downloaded later.
 
-    The signal does not support returning deferreds from their handlers.
+    The signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.http.Request` object
@@ -271,7 +288,7 @@ request_dropped
     Sent when a :class:`~scrapy.http.Request`, scheduled by the engine to be
     downloaded later, is rejected by the scheduler.
 
-    The signal does not support returning deferreds from their handlers.
+    The signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.http.Request` object
@@ -287,7 +304,7 @@ request_reached_downloader
 
     Sent when a :class:`~scrapy.http.Request` reached downloader.
 
-    The signal does not support returning deferreds from their handlers.
+    The signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached downloader
     :type request: :class:`~scrapy.http.Request` object
@@ -304,7 +321,7 @@ response_received
     Sent when the engine receives a new :class:`~scrapy.http.Response` from the
     downloader.
 
-    This signal does not support returning deferreds from their handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param response: the response received
     :type response: :class:`~scrapy.http.Response` object
@@ -323,7 +340,7 @@ response_downloaded
 
     Sent by the downloader right after a ``HTTPResponse`` is downloaded.
 
-    This signal does not support returning deferreds from their handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param response: the response downloaded
     :type response: :class:`~scrapy.http.Response` object
