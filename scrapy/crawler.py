@@ -46,7 +46,7 @@ class Crawler(object):
         logging.root.addHandler(handler)
 
         d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)s",
+        logger.info("Overridden settings:\n%(settings)s",
                     {'settings': pprint.pformat(d)})
 
         if get_scrapy_root_handler() is not None:
