@@ -13,22 +13,24 @@ module with the ``runserver`` argument::
 import os
 import re
 import sys
+from collections import defaultdict
 from urllib.parse import urlparse
 
 from twisted.internet import reactor, defer
-from twisted.web import server, static, util
 from twisted.trial import unittest
+from twisted.web import server, static, util
+from pydispatch import dispatcher
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.test import get_crawler
-from pydispatch import dispatcher
-from tests import tests_datadir
-from scrapy.spiders import Spider
+from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
-from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.test import get_crawler
+
+from tests import tests_datadir, get_testdata
 
 
 class TestItem(Item):
@@ -107,6 +109,7 @@ class CrawlerRun(object):
         self.reqreached = []
         self.itemerror = []
         self.itemresp = []
+        self.bytes = defaultdict(lambda: b"")
         self.signals_caught = {}
         self.spider_class = spider_class
 
@@ -124,6 +127,7 @@ class CrawlerRun(object):
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.item_error, signals.item_error)
+        self.crawler.signals.connect(self.bytes_received, signals.bytes_received)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
@@ -154,6 +158,9 @@ class CrawlerRun(object):
 
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
+
+    def bytes_received(self, data, request):
+        self.bytes[request] += data
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
@@ -187,6 +194,7 @@ class EngineTest(unittest.TestCase):
             self._assert_downloaded_responses()
             self._assert_scraped_items()
             self._assert_signals_caught()
+            self._assert_bytes_received()
 
     @defer.inlineCallbacks
     def test_crawler_dupefilter(self):
@@ -262,6 +270,39 @@ class EngineTest(unittest.TestCase):
             if 'item2.html' in item['url']:
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
+
+    def _assert_bytes_received(self):
+        self.assertEqual(8, len(self.run.bytes))
+        for request, data in self.run.bytes.items():
+            if self.run.getpath(request.url) == "/":
+                self.assertEqual(data, get_testdata("test_site", "index.html"))
+            elif self.run.getpath(request.url) == "/item1.html":
+                self.assertEqual(data, get_testdata("test_site", "item1.html"))
+            elif self.run.getpath(request.url) == "/item2.html":
+                self.assertEqual(data, get_testdata("test_site", "item2.html"))
+            elif self.run.getpath(request.url) == "/redirected":
+                self.assertEqual(data, b"Redirected here")
+            elif self.run.getpath(request.url) == '/redirect':
+                self.assertEqual(data,
+                    b"\n<html>\n"
+                    b"    <head>\n"
+                    b"        <meta http-equiv=\"refresh\" content=\"0;URL=/redirected\">\n"
+                    b"    </head>\n"
+                    b"    <body bgcolor=\"#FFFFFF\" text=\"#000000\">\n"
+                    b"    <a href=\"/redirected\">click here</a>\n"
+                    b"    </body>\n"
+                    b"</html>\n"
+                )
+            elif self.run.getpath(request.url) == "/tem999.html":
+                self.assertEqual(data,
+                    b"\n<html>\n"
+                    b"  <head><title>404 - No Such Resource</title></head>\n"
+                    b"  <body>\n"
+                    b"    <h1>No Such Resource</h1>\n"
+                    b"    <p>File not found.</p>\n"
+                    b"  </body>\n"
+                    b"</html>\n"
+                )
 
     def _assert_signals_caught(self):
         assert signals.engine_started in self.run.signals_caught
