@@ -107,7 +107,7 @@ class CrawlerRun(object):
         self.reqreached = []
         self.itemerror = []
         self.itemresp = []
-        self.signals_catched = {}
+        self.signals_caught = {}
         self.spider_class = spider_class
 
     def run(self):
@@ -172,7 +172,7 @@ class CrawlerRun(object):
         signalargs = kwargs.copy()
         sig = signalargs.pop('signal')
         signalargs.pop('sender', None)
-        self.signals_catched[sig] = signalargs
+        self.signals_caught[sig] = signalargs
 
 
 class EngineTest(unittest.TestCase):
@@ -186,7 +186,7 @@ class EngineTest(unittest.TestCase):
             self._assert_scheduled_requests(urls_to_visit=8)
             self._assert_downloaded_responses()
             self._assert_scraped_items()
-            self._assert_signals_catched()
+            self._assert_signals_caught()
 
     @defer.inlineCallbacks
     def test_crawler_dupefilter(self):
@@ -263,19 +263,19 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
 
-    def _assert_signals_catched(self):
-        assert signals.engine_started in self.run.signals_catched
-        assert signals.engine_stopped in self.run.signals_catched
-        assert signals.spider_opened in self.run.signals_catched
-        assert signals.spider_idle in self.run.signals_catched
-        assert signals.spider_closed in self.run.signals_catched
+    def _assert_signals_caught(self):
+        assert signals.engine_started in self.run.signals_caught
+        assert signals.engine_stopped in self.run.signals_caught
+        assert signals.spider_opened in self.run.signals_caught
+        assert signals.spider_idle in self.run.signals_caught
+        assert signals.spider_closed in self.run.signals_caught
 
         self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_catched[signals.spider_opened])
+                         self.run.signals_caught[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_catched[signals.spider_idle])
+                         self.run.signals_caught[signals.spider_idle])
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
-                         self.run.signals_catched[signals.spider_closed])
+                         self.run.signals_caught[signals.spider_closed])
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
