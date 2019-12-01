@@ -144,10 +144,10 @@ def _get_handler(settings):
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-    logger.info("Versions: %(versions)s",
-                {'versions': ", ".join("%s %s" % (name, version)
+    logger.info("Versions:\n%(versions)s",
+                {'versions': pprint.pformat({name: version
                     for name, version in scrapy_components_versions()
-                    if name != "Scrapy")})
+                    if name != "Scrapy"})})
 
 
 class StreamLogger(object):
