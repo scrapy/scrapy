@@ -30,4 +30,3 @@ class Command(ScrapyCommand):
                 print(patt % (name, version))
         else:
             print("Scrapy %s" % scrapy.__version__)
-

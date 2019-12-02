@@ -6,7 +6,7 @@ For new code, always import from w3lib.form instead of this module
 import warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from w3lib.form import *
+from w3lib.form import *  # noqa: F401
 
 
 warnings.warn("Module `scrapy.utils.multipart` is deprecated. "

@@ -68,6 +68,8 @@ class AjaxCrawlMiddleware(object):
 
 # XXX: move it to w3lib?
 _ajax_crawlable_re = re.compile(six.u(r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'))
+
+
 def _has_ajaxcrawlable_meta(text):
     """
     >>> _has_ajaxcrawlable_meta('<html><head><meta name="fragment"  content="!"/></head><body></body></html>')

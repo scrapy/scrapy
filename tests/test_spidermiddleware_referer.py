@@ -2,7 +2,6 @@ from six.moves.urllib.parse import urlparse
 from unittest import TestCase
 import warnings
 
-from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -349,6 +348,7 @@ class TestSettingsCustomPolicy(TestRefererMiddleware):
 
     ]
 
+
 # --- Tests using Request meta dict to set policy
 class TestRequestMetaDefault(MixinDefault, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_SCRAPY_DEFAULT}
@@ -518,13 +518,16 @@ class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_UNSAFE_URL.upper()}
 
+
 class TestPolicyHeaderPredecence002(MixinNoReferrer, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER.swapcase()}
 
+
 class TestPolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
+
 
 class TestPolicyHeaderPredecence004(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
     """

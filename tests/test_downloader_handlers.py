@@ -1,12 +1,8 @@
 import os
-import six
 import shutil
 import tempfile
+from unittest import mock
 import contextlib
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
@@ -546,7 +542,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
     def setUp(self):
         try:
-            from service_identity.exceptions import CertificateError
+            from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("cryptography lib is too old")
         self.tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
@@ -618,7 +614,7 @@ class Http11MockServerTestCase(unittest.TestCase):
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=Request(url=self.mockserver.url('')))
         failure = crawler.spider.meta.get('failure')
-        self.assertTrue(failure == None)
+        self.assertTrue(failure is None)
         reason = crawler.spider.meta['close_reason']
         self.assertTrue(reason, 'finished')
 
@@ -633,18 +629,16 @@ class Http11MockServerTestCase(unittest.TestCase):
         # download_maxsize < 100, hence the CancelledError
         self.assertIsInstance(failure.value, defer.CancelledError)
 
-        if six.PY2:
-            request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
-            request = request.replace(url=self.mockserver.url('/xpayload'))
-            yield crawler.crawl(seed=request)
-            # download_maxsize = 50 is enough for the gzipped response
-            failure = crawler.spider.meta.get('failure')
-            self.assertTrue(failure == None)
-            reason = crawler.spider.meta['close_reason']
-            self.assertTrue(reason, 'finished')
-        else:
-            # See issue https://twistedmatrix.com/trac/ticket/8175
-            raise unittest.SkipTest("xpayload only enabled for PY2")
+        # See issue https://twistedmatrix.com/trac/ticket/8175
+        raise unittest.SkipTest("xpayload fails on PY3")
+        request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
+        request = request.replace(url=self.mockserver.url('/xpayload'))
+        yield crawler.crawl(seed=request)
+        # download_maxsize = 50 is enough for the gzipped response
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure is None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
 
 
 class UriResource(resource.Resource):
@@ -781,7 +775,7 @@ class S3TestCase(unittest.TestCase):
     @contextlib.contextmanager
     def _mocked_date(self, date):
         try:
-            import botocore.auth
+            import botocore.auth  # noqa: F401
         except ImportError:
             yield
         else:
@@ -846,8 +840,10 @@ class S3TestCase(unittest.TestCase):
                 b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
-        try: import botocore
-        except ImportError: pass
+        try:
+            import botocore  # noqa: F401
+        except ImportError:
+            pass
         else:
             raise unittest.SkipTest(
                 'botocore does not support overriding date with x-amz-date')

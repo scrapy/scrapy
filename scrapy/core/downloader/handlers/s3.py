@@ -21,7 +21,7 @@ def _get_boto_connection():
             return http_request.headers
 
     try:
-        import boto.auth
+        import boto.auth  # noqa: F401
     except ImportError:
         _S3Connection = _v19_S3Connection
     else:

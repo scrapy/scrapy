@@ -72,8 +72,6 @@ scrapy.Spider
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
 
-       .. note:: In Python 2 this must be ASCII only.
-
    .. attribute:: allowed_domains
 
        An optional list of strings containing domains that this spider is

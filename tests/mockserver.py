@@ -1,9 +1,11 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
+import json
+import os
+import random
+import sys
 from subprocess import Popen, PIPE
 
 from OpenSSL import SSL
+from six.moves.urllib.parse import urlencode
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -213,8 +215,7 @@ class MockServer():
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
-        self.proc.wait()
-        time.sleep(0.2)
+        self.proc.communicate()
 
     def url(self, path, is_secure=False):
         host = self.http_address.replace('0.0.0.0', '127.0.0.1')

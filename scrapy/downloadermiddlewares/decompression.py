@@ -4,17 +4,13 @@ and extract the potentially compressed responses that may arrive.
 
 import bz2
 import gzip
+from io import BytesIO
 import zipfile
 import tarfile
 import logging
 from tempfile import mktemp
 
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 from scrapy.responsetypes import responsetypes
 

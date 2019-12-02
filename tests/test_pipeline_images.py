@@ -1,7 +1,6 @@
 import io
 import hashlib
 import random
-import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
 

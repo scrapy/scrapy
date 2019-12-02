@@ -4,8 +4,8 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-import collections
 from abc import ABCMeta
+from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
 from warnings import warn
@@ -14,12 +14,6 @@ import six
 
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
-
-
-if six.PY2:
-    MutableMapping = collections.MutableMapping
-else:
-    MutableMapping = collections.abc.MutableMapping
 
 
 class BaseItem(object_ref):

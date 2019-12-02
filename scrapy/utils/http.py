@@ -8,7 +8,7 @@ import warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import deprecated
-from w3lib.http import *
+from w3lib.http import *  # noqa: F401
 
 
 warnings.warn("Module `scrapy.utils.http` is deprecated, "
@@ -34,4 +34,3 @@ def decode_chunked_transfer(chunked_body):
         body += t[:size]
         t = t[size+2:]
     return body
-

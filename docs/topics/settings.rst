@@ -188,7 +188,6 @@ AWS_ENDPOINT_URL
 Default: ``None``
 
 Endpoint URL used for S3-like storage, for example Minio or s3.scality.
-Only supported with ``botocore`` library.
 
 .. setting:: AWS_USE_SSL
 
@@ -199,7 +198,6 @@ Default: ``None``
 
 Use this option if you want to disable SSL connection for communication with
 S3 or S3-like storage. By default SSL will be used.
-Only supported with ``botocore`` library.
 
 .. setting:: AWS_VERIFY
 
@@ -209,7 +207,7 @@ AWS_VERIFY
 Default: ``None``
 
 Verify SSL connection between Scrapy and S3 or S3-like storage. By default
-SSL verification will occur. Only supported with ``botocore`` library.
+SSL verification will occur.
 
 .. setting:: AWS_REGION_NAME
 
@@ -219,7 +217,6 @@ AWS_REGION_NAME
 Default: ``None``
 
 The name of the region associated with the AWS client.
-Only supported with ``botocore`` library.
 
 .. setting:: BOT_NAME
 
@@ -229,8 +226,7 @@ BOT_NAME
 Default: ``'scrapybot'``
 
 The name of the bot implemented by this Scrapy project (also known as the
-project name). This will be used to construct the User-Agent by default, and
-also for logging.
+project name). This name will be used for the logging too.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
@@ -796,6 +792,7 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
 FTP_PASSWORD
@@ -814,6 +811,7 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://tools.ietf.org/html/rfc1635
 
+.. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
 FTP_USER
