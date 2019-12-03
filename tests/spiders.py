@@ -190,7 +190,7 @@ class DuplicateStartRequestsSpider(MockServerSpider):
 class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
     name = 'crawl_spider_with_errback'
     custom_settings = {
-        'RETRY_HTTP_CODES' : [],  # no need to retry
+        'RETRY_HTTP_CODES': [],  # no need to retry
     }
     rules = (
         Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),
