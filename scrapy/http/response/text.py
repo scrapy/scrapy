@@ -7,10 +7,10 @@ See documentation in docs/topics/request-response.rst
 
 from contextlib import suppress
 from typing import Generator
+from urllib.parse import urljoin
 
 import parsel
 import six
-from six.moves.urllib.parse import urljoin
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
@@ -183,22 +183,25 @@ class TextResponse(Response):
         In addition, ``css`` and ``xpath`` arguments are accepted to perform the link extraction
         within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` is accepted).
 
-        Note that when using the ``css`` or ``xpath`` parameters, this method will not produce
-        requests for selectors from which links cannot be obtained (for instance, anchor tags
-        without an ``href`` attribute)
+        Note that when passing a ``SelectorList`` as argument for the ``urls`` parameter or
+        using the ``css`` or ``xpath`` parameters, this method will not produce requests for
+        selectors from which links cannot be obtained (for instance, anchor tags without an
+        ``href`` attribute)
         """
         arg_count = len(list(filter(None, (urls, css, xpath))))
         if arg_count != 1:
             raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
         if not urls:
             if css:
-                selector_list = self.css(css)
+                urls = self.css(css)
             if xpath:
-                selector_list = self.xpath(xpath)
+                urls = self.xpath(xpath)
+        if isinstance(urls, parsel.SelectorList):
+            selectors = urls
             urls = []
-            for selector in selector_list:
+            for sel in selectors:
                 with suppress(_InvalidSelector):
-                    urls.append(_url_from_selector(selector))
+                    urls.append(_url_from_selector(sel))
         return super(TextResponse, self).follow_all(
             urls=urls,
             callback=callback,

@@ -579,8 +579,10 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com/page/4/',
         ]
         response = self._links_response_no_href()
-        extracted = [r.url for r in response.follow_all(css='.pagination a')]
-        self.assertEqual(expected, extracted)
+        extracted1 = [r.url for r in response.follow_all(css='.pagination a')]
+        self.assertEqual(expected, extracted1)
+        extracted2 = [r.url for r in response.follow_all(response.css('.pagination a'))]
+        self.assertEqual(expected, extracted2)
 
     def test_follow_all_xpath(self):
         expected = [
@@ -598,8 +600,10 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com/page/4/',
         ]
         response = self._links_response_no_href()
-        extracted = [r.url for r in response.follow_all(xpath='//div[@id="pagination"]/a')]
-        self.assertEqual(expected, extracted)
+        extracted1 = [r.url for r in response.follow_all(xpath='//div[@id="pagination"]/a')]
+        self.assertEqual(expected, extracted1)
+        extracted2 = [r.url for r in response.follow_all(response.xpath('//div[@id="pagination"]/a'))]
+        self.assertEqual(expected, extracted2)
 
     def test_follow_all_too_many_arguments(self):
         response = self._links_response()
