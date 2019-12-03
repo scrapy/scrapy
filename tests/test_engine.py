@@ -283,7 +283,8 @@ class EngineTest(unittest.TestCase):
             elif self.run.getpath(request.url) == "/redirected":
                 self.assertEqual(data, b"Redirected here")
             elif self.run.getpath(request.url) == '/redirect':
-                self.assertEqual(data,
+                self.assertEqual(
+                    data,
                     b"\n<html>\n"
                     b"    <head>\n"
                     b"        <meta http-equiv=\"refresh\" content=\"0;URL=/redirected\">\n"
@@ -294,7 +295,8 @@ class EngineTest(unittest.TestCase):
                     b"</html>\n"
                 )
             elif self.run.getpath(request.url) == "/tem999.html":
-                self.assertEqual(data,
+                self.assertEqual(
+                    data,
                     b"\n<html>\n"
                     b"  <head><title>404 - No Such Resource</title></head>\n"
                     b"  <body>\n"
