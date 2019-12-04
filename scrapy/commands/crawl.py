@@ -54,8 +54,16 @@ class Command(ScrapyCommand):
             raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
         spname = args[0]
 
-        self.crawler_process.crawl(spname, **opts.spargs)
+        res = self.crawler_process.crawl(spname, **opts.spargs)
         self.crawler_process.start()
 
-        if self.crawler_process.bootstrap_failed:
+        if hasattr(res, 'result') and res.result is not None and issubclass(res.result.type, Exception):
             self.exitcode = 1
+        else:
+            self.crawler_process.start()
+
+            if self.crawler_process.bootstrap_failed or \
+                    (hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception):
+                self.exitcode = 1
+
+
