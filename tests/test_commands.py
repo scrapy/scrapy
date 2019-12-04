@@ -9,7 +9,6 @@ from tempfile import mkdtemp
 from contextlib import contextmanager
 from threading import Timer
 
-from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
@@ -179,7 +178,6 @@ class MiscCommandsTest(CommandTest):
         self.assertEqual(0, self.call('list'))
 
 
-@mark.usefixtures('reactor_pytest')
 class RunSpiderCommandTest(CommandTest):
 
     debug_log_spider = """
@@ -297,10 +295,13 @@ class BadSpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
-    def test_asyncio_supported(self):
-        if self.reactor_pytest == 'asyncio':
-            log = self.get_log(self.debug_log_spider)
-            self.assertIn("DEBUG: Asyncio support enabled", log)
+    def test_asyncio_support_true(self):
+        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_SUPPORT=True'])
+        self.assertIn("DEBUG: Asyncio support enabled", log)
+
+    def test_asyncio_support_false(self):
+        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_SUPPORT=False'])
+        self.assertNotIn("DEBUG: Asyncio support enabled", log)
 
 
 class BenchCommandTest(CommandTest):

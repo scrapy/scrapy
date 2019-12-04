@@ -9,8 +9,7 @@ from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.asyncio import is_asyncio_supported
-
+from scrapy.utils.asyncio import is_asyncio_reactor_installed
 
 
 def defer_fail(_failure):
@@ -127,12 +126,18 @@ def isfuture(o):
     return isinstance(o, asyncio.futures.Future)
 
 
-def deferred_from_coro(o):
+def deferred_from_coro(o, asyncio_enabled=False):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):
         return o
     if isfuture(o) or inspect.isawaitable(o):
-        if not is_asyncio_supported():
-            raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
-        return defer.Deferred.fromFuture(asyncio.ensure_future(o))
+        if not asyncio_enabled:
+            # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
+            # that use asyncio, e.g. "await asyncio.sleep(1)"
+            return defer.ensureDeferred(o)
+        else:
+            # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
+            if not is_asyncio_reactor_installed():
+                raise TypeError('Using coroutines requires installing AsyncioSelectorReactor')
+            return defer.Deferred.fromFuture(asyncio.ensure_future(o))
     return o

@@ -9,7 +9,6 @@ import pkg_resources
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.asyncio import install_asyncio_reactor
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
@@ -121,10 +120,6 @@ def execute(argv=None, settings=None):
             settings['EDITOR'] = editor
     check_deprecated_settings(settings)
 
-    # needs to be before _get_commands_dict() as that imports the command modules
-    # which may import twisted.internet.reactor
-    install_asyncio_reactor()
-
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
@@ -146,7 +141,8 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    # needs to be after install_asyncio_reactor() as it imports twisted.internet.reactor
+    # needs to be after cmd.process_options() as it imports twisted.internet.reactor
+    # while commands may want to install the asyncio reactor
     from scrapy.crawler import CrawlerProcess
     cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)

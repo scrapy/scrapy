@@ -14,7 +14,7 @@ def install_asyncio_reactor():
             pass
 
 
-def is_asyncio_supported():
+def is_asyncio_reactor_installed():
     try:
         import twisted.internet.reactor
         from twisted.internet import asyncioreactor

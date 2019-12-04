@@ -2,6 +2,7 @@ import sys
 import os
 from importlib import import_module
 
+from scrapy.utils.asyncio import install_asyncio_reactor
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -50,6 +51,8 @@ class Command(ScrapyCommand):
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
+        if self.settings.getbool('ASYNCIO_SUPPORT'):
+            install_asyncio_reactor()
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:

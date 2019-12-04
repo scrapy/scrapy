@@ -10,7 +10,7 @@ import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
-from scrapy.utils.asyncio import is_asyncio_supported
+from scrapy.utils.asyncio import is_asyncio_reactor_installed
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
@@ -209,7 +209,7 @@ class AsyncioSpider(scrapy.Spider):
     name = 'asyncio'
 
     def start_requests(self):
-        self.logger.info('Asyncio support: %s', is_asyncio_supported())
+        self.logger.info('Asyncio support: %s', is_asyncio_reactor_installed())
         return []
 
 
@@ -258,7 +258,25 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         self.assertEqual(runner.bootstrap_failed, True)
 
     @defer.inlineCallbacks
-    def test_asyncio_supported(self):
+    def test_crawler_process_asyncio_supported_true(self):
+        with LogCapture(level=logging.DEBUG) as log:
+            runner = CrawlerProcess(settings={'ASYNCIO_SUPPORT': True})
+            yield runner.crawl(NoRequestsSpider)
+            if self.reactor_pytest == 'asyncio':
+                self.assertIn("Asyncio support enabled", str(log))
+            else:
+                self.assertNotIn("Asyncio support enabled", str(log))
+                self.assertIn("ASYNCIO_SUPPORT is on but the Twisted asyncio reactor is not installed", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawler_process_asyncio_supported_false(self):
+        runner = CrawlerProcess(settings={'ASYNCIO_SUPPORT': False})
+        with LogCapture(level=logging.DEBUG) as log:
+            yield runner.crawl(NoRequestsSpider)
+            self.assertNotIn("Asyncio support enabled", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawler_runner_asyncio_supported(self):
         runner = CrawlerRunner()
         with LogCapture() as log:
             yield runner.crawl(AsyncioSpider)

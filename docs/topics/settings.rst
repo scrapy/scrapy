@@ -160,6 +160,31 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: ASYNCIO_SUPPORT
+
+ASYNCIO_SUPPORT
+---------------
+
+Default: ``False``
+
+Whether to support ``async def`` methods and callbacks which use code that
+requires an asyncio loop.
+
+If an ``async def`` coroutine doesn't require the asyncio loop, it will work
+even if this is set to ``False``. Coroutines that require the asyncio loop may
+silently fail to run or raise errors unless this is set to ``True``.
+
+When this option is set to ``True``, Scrapy will require
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
+install this reactor if no reactor is installed yet, such as when using the
+``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
+manually.
+
+The default value for this option is currently ``False`` to maintain backward
+compatibility and avoid possible problems caused by using a different Twisted
+reactor.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
