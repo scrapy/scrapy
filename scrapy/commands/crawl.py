@@ -66,4 +66,3 @@ class Command(ScrapyCommand):
                     (hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception):
                 self.exitcode = 1
 
-
