@@ -1,4 +1,5 @@
 import logging
+import pprint
 import signal
 import warnings
 
@@ -45,7 +46,8 @@ class Crawler(object):
         logging.root.addHandler(handler)
 
         d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)r", {'settings': d})
+        logger.info("Overridden settings:\n%(settings)s",
+                    {'settings': pprint.pformat(d)})
 
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings

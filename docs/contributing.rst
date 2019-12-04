@@ -243,13 +243,12 @@ the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
 
     tox -e py36 -- scrapy tests -n auto
 
-To see coverage report install `coverage`_ (``pip install coverage``) and run:
+To see coverage report install :doc:`coverage <coverage:index>`
+(``pip install coverage``) and run:
 
     ``coverage report``
 
 see output of ``coverage --help`` for more options like html or xml report.
-
-.. _coverage: https://pypi.python.org/pypi/coverage
 
 Writing tests
 -------------
