@@ -1,12 +1,9 @@
-from __future__ import print_function
 import time
 import tempfile
 import shutil
 import unittest
 import email.utils
 from contextlib import contextmanager
-import pytest
-import sys
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider
@@ -148,6 +145,7 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 class FilesystemStorageTest(DefaultStorageTest):
 
     storage_class = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
 
 class FilesystemStorageGzipTest(FilesystemStorageTest):
 

@@ -4,7 +4,7 @@ from six.moves.urllib.parse import urljoin
 from w3lib.html import remove_tags, replace_entities, replace_escape_chars, get_base_url
 
 from scrapy.link import Link
-from .sgml import SgmlLinkExtractor
+from scrapy.linkextractors.sgml import SgmlLinkExtractor
 
 linkre = re.compile(
         "<a\s.*?href=(\"[.#]+?\"|\'[.#]+?\'|[^\s]+?)(>|\s.*?>)(.*?)<[/ ]?a>",
