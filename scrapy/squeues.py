@@ -3,7 +3,7 @@ Scheduler queues
 """
 
 import marshal
-from six.moves import cPickle as pickle
+import pickle
 
 from queuelib import queue
 

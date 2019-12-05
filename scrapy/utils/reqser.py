@@ -1,8 +1,6 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
-import six
-
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
@@ -87,12 +85,12 @@ def _mangle_private_name(obj, func, name):
 def _find_method(obj, func):
     if obj:
         try:
-            func_self = six.get_method_self(func)
+            func_self = func.__self__
         except AttributeError:  # func has no __self__
             pass
         else:
             if func_self is obj:
-                name = six.get_method_function(func).__name__
+                name = func.__func__.__name__
                 if _is_private_method(name):
                     return _mangle_private_name(obj, func, name)
                 return name

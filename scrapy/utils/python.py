@@ -7,7 +7,6 @@ import re
 import inspect
 import weakref
 import errno
-import six
 from functools import partial, wraps
 from itertools import chain
 import sys
@@ -65,10 +64,10 @@ def is_listlike(x):
     True
     >>> is_listlike((x for x in range(3)))
     True
-    >>> is_listlike(six.moves.xrange(5))
+    >>> is_listlike(range(5))
     True
     """
-    return hasattr(x, "__iter__") and not isinstance(x, (six.text_type, bytes))
+    return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
 def unique(list_, key=lambda x: x):
@@ -87,9 +86,9 @@ def unique(list_, key=lambda x: x):
 def to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return text
-    if not isinstance(text, (bytes, six.text_type)):
+    if not isinstance(text, (bytes, str)):
         raise TypeError('to_unicode must receive a bytes or str '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -102,7 +101,7 @@ def to_bytes(text, encoding=None, errors='strict'):
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
-    if not isinstance(text, six.string_types):
+    if not isinstance(text, str):
         raise TypeError('to_bytes must receive a str or bytes '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -138,7 +137,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    if isinstance(pattern, six.string_types):
+    if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
@@ -162,7 +161,7 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 
@@ -301,10 +300,10 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     dict or a list of tuples, like any dict ``__init__`` method supports.
     """
     d = {}
-    for k, v in six.iteritems(dict(dct_or_tuples)):
-        k = k.encode(encoding) if isinstance(k, six.text_type) else k
+    for k, v in dict(dct_or_tuples).items():
+        k = k.encode(encoding) if isinstance(k, str) else k
         if not keys_only:
-            v = v.encode(encoding) if isinstance(v, six.text_type) else v
+            v = v.encode(encoding) if isinstance(v, str) else v
         d[k] = v
     return d
 
@@ -346,7 +345,7 @@ def without_none_values(iterable):
     value ``None`` have been removed.
     """
     try:
-        return {k: v for k, v in six.iteritems(iterable) if v is not None}
+        return {k: v for k, v in iterable.items() if v is not None}
     except AttributeError:
         return type(iterable)((v for v in iterable if v is not None))
 
