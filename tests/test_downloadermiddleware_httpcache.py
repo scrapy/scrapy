@@ -1,15 +1,11 @@
 import email.utils
 import os
 import shutil
-import sys
 import tempfile
 import time
 import unittest
 from contextlib import contextmanager
-from hashlib import md5
 from unittest.mock import patch
-
-import pytest
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spiders import Spider

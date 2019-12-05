@@ -17,7 +17,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.request import request_fingerprint
 
 
 logger = logging.getLogger(__name__)
