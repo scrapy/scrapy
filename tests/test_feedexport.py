@@ -625,6 +625,56 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExportedJsonLines(items, rows_jl)
 
     @defer.inlineCallbacks
+    def test_export_dicts_warning(self):
+        # When dicts are used, only keys from the first row are used as
+        # a header for CSV, and all fields are used for JSON Lines.
+        items = [
+            {'foo': 'bar', 'egg': 'spam'},
+            {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
+        ]
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_FORMAT': 'csv'}
+            yield self.exported_data(items, settings)
+        logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown for further items")
+
+    @defer.inlineCallbacks
+    def test_export_dicts_no_warning(self):
+        # When dicts are used, only keys from the first row are used as
+        # a header for CSV, and all fields are used for JSON Lines.
+        items = [
+            {'foo': 'bar', 'egg': 'spam'},
+            {'foo': 'bar', 'egg': 'spam'},
+        ]
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
+            yield self.exported_data(items, settings)
+        logs.assert_not_called()
+    
+    @defer.inlineCallbacks
+    def test_export_dicts_with_settings_warning(self):
+        # When dicts are used, only keys from the first row are used as
+        # a header for CSV, and all fields are used for JSON Lines.
+        items = [
+            {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
+            {'foo': 'bar', 'egg': 'spam'},
+        ]
+        with mock.patch('logging.Logger.warning') as logs:
+            settings = {'FEED_EXPORT_FIELDS': ['foo', 'egg']}
+            yield self.exported_data(items, settings)
+        logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown for further items")
+    
+    @defer.inlineCallbacks
+    def test_export_item_warning(self):
+        for item_cls in [self.MyItem, dict]:
+            items = [
+                item_cls({'foo': 'bar1', 'egg': 'spam1'})
+            ]
+            with mock.patch('logging.Logger.warning') as logs:
+                settings = {'FEED_FORMAT': 'csv'}
+                yield self.exported_data(items, settings)
+            logs.assert_called_with("Data loss detected when exporting items -- This message won't be shown for further items")
+
+    @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.

@@ -7,6 +7,7 @@ import io
 import pprint
 import marshal
 import six
+import logging
 from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
@@ -20,6 +21,9 @@ import warnings
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseItemExporter(object):
@@ -205,6 +209,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._show_data_loss_warning = False
+        self._data_loss_already_warned = False
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._join_if_needed)
@@ -223,9 +229,16 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='',
-                                             include_empty=True)
-        values = list(self._build_row(x for _, x in fields))
+        serialized_fields = self._get_serialized_fields(item, default_value='', include_empty=True)
+        fields = self._get_fields_from_item(item)
+        if not self._data_loss_already_warned:
+            if self.fields_to_export is None:
+                logger.warning("Data loss detected when exporting items -- This message won't be shown for further items")
+                self._data_loss_already_warned = True
+            elif set(fields) != set(self.fields_to_export):
+                logger.info("Data loss detected when exporting items -- This message won't be shown for further items")
+                self._data_loss_already_warned = True
+        values = list(self._build_row(x for _, x in serialized_fields))
         self.csv_writer.writerow(values)
 
     def _build_row(self, values):
@@ -237,15 +250,27 @@ class CsvItemExporter(BaseItemExporter):
 
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
+            fields = self._get_fields_from_item(item)
             if not self.fields_to_export:
-                if isinstance(item, dict):
-                    # for dicts try using fields of the first item
-                    self.fields_to_export = list(item.keys())
-                else:
-                    # use fields declared in Item
-                    self.fields_to_export = list(item.fields.keys())
+                self._show_data_loss_warning = True
+                self.fields_to_export = fields
+            elif not self._data_loss_already_warned:
+                if set(fields) != set(self.fields_to_export):
+                    self._show_data_loss_warning = True
+            if self._show_data_loss_warning and not self._data_loss_already_warned:
+                logger.warning("Data loss detected when exporting items -- This message won't be shown for further items")
+                self._data_loss_already_warned = True
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
+
+    def _get_fields_from_item(self, item):
+        if isinstance(item, dict):
+            # for dicts try using fields of the first item
+            fields = list(item.keys())
+        else:
+            # use fields declared in Item
+            fields = list(item.fields.keys())
+        return fields
 
 
 class PickleItemExporter(BaseItemExporter):
