@@ -55,7 +55,7 @@ class Command(ScrapyCommand):
         spname = args[0]
 
         res = self.crawler_process.crawl(spname, **opts.spargs)
-        
+
         if hasattr(res, 'result') and res.result is not None and issubclass(res.result.type, Exception):
             self.exitcode = 1
         else:
@@ -64,4 +64,3 @@ class Command(ScrapyCommand):
             if self.crawler_process.bootstrap_failed or \
                     (hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception):
                 self.exitcode = 1
-
