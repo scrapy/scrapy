@@ -4,7 +4,7 @@ from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
 
-from . import Contract
+from scrapy.contracts import Contract
 
 
 # contracts
