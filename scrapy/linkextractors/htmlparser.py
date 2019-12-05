@@ -2,9 +2,8 @@
 HTMLParser-based link extractor
 """
 import warnings
-import six
-from six.moves.html_parser import HTMLParser
-from six.moves.urllib.parse import urljoin
+from html.parser import HTMLParser
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 from w3lib.html import strip_html5_whitespace
@@ -42,7 +41,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         ret = []
         base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in links:
-            if isinstance(link.url, six.text_type):
+            if isinstance(link.url, str):
                 link.url = link.url.encode(response_encoding)
             try:
                 link.url = urljoin(base_url, link.url)

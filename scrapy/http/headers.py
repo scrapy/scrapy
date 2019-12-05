@@ -1,4 +1,3 @@
-import six
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.python import to_unicode
@@ -19,7 +18,7 @@ class Headers(CaselessDict):
         """Normalize values to bytes"""
         if value is None:
             value = []
-        elif isinstance(value, (six.text_type, bytes)):
+        elif isinstance(value, (str, bytes)):
             value = [value]
         elif not hasattr(value, '__iter__'):
             value = [value]
@@ -29,10 +28,10 @@ class Headers(CaselessDict):
     def _tobytes(self, x):
         if isinstance(x, bytes):
             return x
-        elif isinstance(x, six.text_type):
+        elif isinstance(x, str):
             return x.encode(self.encoding)
         elif isinstance(x, int):
-            return six.text_type(x).encode(self.encoding)
+            return str(x).encode(self.encoding)
         else:
             raise TypeError('Unsupported value type: {}'.format(type(x)))
 
@@ -68,9 +67,6 @@ class Headers(CaselessDict):
         self[key] = lst
 
     def items(self):
-        return list(self.iteritems())
-
-    def iteritems(self):
         return ((k, self.getlist(k)) for k in self.keys())
 
     def values(self):

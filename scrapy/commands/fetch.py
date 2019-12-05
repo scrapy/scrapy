@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 from w3lib.url import is_url
 
@@ -7,6 +6,7 @@ from scrapy.http import Request
 from scrapy.exceptions import UsageError
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+
 
 class Command(ScrapyCommand):
 
