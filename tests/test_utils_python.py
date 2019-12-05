@@ -1,16 +1,16 @@
-import gc
 import functools
+import gc
 import operator
+import platform
 import unittest
 from itertools import count
-import platform
-import six
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, get_func_args, to_bytes, to_unicode,
     without_none_values, MutableChain)
+
 
 __doctests__ = ['scrapy.utils.python']
 
@@ -205,12 +205,12 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         if platform.python_implementation() == 'CPython':
             # TODO: how do we fix this to return the actual argument names?
-            self.assertEqual(get_func_args(six.text_type.split), [])
+            self.assertEqual(get_func_args(str.split), [])
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
             self.assertEqual(
-                get_func_args(six.text_type.split, stripself=True), ['sep', 'maxsplit'])
+                get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
             self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
