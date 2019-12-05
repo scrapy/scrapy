@@ -1,12 +1,10 @@
 import unittest
 import re
 import json
-from unittest import mock
-from urllib.parse import unquote_to_bytes
+import xmlrpc.client
 import warnings
-
-from six.moves import xmlrpc_client as xmlrpclib
-from six.moves.urllib.parse import urlparse, parse_qs
+from unittest import mock
+from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_unicode
@@ -64,7 +62,7 @@ class RequestTest(unittest.TestCase):
         # headers must not be unicode
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
-        for k, v in h.iteritems():
+        for k, v in h.items():
             self.assertIsInstance(k, bytes)
             for s in v:
                 self.assertIsInstance(s, bytes)
@@ -1220,7 +1218,7 @@ class XmlRpcRequestTest(RequestTest):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers[b'Content-Type'], b'text/xml')
         self.assertEqual(r.body,
-                         to_bytes(xmlrpclib.dumps(**kwargs),
+                         to_bytes(xmlrpc.client.dumps(**kwargs),
                                   encoding=kwargs.get('encoding', 'utf-8')))
         self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))

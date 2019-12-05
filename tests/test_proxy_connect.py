@@ -1,20 +1,20 @@
 import json
 import os
 import re
-from subprocess import Popen, PIPE
 import sys
+from subprocess import Popen, PIPE
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
-from six.moves.urllib.parse import urlsplit, urlunsplit
 from testfixtures import LogCapture
-
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy.utils.test import get_crawler
 from scrapy.http import Request
-from tests.spiders import SimpleSpider, SingleRequestSpider
+from scrapy.utils.test import get_crawler
+
 from tests.mockserver import MockServer
+from tests.spiders import SimpleSpider, SingleRequestSpider
 
 
 class MitmProxy:

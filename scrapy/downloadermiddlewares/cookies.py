@@ -1,12 +1,11 @@
 import logging
 from collections import defaultdict
 
-import six
-
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.utils.python import to_unicode
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +24,10 @@ def format_cookie(cookie):
 
 def get_request_cookies(jar, request):
     if isinstance(request.cookies, dict):
-        cookie_list = [{'name': k, 'value': v} for k, v in
-                       six.iteritems(request.cookies)]
+        cookie_list = [
+            {'name': k, 'value': v}
+            for k, v in request.cookies.items()
+        ]
     else:
         cookie_list = request.cookies
 
