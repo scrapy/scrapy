@@ -5,13 +5,30 @@ import unittest
 from itertools import count
 import platform
 import six
+from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
-    without_none_values)
+    WeakKeyCache, get_func_args, to_bytes, to_unicode,
+    without_none_values, MutableChain)
 
 __doctests__ = ['scrapy.utils.python']
+
+
+class MutableChainTest(unittest.TestCase):
+    def test_mutablechain(self):
+        m = MutableChain(range(2), [2, 3], (4, 5))
+        m.extend(range(6, 7))
+        m.extend([7, 8])
+        m.extend([9, 10], (11, 12))
+        self.assertEqual(next(m), 0)
+        self.assertEqual(m.__next__(), 1)
+        with catch_warnings(record=True) as warnings:
+            self.assertEqual(m.next(), 2)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn('scrapy.utils.python.MutableChain.__next__',
+                          str(warnings[0].message))
+        self.assertEqual(list(m), list(range(3, 13)))
 
 
 class ToUnicodeTest(unittest.TestCase):
@@ -151,33 +168,6 @@ class UtilsPythonTestCase(unittest.TestCase):
                 gc.collect()
         self.assertFalse(len(wk._weakdict))
 
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict(self):
-        d = {'a': 123, u'b': b'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d, keys_only=False)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_tuples(self):
-        tuples = [('a', 123), (u'b', 'c'), (u'd', u'e'), (object(), u'e')]
-        d = dict(tuples)
-        d2 = stringify_dict(tuples, keys_only=False)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_keys_only(self):
-        d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d)
-        self.assertEqual(d, d2)
-        self.assertIsNot(d, d2)  # shouldn't modify in place
-        self.assertFalse(any(isinstance(x, six.text_type) for x in d2.keys()))
-
     def test_get_func_args(self):
         def f1(a, b, c):
             pass
@@ -219,12 +209,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
-            stripself = not six.PY2  # PyPy3 exposes them as methods
             self.assertEqual(
-                get_func_args(six.text_type.split, stripself), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself), ['list'])
+                get_func_args(six.text_type.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself), ['obj'])
+                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
 
     def test_without_none_values(self):

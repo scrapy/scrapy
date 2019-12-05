@@ -1,6 +1,8 @@
 """Helper functions which don't fit anywhere else"""
+import os
 import re
 import hashlib
+from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
 
@@ -86,7 +88,7 @@ def extract_regex(regex, text, encoding='utf-8'):
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
@@ -116,7 +118,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return True if rel is not None and 'nofollow' in rel.split() else False
+    return rel is not None and 'nofollow' in rel.split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):
@@ -134,7 +136,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     if settings is None:
         if crawler is None:
-            raise ValueError("Specifiy at least one of settings and crawler.")
+            raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
     if crawler and hasattr(objcls, 'from_crawler'):
         return objcls.from_crawler(crawler, *args, **kwargs)
@@ -142,3 +144,21 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls.from_settings(settings, *args, **kwargs)
     else:
         return objcls(*args, **kwargs)
+
+
+@contextmanager
+def set_environ(**kwargs):
+    """Temporarily set environment variables inside the context manager and
+    fully restore previous environment afterwards
+    """
+
+    original_env = {k: os.environ.get(k) for k in kwargs}
+    os.environ.update(kwargs)
+    try:
+        yield
+    finally:
+        for k, v in original_env.items():
+            if v is None:
+                del os.environ[k]
+            else:
+                os.environ[k] = v

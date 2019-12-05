@@ -18,6 +18,7 @@ from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
+    valid_form_methods = ['GET', 'POST']
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
@@ -48,7 +49,13 @@ class FormRequest(Request):
         form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
+
         method = kwargs.pop('method', form.method)
+        if method is not None:
+            method = method.upper()
+            if method not in cls.valid_form_methods:
+                method = 'GET'
+
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
@@ -97,8 +104,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        encoded = formxpath if six.PY3 else formxpath.encode('unicode_escape')
-        raise ValueError('No <form> element found with %s' % encoded)
+        raise ValueError('No <form> element found with %s' % formxpath)
 
     # If we get here, it means that either formname was None
     # or invalid

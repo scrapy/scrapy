@@ -10,8 +10,7 @@ import logging
 import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-import six
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse, unquote
 from ftplib import FTP
 
 from zope.interface import Interface, implementer
@@ -65,7 +64,7 @@ class StdoutFeedStorage(object):
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
-            _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
+            _stdout = sys.stdout.buffer
         self._stdout = _stdout
 
     def open(self, spider):
@@ -93,12 +92,13 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None):
-        # BEGIN Backwards compatibility for initialising without keys (and
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None):
+        # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
         if no_defaults:
-            from scrapy.conf import settings
+            from scrapy.utils.project import get_project_settings
+            settings = get_project_settings()
             if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
                 import warnings
                 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -111,13 +111,14 @@ class S3FeedStorage(BlockingFeedStorage):
                 )
                 access_key = settings['AWS_ACCESS_KEY_ID']
                 secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        # END Backwards compatibility
+        # END Backward compatibility
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
+        self.acl = acl
         if self.is_botocore:
             import botocore.session
             session = botocore.session.get_session()
@@ -130,37 +131,54 @@ class S3FeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(cls, crawler, uri):
-        return cls(uri, crawler.settings['AWS_ACCESS_KEY_ID'],
-                   crawler.settings['AWS_SECRET_ACCESS_KEY'])
+        return cls(
+            uri=uri,
+            access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
+            secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
+            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None
+        )
 
     def _store_in_thread(self, file):
         file.seek(0)
         if self.is_botocore:
+            kwargs = {'ACL': self.acl} if self.acl else {}
             self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file)
+                Bucket=self.bucketname, Key=self.keyname, Body=file,
+                **kwargs)
         else:
             conn = self.connect_s3(self.access_key, self.secret_key)
             bucket = conn.get_bucket(self.bucketname, validate=False)
             key = bucket.new_key(self.keyname)
-            key.set_contents_from_file(file)
+            kwargs = {'policy': self.acl} if self.acl else {}
+            key.set_contents_from_file(file, **kwargs)
             key.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
+    def __init__(self, uri, use_active_mode=False):
         u = urlparse(uri)
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
-        self.password = u.password
+        self.password = unquote(u.password)
         self.path = u.path
+        self.use_active_mode = use_active_mode
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return cls(
+            uri=uri,
+            use_active_mode=crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE')
+        )
 
     def _store_in_thread(self, file):
         file.seek(0)
         ftp = FTP()
         ftp.connect(self.host, self.port)
         ftp.login(self.username, self.password)
+        if self.use_active_mode:
+            ftp.set_pasv(False)
         dirname, filename = posixpath.split(self.path)
         ftp_makedirs_cwd(ftp, dirname)
         ftp.storbinary('STOR %s' % filename, file)
@@ -180,9 +198,9 @@ class FeedExporter(object):
 
     def __init__(self, settings):
         self.settings = settings
-        self.urifmt = settings['FEED_URI']
-        if not self.urifmt:
+        if not settings['FEED_URI']:
             raise NotConfigured
+        self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')
@@ -223,7 +241,9 @@ class FeedExporter(object):
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
-            return
+            # We need to call slot.storage.store nonetheless to get the file
+            # properly closed.
+            return defer.maybeDeferred(slot.storage.store, slot.file)
         if self._exporting:
             slot.exporter.finish_exporting()
             self._exporting = False

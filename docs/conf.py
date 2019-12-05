@@ -27,8 +27,13 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'hoverxref.extension',
+    'notfound.extension',
     'scrapydocs',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.coverage',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -72,6 +77,8 @@ language = 'en'
 
 # List of documents that shouldn't be included in the build.
 #unused_docs = []
+
+exclude_patterns = ['build']
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
@@ -218,3 +225,66 @@ linkcheck_ignore = [
     'http://localhost:\d+', 'http://hg.scrapy.org',
     'http://directory.google.com/'
 ]
+
+
+# Options for the Coverage extension
+# ----------------------------------
+coverage_ignore_pyobjects = [
+    # Contract’s add_pre_hook and add_post_hook are not documented because
+    # they should be transparent to contract developers, for whom pre_hook and
+    # post_hook should be the actual concern.
+    r'\bContract\.add_(pre|post)_hook$',
+
+    # ContractsManager is an internal class, developers are not expected to
+    # interact with it directly in any way.
+    r'\bContractsManager\b$',
+
+    # For default contracts we only want to document their general purpose in
+    # their __init__ method, the methods they reimplement to achieve that purpose
+    # should be irrelevant to developers using those contracts.
+    r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
+
+    # Methods of downloader middlewares are not documented, only the classes
+    # themselves, since downloader middlewares are controlled through Scrapy
+    # settings.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.(\w*?Middleware|DownloaderStats)\.',
+
+    # Base classes of downloader middlewares are implementation details that
+    # are not meant for users.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.Base\w*?Middleware',
+
+    # Private exception used by the command-line interface implementation.
+    r'^scrapy\.exceptions\.UsageError',
+
+    # Methods of BaseItemExporter subclasses are only documented in
+    # BaseItemExporter.
+    r'^scrapy\.exporters\.(?!BaseItemExporter\b)\w*?\.',
+
+    # Extension behavior is only modified through settings. Methods of
+    # extension classes, as well as helper functions, are implementation
+    # details that are not documented.
+    r'^scrapy\.extensions\.[a-z]\w*?\.[A-Z]\w*?\.',  # methods
+    r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
+
+    # Never documented before, and deprecated now.
+    r'^scrapy\.item\.DictItem$',
+]
+
+
+# Options for the InterSphinx extension
+# -------------------------------------
+
+intersphinx_mapping = {
+    'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'pytest': ('https://docs.pytest.org/en/latest', None),
+    'python': ('https://docs.python.org/3', None),
+    'sphinx': ('https://www.sphinx-doc.org/en/master', None),
+    'tox': ('https://tox.readthedocs.io/en/latest', None),
+    'twisted': ('https://twistedmatrix.com/documents/current', None),
+}
+
+
+# Options for sphinx-hoverxref options
+# ------------------------------------
+
+hoverxref_auto_ref = True

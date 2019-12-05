@@ -43,7 +43,7 @@ previous (or subsequent) middleware being applied.
 
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign `None` as its
+in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
 value.  For example, if you want to disable the off-site middleware::
 
     SPIDER_MIDDLEWARES = {
@@ -54,11 +54,17 @@ value.  For example, if you want to disable the off-site middleware::
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _custom-spider-middleware:
+
 Writing your own spider middleware
 ==================================
 
-Each middleware component is a Python class that defines one or more of the
-following methods:
+Each spider middleware is a Python class that defines one or more of the
+methods defined below.
+
+The main entry point is the ``from_crawler`` class method, which receives a
+:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
+object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
 .. module:: scrapy.spidermiddlewares
 
@@ -78,7 +84,8 @@ following methods:
 
         If it raises an exception, Scrapy won't bother calling any other spider
         middleware :meth:`process_spider_input` and will call the request
-        errback.  The output of the errback is chained back in the other
+        errback if there is one, otherwise it will start the :meth:`process_spider_exception`
+        chain. The output of the errback is chained back in the other
         direction for :meth:`process_spider_output` to process it, or
         :meth:`process_spider_exception` if it raised an exception.
 
@@ -112,8 +119,8 @@ following methods:
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when a spider or :meth:`process_spider_input`
-        method (from other spider middleware) raises an exception.
+        This method is called when a spider or :meth:`process_spider_output`
+        method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.http.Request`, dict or
@@ -125,7 +132,8 @@ following methods:
         exception reaches the engine (where it's logged and discarded).
 
         If it returns an iterable the :meth:`process_spider_output` pipeline
-        kicks in, and no other :meth:`process_spider_exception` will be called.
+        kicks in, starting from the next spider middleware, and no other
+        :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
           raised
@@ -200,7 +208,7 @@ DepthMiddleware
 .. class:: DepthMiddleware
 
    DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
    there is no value previously set (usually just the first Request) and
    incrementing it by 1 otherwise.
 

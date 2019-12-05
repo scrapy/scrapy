@@ -1,10 +1,10 @@
+from configparser import ConfigParser
 import os
 import sys
 import numbers
 from operator import itemgetter
 
 import six
-from six.moves.configparser import SafeConfigParser
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
@@ -42,14 +42,14 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
                 raise ValueError('Invalid value {} for component {}, please provide ' \
                                  'a real number or None instead'.format(value, name))
 
-    # BEGIN Backwards compatibility for old (base, custom) call signature
+    # BEGIN Backward compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
         _check_components(custom)
         return type(custom)(convert(c) for c in custom)
 
     if custom is not None:
         compdict.update(custom)
-    # END Backwards compatibility
+    # END Backward compatibility
 
     _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
@@ -92,9 +92,9 @@ def init_env(project='default', set_syspath=True):
 
 
 def get_config(use_closest=True):
-    """Get Scrapy config file as a SafeConfigParser"""
+    """Get Scrapy config file as a ConfigParser"""
     sources = get_sources(use_closest)
-    cfg = SafeConfigParser()
+    cfg = ConfigParser()
     cfg.read(sources)
     return cfg
 

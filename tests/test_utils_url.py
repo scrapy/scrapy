@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
-from six.moves.urllib.parse import urlparse
-
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme,
-                              parse_url, strip_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url)
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -187,6 +183,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
 class GuessSchemeTest(unittest.TestCase):
     pass
 
+
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
@@ -194,6 +191,7 @@ def create_guess_scheme_t(args):
             'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
                 args[0], url, args[1])
     return do_expected
+
 
 def create_skipped_scheme_t(args):
     def do_expected(self):
@@ -233,8 +231,8 @@ for k, args in enumerate ([
     setattr (GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
-for k, args in enumerate ([
-            ('C:\absolute\path\to\a\file.html',     'file://',
+for k, args in enumerate([
+            (r'C:\absolute\path\to\a\file.html', 'file://',
              'Windows filepath are not supported for scrapy shell'),
         ], start=1):
     t_method = create_skipped_scheme_t(args)

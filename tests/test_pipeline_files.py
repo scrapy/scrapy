@@ -1,10 +1,9 @@
 import os
 import random
 import time
-import hashlib
-import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
+from unittest import mock
 from six.moves.urllib.parse import urlparse
 from six import BytesIO
 
@@ -15,12 +14,9 @@ from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GC
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
 from scrapy.utils.boto import is_botocore
-
-from tests import mock
 
 
 def _mocked_download_func(request, info):
@@ -57,6 +53,12 @@ class FilesPipelineTestCase(unittest.TestCase):
                                    response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
+                         'full/76c00cef2ef669ae65052661f68d451162829507')
+        self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
+                                    //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
+                         'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
+                         
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
@@ -106,44 +108,6 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         for p in patchers:
             p.stop()
-
-
-class DeprecatedFilesPipeline(FilesPipeline):
-    def file_key(self, url):
-        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        media_ext = os.path.splitext(url)[1]
-        return 'empty/%s%s' % (media_guid, media_ext)
-
-
-class DeprecatedFilesPipelineTestCase(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = mkdtemp()
-
-    def init_pipeline(self, pipeline_class):
-        self.pipeline = pipeline_class.from_settings(Settings({'FILES_STORE': self.tempdir}))
-        self.pipeline.download_func = _mocked_download_func
-        self.pipeline.open_spider(None)
-
-    def test_default_file_key_method(self):
-        self.init_pipeline(FilesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.pdf"),
-                             'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
-
-    def test_overridden_file_key_method(self):
-        self.init_pipeline(DeprecatedFilesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
-                             'empty/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
-
-    def tearDown(self):
-        rmtree(self.tempdir)
 
 
 class FilesPipelineTestCaseFields(unittest.TestCase):

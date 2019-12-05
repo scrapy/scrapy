@@ -82,6 +82,9 @@ pydoc-topics: build
 	@echo "Building finished; now copy build/pydoc-topics/pydoc_topics.py " \
 	      "into the Lib/ directory"
 
+coverage: BUILDER = coverage
+coverage: build
+
 htmlview: html
 	 $(PYTHON) -c "import webbrowser, os; webbrowser.open('file://' + \
 	 os.path.realpath('build/html/index.html'))"

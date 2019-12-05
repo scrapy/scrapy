@@ -7,9 +7,7 @@ RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
 Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non failed) pages. Once
-there is no more failed pages to retry this middleware sends a signal
-(retry_complete), so other extensions could connect to that signal.
+once the spider has finished crawling all regular (non failed) pages.
 """
 import logging
 

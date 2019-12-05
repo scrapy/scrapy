@@ -9,6 +9,7 @@ import weakref
 import errno
 import six
 from functools import partial, wraps
+from itertools import chain
 import sys
 
 from scrapy.utils.decorators import deprecated
@@ -83,26 +84,13 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-@deprecated("scrapy.utils.python.to_unicode")
-def str_to_unicode(text, encoding=None, errors='strict'):
-    """ This function is deprecated.
-    Please use scrapy.utils.python.to_unicode. """
-    return to_unicode(text, encoding, errors)
-
-
-@deprecated("scrapy.utils.python.to_bytes")
-def unicode_to_str(text, encoding=None, errors='strict'):
-    """ This function is deprecated. Please use scrapy.utils.python.to_bytes """
-    return to_bytes(text, encoding, errors)
-
-
 def to_unicode(text, encoding=None, errors='strict'):
-    """Return the unicode representation of a bytes object `text`. If `text`
-    is already an unicode object, return it as-is."""
+    """Return the unicode representation of a bytes object ``text``. If
+    ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, six.text_type):
         return text
     if not isinstance(text, (bytes, six.text_type)):
-        raise TypeError('to_unicode must receive a bytes, str or unicode '
+        raise TypeError('to_unicode must receive a bytes or str '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
@@ -110,25 +98,22 @@ def to_unicode(text, encoding=None, errors='strict'):
 
 
 def to_bytes(text, encoding=None, errors='strict'):
-    """Return the binary representation of `text`. If `text`
+    """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
     if not isinstance(text, six.string_types):
-        raise TypeError('to_bytes must receive a unicode, str or bytes '
+        raise TypeError('to_bytes must receive a str or bytes '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
 
 
+@deprecated('to_unicode')
 def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of `text`
-    (bytes in Python 2.x and unicode in Python 3.x). """
-    if six.PY2:
-        return to_bytes(text, encoding, errors)
-    else:
-        return to_unicode(text, encoding, errors)
+    """ Return str representation of ``text``. """
+    return to_unicode(text, encoding, errors)
 
 
 def re_rsearch(pattern, text, chunk_size=1024):
@@ -180,6 +165,7 @@ def memoizemethod_noargs(method):
 _BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
+
 @deprecated("scrapy.utils.python.binary_is_text")
 def isbinarytext(text):
     """ This function is deprecated.
@@ -189,7 +175,7 @@ def isbinarytext(text):
 
 
 def binary_is_text(data):
-    """ Returns `True` if the given ``data`` argument (a ``bytes`` object)
+    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
@@ -201,7 +187,7 @@ def _getargspec_py23(func):
     """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
                                                         defaults)
 
-    Identical to inspect.getargspec() in python2, but uses
+    Was identical to inspect.getargspec() in python2, but uses
     inspect.getfullargspec() for python3 behind the scenes to avoid
     DeprecationWarning.
 
@@ -211,9 +197,6 @@ def _getargspec_py23(func):
     >>> _getargspec_py23(f)
     ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
     """
-    if six.PY2:
-        return inspect.getargspec(func)
-
     return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
 
 
@@ -314,8 +297,8 @@ class WeakKeyCache(object):
 @deprecated
 def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     """Return a (new) dict with unicode keys (and values when "keys_only" is
-    False) of the given dict converted to strings. `dct_or_tuples` can be a
-    dict or a list of tuples, like any dict constructor supports.
+    False) of the given dict converted to strings. ``dct_or_tuples`` can be a
+    dict or a list of tuples, like any dict ``__init__`` method supports.
     """
     d = {}
     for k, v in six.iteritems(dict(dct_or_tuples)):
@@ -357,10 +340,10 @@ def retry_on_eintr(function, *args, **kw):
 
 
 def without_none_values(iterable):
-    """Return a copy of `iterable` with all `None` entries removed.
+    """Return a copy of ``iterable`` with all ``None`` entries removed.
 
-    If `iterable` is a mapping, return a dictionary where all pairs that have
-    value `None` have been removed.
+    If ``iterable`` is a mapping, return a dictionary where all pairs that have
+    value ``None`` have been removed.
     """
     try:
         return {k: v for k, v in six.iteritems(iterable) if v is not None}
@@ -387,3 +370,24 @@ if hasattr(sys, "pypy_version_info"):
 else:
     def garbage_collect():
         gc.collect()
+
+
+class MutableChain(object):
+    """
+    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
+    """
+    def __init__(self, *args):
+        self.data = chain(*args)
+
+    def extend(self, *iterables):
+        self.data = chain(self.data, *iterables)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.data)
+
+    @deprecated("scrapy.utils.python.MutableChain.__next__")
+    def next(self):
+        return self.__next__()

@@ -5,6 +5,8 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from io import BytesIO
+import mimetypes
 import os
 import os.path
 import time
@@ -13,11 +15,6 @@ from email.utils import parsedate_tz, mktime_tz
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 from twisted.internet import defer, threads
 
@@ -189,6 +186,19 @@ class S3FilesStore(object):
             'X-Amz-Grant-Read': 'GrantRead',
             'X-Amz-Grant-Read-ACP': 'GrantReadACP',
             'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
+            'X-Amz-Object-Lock-Legal-Hold': 'ObjectLockLegalHoldStatus',
+            'X-Amz-Object-Lock-Mode': 'ObjectLockMode',
+            'X-Amz-Object-Lock-Retain-Until-Date': 'ObjectLockRetainUntilDate',
+            'X-Amz-Request-Payer': 'RequestPayer',
+            'X-Amz-Server-Side-Encryption': 'ServerSideEncryption',
+            'X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id': 'SSEKMSKeyId',
+            'X-Amz-Server-Side-Encryption-Context': 'SSEKMSEncryptionContext',
+            'X-Amz-Server-Side-Encryption-Customer-Algorithm': 'SSECustomerAlgorithm',
+            'X-Amz-Server-Side-Encryption-Customer-Key': 'SSECustomerKey',
+            'X-Amz-Server-Side-Encryption-Customer-Key-Md5': 'SSECustomerKeyMD5',
+            'X-Amz-Storage-Class': 'StorageClass',
+            'X-Amz-Tagging': 'Tagging',
+            'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
         })
         extra = {}
         for key, value in six.iteritems(headers):
@@ -255,13 +265,13 @@ class FilesPipeline(MediaPipeline):
     doing stat of the files and determining if file is new, uptodate or
     expired.
 
-    `new` files are those that pipeline never processed and needs to be
+    ``new`` files are those that pipeline never processed and needs to be
         downloaded from supplier site the first time.
 
-    `uptodate` files are the ones that the pipeline processed and are still
+    ``uptodate`` files are the ones that the pipeline processed and are still
         valid files.
 
-    `expired` files are those that pipeline already processed but the last
+    ``expired`` files are those that pipeline already processed but the last
         modification was made long time ago, so a reprocessing is recommended to
         refresh it in case of change.
 
@@ -458,33 +468,13 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
-        def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('FilesPipeline.file_key(url) method is deprecated, please use '
-                          'file_path(request, response=None, info=None) instead',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
-
-        # check if called from file_key with url as first argument
-        if not isinstance(request, Request):
-            _warn()
-            url = request
-        else:
-            url = request.url
-
-        # detect if file_key() method has been overridden
-        if not hasattr(self.file_key, '_base'):
-            _warn()
-            return self.file_key(url)
-        ## end of deprecation warning block
-
-        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_ext = os.path.splitext(request.url)[1]
+        # Handles empty and wild extensions by trying to guess the
+        # mime type then extension or default to empty string otherwise
+        if media_ext not in mimetypes.types_map:
+            media_ext = ''
+            media_type = mimetypes.guess_type(request.url)[0]
+            if media_type:
+                media_ext = mimetypes.guess_extension(media_type)
         return 'full/%s%s' % (media_guid, media_ext)
-
-    # deprecated
-    def file_key(self, url):
-        return self.file_path(url)
-
-    file_key._base = True

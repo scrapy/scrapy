@@ -1,11 +1,11 @@
 import six
 import json
 import copy
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
-from . import default_settings
+from scrapy.settings import default_settings
 
 
 SETTINGS_PRIORITIES = {

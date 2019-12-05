@@ -1,5 +1,5 @@
 import logging
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
 
@@ -34,6 +34,8 @@ class BaseRedirectMiddleware(object):
             redirected.meta['redirect_ttl'] = ttl - 1
             redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
                 [request.url]
+            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + \
+                [reason]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
@@ -68,7 +70,10 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
-        location = safe_url_string(response.headers['location'])
+        location = safe_url_string(response.headers['Location'])
+        if response.headers['Location'].startswith(b'//'):
+            request_scheme = urlparse(request.url).scheme
+            location = request_scheme + '://' + location.lstrip('/')
 
         redirected_url = urljoin(request.url, location)
 
@@ -86,6 +91,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings):
         super(MetaRefreshMiddleware, self).__init__(settings)
+        self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
         self._maxdelay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY',
                                          settings.getint('METAREFRESH_MAXDELAY'))
 
@@ -94,7 +100,8 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
                 not isinstance(response, HtmlResponse):
             return response
 
-        interval, url = get_meta_refresh(response)
+        interval, url = get_meta_refresh(response,
+                                         ignore_tags=self._ignore_tags)
         if url and interval < self._maxdelay:
             redirected = self._redirect_request_using_get(request, url)
             return self._redirect(redirected, request, spider, 'meta refresh')

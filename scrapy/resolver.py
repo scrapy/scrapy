@@ -7,6 +7,7 @@ from scrapy.utils.datatypes import LocalCache
 
 dnscache = LocalCache(10000)
 
+
 class CachingThreadedResolver(ThreadedResolver):
     def __init__(self, reactor, cache_size, timeout):
         super(CachingThreadedResolver, self).__init__(reactor)

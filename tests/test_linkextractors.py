@@ -288,7 +288,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
 
             def process_value(value):
-                m = re.search("javascript:goToPage\('(.*?)'", value)
+                m = re.search(r"javascript:goToPage\('(.*?)'", value)
                 if m:
                     return m.group(1)
 
@@ -322,7 +322,7 @@ class Base:
                 Link(url=page4_url, text=u'href with whitespaces'),
             ])
 
-            lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+            lx = self.extractor_cls(attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=())
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
@@ -360,7 +360,7 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
             ])
 
-            lx = self.extractor_cls(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+            lx = self.extractor_cls(tags=("a", "img"), attrs=("href", "src"), deny_extensions=())
             self.assertEqual(lx.extract_links(response), [
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample2.jpg', text=u''),
@@ -477,6 +477,30 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
         self.assertEqual([link for link in lx.extract_links(response)], [
             Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
+        ])
+
+    def test_link_restrict_text(self):
+        html = b"""
+        <a href="http://example.org/item1.html">Pic of a cat</a>
+        <a href="http://example.org/item2.html">Pic of a dog</a>
+        <a href="http://example.org/item3.html">Pic of a cow</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        # Simple text inclusion test
+        lx = self.extractor_cls(restrict_text='dog')
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
+        ])
+        # Unique regex test
+        lx = self.extractor_cls(restrict_text=r'of.*dog')
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
+        ])
+        # Multiple regex test
+        lx = self.extractor_cls(restrict_text=[r'of.*dog', r'of.*cat'])
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Pic of a cat', nofollow=False),
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
         ])
 
     @pytest.mark.xfail

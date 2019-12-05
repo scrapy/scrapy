@@ -11,7 +11,7 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertEqual(build_component_list(d, convert=lambda x: x),
                          ['one', 'four', 'three'])
 
-    def test_backwards_compatible_build_dict(self):
+    def test_backward_compatible_build_dict(self):
         base = {'one': 1, 'two': 2, 'three': 3, 'five': 5, 'six': None}
         custom = {'two': None, 'three': 8, 'four': 4}
         self.assertEqual(build_component_list(base, custom,
@@ -79,7 +79,7 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
         d = {'one': {'a': 'a', 'b': 2}}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {'one': 'lorem ipsum',}
+        d = {'one': 'lorem ipsum'}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
 
 

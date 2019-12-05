@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 import random
-import warnings
 from time import time
 from datetime import datetime
 from collections import deque
@@ -12,8 +10,8 @@ from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy import signals
-from .middleware import DownloaderMiddlewareManager
-from .handlers import DownloadHandlers
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader.handlers import DownloadHandlers
 
 
 class Slot(object):
@@ -60,10 +58,6 @@ class Slot(object):
 
 def _get_concurrency_delay(concurrency, spider, settings):
     delay = settings.getfloat('DOWNLOAD_DELAY')
-    if hasattr(spider, 'DOWNLOAD_DELAY'):
-        warnings.warn("%s.DOWNLOAD_DELAY attribute is deprecated, use %s.download_delay instead" %
-                      (type(spider).__name__, type(spider).__name__))
-        delay = spider.DOWNLOAD_DELAY
     if hasattr(spider, 'download_delay'):
         delay = spider.download_delay
 
@@ -74,6 +68,8 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
 
 class Downloader(object):
+
+    DOWNLOAD_SLOT = 'download_slot'
 
     def __init__(self, crawler):
         self.settings = crawler.settings
@@ -111,8 +107,8 @@ class Downloader(object):
         return key, self.slots[key]
 
     def _get_slot_key(self, request, spider):
-        if 'download_slot' in request.meta:
-            return request.meta['download_slot']
+        if self.DOWNLOAD_SLOT in request.meta:
+            return request.meta[self.DOWNLOAD_SLOT]
 
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
@@ -122,7 +118,7 @@ class Downloader(object):
 
     def _enqueue_request(self, request, spider):
         key, slot = self._get_slot(request, spider)
-        request.meta['download_slot'] = key
+        request.meta[self.DOWNLOAD_SLOT] = key
 
         def _deactivate(response):
             slot.active.remove(request)

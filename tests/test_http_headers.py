@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):
@@ -147,11 +148,11 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h1.getlist('hey'), [b'5'])
 
     def test_invalid_value(self):
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers, {'foo': object()})
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().__setitem__, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setdefault, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setlist, 'foo', [object()])
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers, {'foo': object()})
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().__setitem__, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setdefault, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setlist, 'foo', [object()])

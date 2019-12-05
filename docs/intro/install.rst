@@ -7,7 +7,7 @@ Installation guide
 Installing Scrapy
 =================
 
-Scrapy runs on Python 2.7 and Python 3.4 or above
+Scrapy runs on Python 3.5 or above
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
@@ -102,10 +102,8 @@ just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
 
-Python virtualenvs can be created to use Python 2 by default, or Python 3 by default.
-
-* If you want to install scrapy with Python 3, install scrapy within a Python 3 virtualenv.
-* And if you want to install scrapy with Python 2, install scrapy within a Python 2 virtualenv.
+Python virtualenvs can be created to use Python 2 by default, or Python 3 by default. As Scrapy
+only supports Python 3, make sure you created a Python 3 virtualenv.
 
 .. _virtualenv: https://virtualenv.pypa.io
 .. _virtualenv installation instructions: https://virtualenv.pypa.io/en/stable/installation/
@@ -149,15 +147,11 @@ typically too old and slow to catch up with latest Scrapy.
 To install scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
 these dependencies::
 
-    sudo apt-get install python-dev python-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
+    sudo apt-get install python3 python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
 
-- ``python-dev``, ``zlib1g-dev``, ``libxml2-dev`` and ``libxslt1-dev``
+- ``python3-dev``, ``zlib1g-dev``, ``libxml2-dev`` and ``libxslt1-dev``
   are required for ``lxml``
 - ``libssl-dev`` and ``libffi-dev`` are required for ``cryptography``
-
-If you want to install scrapy on Python 3, you’ll also need Python 3 development headers::
-
-    sudo apt-get install python3 python3-dev
 
 Inside a :ref:`virtualenv <intro-using-virtualenv>`,
 you can install Scrapy with ``pip`` after that::
@@ -290,5 +284,5 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _zsh: https://www.zsh.org/
 .. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
-.. _Miniconda: https://conda.io/docs/user-guide/install/index.html
+.. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 .. _conda-forge: https://conda-forge.org/
