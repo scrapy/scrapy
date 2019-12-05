@@ -2,11 +2,9 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO
-import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
@@ -37,7 +35,7 @@ class ResponseTypes(object):
         self.mimetypes = MimeTypes()
         mimedata = get_data('scrapy', 'mime.types').decode('utf8')
         self.mimetypes.readfp(StringIO(mimedata))
-        for mimetype, cls in six.iteritems(self.CLASSES):
+        for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype):

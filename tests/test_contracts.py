@@ -1,6 +1,5 @@
 from unittest import TextTestResult
 
-from six import get_unbound_function
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.trial import unittest
@@ -395,8 +394,8 @@ class ContractsManagerTest(unittest.TestCase):
         with MockServer() as mockserver:
             contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
 
-            get_unbound_function(TestSameUrlSpider.parse_first).__doc__ = contract_doc
-            get_unbound_function(TestSameUrlSpider.parse_second).__doc__ = contract_doc
+            TestSameUrlSpider.parse_first.__doc__ = contract_doc
+            TestSameUrlSpider.parse_second.__doc__ = contract_doc
 
             crawler = CrawlerRunner().create_crawler(TestSameUrlSpider)
             yield crawler.crawl()

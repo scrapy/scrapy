@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 from w3lib.url import is_url
 
