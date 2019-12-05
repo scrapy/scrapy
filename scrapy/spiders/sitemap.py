@@ -1,11 +1,7 @@
 import re
 import logging
-<<<<<<< HEAD
 
-import six
 from lxml.etree import XMLSyntaxError
-=======
->>>>>>> master
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
