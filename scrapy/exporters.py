@@ -40,6 +40,15 @@ class BaseItemExporter(object):
             raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
     def export_item(self, item):
+        try:
+            return self._export_item_impl(item)
+        except Exception as err:
+            exc_info = sys.exc_info()
+            new_err = ValueError("Cannot serialize item: %s: %s\nitem=%s" % (
+                type(err).__name__, err, item))
+            six.reraise(type(new_err), new_err, exc_info[2])
+
+    def _export_item_impl(self, item):
         raise NotImplementedError
 
     def serialize_field(self, field, name, value):
@@ -87,7 +96,7 @@ class JsonLinesItemExporter(BaseItemExporter):
         kwargs.setdefault('ensure_ascii', not self.encoding)
         self.encoder = ScrapyJSONEncoder(**kwargs)
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + '\n'
         self.file.write(to_bytes(data, self.encoding))
@@ -119,7 +128,7 @@ class JsonItemExporter(BaseItemExporter):
         self._beautify_newline()
         self.file.write(b"]")
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         if self.first_item:
             self.first_item = False
         else:
@@ -153,7 +162,7 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.startElement(self.root_element, {})
         self._beautify_newline(new_item=True)
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         self._beautify_indent(depth=1)
         self.xg.startElement(self.item_element, {})
         self._beautify_newline()
@@ -218,7 +227,7 @@ class CsvItemExporter(BaseItemExporter):
                 pass
         return value
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         if self._headers_not_written:
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
@@ -255,7 +264,7 @@ class PickleItemExporter(BaseItemExporter):
         self.file = file
         self.protocol = protocol
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         d = dict(self._get_serialized_fields(item))
         pickle.dump(d, self.file, self.protocol)
 
@@ -273,7 +282,7 @@ class MarshalItemExporter(BaseItemExporter):
         self._configure(kwargs)
         self.file = file
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         marshal.dump(dict(self._get_serialized_fields(item)), self.file)
 
 
@@ -283,7 +292,7 @@ class PprintItemExporter(BaseItemExporter):
         self._configure(kwargs)
         self.file = file
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
 
@@ -328,7 +337,7 @@ class PythonItemExporter(BaseItemExporter):
             key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 
-    def export_item(self, item):
+    def _export_item_impl(self, item):
         result = dict(self._get_serialized_fields(item))
         if self.binary:
             result = dict(self._serialize_dict(result))
