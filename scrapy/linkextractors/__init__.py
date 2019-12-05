@@ -6,8 +6,8 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 import re
+from urllib.parse import urlparse
 
-from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 

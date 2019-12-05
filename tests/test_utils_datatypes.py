@@ -192,14 +192,6 @@ class SequenceExcludeTest(unittest.TestCase):
         self.assertIn(20, d)
         self.assertNotIn(15, d)
 
-    def test_six_range(self):
-        import six.moves
-        seq = six.moves.range(10**3, 10**6)
-        d = SequenceExclude(seq)
-        self.assertIn(10**2, d)
-        self.assertIn(10**7, d)
-        self.assertNotIn(10**4, d)
-
     def test_range_step(self):
         seq = range(10, 20, 3)
         d = SequenceExclude(seq)

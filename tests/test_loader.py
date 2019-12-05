@@ -1,8 +1,6 @@
 from functools import partial
 import unittest
 
-import six
-
 from scrapy.http import HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
@@ -157,7 +155,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_get_value(self):
         il = NameItemLoader()
-        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), six.text_type.upper))
+        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), str.upper))
         self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
         self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
 
@@ -258,7 +256,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
-            name_in = MapCompose(TestItemLoader.name_in, six.text_type.swapcase)
+            name_in = MapCompose(TestItemLoader.name_in, str.swapcase)
 
         il = ChildItemLoader()
         il.add_value('name', u'marta')
@@ -266,7 +264,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_in = MapCompose(DefaultedItemLoader.default_input_processor, six.text_type.swapcase)
+            name_in = MapCompose(DefaultedItemLoader.default_input_processor, str.swapcase)
 
         il = ChildDefaultedItemLoader()
         il.add_value('name', u'marta')
@@ -689,7 +687,7 @@ class ProcessorsTest(unittest.TestCase):
         self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
         self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
         self.assertEqual(proc(['hello', 'world']), u'hello world')
-        self.assertIsInstance(proc(['hello', 'world']), six.text_type)
+        self.assertIsInstance(proc(['hello', 'world']), str)
 
     def test_compose(self):
         proc = Compose(lambda v: v[0], str.upper)
@@ -704,12 +702,12 @@ class ProcessorsTest(unittest.TestCase):
     def test_mapcompose(self):
         def filter_world(x):
             return None if x == 'world' else x
-        proc = MapCompose(filter_world, six.text_type.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
-        proc = MapCompose(filter_world, six.text_type.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
-        proc = MapCompose(filter_world, six.text_type.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertRaises(ValueError, proc, [1])
         proc = MapCompose(filter_world, lambda x: x + 1)
         self.assertRaises(ValueError, proc, 'hello')
