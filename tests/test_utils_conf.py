@@ -79,7 +79,7 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
         d = {'one': {'a': 'a', 'b': 2}}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {'one': 'lorem ipsum',}
+        d = {'one': 'lorem ipsum'}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
 
 

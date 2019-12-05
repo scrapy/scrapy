@@ -203,7 +203,7 @@ where our quotes are coming from:
 First click on the request with the name ``scroll``. On the right 
 you can now inspect the request. In ``Headers`` you'll find details
 about the request headers, such as the URL, the method, the IP-address,
-and so on. We'll ignore the other tabs and click directly on ``Reponse``.
+and so on. We'll ignore the other tabs and click directly on ``Response``.
 
 What you should see in the ``Preview`` pane is the rendered HTML-code, 
 that is exactly what we saw when we called ``view(response)`` in the 

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
-from six.moves.urllib.parse import urlparse
-
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme,
-                              parse_url, strip_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url)
+
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -187,6 +184,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
 class GuessSchemeTest(unittest.TestCase):
     pass
 
+
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
@@ -194,6 +192,7 @@ def create_guess_scheme_t(args):
             'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
                 args[0], url, args[1])
     return do_expected
+
 
 def create_skipped_scheme_t(args):
     def do_expected(self):

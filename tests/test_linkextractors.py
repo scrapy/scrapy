@@ -325,7 +325,7 @@ class Base:
                 Link(url=page4_url, text=u'href with whitespaces'),
             ])
 
-            lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+            lx = self.extractor_cls(attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=())
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
@@ -363,7 +363,7 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
             ])
 
-            lx = self.extractor_cls(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+            lx = self.extractor_cls(tags=("a", "img"), attrs=("href", "src"), deny_extensions=())
             self.assertEqual(lx.extract_links(response), [
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample2.jpg', text=u''),

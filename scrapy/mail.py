@@ -4,28 +4,19 @@ Mail sending helpers
 See documentation in docs/topics/email.rst
 """
 import logging
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-import six
-
+from email import encoders as Encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.nonmultipart import MIMENonMultipart
+from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
-from six.moves.email_mime_multipart import MIMEMultipart
-from six.moves.email_mime_text import MIMEText
-from six.moves.email_mime_base import MIMEBase
-if six.PY2:
-    from email.MIMENonMultipart import MIMENonMultipart
-    from email import Encoders
-else:
-    from email.mime.nonmultipart import MIMENonMultipart
-    from email import encoders as Encoders
+from io import BytesIO
 
 from twisted.internet import defer, reactor, ssl
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+
 
 logger = logging.getLogger(__name__)
 

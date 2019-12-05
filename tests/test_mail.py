@@ -6,6 +6,7 @@ from email.charset import Charset
 
 from scrapy.mail import MailSender
 
+
 class MailSenderTest(unittest.TestCase):
 
     def test_send(self):

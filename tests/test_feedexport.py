@@ -1,21 +1,21 @@
-from __future__ import absolute_import
 import os
 import csv
 import json
 import warnings
-from io import BytesIO
 import tempfile
 import shutil
 import string
-from six.moves.urllib.parse import urljoin, urlparse, quote
-from six.moves.urllib.request import pathname2url
+from io import BytesIO
+from pathlib import Path
+from unittest import mock
+from urllib.parse import urljoin, urlparse, quote
+from urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.settings import Settings
-from tests import mock
 from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
@@ -26,8 +26,7 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage, StdoutFeedStorage,
     BlockingFeedStorage)
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
-from scrapy.utils.python import to_native_str
-from scrapy.utils.project import get_project_settings
+from scrapy.utils.python import to_unicode
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -166,7 +165,7 @@ class S3FeedStorageTest(unittest.TestCase):
                 create=True)
     def test_parse_credentials(self):
         try:
-            import boto
+            import boto  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("S3FeedStorage requires boto")
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
@@ -267,7 +266,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
@@ -287,7 +286,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
@@ -405,6 +404,7 @@ class FeedExportTest(unittest.TestCase):
         defaults = {
             'FEED_URI': res_uri,
             'FEED_FORMAT': 'csv',
+            'FEED_PATH': res_path
         }
         defaults.update(settings or {})
         try:
@@ -413,11 +413,11 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(res_path, 'rb') as f:
+            with open(str(defaults['FEED_PATH']), 'rb') as f:
                 content = f.read()
 
         finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+            shutil.rmtree(tmpdir)
 
         defer.returnValue(content)
 
@@ -456,7 +456,7 @@ class FeedExportTest(unittest.TestCase):
         settings.update({'FEED_FORMAT': 'csv'})
         data = yield self.exported_data(items, settings)
 
-        reader = csv.DictReader(to_native_str(data).splitlines())
+        reader = csv.DictReader(to_unicode(data).splitlines())
         got_rows = list(reader)
         if ordered:
             self.assertEqual(reader.fieldnames, header)
@@ -470,7 +470,7 @@ class FeedExportTest(unittest.TestCase):
         settings = settings or {}
         settings.update({'FEED_FORMAT': 'jl'})
         data = yield self.exported_data(items, settings)
-        parsed = [json.loads(to_native_str(line)) for line in data.splitlines()]
+        parsed = [json.loads(to_unicode(line)) for line in data.splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
@@ -843,3 +843,17 @@ class FeedExportTest(unittest.TestCase):
         yield self.exported_data({}, settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+
+    @defer.inlineCallbacks
+    def test_pathlib_uri(self):
+        tmpdir = tempfile.mkdtemp()
+        feed_uri = Path(tmpdir) / 'res'
+        settings = {
+            'FEED_FORMAT': 'csv',
+            'FEED_STORE_EMPTY': True,
+            'FEED_URI': feed_uri,
+            'FEED_PATH': feed_uri
+        }
+        data = yield self.exported_no_data(settings)
+        self.assertEqual(data, b'')
+        shutil.rmtree(tmpdir, ignore_errors=True)

@@ -26,7 +26,7 @@ Using Item Loaders to populate items
 
 To use an Item Loader, you must first instantiate it. You can either
 instantiate it with a dict-like object (e.g. Item or dict) or without one, in
-which case an Item is automatically instantiated in the Item Loader constructor
+which case an Item is automatically instantiated in the Item Loader ``__init__`` method
 using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
@@ -34,6 +34,12 @@ Then, you start collecting values into the Item Loader, typically using
 :ref:`Selectors <topics-selectors>`. You can add more than one value to
 the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
+
+.. note:: Collected data is internally stored as lists,
+   allowing to add several values to the same field.
+   If an ``item`` argument is passed when creating a loader,
+   each of the item's values will be stored as-is if it's already
+   an iterable, or wrapped with a list if it's a single value.
 
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
@@ -128,27 +134,13 @@ So what happens is:
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
-accept one (and only one) positional argument, which will be an iterator.
+accept one (and only one) positional argument, which will be an iterable.
 
-.. note:: Both input and output processors must receive an iterator as their
+.. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
    input processors will be appended to an internal list (in the Loader)
    containing the collected values (for that field). The result of the output
    processors is the value that will be finally assigned to the item.
-
-If you want to use a plain function as a processor, make sure it receives
-``self`` as the first argument::
-
-    def lowercase_processor(self, values):
-        for v in values:
-            yield v.lower()
-
-    class MyItemLoader(ItemLoader):
-        name_in = lowercase_processor
-
-This is because whenever a function is assigned as a class variable, it becomes
-a method and would be passed the instance as the the first argument when being
-called. See `this answer on stackoverflow`_ for more details.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
@@ -157,7 +149,7 @@ processors to populate the fields.
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
 
-.. _this answer on stackoverflow: https://stackoverflow.com/a/35322635
+
 
 Declaring Item Loaders
 ======================
@@ -265,7 +257,7 @@ There are several ways to modify Item Loader context values:
       loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
-   constructor are stored in the Item Loader context)::
+   ``__init__`` method are stored in the Item Loader context)::
 
       loader = ItemLoader(product, unit='cm')
 
@@ -485,6 +477,8 @@ ItemLoader objects
     .. attribute:: item
 
         The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
+        This is mostly used as a property so when attempting to override this
+        value, you may want to check out :attr:`default_item_class` first.
 
     .. attribute:: context
 
@@ -494,7 +488,7 @@ ItemLoader objects
     .. attribute:: default_item_class
 
         An Item class (or factory), used to instantiate items when not given in
-        the constructor.
+        the ``__init__`` method.
 
     .. attribute:: default_input_processor
 
@@ -509,15 +503,15 @@ ItemLoader objects
     .. attribute:: default_selector_class
 
         The class used to construct the :attr:`selector` of this
-        :class:`ItemLoader`, if only a response is given in the constructor.
-        If a selector is given in the constructor this attribute is ignored.
+        :class:`ItemLoader`, if only a response is given in the ``__init__`` method.
+        If a selector is given in the ``__init__`` method this attribute is ignored.
         This attribute is sometimes overridden in subclasses.
 
     .. attribute:: selector
 
         The :class:`~scrapy.selector.Selector` object to extract data from.
-        It's either the selector given in the constructor or one created from
-        the response given in the constructor using the
+        It's either the selector given in the ``__init__`` method or one created from
+        the response given in the ``__init__`` method using the
         :attr:`default_selector_class`. This attribute is meant to be
         read-only.
 
@@ -642,7 +636,7 @@ Here is a list of all built-in processors:
 .. class:: Identity
 
     The simplest processor, which doesn't do anything. It returns the original
-    values unchanged. It doesn't receive any constructor arguments, nor does it
+    values unchanged. It doesn't receive any ``__init__`` method arguments, nor does it
     accept Loader contexts.
 
     Example::
@@ -656,7 +650,7 @@ Here is a list of all built-in processors:
 
     Returns the first non-null/non-empty value from the values received,
     so it's typically used as an output processor to single-valued fields.
-    It doesn't receive any constructor arguments, nor does it accept Loader contexts.
+    It doesn't receive any ``__init__`` method arguments, nor does it accept Loader contexts.
 
     Example::
 
@@ -667,7 +661,7 @@ Here is a list of all built-in processors:
 
 .. class:: Join(separator=u' ')
 
-    Returns the values joined with the separator given in the constructor, which
+    Returns the values joined with the separator given in the ``__init__`` method, which
     defaults to ``u' '``. It doesn't accept Loader contexts.
 
     When using the default separator, this processor is equivalent to the
@@ -705,7 +699,7 @@ Here is a list of all built-in processors:
     those which do, this processor will pass the currently active :ref:`Loader
     context <topics-loaders-context>` through that parameter.
 
-    The keyword arguments passed in the constructor are used as the default
+    The keyword arguments passed in the ``__init__`` method are used as the default
     Loader context values passed to each function call. However, the final
     Loader context values passed to functions are overridden with the currently
     active Loader context accessible through the :meth:`ItemLoader.context`
@@ -749,12 +743,12 @@ Here is a list of all built-in processors:
         ['HELLO, 'THIS', 'IS', 'SCRAPY']
 
     As with the Compose processor, functions can receive Loader contexts, and
-    constructor keyword arguments are used as default context values. See
+    ``__init__`` method keyword arguments are used as default context values. See
     :class:`Compose` processor for more info.
 
 .. class:: SelectJmes(json_path)
 
-    Queries the value using the json path provided to the constructor and returns the output.
+    Queries the value using the json path provided to the ``__init__`` method and returns the output.
     Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
     This processor takes only one input at a time.
 

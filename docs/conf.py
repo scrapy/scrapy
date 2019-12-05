@@ -27,10 +27,13 @@ sys.path.insert(0, path.dirname(path.dirname(__file__)))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'hoverxref.extension',
+    'notfound.extension',
     'scrapydocs',
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -237,7 +240,7 @@ coverage_ignore_pyobjects = [
     r'\bContractsManager\b$',
 
     # For default contracts we only want to document their general purpose in
-    # their constructor, the methods they reimplement to achieve that purpose
+    # their __init__ method, the methods they reimplement to achieve that purpose
     # should be irrelevant to developers using those contracts.
     r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
 
@@ -276,5 +279,16 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
+    'sphinx': ('https://www.sphinx-doc.org/en/master', None),
+    'tox': ('https://tox.readthedocs.io/en/latest', None),
+    'twisted': ('https://twistedmatrix.com/documents/current', None),
 }
+
+
+# Options for sphinx-hoverxref options
+# ------------------------------------
+
+hoverxref_auto_ref = True

@@ -1,9 +1,9 @@
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.boto import is_botocore
-from .http import HTTPDownloadHandler
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 
 
 def _get_boto_connection():
@@ -21,7 +21,7 @@ def _get_boto_connection():
             return http_request.headers
 
     try:
-        import boto.auth
+        import boto.auth  # noqa: F401
     except ImportError:
         _S3Connection = _v19_S3Connection
     else:

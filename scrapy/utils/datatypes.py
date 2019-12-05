@@ -5,19 +5,12 @@ Python Standard Library.
 This module must not depend on any module outside the Standard Library.
 """
 
-import copy
 import collections
+import copy
 import warnings
-
-import six
+from collections.abc import Mapping
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-
-
-if six.PY2:
-    Mapping = collections.Mapping
-else:
-    Mapping = collections.abc.Mapping
 
 
 class MultiValueDictKeyError(KeyError):
@@ -156,7 +149,7 @@ class MultiValueDict(dict):
                         self.setlistdefault(key, []).append(value)
                 except TypeError:
                     raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             self.setlistdefault(key, []).append(value)
 
 
@@ -243,66 +236,6 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class MergeDict(object):
-    """
-    A simple class for creating new "virtual" dictionaries that actually look
-    up values in more than one dictionary, passed in the constructor.
-
-    If a key appears in more than one of the given dictionaries, only the
-    first occurrence will be used.
-    """
-    def __init__(self, *dicts):
-        if not six.PY2:
-            warnings.warn(
-                "scrapy.utils.datatypes.MergeDict is deprecated in favor "
-                "of collections.ChainMap (introduced in Python 3.3)",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        self.dicts = dicts
-
-    def __getitem__(self, key):
-        for dict_ in self.dicts:
-            try:
-                return dict_[key]
-            except KeyError:
-                pass
-        raise KeyError
-
-    def __copy__(self):
-        return self.__class__(*self.dicts)
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def getlist(self, key):
-        for dict_ in self.dicts:
-            if key in dict_.keys():
-                return dict_.getlist(key)
-        return []
-
-    def items(self):
-        item_list = []
-        for dict_ in self.dicts:
-            item_list.extend(dict_.items())
-        return item_list
-
-    def has_key(self, key):
-        for dict_ in self.dicts:
-            if key in dict_:
-                return True
-        return False
-
-    __contains__ = has_key
-
-    def copy(self):
-        """Returns a copy of this object."""
-        return self.__copy__()
-
-
 class LocalCache(collections.OrderedDict):
     """Dictionary with a finite number of keys.
 
@@ -315,8 +248,9 @@ class LocalCache(collections.OrderedDict):
         self.limit = limit
 
     def __setitem__(self, key, value):
-        while len(self) >= self.limit:
-            self.popitem(last=False)
+        if self.limit:
+            while len(self) >= self.limit:
+                self.popitem(last=False)
         super(LocalCache, self).__setitem__(key, value)
 
 
