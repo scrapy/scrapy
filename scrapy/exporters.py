@@ -6,15 +6,17 @@ import csv
 import io
 import pprint
 import marshal
+import warnings
+from xml.sax.saxutils import XMLGenerator
+from types import GeneratorType
+
 import six
 from six.moves import cPickle as pickle
-from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
-import warnings
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
@@ -44,6 +46,8 @@ class BaseItemExporter(object):
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', lambda x: x)
+        if isinstance(value, BaseItem):
+            return serializer(dict(self._get_serialized_fields(value)))
         return serializer(value)
 
     def start_exporting(self):
@@ -72,11 +76,14 @@ class BaseItemExporter(object):
         for field_name in field_iter:
             if field_name in item:
                 field = {} if isinstance(item, dict) else item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+                value = item[field_name]
+                if isinstance(value, (tuple, list)):
+                    serialized = (self.serialize_field(field, field_name, x) for x in value)
+                    yield field_name, serialized
+                else:
+                    yield field_name, self.serialize_field(field, field_name, value)
             else:
-                value = default_value
-
-            yield field_name, value
+                yield field_name, default_value
 
 
 class JsonLinesItemExporter(BaseItemExporter):
@@ -223,13 +230,18 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='',
-                                             include_empty=True)
+        fields = self._get_serialized_fields(item, default_value='', include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
     def _build_row(self, values):
         for s in values:
+            if isinstance(s, GeneratorType):
+                s = list(s)
+                try:
+                    s = self._join_multivalued.join(s)
+                except TypeError:
+                    pass
             try:
                 yield to_unicode(s, self.encoding)
             except TypeError:

@@ -1,6 +1,7 @@
 import json
 import datetime
 import decimal
+from types import GeneratorType
 
 from twisted.internet import defer
 
@@ -14,7 +15,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
     TIME_FORMAT = "%H:%M:%S"
 
     def default(self, o):
-        if isinstance(o, set):
+        if isinstance(o, (set, GeneratorType)):
             return list(o)
         elif isinstance(o, datetime.datetime):
             return o.strftime("%s %s" % (self.DATE_FORMAT, self.TIME_FORMAT))
