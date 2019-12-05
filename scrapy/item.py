@@ -10,8 +10,6 @@ from copy import deepcopy
 from pprint import pformat
 from warnings import warn
 
-import six
-
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
@@ -78,7 +76,7 @@ class DictItem(MutableMapping, BaseItem):
     def __init__(self, *args, **kwargs):
         self._values = {}
         if args or kwargs:  # avoid creating dict for most common case
-            for k, v in six.iteritems(dict(*args, **kwargs)):
+            for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
     def __getitem__(self, key):
@@ -130,6 +128,5 @@ class DictItem(MutableMapping, BaseItem):
         return deepcopy(self)
 
 
-@six.add_metaclass(ItemMeta)
-class Item(DictItem):
+class Item(DictItem, metaclass=ItemMeta):
     pass

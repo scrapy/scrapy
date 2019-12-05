@@ -8,8 +8,6 @@ See documentation in docs/topics/spiders.rst
 import copy
 import warnings
 
-import six
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
@@ -25,7 +23,7 @@ def _identity(request, response):
 def _get_method(method, spider):
     if callable(method):
         return method
-    elif isinstance(method, six.string_types):
+    elif isinstance(method, str):
         return getattr(spider, method, None)
 
 

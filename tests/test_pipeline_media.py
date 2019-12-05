@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure

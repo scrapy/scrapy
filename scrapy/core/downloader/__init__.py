@@ -1,19 +1,16 @@
-from __future__ import absolute_import
 import random
-import warnings
 from time import time
 from datetime import datetime
 from collections import deque
 
-import six
 from twisted.internet import reactor, defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy import signals
-from .middleware import DownloaderMiddlewareManager
-from .handlers import DownloadHandlers
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader.handlers import DownloadHandlers
 
 
 class Slot(object):
@@ -190,7 +187,7 @@ class Downloader(object):
 
     def close(self):
         self._slot_gc_loop.stop()
-        for slot in six.itervalues(self.slots):
+        for slot in self.slots.values():
             slot.close()
 
     def _slot_gc(self, age=60):

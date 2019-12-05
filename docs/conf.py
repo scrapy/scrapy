@@ -275,8 +275,17 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
+    'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
     'w3lib': ('https://w3lib.readthedocs.io/en/latest', None),
 }
+
+
+# Options for sphinx-hoverxref options
+# ------------------------------------
+
+hoverxref_auto_ref = True

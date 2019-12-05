@@ -70,7 +70,7 @@ class HttpCompressionTest(TestCase):
 
     def test_process_response_br(self):
         try:
-            import brotli
+            import brotli  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         response = self._getresponse('br')

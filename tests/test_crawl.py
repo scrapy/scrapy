@@ -140,7 +140,7 @@ class CrawlTestCase(TestCase):
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
-        from six.moves.urllib.parse import urlencode
+        from urllib.parse import urlencode
         query = urlencode({'raw': '''\
 HTTP/1.1 200 OK
 Server: Apache-Coyote/1.1

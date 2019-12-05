@@ -1,15 +1,15 @@
-from __future__ import absolute_import
 import os
 import csv
 import json
 import warnings
-from io import BytesIO
 import tempfile
 import shutil
 import string
+from io import BytesIO
+from pathlib import Path
 from unittest import mock
-from six.moves.urllib.parse import urljoin, urlparse, quote
-from six.moves.urllib.request import pathname2url
+from urllib.parse import urljoin, urlparse, quote
+from urllib.request import pathname2url
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -27,8 +27,6 @@ from scrapy.extensions.feedexport import (
     BlockingFeedStorage)
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
 from scrapy.utils.python import to_unicode
-
-from pathlib import Path
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -167,7 +165,7 @@ class S3FeedStorageTest(unittest.TestCase):
                 create=True)
     def test_parse_credentials(self):
         try:
-            import boto
+            import boto  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("S3FeedStorage requires boto")
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
@@ -268,7 +266,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
@@ -288,7 +286,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
         try:
-            import botocore
+            import botocore  # noqa: F401
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
