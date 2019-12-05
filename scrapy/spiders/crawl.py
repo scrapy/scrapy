@@ -9,6 +9,7 @@ import copy
 import warnings
 
 import six
+import logging
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
@@ -21,6 +22,7 @@ from scrapy.utils.spider import iterate_spider_output
 def _identity(request, response):
     return request
 
+logger = logging.getLogger(__name__)
 
 def _get_method(method, spider):
     if callable(method):
@@ -85,6 +87,8 @@ class CrawlSpider(Spider):
 
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):
+            logger.debug("Skipping non-html response %(response)s" , 
+                {'response' : response}) 
             return
         seen = set()
         for n, rule in enumerate(self._rules):
