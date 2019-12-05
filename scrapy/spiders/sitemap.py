@@ -7,6 +7,7 @@ from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, gzip_magic_number
 
+from lxml.etree import XMLSyntaxError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,13 @@ class SitemapSpider(Spider):
                                {'response': response}, extra={'spider': self})
                 return
 
-            s = Sitemap(body)
+            try:
+                s = Sitemap(body)
+            except XMLSyntaxError:
+                logger.warning("Ignoring invalid sitemap: %(response)s",
+                               {'response': response}, extra={'spider': self})
+                return
+
             it = self.sitemap_filter(s)
 
             if s.type == 'sitemapindex':
