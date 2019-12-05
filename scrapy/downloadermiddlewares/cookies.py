@@ -1,7 +1,7 @@
-import os
-import six
 import logging
 from collections import defaultdict
+
+import six
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response

@@ -5,7 +5,7 @@ from twisted.trial import unittest
 def reppy_available():
     # check if reppy parser is installed
     try:
-        from reppy.robots import Robots
+        from reppy.robots import Robots  # noqa: F401
     except ImportError:
         return False
     return True
@@ -14,18 +14,20 @@ def reppy_available():
 def rerp_available():
     # check if robotexclusionrulesparser is installed
     try:
-        from robotexclusionrulesparser import RobotExclusionRulesParser
+        from robotexclusionrulesparser import RobotExclusionRulesParser  # noqa: F401
     except ImportError:
         return False
     return True
 
+
 def protego_available():
     # check if protego parser is installed
     try:
-        from protego import Protego
+        from protego import Protego  # noqa: F401
     except ImportError:
         return False
     return True
+
 
 class BaseRobotParserTest:
     def _setUp(self, parser_cls):

@@ -48,6 +48,10 @@ The most basic way of checking the output of your spider is to use the
 of the spider at the method level. It has the advantage of being flexible and
 simple to use, but does not allow debugging code inside a method.
 
+.. highlight:: none
+
+.. skip: start
+
 In order to see the item scraped from a specific url::
 
     $ scrapy parse --spider=myspider -c parse_item -d 2 <item_url>
@@ -85,6 +89,8 @@ using::
 
     $ scrapy parse --spider=myspider -d 3 'http://example.com/page1'
 
+.. skip: end
+
 
 Scrapy Shell
 ============
@@ -93,6 +99,8 @@ While the :command:`parse` command is very useful for checking behaviour of a
 spider, it is of little help to check what happens inside a callback, besides
 showing the response received and the output. How to debug the situation when
 ``parse_details`` sometimes receives no item?
+
+.. highlight:: python
 
 Fortunately, the :command:`shell` is your bread and butter in this case (see
 :ref:`topics-shell-inspect-response`)::

@@ -10,7 +10,6 @@ from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
 
 
@@ -58,6 +57,11 @@ class Spider(object_ref):
 
     def start_requests(self):
         cls = self.__class__
+        if not self.start_urls and hasattr(self, 'start_url'):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)")
         if method_is_overridden(cls, Spider, 'make_requests_from_url'):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "
@@ -100,6 +104,6 @@ class Spider(object_ref):
 
 
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
-from scrapy.spiders.sitemap import SitemapSpider
+from scrapy.spiders.crawl import CrawlSpider, Rule  # noqa: F401
+from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider  # noqa: F401
+from scrapy.spiders.sitemap import SitemapSpider  # noqa: F401

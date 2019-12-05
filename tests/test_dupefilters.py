@@ -12,6 +12,7 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
+
 class FromCrawlerRFPDupeFilter(RFPDupeFilter):
 
     @classmethod

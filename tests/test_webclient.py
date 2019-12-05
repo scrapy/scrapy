@@ -78,26 +78,6 @@ class ParseUrlTestCase(unittest.TestCase):
                 to_bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEqual(client._parse(url), test, url)
 
-    def test_externalUnicodeInterference(self):
-        """
-        L{client._parse} should return C{str} for the scheme, host, and path
-        elements of its return tuple, even when passed an URL which has
-        previously been passed to L{urlparse} as a C{unicode} string.
-        """
-        if not six.PY2:
-            raise unittest.SkipTest(
-                "Applies only to Py2, as urls can be ONLY unicode on Py3")
-        badInput = u'http://example.com/path'
-        goodInput = badInput.encode('ascii')
-        self._parse(badInput)  # cache badInput in urlparse_cached
-        scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, str))
-        self.assertTrue(isinstance(netloc, str))
-        self.assertTrue(isinstance(host, str))
-        self.assertTrue(isinstance(path, str))
-        self.assertTrue(isinstance(port, int))
-
-
 
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
