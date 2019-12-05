@@ -27,7 +27,7 @@ class Command(ScrapyCommand):
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
-        if self.settings.getbool('ASYNCIO_SUPPORT'):
+        if self.settings.getbool('ASYNCIO_ENABLED'):
             install_asyncio_reactor()
         try:
             opts.spargs = arglist_to_dict(opts.spargs)

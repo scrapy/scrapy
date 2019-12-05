@@ -160,9 +160,9 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
-.. setting:: ASYNCIO_SUPPORT
+.. setting:: ASYNCIO_ENABLED
 
-ASYNCIO_SUPPORT
+ASYNCIO_ENABLED
 ---------------
 
 Default: ``False``

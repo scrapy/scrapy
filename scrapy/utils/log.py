@@ -149,11 +149,11 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
-    if settings.getbool('ASYNCIO_SUPPORT'):
+    if settings.getbool('ASYNCIO_ENABLED'):
         if is_asyncio_reactor_installed():
             logger.debug("Asyncio support enabled")
         else:
-            logger.error("ASYNCIO_SUPPORT is on but the Twisted asyncio "
+            logger.error("ASYNCIO_ENABLED is on but the Twisted asyncio "
                          "reactor is not installed, this is not supported "
                          "and asyncio coroutines will not work.")
 

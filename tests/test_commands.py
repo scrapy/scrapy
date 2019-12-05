@@ -295,12 +295,12 @@ class BadSpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
-    def test_asyncio_support_true(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_SUPPORT=True'])
+    def test_asyncio_enabled_true(self):
+        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_ENABLED=True'])
         self.assertIn("DEBUG: Asyncio support enabled", log)
 
-    def test_asyncio_support_false(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_SUPPORT=False'])
+    def test_asyncio_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_ENABLED=False'])
         self.assertNotIn("DEBUG: Asyncio support enabled", log)
 
 
