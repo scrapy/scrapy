@@ -265,4 +265,3 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_simple(self):
         log = self.run_script('simple.py')
         self.assertIn('Spider closed (finished)', log)
-        pass
