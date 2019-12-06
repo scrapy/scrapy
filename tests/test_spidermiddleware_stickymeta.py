@@ -1,11 +1,11 @@
-import pytest
-
 from unittest import TestCase
 
-from scrapy.spidermiddlewares.stickymeta import StickyMetaParamsMiddleware
+import pytest
+
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, Request
-from scrapy.item import Item, Field
+from scrapy.http import Request, Response
+from scrapy.item import Field, Item
+from scrapy.spidermiddlewares.stickymeta import StickyMetaParamsMiddleware
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
