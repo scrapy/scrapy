@@ -1,4 +1,10 @@
+import glob
+
 import pytest
+
+
+def _py_files(folder):
+    return glob.glob(folder + "/*.py") + glob.glob(folder + "/*/*.py")
 
 
 collect_ignore = [
@@ -6,6 +12,7 @@ collect_ignore = [
     "scrapy/utils/testsite.py",
 ]
 
+collect_ignore += _py_files("tests/CrawlerProcess")
 
 for line in open('tests/ignores.txt'):
     file_path = line.strip()
@@ -17,13 +24,3 @@ for line in open('tests/ignores.txt'):
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()
-
-
-def pytest_collection_modifyitems(session, config, items):
-    # Avoid executing tests when executing `--flake8` flag (pytest-flake8)
-    try:
-        from pytest_flake8 import Flake8Item
-        if config.getoption('--flake8'):
-            items[:] = [item for item in items if isinstance(item, Flake8Item)]
-    except ImportError:
-        pass
