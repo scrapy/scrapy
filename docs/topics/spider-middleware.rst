@@ -463,7 +463,7 @@ StickyMetaParamsMiddleware
    When enabled and configured, this middleware forwards the desired :ref:`Request.meta <topics-request-meta>`
    parameters between ``Requests`` and ``Responses``.
 
-   The :class:`StickyMetaParamsMiddleware` can be configured through the settings :setting:`STICKY_META_KEYS`.
+   The :class:`StickyMetaParamsMiddleware` can be configured through the :setting:`STICKY_META_KEYS` setting.
 
    See the difference between :ref:`topics-spiders` with and without the middleware:
 

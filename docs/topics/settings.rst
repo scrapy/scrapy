@@ -1390,7 +1390,7 @@ STICKY_META_KEYS
 
 Default: ``[]`` (empty list)
 
-Configure which key/values should be stickied in :attr:`Request.meta`. See
+Configure which key/values should be stickied in :attr:`Request.meta <scrapy.http.Request.meta>`. See
 :class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
