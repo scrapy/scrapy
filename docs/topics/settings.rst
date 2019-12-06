@@ -1383,6 +1383,16 @@ Default: ``[]`` (empty list)
 Send Scrapy stats after spiders finish scraping. See
 :class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
 
+.. setting:: STICKY_META_KEYS
+
+STICKY_META_KEYS
+----------------
+
+Default: ``[]`` (empty list)
+
+Configure which key/values should be stickied in :attr:`Request.meta`. See
+:class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware` for more info.
+
 .. setting:: TELNETCONSOLE_ENABLED
 
 TELNETCONSOLE_ENABLED

@@ -20,7 +20,6 @@ class Spider(object_ref):
 
     name = None
     custom_settings = None
-    sticky_meta_keys = []
 
     def __init__(self, name=None, **kwargs):
         if name is not None:

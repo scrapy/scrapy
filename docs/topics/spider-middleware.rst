@@ -463,8 +463,7 @@ StickyMetaParamsMiddleware
    When enabled and configured, this middleware forwards the desired :ref:`Request.meta <topics-request-meta>`
    parameters between ``Requests`` and ``Responses``.
 
-   The :class:`StickyMetaParamsMiddleware` can be configured through the :attr:`~scrapy.spiders.Spider.sticky_meta_keys`
-   spider attribute.
+   The :class:`StickyMetaParamsMiddleware` can be configured through the settings :setting:`STICKY_META_KEYS`.
 
    See the difference between :ref:`topics-spiders` with and without the middleware:
 
@@ -505,7 +504,7 @@ StickyMetaParamsMiddleware
     class StickySpider(Spider):
         name = 'sticky'
         start_urls = ['https://www.example.com']
-        sticky_meta_keys = ['param']  # Will always forward the meta param "param"
+        custom_settings = {'STICKY_META_KEYS': ['param']}  # Will always forward the meta param "param"
 
         def parse(self, response):
             for param in range(5):

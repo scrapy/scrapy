@@ -22,21 +22,13 @@ class TestStickyMetaParamsMiddleware(TestCase):
     def create_middleware(self, crawler):
         return StickyMetaParamsMiddleware.from_crawler(crawler)
 
-    def _get_crawler(self, spider):
-        crawler = get_crawler(Spider)
-        crawler.spider = spider
-        return crawler
-
     def test_middleware_not_enabled(self):
-        spider = Spider('dummy')
-        crawler = self._get_crawler(spider)
+        crawler = get_crawler(Spider)
         with pytest.raises(NotConfigured):
             self.create_middleware(crawler)
 
     def test_sticky_params(self):
-        spider = Spider('dummy')
-        spider.sticky_meta_keys = ['param2']
-        crawler = self._get_crawler(spider)
+        crawler = get_crawler(Spider, {'STICKY_META_KEYS': ['param2']})
         middleware = self.create_middleware(crawler)
         request = Request(
             self.test_url,
@@ -49,7 +41,7 @@ class TestStickyMetaParamsMiddleware(TestCase):
             Request(self.test_url),
             MockItem(name='dummy')
         ]
-        results = middleware.process_spider_output(response, result, spider)
+        results = middleware.process_spider_output(response, result, None)
         for result in results:
             if isinstance(result, Request):
                 self.assertEqual(result.meta, {'param2': 'Stickied!'})
