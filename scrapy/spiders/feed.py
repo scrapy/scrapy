@@ -133,4 +133,3 @@ class CSVFeedSpider(Spider):
             raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
         response = self.adapt_response(response)
         return self.parse_rows(response)
-

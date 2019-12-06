@@ -109,6 +109,7 @@ class SpiderLoaderTest(unittest.TestCase):
             spiders = spider_loader.list()
             self.assertEqual(spiders, [])
 
+
 class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
     def setUp(self):
