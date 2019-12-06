@@ -51,3 +51,31 @@ class TestStickyMetaParamsMiddleware(TestCase):
         middleware = self.create_middleware(crawler)
         assert type(middleware.keys_to_sticky) is list
         assert middleware.keys_to_sticky == ['param1', 'param2']
+
+    def test_sticky_param_does_not_override_manually_configured_param(self):
+        crawler = get_crawler(
+            Spider,
+            {'STICKY_META_KEYS': ['param', 'param2']}
+        )
+        middleware = self.create_middleware(crawler)
+        request = Request(
+            self.test_url,
+            meta={
+                'param': 'Stickied!',
+                'param2': 'Stickied!'
+            })
+        response = Response(self.test_url, request=request)
+        result = [
+            Request(self.test_url, meta={'param': 'Override stickied'}),
+            MockItem(name='dummy')
+        ]
+        results = middleware.process_spider_output(response, result, None)
+        for result in results:
+            if isinstance(result, Request):
+                self.assertEqual(
+                    result.meta,
+                    {
+                        'param': 'Override stickied',
+                        'param2': 'Stickied!'
+                    }
+                )
