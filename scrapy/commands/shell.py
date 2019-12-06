@@ -7,6 +7,7 @@ from threading import Thread
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
+from scrapy.shell import Shell
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 from scrapy.utils.url import guess_scheme
 
@@ -69,8 +70,6 @@ class Command(ScrapyCommand):
 
         self._start_crawler_thread()
 
-        # moved from the top-level because it imports twisted.internet.reactor
-        from scrapy.shell import Shell
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         shell.start(url=url, redirect=not opts.no_redirect)
 

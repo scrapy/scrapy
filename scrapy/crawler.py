@@ -3,7 +3,7 @@ import pprint
 import signal
 import warnings
 
-from twisted.internet import reactor, defer
+from twisted.internet import defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy import Spider
@@ -261,6 +261,7 @@ class CrawlerProcess(CrawlerRunner):
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
         logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
@@ -268,6 +269,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown',
@@ -286,6 +288,7 @@ class CrawlerProcess(CrawlerRunner):
         :param boolean stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
+        from twisted.internet import reactor
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
@@ -300,6 +303,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.run(installSignalHandlers=False)  # blocking call
 
     def _get_dns_resolver(self):
+        from twisted.internet import reactor
         if self.settings.getbool('DNSCACHE_ENABLED'):
             cache_size = self.settings.getint('DNSCACHE_SIZE')
         else:
@@ -316,6 +320,7 @@ class CrawlerProcess(CrawlerRunner):
         return d
 
     def _stop_reactor(self, _=None):
+        from twisted.internet import reactor
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
