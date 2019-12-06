@@ -7,7 +7,7 @@ class StickyMetaParamsMiddleware(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        keys_to_sticky = crawler.settings.get('STICKY_META_KEYS', [])
+        keys_to_sticky = crawler.settings.getlist('STICKY_META_KEYS')
         if not keys_to_sticky:
             raise NotConfigured
         return cls(keys_to_sticky)

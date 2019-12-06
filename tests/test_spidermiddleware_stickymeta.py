@@ -45,3 +45,9 @@ class TestStickyMetaParamsMiddleware(TestCase):
         for result in results:
             if isinstance(result, Request):
                 self.assertEqual(result.meta, {'param2': 'Stickied!'})
+
+    def test_comma_separated_string_setting(self):
+        crawler = get_crawler(Spider, {'STICKY_META_KEYS': 'param1,param2'})
+        middleware = self.create_middleware(crawler)
+        assert type(middleware.keys_to_sticky) is list
+        assert middleware.keys_to_sticky == ['param1', 'param2']
