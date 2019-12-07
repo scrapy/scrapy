@@ -4,7 +4,7 @@ import os
 import unittest
 
 
-class CmdlineCrawlTest(unittest.TestCase):
+class CmdlineCrawlPipelineTest(unittest.TestCase):
 
     def setUp(self):
         pass
