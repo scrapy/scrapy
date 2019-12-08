@@ -130,6 +130,9 @@ class Request(object_ref):
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
                      may modify the :class:`~scrapy.http.Request` object.
 
+        You can also use `curl2scrapy
+        <https://michael-shub.github.io/curl2scrapy//>`_ to convert a curl
+        command to a scrapy request.
        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
