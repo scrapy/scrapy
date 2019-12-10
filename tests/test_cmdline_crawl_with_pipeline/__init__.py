@@ -1,13 +1,10 @@
-from subprocess import Popen, PIPE
-import sys
 import os
+import sys
 import unittest
+from subprocess import Popen, PIPE
 
 
 class CmdlineCrawlPipelineTest(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def _execute(self, spname):
         args = (sys.executable, '-m', 'scrapy.cmdline', 'crawl', spname)
