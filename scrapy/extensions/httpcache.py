@@ -1,14 +1,12 @@
-from __future__ import print_function
-
 import gzip
 import logging
 import os
+import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
 
-from six.moves import cPickle as pickle
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 
 from scrapy.http import Headers, Response

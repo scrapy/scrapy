@@ -1,8 +1,7 @@
 """Helper functions for scrapy.http objects (Request, Response)"""
 
 import weakref
-
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 
 _urlparse_cache = weakref.WeakKeyDictionary()
