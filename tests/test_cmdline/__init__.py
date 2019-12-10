@@ -1,13 +1,12 @@
-from io import StringIO
 import json
 import os
 import pstats
 import shutil
-import six
-from subprocess import Popen, PIPE
 import sys
 import tempfile
 import unittest
+from io import StringIO
+from subprocess import Popen, PIPE
 
 from scrapy.utils.test import get_testenv
 
@@ -65,5 +64,5 @@ class CmdlineTest(unittest.TestCase):
         for char in ("'", "<", ">", 'u"'):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
-        six.assertCountEqual(self, settingsdict.keys(), EXTENSIONS.keys())
+        self.assertCountEqual(settingsdict.keys(), EXTENSIONS.keys())
         self.assertEqual(200, settingsdict[EXT_PATH])

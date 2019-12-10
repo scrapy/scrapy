@@ -2,8 +2,7 @@
 Some spiders used for testing and benchmarking
 """
 import time
-
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 from scrapy.http import Request
 from scrapy.item import Item

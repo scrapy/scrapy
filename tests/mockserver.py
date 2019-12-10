@@ -3,9 +3,9 @@ import os
 import random
 import sys
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 
 from OpenSSL import SSL
-from six.moves.urllib.parse import urlencode
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File

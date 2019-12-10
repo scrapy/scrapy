@@ -6,15 +6,14 @@ import csv
 import io
 import pprint
 import marshal
-import six
-from six.moves import cPickle as pickle
+import warnings
+import pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
-import warnings
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
@@ -60,9 +59,9 @@ class BaseItemExporter(object):
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
             if include_empty and not isinstance(item, dict):
-                field_iter = six.iterkeys(item.fields)
+                field_iter = item.fields.keys()
             else:
-                field_iter = six.iterkeys(item)
+                field_iter = item.keys()
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -180,7 +179,7 @@ class XmlItemExporter(BaseItemExporter):
             for value in serialized_value:
                 self._export_xml_field('value', value, depth=depth+1)
             self._beautify_indent(depth=depth)
-        elif isinstance(serialized_value, six.text_type):
+        elif isinstance(serialized_value, str):
             self.xg.characters(serialized_value)
         else:
             self.xg.characters(str(serialized_value))
@@ -319,12 +318,12 @@ class PythonItemExporter(BaseItemExporter):
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
-        if isinstance(value, (six.text_type, bytes)):
+        if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 
     def _serialize_dict(self, value):
-        for key, val in six.iteritems(value):
+        for key, val in value.items():
             key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 
