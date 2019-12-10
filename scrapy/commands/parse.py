@@ -114,14 +114,15 @@ class Command(ScrapyCommand):
 
     def run_callback(self, response, callback, cb_kwargs=None):
         cb_kwargs = cb_kwargs or {}
-        items, requests = [], []
+        items =[]
+        request1 =[]
 
         for x in iterate_spider_output(callback(response, **cb_kwargs)):
             if isinstance(x, (BaseItem, dict)):
                 items.append(x)
             elif isinstance(x, Request):
-                requests.append(x)
-        return items, requests
+                request1.append(x)
+        return items, request1
 
     def get_callback_from_rules(self, spider, response):
         if getattr(spider, 'rules', None):
@@ -129,9 +130,7 @@ class Command(ScrapyCommand):
                 if rule.link_extractor.matches(response.url):
                     return rule.callback or "parse"
         else:
-            logger.error('No CrawlSpider rules found in spider %(spider)r, '
-                         'please specify a callback to use for parsing',
-                         {'spider': spider.name})
+            logger.error('No CrawlSpider rules found in spider %(spider)r,'please specify a callback to use for parsing'{'spider': spider.name})
 
     def set_spidercls(self, url, opts):
         spider_loader = self.crawler_process.spider_loader
