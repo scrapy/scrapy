@@ -1,3 +1,4 @@
+from twisted.internet import reactor
 from twisted.internet.interfaces import IHostnameResolver, IResolutionReceiver
 from zope.interface.declarations import implementer, provider
 
@@ -21,9 +22,14 @@ class CachingHostnameResolver(object):
 
         @provider(IResolutionReceiver)
         class CachingResolutionReceiver(resolutionReceiver):
+
+            def __init__(self, timeout):
+                self.timeout = timeout
+
             def resolutionBegan(self, resolution):
                 super(CachingResolutionReceiver, self).resolutionBegan(resolution)
                 self.resolution = resolution
+                # reactor.callLater(self.timeout, resolution.cancel)
 
             def resolutionComplete(self):
                 super(CachingResolutionReceiver, self).resolutionComplete()
@@ -33,7 +39,11 @@ class CachingHostnameResolver(object):
             result = dnscache[hostName]
         except KeyError:
             result = self.resolver.resolveHostName(
-                CachingResolutionReceiver(), hostName, portNumber, addressTypes, transportSemantics
+                CachingResolutionReceiver(self.timeout),
+                hostName,
+                portNumber,
+                addressTypes,
+                transportSemantics
             )
         finally:
             return result
