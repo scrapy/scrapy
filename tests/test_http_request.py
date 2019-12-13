@@ -149,7 +149,7 @@ class RequestTest(unittest.TestCase):
 
         r2 = self.request_class(url="http://www.example.com/", body=b"")
         assert isinstance(r2.body, bytes)
-        self.assertEqual(r2.encoding, 'utf-8') # default encoding
+        self.assertEqual(r2.encoding, 'utf-8')  # default encoding
 
         r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
         assert isinstance(r3.body, bytes)

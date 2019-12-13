@@ -47,7 +47,7 @@ def _embed_ptpython_shell(namespace={}, banner=''):
 def _embed_standard_shell(namespace={}, banner=''):
     """Start a standard python shell"""
     import code
-    try: # readline module is only available on unix systems
+    try:  # readline module is only available on unix systems
         import readline
     except ImportError:
         pass
@@ -72,9 +72,9 @@ def get_shell_embed_func(shells=None, known_shells=None):
     """Return the first acceptable shell-embed function
     from a given list of shell names.
     """
-    if shells is None: # list, preference order of shells
+    if shells is None:  # list, preference order of shells
         shells = DEFAULT_PYTHON_SHELLS.keys()
-    if known_shells is None: # available embeddable shells
+    if known_shells is None:  # available embeddable shells
         known_shells = DEFAULT_PYTHON_SHELLS.copy()
     for shell in shells:
         if shell in known_shells:
@@ -97,5 +97,5 @@ def start_python_console(namespace=None, banner='', shells=None):
         shell = get_shell_embed_func(shells)
         if shell is not None:
             shell(namespace=namespace, banner=banner)
-    except SystemExit: # raised when using exit() in python code.interact
+    except SystemExit:  # raised when using exit() in python code.interact
         pass

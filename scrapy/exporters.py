@@ -199,7 +199,7 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
         )
         self.csv_writer = csv.writer(self.stream, **kwargs)
         self._headers_not_written = True
