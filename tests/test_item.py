@@ -3,8 +3,6 @@ import unittest
 from unittest import mock
 from warnings import catch_warnings
 
-import six
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
 
@@ -302,7 +300,7 @@ class ItemMetaTest(unittest.TestCase):
 class ItemMetaClassCellRegression(unittest.TestCase):
 
     def test_item_meta_classcell_regression(self):
-        class MyItem(six.with_metaclass(ItemMeta, Item)):
+        class MyItem(Item, metaclass=ItemMeta):
             def __init__(self, *args, **kwargs):
                 # This call to super() trigger the __classcell__ propagation
                 # requirement. When not done properly raises an error:

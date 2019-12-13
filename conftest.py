@@ -1,11 +1,18 @@
+from pathlib import Path
+
 import pytest
+
+
+def _py_files(folder):
+    return (str(p) for p in Path(folder).rglob('*.py'))
 
 
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
+    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    *_py_files("tests/CrawlerProcess")
 ]
-
 
 for line in open('tests/ignores.txt'):
     file_path = line.strip()

@@ -3,7 +3,6 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
-import six
 import shutil
 
 import OpenSSL.SSL
@@ -298,7 +297,7 @@ class WebClientTestCase(unittest.TestCase):
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
             # anything.
-            connected = list(six.iterkeys(self.wrapper.protocols))
+            connected = list(self.wrapper.protocols.keys())
             # There might be nothing here if the server managed to already see
             # that the connection was lost.
             if connected:
