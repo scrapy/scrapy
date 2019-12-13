@@ -2,7 +2,6 @@
 Helper functions for dealing with Twisted deferreds
 """
 import asyncio
-import asyncio.futures
 import inspect
 
 from twisted.internet import defer, task
@@ -121,18 +120,18 @@ def iter_errback(iterable, errback, *a, **kw):
             errback(failure.Failure(), *a, **kw)
 
 
-def isfuture(o):
+def _isfuture(o):
     # workaround for Python before 3.5.3 not having asyncio.isfuture
     if hasattr(asyncio, 'isfuture'):
         return asyncio.isfuture(o)
-    return isinstance(o, asyncio.futures.Future)
+    return isinstance(o, asyncio.Future)
 
 
 def deferred_from_coro(o, asyncio_enabled=False):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):
         return o
-    if isfuture(o) or inspect.isawaitable(o):
+    if _isfuture(o) or inspect.isawaitable(o):
         if not asyncio_enabled:
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
