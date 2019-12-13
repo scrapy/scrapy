@@ -301,3 +301,14 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_simple(self):
         log = self.run_script('simple.py')
         self.assertIn('Spider closed (finished)', log)
+        self.assertNotIn("DEBUG: Asyncio support enabled", log)
+
+    def test_asyncio_enabled_no_reactor(self):
+        log = self.run_script('asyncio_enabled_no_reactor.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertIn("DEBUG: Asyncio support enabled", log)
+
+    def test_asyncio_enabled_reactor(self):
+        log = self.run_script('asyncio_enabled_reactor.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertIn("DEBUG: Asyncio support enabled", log)
