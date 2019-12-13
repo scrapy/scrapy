@@ -514,25 +514,27 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
         """Make sure the FilteringLinkExtractor deprecation warning is not
         issued for LxmlLinkExtractor"""
         with catch_warnings(record=True) as warnings:
-            extractor = LxmlLinkExtractor()
+            LxmlLinkExtractor()
             self.assertEqual(len(warnings), 0)
+
             class SubclassedItem(LxmlLinkExtractor):
                 pass
-            subclassed_extractor = SubclassedItem()
+
+            SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
 class FilteringLinkExtractorTest(unittest.TestCase):
 
     def test_deprecation_warning(self):
-        args = [None]*10
+        args = [None] * 10
         with catch_warnings(record=True) as warnings:
-            extractor = FilteringLinkExtractor(*args)
+            FilteringLinkExtractor(*args)
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
             class SubclassedFilteringLinkExtractor(FilteringLinkExtractor):
                 pass
-            subclassed_extractor = SubclassedFilteringLinkExtractor(*args)
+            SubclassedFilteringLinkExtractor(*args)
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
