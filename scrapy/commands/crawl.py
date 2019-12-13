@@ -1,6 +1,5 @@
 import os
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.asyncio import install_asyncio_reactor
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
 from scrapy.exceptions import UsageError
@@ -27,8 +26,6 @@ class Command(ScrapyCommand):
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
-        if self.settings.getbool('ASYNCIO_ENABLED'):
-            install_asyncio_reactor()
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
