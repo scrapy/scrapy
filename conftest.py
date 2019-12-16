@@ -36,8 +36,11 @@ def pytest_collection_modifyitems(session, config, items):
         pass
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def reactor_pytest(request):
+    if not request.cls:
+        # doctests
+        return
     request.cls.reactor_pytest = request.config.getoption("--reactor")
     return request.cls.reactor_pytest
 
