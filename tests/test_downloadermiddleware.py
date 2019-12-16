@@ -1,6 +1,7 @@
 import asyncio
 from unittest import mock
 
+from pytest import mark
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
@@ -231,6 +232,12 @@ class MiddlewareUsingCoro(ManagerTestCase):
 
         self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
+
+
+@mark.only_asyncio()
+class MiddlewareUsingCoroAsyncio(ManagerTestCase):
+
+    settings_dict = {'ASYNCIO_ENABLED': True}
 
     def test_asyncdef_asyncio(self):
         resp = Response('http://example.com/index.html')
