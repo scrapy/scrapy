@@ -4,6 +4,7 @@ from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.exceptions import NotConfigured
+from scrapy.settings import default_settings
 
 
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
@@ -18,11 +19,31 @@ except ImportError:
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+    def __init__(self, crawler=None):
+        self.crawler = crawler
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls()
+        return cls(crawler=crawler)
+
+    def should_retry(self, spider):
+        default = default_settings.RETRY_HTTP_COMPRESSION_ERRORS
+
+        if hasattr(spider, 'settings'):
+            return spider.settings.getbool(
+                'RETRY_HTTP_COMPRESSION_ERRORS',
+                default
+            )
+
+        if self.crawler:
+            return self.crawler.settings.getbool(
+                'RETRY_HTTP_COMPRESSION_ERRORS',
+                default
+            )
+
+        return default
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
@@ -36,7 +57,14 @@ class HttpCompressionMiddleware(object):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding:
                 encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                try:
+                    decoded_body = self._decode(response.body, encoding.lower())
+                except Exception as exc:
+                    if not self.should_retry(spider):
+                        raise
+
+                    response.meta['_http_compression_exc'] = exc
+                    return response
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url, body=decoded_body)
                 kwargs = dict(cls=respcls, body=decoded_body)

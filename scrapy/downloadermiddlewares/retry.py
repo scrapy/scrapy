@@ -32,7 +32,7 @@ class RetryMiddleware(object):
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError, TunnelError)
+                           IOError, OSError, TunnelError)
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
@@ -51,6 +51,13 @@ class RetryMiddleware(object):
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
+        if '_http_compression_exc' in request.meta:
+            exc = request.meta.pop('_http_compression_exc')
+            if isinstance(exc, self.EXCEPTIONS_TO_RETRY):
+                reason = 'HttpCompressionMiddleware/{exc_name}'.format(
+                    exc_name=type(exc).__name__
+                )
+                return self._retry(request, reason, spider) or response
         return response
 
     def process_exception(self, request, exception, spider):

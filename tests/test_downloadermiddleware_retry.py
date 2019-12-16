@@ -74,6 +74,34 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable') == 2
         assert self.crawler.stats.get_value('retry/count') == 2
 
+    def test_http_compression_exception(self):
+        req = Request('http://www.scrapytest.org/')
+
+        # first retry
+        rsp = Response('http://www.scrapytest.org/', body=b'', request=req)
+        rsp.meta['_http_compression_exc'] = OSError('Not a gzipped file')
+        req = self.mw.process_response(req, rsp, self.spider)
+        self.assertIsInstance(req, Request)
+        self.assertNotIn('_http_compression_exc', req.meta)
+        self.assertEqual(req.meta['retry_times'], 1)
+
+        # second retry
+        rsp = Response('http://www.scrapytest.org/', body=b'', request=req)
+        rsp.meta['_http_compression_exc'] = OSError('Not a gzipped file')
+        req = self.mw.process_response(req, rsp, self.spider)
+        self.assertIsInstance(req, Request)
+        self.assertNotIn('_http_compression_exc', req.meta)
+        self.assertEqual(req.meta['retry_times'], 2)
+
+        # discard it
+        rsp = Response('http://www.scrapytest.org/', body=b'', request=req)
+        rsp.meta['_http_compression_exc'] = OSError('Not a gzipped file')
+        assert self.mw.process_response(req, rsp, self.spider) is rsp
+
+        assert self.crawler.stats.get_value('retry/max_reached') == 1
+        assert self.crawler.stats.get_value('retry/reason_count/HttpCompressionMiddleware/OSError') == 2
+        assert self.crawler.stats.get_value('retry/count') == 2
+
     def test_twistederrors(self):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
                 DNSLookupError, ConnectionRefusedError, ConnectionDone,

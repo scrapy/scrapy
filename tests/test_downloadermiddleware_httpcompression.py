@@ -4,6 +4,7 @@ from os.path import join
 from gzip import GzipFile
 
 from scrapy.spiders import Spider
+from scrapy.settings import BaseSettings
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
     ACCEPTED_ENCODINGS
@@ -17,6 +18,7 @@ SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
         'gzip': ('html-gzip.bin', 'gzip'),
+        'invalid-gzip': ('html-invalid-gzip.bin', 'gzip'),
         'x-gzip': ('html-gzip.bin', 'gzip'),
         'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
@@ -67,6 +69,30 @@ class HttpCompressionTest(TestCase):
         assert newresponse is not response
         assert newresponse.body.startswith(b'<!DOCTYPE')
         assert 'Content-Encoding' not in newresponse.headers
+
+    def test_process_response_invalid_gzip_without_retry(self):
+        response = self._getresponse('invalid-gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        with self.assertRaises((IOError, OSError,)):
+            self.mw.process_response(request, response, self.spider)
+
+    def test_process_response_invalid_gzip_with_retry(self):
+        spider = Spider('foo')
+        spider.settings = BaseSettings()
+        spider.settings['RETRY_HTTP_COMPRESSION_ERRORS'] = True
+
+        response = self._getresponse('invalid-gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        newresponse = self.mw.process_response(request, response, spider)
+        self.assertEqual(newresponse, response)
+        self.assertIsInstance(
+            response.meta['_http_compression_exc'],
+            (IOError, OSError,)
+        )
 
     def test_process_response_br(self):
         try:
