@@ -9,7 +9,6 @@ from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_f_from_coro_f
 
 
-
 class ItemPipelineManager(MiddlewareManager):
 
     component_name = 'item pipeline'
