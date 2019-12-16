@@ -1,3 +1,8 @@
+from contextlib import suppress
+
+from twisted.internet.error import ReactorAlreadyInstalledError
+
+
 def install_asyncio_reactor():
     """ Tries to install AsyncioSelectorReactor
     """
@@ -5,13 +10,10 @@ def install_asyncio_reactor():
         import asyncio
         from twisted.internet import asyncioreactor
     except ImportError:
-        pass
-    else:
-        from twisted.internet.error import ReactorAlreadyInstalledError
-        try:
-            asyncioreactor.install(asyncio.get_event_loop())
-        except ReactorAlreadyInstalledError:
-            pass
+        return
+
+    with suppress(ReactorAlreadyInstalledError):
+        asyncioreactor.install(asyncio.get_event_loop())
 
 
 def is_asyncio_reactor_installed():
