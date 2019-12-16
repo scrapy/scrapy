@@ -2,6 +2,7 @@
 Helper functions for dealing with Twisted deferreds
 """
 import asyncio
+from functools import wraps
 import inspect
 
 from twisted.internet import defer, task
@@ -140,3 +141,15 @@ def deferred_from_coro(o):
             # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
             return defer.Deferred.fromFuture(asyncio.ensure_future(o))
     return o
+
+
+def deferred_f_from_coro_f(coro_f):
+    """ Converts a coroutine function into a function that returns a Deferred.
+
+    The coroutine function will be called at the time when the wrapper is called. Wrapper args will be passed to it.
+    This is useful for callback chains, as callback functions are called with the previous callback result.
+    """
+    @wraps(coro_f)
+    def f(*coro_args, **coro_kwargs):
+        return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
+    return f
