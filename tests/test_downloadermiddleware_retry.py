@@ -165,11 +165,11 @@ class MaxRetryTimesTest(unittest.TestCase):
         # SETTINGS: meta(max_retry_times) = 4
         meta_max_retry_times = 4
 
-        req = Request(self.invalid_url, meta= \
-            {'max_retry_times': meta_max_retry_times, 'dont_retry': True})
+        req = Request(self.invalid_url, meta={
+            'max_retry_times': meta_max_retry_times, 'dont_retry': True
+        })
 
         self._test_retry(req, DNSLookupError('foo'), 0)
-
 
     def _test_retry(self, req, exception, max_retry_times):
         

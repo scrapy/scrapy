@@ -123,7 +123,7 @@ class Scraper(object):
         callback/errback"""
         assert isinstance(response, (Response, Failure))
 
-        dfd = self._scrape2(response, request, spider) # returns spiders processed output
+        dfd = self._scrape2(response, request, spider)  # returns spiders processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
         dfd.addCallback(self.handle_spider_output, request, response, spider)
         return dfd
