@@ -1,6 +1,7 @@
-import six
 import unittest
+from io import StringIO
 from unittest import mock
+
 from scrapy.utils import trackref
 
 
@@ -38,12 +39,12 @@ Live References
 Bar                                 1   oldest: 0s ago
 ''')
 
-    @mock.patch('sys.stdout', new_callable=six.StringIO)
+    @mock.patch('sys.stdout', new_callable=StringIO)
     def test_print_live_refs_empty(self, stdout):
         trackref.print_live_refs()
         self.assertEqual(stdout.getvalue(), 'Live References\n\n\n')
 
-    @mock.patch('sys.stdout', new_callable=six.StringIO)
+    @mock.patch('sys.stdout', new_callable=StringIO)
     def test_print_live_refs_with_objects(self, stdout):
         o1 = Foo()  # NOQA
         trackref.print_live_refs()

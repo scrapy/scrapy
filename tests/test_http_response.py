@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
 from w3lib.encoding import resolve_encoding
 
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
@@ -102,7 +101,7 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r4.flags, [])
 
     def _assert_response_values(self, response, encoding, body):
-        if isinstance(body, six.text_type):
+        if isinstance(body, str):
             body_unicode = body
             body_bytes = body.encode(encoding)
         else:
@@ -110,7 +109,7 @@ class BaseResponseTest(unittest.TestCase):
             body_bytes = body
 
         assert isinstance(response.body, bytes)
-        assert isinstance(response.text, six.text_type)
+        assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
         self.assertEqual(response.body_as_unicode(), body_unicode)
@@ -220,11 +219,11 @@ class TextResponseTest(BaseResponseTest):
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
 
         # check body_as_unicode
-        self.assertTrue(isinstance(r1.body_as_unicode(), six.text_type))
+        self.assertTrue(isinstance(r1.body_as_unicode(), str))
         self.assertEqual(r1.body_as_unicode(), unicode_string)
 
         # check response.text
-        self.assertTrue(isinstance(r1.text, six.text_type))
+        self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):
@@ -317,8 +316,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'SUFFIX' in r.text, repr(r.text)
 
         # Do not destroy html tags due to encoding bugs
-        r = self.response_class("http://example.com", encoding='utf-8', \
-                body=b'\xf0<span>value</span>')
+        r = self.response_class("http://example.com", encoding='utf-8',
+                                body=b'\xf0<span>value</span>')
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse

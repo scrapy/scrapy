@@ -1,4 +1,4 @@
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
@@ -32,8 +32,8 @@ def _get_boto_connection():
 
 class S3DownloadHandler(object):
 
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler, **kw):
+    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None,
+                 httpdownloadhandler=HTTPDownloadHandler, **kw):
 
         if not aws_access_key_id:
             aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
