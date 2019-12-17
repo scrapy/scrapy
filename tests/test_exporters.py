@@ -9,7 +9,6 @@ from io import BytesIO
 from datetime import datetime
 
 import lxml.etree
-from six.moves import cPickle as pickle
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
