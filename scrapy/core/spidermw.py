@@ -44,7 +44,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 try:
                     result = method(response=response, spider=spider)
                     if result is not None:
-                        raise _InvalidOutput('Middleware {} must return None or raise an exception, got {}' \
+                        raise _InvalidOutput('Middleware {} must return None or raise an exception, got {}'
                                              .format(fname(method), type(result)))
                 except _InvalidOutput:
                     raise
@@ -69,7 +69,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 elif result is None:
                     continue
                 else:
-                    raise _InvalidOutput('Middleware {} must return None or an iterable, got {}' \
+                    raise _InvalidOutput('Middleware {} must return None or an iterable, got {}'
                                          .format(fname(method), type(result)))
             return _failure
 
@@ -103,7 +103,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if _isiterable(result):
                     result = evaluate_iterable(result, method_index)
                 else:
-                    raise _InvalidOutput('Middleware {} must return an iterable, got {}' \
+                    raise _InvalidOutput('Middleware {} must return an iterable, got {}'
                                          .format(fname(method), type(result)))
 
             return chain(result, recovered)
