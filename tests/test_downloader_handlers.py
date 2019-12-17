@@ -800,8 +800,8 @@ class S3TestCase(unittest.TestCase):
         req = Request('s3://johnsmith/photos/puppy.jpg', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
@@ -813,21 +813,22 @@ class S3TestCase(unittest.TestCase):
             })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
-        req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy', \
-                method='GET', headers={
-                    'User-Agent': 'Mozilla/5.0',
-                    'Date': date,
-                    })
+        req = Request(
+            's3://johnsmith/?prefix=photos&max-keys=50&marker=puppy',
+            method='GET', headers={
+                'User-Agent': 'Mozilla/5.0',
+                'Date': date,
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
@@ -836,8 +837,8 @@ class S3TestCase(unittest.TestCase):
             method='GET', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
         try:
@@ -850,11 +851,11 @@ class S3TestCase(unittest.TestCase):
         # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', \
-                method='DELETE', headers={
-                    'Date': date,
-                    'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-                    })
+        req = Request(
+            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
+                'Date': date,
+                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         # botocore does not override Date with x-amz-date
@@ -864,25 +865,26 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
-        req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz', \
-                method='PUT', headers={
-                    'User-Agent': 'curl/7.15.5',
-                    'Host': 'static.johnsmith.net:8080',
-                    'Date': date,
-                    'x-amz-acl': 'public-read',
-                    'content-type': 'application/x-download',
-                    'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
-                    'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
-                    'X-Amz-Meta-FileChecksum': '0x02661779',
-                    'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
-                    'Content-Disposition': 'attachment; filename=database.dat',
-                    'Content-Encoding': 'gzip',
-                    'Content-Length': '5913339',
-                    })
+        req = Request(
+            's3://static.johnsmith.net:8080/db-backup.dat.gz',
+            method='PUT', headers={
+                'User-Agent': 'curl/7.15.5',
+                'Host': 'static.johnsmith.net:8080',
+                'Date': date,
+                'x-amz-acl': 'public-read',
+                'content-type': 'application/x-download',
+                'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
+                'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
+                'X-Amz-Meta-FileChecksum': '0x02661779',
+                'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
+                'Content-Disposition': 'attachment; filename=database.dat',
+                'Content-Encoding': 'gzip',
+                'Content-Length': '5913339',
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
     def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
