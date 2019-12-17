@@ -3,7 +3,6 @@ import unittest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
-import six
 
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import DropItem
@@ -60,7 +59,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.dropped(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, six.text_type) for x in lines)
+        assert all(isinstance(x, str) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
 
     def test_error(self):
@@ -80,7 +79,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.scraped(item, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, six.text_type) for x in lines)
+        assert all(isinstance(x, str) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
 
 

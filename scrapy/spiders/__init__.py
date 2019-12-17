@@ -57,6 +57,11 @@ class Spider(object_ref):
 
     def start_requests(self):
         cls = self.__class__
+        if not self.start_urls and hasattr(self, 'start_url'):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)")
         if method_is_overridden(cls, Spider, 'make_requests_from_url'):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "

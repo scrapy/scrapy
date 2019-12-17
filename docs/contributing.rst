@@ -229,7 +229,7 @@ You can also specify a comma-separated list of environmets, and use :ref:`tox’
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py27,py36 -p auto
+    tox -e py36,py38 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -243,13 +243,12 @@ the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
 
     tox -e py36 -- scrapy tests -n auto
 
-To see coverage report install `coverage`_ (``pip install coverage``) and run:
+To see coverage report install :doc:`coverage <coverage:index>`
+(``pip install coverage``) and run:
 
     ``coverage report``
 
 see output of ``coverage --help`` for more options like html or xml report.
-
-.. _coverage: https://pypi.python.org/pypi/coverage
 
 Writing tests
 -------------

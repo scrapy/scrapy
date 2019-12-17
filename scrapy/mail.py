@@ -3,20 +3,20 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
-from io import BytesIO
 import logging
-
-from email.utils import COMMASPACE, formatdate
-from six.moves.email_mime_multipart import MIMEMultipart
-from six.moves.email_mime_text import MIMEText
-from six.moves.email_mime_base import MIMEBase
-from email.mime.nonmultipart import MIMENonMultipart
 from email import encoders as Encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.nonmultipart import MIMENonMultipart
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
+from io import BytesIO
 
 from twisted.internet import defer, reactor, ssl
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,7 @@ class MailSender(object):
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
-                    % attach_name)
+                part.add_header('Content-Disposition', 'attachment', filename=attach_name)
                 msg.attach(part)
         else:
             msg.set_payload(body)
