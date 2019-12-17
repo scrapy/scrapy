@@ -1,18 +1,14 @@
-# -*- coding:utf-8 -*-
-
-from __future__ import absolute_import
-from collections import OrderedDict
 import re
 import json
 import marshal
+import pickle
 import tempfile
 import unittest
+from collections import OrderedDict
 from io import BytesIO
 from datetime import datetime
-from six.moves import cPickle as pickle
 
 import lxml.etree
-import six
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
@@ -83,7 +79,7 @@ class BaseItemExporterTest(unittest.TestCase):
 
         ie = self._get_exporter(fields_to_export=['name'], encoding='latin-1')
         _, name = list(ie._get_serialized_fields(self.i))[0]
-        assert isinstance(name, six.text_type)
+        assert isinstance(name, str)
         self.assertEqual(name, u'John\xa3')
 
         ie = self._get_exporter(
@@ -114,7 +110,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
         return PythonItemExporter(binary=False, **kwargs)
 
     def test_invalid_option(self):
-        with self.assertRaisesRegexp(TypeError, "Unexpected options: invalid_option"):
+        with self.assertRaisesRegex(TypeError, "Unexpected options: invalid_option"):
             PythonItemExporter(invalid_option='something')
 
     def test_nested_item(self):

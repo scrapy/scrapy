@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from scrapy.http.request import Request
 from scrapy.http.headers import Headers
@@ -88,7 +88,7 @@ class Response(object_ref):
     @property
     def text(self):
         """For subclasses of TextResponse, this will return the body
-        as text (unicode object in Python 2 and str in Python 3)
+        as str
         """
         raise AttributeError("Response content isn't text")
 
@@ -106,7 +106,7 @@ class Response(object_ref):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None):
+               dont_filter=False, errback=None, cb_kwargs=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -132,4 +132,5 @@ class Response(object_ref):
                        encoding=encoding,
                        priority=priority,
                        dont_filter=dont_filter,
-                       errback=errback)
+                       errback=errback,
+                       cb_kwargs=cb_kwargs)

@@ -78,9 +78,9 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`scrapy.Spider` and define the initial requests to make, optionally how
-to follow links in the pages, and how to parse the downloaded page content to
-extract data.
+:class:`~scrapy.spiders.Spider` and define the initial requests to make,
+optionally how to follow links in the pages, and how to parse the downloaded
+page content to extract data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
@@ -205,7 +205,7 @@ Extracting data
 ---------------
 
 The best way to learn how to extract data with Scrapy is trying selectors
-using the shell :ref:`Scrapy shell <topics-shell>`. Run::
+using the :ref:`Scrapy shell <topics-shell>`. Run::
 
     scrapy shell 'http://quotes.toscrape.com/page/1/'
 
@@ -235,13 +235,16 @@ You will see something like::
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
-    >>>
 
 Using the shell, you can try selecting elements using `CSS`_ with the response
-object::
+object:
 
-    >>> response.css('title')
-    [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
+.. invisible-code-block: python
+
+    response = load_response('http://quotes.toscrape.com/page/1/', 'quotes1.html')
+
+>>> response.css('title')
+[<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
@@ -296,8 +299,8 @@ expressions`_::
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
-You can use your browser developer tools to inspect the HTML and come up
-with a selector (see section about :ref:`topics-developer-tools`).
+You can use your browser's developer tools to inspect the HTML and come up
+with a selector (see :ref:`topics-developer-tools`).
 
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
@@ -372,6 +375,9 @@ we want::
 We get a list of selectors for the quote HTML elements with::
 
     >>> response.css("div.quote")
+    [<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+     <Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+     ...]
 
 Each of the selectors returned by the query above allows us to run further
 queries over their sub-elements. Let's assign the first selector to a
@@ -379,11 +385,11 @@ variable, so that we can run our CSS selectors directly on a particular quote::
 
     >>> quote = response.css("div.quote")[0]
 
-Now, let's extract ``title``, ``author`` and the ``tags`` from that quote
+Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
 using the ``quote`` object we just created::
 
-    >>> title = quote.css("span.text::text").get()
-    >>> title
+    >>> text = quote.css("span.text::text").get()
+    >>> text
     '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
     >>> author = quote.css("small.author::text").get()
     >>> author
@@ -396,6 +402,12 @@ to get all of them::
     >>> tags
     ['change', 'deep-thoughts', 'thinking', 'world']
 
+.. invisible-code-block: python
+
+  from sys import version_info
+
+.. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
+
 Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary::
 
@@ -404,10 +416,9 @@ quotes elements and put them together into a Python dictionary::
     ...     author = quote.css("small.author::text").get()
     ...     tags = quote.css("div.tags a.tag::text").getall()
     ...     print(dict(text=text, author=author, tags=tags))
-    {'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'}
-    {'tags': ['abilities', 'choices'], 'author': 'J.K. Rowling', 'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”'}
-        ... a few more of these, omitted for brevity
-    >>>
+    {'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', 'author': 'Albert Einstein', 'tags': ['change', 'deep-thoughts', 'thinking', 'world']}
+    {'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”', 'author': 'J.K. Rowling', 'tags': ['abilities', 'choices']}
+    ...
 
 Extracting data in our spider
 -----------------------------
@@ -511,7 +522,7 @@ We can try extracting it in the shell::
     '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
-Scrapy supports a CSS extension that let's you select the attribute contents,
+Scrapy supports a CSS extension that lets you select the attribute contents,
 like this::
 
     >>> response.css('li.next a::attr(href)').get()
@@ -521,7 +532,7 @@ There is also an ``attrib`` property available
 (see :ref:`selecting-attributes` for more)::
 
     >>> response.css('li.next a').attrib['href']
-    '/page/2'
+    '/page/2/'
 
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::

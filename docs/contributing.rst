@@ -99,6 +99,15 @@ Well-written patches should:
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
+* if you're adding a private API, please add a regular expression to the
+  ``coverage_ignore_pyobjects`` variable of ``docs/conf.py`` to exclude the new
+  private API from documentation coverage checks.
+
+  To see if your private API is skipped properly, generate a documentation
+  coverage report as follows::
+
+      tox -e docs-coverage
+
 .. _submitting-patches:
 
 Submitting patches
@@ -162,34 +171,39 @@ Scrapy:
   See https://help.github.com/articles/setting-your-username-in-git/ for
   setup instructions.
 
+.. _documentation-policies:
+
 Documentation policies
 ======================
 
-* **Don't** use docstrings for documenting classes, or methods which are
-  already documented in the official (sphinx) documentation. Alternatively,
-  **do** provide a docstring, but make sure sphinx documentation uses
-  autodoc_ extension to pull the docstring. For example, the
-  :meth:`ItemLoader.add_value` method should be either
-  documented only in the sphinx documentation (not as a docstring), or
-  it should have a docstring which is pulled to sphinx documentation using
-  autodoc_ extension.
+For reference documentation of API members (classes, methods, etc.) use
+docstrings and make sure that the Sphinx documentation uses the
+:mod:`~sphinx.ext.autodoc` extension to pull the docstrings. API reference
+documentation should follow docstring conventions (`PEP 257`_) and be
+IDE-friendly: short, to the point, and it may provide short examples.
 
-* **Do** use docstrings for documenting functions not present in the official
-  (sphinx) documentation, such as functions from ``scrapy.utils`` package and
-  its sub-modules.
+Other types of documentation, such as tutorials or topics, should be covered in
+files within the ``docs/`` directory. This includes documentation that is
+specific to an API member, but goes beyond API reference documentation.
 
-.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+In any case, if something is covered in a docstring, use the
+:mod:`~sphinx.ext.autodoc` extension to pull the docstring into the
+documentation instead of duplicating the docstring in files within the
+``docs/`` directory.
 
 Tests
 =====
 
-Tests are implemented using the `Twisted unit-testing framework`_, running
-tests requires `tox`_.
+Tests are implemented using the :doc:`Twisted unit-testing framework
+<twisted:core/development/policy/test-standard>`. Running tests requires
+:doc:`tox <tox:index>`.
+
+.. _running-tests:
 
 Running tests
 -------------
 
-Make sure you have a recent enough `tox`_ installation:
+Make sure you have a recent enough :doc:`tox <tox:index>` installation:
 
     ``tox --version``
 
@@ -205,13 +219,36 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
     ``tox -- tests/test_loader.py``
 
-To see coverage report install `coverage`_ (``pip install coverage``) and run:
+To run the tests on a specific :doc:`tox <tox:index>` environment, use
+``-e <name>`` with an environment name from ``tox.ini``. For example, to run
+the tests with Python 3.6 use::
+
+    tox -e py36
+
+You can also specify a comma-separated list of environmets, and use :ref:`tox’s
+parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
+parallel::
+
+    tox -e py36,py38 -p auto
+
+To pass command-line options to :doc:`pytest <pytest:index>`, add them after
+``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
+default positional arguments defined in ``tox.ini``, so you must include those
+default positional arguments (``scrapy tests``) after ``--`` as well::
+
+    tox -- scrapy tests -x  # stop after first failure
+
+You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
+the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
+
+    tox -e py36 -- scrapy tests -n auto
+
+To see coverage report install :doc:`coverage <coverage:index>`
+(``pip install coverage``) and run:
 
     ``coverage report``
 
 see output of ``coverage --help`` for more options like html or xml report.
-
-.. _coverage: https://pypi.python.org/pypi/coverage
 
 Writing tests
 -------------
@@ -233,9 +270,9 @@ And their unit-tests are in::
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://reddit.com/r/scrapy
-.. _Twisted unit-testing framework: https://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
-.. _pull request: https://help.github.com/send-pull-requests/
-.. _tox: https://pypi.python.org/pypi/tox
+.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
+.. _pull request: https://help.github.com/en/articles/creating-a-pull-request
+.. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist

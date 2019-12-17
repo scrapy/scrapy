@@ -16,12 +16,12 @@ especially in a larger project with many spiders.
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields. 
+their available fields.
 
-Various Scrapy components use extra information provided by Items: 
+Various Scrapy components use extra information provided by Items:
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help find memory leaks 
+tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -40,6 +40,7 @@ objects. Here is an example::
         name = scrapy.Field()
         price = scrapy.Field()
         stock = scrapy.Field()
+        tags = scrapy.Field()
         last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
@@ -155,18 +156,43 @@ To access all populated values, just use the typical `dict API`_::
     >>> product.items()
     [('price', 1000), ('name', 'Desktop PC')]
 
+
+.. _copying-items:
+
+Copying items
+-------------
+
+To copy an item, you must first decide whether you want a shallow copy or a
+deep copy.
+
+If your item contains mutable_ values like lists or dictionaries, a shallow
+copy will keep references to the same mutable values across all different
+copies.
+
+.. _mutable: https://docs.python.org/glossary.html#term-mutable
+
+For example, if you have an item with a list of tags, and you create a shallow
+copy of that item, both the original item and the copy have the same list of
+tags. Adding a tag to the list of one of the items will add the tag to the
+other item as well.
+
+If that is not the desired behavior, use a deep copy instead.
+
+See the `documentation of the copy module`_ for more information.
+
+.. _documentation of the copy module: https://docs.python.org/library/copy.html
+
+To create a shallow copy of an item, you can either call
+:meth:`~scrapy.item.Item.copy` on an existing item
+(``product2 = product.copy()``) or instantiate your item class from an existing
+item (``product2 = Product(product)``).
+
+To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+(``product2 = product.deepcopy()``).
+
+
 Other common tasks
 ------------------
-
-Copying items::
-
-    >>> product2 = Product(product)
-    >>> print(product2)
-    Product(name='Desktop PC', price=1000)
-
-    >>> product3 = product2.copy()
-    >>> print(product3)
-    Product(name='Desktop PC', price=1000)
 
 Creating dicts from items::
 
@@ -211,8 +237,12 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    Items replicate the standard `dict API`_, including its ``__init__`` method, and
+    also provide the following additional API members:
+
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
 
     .. attribute:: fields
 
@@ -237,3 +267,9 @@ Field objects
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 
+Other classes related to Item
+=============================
+
+.. autoclass:: BaseItem
+
+.. autoclass:: ItemMeta

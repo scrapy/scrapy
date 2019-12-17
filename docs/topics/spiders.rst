@@ -72,8 +72,6 @@ scrapy.Spider
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
 
-       .. note:: In Python 2 this must be ASCII only.
-
    .. attribute:: allowed_domains
 
        An optional list of strings containing domains that this spider is
@@ -374,16 +372,23 @@ CrawlSpider
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
+.. autoclass:: Rule
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
+   defines how links will be extracted from each crawled page. Each produced link will
+   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   link's text in its ``meta`` dictionary (under the ``link_text`` key).
+   If omitted, a default link extractor created with no arguments will be used,
+   resulting in all links being extracted.
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
+   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
+   as its first argument and must return either a single instance or an iterable of
+   :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
+   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
+   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   in its ``meta`` dictionary (under the ``link_text`` key)
 
    .. warning:: When writing crawl spider rules, avoid using ``parse`` as
        callback, since the :class:`CrawlSpider` uses the ``parse`` method
@@ -402,10 +407,12 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes.
 
-   ``process_request`` is a callable, or a string (in which case a method from
-   the spider object with that name will be used) which will be called with
-   every request extracted by this rule, and must return a request or None (to
-   filter out the request).
+   ``process_request`` is a callable (or a string, in which case a method from
+   the spider object with that name will be used) which will be called for every
+   :class:`~scrapy.http.Request` extracted by this rule. This callable should
+   take said request as first argument and the :class:`~scrapy.http.Response`
+   from which the request originated as second argument. It must return a
+   ``Request`` object or ``None`` (to filter out the request).
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
@@ -436,6 +443,7 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
             item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+            item['link_text'] = response.meta['link_text']
             return item
 
 
@@ -655,7 +663,7 @@ SitemapSpider
 
     .. attribute:: sitemap_follow
 
-        A list of regexes of sitemap that should be followed. This is is only
+        A list of regexes of sitemap that should be followed. This is only
         for sites that use `Sitemap index files`_ that point to other sitemap
         files.
 
@@ -682,7 +690,7 @@ SitemapSpider
 
     .. method:: sitemap_filter(entries)
 
-        This is a filter funtion that could be overridden to select sitemap entries
+        This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
         For example::

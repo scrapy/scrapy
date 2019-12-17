@@ -1,9 +1,7 @@
-from __future__ import print_function
-
 import functools
 import logging
 from collections import defaultdict
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, _DefGen_Return
 from twisted.python.failure import Failure
 
 from scrapy.settings import Settings
@@ -139,6 +137,30 @@ class MediaPipeline(object):
             result.cleanFailure()
             result.frames = []
             result.stack = None
+
+            # This code fixes a memory leak by avoiding to keep references to
+            # the Request and Response objects on the Media Pipeline cache.
+            #
+            # Twisted inline callbacks pass return values using the function
+            # twisted.internet.defer.returnValue, which encapsulates the return
+            # value inside a _DefGen_Return base exception.
+            #
+            # What happens when the media_downloaded callback raises another
+            # exception, for example a FileException('download-error') when
+            # the Response status code is not 200 OK, is that it stores the
+            # _DefGen_Return exception on the FileException context.
+            #
+            # To avoid keeping references to the Response and therefore Request
+            # objects on the Media Pipeline cache, we should wipe the context of
+            # the exception encapsulated by the Twisted Failure when its a
+            # _DefGen_Return instance.
+            #
+            # This problem does not occur in Python 2.7 since we don't have
+            # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
+            context = getattr(result.value, '__context__', None)
+            if isinstance(context, _DefGen_Return):
+                setattr(result.value, '__context__', None)
+
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
         for wad in info.waiting.pop(fp):

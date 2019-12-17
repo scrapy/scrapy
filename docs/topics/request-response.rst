@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. autoclass:: Request
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -83,17 +83,21 @@ Request objects
         .. reqmeta:: dont_merge_cookies
 
         When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests. That's
-        the typical behaviour of any regular web browser. However, if, for some
-        reason, you want to avoid merging with existing cookies you can instruct
-        Scrapy to do so by setting the ``dont_merge_cookies`` key to True in the
-        :attr:`Request.meta`.
+        cookies for that domain and will be sent again in future requests.
+        That's the typical behaviour of any regular web browser.
 
-        Example of request without merging cookies::
+        To create a request that does not send stored cookies and does not
+        store received cookies, set the ``dont_merge_cookies`` key to ``True``
+        in :attr:`request.meta <scrapy.http.Request.meta>`.
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={'currency': 'USD', 'country': 'UY'},
-                                           meta={'dont_merge_cookies': True})
+        Example of a request that sends manually-defined cookies and ignores
+        cookie storage::
+
+            Request(
+                url="http://www.example.com",
+                cookies={'currency': 'USD', 'country': 'UY'},
+                meta={'dont_merge_cookies': True},
+            )
 
         For more info see :ref:`cookies-mw`.
     :type cookies: dict or list
@@ -117,8 +121,8 @@ Request objects
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
-       with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
-       as first parameter.
+       with 404 HTTP errors and such. It receives a
+       :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
     :type errback: callable
@@ -126,11 +130,14 @@ Request objects
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
 
+    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
+    :type cb_kwargs: dict
+
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
         attribute contains the escaped URL, so it can differ from the URL passed in
-        the constructor.
+        the ``__init__`` method.
 
         This attribute is read-only. To change the URL of a Request use
         :meth:`replace`.
@@ -165,6 +172,17 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
+    .. attribute:: Request.cb_kwargs
+
+        A dictionary that contains arbitrary metadata for this request. Its contents
+        will be passed to the Request's callback as keyword arguments. It is empty
+        for new Requests, which means by default callbacks only get a :class:`Response`
+        object as argument.
+
+        This dict is `shallow copied`_ when the request is cloned using the
+        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
+        spider, from the ``response.cb_kwargs`` attribute.
+
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
@@ -172,13 +190,15 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, encoding, dont_filter, callback, errback])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       attribute :attr:`Request.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). See also
+       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are shallow
+       copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
+
+    .. automethod:: from_curl
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -200,25 +220,31 @@ Example::
         self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
-functions so you can receive the arguments later, in the second callback. You
-can use the :attr:`Request.meta` attribute for that.
+functions so you can receive the arguments later, in the second callback.
+The following example shows how to achieve this by using the
+:attr:`Request.cb_kwargs` attribute:
 
-Here's an example of how to pass an item using this mechanism, to populate
-different fields from different pages::
+::
 
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.meta['item'] = item
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
         yield request
 
-    def parse_page2(self, response):
-        item = response.meta['item']
-        item['other_url'] = response.url
-        yield item
+    def parse_page2(self, response, main_url, foo):
+        yield dict(
+            main_url=main_url,
+            other_url=response.url,
+            foo=foo,
+        )
 
+.. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
+   Prior to that, using :attr:`Request.meta` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs`
+   became the preferred way for handling user information, leaving :attr:`Request.meta`
+   for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
 
@@ -228,8 +254,8 @@ Using errbacks to catch exceptions in request processing
 The errback of a request is a function that will be called when an exception
 is raise while processing it.
 
-It receives a `Twisted Failure`_ instance as first parameter and can be
-used to track connection establishment timeouts, DNS errors etc.
+It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
+be used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
 errors if needed::
@@ -299,6 +325,7 @@ Those are:
 * :reqmeta:`dont_merge_cookies`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
 * :reqmeta:`dont_obey_robotstxt`
@@ -373,7 +400,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new argument to the constructor. The
+    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
@@ -446,7 +473,7 @@ fields with form data from :class:`Response` objects.
        :type dont_click: boolean
 
        The other parameters of this class method are passed directly to the
-       :class:`FormRequest` constructor.
+       :class:`FormRequest` ``__init__`` method.
 
        .. versionadded:: 0.10.3
           The ``formname`` parameter.
@@ -512,11 +539,49 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
+JsonRequest
+-----------
+
+The JsonRequest class extends the base :class:`Request` class with functionality for
+dealing with JSON requests.
+
+.. class:: JsonRequest(url, [... data, dumps_kwargs])
+
+   The :class:`JsonRequest` class adds two new keyword parameters to the ``__init__`` method. The
+   remaining arguments are the same as for the :class:`Request` class and are
+   not documented here.
+
+   Using the :class:`JsonRequest` will set the ``Content-Type`` header to ``application/json``
+   and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
+
+   :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
+      if :attr:`Request.body` argument is provided this parameter will be ignored.
+      if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be
+      set to ``'POST'`` automatically.
+   :type data: JSON serializable object
+
+   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+       data into JSON format.
+   :type dumps_kwargs: dict
+
+.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
+
+JsonRequest usage example
+-------------------------
+
+Sending a JSON POST request with a JSON payload::
+
+   data = {
+       'name1': 'value1',
+       'name2': 'value2',
+   }
+   yield JsonRequest(url='http://www.example.com/post/action', data=data)
+
 
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
+.. autoclass:: Response
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -531,8 +596,8 @@ Response objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. To access the decoded text as str (unicode
-       in Python 2) you can use ``response.text`` from an encoding-aware
+    :param body: the response body. To access the decoded text as str you can use
+       ``response.text`` from an encoding-aware
        :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
        such as :class:`TextResponse`.
     :type body: bytes
@@ -656,7 +721,7 @@ TextResponse objects
     :class:`Response` class, which is meant to be used only for binary data,
     such as images, sounds or any media file.
 
-    :class:`TextResponse` objects support a new constructor argument, in
+    :class:`TextResponse` objects support a new ``__init__`` method argument, in
     addition to the base :class:`Response` objects. The remaining functionality
     is the same as for the :class:`Response` class and is not documented here.
 
@@ -690,7 +755,7 @@ TextResponse objects
        A string with the encoding of this response. The encoding is resolved by
        trying the following mechanisms, in order:
 
-       1. the encoding passed in the constructor ``encoding`` argument
+       1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (ie. unknown), it is ignored and the next
@@ -751,5 +816,4 @@ XmlResponse objects
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241

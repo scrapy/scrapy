@@ -6,8 +6,8 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 import re
+from urllib.parse import urlparse
 
-from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 
@@ -19,30 +19,32 @@ from scrapy.utils.url import (
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
+    # archives
+    '7z', '7zip', 'bz2', 'rar', 'tar', 'tar.gz', 'xz', 'zip',
+
     # images
     'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif',
-    'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg',
+    'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg', 'cdr', 'ico',
 
     # audio
     'mp3', 'wma', 'ogg', 'wav', 'ra', 'aac', 'mid', 'au', 'aiff',
 
     # video
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a', 'm4v', 'flv',
+    'm4a', 'm4v', 'flv', 'webm',
 
     # office suites
     'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
     'odp',
 
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar',
+    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk'
 ]
 
 
 _re_type = type(re.compile("", 0))
 _matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', \
-                                                       'file', 'ftp'}
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
 class FilteringLinkExtractor(object):
@@ -115,4 +117,4 @@ class FilteringLinkExtractor(object):
 
 
 # Top-level imports
-from .lxmlhtml import LxmlLinkExtractor as LinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor  # noqa: F401

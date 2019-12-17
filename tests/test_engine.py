@@ -10,9 +10,10 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-from __future__ import print_function
-import sys, os, re
-from six.moves.urllib.parse import urlparse
+import os
+import re
+import sys
+from urllib.parse import urlparse
 
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
@@ -40,9 +41,9 @@ class TestSpider(Spider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
 
-    itemurl_re = re.compile("item\d+.html")
-    name_re = re.compile("<h1>(.*?)</h1>", re.M)
-    price_re = re.compile(">Price: \$(.*?)<", re.M)
+    itemurl_re = re.compile(r"item\d+.html")
+    name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
+    price_re = re.compile(r">Price: \$(.*?)<", re.M)
 
     item_cls = TestItem
 
@@ -90,8 +91,8 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
-            % port.getHost().port)
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
+              % port.getHost().port)
     return port
 
 
@@ -270,7 +271,6 @@ class EngineTest(unittest.TestCase):
                          self.run.signals_catched[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_catched[signals.spider_idle])
-        self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
 

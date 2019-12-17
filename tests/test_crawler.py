@@ -1,5 +1,7 @@
 import logging
-import tempfile
+import os
+import subprocess
+import sys
 import warnings
 
 from twisted.internet import defer
@@ -15,6 +17,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
+from scrapy.utils.test import get_testenv
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -38,7 +41,11 @@ class CrawlerTestCase(BaseCrawlerTest):
             self.assertIsInstance(spiders, sl_cls)
 
             self.crawler.spiders
-            self.assertEqual(len(w), 1, "Warn deprecated access only once")
+            is_one_warning = len(w) == 1
+            if not is_one_warning:
+                for warning in w:
+                    print(warning)
+            self.assertTrue(is_one_warning, "Warn deprecated access only once")
 
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
@@ -173,23 +180,6 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
             sl_cls = load_object(runner.settings['SPIDER_LOADER_CLASS'])
             self.assertIsInstance(spiders, sl_cls)
 
-    def test_spidermanager_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            runner = CrawlerRunner({
-                'SPIDER_MANAGER_CLASS': 'tests.test_crawler.CustomSpiderLoader'
-            })
-            self.assertIsInstance(runner.spider_loader, CustomSpiderLoader)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
-
-    def test_crawl_rejects_spider_objects(self):
-        with raises(ValueError):
-            CrawlerRunner().crawl(DefaultSpider())
-
-    def test_create_crawler_rejects_spider_objects(self):
-        with raises(ValueError):
-            CrawlerRunner().create_crawler(DefaultSpider())
-
 
 class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_dict(self):
@@ -259,3 +249,19 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         yield runner.crawl(NoRequestsSpider)
 
         self.assertEqual(runner.bootstrap_failed, True)
+
+
+class CrawlerProcessSubprocess(unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
+
+    def run_script(self, script_name):
+        script_path = os.path.join(self.script_dir, script_name)
+        args = (sys.executable, script_path)
+        p = subprocess.Popen(args, env=get_testenv(),
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        return stderr.decode('utf-8')
+
+    def test_simple(self):
+        log = self.run_script('simple.py')
+        self.assertIn('Spider closed (finished)', log)

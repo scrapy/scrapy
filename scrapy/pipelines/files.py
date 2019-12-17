@@ -5,19 +5,14 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
-import os
-import os.path
-import time
 import logging
-from email.utils import parsedate_tz, mktime_tz
-from six.moves.urllib.parse import urlparse
+import mimetypes
+import os
+import time
 from collections import defaultdict
-import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from email.utils import parsedate_tz, mktime_tz
+from io import BytesIO
+from urllib.parse import urlparse
 
 from twisted.internet import defer, threads
 
@@ -31,6 +26,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -156,14 +152,14 @@ class S3FilesStore(object):
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
+                Metadata={k: str(v) for k, v in (meta or {}).items()},
                 ACL=self.POLICY,
                 **extra)
         else:
             b = self._get_boto_bucket()
             k = b.new_key(key_name)
             if meta:
-                for metakey, metavalue in six.iteritems(meta):
+                for metakey, metavalue in meta.items():
                     k.set_metadata(metakey, str(metavalue))
             h = self.HEADERS.copy()
             if headers:
@@ -189,9 +185,22 @@ class S3FilesStore(object):
             'X-Amz-Grant-Read': 'GrantRead',
             'X-Amz-Grant-Read-ACP': 'GrantReadACP',
             'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
+            'X-Amz-Object-Lock-Legal-Hold': 'ObjectLockLegalHoldStatus',
+            'X-Amz-Object-Lock-Mode': 'ObjectLockMode',
+            'X-Amz-Object-Lock-Retain-Until-Date': 'ObjectLockRetainUntilDate',
+            'X-Amz-Request-Payer': 'RequestPayer',
+            'X-Amz-Server-Side-Encryption': 'ServerSideEncryption',
+            'X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id': 'SSEKMSKeyId',
+            'X-Amz-Server-Side-Encryption-Context': 'SSEKMSEncryptionContext',
+            'X-Amz-Server-Side-Encryption-Customer-Algorithm': 'SSECustomerAlgorithm',
+            'X-Amz-Server-Side-Encryption-Customer-Key': 'SSECustomerKey',
+            'X-Amz-Server-Side-Encryption-Customer-Key-Md5': 'SSECustomerKeyMD5',
+            'X-Amz-Storage-Class': 'StorageClass',
+            'X-Amz-Tagging': 'Tagging',
+            'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
         })
         extra = {}
-        for key, value in six.iteritems(headers):
+        for key, value in headers.items():
             try:
                 kwarg = mapping[key]
             except KeyError:
@@ -239,7 +248,7 @@ class GCSFilesStore(object):
     def persist_file(self, path, buf, info, meta=None, headers=None):
         blob = self.bucket.blob(self.prefix + path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in six.iteritems(meta or {})}
+        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
@@ -458,33 +467,13 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
-        def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('FilesPipeline.file_key(url) method is deprecated, please use '
-                          'file_path(request, response=None, info=None) instead',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
-
-        # check if called from file_key with url as first argument
-        if not isinstance(request, Request):
-            _warn()
-            url = request
-        else:
-            url = request.url
-
-        # detect if file_key() method has been overridden
-        if not hasattr(self.file_key, '_base'):
-            _warn()
-            return self.file_key(url)
-        ## end of deprecation warning block
-
-        media_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
-        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_ext = os.path.splitext(request.url)[1]
+        # Handles empty and wild extensions by trying to guess the
+        # mime type then extension or default to empty string otherwise
+        if media_ext not in mimetypes.types_map:
+            media_ext = ''
+            media_type = mimetypes.guess_type(request.url)[0]
+            if media_type:
+                media_ext = mimetypes.guess_extension(media_type)
         return 'full/%s%s' % (media_guid, media_ext)
-
-    # deprecated
-    def file_key(self, url):
-        return self.file_path(url)
-
-    file_key._base = True

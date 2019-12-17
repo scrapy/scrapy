@@ -99,12 +99,12 @@ The storages backends supported out of the box are:
 
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
- * :ref:`topics-feed-storage-s3` (requires botocore_ or boto_)
+ * :ref:`topics-feed-storage-s3` (requires botocore_)
  * :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
 not available. For example, the S3 backend is only available if the botocore_
-or boto_ library is installed (Scrapy supports boto_ only on Python 2).
+library is installed.
 
 
 .. _topics-feed-uri-params:
@@ -164,6 +164,11 @@ The feeds are stored in a FTP server.
  * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
  * Required external libraries: none
 
+FTP supports two different connection modes: `active or passive
+<https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
+mode by default. To use the active connection mode instead, set the
+:setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
+
 .. _topics-feed-storage-s3:
 
 S3
@@ -177,7 +182,7 @@ The feeds are stored on `Amazon S3`_.
    * ``s3://mybucket/path/to/export.csv``
    * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
- * Required external libraries: `botocore`_ (Python 2 and Python 3) or `boto`_ (Python 2 only)
+ * Required external libraries: `botocore`_
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -209,6 +214,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_URI` (mandatory)
  * :setting:`FEED_FORMAT`
  * :setting:`FEED_STORAGES`
+ * :setting:`FEED_STORAGE_FTP_ACTIVE`
  * :setting:`FEED_STORAGE_S3_ACL`
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
@@ -298,6 +304,19 @@ Default: ``{}``
 A dict containing additional feed storage backends supported by your project.
 The keys are URI schemes and the values are paths to storage classes.
 
+.. setting:: FEED_STORAGE_FTP_ACTIVE
+
+FEED_STORAGE_FTP_ACTIVE
+-----------------------
+
+Default: ``False``
+
+Whether to use the active connection mode when exporting feeds to an FTP server
+(``True``) or use the passive connection mode instead (``False``, default).
+
+For information about FTP connection modes, see `What is the difference between
+active and passive FTP? <https://stackoverflow.com/a/1699163>`_.
+
 .. setting:: FEED_STORAGE_S3_ACL
 
 FEED_STORAGE_S3_ACL
@@ -371,6 +390,5 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _boto: https://github.com/boto/boto
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl

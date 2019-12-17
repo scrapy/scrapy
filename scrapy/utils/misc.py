@@ -1,17 +1,18 @@
 """Helper functions which don't fit anywhere else"""
+import os
 import re
 import hashlib
+from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
 
-import six
 from w3lib.html import replace_entities
 
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
-_ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
+_ITERABLE_SINGLE_VALUES = dict, BaseItem, str, bytes
 
 
 def arg_to_iter(arg):
@@ -81,16 +82,16 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, six.string_types):
+    if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
@@ -134,7 +135,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     if settings is None:
         if crawler is None:
-            raise ValueError("Specifiy at least one of settings and crawler.")
+            raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
     if crawler and hasattr(objcls, 'from_crawler'):
         return objcls.from_crawler(crawler, *args, **kwargs)
@@ -142,3 +143,21 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls.from_settings(settings, *args, **kwargs)
     else:
         return objcls(*args, **kwargs)
+
+
+@contextmanager
+def set_environ(**kwargs):
+    """Temporarily set environment variables inside the context manager and
+    fully restore previous environment afterwards
+    """
+
+    original_env = {k: os.environ.get(k) for k in kwargs}
+    os.environ.update(kwargs)
+    try:
+        yield
+    finally:
+        for k, v in original_env.items():
+            if v is None:
+                del os.environ[k]
+            else:
+                os.environ[k] = v

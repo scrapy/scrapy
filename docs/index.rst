@@ -158,6 +158,7 @@ Solving specific problems
    topics/practices
    topics/broad-crawls
    topics/developer-tools
+   topics/dynamic-content
    topics/leaks
    topics/media-pipeline
    topics/deploy
@@ -182,6 +183,9 @@ Solving specific problems
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
+
+:doc:`topics/dynamic-content`
+    Read webpage data that is loaded dynamically.
 
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.

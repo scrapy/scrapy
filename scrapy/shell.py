@@ -3,8 +3,6 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
-
 import os
 import signal
 import warnings
