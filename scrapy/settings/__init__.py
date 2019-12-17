@@ -224,7 +224,7 @@ class BaseSettings(MutableMapping):
         value = self.get(name, default)
         if value is None:
             return {}
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             try:
                 return json.loads(value, object_pairs_hook=OrderedDict)
             except ValueError:
