@@ -285,7 +285,7 @@ intersphinx_mapping = {
 }
 
 
-# Options for the sphinx-hoverxref extension
-# ------------------------------------------
+# Options for sphinx-hoverxref options
+# ------------------------------------
 
 hoverxref_auto_ref = True
