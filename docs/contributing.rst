@@ -217,7 +217,7 @@ the tests with Python 3.6 use::
 
     tox -e py36
 
-You can also specify a comma-separated list of environmets, and use :ref:`tox’s
+You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 

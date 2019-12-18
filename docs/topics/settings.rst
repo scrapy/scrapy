@@ -884,7 +884,7 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messsages. Refer to the `Python logging documentation`_ for the whole list of available
+String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
 placeholders.
 
 .. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes

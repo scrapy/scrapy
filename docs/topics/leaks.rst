@@ -110,7 +110,7 @@ ties the response lifetime to the requests' one, and that would definitely
 cause memory leaks.
 
 Let's see how we can discover the cause (without knowing it
-a-priori, of course) by using the ``trackref`` tool.
+a priori, of course) by using the ``trackref`` tool.
 
 After the crawler is running for a few minutes and we notice its memory usage
 has grown a lot, we can enter its telnet console and check the live
