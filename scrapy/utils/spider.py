@@ -5,7 +5,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 try:
-    from scrapy.utils.py36 import collect_asyncgen
+    from scrapy.utils.asyncgen import collect_asyncgen
 except SyntaxError:
     collect_asyncgen = None
 

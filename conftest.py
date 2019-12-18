@@ -8,6 +8,8 @@ def _py_files(folder):
 
 
 collect_ignore = [
+    # no tests and not importable on 3.5
+    "scrapy/utils/asyncgen.py",
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess

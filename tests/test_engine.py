@@ -15,6 +15,7 @@ import re
 import sys
 from urllib.parse import urlparse
 
+from pytest import mark
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
 from twisted.trial import unittest
@@ -209,6 +210,32 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler_startrequests_asyncdef(self):
         self.run = CrawlerRun(StartRequestsAsyncDefSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncgen(self):
+        from tests.py36._test_engine import StartRequestsAsyncGenSpider
+        self.run = CrawlerRun(StartRequestsAsyncGenSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncgen_asyncio(self):
+        from tests.py36._test_engine import StartRequestsAsyncGenAsyncioSpider
+        self.run = CrawlerRun(StartRequestsAsyncGenAsyncioSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncgen_asyncio_mw1(self):
+        from tests.py36._test_engine import StartRequestsAsyncGenAsyncioSpider
+        self.run = CrawlerRun(StartRequestsAsyncGenAsyncioSpider)
         yield self.run.run()
         self._assert_visited_urls()
 

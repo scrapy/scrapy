@@ -1,13 +1,19 @@
+import inspect
+import sys
 from unittest import mock
 
+from pytest import mark
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.exceptions import _InvalidOutput
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.test import get_crawler
 from scrapy.core.spidermw import SpiderMiddlewareManager
+from tests.test_engine import StartRequestsAsyncDefSpider
 
 
 class SpiderMiddlewareTestCase(TestCase):
@@ -101,3 +107,109 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
         result = self._scrape_response()
         self.assertIsInstance(result, Failure)
         self.assertIsInstance(result.value, ZeroDivisionError)
+
+
+class ProcessStartRequestsSimpleMiddleware:
+    def process_start_requests(self, start_requests, spider):
+        for r in start_requests:
+            yield r
+
+
+class ProcessStartRequestsSimple(TestCase):
+    """ process_start_requests tests for simple start_requests"""
+
+    spider_cls = Spider
+
+    @defer.inlineCallbacks
+    def _get_processed_start_requests(self, *mw_classes):
+        crawler = get_crawler(self.spider_cls)
+        start_urls = ['https://example.com/%d' % i for i in range(3)]
+        crawler.spider = crawler._create_spider('foo', start_urls=start_urls)
+        mwman = SpiderMiddlewareManager.from_crawler(crawler)
+        for mw_cls in mw_classes:
+            mwman._add_middleware(mw_cls())
+        start_requests = yield crawler.call_start_requests()
+        processed_start_requests = yield mwman.process_start_requests(start_requests, crawler.spider)
+        return processed_start_requests
+
+    def assertAsyncGeneratorNotIterable(self, processed_start_requests):
+        with self.assertRaisesRegex(TypeError, "'async_generator' object is not iterable"):
+            list(processed_start_requests)
+
+    @defer.inlineCallbacks
+    def test_simple(self):
+        """ Simple mw """
+        processed_start_requests = yield self._get_processed_start_requests(ProcessStartRequestsSimpleMiddleware)
+        self.assertTrue(inspect.isgenerator(processed_start_requests))
+        start_requests_list = list(processed_start_requests)
+        self.assertEqual(len(start_requests_list), 3)
+        self.assertIsInstance(start_requests_list[0], Request)
+
+    @defer.inlineCallbacks
+    def _test_asyncgen_base(self, *mw_classes):
+        from scrapy.utils.asyncgen import collect_asyncgen
+        processed_start_requests = yield self._get_processed_start_requests(*mw_classes)
+        self.assertTrue(inspect.isasyncgen(processed_start_requests))
+        start_requests_list = yield deferred_from_coro(collect_asyncgen(processed_start_requests))
+        self.assertEqual(len(start_requests_list), 3)
+        self.assertIsInstance(start_requests_list[0], Request)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @defer.inlineCallbacks
+    def test_asyncgen(self):
+        """ Asyncgen mw """
+        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
+        yield self._test_asyncgen_base(ProcessStartRequestsAsyncGenMiddleware)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @defer.inlineCallbacks
+    def test_asyncgen2(self):
+        """ Simple mw -> asyncgen mw """
+        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
+        yield self._test_asyncgen_base(ProcessStartRequestsAsyncGenMiddleware,
+                                       ProcessStartRequestsSimpleMiddleware)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @defer.inlineCallbacks
+    def test_asyncgen3(self):
+        """ Asyncgen mw -> simple mw; cannot work """
+        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
+        processed_start_requests = yield self._get_processed_start_requests(
+            ProcessStartRequestsSimpleMiddleware,
+            ProcessStartRequestsAsyncGenMiddleware)
+        self.assertTrue(inspect.isgenerator(processed_start_requests))
+        self.assertAsyncGeneratorNotIterable(processed_start_requests)
+
+
+class ProcessStartRequestsAsyncDef(ProcessStartRequestsSimple):
+    """ process_start_requests tests for async def start_requests """
+
+    spider_cls = StartRequestsAsyncDefSpider
+
+
+@mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+class ProcessStartRequestsAsyncGen(ProcessStartRequestsSimple):
+    """ process_start_requests tests for async generator start_requests """
+
+    def __init__(self, methodName='runTest'):
+        super().__init__(methodName)
+        from tests.py36._test_engine import StartRequestsAsyncGenSpider
+        self.spider_cls = StartRequestsAsyncGenSpider
+
+    @defer.inlineCallbacks
+    def test_simple(self):
+        """ Simple mw; cannot work """
+        processed_start_requests = yield self._get_processed_start_requests(
+            ProcessStartRequestsSimpleMiddleware)
+        self.assertTrue(inspect.isgenerator(processed_start_requests))
+        self.assertAsyncGeneratorNotIterable(processed_start_requests)
+
+    @defer.inlineCallbacks
+    def test_asyncgen2(self):
+        """ Simple mw -> asyncgen mw; cannot work """
+        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
+        processed_start_requests = yield self._get_processed_start_requests(
+            ProcessStartRequestsAsyncGenMiddleware,
+            ProcessStartRequestsSimpleMiddleware)
+        self.assertTrue(inspect.isasyncgen(processed_start_requests))
+        self.assertAsyncGeneratorNotIterable(processed_start_requests)

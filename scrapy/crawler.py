@@ -86,10 +86,7 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
-            if inspect.iscoroutinefunction(self.spider.start_requests):
-                start_requests = yield deferred_from_coro(self.spider.start_requests())
-            else:
-                start_requests = iter(self.spider.start_requests())
+            start_requests = yield self.call_start_requests()
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
@@ -97,6 +94,17 @@ class Crawler:
             if self.engine is not None:
                 yield self.engine.close()
             raise
+
+    @defer.inlineCallbacks
+    def call_start_requests(self):
+        if hasattr(inspect, 'isasyncgenfunction') and inspect.isasyncgenfunction(self.spider.start_requests):
+            # requires Python 3.6+
+            start_requests = self.spider.start_requests().__aiter__()
+        elif inspect.iscoroutinefunction(self.spider.start_requests):
+            start_requests = yield deferred_from_coro(self.spider.start_requests())
+        else:
+            start_requests = iter(self.spider.start_requests())
+        return start_requests
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
