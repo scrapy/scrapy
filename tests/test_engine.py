@@ -179,7 +179,6 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-
         for spider in TestSpider, DictItemsSpider:
             self.run = CrawlerRun(spider)
             yield self.run.run()
@@ -189,11 +188,15 @@ class EngineTest(unittest.TestCase):
             self._assert_scraped_items()
             self._assert_signals_catched()
 
+    @defer.inlineCallbacks
+    def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
         self._assert_scheduled_requests(urls_to_visit=7)
         self._assert_dropped_requests()
 
+    @defer.inlineCallbacks
+    def test_crawler_itemerror(self):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
