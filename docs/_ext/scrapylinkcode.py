@@ -4,8 +4,8 @@ It defines and injects the ``resolve`` function so that we can keep complex
 code out of the ``conf.py`` file.
 """
 
-import inspect
 import sys
+from inspect import getsourcefile, getsourcelines, unwrap
 from os import environ
 from os.path import relpath, dirname
 from typing import Any, Dict
@@ -15,6 +15,16 @@ from sphinx.application import Sphinx
 from sphinx.ext.linkcode import doctree_read
 
 import scrapy
+
+
+def _github_branch():
+    rtd_version = environ.get('READTHEDOCS_VERSION')
+    is_a_local_build = not rtd_version
+
+    if is_a_local_build or rtd_version == 'master':
+        return 'master'
+
+    return scrapy.__version__
 
 
 # Based on numpy’s:
@@ -37,41 +47,19 @@ def resolve(domain, info):
         except Exception:
             return None
 
-    # strip decorators, which would resolve to the source of the decorator
-    # possibly an upstream bug in getsourcefile, bpo-1764286
     try:
-        unwrap = inspect.unwrap
-    except AttributeError:
-        pass
-    else:
-        obj = unwrap(obj)
-
-    try:
-        fn = inspect.getsourcefile(obj)
-    except Exception:
-        fn = None
-    if not fn:
+        file_path = getsourcefile(obj)
+    except TypeError:
         return None
 
-    try:
-        source, lineno = inspect.getsourcelines(obj)
-    except Exception:
-        lineno = None
+    file_path = relpath(file_path,
+                        start=dirname(scrapy.__file__))
+    source, lineno = getsourcelines(obj)
+    linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+    branch = _github_branch()
 
-    if lineno:
-        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
-    else:
-        linespec = ""
-
-    fn = relpath(fn, start=dirname(scrapy.__file__))
-
-    rtd_version = environ.get('READTHEDOCS_VERSION')
-    is_a_local_build = not rtd_version
-    if is_a_local_build or rtd_version == 'master':
-        return "https://github.com/scrapy/scrapy/blob/master/scrapy/%s%s" % (
-           fn, linespec)
     return "https://github.com/scrapy/scrapy/blob/%s/scrapy/%s%s" % (
-        scrapy.__version__, fn, linespec)
+        branch, file_path, linespec)
 
 
 def setup(app: Sphinx) -> Dict[str, Any]:
