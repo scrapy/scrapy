@@ -43,3 +43,33 @@ def inthread(func):
     def wrapped(*a, **kw):
         return threads.deferToThread(func, *a, **kw)
     return wrapped
+
+
+try:
+    from dataclasses import fields
+except ImportError:
+    pass
+else:
+    def subscriptable_dataclass(cls):
+        """
+        Decorator to allow dictionary-like access to dataclass instances
+        """
+
+        def __getitem__(self, key):
+            if not hasattr(self, "_field_names"):
+                self._field_names = [f.name for f in fields(self)]
+            if key in self._field_names:
+                return getattr(self, key)
+            raise KeyError(key)
+
+        def __setitem__(self, key, value):
+            if not hasattr(self, "_field_names"):
+                self._field_names = [f.name for f in fields(self)]
+            if key in self._field_names:
+                setattr(self, key, value)
+            else:
+                raise KeyError("%s does not support field: %s" % (self.__class__.__name__, key))
+
+        setattr(cls, "__getitem__", __getitem__)
+        setattr(cls, "__setitem__", __setitem__)
+        return cls
