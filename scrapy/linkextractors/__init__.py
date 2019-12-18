@@ -61,7 +61,7 @@ class FilteringLinkExtractor(object):
             warn('scrapy.linkextractors.FilteringLinkExtractor is deprecated, '
                  'please use scrapy.linkextractors.LinkExtractor instead',
                  ScrapyDeprecationWarning, stacklevel=2)
-        return super(FilteringLinkExtractor, cls).__new__(cls)
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
                  restrict_xpaths, canonicalize, deny_extensions, restrict_css, restrict_text):
