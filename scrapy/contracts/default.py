@@ -4,7 +4,7 @@ from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
 
-from . import Contract
+from scrapy.contracts import Contract
 
 
 # contracts
@@ -86,8 +86,8 @@ class ReturnsContract(Contract):
             else:
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
-            raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+            raise ContractFail("Returned %s %s, expected %s" %
+                               (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):

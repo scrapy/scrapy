@@ -1,4 +1,3 @@
-import six
 import json
 import copy
 from collections.abc import MutableMapping
@@ -23,7 +22,7 @@ def get_settings_priority(priority):
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
     numerical value, or directly returns a given numerical priority.
     """
-    if isinstance(priority, six.string_types):
+    if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
     else:
         return priority
@@ -173,7 +172,7 @@ class BaseSettings(MutableMapping):
         :type default: any
         """
         value = self.get(name, default or [])
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = value.split(',')
         return list(value)
 
@@ -194,7 +193,7 @@ class BaseSettings(MutableMapping):
         :type default: any
         """
         value = self.get(name, default or {})
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = json.loads(value)
         return dict(value)
 
@@ -284,7 +283,7 @@ class BaseSettings(MutableMapping):
         :type priority: string or int
         """
         self._assert_mutability()
-        if isinstance(module, six.string_types):
+        if isinstance(module, str):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
@@ -313,14 +312,14 @@ class BaseSettings(MutableMapping):
         :type priority: string or int
         """
         self._assert_mutability()
-        if isinstance(values, six.string_types):
+        if isinstance(values, str):
             values = json.loads(values)
         if values is not None:
             if isinstance(values, BaseSettings):
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, values.getpriority(name))
             else:
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, priority)
 
     def delete(self, name, priority='project'):
@@ -377,7 +376,7 @@ class BaseSettings(MutableMapping):
 
     def _to_dict(self):
         return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in six.iteritems(self)}
+                for k, v in self.items()}
 
     def copy_to_dict(self):
         """
@@ -445,7 +444,7 @@ class Settings(BaseSettings):
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name, val in six.iteritems(self):
+        for name, val in self.items():
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)
