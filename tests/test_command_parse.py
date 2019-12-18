@@ -12,6 +12,7 @@ def _textmode(bstr):
     and reading from it in text mode"""
     return to_unicode(bstr).replace(os.linesep, '\n')
 
+
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
 

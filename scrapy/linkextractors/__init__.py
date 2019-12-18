@@ -6,8 +6,8 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 import re
+from urllib.parse import urlparse
 
-from six.moves.urllib.parse import urlparse
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 
@@ -44,8 +44,7 @@ IGNORED_EXTENSIONS = [
 
 _re_type = type(re.compile("", 0))
 _matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', \
-                                                       'file', 'ftp'}
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
 class FilteringLinkExtractor(object):
@@ -118,4 +117,4 @@ class FilteringLinkExtractor(object):
 
 
 # Top-level imports
-from .lxmlhtml import LxmlLinkExtractor as LinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor  # noqa: F401

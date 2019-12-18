@@ -1,6 +1,6 @@
-import six
-import signal
 import logging
+import pprint
+import signal
 import warnings
 
 from twisted.internet import reactor, defer
@@ -20,6 +20,7 @@ from scrapy.utils.log import (
     LogCounterHandler, configure_logging, log_scrapy_info,
     get_scrapy_root_handler, install_scrapy_root_handler)
 from scrapy import signals
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,8 @@ class Crawler(object):
         logging.root.addHandler(handler)
 
         d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)r", {'settings': d})
+        logger.info("Overridden settings:\n%(settings)s",
+                    {'settings': pprint.pformat(d)})
 
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
@@ -110,7 +112,7 @@ class Crawler(object):
 class CrawlerRunner(object):
     """
     This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
+    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
 
     The CrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -204,7 +206,7 @@ class CrawlerRunner(object):
         return self._create_crawler(crawler_or_spidercls)
 
     def _create_crawler(self, spidercls):
-        if isinstance(spidercls, six.string_types):
+        if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 
@@ -233,12 +235,13 @@ class CrawlerProcess(CrawlerRunner):
     A class to run multiple scrapy crawlers in a process simultaneously.
 
     This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
-    for starting a Twisted `reactor`_ and handling shutdown signals, like the
-    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
+    signals, like the keyboard interrupt command Ctrl-C. It also configures
+    top-level logging.
 
     This utility should be a better fit than
     :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
-    Twisted `reactor`_ within your application.
+    :mod:`~twisted.internet.reactor` within your application.
 
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -273,9 +276,9 @@ class CrawlerProcess(CrawlerRunner):
 
     def start(self, stop_after_crawl=True):
         """
-        This method starts a Twisted `reactor`_, adjusts its pool size to
-        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
-        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
+        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
+        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.

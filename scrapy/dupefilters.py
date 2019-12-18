@@ -1,9 +1,9 @@
-from __future__ import print_function
 import os
 import logging
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
+
 
 class BaseDupeFilter(object):
 

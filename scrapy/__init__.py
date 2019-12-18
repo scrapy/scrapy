@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
 del warnings
 
 # Apply monkey patches to fix issues in external libraries
-from . import _monkeypatches
+from scrapy import _monkeypatches
 del _monkeypatches
 
 from twisted import version as _txv

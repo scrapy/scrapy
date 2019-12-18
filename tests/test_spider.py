@@ -15,7 +15,6 @@ from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
 
 
@@ -384,6 +383,14 @@ class CrawlSpiderTest(SpiderTest):
         spider = self.spider_class.from_crawler(crawler, 'example.com')
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
+
+    def test_start_url(self):
+        spider = self.spider_class("example.com")
+        spider.start_url = 'https://www.example.com'
+
+        with self.assertRaisesRegex(AttributeError,
+                                    r'^Crawling could not start.*$'):
+            list(spider.start_requests())
 
 
 class SitemapSpiderTest(SpiderTest):
