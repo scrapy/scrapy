@@ -1,12 +1,10 @@
 import sys
 import unittest
+from unittest import mock
 from warnings import catch_warnings
-
-import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
-from tests import mock
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -62,12 +60,8 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
 
-        if six.PY2:
-            self.assertEqual(itemrepr,
-                             "{'name': u'John Doe', 'number': 123}")
-        else:
-            self.assertEqual(itemrepr,
-                             "{'name': 'John Doe', 'number': 123}")
+        self.assertEqual(itemrepr,
+                         "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')
@@ -245,7 +239,7 @@ class ItemTest(unittest.TestCase):
     def test_copy(self):
         class TestItem(Item):
             name = Field()
-        item = TestItem({'name':'lower'})
+        item = TestItem({'name': 'lower'})
         copied_item = item.copy()
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
@@ -306,7 +300,7 @@ class ItemMetaTest(unittest.TestCase):
 class ItemMetaClassCellRegression(unittest.TestCase):
 
     def test_item_meta_classcell_regression(self):
-        class MyItem(six.with_metaclass(ItemMeta, Item)):
+        class MyItem(Item, metaclass=ItemMeta):
             def __init__(self, *args, **kwargs):
                 # This call to super() trigger the __classcell__ propagation
                 # requirement. When not done properly raises an error:

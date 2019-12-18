@@ -7,15 +7,16 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
+    - env: TOXENV=security
+      python: 3.8
     - env: TOXENV=flake8
       python: 3.8
     - env: TOXENV=pylint
       python: 3.8
     - env: TOXENV=pypy3
-      python: 3.5
     - env: TOXENV=py35
       python: 3.5
-    - env: TOXENV=py35-pinned
+    - env: TOXENV=pinned
       python: 3.5
     - env: TOXENV=py36
       python: 3.6
@@ -23,7 +24,7 @@ matrix:
       python: 3.7
     - env: TOXENV=py38
       python: 3.8
-    - env: TOXENV=py38-extra-deps
+    - env: TOXENV=extra-deps
       python: 3.8
     - env: TOXENV=docs
       python: 3.6

@@ -10,8 +10,7 @@ import logging
 import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-import six
-from six.moves.urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote
 from ftplib import FTP
 
 from zope.interface import Interface, implementer
@@ -65,7 +64,7 @@ class StdoutFeedStorage(object):
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
-            _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
+            _stdout = sys.stdout.buffer
         self._stdout = _stdout
 
     def open(self, spider):
@@ -199,9 +198,9 @@ class FeedExporter(object):
 
     def __init__(self, settings):
         self.settings = settings
-        self.urifmt = settings['FEED_URI']
-        if not self.urifmt:
+        if not settings['FEED_URI']:
             raise NotConfigured
+        self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')

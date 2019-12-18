@@ -6,7 +6,7 @@ For new code, always import from w3lib.html instead of this module
 import warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from w3lib.html import *
+from w3lib.html import *  # noqa: F401
 
 
 warnings.warn("Module `scrapy.utils.markup` is deprecated. "

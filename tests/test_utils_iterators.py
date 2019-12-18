@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
-import six
+
 from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter, _body_or_str, xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
+
 
 FOOBAR_NL = u"foo\nbar"
 
@@ -235,6 +236,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
         i = self.xmliter(42, 'product')
         self.assertRaises(TypeError, next, i)
 
+
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
     sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')
@@ -255,8 +257,8 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assertTrue(all((isinstance(k, six.text_type) for k in result_row.keys())))
-            self.assertTrue(all((isinstance(v, six.text_type) for v in result_row.values())))
+            self.assertTrue(all((isinstance(k, str) for k in result_row.keys())))
+            self.assertTrue(all((isinstance(v, str) for v in result_row.values())))
 
     def test_csviter_delimiter(self):
         body = get_testdata('feeds', 'feed-sample3.csv').replace(b',', b'\t')

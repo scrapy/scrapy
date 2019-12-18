@@ -1,5 +1,3 @@
-
-from __future__ import absolute_import
 import signal
 
 from twisted.internet import reactor

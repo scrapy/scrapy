@@ -1,18 +1,23 @@
-import six
+from pathlib import Path
+
 import pytest
+
+
+def _py_files(folder):
+    return (str(p) for p in Path(folder).rglob('*.py'))
 
 
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
+    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    *_py_files("tests/CrawlerProcess")
 ]
 
-
-if six.PY3:
-    for line in open('tests/py3-ignores.txt'):
-        file_path = line.strip()
-        if file_path and file_path[0] != '#':
-            collect_ignore.append(file_path)
+for line in open('tests/ignores.txt'):
+    file_path = line.strip()
+    if file_path and file_path[0] != '#':
+        collect_ignore.append(file_path)
 
 
 @pytest.fixture()

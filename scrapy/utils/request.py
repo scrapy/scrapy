@@ -3,19 +3,20 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-from __future__ import print_function
 import hashlib
 import weakref
-from six.moves.urllib.parse import urlunparse
+from urllib.parse import urlunparse
 
 from w3lib.http import basic_auth_header
-from scrapy.utils.python import to_bytes, to_native_str
-
 from w3lib.url import canonicalize_url
+
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
+
+
 def request_fingerprint(request, include_headers=None, keep_fragments=False):
     """
     Return the request fingerprint.
@@ -97,4 +98,4 @@ def referer_str(request):
     referrer = request.headers.get('Referer')
     if referrer is None:
         return referrer
-    return to_native_str(referrer, errors='replace')
+    return to_unicode(referrer, errors='replace')
