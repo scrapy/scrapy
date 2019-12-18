@@ -353,8 +353,44 @@ method for this puspose. For example::
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 
+.. _faq-dataclass-items:
+
+Can I use dataclasses as items?
+-------------------------------
+
+Support for :class:`dataclasses.dataclass` objects as items was added in version 2.0.
+This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
+
+Most of the examples in this documentation assume you are using either :class:`dict`
+or :class:`~scrapy.item.Item` objects, and access their values in a dictionary-like
+manner. However, ``dataclass`` objects expose their values trough attributes instead,
+which means you might need to update your existing components (such as pipelines,
+signal handlers or middlewares) to make them work correctly.
+
+Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
+decorator, which adds the appropriate methods in order to make ``dataclass`` objects
+capable of being accessed like dictionaries::
+
+    >>> from dataclasses import dataclass
+    >>> from scrapy.utils.decorators import subscriptable_dataclass
+    >>>
+    >>> @subscriptable_dataclass
+    ... @dataclass
+    ... class InventoryItem:
+    ...     name: str
+    ...     price: int
+    ...
+    >>> d = InventoryItem(name="foobar", price=10)
+    >>> d["name"]
+    'foobar'
+    >>> d["price"] = 5
+    >>> d
+    InventoryItem(name='foobar', price=5)
+    >>>
+
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
+.. _dataclasses backport: https://pypi.org/project/dataclasses/
