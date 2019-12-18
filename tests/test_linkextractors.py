@@ -517,10 +517,10 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             LxmlLinkExtractor()
             self.assertEqual(len(warnings), 0)
 
-            class SubclassedItem(LxmlLinkExtractor):
+            class SubclassedLxmlLinkExtractor(LxmlLinkExtractor):
                 pass
 
-            SubclassedItem()
+            SubclassedLxmlLinkExtractor()
             self.assertEqual(len(warnings), 0)
 
 
