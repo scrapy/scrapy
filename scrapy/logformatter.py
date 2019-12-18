@@ -13,7 +13,7 @@ ERRORMSG = u"'Error processing %(item)s'"
 
 class LogFormatter(object):
     """Class for generating log messages for different actions.
-    
+
     All methods must return a dictionary listing the parameters ``level``, ``msg``
     and ``args`` which are going to be used for constructing the log message when
     calling ``logging.log``.
@@ -48,7 +48,7 @@ class LogFormatter(object):
                         }
                     }
     """
-    
+
     def crawled(self, request, response, spider):
         """Logs a message when the crawler finds a webpage."""
         request_flags = ' %s' % str(request.flags) if request.flags else ''
