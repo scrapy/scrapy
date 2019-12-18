@@ -33,7 +33,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
@@ -695,7 +695,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
-        return self.download_request(request, Spider('foo')).addCallback(_test)
+        with self.assertWarnsRegex(ScrapyDeprecationWarning,
+                                   r'Using HTTPS proxies in the noconnect mode is deprecated'):
+            return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_download_without_proxy(self):
         def _test(response):
@@ -709,6 +711,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
 class Http10ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP10DownloadHandler
+
+    def test_download_with_proxy_https_noconnect(self):
+        raise unittest.SkipTest('noconnect is not supported in HTTP10DownloadHandler')
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
