@@ -5,12 +5,12 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
 from scrapy.utils.python import to_unicode
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
+from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
+                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback)
 
 
 class CrawlTestCase(TestCase):
@@ -277,3 +277,15 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_with_errback(self):
+        self.runner.crawl(CrawlSpiderWithErrback, mockserver=self.mockserver)
+
+        with LogCapture() as log:
+            yield self.runner.join()
+
+        self.assertIn("[callback] status 200", str(log))
+        self.assertIn("[callback] status 201", str(log))
+        self.assertIn("[errback] status 404", str(log))
+        self.assertIn("[errback] status 500", str(log))
