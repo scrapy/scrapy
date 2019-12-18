@@ -34,11 +34,14 @@ Each item pipeline component is a Python class that must implement the following
    :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
-   :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object or a dict
+   :param item: the scraped item
+   :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`dataclasses.dataclass`
 
    :param spider: the spider which scraped the item
    :type spider: :class:`~scrapy.spiders.Spider` object
+
+  .. note:: Please see the :ref:`this FAQ entry <faq-dataclass-items>`
+            if you are using :func:`dataclasses.dataclass` objects as items
 
 Additionally, they may also implement the following methods:
 

@@ -364,8 +364,10 @@ This works natively in Python 3.7+, or using the `dataclasses backport`_ in Pyth
 Most of the examples in this documentation assume you are using either :class:`dict`
 or :class:`~scrapy.item.Item` objects, and access their values in a dictionary-like
 manner. However, ``dataclass`` objects expose their values trough attributes instead,
-which means you might need to update your existing components (such as pipelines,
-signal handlers or middlewares) to make them work correctly.
+which means you might need to update your existing components
+(such as :ref:`item pipelines <topics-item-pipeline>`,
+:ref:`signal handlers <topics-signals>` handlers or
+:ref:`spider middlewares <topics-spider-middleware>`) to make them work correctly.
 
 Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
 decorator, which adds the appropriate methods in order to make ``dataclass`` objects
