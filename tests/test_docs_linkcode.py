@@ -17,13 +17,8 @@ def check_url(url, path=PATH, branch='master'):
     assert re.match(pattern, url) is not None
 
 
-def test_unknown_module():
-    info = {'module': 'foo', 'fullname': ''}
-    assert resolve(DOMAIN, info) is None
-
-
 def test_unexisting_object():
-    info = {'module': 'scrapy', 'fullname': 'foo'}
+    info = {'module': 'scrapy.crawler', 'fullname': 'Crawler.settings'}
     assert resolve(DOMAIN, info) is None
 
 

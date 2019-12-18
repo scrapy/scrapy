@@ -33,15 +33,11 @@ def resolve(domain, info):
     modname = info['module']
     fullname = info['fullname']
 
-    submod = sys.modules.get(modname)
-    if submod is None:
-        return None
-
-    obj = submod
+    obj = sys.modules.get(modname)
     for part in fullname.split('.'):
         try:
             obj = getattr(obj, part)
-        except Exception:
+        except AttributeError:
             return None
 
     try:
