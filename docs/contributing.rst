@@ -229,7 +229,7 @@ You can also specify a comma-separated list of environmets, and use :ref:`tox’
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py27,py36 -p auto
+    tox -e py36,py38 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the

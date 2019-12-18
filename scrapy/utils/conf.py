@@ -37,7 +37,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         """Fail if a value in the components dict is not a real number or None."""
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError('Invalid value {} for component {}, please provide ' \
+                raise ValueError('Invalid value {} for component {}, please provide '
                                  'a real number or None instead'.format(value, name))
 
     # BEGIN Backward compatibility for old (base, custom) call signature
