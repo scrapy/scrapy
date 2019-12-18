@@ -30,9 +30,6 @@ def _github_branch():
 # Based on numpy’s:
 # https://github.com/numpy/numpy/blob/dedc4178fc334329de9872ab42df870d2ac7a270/doc/source/conf.py#L313
 def resolve(domain, info):
-    if domain != 'py':
-        return None
-
     modname = info['module']
     fullname = info['fullname']
 

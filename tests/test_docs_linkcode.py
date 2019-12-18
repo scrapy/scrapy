@@ -17,10 +17,6 @@ def check_url(url, path=PATH, branch='master'):
     assert re.match(pattern, url) is not None
 
 
-def test_non_py_domain():
-    assert resolve('cpp', None) is None
-
-
 def test_unknown_module():
     info = {'module': 'foo', 'fullname': ''}
     assert resolve(DOMAIN, info) is None
