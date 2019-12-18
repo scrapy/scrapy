@@ -11,11 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import inspect
 import sys
 from datetime import datetime
-from os import environ, path
-from os.path import relpath, dirname
+from os import path
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
