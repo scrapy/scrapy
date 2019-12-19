@@ -31,7 +31,7 @@ for more info.
 Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
 is unavailable.
 
-Through scrapy's settings you can configure it to use any one of
+Through Scrapy's settings you can configure it to use any one of
 ``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
 are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
 variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::

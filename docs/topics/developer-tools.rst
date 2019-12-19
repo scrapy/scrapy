@@ -80,7 +80,7 @@ expand and collapse a tag by clicking on the arrow in front of it or by double
 clicking directly on the tag. If we expand the ``span`` tag with the ``class=
 "text"`` we will see the quote-text we clicked on. The `Inspector` lets you
 copy XPaths to selected elements. Let's try it out: Right-click on the ``span`` 
-tag, select ``Copy > XPath`` and paste it in the scrapy shell like so::
+tag, select ``Copy > XPath`` and paste it in the Scrapy shell like so::
 
     $ scrapy shell "http://quotes.toscrape.com/"
     (...)
@@ -159,7 +159,7 @@ The page is quite similar to the basic `quotes.toscrape.com`_-page,
 but instead of the above-mentioned ``Next`` button, the page 
 automatically loads new quotes when you scroll to the bottom. We 
 could go ahead and try out different XPaths directly, but instead 
-we'll check another quite useful command from the scrapy shell::
+we'll check another quite useful command from the Scrapy shell::
 
   $ scrapy shell "quotes.toscrape.com/scroll"
   (...)

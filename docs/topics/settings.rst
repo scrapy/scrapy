@@ -1264,7 +1264,7 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled by default in Scrapy. You should
+A dict containing the Scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
 
@@ -1295,7 +1295,7 @@ SPIDER_LOADER_WARN_ONLY
 
 Default: ``False``
 
-By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
 it will fail loudly if there is any ``ImportError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.

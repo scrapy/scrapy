@@ -44,7 +44,7 @@ guidelines when you're going to report a new bug.
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
-* if you have a general question about scrapy usage, please ask it at
+* if you have a general question about Scrapy usage, please ask it at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__
   (use "scrapy" tag).
 

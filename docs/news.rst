@@ -1360,7 +1360,7 @@ Documentation
 
 - Grammar fixes: :issue:`2128`, :issue:`1566`.
 - Download stats badge removed from README (:issue:`2160`).
-- New scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
+- New Scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
 - Updated ``Response`` parameters documentation (:issue:`2197`).
 - Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
@@ -1450,7 +1450,7 @@ Documentation
 - Use "url" variable in downloader middleware example (:issue:`2015`)
 - Grammar fixes (:issue:`2054`, :issue:`2120`)
 - New FAQ entry on using BeautifulSoup in spider callbacks (:issue:`2048`)
-- Add notes about scrapy not working on Windows with Python 3 (:issue:`2060`)
+- Add notes about Scrapy not working on Windows with Python 3 (:issue:`2060`)
 - Encourage complete titles in pull requests (:issue:`2026`)
 
 Tests
@@ -1509,7 +1509,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     You can use :setting:`FILES_STORE_S3_ACL` to change it.
   - We've reimplemented ``canonicalize_url()`` for more correct output,
     especially for URLs with non-ASCII characters (:issue:`1947`).
-    This could change link extractors output compared to previous scrapy versions.
+    This could change link extractors output compared to previous Scrapy versions.
     This may also invalidate some cache entries you could still have from pre-1.1 runs.
     **Warning: backward incompatible!**.
 
@@ -1722,7 +1722,7 @@ Scrapy 1.0.4 (2015-12-30)
 - Merge pull request #1513 from mgedmin/patch-2 (:commit:`5d4daf8`)
 - Typo (:commit:`f8d0682`)
 - Fix list formatting (:commit:`5f83a93`)
-- fix scrapy squeue tests after recent changes to queuelib (:commit:`3365c01`)
+- fix Scrapy squeue tests after recent changes to queuelib (:commit:`3365c01`)
 - Merge pull request #1475 from rweindl/patch-1 (:commit:`2d688cd`)
 - Update tutorial.rst (:commit:`fbc1f25`)
 - Merge pull request #1449 from rhoekman/patch-1 (:commit:`7d6538c`)
@@ -1734,7 +1734,7 @@ Scrapy 1.0.4 (2015-12-30)
 Scrapy 1.0.3 (2015-08-11)
 -------------------------
 
-- add service_identity to scrapy install_requires (:commit:`cbc2501`)
+- add service_identity to Scrapy install_requires (:commit:`cbc2501`)
 - Workaround for travis#296 (:commit:`66af9cd`)
 
 .. _release-1.0.2:
@@ -2411,7 +2411,7 @@ Enhancements
 - scrapy.mail.MailSender now can connect over TLS or upgrade using STARTTLS (:issue:`327`)
 - New FilesPipeline with functionality factored out from ImagesPipeline (:issue:`370`, :issue:`409`)
 - Recommend Pillow instead of PIL for image handling (:issue:`317`)
-- Added Debian packages for Ubuntu Quantal and raring (:commit:`86230c0`)
+- Added Debian packages for Ubuntu Quantal and Raring (:commit:`86230c0`)
 - Mock server (used for tests) can listen for HTTPS requests (:issue:`410`)
 - Remove multi spider support from multiple core components
   (:issue:`422`, :issue:`421`, :issue:`420`, :issue:`419`, :issue:`423`, :issue:`418`)
@@ -2516,7 +2516,7 @@ Scrapy 0.18.1 (released 2013-08-27)
 - limit travis-ci build matrix (:commit:`3b01bb8`)
 - Merge pull request #375 from peterarenot/patch-1 (:commit:`fa766d7`)
 - Fixed so it refers to the correct folder (:commit:`3283809`)
-- added Quantal & raring to support Ubuntu releases (:commit:`1411923`)
+- added Quantal & Raring to support Ubuntu releases (:commit:`1411923`)
 - fix retry middleware which didn't retry certain connection errors after the upgrade to http1 client, closes GH-373 (:commit:`bb35ed0`)
 - fix XmlItemExporter in Python 2.7.4 and 2.7.5 (:commit:`de3e451`)
 - minor updates to 0.18 release notes (:commit:`c45e5f1`)
@@ -2555,8 +2555,8 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Collect idle downloader slots (:issue:`297`)
 - Add ``ftp://`` scheme downloader handler (:issue:`329`)
 - Added downloader benchmark webserver and spider tools :ref:`benchmarking`
-- Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
-- Add scrapy commands using external libraries (:issue:`260`)
+- Moved persistent (on disk) queues to a separate project (queuelib_) which Scrapy now depends on
+- Add Scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
 - Added :meth:`XPathSelector.remove_namespaces <scrapy.selector.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - Several improvements to spider contracts
@@ -2568,7 +2568,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - several more cleanups to singletons and multi-spider support (thanks Nicolas Ramirez)
 - support custom download slots
 - added --spider option to "shell" command.
-- log overridden settings when scrapy starts
+- log overridden settings when Scrapy starts
 
 Thanks to everyone who contribute to this release. Here is a list of
 contributors sorted by number of commits::
