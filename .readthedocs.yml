@@ -2,6 +2,8 @@ version: 2
 sphinx:
   configuration: docs/conf.py
 python:
-  version: 3.8
+  # For available versions, see:
+  # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-image
+  version: 3.7  # Keep in sync with .travis.yml
   install:
     - requirements: docs/requirements.txt
