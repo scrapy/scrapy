@@ -5,7 +5,7 @@ Debugging Spiders
 =================
 
 This document explains the most common techniques for debugging spiders.
-Consider the following scrapy spider below::
+Consider the following Scrapy spider below::
 
     import scrapy
     from myproject.items import MyItem

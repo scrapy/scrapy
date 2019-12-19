@@ -338,7 +338,7 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this puspose. For example::
+method for this purpose. For example::
 
     from copy import deepcopy
 

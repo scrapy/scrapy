@@ -169,7 +169,7 @@ The page is quite similar to the basic `quotes.toscrape.com`_-page,
 but instead of the above-mentioned ``Next`` button, the page 
 automatically loads new quotes when you scroll to the bottom. We 
 could go ahead and try out different XPaths directly, but instead 
-we'll check another quite useful command from the scrapy shell:
+we'll check another quite useful command from the Scrapy shell:
 
 .. skip: next
 
