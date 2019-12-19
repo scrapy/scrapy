@@ -1,4 +1,5 @@
 # Tests requirements
+dataclasses; python_version == '3.6'
 jmespath
 mitmproxy; python_version >= '3.6'
 mitmproxy<4.0.0; python_version < '3.6'
