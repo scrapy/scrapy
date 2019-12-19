@@ -371,24 +371,30 @@ which means you might need to update your existing components
 
 Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
 decorator, which adds the appropriate methods in order to make ``dataclass`` objects
-capable of being accessed like dictionaries::
+capable of being accessed like dictionaries:
 
-    >>> from dataclasses import dataclass
-    >>> from scrapy.utils.decorators import subscriptable_dataclass
-    >>>
-    >>> @subscriptable_dataclass
-    ... @dataclass
-    ... class InventoryItem:
-    ...     name: str
-    ...     price: int
-    ...
-    >>> d = InventoryItem(name="foobar", price=10)
-    >>> d["name"]
-    'foobar'
-    >>> d["price"] = 5
-    >>> d
-    InventoryItem(name='foobar', price=5)
-    >>>
+.. invisible-code-block: python
+
+  import sys
+
+.. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
+
+>>> from dataclasses import dataclass
+>>> from scrapy.utils.decorators import subscriptable_dataclass
+>>> @subscriptable_dataclass
+... @dataclass
+... class InventoryItem:
+...     name: str
+...     price: int
+...
+>>> d = InventoryItem(name="foobar", price=10)
+>>> d["name"]
+'foobar'
+>>> d["price"] = 5
+>>> d
+InventoryItem(name='foobar', price=5)
+
+.. skip: end
 
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
