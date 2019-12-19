@@ -156,7 +156,7 @@ class GeneratorFailMiddleware:
             r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
             yield r
             raise LookupError()
-    
+
     def process_spider_exception(self, response, exception, spider):
         method = '{}.process_spider_exception'.format(self.__class__.__name__)
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
@@ -264,7 +264,7 @@ class TestSpiderMiddleware(TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
-    
+
     @defer.inlineCallbacks
     def crawl_log(self, spider):
         crawler = get_crawler(spider)
@@ -308,7 +308,7 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("{'from': 'errback'}", str(log1))
         self.assertNotIn("{'from': 'callback'}", str(log1))
         self.assertIn("'item_scraped_count': 1", str(log1))
-    
+
     @defer.inlineCallbacks
     def test_generator_callback(self):
         """
@@ -319,7 +319,7 @@ class TestSpiderMiddleware(TestCase):
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
         self.assertIn("'item_scraped_count': 2", str(log2))
-    
+
     @defer.inlineCallbacks
     def test_not_a_generator_callback(self):
         """
