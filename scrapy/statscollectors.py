@@ -1,8 +1,8 @@
 """
 Scrapy extension for collecting scraping stats
 """
-import pprint
 import logging
+import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,15 @@ class StatsCollector(object):
 
     def _persist_stats(self, stats, spider):
         pass
+
+    def __getitem__(self, key):
+        return self._stats.get(key)
+
+    def __setitem__(self, key, value):
+        self._stats[key] = value
+
+    def __iter__(self):
+        return iter(self._stats)
 
 
 class MemoryStatsCollector(StatsCollector):

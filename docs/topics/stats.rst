@@ -45,6 +45,10 @@ Set stat value::
 
     stats.set_value('hostname', socket.gethostname())
 
+or::
+
+   stats['hostname'] = socket.gethostname()
+
 Increment stat value::
 
     stats.inc_value('custom_count')
@@ -62,10 +66,24 @@ Get stat value::
     >>> stats.get_value('custom_count')
     1
 
+or::
+
+   >>> stats['custom_count']
+   1
+
 Get all stats::
 
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+
+
+Get stat key::
+
+   >>> for key in stats:
+   ...     print(key)
+   ...
+   custom_count
+   start_time
 
 Available Stats Collectors
 ==========================

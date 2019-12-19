@@ -62,7 +62,14 @@ class StatsCollectorTest(unittest.TestCase):
         self.assertEqual(stats.get_value('anything'), None)
         self.assertEqual(stats.get_value('anything', 'default'), 'default')
         stats.set_value('test', 'value')
+        self.assertEqual(stats['test'], 'value')
         self.assertEqual(stats.get_stats(), {'test': 'value'})
+        stats['test'] = 'value2'
+        self.assertIn('test', stats)
+        self.assertEqual(stats['test'], 'value2')
+        self.assertEqual(next(iter(stats)), 'test')
+        self.assertEqual(stats.get_stats(), {'test': 'value2'})
+        stats['test'] = 'value'
         stats.set_value('test2', 23)
         self.assertEqual(stats.get_stats(), {'test': 'value', 'test2': 23})
         self.assertEqual(stats.get_value('test2'), 23)
