@@ -1,4 +1,3 @@
-import six
 import unittest
 from unittest import mock
 
@@ -10,7 +9,7 @@ from . import default_settings
 class SettingsGlobalFuncsTest(unittest.TestCase):
 
     def test_get_settings_priority(self):
-        for prio_str, prio_num in six.iteritems(SETTINGS_PRIORITIES):
+        for prio_str, prio_num in SETTINGS_PRIORITIES.items():
             self.assertEqual(get_settings_priority(prio_str), prio_num)
         self.assertEqual(get_settings_priority(99), 99)
 
@@ -43,14 +42,14 @@ class SettingsAttributeTest(unittest.TestCase):
         new_dict = {'three': 11, 'four': 21}
         attribute.set(new_dict, 10)
         self.assertIsInstance(attribute.value, BaseSettings)
-        six.assertCountEqual(self, attribute.value, new_dict)
-        six.assertCountEqual(self, original_settings, original_dict)
+        self.assertCountEqual(attribute.value, new_dict)
+        self.assertCountEqual(original_settings, original_dict)
 
         new_settings = BaseSettings({'five': 12}, 0)
         attribute.set(new_settings, 0)  # Insufficient priority
-        six.assertCountEqual(self, attribute.value, new_dict)
+        self.assertCountEqual(attribute.value, new_dict)
         attribute.set(new_settings, 10)
-        six.assertCountEqual(self, attribute.value, new_settings)
+        self.assertCountEqual(attribute.value, new_settings)
 
     def test_repr(self):
         self.assertEqual(repr(self.attribute),
@@ -148,10 +147,10 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.setmodule(
             'tests.test_settings.default_settings', 10)
 
-        self.assertCountEqual(six.iterkeys(self.settings.attributes),
-                              six.iterkeys(ctrl_attributes))
+        self.assertCountEqual(self.settings.attributes.keys(),
+                              ctrl_attributes.keys())
 
-        for key in six.iterkeys(ctrl_attributes):
+        for key in ctrl_attributes.keys():
             attr = self.settings.attributes[key]
             ctrl_attr = ctrl_attributes[key]
             self.assertEqual(attr.value, ctrl_attr.value)
@@ -227,7 +226,7 @@ class BaseSettingsTest(unittest.TestCase):
         }
         settings = self.settings
         settings.attributes = {key: SettingsAttribute(value, 0) for key, value
-                               in six.iteritems(test_configuration)}
+                               in test_configuration.items()}
 
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))
@@ -276,9 +275,8 @@ class BaseSettingsTest(unittest.TestCase):
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
                           'HASNOBASE': BaseSettings({3: 3000}, 'default')})
         s['TEST'].set(2, 200, 'cmdline')
-        six.assertCountEqual(self, s.getwithbase('TEST'),
-                             {1: 1, 2: 200, 3: 30})
-        six.assertCountEqual(self, s.getwithbase('HASNOBASE'), s['HASNOBASE'])
+        self.assertCountEqual(s.getwithbase('TEST'), {1: 1, 2: 200, 3: 30})
+        self.assertCountEqual(s.getwithbase('HASNOBASE'), s['HASNOBASE'])
         self.assertEqual(s.getwithbase('NONEXISTENT'), {})
 
     def test_maxpriority(self):

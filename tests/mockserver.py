@@ -3,9 +3,9 @@ import os
 import random
 import sys
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 
 from OpenSSL import SSL
-from six.moves.urllib.parse import urlencode
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -164,6 +164,12 @@ class Drop(Partial):
             request.finish()
 
 
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
 class Root(Resource):
 
     def __init__(self):
@@ -177,6 +183,7 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))

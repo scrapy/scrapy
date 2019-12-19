@@ -1,7 +1,6 @@
-import pprint
-import six
-import signal
 import logging
+import pprint
+import signal
 import warnings
 
 from twisted.internet import reactor, defer
@@ -21,6 +20,7 @@ from scrapy.utils.log import (
     LogCounterHandler, configure_logging, log_scrapy_info,
     get_scrapy_root_handler, install_scrapy_root_handler)
 from scrapy import signals
+
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ class CrawlerRunner(object):
         return self._create_crawler(crawler_or_spidercls)
 
     def _create_crawler(self, spidercls):
-        if isinstance(spidercls, six.string_types):
+        if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 

@@ -1,14 +1,14 @@
 """
 Some spiders used for testing and benchmarking
 """
-
 import time
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
-from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Spider
+from scrapy.spiders.crawl import CrawlSpider, Rule
 
 
 class MockServerSpider(Spider):
@@ -184,3 +184,35 @@ class DuplicateStartRequestsSpider(MockServerSpider):
 
     def parse(self, response):
         self.visited += 1
+
+
+class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
+    name = 'crawl_spider_with_errback'
+    custom_settings = {
+        'RETRY_HTTP_CODES': [],  # no need to retry
+    }
+    rules = (
+        Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),
+    )
+
+    def start_requests(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title<title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- errback -->
+                <p><a href="/status?n=500">Item 500</a></p>  <!-- errback -->
+                <p><a href="/status?n=501">Item 501</a></p>  <!-- errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+    def callback(self, response):
+        self.logger.info('[callback] status %i', response.status)
+
+    def errback(self, failure):
+        self.logger.info('[errback] status %i', failure.value.response.status)
