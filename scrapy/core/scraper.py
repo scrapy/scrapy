@@ -9,7 +9,7 @@ from twisted.internet import defer
 
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
@@ -17,6 +17,7 @@ from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.utils.request import referer_str
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,11 +100,13 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         slot = self.slot
         dfd = slot.add_response_request(response, request)
+
         def finish_scraping(_):
             slot.finish_response(response, request)
             self._check_if_closing(spider, slot)
             self._scrape_next(spider, slot)
             return _
+
         dfd.addBoth(finish_scraping)
         dfd.addErrback(
             lambda f: logger.error('Scraper bug processing %(request)s',
@@ -123,7 +126,7 @@ class Scraper(object):
         callback/errback"""
         assert isinstance(response, (Response, Failure))
 
-        dfd = self._scrape2(response, request, spider)  # returns spiders processed output
+        dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
         dfd.addCallback(self.handle_spider_output, request, response, spider)
         return dfd
@@ -142,7 +145,10 @@ class Scraper(object):
     def call_spider(self, result, request, spider):
         result.request = request
         dfd = defer_result(result)
-        dfd.addCallbacks(callback=request.callback or spider.parse,
+        callback = request.callback or spider.parse
+        warn_on_generator_with_return_value(spider, callback)
+        warn_on_generator_with_return_value(spider, request.errback)
+        dfd.addCallbacks(callback=callback,
                          errback=request.errback,
                          callbackKeywords=request.cb_kwargs)
         return dfd.addCallback(iterate_spider_output)
@@ -172,8 +178,8 @@ class Scraper(object):
         if not result:
             return defer_succeed(None)
         it = iter_errback(result, self.handle_spider_error, request, response, spider)
-        dfd = parallel(it, self.concurrent_items,
-            self._process_spidermw_output, request, response, spider)
+        dfd = parallel(it, self.concurrent_items, self._process_spidermw_output,
+                       request, response, spider)
         return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):
@@ -200,8 +206,7 @@ class Scraper(object):
         """Log and silence errors that come from the engine (typically download
         errors that got propagated thru here)
         """
-        if (isinstance(download_failure, Failure) and
-                not download_failure.check(IgnoreRequest)):
+        if isinstance(download_failure, Failure) and not download_failure.check(IgnoreRequest):
             if download_failure.frames:
                 logger.error('Error downloading %(request)s',
                              {'request': request},
