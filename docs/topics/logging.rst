@@ -171,9 +171,9 @@ listed in `logging's logrecord attributes docs
 <https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
 respectively.
 
-If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
+If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the 
-scrapy component responsible for that log output.
+Scrapy component responsible for that log output.
 
 Command-line options
 --------------------

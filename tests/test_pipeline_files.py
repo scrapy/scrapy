@@ -58,7 +58,6 @@ class FilesPipelineTestCase(unittest.TestCase):
         self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
                                     //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
                          'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
-                         
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)

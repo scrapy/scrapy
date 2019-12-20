@@ -67,7 +67,7 @@ def _pop_command_name(argv):
 
 def _print_header(settings, inproject):
     if inproject:
-        print("Scrapy %s - project: %s\n" % (scrapy.__version__, \
+        print("Scrapy %s - project: %s\n" % (scrapy.__version__,
                                              settings['BOT_NAME']))
     else:
         print("Scrapy %s - no active project\n" % scrapy.__version__)
@@ -123,7 +123,7 @@ def execute(argv=None, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(),
                                    conflict_handler='resolve')
     if not cmdname:
         _print_commands(settings, inproject)

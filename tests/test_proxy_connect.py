@@ -108,32 +108,6 @@ class ProxyConnectTestCase(TestCase):
         echo = json.loads(crawler.spider.meta['responses'][0].text)
         self.assertTrue('Proxy-Authorization' not in echo['headers'])
 
-    # The noconnect mode isn't supported by the current mitmproxy, it returns
-    # "Invalid request scheme: https" as it doesn't seem to support full URLs in GET at all,
-    # and it's not clear what behavior is intended by Scrapy and by mitmproxy here.
-    # https://github.com/mitmproxy/mitmproxy/issues/848 may be related.
-    # The Scrapy noconnect mode was required, at least in the past, to work with Crawlera,
-    # and https://github.com/scrapy-plugins/scrapy-crawlera/pull/44 seems to be related.
-
-    @pytest.mark.xfail(reason='mitmproxy gives an error for noconnect requests')
-    @defer.inlineCallbacks
-    def test_https_noconnect(self):
-        proxy = os.environ['https_proxy']
-        os.environ['https_proxy'] = proxy + '?noconnect'
-        crawler = get_crawler(SimpleSpider)
-        with LogCapture() as l:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        self._assert_got_response_code(200, l)
-
-    @pytest.mark.xfail(reason='mitmproxy gives an error for noconnect requests')
-    @defer.inlineCallbacks
-    def test_https_noconnect_auth_error(self):
-        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy']) + '?noconnect'
-        crawler = get_crawler(SimpleSpider)
-        with LogCapture() as l:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        self._assert_got_response_code(407, l)
-
     def _assert_got_response_code(self, code, log):
         print(log)
         self.assertEqual(str(log).count('Crawled (%d)' % code), 1)

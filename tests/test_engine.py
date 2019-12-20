@@ -91,8 +91,8 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
-            % port.getHost().port)
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
+              % port.getHost().port)
     return port
 
 
@@ -179,7 +179,6 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-
         for spider in TestSpider, DictItemsSpider:
             self.run = CrawlerRun(spider)
             yield self.run.run()
@@ -189,11 +188,15 @@ class EngineTest(unittest.TestCase):
             self._assert_scraped_items()
             self._assert_signals_catched()
 
+    @defer.inlineCallbacks
+    def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
         self._assert_scheduled_requests(urls_to_visit=7)
         self._assert_dropped_requests()
 
+    @defer.inlineCallbacks
+    def test_crawler_itemerror(self):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
@@ -271,7 +274,6 @@ class EngineTest(unittest.TestCase):
                          self.run.signals_catched[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_catched[signals.spider_idle])
-        self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
 

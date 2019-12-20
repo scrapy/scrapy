@@ -125,7 +125,7 @@ class TextResponse(Response):
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be not only an absolute URL, but also
-        
+
         * a relative URL;
         * a scrapy.link.Link object (e.g. a link extractor result);
         * an attribute Selector (not SelectorList) - e.g.
@@ -133,7 +133,7 @@ class TextResponse(Response):
           ``response.xpath('//img/@src')[0]``.
         * a Selector for ``<a>`` or ``<link>`` element, e.g.
           ``response.css('a.my_link')[0]``.
-          
+
         See :ref:`response-follow-example` for usage examples.
         """
         if isinstance(url, parsel.Selector):

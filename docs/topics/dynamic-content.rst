@@ -172,27 +172,27 @@ data from it:
     data in JSON format, which you can then parse with `json.loads`_.
 
     For example, if the JavaScript code contains a separate line like
-    ``var data = {"field": "value"};`` you can extract that data as follows::
+    ``var data = {"field": "value"};`` you can extract that data as follows:
 
-        >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
-        >>> json_data = response.css('script::text').re_first(pattern)
-        >>> json.loads(json_data)
-        {'field': 'value'}
+    >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
+    >>> json_data = response.css('script::text').re_first(pattern)
+    >>> json.loads(json_data)
+    {'field': 'value'}
 
 -   Otherwise, use js2xml_ to convert the JavaScript code into an XML document
     that you can parse using :ref:`selectors <topics-selectors>`.
 
     For example, if the JavaScript code contains
-    ``var data = {field: "value"};`` you can extract that data as follows::
+    ``var data = {field: "value"};`` you can extract that data as follows:
 
-        >>> import js2xml
-        >>> import lxml.etree
-        >>> from parsel import Selector
-        >>> javascript = response.css('script::text').get()
-        >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
-        >>> selector = Selector(text=xml)
-        >>> selector.css('var[name="data"]').get()
-        '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
+    >>> import js2xml
+    >>> import lxml.etree
+    >>> from parsel import Selector
+    >>> javascript = response.css('script::text').get()
+    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
+    >>> selector = Selector(text=xml)
+    >>> selector.css('var[name="data"]').get()
+    '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
 .. _topics-javascript-rendering:
 

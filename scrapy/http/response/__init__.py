@@ -113,8 +113,8 @@ class Response(object_ref):
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be a relative URL or a ``scrapy.link.Link`` object,
         not only an absolute URL.
-        
-        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow` 
+
+        :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
         """
