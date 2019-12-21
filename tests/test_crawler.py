@@ -264,13 +264,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_true(self):
         with LogCapture(level=logging.DEBUG) as log:
-            runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': True})
-            yield runner.crawl(NoRequestsSpider)
             if self.reactor_pytest == 'asyncio':
+                runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': True})
+                yield runner.crawl(NoRequestsSpider)
                 self.assertIn("Asyncio support enabled", str(log))
             else:
-                self.assertNotIn("Asyncio support enabled", str(log))
-                self.assertIn("ASYNCIO_ENABLED is on but the Twisted asyncio reactor is not installed", str(log))
+                msg = "ASYNCIO_ENABLED is on but the Twisted asyncio reactor is not installed"
+                with self.assertRaisesRegex(Exception, msg):
+                    runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': True})
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_false(self):

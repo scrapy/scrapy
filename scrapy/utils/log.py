@@ -11,7 +11,6 @@ from twisted.python import log as twisted_log
 import scrapy
 from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -150,12 +149,7 @@ def log_scrapy_info(settings):
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
     if settings.getbool('ASYNCIO_ENABLED'):
-        if is_asyncio_reactor_installed():
-            logger.debug("Asyncio support enabled")
-        else:
-            logger.error("ASYNCIO_ENABLED is on but the Twisted asyncio "
-                         "reactor is not installed, this is not supported "
-                         "and asyncio coroutines will not work.")
+        logger.debug("Asyncio support enabled")
 
 
 class StreamLogger(object):

@@ -14,7 +14,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import install_asyncio_reactor
+from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import (
@@ -259,6 +259,10 @@ class CrawlerProcess(CrawlerRunner):
         super(CrawlerProcess, self).__init__(settings)
         if self.settings.getbool('ASYNCIO_ENABLED'):
             install_asyncio_reactor()
+            if not is_asyncio_reactor_installed():
+                raise Exception("ASYNCIO_ENABLED is on but the Twisted asyncio "
+                                "reactor is not installed, this is not supported.")
+
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
