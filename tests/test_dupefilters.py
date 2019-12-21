@@ -142,12 +142,12 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             r1 = Request('http://scrapytest.org/index.html')
             r2 = Request('http://scrapytest.org/index.html')
-            
+
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            l.check_present(('scrapy.dupefilters', 'DEBUG', 
+            l.check_present(('scrapy.dupefilters', 'DEBUG',
                 ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
                 ' - no more duplicates will be shown'
                 ' (see DUPEFILTER_DEBUG to show all duplicates)')))
@@ -169,7 +169,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             r2 = Request('http://scrapytest.org/index.html',
                 headers={'Referer': 'http://scrapytest.org/INDEX.html'}
             )
-            
+
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 

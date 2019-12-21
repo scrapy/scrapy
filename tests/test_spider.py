@@ -384,6 +384,14 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
 
+    def test_start_url(self):
+        spider = self.spider_class("example.com")
+        spider.start_url = 'https://www.example.com'
+
+        with self.assertRaisesRegex(AttributeError,
+                                    r'^Crawling could not start.*$'):
+            list(spider.start_requests())
+
 
 class SitemapSpiderTest(SpiderTest):
 

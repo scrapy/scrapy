@@ -86,9 +86,6 @@ class HeadersTest(unittest.TestCase):
         self.assertSortedEqual(h.items(),
                                [(b'X-Forwarded-For', [b'ip1', b'ip2']),
                                 (b'Content-Type', [b'text/html'])])
-        self.assertSortedEqual(h.iteritems(),
-                               [(b'X-Forwarded-For', [b'ip1', b'ip2']),
-                                (b'Content-Type', [b'text/html'])])
         self.assertSortedEqual(h.values(), [b'ip2', b'text/html'])
 
     def test_update(self):

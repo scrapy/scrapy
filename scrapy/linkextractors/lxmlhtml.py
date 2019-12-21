@@ -1,8 +1,7 @@
 """
 Link extractor based on lxml.html
 """
-import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
@@ -22,7 +21,7 @@ _collect_string_content = etree.XPath("string()")
 
 
 def _nons(tag):
-    if isinstance(tag, six.string_types):
+    if isinstance(tag, str):
         if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE)+1] == XHTML_NAMESPACE:
             return tag.split('}')[-1]
     return tag
@@ -117,6 +116,14 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
                                                 restrict_text=restrict_text)
 
     def extract_links(self, response):
+        """Returns a list of :class:`~scrapy.link.Link` objects from the
+        specified :class:`response <scrapy.http.Response>`.
+
+        Only links that match the settings passed to the ``__init__`` method of
+        the link extractor are returned.
+
+        Duplicate links are omitted.
+        """
         base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [subdoc

@@ -1,9 +1,9 @@
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.boto import is_botocore
-from .http import HTTPDownloadHandler
+from scrapy.utils.httpobj import urlparse_cached
 
 
 def _get_boto_connection():
