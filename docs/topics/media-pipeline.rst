@@ -86,8 +86,7 @@ Enabling your Media Pipeline
 .. setting:: IMAGES_STORE
 .. setting:: FILES_STORE
 
-To enable your media pipeline you must first add it to your project
-:setting:`ITEM_PIPELINES` setting.
+To enable your media pipeline you must add its class to the :setting:`ITEM_PIPELINES` setting, like in the following example:
 
 For Images Pipeline, use::
 
