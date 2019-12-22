@@ -91,12 +91,11 @@ To enable your media pipeline you must first add it to your project
 
 For Images Pipeline, use::
 
-    ITEM_PIPELINES = {f'{your_scrapername}.pipelines.images.{your_item_pipeline_class_name}: 1*}*
+    ITEM_PIPELINES = {my_project.pipelines.MyImagesPipeline: 1}
 
 For Files Pipeline, use::
 
-    ITEM_PIPELINES = {f'{your_scrapername}.pipelines.files.{your_item_pipeline_class_name}: 1*}*
-
+    ITEM_PIPELINES = {my_project.pipelines.MyFilesPipeline: 1}
 
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
