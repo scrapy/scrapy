@@ -95,7 +95,7 @@ For Images Pipeline, use::
 
 For Files Pipeline, use::
 
-    ITEM_PIPELINES = {f'{your_scrapername}.pipelines.images.{your_item_pipeline_class_name}: 1*}*
+    ITEM_PIPELINES = {f'{your_scrapername}.pipelines.files.{your_item_pipeline_class_name}: 1*}*
 
 
 .. note::
