@@ -1,21 +1,20 @@
+import contextlib
 import os
 import shutil
 import tempfile
 from unittest import mock
-import contextlib
 
 from testfixtures import LogCapture
-from twisted.trial import unittest
+from twisted.cred import checkers, credentials, portal
+from twisted.internet import defer, error, reactor
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
-from twisted.internet import reactor, defer, error
-from twisted.web import server, static, util, resource
+from twisted.trial import unittest
+from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        NoLengthResource, HostHeaderResource, \
-        PayloadResource
-from twisted.cred import portal, checkers, credentials
+from twisted.web.test.test_webclient import (ForeverTakingResource, HostHeaderResource,
+                                             NoLengthResource, PayloadResource)
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -26,13 +25,14 @@ from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
-from scrapy.spiders import Spider
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.test import get_crawler, skip_if_no_boto
+from scrapy.spiders import Spider
+from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.utils.test import get_crawler, skip_if_no_boto
 
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
@@ -117,7 +117,9 @@ class FileTestCase(unittest.TestCase):
         self.tmpname = self.mktemp()
         with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
-        self.download_request = FileDownloadHandler().download_request
+        crawler = get_crawler()
+        handler = create_instance(FileDownloadHandler, crawler.settings, crawler)
+        self.download_request = handler.download_request
 
     def tearDown(self):
         os.unlink(self.tmpname + '^')
