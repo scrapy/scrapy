@@ -29,7 +29,7 @@ class HTTP10DownloadHandler:
         host, port = to_unicode(factory.host), factory.port
         if factory.scheme == b'https':
             client_context_factory = create_instance(
-                self.ClientContextFactory,
+                objcls=self.ClientContextFactory,
                 settings=self._settings,
                 crawler=self._crawler,
             )

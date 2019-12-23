@@ -68,7 +68,11 @@ class S3DownloadHandler:
             except Exception as ex:
                 raise NotConfigured(str(ex))
 
-        _http_handler = create_instance(httpdownloadhandler, settings, crawler)
+        _http_handler = create_instance(
+            objcls=httpdownloadhandler,
+            settings=settings,
+            crawler=crawler,
+        )
         self._download_http = _http_handler.download_request
 
     @classmethod

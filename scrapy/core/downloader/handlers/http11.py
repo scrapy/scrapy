@@ -41,7 +41,7 @@ class HTTP11DownloadHandler:
         # try method-aware context factory
         try:
             self._contextFactory = create_instance(
-                self._contextFactoryClass,
+                objcls=self._contextFactoryClass,
                 settings=settings,
                 crawler=crawler,
                 method=self._sslMethod,
@@ -49,7 +49,7 @@ class HTTP11DownloadHandler:
         except TypeError:
             # use context factory defaults
             self._contextFactory = create_instance(
-                self._contextFactoryClass,
+                objcls=self._contextFactoryClass,
                 settings=settings,
                 crawler=crawler,
             )
