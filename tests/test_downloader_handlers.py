@@ -252,7 +252,12 @@ class HttpTestCase(unittest.TestCase):
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls.from_crawler(get_crawler())
+        crawler = get_crawler()
+        self.download_handler = create_instance(
+            objcls=self.download_handler_cls,
+            settings=crawler.settings,
+            crawler=crawler
+        )
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -492,8 +497,11 @@ class Http11TestCase(HttpTestCase):
         return self.test_download_broken_content_allow_data_loss('broken-chunked')
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
-        download_handler = self.download_handler_cls.from_crawler(
-            get_crawler(settings_dict={'DOWNLOAD_FAIL_ON_DATALOSS': False})
+        crawler = get_crawler(settings_dict={'DOWNLOAD_FAIL_ON_DATALOSS': False})
+        download_handler = create_instance(
+            objcls=self.download_handler_cls,
+            settings=crawler.settings,
+            crawler=crawler
         )
         request = Request(self.getURL(url))
         d = download_handler.download_request(request, Spider('foo'))
@@ -512,8 +520,11 @@ class Https11TestCase(Http11TestCase):
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
-        download_handler = self.download_handler_cls.from_crawler(
-            get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True})
+        crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True})
+        download_handler = create_instance(
+            objcls=self.download_handler_cls,
+            settings=crawler.settings,
+            crawler=crawler
         )
         try:
             with LogCapture() as log_capture:
@@ -581,8 +592,11 @@ class Https11CustomCiphers(unittest.TestCase):
             0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
             interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls.from_crawler(
-            get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        self.download_handler = create_instance(
+            objcls=self.download_handler_cls,
+            settings=crawler.settings,
+            crawler=crawler
         )
         self.download_request = self.download_handler.download_request
 
@@ -679,7 +693,12 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls.from_crawler(get_crawler())
+        crawler = get_crawler()
+        self.download_handler = create_instance(
+            objcls=self.download_handler_cls,
+            settings=crawler.settings,
+            crawler=crawler
+        )
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
