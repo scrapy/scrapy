@@ -776,10 +776,13 @@ class S3AnonTestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        self.s3reqh = S3DownloadHandler.from_crawler(
-            crawler=get_crawler(),
+        crawler = get_crawler()
+        self.s3reqh = create_instance(
+            objcls=S3DownloadHandler,
+            settings=crawler.settings,
+            crawler=crawler,
             httpdownloadhandler=HttpDownloadHandlerMock,
-            #anon=True, # is implicit
+            # anon=True, # implicit
         )
         self.download_request = self.s3reqh.download_request
         self.spider = Spider('foo')
@@ -805,8 +808,11 @@ class S3TestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        s3reqh = S3DownloadHandler.from_crawler(
-            crawler=get_crawler(),
+        crawler = get_crawler()
+        s3reqh = create_instance(
+            objcls=S3DownloadHandler,
+            settings=crawler.settings,
+            crawler=crawler,
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
             httpdownloadhandler=HttpDownloadHandlerMock,
@@ -830,7 +836,13 @@ class S3TestCase(unittest.TestCase):
 
     def test_extra_kw(self):
         try:
-            S3DownloadHandler.from_crawler(get_crawler(), extra_kw=True)
+            crawler = get_crawler()
+            create_instance(
+                objcls=S3DownloadHandler,
+                settings=crawler.settings,
+                crawler=crawler,
+                extra_kw=True,
+            )
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
