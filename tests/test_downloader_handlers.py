@@ -984,7 +984,8 @@ class BaseFTPTestCase(unittest.TestCase):
         self.factory = FTPFactory(portal=p)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(get_crawler())
+        crawler = get_crawler()
+        self.download_handler = create_instance(FTPDownloadHandler, crawler.settings, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1098,7 +1099,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
                                   userAnonymous=self.username)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(get_crawler())
+        crawler = get_crawler()
+        self.download_handler = create_instance(FTPDownloadHandler, crawler.settings, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1108,7 +1110,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
 
     def setUp(self):
-        self.download_handler = DataURIDownloadHandler()
+        crawler = get_crawler()
+        self.download_handler = create_instance(DataURIDownloadHandler, crawler.settings, crawler)
         self.download_request = self.download_handler.download_request
         self.spider = Spider('foo')
 
