@@ -50,9 +50,9 @@ class DownloadHandlers(object):
             if skip_lazy and getattr(dhcls, 'lazy', True):
                 return None
             dh = create_instance(
-                dhcls,
-                self._crawler.settings,
-                self._crawler,
+                objcls=dhcls,
+                settings=self._crawler.settings,
+                crawler=self._crawler,
             )
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
