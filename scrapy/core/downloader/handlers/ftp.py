@@ -71,14 +71,14 @@ class FTPDownloadHandler:
         "default": 503,
     }
 
-    def __init__(self, settings, crawler=None):
+    def __init__(self, settings):
         self.default_user = settings['FTP_USER']
         self.default_password = settings['FTP_PASSWORD']
         self.passive_mode = settings['FTP_PASSIVE_MODE']
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings, crawler)
+        return cls(crawler.settings)
 
     def download_request(self, request, spider):
         parsed_url = urlparse_cached(request)
