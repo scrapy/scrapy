@@ -104,8 +104,7 @@ class FileTestCase(unittest.TestCase):
         self.tmpname = self.mktemp()
         with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
-        crawler = get_crawler()
-        handler = create_instance(FileDownloadHandler, crawler.settings, crawler)
+        handler = create_instance(FileDownloadHandler, None, get_crawler())
         self.download_request = handler.download_request
 
     def tearDown(self):
@@ -239,12 +238,7 @@ class HttpTestCase(unittest.TestCase):
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
-        crawler = get_crawler()
-        self.download_handler = create_instance(
-            objcls=self.download_handler_cls,
-            settings=crawler.settings,
-            crawler=crawler
-        )
+        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -485,11 +479,7 @@ class Http11TestCase(HttpTestCase):
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
         crawler = get_crawler(settings_dict={'DOWNLOAD_FAIL_ON_DATALOSS': False})
-        download_handler = create_instance(
-            objcls=self.download_handler_cls,
-            settings=crawler.settings,
-            crawler=crawler
-        )
+        download_handler = create_instance(self.download_handler_cls, None, crawler)
         request = Request(self.getURL(url))
         d = download_handler.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.flags)
@@ -508,11 +498,7 @@ class Https11TestCase(Http11TestCase):
     @defer.inlineCallbacks
     def test_tls_logging(self):
         crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True})
-        download_handler = create_instance(
-            objcls=self.download_handler_cls,
-            settings=crawler.settings,
-            crawler=crawler
-        )
+        download_handler = create_instance(self.download_handler_cls, None, crawler)
         try:
             with LogCapture() as log_capture:
                 request = Request(self.getURL('file'))
@@ -580,11 +566,7 @@ class Https11CustomCiphers(unittest.TestCase):
             interface=self.host)
         self.portno = self.port.getHost().port
         crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
-        self.download_handler = create_instance(
-            objcls=self.download_handler_cls,
-            settings=crawler.settings,
-            crawler=crawler
-        )
+        self.download_handler = create_instance(self.download_handler_cls, None, crawler)
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -680,12 +662,7 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        crawler = get_crawler()
-        self.download_handler = create_instance(
-            objcls=self.download_handler_cls,
-            settings=crawler.settings,
-            crawler=crawler
-        )
+        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -764,7 +741,7 @@ class S3AnonTestCase(unittest.TestCase):
         crawler = get_crawler()
         self.s3reqh = create_instance(
             objcls=S3DownloadHandler,
-            settings=crawler.settings,
+            settings=None,
             crawler=crawler,
             httpdownloadhandler=HttpDownloadHandlerMock,
             # anon=True, # implicit
@@ -796,7 +773,7 @@ class S3TestCase(unittest.TestCase):
         crawler = get_crawler()
         s3reqh = create_instance(
             objcls=S3DownloadHandler,
-            settings=crawler.settings,
+            settings=None,
             crawler=crawler,
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
@@ -824,7 +801,7 @@ class S3TestCase(unittest.TestCase):
             crawler = get_crawler()
             create_instance(
                 objcls=S3DownloadHandler,
-                settings=crawler.settings,
+                settings=None,
                 crawler=crawler,
                 extra_kw=True,
             )
