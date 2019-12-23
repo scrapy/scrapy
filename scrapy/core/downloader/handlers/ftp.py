@@ -33,8 +33,8 @@ from io import BytesIO
 from urllib.parse import unquote
 
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
-from twisted.internet.protocol import Protocol, ClientCreator
+from twisted.internet.protocol import ClientCreator, Protocol
+from twisted.protocols.ftp import CommandFailed, FTPClient
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes

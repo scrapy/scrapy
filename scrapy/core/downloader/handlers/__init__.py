@@ -4,17 +4,17 @@ import logging
 
 from twisted.internet import defer
 
-from scrapy.exceptions import NotSupported, NotConfigured
+from scrapy import signals
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
-from scrapy import signals
 
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadHandlers(object):
+class DownloadHandlers:
 
     def __init__(self, crawler):
         self._crawler = crawler

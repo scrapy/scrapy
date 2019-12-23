@@ -2,7 +2,7 @@
 """
 from twisted.internet import reactor
 
-from scrapy.utils.misc import load_object, create_instance
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import to_unicode
 
 
