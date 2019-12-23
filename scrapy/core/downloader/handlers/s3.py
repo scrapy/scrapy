@@ -4,6 +4,7 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import create_instance
 
 
 def _get_boto_connection():
@@ -30,14 +31,15 @@ def _get_boto_connection():
     return _S3Connection
 
 
-class S3DownloadHandler(object):
+class S3DownloadHandler:
 
-    def __init__(self, crawler, aws_access_key_id=None, aws_secret_access_key=None,
+    def __init__(self, settings, crawler=None,
+                 aws_access_key_id=None, aws_secret_access_key=None,
                  httpdownloadhandler=HTTPDownloadHandler, **kw):
         if not aws_access_key_id:
-            aws_access_key_id = crawler.settings['AWS_ACCESS_KEY_ID']
+            aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
         if not aws_secret_access_key:
-            aws_secret_access_key = crawler.settings['AWS_SECRET_ACCESS_KEY']
+            aws_secret_access_key = settings['AWS_SECRET_ACCESS_KEY']
 
         # If no credentials could be found anywhere,
         # consider this an anonymous connection request by default;
@@ -66,11 +68,12 @@ class S3DownloadHandler(object):
             except Exception as ex:
                 raise NotConfigured(str(ex))
 
-        self._download_http = httpdownloadhandler(crawler).download_request
+        _http_handler = create_instance(httpdownloadhandler, settings, crawler)
+        self._download_http = _http_handler.download_request
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        return cls(crawler, *args, **kwargs)
+        return cls(crawler.settings, crawler, *args, **kwargs)
 
     def download_request(self, request, spider):
         p = urlparse_cached(request)

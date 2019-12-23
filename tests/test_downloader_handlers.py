@@ -751,9 +751,7 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         self.assertIn(domain, timeout.osError)
 
 
-class HttpDownloadHandlerMock(object):
-    def __init__(self, settings, crawler):
-        pass
+class HttpDownloadHandlerMock:
 
     def download_request(self, request, spider):
         return request

@@ -28,12 +28,10 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
-class HTTP11DownloadHandler(object):
+class HTTP11DownloadHandler:
     lazy = False
 
-    def __init__(self, crawler):
-        settings = crawler.settings
-
+    def __init__(self, settings, crawler=None):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -68,7 +66,7 @@ class HTTP11DownloadHandler(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler)
+        return cls(crawler.settings, crawler)
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""

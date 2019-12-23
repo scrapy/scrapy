@@ -6,18 +6,18 @@ from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.python import to_unicode
 
 
-class HTTP10DownloadHandler(object):
+class HTTP10DownloadHandler:
     lazy = False
 
-    def __init__(self, crawler):
+    def __init__(self, settings, crawler=None):
         self.HTTPClientFactory = load_object(crawler.settings['DOWNLOADER_HTTPCLIENTFACTORY'])
         self.ClientContextFactory = load_object(crawler.settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+        self._settings = settings
         self._crawler = crawler
-        self._settings = crawler.settings
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler)
+        return cls(crawler.settings, crawler)
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
