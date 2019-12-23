@@ -80,10 +80,10 @@ class Spider(object_ref):
         """ This method is deprecated. """
         return Request(url, dont_filter=True)
 
-    def _parse(self, response):
-        return self.parse(response)
+    def _parse(self, response, **kwargs):
+        return self.parse(response, **kwargs)
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
 
     @classmethod

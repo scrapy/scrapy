@@ -362,12 +362,14 @@ CrawlSpider
 
    This spider also exposes an overrideable method:
 
-   .. method:: parse_start_url(response)
+   .. method:: parse_start_url(response, **kwargs)
 
-      This method is called for the start_urls responses. It allows to parse
-      the initial responses and must return either an
-      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
-      object, or an iterable containing any of them.
+      This method is called for each response produced for the URLs in
+      the spider's ``start_urls`` attribute. It allows to parse
+      the initial responses and must return either an item
+      (:class:`scrapy.item.Item` or :class:`dict`),
+      a :class:`~scrapy.http.Request`,
+      or an iterable containing any of them.
 
 Crawling rules
 ~~~~~~~~~~~~~~
