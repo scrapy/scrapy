@@ -33,7 +33,8 @@ def _get_boto_connection():
 
 class S3DownloadHandler:
 
-    def __init__(self, settings, crawler=None,
+    def __init__(self, settings, *,
+                 crawler=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
                  httpdownloadhandler=HTTPDownloadHandler, **kw):
         if not aws_access_key_id:
@@ -76,8 +77,8 @@ class S3DownloadHandler:
         self._download_http = _http_handler.download_request
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        return cls(crawler.settings, crawler, *args, **kwargs)
+    def from_crawler(cls, crawler, **kwargs):
+        return cls(crawler.settings, crawler=crawler, **kwargs)
 
     def download_request(self, request, spider):
         p = urlparse_cached(request)
