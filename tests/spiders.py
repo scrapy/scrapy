@@ -186,13 +186,39 @@ class DuplicateStartRequestsSpider(MockServerSpider):
         self.visited += 1
 
 
-class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
-    name = 'crawl_spider_with_errback'
+class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
+    """
+    A CrawlSpider which overrides the 'parse' method
+    """
+    name = 'crawl_spider_with_parse_method'
     custom_settings = {
         'RETRY_HTTP_CODES': [],  # no need to retry
     }
     rules = (
-        Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),
+        Rule(LinkExtractor(), callback='parse', follow=True),
+    )
+
+    def start_requests(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title<title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+    def parse(self, response):
+        self.logger.info('[parse] status %i', response.status)
+
+
+class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
+    name = 'crawl_spider_with_errback'
+    rules = (
+        Rule(LinkExtractor(), callback='parse', errback='errback', follow=True),
     )
 
     def start_requests(self):
@@ -210,9 +236,6 @@ class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
         """
         url = self.mockserver.url("/alpayload")
         yield Request(url, method="POST", body=test_body)
-
-    def callback(self, response):
-        self.logger.info('[callback] status %i', response.status)
 
     def errback(self, failure):
         self.logger.info('[errback] status %i', failure.value.response.status)
