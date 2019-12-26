@@ -2,21 +2,29 @@ import os
 import random
 import time
 from io import BytesIO
-from tempfile import mkdtemp
 from shutil import rmtree
-from unittest import mock
+from tempfile import mkdtemp
+from unittest import mock, skipIf
 from urllib.parse import urlparse
 
-from twisted.trial import unittest
 from twisted.internet import defer
+from twisted.trial import unittest
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
+from scrapy.item import Item, Field
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, GCSFilesStore, S3FilesStore
 from scrapy.settings import Settings
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
-from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.python import is_dataclass_instance
+from scrapy.utils.test import (assert_aws_environ, assert_gcs_environ,
+                               get_gcs_content_and_delete, get_s3_content_and_delete)
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -109,43 +117,65 @@ class FilesPipelineTestCase(unittest.TestCase):
             p.stop()
 
 
-class FilesPipelineTestCaseFields(unittest.TestCase):
+class FilesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
-        class TestItem(Item):
-            name = Field()
-            file_urls = Field()
-            files = Field()
-
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'file_urls': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['files'], [results[0][1]])
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', file_urls=[url])
+        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        files = item.files if is_dataclass_instance(item) else item["files"]
+        self.assertEqual(files, [results[0][1]])
 
     def test_item_fields_override_settings(self):
-        class TestItem(Item):
-            name = Field()
-            files = Field()
-            stored_file = Field()
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', files=[url])
+        pipeline = FilesPipeline.from_settings(Settings({
+            'FILES_STORE': 's3://example/files/',
+            'FILES_URLS_FIELD': 'files',
+            'FILES_RESULT_FIELD': 'stored_file'
+        }))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        stored_file = item.stored_file if is_dataclass_instance(item) else item["stored_file"]
+        self.assertEqual(stored_file, [results[0][1]])
 
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'files': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({
-                'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files',
-                'FILES_RESULT_FIELD': 'stored_file'
-            }))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['stored_file'], [results[0][1]])
+
+class FilesPipelineTestCaseFieldsDict(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = dict
+
+
+class FilesPipelineTestItem(Item):
+    name = Field()
+    file_urls = Field()
+    files = Field()
+    stored_file = Field()
+
+
+class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestItem
+
+
+@skipIf(not make_dataclass, "dataclasses module is not available")
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "FilesPipelineTestDataClass",
+                [
+                    ("name", str),
+                    ("file_urls", list, dataclass_field(default_factory=list)),
+                    ("files", list, dataclass_field(default_factory=list)),
+                    ("stored_file", list, dataclass_field(default_factory=list)),
+                ],
+            )
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
