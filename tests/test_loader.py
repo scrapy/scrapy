@@ -7,8 +7,7 @@ from scrapy.loader import ItemLoader
 from scrapy.loader.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 from scrapy.selector import Selector
-from scrapy.utils.python import dataclasses_available, dataclass_asdict
-from scrapy.utils.test import create_dataclass_item_class_for_item_loader
+from scrapy.utils.python import dataclasses_available
 
 
 # test items
@@ -558,10 +557,18 @@ class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
 
 @unittest.skipIf(not dataclasses_available, "dataclasses module is not available")
 class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
-    item_class = create_dataclass_item_class_for_item_loader()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from dataclasses import make_dataclass, field
+        self.item_class = make_dataclass(
+            "TestDataClass",
+            [("name", list, field(default_factory=list))],
+        )
 
     def to_dict(self, item):
-        return dataclass_asdict(item)
+        from dataclasses import asdict
+        return asdict(item)
 
 
 class BaseNoInputReprocessingLoader(ItemLoader):

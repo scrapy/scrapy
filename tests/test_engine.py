@@ -28,7 +28,8 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.python import dataclass_asdict, is_dataclass_instance
 from scrapy.utils.signal import disconnect_all
-from scrapy.utils.test import create_dataclass_item_class, get_crawler
+from scrapy.utils.test import get_crawler
+
 from tests import tests_datadir
 
 
@@ -76,8 +77,13 @@ class DictItemsSpider(TestSpider):
     item_cls = dict
 
 
-TestDataClass = create_dataclass_item_class()
-if TestDataClass:
+try:
+    from dataclasses import make_dataclass
+except ImportError:
+    DataClassItemsSpider = None
+else:
+    TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
+
     class DataClassItemsSpider(DictItemsSpider):
         def parse_item(self, response):
             item = super().parse_item(response)
@@ -86,8 +92,6 @@ if TestDataClass:
                 url=item.get('url'),
                 price=item.get('price'),
             )
-else:
-    DataClassItemsSpider = None
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):

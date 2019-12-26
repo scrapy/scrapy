@@ -20,8 +20,6 @@ from scrapy.utils.python import (
     WeakKeyCache,
     without_none_values,
 )
-from scrapy.utils.test import create_dataclass_item_class
-
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -240,7 +238,8 @@ class DataclassItemsTestCase(unittest.TestCase):
 
     @unittest.skipUnless(dataclasses_available, "dataclasses module is not available")
     def test_dataclasses_asdict(self):
-        TestDataClass = create_dataclass_item_class()
+        from dataclasses import make_dataclass
+        TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
         self.assertTrue(is_dataclass_instance(TestDataClass("Name", "URL", 10)))
         self.assertEqual(
             dataclass_asdict(TestDataClass("Name", "URL", 10)),
