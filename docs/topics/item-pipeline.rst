@@ -40,7 +40,7 @@ Each item pipeline component is a Python class that must implement the following
    :param spider: the spider which scraped the item
    :type spider: :class:`~scrapy.spiders.Spider` object
 
-  .. note:: Please see the :ref:`this FAQ entry <faq-dataclass-items>`
+  .. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
             if you are using :func:`dataclasses.dataclass` objects as items
 
 Additionally, they may also implement the following methods:

@@ -117,7 +117,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
 
-    .. note:: Please see the :ref:`this FAQ entry <faq-dataclass-items>`
+    .. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
               if you are using :func:`dataclasses.dataclass` objects as items
 
 

@@ -52,7 +52,7 @@ except ImportError:
 else:
     def subscriptable_dataclass(cls):
         """
-        Decorator to allow dictionary-like access to dataclass instances
+        Allow dictionary-like access on dataclass instances
         """
 
         def __getitem__(self, key):

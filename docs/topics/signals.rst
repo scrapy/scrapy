@@ -16,7 +16,7 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
-.. note:: Please see the :ref:`this FAQ entry <faq-dataclass-items>`
+.. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
           if you are using :func:`dataclasses.dataclass` objects as items
 
 Here is a simple example showing how you can catch signals and perform some action:
