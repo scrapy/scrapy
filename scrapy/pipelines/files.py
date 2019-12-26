@@ -10,22 +10,22 @@ import mimetypes
 import os
 import time
 from collections import defaultdict
-from email.utils import parsedate_tz, mktime_tz
+from email.utils import mktime_tz, parsedate_tz
 from io import BytesIO
 from urllib.parse import urlparse
 
 from twisted.internet import defer, threads
 
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
-from scrapy.utils.misc import md5sum
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
-from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import md5sum
+from scrapy.utils.python import dataclass_asdict, is_dataclass_instance, to_bytes
+from scrapy.utils.request import referer_str
 
 
 logger = logging.getLogger(__name__)
@@ -451,6 +451,7 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
+        item = dataclass_asdict(item) if is_dataclass_instance(item) else item
         return [Request(x) for x in item.get(self.files_urls_field, [])]
 
     def file_downloaded(self, response, request, info):
@@ -462,6 +463,7 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
+        item = dataclass_asdict(item) if is_dataclass_instance(item) else item
         if isinstance(item, dict) or self.files_result_field in item.fields:
             item[self.files_result_field] = [x for ok, x in results if ok]
         return item
