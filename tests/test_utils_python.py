@@ -9,7 +9,6 @@ from warnings import catch_warnings
 from scrapy.utils.python import (
     binary_is_text,
     dataclass_asdict,
-    dataclasses_available,
     equal_attributes,
     get_func_args,
     is_dataclass_instance,
@@ -20,6 +19,12 @@ from scrapy.utils.python import (
     WeakKeyCache,
     without_none_values,
 )
+
+
+try:
+    from dataclasses import make_dataclass
+except ImportError:
+    make_dataclass = None
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -236,9 +241,8 @@ class UtilsPythonTestCase(unittest.TestCase):
 
 class DataclassItemsTestCase(unittest.TestCase):
 
-    @unittest.skipUnless(dataclasses_available, "dataclasses module is not available")
+    @unittest.skipIf(not make_dataclass, "dataclasses module is not available")
     def test_dataclasses_asdict(self):
-        from dataclasses import make_dataclass
         TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
         self.assertTrue(is_dataclass_instance(TestDataClass("Name", "URL", 10)))
         self.assertEqual(
@@ -246,7 +250,7 @@ class DataclassItemsTestCase(unittest.TestCase):
             dict(name="Name", url="URL", price=10)
         )
 
-    @unittest.skipIf(dataclasses_available, "dataclasses module is available")
+    @unittest.skipIf(make_dataclass, "dataclasses module is available")
     def test_dataclasses_importerror(self):
         self.assertFalse(is_dataclass_instance(object()))
         self.assertRaises(ImportError, dataclass_asdict, object())

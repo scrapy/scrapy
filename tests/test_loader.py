@@ -7,7 +7,13 @@ from scrapy.loader import ItemLoader
 from scrapy.loader.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 from scrapy.selector import Selector
-from scrapy.utils.python import dataclasses_available
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
 
 
 # test items
@@ -555,15 +561,14 @@ class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
     item_class = NameItem
 
 
-@unittest.skipIf(not dataclasses_available, "dataclasses module is not available")
+@unittest.skipIf(not make_dataclass, "dataclasses module is not available")
 class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from dataclasses import make_dataclass, field
         self.item_class = make_dataclass(
             "TestDataClass",
-            [("name", list, field(default_factory=list))],
+            [("name", list, dataclass_field(default_factory=list))],
         )
 
     def to_dict(self, item):

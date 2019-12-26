@@ -6,8 +6,13 @@ from decimal import Decimal
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
-from scrapy.utils.python import dataclasses_available
 from scrapy.utils.serialize import ScrapyJSONEncoder
+
+
+try:
+    from dataclasses import make_dataclass
+except ImportError:
+    make_dataclass = None
 
 
 class JsonEncoderTestCase(unittest.TestCase):
@@ -49,10 +54,12 @@ class JsonEncoderTestCase(unittest.TestCase):
         self.assertIn(r.url, rs)
         self.assertIn(str(r.status), rs)
 
-    @unittest.skipUnless(dataclasses_available, "No dataclass support")
+    @unittest.skipIf(not make_dataclass, "No dataclass support")
     def test_encode_dataclass_item(self):
-        from dataclasses import make_dataclass
-        TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
+        TestDataClass = make_dataclass(
+            "TestDataClass",
+            [("name", str), ("url", str), ("price", int)],
+        )
         item = TestDataClass(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
         self.assertEqual(
