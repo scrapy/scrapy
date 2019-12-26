@@ -566,10 +566,11 @@ class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.item_class = make_dataclass(
-            "TestDataClass",
-            [("name", list, dataclass_field(default_factory=list))],
-        )
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "TestDataClass",
+                [("name", list, dataclass_field(default_factory=list))],
+            )
 
     def to_dict(self, item):
         from dataclasses import asdict
