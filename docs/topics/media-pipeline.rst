@@ -558,7 +558,7 @@ See here the methods that you can override in your custom Images Pipeline:
 Custom Images pipeline example
 ==============================
 
-Here is a full example of the Images Pipeline whose methods are examplified
+Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy

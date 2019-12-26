@@ -269,6 +269,10 @@ coverage_ignore_pyobjects = [
 
     # Never documented before, and deprecated now.
     r'^scrapy\.item\.DictItem$',
+    r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
+
+    # Implementation detail of LxmlLinkExtractor
+    r'^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor',
 ]
 
 
