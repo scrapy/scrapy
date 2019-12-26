@@ -211,8 +211,9 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
         url = self.mockserver.url("/alpayload")
         yield Request(url, method="POST", body=test_body)
 
-    def parse(self, response):
-        self.logger.info('[parse] status %i', response.status)
+    def parse(self, response, foo=None):
+        self.logger.info('[parse] status %i (foo: %s)', response.status, foo)
+        yield Request(self.mockserver.url("/status?n=202"), self.parse, cb_kwargs={"foo": "bar"})
 
 
 class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):

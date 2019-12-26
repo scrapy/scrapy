@@ -316,8 +316,9 @@ class CrawlSpiderTestCase(TestCase):
         with LogCapture() as log:
             yield self.runner.join()
 
-        self.assertIn("[parse] status 200", str(log))
-        self.assertIn("[parse] status 201", str(log))
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
 
     @defer.inlineCallbacks
     def test_crawlspider_with_errback(self):
@@ -326,8 +327,9 @@ class CrawlSpiderTestCase(TestCase):
         with LogCapture() as log:
             yield self.runner.join()
 
-        self.assertIn("[parse] status 200", str(log))
-        self.assertIn("[parse] status 201", str(log))
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
         self.assertIn("[errback] status 501", str(log))
