@@ -1,21 +1,30 @@
-import io
 import hashlib
+import io
 import random
-from tempfile import mkdtemp
 from shutil import rmtree
+from tempfile import mkdtemp
+from unittest import skipIf
 
 from twisted.trial import unittest
 
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
+from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
-from scrapy.utils.python import to_bytes
+from scrapy.settings import Settings
+from scrapy.utils.python import is_dataclass_instance, to_bytes
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
+
 
 skip = False
 try:
     from PIL import Image
-except ImportError as e:
+except ImportError:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
     encoders = set(('jpeg_encoder', 'jpeg_decoder'))
@@ -117,43 +126,67 @@ class DeprecatedImagesPipeline(ImagesPipeline):
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
 
 
-class ImagesPipelineTestCaseFields(unittest.TestCase):
+class ImagesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
-        class TestItem(Item):
-            name = Field()
-            image_urls = Field()
-            images = Field()
-
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/images/1.jpg'
-            item = cls({'name': 'item1', 'image_urls': [url]})
-            pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['images'], [results[0][1]])
+        url = 'http://www.example.com/images/1.jpg'
+        item = self.item_class(name='item1', image_urls=[url], image=None)
+        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        images = item.images if is_dataclass_instance(item) else item["images"]
+        self.assertEqual(images, [results[0][1]])
 
     def test_item_fields_override_settings(self):
-        class TestItem(Item):
-            name = Field()
-            image = Field()
-            stored_image = Field()
+        url = 'http://www.example.com/images/1.jpg'
+        item = self.item_class(name='item1', image=[url])
+        pipeline = ImagesPipeline.from_settings(Settings({
+            'IMAGES_STORE': 's3://example/images/',
+            'IMAGES_URLS_FIELD': 'image',
+            'IMAGES_RESULT_FIELD': 'stored_image'
+        }))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        stored_image = item.stored_image if is_dataclass_instance(item) else item["stored_image"]
+        self.assertEqual(stored_image, [results[0][1]])
 
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/images/1.jpg'
-            item = cls({'name': 'item1', 'image': [url]})
-            pipeline = ImagesPipeline.from_settings(Settings({
-                'IMAGES_STORE': 's3://example/images/',
-                'IMAGES_URLS_FIELD': 'image',
-                'IMAGES_RESULT_FIELD': 'stored_image'
-            }))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['stored_image'], [results[0][1]])
+
+class ImagesPipelineTestCaseFieldsMixinDict(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = dict
+
+
+class ImagesPipelineTestItem(Item):
+    name = Field()
+    image = Field()
+    image_urls = Field()
+    images = Field()
+    stored_image = Field()
+
+
+class ImagesPipelineTestCaseFieldsMixinItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestItem
+
+
+@skipIf(not make_dataclass, "dataclasses module is not available")
+class ImagesPipelineTestCaseFieldsMixinDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "FilesPipelineTestDataClass",
+                [
+                    ("name", str),
+                    ("image", str),
+                    ("image_urls", list, dataclass_field(default_factory=list)),
+                    ("images", list, dataclass_field(default_factory=list)),
+                    ("stored_image", list, dataclass_field(default_factory=list)),
+                ],
+            )
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):

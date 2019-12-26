@@ -11,7 +11,7 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 from scrapy.http import Request, Response
-from scrapy.item import Item, Field
+from scrapy.item import Field, Item
 from scrapy.pipelines.files import FilesPipeline, FSFilesStore, GCSFilesStore, S3FilesStore
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
