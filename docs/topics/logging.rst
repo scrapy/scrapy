@@ -242,6 +242,23 @@ e.g. in the spider's ``__init__`` method::
 If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
+You could also filter logs based on a substring. This can be achieved using `Filter` class. For example, if you want to filter log message that contains a string 'filter', you can do it like this::
+
+    import logging
+
+    class ContentFilter(logging.Filter):
+        def filter(self, record):
+            return 'filter' in record.msg
+
+    logger = logging.getLogger('mycustomlogger')
+    logger.addFilter(ContentFilter())
+    logger.info("This is a filter based on a substring")
+
+adding the code above will return log messages that contain substring 'filter'.
+
+Additionally, you can also filter message using regular expression, for this you can check more on `regex <https://docs.python.org/3/library/re.html>`_
+
+
 scrapy.utils.log module
 =======================
 
