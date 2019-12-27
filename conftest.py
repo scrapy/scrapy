@@ -48,4 +48,4 @@ def reactor_pytest(request):
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
     if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
-        pytest.skip('This test is only run with --reactor-asyncio')
+        pytest.skip('This test is only run with --reactor=asyncio')
