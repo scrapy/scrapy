@@ -130,7 +130,7 @@ class ImagesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
         url = 'http://www.example.com/images/1.jpg'
-        item = self.item_class(name='item1', image_urls=[url], image=None)
+        item = self.item_class(name='item1', image_urls=[url])
         pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
@@ -138,41 +138,46 @@ class ImagesPipelineTestCaseFieldsMixin:
         item = pipeline.item_completed(results, item, None)
         images = item.images if is_dataclass_instance(item) else item["images"]
         self.assertEqual(images, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
         url = 'http://www.example.com/images/1.jpg'
-        item = self.item_class(name='item1', image=[url])
+        item = self.item_class(name='item1', custom_image_urls=[url])
         pipeline = ImagesPipeline.from_settings(Settings({
             'IMAGES_STORE': 's3://example/images/',
-            'IMAGES_URLS_FIELD': 'image',
-            'IMAGES_RESULT_FIELD': 'stored_image'
+            'IMAGES_URLS_FIELD': 'custom_image_urls',
+            'IMAGES_RESULT_FIELD': 'custom_images'
         }))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        stored_image = item.stored_image if is_dataclass_instance(item) else item["stored_image"]
-        self.assertEqual(stored_image, [results[0][1]])
+        custom_images = item.custom_images if is_dataclass_instance(item) else item["custom_images"]
+        self.assertEqual(custom_images, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
 
-class ImagesPipelineTestCaseFieldsMixinDict(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsDict(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
     item_class = dict
 
 
 class ImagesPipelineTestItem(Item):
     name = Field()
-    image = Field()
+    # default fields
     image_urls = Field()
     images = Field()
-    stored_image = Field()
+    # overridden fields
+    custom_image_urls = Field()
+    custom_images = Field()
 
 
-class ImagesPipelineTestCaseFieldsMixinItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
     item_class = ImagesPipelineTestItem
 
 
 @skipIf(not make_dataclass, "dataclasses module is not available")
-class ImagesPipelineTestCaseFieldsMixinDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -181,10 +186,12 @@ class ImagesPipelineTestCaseFieldsMixinDataClass(ImagesPipelineTestCaseFieldsMix
                 "FilesPipelineTestDataClass",
                 [
                     ("name", str),
-                    ("image", str),
+                    # default fields
                     ("image_urls", list, dataclass_field(default_factory=list)),
                     ("images", list, dataclass_field(default_factory=list)),
-                    ("stored_image", list, dataclass_field(default_factory=list)),
+                    # overridden fields
+                    ("custom_image_urls", list, dataclass_field(default_factory=list)),
+                    ("custom_images", list, dataclass_field(default_factory=list)),
                 ],
             )
 

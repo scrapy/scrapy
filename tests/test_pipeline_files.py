@@ -129,21 +129,23 @@ class FilesPipelineTestCaseFieldsMixin:
         item = pipeline.item_completed(results, item, None)
         files = item.files if is_dataclass_instance(item) else item["files"]
         self.assertEqual(files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
         url = 'http://www.example.com/files/1.txt'
-        item = self.item_class(name='item1', files=[url])
+        item = self.item_class(name='item1', custom_file_urls=[url])
         pipeline = FilesPipeline.from_settings(Settings({
             'FILES_STORE': 's3://example/files/',
-            'FILES_URLS_FIELD': 'files',
-            'FILES_RESULT_FIELD': 'stored_file'
+            'FILES_URLS_FIELD': 'custom_file_urls',
+            'FILES_RESULT_FIELD': 'custom_files'
         }))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        stored_file = item.stored_file if is_dataclass_instance(item) else item["stored_file"]
-        self.assertEqual(stored_file, [results[0][1]])
+        custom_files = item.custom_files if is_dataclass_instance(item) else item["custom_files"]
+        self.assertEqual(custom_files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
 
 class FilesPipelineTestCaseFieldsDict(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
@@ -152,9 +154,12 @@ class FilesPipelineTestCaseFieldsDict(FilesPipelineTestCaseFieldsMixin, unittest
 
 class FilesPipelineTestItem(Item):
     name = Field()
+    # default fields
     file_urls = Field()
     files = Field()
-    stored_file = Field()
+    # overridden fields
+    custom_file_urls = Field()
+    custom_files = Field()
 
 
 class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
@@ -171,11 +176,17 @@ class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, uni
                 "FilesPipelineTestDataClass",
                 [
                     ("name", str),
+                    # default fields
                     ("file_urls", list, dataclass_field(default_factory=list)),
                     ("files", list, dataclass_field(default_factory=list)),
-                    ("stored_file", list, dataclass_field(default_factory=list)),
+                    # overridden fields
+                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
+                    ("custom_files", list, dataclass_field(default_factory=list)),
                 ],
             )
+        print("="*100)
+        print(make_dataclass)
+        print("="*100)
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
