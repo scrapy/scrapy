@@ -19,7 +19,7 @@ from os.path import join, abspath, dirname
 
 AJAXCRAWL_ENABLED = False
 
-ASYNCIO_ENABLED = False
+ASYNCIO_REACTOR = False
 
 AUTOTHROTTLE_ENABLED = False
 AUTOTHROTTLE_DEBUG = False

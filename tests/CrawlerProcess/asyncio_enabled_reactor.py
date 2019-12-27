@@ -15,7 +15,7 @@ class NoRequestsSpider(scrapy.Spider):
 
 
 process = CrawlerProcess(settings={
-    'ASYNCIO_ENABLED': True,
+    'ASYNCIO_REACTOR': True,
 })
 
 process.crawl(NoRequestsSpider)

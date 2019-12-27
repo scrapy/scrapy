@@ -13,7 +13,6 @@ import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
@@ -209,14 +208,6 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-class AsyncioSpider(scrapy.Spider):
-    name = 'asyncio'
-
-    def start_requests(self):
-        self.logger.info('Asyncio support: %s', is_asyncio_reactor_installed())
-        return []
-
-
 @mark.usefixtures('reactor_pytest')
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
@@ -261,31 +252,32 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         self.assertEqual(runner.bootstrap_failed, True)
 
+    def test_crawler_runner_asyncio_enabled_true(self):
+        if self.reactor_pytest == 'asyncio':
+            runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+        else:
+            msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
+            with self.assertRaisesRegex(Exception, msg):
+                runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_true(self):
         with LogCapture(level=logging.DEBUG) as log:
             if self.reactor_pytest == 'asyncio':
-                runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': True})
+                runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
                 yield runner.crawl(NoRequestsSpider)
-                self.assertIn("Asyncio support enabled", str(log))
+                self.assertIn("Asyncio reactor is installed", str(log))
             else:
-                msg = "ASYNCIO_ENABLED is on but the Twisted asyncio reactor is not installed"
+                msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
                 with self.assertRaisesRegex(Exception, msg):
-                    runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': True})
+                    runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_false(self):
-        runner = CrawlerProcess(settings={'ASYNCIO_ENABLED': False})
+        runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': False})
         with LogCapture(level=logging.DEBUG) as log:
             yield runner.crawl(NoRequestsSpider)
-            self.assertNotIn("Asyncio support enabled", str(log))
-
-    @defer.inlineCallbacks
-    def test_crawler_runner_asyncio_supported(self):
-        runner = CrawlerRunner()
-        with LogCapture() as log:
-            yield runner.crawl(AsyncioSpider)
-            log.check_present(('asyncio', 'INFO', 'Asyncio support: %s' % (self.reactor_pytest == 'asyncio')))
+            self.assertNotIn("Asyncio reactor is installed", str(log))
 
 
 class CrawlerProcessSubprocess(unittest.TestCase):
@@ -302,14 +294,14 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_simple(self):
         log = self.run_script('simple.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertNotIn("DEBUG: Asyncio support enabled", log)
+        self.assertNotIn("DEBUG: Asyncio reactor is installed", log)
 
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio support enabled", log)
+        self.assertIn("DEBUG: Asyncio reactor is installed", log)
 
     def test_asyncio_enabled_reactor(self):
         log = self.run_script('asyncio_enabled_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio support enabled", log)
+        self.assertIn("DEBUG: Asyncio reactor is installed", log)

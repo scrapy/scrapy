@@ -137,6 +137,7 @@ class CrawlerRunner(object):
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
+        self._handle_asyncio_reactor()
 
     @property
     def spiders(self):
@@ -230,6 +231,11 @@ class CrawlerRunner(object):
         while self._active:
             yield defer.DeferredList(self._active)
 
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR') and not is_asyncio_reactor_installed():
+            raise Exception("ASYNCIO_REACTOR is on but the Twisted asyncio "
+                            "reactor is not installed.")
+
 
 class CrawlerProcess(CrawlerRunner):
     """
@@ -257,12 +263,6 @@ class CrawlerProcess(CrawlerRunner):
 
     def __init__(self, settings=None, install_root_handler=True):
         super(CrawlerProcess, self).__init__(settings)
-        if self.settings.getbool('ASYNCIO_ENABLED'):
-            install_asyncio_reactor()
-            if not is_asyncio_reactor_installed():
-                raise Exception("ASYNCIO_ENABLED is on but the Twisted asyncio "
-                                "reactor is not installed, this is not supported.")
-
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
@@ -332,6 +332,11 @@ class CrawlerProcess(CrawlerRunner):
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR'):
+            install_asyncio_reactor()
+        super()._handle_asyncio_reactor()
 
 
 def _get_spider_loader(settings):
