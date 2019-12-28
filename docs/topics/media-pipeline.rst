@@ -578,7 +578,7 @@ above::
             return item
 
 
-To enable your custom media pipeline component you must add its class to the
+To enable your custom media pipeline component you must add its class import path to the
 :setting:`ITEM_PIPELINES` setting, like in the following example::
 
    ITEM_PIPELINES = {
