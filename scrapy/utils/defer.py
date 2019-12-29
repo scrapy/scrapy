@@ -1,8 +1,7 @@
 """
 Helper functions for dealing with Twisted deferreds
 """
-
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
@@ -15,6 +14,7 @@ def defer_fail(_failure):
     It delays by 100ms so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    from twisted.internet import reactor
     d = defer.Deferred()
     reactor.callLater(0.1, d.errback, _failure)
     return d
@@ -27,6 +27,7 @@ def defer_succeed(result):
     It delays by 100ms so reactor has a chance to go trough readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    from twisted.internet import reactor
     d = defer.Deferred()
     reactor.callLater(0.1, d.callback, result)
     return d

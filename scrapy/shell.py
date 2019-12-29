@@ -7,7 +7,7 @@ import os
 import signal
 import warnings
 
-from twisted.internet import reactor, threads, defer
+from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -98,6 +98,7 @@ class Shell(object):
         return spider
 
     def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
