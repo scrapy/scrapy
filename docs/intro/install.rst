@@ -272,7 +272,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
-.. _lxml: http://lxml.de/
+.. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.python.org/pypi/parsel
 .. _w3lib: https://pypi.python.org/pypi/w3lib
 .. _twisted: https://twistedmatrix.com/
