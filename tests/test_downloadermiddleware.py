@@ -233,12 +233,7 @@ class MiddlewareUsingCoro(ManagerTestCase):
         self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
 
-
-@mark.only_asyncio()
-class MiddlewareUsingCoroAsyncio(ManagerTestCase):
-
-    settings_dict = {'ASYNCIO_ENABLED': True}
-
+    @mark.only_asyncio()
     def test_asyncdef_asyncio(self):
         resp = Response('http://example.com/index.html')
 
