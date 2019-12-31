@@ -18,6 +18,8 @@ matrix:
       python: 3.5
     - env: TOXENV=py35-asyncio
       python: 3.5
+    - env: TOXENV=py35-asyncio
+      python: 3.5.2
     - env: TOXENV=py36
       python: 3.6
     - env: TOXENV=py37
