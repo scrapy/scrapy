@@ -45,13 +45,15 @@ install:
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       elif [ "$INSTALL_PYTHON_VERSION" ]; then
-        wget "https://www.python.org/ftp/python/$INSTALL_PYTHON_VERSION/Python-$INSTALL_PYTHON_VERSION.tar.xz"
-        tar -axf Python-$INSTALL_PYTHON_VERSION.tar.xz
-        cd Python-$INSTALL_PYTHON_VERSION
-        ./configure --prefix=$(pwd)
-        make
-        make install
-        cd ..
+        if [ ! -d "Python-$INSTALL_PYTHON_VERSION" ]; then
+          wget "https://www.python.org/ftp/python/$INSTALL_PYTHON_VERSION/Python-$INSTALL_PYTHON_VERSION.tar.xz"
+          tar -axf Python-$INSTALL_PYTHON_VERSION.tar.xz
+          cd Python-$INSTALL_PYTHON_VERSION
+          ./configure --prefix=$(pwd)
+          make
+          make install
+          cd ..
+        fi
         virtualenv --python="Python-$INSTALL_PYTHON_VERSION/bin/python3" "$HOME/virtualenvs/$INSTALL_PYTHON_VERSION"
         source "$HOME/virtualenvs/$INSTALL_PYTHON_VERSION/bin/activate"
       fi
@@ -69,6 +71,7 @@ notifications:
 cache:
   directories:
     - $HOME/.cache/pip
+    - Python-3.5.0
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"
