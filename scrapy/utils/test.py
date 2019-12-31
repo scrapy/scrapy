@@ -1,7 +1,7 @@
 """
 This module contains some assorted functions used in tests
 """
-
+import asyncio
 import os
 
 from importlib import import_module
@@ -96,3 +96,10 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+
+def get_from_asyncio_queue(value):
+    q = asyncio.Queue()
+    getter = q.get()
+    q.put_nowait(value)
+    return getter

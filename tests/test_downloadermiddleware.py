@@ -11,7 +11,7 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from scrapy.utils.python import to_bytes
 
 
@@ -240,7 +240,8 @@ class MiddlewareUsingCoro(ManagerTestCase):
         class CoroMiddleware:
             async def process_request(self, request, spider):
                 await asyncio.sleep(0.1)
-                return resp
+                result = await get_from_asyncio_queue(resp)
+                return result
 
         self.mwman._add_middleware(CoroMiddleware())
         req = Request('http://example.com/index.html')
