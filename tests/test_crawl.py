@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 
 from pytest import mark
 from testfixtures import LogCapture
@@ -343,3 +344,53 @@ with multiples lines
         self.assertIn("Got response 200", str(log))
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse(self):
+        from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 1)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_loop(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 10)
+        for i in range(10):
+            self.assertIn({'foo': i}, items)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_complex(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        yield crawler.crawl(mockserver=self.mockserver)
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 80)
+        for i in [0, 3, 21, 22, 207, 311]:  # some random items
+            self.assertIn({'index': i}, items)
