@@ -42,7 +42,7 @@ class HttpCacheMiddleware(object):
         self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler) -> HttpCacheMiddleware:
+    def from_crawler(cls, crawler: Crawler) -> "HttpCacheMiddleware":
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
