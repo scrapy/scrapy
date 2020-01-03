@@ -34,7 +34,7 @@ from scrapy.utils.misc import load_object
 
 class HttpCacheMiddleware(object):
 
-    DOWNLOAD_EXCEPTIONS: Tuple = (defer.TimeoutError, TimeoutError, DNSLookupError,
+    DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError)
@@ -42,9 +42,9 @@ class HttpCacheMiddleware(object):
     def __init__(self, settings: Settings, stats: StatsCollector) -> None:
         if not settings.getbool('HTTPCACHE_ENABLED'):
             raise NotConfigured
-        self.policy: Union[DummyPolicy, RFC2616Policy] = load_object(settings['HTTPCACHE_POLICY'])(settings)
-        self.storage: Union[DbmCacheStorage, FilesystemCacheStorage] = load_object(settings['HTTPCACHE_STORAGE'])(settings)
-        self.ignore_missing: bool = settings.getbool('HTTPCACHE_IGNORE_MISSING')
+        self.policy = load_object(settings['HTTPCACHE_POLICY'])(settings)
+        self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
+        self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
         self.stats = stats
 
     @classmethod
@@ -70,7 +70,7 @@ class HttpCacheMiddleware(object):
             return
 
         # Look for cached response and check if expired
-        cachedresponse: Response = self.storage.retrieve_response(spider, request)
+        cachedresponse = self.storage.retrieve_response(spider, request)
         if cachedresponse is None:
             self.stats.inc_value('httpcache/miss', spider=spider)
             if self.ignore_missing:
@@ -103,7 +103,7 @@ class HttpCacheMiddleware(object):
             response.headers['Date'] = formatdate(usegmt=1)
 
         # Do not validate first-hand responses
-        cachedresponse: Optional[Response] = request.meta.pop('cached_response', None)
+        cachedresponse = request.meta.pop('cached_response', None)
         if cachedresponse is None:
             self.stats.inc_value('httpcache/firsthand', spider=spider)
             self._cache_response(spider, response, request, cachedresponse)
@@ -118,7 +118,7 @@ class HttpCacheMiddleware(object):
         return response
 
     def process_exception(self, request: Request, exception: Exception, spider: Spider) -> Optional[Response]:
-        cachedresponse: Response = request.meta.pop('cached_response', None)
+        cachedresponse = request.meta.pop('cached_response', None)
         if cachedresponse is not None and isinstance(exception, self.DOWNLOAD_EXCEPTIONS):
             self.stats.inc_value('httpcache/errorrecovery', spider=spider)
             return cachedresponse
