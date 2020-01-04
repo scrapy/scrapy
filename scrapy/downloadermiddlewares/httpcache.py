@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from email.utils import formatdate
 from typing import Optional
 
