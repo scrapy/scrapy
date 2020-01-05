@@ -1,8 +1,9 @@
-from twisted.internet import reactor, error
+from twisted.internet import error
 
 
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
+    from twisted.internet import reactor
     assert len(portrange) <= 2, "invalid portrange: %s" % portrange
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
@@ -30,6 +31,7 @@ class CallLaterOnce(object):
         self._call = None
 
     def schedule(self, delay=0):
+        from twisted.internet import reactor
         if self._call is None:
             self._call = reactor.callLater(delay, self)
 

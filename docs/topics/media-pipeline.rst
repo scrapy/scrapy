@@ -97,7 +97,6 @@ For Files Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
-
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
@@ -558,7 +557,7 @@ See here the methods that you can override in your custom Images Pipeline:
 Custom Images pipeline example
 ==============================
 
-Here is a full example of the Images Pipeline whose methods are examplified
+Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
@@ -577,5 +576,13 @@ above::
                 raise DropItem("Item contains no images")
             item['image_paths'] = image_paths
             return item
+
+
+To enable your custom media pipeline component you must add its class import path to the
+:setting:`ITEM_PIPELINES` setting, like in the following example::
+
+   ITEM_PIPELINES = {
+       'myproject.pipelines.MyImagesPipeline': 300
+   }
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5

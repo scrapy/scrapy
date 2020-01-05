@@ -252,30 +252,30 @@ The result of running ``response.css('title')`` is a list-like object called
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
-To extract the text from the title above, you can do::
+To extract the text from the title above, you can do:
 
-    >>> response.css('title::text').getall()
-    ['Quotes to Scrape']
+>>> response.css('title::text').getall()
+['Quotes to Scrape']
 
 There are two things to note here: one is that we've added ``::text`` to the
 CSS query, to mean we want to select only the text elements directly inside
 ``<title>`` element.  If we don't specify ``::text``, we'd get the full title
-element, including its tags::
+element, including its tags:
 
-    >>> response.css('title').getall()
-    ['<title>Quotes to Scrape</title>']
+>>> response.css('title').getall()
+['<title>Quotes to Scrape</title>']
 
 The other thing is that the result of calling ``.getall()`` is a list: it is
 possible that a selector returns more than one result, so we extract them all.
-When you know you just want the first result, as in this case, you can do::
+When you know you just want the first result, as in this case, you can do:
 
-    >>> response.css('title::text').get()
-    'Quotes to Scrape'
+>>> response.css('title::text').get()
+'Quotes to Scrape'
 
-As an alternative, you could've written::
+As an alternative, you could've written:
 
-    >>> response.css('title::text')[0].get()
-    'Quotes to Scrape'
+>>> response.css('title::text')[0].get()
+'Quotes to Scrape'
 
 However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList`
 instance avoids an ``IndexError`` and returns ``None`` when it doesn't
@@ -288,14 +288,14 @@ to be scraped, you can at least get **some** data.
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
 the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_::
+expressions`_:
 
-    >>> response.css('title::text').re(r'Quotes.*')
-    ['Quotes to Scrape']
-    >>> response.css('title::text').re(r'Q\w+')
-    ['Quotes']
-    >>> response.css('title::text').re(r'(\w+) to (\w+)')
-    ['Quotes', 'Scrape']
+>>> response.css('title::text').re(r'Quotes.*')
+['Quotes to Scrape']
+>>> response.css('title::text').re(r'Q\w+')
+['Quotes']
+>>> response.css('title::text').re(r'(\w+) to (\w+)')
+['Quotes', 'Scrape']
 
 In order to find the proper CSS selectors to use, you might find useful opening
 the response page from the shell in your web browser using ``view(response)``.
@@ -312,12 +312,12 @@ visually selected elements, which works in many browsers.
 XPath: a brief intro
 ^^^^^^^^^^^^^^^^^^^^
 
-Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions::
+Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:
 
-    >>> response.xpath('//title')
-    [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
-    >>> response.xpath('//title/text()').get()
-    'Quotes to Scrape'
+>>> response.xpath('//title')
+[<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
+>>> response.xpath('//title/text()').get()
+'Quotes to Scrape'
 
 XPath expressions are very powerful, and are the foundation of Scrapy
 Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You
@@ -372,35 +372,35 @@ we want::
 
     $ scrapy shell 'http://quotes.toscrape.com'
 
-We get a list of selectors for the quote HTML elements with::
+We get a list of selectors for the quote HTML elements with:
 
-    >>> response.css("div.quote")
-    [<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-     <Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-     ...]
+>>> response.css("div.quote")
+[<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+ <Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+ ...]
 
 Each of the selectors returned by the query above allows us to run further
 queries over their sub-elements. Let's assign the first selector to a
-variable, so that we can run our CSS selectors directly on a particular quote::
+variable, so that we can run our CSS selectors directly on a particular quote:
 
-    >>> quote = response.css("div.quote")[0]
+>>> quote = response.css("div.quote")[0]
 
 Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
-using the ``quote`` object we just created::
+using the ``quote`` object we just created:
 
-    >>> text = quote.css("span.text::text").get()
-    >>> text
-    '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
-    >>> author = quote.css("small.author::text").get()
-    >>> author
-    'Albert Einstein'
+>>> text = quote.css("span.text::text").get()
+>>> text
+'“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”'
+>>> author = quote.css("small.author::text").get()
+>>> author
+'Albert Einstein'
 
 Given that the tags are a list of strings, we can use the ``.getall()`` method
-to get all of them::
+to get all of them:
 
-    >>> tags = quote.css("div.tags a.tag::text").getall()
-    >>> tags
-    ['change', 'deep-thoughts', 'thinking', 'world']
+>>> tags = quote.css("div.tags a.tag::text").getall()
+>>> tags
+['change', 'deep-thoughts', 'thinking', 'world']
 
 .. invisible-code-block: python
 
@@ -409,16 +409,16 @@ to get all of them::
 .. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
 
 Having figured out how to extract each bit, we can now iterate over all the
-quotes elements and put them together into a Python dictionary::
+quotes elements and put them together into a Python dictionary:
 
-    >>> for quote in response.css("div.quote"):
-    ...     text = quote.css("span.text::text").get()
-    ...     author = quote.css("small.author::text").get()
-    ...     tags = quote.css("div.tags a.tag::text").getall()
-    ...     print(dict(text=text, author=author, tags=tags))
-    {'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', 'author': 'Albert Einstein', 'tags': ['change', 'deep-thoughts', 'thinking', 'world']}
-    {'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”', 'author': 'J.K. Rowling', 'tags': ['abilities', 'choices']}
-    ...
+>>> for quote in response.css("div.quote"):
+...     text = quote.css("span.text::text").get()
+...     author = quote.css("small.author::text").get()
+...     tags = quote.css("div.tags a.tag::text").getall()
+...     print(dict(text=text, author=author, tags=tags))
+{'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', 'author': 'Albert Einstein', 'tags': ['change', 'deep-thoughts', 'thinking', 'world']}
+{'text': '“It is our choices, Harry, that show what we truly are, far more than our abilities.”', 'author': 'J.K. Rowling', 'tags': ['abilities', 'choices']}
+...
 
 Extracting data in our spider
 -----------------------------
@@ -516,23 +516,23 @@ markup:
         </li>
     </ul>
 
-We can try extracting it in the shell::
+We can try extracting it in the shell:
 
-    >>> response.css('li.next a').get()
-    '<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
+>>> response.css('li.next a').get()
+'<a href="/page/2/">Next <span aria-hidden="true">→</span></a>'
 
 This gets the anchor element, but we want the attribute ``href``. For that,
 Scrapy supports a CSS extension that lets you select the attribute contents,
-like this::
+like this:
 
-    >>> response.css('li.next a::attr(href)').get()
-    '/page/2/'
+>>> response.css('li.next a::attr(href)').get()
+'/page/2/'
 
 There is also an ``attrib`` property available
-(see :ref:`selecting-attributes` for more)::
+(see :ref:`selecting-attributes` for more):
 
-    >>> response.css('li.next a').attrib['href']
-    '/page/2/'
+>>> response.css('li.next a').attrib['href']
+'/page/2/'
 
 Let's see now our spider modified to recursively follow the link to the next
 page, extracting data from it::

@@ -64,7 +64,7 @@ Use the :command:`check` command to run the contract checks.
 Custom Contracts
 ================
 
-If you find you need more power than the built-in scrapy contracts you can
+If you find you need more power than the built-in Scrapy contracts you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting::
 

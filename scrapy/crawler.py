@@ -3,7 +3,7 @@ import pprint
 import signal
 import warnings
 
-from twisted.internet import reactor, defer
+from twisted.internet import defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy import Spider
@@ -14,6 +14,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import (
@@ -136,6 +137,7 @@ class CrawlerRunner(object):
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
+        self._handle_asyncio_reactor()
 
     @property
     def spiders(self):
@@ -229,6 +231,11 @@ class CrawlerRunner(object):
         while self._active:
             yield defer.DeferredList(self._active)
 
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR') and not is_asyncio_reactor_installed():
+            raise Exception("ASYNCIO_REACTOR is on but the Twisted asyncio "
+                            "reactor is not installed.")
+
 
 class CrawlerProcess(CrawlerRunner):
     """
@@ -261,6 +268,7 @@ class CrawlerProcess(CrawlerRunner):
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
         logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
@@ -268,6 +276,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown',
@@ -286,6 +295,7 @@ class CrawlerProcess(CrawlerRunner):
         :param boolean stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
+        from twisted.internet import reactor
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
@@ -300,6 +310,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.run(installSignalHandlers=False)  # blocking call
 
     def _get_dns_resolver(self):
+        from twisted.internet import reactor
         if self.settings.getbool('DNSCACHE_ENABLED'):
             cache_size = self.settings.getint('DNSCACHE_SIZE')
         else:
@@ -316,10 +327,16 @@ class CrawlerProcess(CrawlerRunner):
         return d
 
     def _stop_reactor(self, _=None):
+        from twisted.internet import reactor
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR'):
+            install_asyncio_reactor()
+        super()._handle_asyncio_reactor()
 
 
 def _get_spider_loader(settings):

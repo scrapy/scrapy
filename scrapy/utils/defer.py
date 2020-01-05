@@ -1,11 +1,14 @@
 """
 Helper functions for dealing with Twisted deferreds
 """
+import asyncio
+import inspect
 
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.asyncio import is_asyncio_reactor_installed
 
 
 def defer_fail(_failure):
@@ -15,6 +18,7 @@ def defer_fail(_failure):
     It delays by 100ms so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    from twisted.internet import reactor
     d = defer.Deferred()
     reactor.callLater(0.1, d.errback, _failure)
     return d
@@ -27,6 +31,7 @@ def defer_succeed(result):
     It delays by 100ms so reactor has a chance to go trough readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    from twisted.internet import reactor
     d = defer.Deferred()
     reactor.callLater(0.1, d.callback, result)
     return d
@@ -113,3 +118,25 @@ def iter_errback(iterable, errback, *a, **kw):
             break
         except Exception:
             errback(failure.Failure(), *a, **kw)
+
+
+def _isfuture(o):
+    # workaround for Python before 3.5.3 not having asyncio.isfuture
+    if hasattr(asyncio, 'isfuture'):
+        return asyncio.isfuture(o)
+    return isinstance(o, asyncio.Future)
+
+
+def deferred_from_coro(o):
+    """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
+    if isinstance(o, defer.Deferred):
+        return o
+    if _isfuture(o) or inspect.isawaitable(o):
+        if not is_asyncio_reactor_installed():
+            # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
+            # that use asyncio, e.g. "await asyncio.sleep(1)"
+            return defer.ensureDeferred(o)
+        else:
+            # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
+            return defer.Deferred.fromFuture(asyncio.ensure_future(o))
+    return o

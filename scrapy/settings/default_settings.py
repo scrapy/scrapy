@@ -19,6 +19,8 @@ from os.path import join, abspath, dirname
 
 AJAXCRAWL_ENABLED = False
 
+ASYNCIO_REACTOR = False
+
 AUTOTHROTTLE_ENABLED = False
 AUTOTHROTTLE_DEBUG = False
 AUTOTHROTTLE_MAX_DELAY = 60.0
@@ -84,8 +86,8 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 DOWNLOADER_CLIENT_TLS_CIPHERS = 'DEFAULT'
-DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
-                                     # also allowing negotiation
+# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
+DOWNLOADER_CLIENT_TLS_METHOD = 'TLS'
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}

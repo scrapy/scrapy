@@ -160,6 +160,27 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: ASYNCIO_REACTOR
+
+ASYNCIO_REACTOR
+---------------
+
+Default: ``False``
+
+Whether to install and require the Twisted reactor that uses the asyncio loop.
+
+When this option is set to ``True``, Scrapy will require
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
+install this reactor if no reactor is installed yet, such as when using the
+``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
+manually. If a different reactor is installed outside Scrapy, it will raise an
+exception.
+
+The default value for this option is currently ``False`` to maintain backward
+compatibility and avoid possible problems caused by using a different Twisted
+reactor.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -884,7 +905,7 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messsages. Refer to the `Python logging documentation`_ for the whole list of available
+String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
 placeholders.
 
 .. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
@@ -1264,7 +1285,7 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled by default in Scrapy. You should
+A dict containing the Scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
 
@@ -1295,7 +1316,7 @@ SPIDER_LOADER_WARN_ONLY
 
 Default: ``False``
 
-By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
 it will fail loudly if there is any ``ImportError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.

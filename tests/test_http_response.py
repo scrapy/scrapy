@@ -397,8 +397,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'SUFFIX' in r.text, repr(r.text)
 
         # Do not destroy html tags due to encoding bugs
-        r = self.response_class("http://example.com", encoding='utf-8', \
-                body=b'\xf0<span>value</span>')
+        r = self.response_class("http://example.com", encoding='utf-8',
+                                body=b'\xf0<span>value</span>')
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse

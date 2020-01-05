@@ -44,7 +44,7 @@ guidelines when you're going to report a new bug.
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
-* if you have a general question about scrapy usage, please ask it at
+* if you have a general question about Scrapy usage, please ask it at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__
   (use "scrapy" tag).
 
@@ -203,17 +203,9 @@ Tests are implemented using the :doc:`Twisted unit-testing framework
 Running tests
 -------------
 
-Make sure you have a recent enough :doc:`tox <tox:index>` installation:
+To run all tests::
 
-    ``tox --version``
-
-If your version is older than 1.7.0, please update it first:
-
-    ``pip install -U tox``
-
-To run all tests go to the root directory of Scrapy source code and run:
-
-    ``tox``
+    tox
 
 To run a specific test (say ``tests/test_loader.py``) use:
 
@@ -225,11 +217,11 @@ the tests with Python 3.6 use::
 
     tox -e py36
 
-You can also specify a comma-separated list of environmets, and use :ref:`tox’s
+You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py27,py36 -p auto
+    tox -e py36,py38 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the

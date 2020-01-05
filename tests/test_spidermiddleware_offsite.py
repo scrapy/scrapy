@@ -73,7 +73,7 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
 
 class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
-    
+
     def test_get_host_regex(self):
         self.spider.allowed_domains = ['http://scrapytest.org', 'scrapy.org', 'scrapy.test.org']
         with warnings.catch_warnings(record=True) as w:

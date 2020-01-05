@@ -78,9 +78,9 @@ TL;DR: We recommend installing Scrapy inside a virtual environment
 on all platforms.
 
 Python packages can be installed either globally (a.k.a system wide),
-or in user-space. We do not recommend installing scrapy system wide.
+or in user-space. We do not recommend installing Scrapy system wide.
 
-Instead, we recommend that you install scrapy within a so-called
+Instead, we recommend that you install Scrapy within a so-called
 "virtual environment" (`virtualenv`_).
 Virtualenvs allow you to not conflict with already-installed Python
 system packages (which could break some of your system tools and scripts),
@@ -97,7 +97,7 @@ Check this `user guide`_ on how to create your virtualenv.
 .. note::
     If you use Linux or OS X, `virtualenvwrapper`_ is a handy tool to create virtualenvs.
 
-Once you have created a virtualenv, you can install scrapy inside it with ``pip``,
+Once you have created a virtualenv, you can install Scrapy inside it with ``pip``,
 just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
@@ -144,7 +144,7 @@ albeit with potential issues with TLS connections.
 typically too old and slow to catch up with latest Scrapy.
 
 
-To install scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
+To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
 these dependencies::
 
     sudo apt-get install python3 python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
@@ -225,17 +225,17 @@ PyPy
 We recommend using the latest PyPy version. The version tested is 5.9.0.
 For PyPy3, only Linux installation was tested.
 
-Most scrapy dependencides now have binary wheels for CPython, but not for PyPy.
+Most Scrapy dependencides now have binary wheels for CPython, but not for PyPy.
 This means that these dependecies will be built during installation.
 On OS X, you are likely to face an issue with building Cryptography dependency,
 solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
 that is to ``brew install openssl`` and then export the flags that this command
-recommends (only needed when installing scrapy). Installing on Linux has no special
+recommends (only needed when installing Scrapy). Installing on Linux has no special
 issues besides installing build dependencies.
-Installing scrapy with PyPy on Windows is not tested.
+Installing Scrapy with PyPy on Windows is not tested.
 
-You can check that scrapy is installed correctly by running ``scrapy bench``.
+You can check that Scrapy is installed correctly by running ``scrapy bench``.
 If this command gives errors such as
 ``TypeError: ... got 2 unexpected keyword arguments``, this means
 that setuptools was unable to pick up one PyPy-specific dependency.
@@ -272,7 +272,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
-.. _lxml: http://lxml.de/
+.. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.python.org/pypi/parsel
 .. _w3lib: https://pypi.python.org/pypi/w3lib
 .. _twisted: https://twistedmatrix.com/
