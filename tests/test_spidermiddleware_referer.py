@@ -47,7 +47,7 @@ class TestRefererMiddleware(TestCase):
             self.assertEqual(out[0].headers.get('Referer'), referrer)
 
 
-class MixinDefault(object):
+class MixinDefault:
     """
     Based on https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
 
@@ -72,7 +72,7 @@ class MixinDefault(object):
     ]
 
 
-class MixinNoReferrer(object):
+class MixinNoReferrer:
     scenarii = [
         ('https://example.com/page.html',       'https://example.com/', None),
         ('http://www.example.com/',             'https://scrapy.org/',  None),
@@ -82,7 +82,7 @@ class MixinNoReferrer(object):
     ]
 
 
-class MixinNoReferrerWhenDowngrade(object):
+class MixinNoReferrerWhenDowngrade:
     scenarii = [
         # TLS to TLS: send non-empty referrer
         ('https://example.com/page.html',       'https://not.example.com/', b'https://example.com/page.html'),
@@ -111,7 +111,7 @@ class MixinNoReferrerWhenDowngrade(object):
     ]
 
 
-class MixinSameOrigin(object):
+class MixinSameOrigin:
     scenarii = [
         # Same origin (protocol, host, port): send referrer
         ('https://example.com/page.html',       'https://example.com/not-page.html',        b'https://example.com/page.html'),
@@ -144,7 +144,7 @@ class MixinSameOrigin(object):
     ]
 
 
-class MixinOrigin(object):
+class MixinOrigin:
     scenarii = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
         ('https://example.com/page.html',   'https://example.com/not-page.html',    b'https://example.com/'),
@@ -157,7 +157,7 @@ class MixinOrigin(object):
     ]
 
 
-class MixinStrictOrigin(object):
+class MixinStrictOrigin:
     scenarii = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
         ('https://example.com/page.html',   'https://example.com/not-page.html',    b'https://example.com/'),
@@ -176,7 +176,7 @@ class MixinStrictOrigin(object):
     ]
 
 
-class MixinOriginWhenCrossOrigin(object):
+class MixinOriginWhenCrossOrigin:
     scenarii = [
         # Same origin (protocol, host, port): send referrer
         ('https://example.com/page.html',       'https://example.com/not-page.html',        b'https://example.com/page.html'),
@@ -211,7 +211,7 @@ class MixinOriginWhenCrossOrigin(object):
     ]
 
 
-class MixinStrictOriginWhenCrossOrigin(object):
+class MixinStrictOriginWhenCrossOrigin:
     scenarii = [
         # Same origin (protocol, host, port): send referrer
         ('https://example.com/page.html',       'https://example.com/not-page.html',        b'https://example.com/page.html'),
@@ -255,7 +255,7 @@ class MixinStrictOriginWhenCrossOrigin(object):
     ]
 
 
-class MixinUnsafeUrl(object):
+class MixinUnsafeUrl:
     scenarii = [
         # TLS to TLS: send referrer
         ('https://example.com/sekrit.html',     'http://not.example.com/',      b'https://example.com/sekrit.html'),

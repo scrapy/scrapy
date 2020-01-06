@@ -89,7 +89,7 @@ class MyBadCrawlSpider(CrawlSpider):
             f.write("""
 import logging
 
-class MyPipeline(object):
+class MyPipeline:
     component_name = 'my_pipeline'
 
     def process_item(self, item, spider):

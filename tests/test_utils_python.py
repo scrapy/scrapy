@@ -73,7 +73,7 @@ class ToBytesTest(unittest.TestCase):
 
 class MemoizedMethodTest(unittest.TestCase):
     def test_memoizemethod_noargs(self):
-        class A(object):
+        class A:
 
             @memoizemethod_noargs
             def cached(self):
@@ -154,7 +154,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+        class _Weakme: pass
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
@@ -175,14 +175,14 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
-        class A(object):
+        class A:
             def __init__(self, a, b, c):
                 pass
 
             def method(self, a, b, c):
                 pass
 
-        class Callable(object):
+        class Callable:
 
             def __call__(self, a, b, c):
                 pass
@@ -201,7 +201,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(partial_f2), ['a', 'c'])
         self.assertEqual(get_func_args(partial_f3), ['c'])
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
-        self.assertEqual(get_func_args(object), [])
+        self.assertEqual(get_func_args, [])
 
         if platform.python_implementation() == 'CPython':
             # TODO: how do we fix this to return the actual argument names?

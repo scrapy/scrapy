@@ -39,21 +39,21 @@ from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 
-class DummyDH(object):
+class DummyDH:
     lazy = False
 
     def __init__(self, crawler):
         pass
 
 
-class DummyLazyDH(object):
+class DummyLazyDH:
     # Default is lazy for backward compatibility
 
     def __init__(self, crawler):
         pass
 
 
-class OffDH(object):
+class OffDH:
     lazy = False
 
     def __init__(self, crawler):
@@ -731,7 +731,7 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         self.assertIn(domain, timeout.osError)
 
 
-class HttpDownloadHandlerMock(object):
+class HttpDownloadHandlerMock:
     def __init__(self, settings):
         pass
 

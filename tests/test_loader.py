@@ -456,7 +456,7 @@ class BasicItemLoaderTest(unittest.TestCase):
                           [u'marta', u'other'], Compose(float))
 
 
-class InitializationTestMixin(object):
+class InitializationTestMixin:
 
     item_class = None
 

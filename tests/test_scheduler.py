@@ -20,7 +20,7 @@ MockEngine = collections.namedtuple('MockEngine', ['downloader'])
 MockSlot = collections.namedtuple('MockSlot', ['active'])
 
 
-class MockDownloader(object):
+class MockDownloader:
     def __init__(self):
         self.slots = dict()
 
@@ -57,7 +57,7 @@ class MockCrawler(Crawler):
         self.engine = MockEngine(downloader=MockDownloader())
 
 
-class SchedulerHandler(object):
+class SchedulerHandler:
     priority_queue_cls = None
     jobdir = None
 
@@ -245,7 +245,7 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     return True
 
 
-class DownloaderAwareSchedulerTestMixin(object):
+class DownloaderAwareSchedulerTestMixin:
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
     reopen = False
 
