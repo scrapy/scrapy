@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
 import unittest
-import sys
-
-import six
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
@@ -80,8 +76,6 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r, spider=self.spider)
 
     def test_mixin_private_callback_serialization(self):
-        if sys.version_info[0] < 3:
-            return
         r = Request("http://www.example.com",
                     callback=self.spider._TestSpiderMixin__mixin_callback,
                     errback=self.spider.handle_error)
@@ -119,9 +113,8 @@ class RequestSerializationTest(unittest.TestCase):
     def test_private_name_mangling(self):
         self._assert_mangles_to(
             self.spider, '_TestSpider__parse_item_private')
-        if sys.version_info[0] >= 3:
-            self._assert_mangles_to(
-                self.spider, '_TestSpiderMixin__mixin_callback')
+        self._assert_mangles_to(
+            self.spider, '_TestSpiderMixin__mixin_callback')
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)

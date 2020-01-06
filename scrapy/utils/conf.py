@@ -1,13 +1,8 @@
 import os
 import sys
 import numbers
+from configparser import ConfigParser
 from operator import itemgetter
-
-import six
-if six.PY2:
-    from ConfigParser import SafeConfigParser as ConfigParser
-else:
-    from configparser import ConfigParser
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
@@ -25,7 +20,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
     def _map_keys(compdict):
         if isinstance(compdict, BaseSettings):
             compbs = BaseSettings()
-            for k, v in six.iteritems(compdict):
+            for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 if compbs.getpriority(convert(k)) == prio:
                     raise ValueError('Some paths in {!r} convert to the same '
@@ -36,13 +31,13 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             return compbs
         else:
             _check_components(compdict)
-            return {convert(k): v for k, v in six.iteritems(compdict)}
+            return {convert(k): v for k, v in compdict.items()}
 
     def _validate_values(compdict):
         """Fail if a value in the components dict is not a real number or None."""
-        for name, value in six.iteritems(compdict):
+        for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError('Invalid value {} for component {}, please provide ' \
+                raise ValueError('Invalid value {} for component {}, please provide '
                                  'a real number or None instead'.format(value, name))
 
     # BEGIN Backward compatibility for old (base, custom) call signature
@@ -56,7 +51,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
 
     _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
-    return [k for k, v in sorted(six.iteritems(compdict), key=itemgetter(1))]
+    return [k for k, v in sorted(compdict.items(), key=itemgetter(1))]
 
 
 def arglist_to_dict(arglist):

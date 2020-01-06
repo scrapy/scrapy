@@ -1,10 +1,9 @@
-import six
-import signal
 import logging
+import pprint
+import signal
 import warnings
 
-import sys
-from twisted.internet import reactor, defer
+from twisted.internet import defer
 from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy import Spider
@@ -15,12 +14,14 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy.utils.log import (
     LogCounterHandler, configure_logging, log_scrapy_info,
     get_scrapy_root_handler, install_scrapy_root_handler)
 from scrapy import signals
+
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,8 @@ class Crawler(object):
         logging.root.addHandler(handler)
 
         d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings: %(settings)r", {'settings': d})
+        logger.info("Overridden settings:\n%(settings)s",
+                    {'settings': pprint.pformat(d)})
 
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
@@ -88,20 +90,9 @@ class Crawler(object):
             yield self.engine.open_spider(self.spider, start_requests)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
-            # In Python 2 reraising an exception after yield discards
-            # the original traceback (see https://bugs.python.org/issue7563),
-            # so sys.exc_info() workaround is used.
-            # This workaround also works in Python 3, but it is not needed,
-            # and it is slower, so in Python 3 we use native `raise`.
-            if six.PY2:
-                exc_info = sys.exc_info()
-
             self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
-
-            if six.PY2:
-                six.reraise(*exc_info)
             raise
 
     def _create_spider(self, *args, **kwargs):
@@ -122,7 +113,7 @@ class Crawler(object):
 class CrawlerRunner(object):
     """
     This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
+    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
 
     The CrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -146,6 +137,7 @@ class CrawlerRunner(object):
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
+        self._handle_asyncio_reactor()
 
     @property
     def spiders(self):
@@ -216,7 +208,7 @@ class CrawlerRunner(object):
         return self._create_crawler(crawler_or_spidercls)
 
     def _create_crawler(self, spidercls):
-        if isinstance(spidercls, six.string_types):
+        if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 
@@ -239,18 +231,24 @@ class CrawlerRunner(object):
         while self._active:
             yield defer.DeferredList(self._active)
 
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR') and not is_asyncio_reactor_installed():
+            raise Exception("ASYNCIO_REACTOR is on but the Twisted asyncio "
+                            "reactor is not installed.")
+
 
 class CrawlerProcess(CrawlerRunner):
     """
     A class to run multiple scrapy crawlers in a process simultaneously.
 
     This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
-    for starting a Twisted `reactor`_ and handling shutdown signals, like the
-    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
+    signals, like the keyboard interrupt command Ctrl-C. It also configures
+    top-level logging.
 
     This utility should be a better fit than
     :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
-    Twisted `reactor`_ within your application.
+    :mod:`~twisted.internet.reactor` within your application.
 
     The CrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
@@ -270,6 +268,7 @@ class CrawlerProcess(CrawlerRunner):
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
         logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
@@ -277,6 +276,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown',
@@ -285,9 +285,9 @@ class CrawlerProcess(CrawlerRunner):
 
     def start(self, stop_after_crawl=True):
         """
-        This method starts a Twisted `reactor`_, adjusts its pool size to
-        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
-        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
+        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
+        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -295,6 +295,7 @@ class CrawlerProcess(CrawlerRunner):
         :param boolean stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
+        from twisted.internet import reactor
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
@@ -309,6 +310,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.run(installSignalHandlers=False)  # blocking call
 
     def _get_dns_resolver(self):
+        from twisted.internet import reactor
         if self.settings.getbool('DNSCACHE_ENABLED'):
             cache_size = self.settings.getint('DNSCACHE_SIZE')
         else:
@@ -325,10 +327,16 @@ class CrawlerProcess(CrawlerRunner):
         return d
 
     def _stop_reactor(self, _=None):
+        from twisted.internet import reactor
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+    def _handle_asyncio_reactor(self):
+        if self.settings.getbool('ASYNCIO_REACTOR'):
+            install_asyncio_reactor()
+        super()._handle_asyncio_reactor()
 
 
 def _get_spider_loader(settings):

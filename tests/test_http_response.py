@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
 from w3lib.encoding import resolve_encoding
 
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 from scrapy.exceptions import NotSupported
 from scrapy.link import Link
 from tests import get_testdata
@@ -21,8 +20,7 @@ class BaseResponseTest(unittest.TestCase):
         # Response requires url in the consturctor
         self.assertRaises(Exception, self.response_class)
         self.assertTrue(isinstance(self.response_class('http://example.com/'), self.response_class))
-        if not six.PY2:
-            self.assertRaises(TypeError, self.response_class, b"http://example.com")
+        self.assertRaises(TypeError, self.response_class, b"http://example.com")
         # body can be str or None
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b''), self.response_class))
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'body'), self.response_class))
@@ -103,7 +101,7 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r4.flags, [])
 
     def _assert_response_values(self, response, encoding, body):
-        if isinstance(body, six.text_type):
+        if isinstance(body, str):
             body_unicode = body
             body_bytes = body.encode(encoding)
         else:
@@ -111,7 +109,7 @@ class BaseResponseTest(unittest.TestCase):
             body_bytes = body
 
         assert isinstance(response.body, bytes)
-        assert isinstance(response.text, six.text_type)
+        assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
         self.assertEqual(response.body_as_unicode(), body_unicode)
@@ -205,11 +203,11 @@ class TextResponseTest(BaseResponseTest):
         assert isinstance(resp.url, str)
 
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='utf-8')
-        self.assertEqual(resp.url, to_native_str(b'http://www.example.com/price/\xc2\xa3'))
+        self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=utf-8"]})
-        self.assertEqual(resp.url, to_native_str(b'http://www.example.com/price/\xc2\xa3'))
+        self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
 
@@ -221,11 +219,11 @@ class TextResponseTest(BaseResponseTest):
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
 
         # check body_as_unicode
-        self.assertTrue(isinstance(r1.body_as_unicode(), six.text_type))
+        self.assertTrue(isinstance(r1.body_as_unicode(), str))
         self.assertEqual(r1.body_as_unicode(), unicode_string)
 
         # check response.text
-        self.assertTrue(isinstance(r1.text, six.text_type))
+        self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):
@@ -318,8 +316,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'SUFFIX' in r.text, repr(r.text)
 
         # Do not destroy html tags due to encoding bugs
-        r = self.response_class("http://example.com", encoding='utf-8', \
-                body=b'\xf0<span>value</span>')
+        r = self.response_class("http://example.com", encoding='utf-8',
+                                body=b'\xf0<span>value</span>')
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
@@ -534,7 +532,7 @@ class XmlResponseTest(TextResponseTest):
         r2 = self.response_class("http://www.example.com", body=body)
         self._assert_response_values(r2, 'iso-8859-1', body)
 
-        # make sure replace() preserves the explicit encoding passed in the constructor
+        # make sure replace() preserves the explicit encoding passed in the __init__ method
         body = b"""<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r3 = self.response_class("http://www.example.com", body=body, encoding='utf-8')
         body2 = b"New body"

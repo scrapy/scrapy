@@ -348,7 +348,6 @@ HttpCacheMiddleware
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
-        * :ref:`httpcache-storage-leveldb`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
     setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
@@ -475,29 +474,8 @@ DBM storage backend
 
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
-    By default, it uses the anydbm_ module, but you can change it with the
+    By default, it uses the :mod:`dbm`, but you can change it with the
     :setting:`HTTPCACHE_DBM_MODULE` setting.
-
-.. _httpcache-storage-leveldb:
-
-LevelDB storage backend
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. class:: LeveldbCacheStorage
-
-    .. versionadded:: 0.23
-
-    A LevelDB_ storage backend is also available for the HTTP cache middleware.
-
-    This backend is not recommended for development because only one process
-    can access LevelDB databases at the same time, so you can't run a crawl and
-    open the scrapy shell in parallel for the same spider.
-
-    In order to use this storage backend, install the `LevelDB python
-    bindings`_ (e.g. ``pip install leveldb``).
-
-    .. _LevelDB: https://github.com/google/leveldb
-    .. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
 .. _httpcache-storage-custom:
 
@@ -534,7 +512,7 @@ defines the methods described below.
       :param spider: the spider which generated the request
       :type spider: :class:`~scrapy.spiders.Spider` object
 
-      :param request: the request to find cached reponse for
+      :param request: the request to find cached response for
       :type request: :class:`~scrapy.http.Request` object
 
     .. method:: store_response(spider, request, response)
@@ -648,7 +626,7 @@ HTTPCACHE_DBM_MODULE
 
 .. versionadded:: 0.13
 
-Default: ``'anydbm'``
+Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
 <httpcache-storage-dbm>`. This setting is specific to the DBM backend.
@@ -1224,4 +1202,3 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
-.. _anydbm: https://docs.python.org/2/library/anydbm.html

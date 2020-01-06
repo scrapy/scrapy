@@ -4,45 +4,32 @@
 Link Extractors
 ===============
 
-Link extractors are objects whose only purpose is to extract links from web
-pages (:class:`scrapy.http.Response` objects) which will be eventually
-followed.
+A link extractor is an object that extracts links from responses.
 
-There is ``scrapy.linkextractors.LinkExtractor`` available
-in Scrapy, but you can create your own custom Link Extractors to suit your
-needs by implementing a simple interface.
+The ``__init__`` method of
+:class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` takes settings that
+determine which links may be extracted. :class:`LxmlLinkExtractor.extract_links
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` returns a
+list of matching :class:`scrapy.link.Link` objects from a
+:class:`~scrapy.http.Response` object.
 
-The only public method that every link extractor has is ``extract_links``,
-which receives a :class:`~scrapy.http.Response` object and returns a list
-of :class:`scrapy.link.Link` objects. Link extractors are meant to be
-instantiated once and their ``extract_links`` method called several times
-with different responses to extract links to follow.
-
-Link extractors are used in the :class:`~scrapy.spiders.CrawlSpider`
-class (available in Scrapy), through a set of rules, but you can also use it in
-your spiders, even if you don't subclass from
-:class:`~scrapy.spiders.CrawlSpider`, as its purpose is very simple: to
-extract links.
-
+Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
+through a set of :class:`~scrapy.spiders.Rule` objects. You can also use link
+extractors in regular spiders.
 
 .. _topics-link-extractors-ref:
 
-Built-in link extractors reference
-==================================
+Link extractor reference
+========================
 
 .. module:: scrapy.linkextractors
    :synopsis: Link extractors classes
 
-Link extractors classes bundled with Scrapy are provided in the
-:mod:`scrapy.linkextractors` module.
-
-The default link extractor is ``LinkExtractor``, which is the same as
-:class:`~.LxmlLinkExtractor`::
+The link extractor class is
+:class:`scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`. For convenience it
+can also be imported as ``scrapy.linkextractors.LinkExtractor``::
 
     from scrapy.linkextractors import LinkExtractor
-
-There used to be other link extractor classes in previous Scrapy versions,
-but they are deprecated now.
 
 LxmlLinkExtractor
 -----------------
@@ -151,5 +138,7 @@ LxmlLinkExtractor
         Set ``strip=False`` to turn it off (e.g. if you're extracting urls
         from elements or attributes which allow leading/trailing whitespaces).
     :type strip: boolean
+
+    .. automethod:: extract_links
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

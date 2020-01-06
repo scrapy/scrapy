@@ -1,20 +1,13 @@
-# -*- coding: utf-8 -*-
-import cgi
 import unittest
 import re
 import json
+import xmlrpc.client
 import warnings
-
-import six
-from six.moves import xmlrpc_client as xmlrpclib
-from six.moves.urllib.parse import urlparse, parse_qs, unquote
-if six.PY3:
-    from urllib.parse import unquote_to_bytes
+from unittest import mock
+from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
-from scrapy.utils.python import to_bytes, to_native_str
-
-from tests import mock
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
@@ -25,7 +18,7 @@ class RequestTest(unittest.TestCase):
     default_meta = {}
 
     def test_init(self):
-        # Request requires url in the constructor
+        # Request requires url in the __init__ method
         self.assertRaises(Exception, self.request_class)
 
         # url argument must be basestring
@@ -52,11 +45,13 @@ class RequestTest(unittest.TestCase):
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
+        self.assertRaises(ValueError, self.request_class, '/foo/')
+        self.assertRaises(ValueError, self.request_class, '/foo:bar')
 
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {b'Accept':'gzip', b'Custom-Header':'nothing to tell you'}
+        headers = {b'Accept': 'gzip', b'Custom-Header': 'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -67,7 +62,7 @@ class RequestTest(unittest.TestCase):
         # headers must not be unicode
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
-        for k, v in h.iteritems():
+        for k, v in h.items():
             self.assertIsInstance(k, bytes)
             for s in v:
                 self.assertIsInstance(s, bytes)
@@ -154,7 +149,7 @@ class RequestTest(unittest.TestCase):
 
         r2 = self.request_class(url="http://www.example.com/", body=b"")
         assert isinstance(r2.body, bytes)
-        self.assertEqual(r2.encoding, 'utf-8') # default encoding
+        self.assertEqual(r2.encoding, 'utf-8')  # default encoding
 
         r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
         assert isinstance(r3.body, bytes)
@@ -351,8 +346,8 @@ class FormRequestTest(RequestTest):
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
-        first = to_native_str(first).split("&")
-        second = to_native_str(second).split("&")
+        first = to_unicode(first).split("&")
+        second = to_unicode(second).split("&")
         return self.assertEqual(sorted(first), sorted(second), msg)
 
     def test_empty_formdata(self):
@@ -500,7 +495,7 @@ class FormRequestTest(RequestTest):
                 formdata=(('foo', 'bar'), ('foo', 'baz')))
         self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
         self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
-    
+
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
             """<form action="get.php" method="POST">
@@ -627,8 +622,9 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="two" value="3">
             <input type="submit" name="clickable2" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, formdata={'two': '2'}, \
-                                              clickdata={'name': 'clickable2'})
+        req = self.request_class.from_response(
+            response, formdata={'two': '2'}, clickdata={'name': 'clickable2'}
+        )
         fs = _qs(req)
         self.assertEqual(fs[b'clickable2'], [b'clicked2'])
         self.assertFalse(b'clickable1' in fs, fs)
@@ -657,7 +653,7 @@ class FormRequestTest(RequestTest):
         req = self.request_class.from_response(response, dont_click=True)
         fs = _qs(req)
         self.assertEqual(fs, {b'i1': [b'i1v'], b'i2': [b'i2v']})
-    
+
     def test_from_response_clickdata_does_not_ignore_image(self):
         response = _buildresponse(
             """<form>
@@ -676,8 +672,9 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="clicked1">
             <input type="hidden" name="two" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={u'name': u'clickable', u'value': u'clicked2'})
+        req = self.request_class.from_response(
+            response, clickdata={u'name': u'clickable', u'value': u'clicked2'}
+        )
         fs = _qs(req)
         self.assertEqual(fs[b'clickable'], [b'clicked2'])
         self.assertEqual(fs[b'one'], [b'clicked1'])
@@ -691,8 +688,9 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="poundsign" value="\u00a3">
             <input type="hidden" name="eurosign" value="\u20ac">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={u'name': u'price in \u00a3'})
+        req = self.request_class.from_response(
+            response, clickdata={u'name': u'price in \u00a3'}
+        )
         fs = _qs(req, to_unicode=True)
         self.assertTrue(fs[u'price in \u00a3'])
 
@@ -705,8 +703,9 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="yensign" value="\u00a5">
             </form>""",
             encoding='latin1')
-        req = self.request_class.from_response(response, \
-                clickdata={u'name': u'price in \u00a5'})
+        req = self.request_class.from_response(
+            response, clickdata={u'name': u'price in \u00a5'}
+        )
         fs = _qs(req, to_unicode=True, encoding='latin1')
         self.assertTrue(fs[u'price in \u00a5'])
 
@@ -721,8 +720,9 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="field2" value="value2">
             </form>
             """)
-        req = self.request_class.from_response(response, formname='form2', \
-                clickdata={u'name': u'clickable'})
+        req = self.request_class.from_response(
+            response, formname='form2', clickdata={u'name': u'clickable'}
+        )
         fs = _qs(req)
         self.assertEqual(fs[b'clickable'], [b'clicked2'])
         self.assertEqual(fs[b'field2'], [b'value2'])
@@ -730,8 +730,9 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_clickable(self):
         response = _buildresponse('''<form><input type="submit" name="clickme" value="one"> </form>''')
-        req = self.request_class.from_response(response, \
-                formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
+        req = self.request_class.from_response(
+            response, formdata={'clickme': 'two'}, clickdata={'name': 'clickme'}
+        )
         fs = _qs(req)
         self.assertEqual(fs[b'clickme'], [b'two'])
 
@@ -816,7 +817,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="1">
             <input type="hidden" name="two" value="2">
             </form>""")
-        r1 = self.request_class.from_response(response, formdata={'two':'3'})
+        r1 = self.request_class.from_response(response, formdata={'two': '3'})
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], b'application/x-www-form-urlencoded')
         fs = _qs(r1)
@@ -858,7 +859,7 @@ class FormRequestTest(RequestTest):
             <form name="form2" action="post.php" method="POST">
             <input type="hidden" name="two" value="2">
             </form>""")
-        self.assertRaises(IndexError, self.request_class.from_response, \
+        self.assertRaises(IndexError, self.request_class.from_response,
                           response, formname="form3", formnumber=2)
 
     def test_from_response_formid_exists(self):
@@ -912,7 +913,7 @@ class FormRequestTest(RequestTest):
             <form id="form2" name="form2" action="post.php" method="POST">
             <input type="hidden" name="two" value="2">
             </form>""")
-        self.assertRaises(IndexError, self.request_class.from_response, \
+        self.assertRaises(IndexError, self.request_class.from_response,
                           response, formid="form3", formnumber=2)
 
     def test_from_response_select(self):
@@ -1064,8 +1065,7 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs, {})
 
         xpath = u"//form[@name='\u03b1']"
-        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
-        self.assertRaisesRegex(ValueError, re.escape(encoded),
+        self.assertRaisesRegex(ValueError, re.escape(xpath),
                                self.request_class.from_response,
                                response, formxpath=xpath)
 
@@ -1208,10 +1208,7 @@ def _qs(req, encoding='utf-8', to_unicode=False):
         qs = req.body
     else:
         qs = req.url.partition('?')[2]
-    if six.PY2:
-        uqs = unquote(to_native_str(qs, encoding))
-    elif six.PY3:
-        uqs = unquote_to_bytes(qs)
+    uqs = unquote_to_bytes(qs)
     if to_unicode:
         uqs = uqs.decode(encoding)
     return parse_qs(uqs, True)
@@ -1227,7 +1224,7 @@ class XmlRpcRequestTest(RequestTest):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers[b'Content-Type'], b'text/xml')
         self.assertEqual(r.body,
-                         to_bytes(xmlrpclib.dumps(**kwargs),
+                         to_bytes(xmlrpc.client.dumps(**kwargs),
                                   encoding=kwargs.get('encoding', 'utf-8')))
         self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))
