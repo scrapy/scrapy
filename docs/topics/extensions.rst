@@ -107,7 +107,7 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
+    class SpiderOpenCloseLogging:
 
         def __init__(self, item_count):
             self.item_count = item_count

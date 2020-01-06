@@ -124,7 +124,7 @@ Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
 extensions, middlewares and item pipelines::
 
-    class MyExtension(object):
+    class MyExtension:
         def __init__(self, log_is_enabled=False):
             if log_is_enabled:
                 print("log is enabled!")

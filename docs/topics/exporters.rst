@@ -42,7 +42,7 @@ value of one of their fields::
 
     from scrapy.exporters import XmlItemExporter
 
-    class PerYearXmlExportPipeline(object):
+    class PerYearXmlExportPipeline:
         """Distribute items across multiple XML files according to their 'year' field"""
 
         def open_spider(self, spider):
