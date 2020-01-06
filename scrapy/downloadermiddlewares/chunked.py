@@ -9,7 +9,7 @@ warnings.warn("Module `scrapy.downloadermiddlewares.chunked` is deprecated, "
               ScrapyDeprecationWarning, stacklevel=2)
 
 
-class ChunkedTransferMiddleware(object):
+class ChunkedTransferMiddleware:
     """This middleware adds support for chunked transfer encoding, as
     documented in: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
     """

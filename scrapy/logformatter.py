@@ -11,7 +11,7 @@ CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(ref
 ERRORMSG = u"'Error processing %(item)s'"
 
 
-class LogFormatter(object):
+class LogFormatter:
     """Class for generating log messages for different actions.
 
     All methods must return a dictionary listing the parameters ``level``, ``msg``

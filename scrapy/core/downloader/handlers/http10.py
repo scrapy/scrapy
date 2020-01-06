@@ -5,7 +5,7 @@ from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.python import to_unicode
 
 
-class HTTP10DownloadHandler(object):
+class HTTP10DownloadHandler:
     lazy = False
 
     def __init__(self, settings):

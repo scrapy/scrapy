@@ -14,7 +14,7 @@ from scrapy.utils.deprecate import ScrapyDeprecationWarning
 logger = logging.getLogger(__name__)
 
 
-class Scheduler(object):
+class Scheduler:
     """
     Scrapy Scheduler. It allows to enqueue requests and then get
     a next request to download. Scheduler is also handling duplication

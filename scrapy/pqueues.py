@@ -47,7 +47,7 @@ class _Priority(namedtuple("_Priority", ["priority", "slot"])):
         return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
 
 
-class _SlotPriorityQueues(object):
+class _SlotPriorityQueues:
     """ Container for multiple priority queues. """
     def __init__(self, pqfactory, slot_startprios=None):
         """
@@ -113,7 +113,7 @@ class ScrapyPriorityQueue(PriorityQueue):
         return request
 
 
-class DownloaderInterface(object):
+class DownloaderInterface:
 
     def __init__(self, crawler):
         self.downloader = crawler.engine.downloader
@@ -132,7 +132,7 @@ class DownloaderInterface(object):
         return len(self.downloader.slots[slot].active)
 
 
-class DownloaderAwarePriorityQueue(object):
+class DownloaderAwarePriorityQueue:
     """ PriorityQueue which takes Downlaoder activity in account:
     domains (slots) with the least amount of active downloads are dequeued
     first.

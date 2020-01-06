@@ -62,7 +62,7 @@ class ReceivedDataProtocol(Protocol):
 _CODE_RE = re.compile(r"\d+")
 
 
-class FTPDownloadHandler(object):
+class FTPDownloadHandler:
     lazy = False
 
     CODE_MAPPING = {

@@ -153,7 +153,7 @@ def log_scrapy_info(settings):
         logger.debug("Asyncio reactor is installed")
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:

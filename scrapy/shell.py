@@ -25,7 +25,7 @@ from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
-class Shell(object):
+class Shell:
 
     relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
                         Settings)
@@ -194,7 +194,7 @@ def _request_deferred(request):
     return d
 
 
-class _SelectorProxy(object):
+class _SelectorProxy:
 
     def __init__(self, response):
         self._proxiedresponse = response

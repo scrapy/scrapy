@@ -30,7 +30,7 @@ def _get_boto_connection():
     return _S3Connection
 
 
-class S3DownloadHandler(object):
+class S3DownloadHandler:
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None,
                  httpdownloadhandler=HTTPDownloadHandler, **kw):

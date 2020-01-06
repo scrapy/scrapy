@@ -14,7 +14,7 @@ from scrapy import signals
 logger = logging.getLogger(__name__)
 
 
-class DownloadHandlers(object):
+class DownloadHandlers:
 
     def __init__(self, crawler):
         self._crawler = crawler

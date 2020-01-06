@@ -22,7 +22,7 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -63,7 +63,7 @@ class Slot(object):
         return self.active_size > self.max_active_size
 
 
-class Scraper(object):
+class Scraper:
 
     def __init__(self, crawler):
         self.slot = None

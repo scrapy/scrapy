@@ -12,7 +12,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured
 
 
-class CloseSpider(object):
+class CloseSpider:
 
     def __init__(self, crawler):
         self.crawler = crawler

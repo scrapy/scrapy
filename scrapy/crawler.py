@@ -26,7 +26,7 @@ from scrapy import signals
 logger = logging.getLogger(__name__)
 
 
-class Crawler(object):
+class Crawler:
 
     def __init__(self, spidercls, settings=None):
         if isinstance(spidercls, Spider):
@@ -110,7 +110,7 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class CrawlerRunner(object):
+class CrawlerRunner:
     """
     This is a convenient helper class that keeps track of, manages and runs
     crawlers inside an already setup :mod:`~twisted.internet.reactor`.

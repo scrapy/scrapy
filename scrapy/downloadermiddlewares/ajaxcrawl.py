@@ -11,7 +11,7 @@ from scrapy.http import HtmlResponse
 logger = logging.getLogger(__name__)
 
 
-class AjaxCrawlMiddleware(object):
+class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.

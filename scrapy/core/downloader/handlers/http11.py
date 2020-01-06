@@ -28,7 +28,7 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
-class HTTP11DownloadHandler(object):
+class HTTP11DownloadHandler:
     lazy = False
 
     def __init__(self, settings):
@@ -261,7 +261,7 @@ class ScrapyProxyAgent(Agent):
         )
 
 
-class ScrapyAgent(object):
+class ScrapyAgent:
 
     _Agent = Agent
     _ProxyAgent = ScrapyProxyAgent
@@ -422,7 +422,7 @@ class ScrapyAgent(object):
 
 
 @implementer(IBodyProducer)
-class _RequestBodyProducer(object):
+class _RequestBodyProducer:
 
     def __init__(self, body):
         self.body = body

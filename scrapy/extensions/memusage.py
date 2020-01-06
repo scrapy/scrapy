@@ -19,7 +19,7 @@ from scrapy.utils.engine import get_engine_status
 logger = logging.getLogger(__name__)
 
 
-class MemoryUsage(object):
+class MemoryUsage:
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):

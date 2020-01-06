@@ -27,7 +27,7 @@ def _nons(tag):
     return tag
 
 
-class LxmlParserLinkExtractor(object):
+class LxmlParserLinkExtractor:
     def __init__(self, tag="a", attr="href", process=None, unique=False,
                  strip=True, canonicalized=False):
         self.scan_tag = tag if callable(tag) else lambda t: t == tag

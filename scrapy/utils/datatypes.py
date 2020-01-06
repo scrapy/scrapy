@@ -154,7 +154,7 @@ class MultiValueDict(dict):
             self.setlistdefault(key, []).append(value)
 
 
-class SiteNode(object):
+class SiteNode:
     """Class to represent a site node (page, image or any other file)"""
 
     def __init__(self, url):
@@ -283,7 +283,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
             return None  # key is not weak-referenceable, it's not cached
 
 
-class SequenceExclude(object):
+class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
     def __init__(self, seq):

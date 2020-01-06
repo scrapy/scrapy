@@ -4,7 +4,7 @@ from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
 
-class SiteTest(object):
+class SiteTest:
 
     def setUp(self):
         super(SiteTest, self).setUp()

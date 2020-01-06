@@ -43,7 +43,7 @@ class IFeedStorage(Interface):
 
 
 @implementer(IFeedStorage)
-class BlockingFeedStorage(object):
+class BlockingFeedStorage:
 
     def open(self, spider):
         path = spider.crawler.settings['FEED_TEMPDIR']
@@ -60,7 +60,7 @@ class BlockingFeedStorage(object):
 
 
 @implementer(IFeedStorage)
-class StdoutFeedStorage(object):
+class StdoutFeedStorage:
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
@@ -75,7 +75,7 @@ class StdoutFeedStorage(object):
 
 
 @implementer(IFeedStorage)
-class FileFeedStorage(object):
+class FileFeedStorage:
 
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
@@ -185,7 +185,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         ftp.quit()
 
 
-class SpiderSlot(object):
+class SpiderSlot:
     def __init__(self, file, exporter, storage, uri):
         self.file = file
         self.exporter = exporter
@@ -194,7 +194,7 @@ class SpiderSlot(object):
         self.itemcount = 0
 
 
-class FeedExporter(object):
+class FeedExporter:
 
     def __init__(self, settings):
         self.settings = settings

@@ -25,7 +25,7 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response

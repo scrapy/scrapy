@@ -19,7 +19,7 @@ NoneType = type(None)
 live_refs = defaultdict(weakref.WeakKeyDictionary)
 
 
-class object_ref(object):
+class object_ref:
     """Inherit from this class (instead of object) to a keep a record of live
     instances"""
 

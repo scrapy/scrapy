@@ -232,7 +232,7 @@ def get_spec(func):
     >>> get_spec(re.match)
     (['pattern', 'string'], {'flags': 0})
 
-    >>> class Test(object):
+    >>> class Test:
     ...     def __call__(self, val):
     ...         pass
     ...     def method(self, val, flags=0):
@@ -281,7 +281,7 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache(object):
+class WeakKeyCache:
 
     def __init__(self, default_factory):
         self.default_factory = default_factory
@@ -371,7 +371,7 @@ else:
         gc.collect()
 
 
-class MutableChain(object):
+class MutableChain:
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """

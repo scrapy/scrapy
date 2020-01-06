@@ -15,7 +15,7 @@ except ImportError:
     pass
 
 
-class HttpCompressionMiddleware(object):
+class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
     @classmethod

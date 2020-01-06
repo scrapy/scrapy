@@ -3,7 +3,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.decorators import defers
 
 
-class FileDownloadHandler(object):
+class FileDownloadHandler:
     lazy = False
 
     def __init__(self, settings):

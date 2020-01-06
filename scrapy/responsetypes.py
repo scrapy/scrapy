@@ -11,7 +11,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
-class ResponseTypes(object):
+class ResponseTypes:
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
