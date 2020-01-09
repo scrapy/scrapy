@@ -6,7 +6,7 @@ from twisted.internet.defer import Deferred
 from twisted.trial import unittest
 
 from scrapy import Spider, signals, Request
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
 from tests.mockserver import MockServer
 
@@ -39,7 +39,7 @@ class AsyncDefPipeline:
 class AsyncDefAsyncioPipeline:
     async def process_item(self, item, spider):
         await asyncio.sleep(0.2)
-        item['pipeline_passed'] = True
+        item['pipeline_passed'] = await get_from_asyncio_queue(True)
         return item
 
 
