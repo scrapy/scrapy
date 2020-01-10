@@ -117,14 +117,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return MutableChain(result, recovered)
 
         def process_callback_output(result):
-            if isinstance(result, Failure):
-                return process_spider_exception(result)
             recovered = MutableChain()
             result = _evaluate_iterable(result, 0, recovered)
             return MutableChain(process_spider_output(result), recovered)
 
         dfd = mustbe_deferred(process_spider_input, response)
-        dfd.addCallbacks(callback=process_callback_output, errback=process_callback_output)
+        dfd.addCallbacks(callback=process_callback_output, errback=process_spider_exception)
         return dfd
 
     def process_start_requests(self, start_requests, spider):
