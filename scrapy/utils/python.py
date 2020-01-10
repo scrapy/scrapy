@@ -375,6 +375,7 @@ class MutableChain(object):
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
+
     def __init__(self, *args):
         self.data = chain(*args)
 
