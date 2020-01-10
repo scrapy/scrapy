@@ -1,15 +1,15 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+import errno
 import gc
+import inspect
 import os
 import re
-import inspect
+import sys
 import weakref
-import errno
 from functools import partial, wraps
 from itertools import chain
-import sys
 
 from scrapy.utils.decorators import deprecated
 
@@ -371,7 +371,7 @@ else:
         gc.collect()
 
 
-class MutableChain(object):
+class MutableChain:
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
