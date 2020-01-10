@@ -21,11 +21,13 @@ def check_url(url, path=PATH, branch='master'):
 class TestCase(unittest.TestCase):
 
     def test_unexisting_object(self):
-        info = {'module': 'scrapy.crawler', 'fullname': 'Crawler.settings'}
+        info = {'module': 'scrapy.crawler',
+                'fullname': 'Crawler.settings'}
         assert resolve(DOMAIN, info) is None
 
     def test_property(self):
-        info = {'module': 'scrapy.crawler', 'fullname': 'CrawlerRunner.crawlers'}
+        info = {'module': 'scrapy.crawler',
+                'fullname': 'CrawlerRunner.crawlers'}
         assert resolve(DOMAIN, info) is None
 
     def test_local_build(self):
