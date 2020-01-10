@@ -288,6 +288,8 @@ Backward-incompatible changes
     :class:`~scrapy.http.Request` objects instead of arbitrary Python data
     structures.
 
+*   This version of scrapy breaks custom schedulers 
+
 See also :ref:`1.7-deprecation-removals` below.
 
 
