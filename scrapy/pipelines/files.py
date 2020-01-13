@@ -21,7 +21,7 @@ from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaselessDict, get_item_field, set_item_field
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import is_dataclass_instance, to_bytes
@@ -457,10 +457,7 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
-        if is_dataclass_instance(item):
-            urls = getattr(item, self.files_urls_field, [])
-        else:
-            urls = item.get(self.files_urls_field, [])
+        urls = get_item_field(item, self.files_urls_field, [])
         return [Request(u) for u in urls]
 
     def file_downloaded(self, response, request, info):
@@ -472,12 +469,13 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        result = [x for ok, x in results if ok]
-        if is_dataclass_instance(item):
-            if self.files_result_field in (f.name for f in dataclass_fields(item)):
-                setattr(item, self.files_result_field, result)
-        elif isinstance(item, dict) or self.files_result_field in item.fields:
-            item[self.files_result_field] = [x for ok, x in results if ok]
+        if (
+            is_dataclass_instance(item)
+            and self.files_result_field in (f.name for f in dataclass_fields(item))
+            or isinstance(item, dict)
+            or self.files_result_field in item.fields
+        ):
+            set_item_field(item, self.files_result_field, [x for ok, x in results if ok])
         return item
 
     def file_path(self, request, response=None, info=None):

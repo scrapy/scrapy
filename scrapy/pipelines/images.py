@@ -14,6 +14,7 @@ from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
+from scrapy.utils.datatypes import get_item_field, set_item_field
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import is_dataclass_instance, to_bytes
 
@@ -158,19 +159,17 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        if is_dataclass_instance(item):
-            urls = getattr(item, self.images_urls_field, [])
-        else:
-            urls = item.get(self.images_urls_field, [])
+        urls = get_item_field(item, self.images_urls_field, [])
         return [Request(u) for u in urls]
 
     def item_completed(self, results, item, info):
-        result = [x for ok, x in results if ok]
-        if is_dataclass_instance(item):
-            if self.images_result_field in (f.name for f in dataclass_fields(item)):
-                setattr(item, self.images_result_field, result)
-        elif isinstance(item, dict) or self.images_result_field in item.fields:
-            item[self.images_result_field] = [x for ok, x in results if ok]
+        if (
+            is_dataclass_instance(item)
+            and self.images_result_field in (f.name for f in dataclass_fields(item))
+            or isinstance(item, dict)
+            or self.images_result_field in item.fields
+        ):
+            set_item_field(item, self.images_result_field, [x for ok, x in results if ok])
         return item
 
     def file_path(self, request, response=None, info=None):

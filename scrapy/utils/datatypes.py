@@ -12,6 +12,7 @@ import weakref
 from collections.abc import Mapping
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.python import is_dataclass_instance
 
 
 class MultiValueDictKeyError(KeyError):
@@ -291,3 +292,23 @@ class SequenceExclude(object):
 
     def __contains__(self, item):
         return item not in self.seq
+
+
+def get_item_field(item, field_name, default=None):
+    """
+    Access item fields on both "regular" and dataclass-based items
+    """
+    if is_dataclass_instance(item):
+        return getattr(item, field_name, default)
+    else:
+        return item.get(field_name, default)
+
+
+def set_item_field(item, field_name, value):
+    """
+    Set item fields on both "regular" and dataclass-based items
+    """
+    if is_dataclass_instance(item):
+        setattr(item, field_name, value)
+    else:
+        item[field_name] = value
