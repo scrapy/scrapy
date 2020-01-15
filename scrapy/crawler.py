@@ -320,7 +320,6 @@ class CrawlerProcess(CrawlerRunner):
         return CachingHostnameResolver(
             resolver=reactor.nameResolver,
             cache_size=cache_size,
-            timeout=self.settings.getfloat('DNS_TIMEOUT'),
         )
 
     def _graceful_stop_reactor(self):
