@@ -10,7 +10,7 @@ dnscache = LocalCache(10000)
 
 
 @implementer(IHostnameResolver)
-class CachingHostnameResolver(object):
+class CachingHostnameResolver:
 
     def __init__(self, resolver, cache_size, timeout):
         self.resolver = resolver
@@ -25,15 +25,21 @@ class CachingHostnameResolver(object):
 
             def __init__(self, timeout):
                 self.timeout = timeout
+                self.resolved = False
 
             def resolutionBegan(self, resolution):
                 super(CachingResolutionReceiver, self).resolutionBegan(resolution)
                 self.resolution = resolution
                 # reactor.callLater(self.timeout, resolution.cancel)
 
+            def addressResolved(self, address):
+                super(CachingResolutionReceiver, self).addressResolved(address)
+                self.resolved = True
+
             def resolutionComplete(self):
                 super(CachingResolutionReceiver, self).resolutionComplete()
-                dnscache[hostName] = self.resolution
+                if self.resolved:
+                    dnscache[hostName] = self.resolution
 
         try:
             result = dnscache[hostName]
