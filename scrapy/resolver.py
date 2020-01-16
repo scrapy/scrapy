@@ -19,6 +19,7 @@ class CachingThreadedResolver(ThreadedResolver):
     def __init__(self, reactor, cache_size, timeout):
         super(CachingThreadedResolver, self).__init__(reactor)
         dnscache.limit = cache_size
+        self.reactor = reactor
         self.timeout = timeout
 
     @classmethod
@@ -29,8 +30,8 @@ class CachingThreadedResolver(ThreadedResolver):
             cache_size = 0
         return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
 
-    def install_on_reactor(self, reactor):
-        reactor.installResolver(self)
+    def install_on_reactor(self,):
+        self.reactor.installResolver(self)
 
     def getHostByName(self, name, timeout=None):
         if name in dnscache:
@@ -58,7 +59,8 @@ class CachingHostnameResolver:
     """
 
     def __init__(self, reactor, cache_size):
-        self.resolver = reactor.nameResolver
+        self.reactor = reactor
+        self.original_resolver = reactor.nameResolver
         dnscache.limit = cache_size
 
     @classmethod
@@ -69,8 +71,8 @@ class CachingHostnameResolver:
             cache_size = 0
         return cls(reactor, cache_size)
 
-    def install_on_reactor(self, reactor):
-        reactor.installNameResolver(self)
+    def install_on_reactor(self):
+        self.reactor.installNameResolver(self)
 
     def resolveHostName(self, resolutionReceiver, hostName, portNumber=0,
                         addressTypes=None, transportSemantics='TCP'):
@@ -95,7 +97,7 @@ class CachingHostnameResolver:
         try:
             result = dnscache[hostName]
         except KeyError:
-            result = self.resolver.resolveHostName(
+            result = self.original_resolver.resolveHostName(
                 CachingResolutionReceiver(),
                 hostName,
                 portNumber,
