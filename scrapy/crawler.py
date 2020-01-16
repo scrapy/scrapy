@@ -11,7 +11,6 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
-from scrapy.resolver import CachingHostnameResolver
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
