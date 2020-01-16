@@ -788,6 +788,18 @@ TextResponse objects
 
             response.css('p')
 
+    .. method:: TextResponse.re(self, regex, replace_entities=True)
+
+        A shortcut to ``TextResponse.selector.re(regex, replace_entities=True)``::
+
+            response.re(r'-(\w+)')
+
+    .. method:: TextResponse.re_first(self, regex, default=None, replace_entities=True)
+
+        A shortcut to ``TextResponse.selector.re_first(regex, default=None, replace_entities=True)``::
+
+            response.re_first(r'-(\w+)', default='')
+
     .. automethod:: TextResponse.follow
 
     .. method:: TextResponse.body_as_unicode()

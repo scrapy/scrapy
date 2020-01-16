@@ -117,6 +117,18 @@ class TextResponse(Response):
     def css(self, query):
         return self.selector.css(query)
 
+    def re(self, regex, replace_entities=True):
+        # type: (Pattern) -> list
+        return self.selector.re(regex, replace_entities=replace_entities)
+
+    def re_first(self, regex, default=None, replace_entities=True):
+        # type: (Pattern) -> str
+        return self.selector.re_first(
+            regex,
+            default=default,
+            replace_entities=replace_entities
+        )
+
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
                dont_filter=False, errback=None, cb_kwargs=None):

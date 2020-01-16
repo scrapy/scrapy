@@ -358,9 +358,18 @@ class TextResponseTest(BaseResponseTest):
             response.css("title::text").getall(),
             response.selector.css("title::text").getall(),
         )
+        self.assertEqual(
+            response.re(r'Some\s+(\w+)<'),
+            response.selector.re(r'Some\s+(\w+)<')
+        )
+
+        self.assertEqual(
+            response.re_first(r'Some\s+(\w+)<'),
+            response.selector.re_first(r'Some\s+(\w+)<')
+        )
 
     def test_selector_shortcuts_kwargs(self):
-        body = b"<html><head><title>Some page</title><body><p class=\"content\">A nice paragraph.</p></body></html>"
+        body = b"<html><head><title>Some page &gt;</title><body><p class=\"content\">A nice paragraph.</p></body></html>"
         response = self.response_class("http://www.example.com", body=body)
 
         self.assertEqual(
@@ -371,6 +380,21 @@ class TextResponseTest(BaseResponseTest):
             response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
                 pclass="content", pcount=1).getall(),
             response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
+        )
+
+        self.assertEqual(
+            response.re(r'Some\s+(.+?)<'),
+            ['page >']
+        )
+
+        self.assertEqual(
+            response.re(r'Some\s+(.+?)<', replace_entities=False),
+            ['page &gt;']
+        )
+
+        self.assertEqual(
+            response.re_first(r'a(xxx)b<', default='not present'),
+            'not present'
         )
 
     def test_urljoin_with_base_url(self):
