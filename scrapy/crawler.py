@@ -305,22 +305,12 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        reactor.installNameResolver(self._get_dns_resolver())
+        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        resolver_class.install(reactor, self.settings)
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _get_dns_resolver(self):
-        from twisted.internet import reactor
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = self.settings.getint('DNSCACHE_SIZE')
-        else:
-            cache_size = 0
-        return CachingHostnameResolver(
-            resolver=reactor.nameResolver,
-            cache_size=cache_size,
-        )
 
     def _graceful_stop_reactor(self):
         d = self.stop()
