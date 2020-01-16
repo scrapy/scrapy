@@ -4,6 +4,7 @@ from twisted.internet.interfaces import IHostnameResolver, IResolutionReceiver, 
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
+from scrapy.utils.misc import create_instance
 
 
 # TODO: cache misses
@@ -13,22 +14,26 @@ dnscache = LocalCache(10000)
 @implementer(IResolverSimple)
 class CachingThreadedResolver(ThreadedResolver):
     """
-    Default caching resolver. IPv4 only, supports setting a timeout value for DNS requests
+    Default caching resolver. IPv4 only, supports setting a timeout value for DNS requests.
     """
-
-    @classmethod
-    def install(cls, reactor, settings):
-        if settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = settings.getint('DNSCACHE_SIZE')
-        else:
-            cache_size = 0
-        resolver = cls(reactor, cache_size, settings.getfloat('DNS_TIMEOUT'))
-        reactor.installResolver(resolver)
 
     def __init__(self, reactor, cache_size, timeout):
         super(CachingThreadedResolver, self).__init__(reactor)
         dnscache.limit = cache_size
         self.timeout = timeout
+
+    @classmethod
+    def from_crawler(cls, crawler, reactor):
+        if crawler.settings.getbool('DNSCACHE_ENABLED'):
+            cache_size = crawler.settings.getint('DNSCACHE_SIZE')
+        else:
+            cache_size = 0
+        return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
+
+    @classmethod
+    def install_on_reactor(cls, reactor, crawler):
+        resolver = create_instance(cls, None, crawler, reactor=reactor)
+        reactor.installResolver(resolver)
 
     def getHostByName(self, name, timeout=None):
         if name in dnscache:
@@ -51,21 +56,26 @@ class CachingThreadedResolver(ThreadedResolver):
 @implementer(IHostnameResolver)
 class CachingHostnameResolver:
     """
-    Experimental caching resolver, supporting IPv4 and IPv6
+    Experimental caching resolver. Resolves IPv4 and IPv6 addresses,
+    does not support setting a timeout value for DNS requests.
     """
 
+    def __init__(self, reactor, cache_size):
+        self.resolver = reactor.nameResolver
+        dnscache.limit = cache_size
+
     @classmethod
-    def install(cls, reactor, settings):
-        if settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = settings.getint('DNSCACHE_SIZE')
+    def from_crawler(cls, crawler, reactor):
+        if crawler.settings.getbool('DNSCACHE_ENABLED'):
+            cache_size = crawler.settings.getint('DNSCACHE_SIZE')
         else:
             cache_size = 0
-        resolver = cls(reactor.nameResolver, cache_size)
-        reactor.installNameResolver(resolver)
+        return cls(reactor, cache_size)
 
-    def __init__(self, resolver, cache_size):
-        self.resolver = resolver
-        dnscache.limit = cache_size
+    @classmethod
+    def install_on_reactor(cls, reactor, crawler):
+        resolver = create_instance(cls, None, crawler, reactor=reactor)
+        reactor.installNameResolver(resolver)
 
     def resolveHostName(self, resolutionReceiver, hostName, portNumber=0,
                         addressTypes=None, transportSemantics='TCP'):
