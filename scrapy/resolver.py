@@ -4,7 +4,6 @@ from twisted.internet.interfaces import IHostnameResolver, IResolutionReceiver, 
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
-from scrapy.utils.misc import create_instance
 
 
 # TODO: cache misses
@@ -30,10 +29,8 @@ class CachingThreadedResolver(ThreadedResolver):
             cache_size = 0
         return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
 
-    @classmethod
-    def install_on_reactor(cls, reactor, crawler):
-        resolver = create_instance(cls, None, crawler, reactor=reactor)
-        reactor.installResolver(resolver)
+    def install_on_reactor(self, reactor):
+        reactor.installResolver(self)
 
     def getHostByName(self, name, timeout=None):
         if name in dnscache:
@@ -72,10 +69,8 @@ class CachingHostnameResolver:
             cache_size = 0
         return cls(reactor, cache_size)
 
-    @classmethod
-    def install_on_reactor(cls, reactor, crawler):
-        resolver = create_instance(cls, None, crawler, reactor=reactor)
-        reactor.installNameResolver(resolver)
+    def install_on_reactor(self, reactor):
+        reactor.installNameResolver(self)
 
     def resolveHostName(self, resolutionReceiver, hostName, portNumber=0,
                         addressTypes=None, transportSemantics='TCP'):

@@ -21,7 +21,7 @@ from scrapy.utils.log import (
     log_scrapy_info,
     LogCounterHandler,
 )
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
@@ -305,7 +305,8 @@ class CrawlerProcess(CrawlerRunner):
             d.addBoth(self._stop_reactor)
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        resolver_class.install_on_reactor(reactor, crawler=self)
+        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        resolver.install_on_reactor(reactor)
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
