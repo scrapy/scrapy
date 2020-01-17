@@ -315,11 +315,11 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertTrue(any(
+        self.assertTrue(any([
             "twisted.internet.error.ConnectionRefusedError" in log,
             "twisted.internet.error.ConnectError" in log,
-        ))
-        self.assertTrue(any(
+        ]))
+        self.assertTrue(any([
             "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
             "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
-        ))
+        ]))
