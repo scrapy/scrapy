@@ -19,7 +19,6 @@ class CachingThreadedResolver(ThreadedResolver):
     def __init__(self, reactor, cache_size, timeout):
         super(CachingThreadedResolver, self).__init__(reactor)
         dnscache.limit = cache_size
-        self.reactor = reactor
         self.timeout = timeout
 
     @classmethod
