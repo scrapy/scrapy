@@ -306,14 +306,20 @@ class CrawlerProcessSubprocess(unittest.TestCase):
         self.assertIn('Spider closed (finished)', log)
         self.assertIn("DEBUG: Asyncio reactor is installed", log)
 
-    def test_default_name_resolver(self):
+    def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
         self.assertIn("twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.", log)
         self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
 
-    def test_alternative_name_resolver(self):
+    def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("twisted.internet.error.ConnectionRefusedError: Connection was refused by other side: 111: Connection refused.", log)
-        self.assertIn("'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1,", log)
+        self.assertTrue(any(
+            "twisted.internet.error.ConnectionRefusedError" in log,
+            "twisted.internet.error.ConnectError" in log,
+        ))
+        self.assertTrue(any(
+            "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
+            "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
+        ))
