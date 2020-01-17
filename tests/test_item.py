@@ -23,6 +23,9 @@ class ItemTest(unittest.TestCase):
         i['name'] = u'name'
         self.assertEqual(i['name'], u'name')
 
+        del i['name']
+        self.assertRaises(KeyError, i.__getitem__, 'name')
+
     def test_init(self):
         class TestItem(Item):
             name = Field()
@@ -170,6 +173,34 @@ class ItemTest(unittest.TestCase):
         self.assertEqual(E(load='X')['load'], 'X')
         self.assertEqual(E.fields, {'load': {'default': 'C'},
             'save': {'default': 'C'}})
+
+        class TestItem(Item):
+            name = Field()
+
+        class ChildItem(TestItem):
+            name = 'John'
+            age = Field()
+
+        item = ChildItem()
+        self.assertEqual(item.get('name'), 'John')
+        self.assertRaises(KeyError, item.__getitem__, 'age')
+
+        class GrandChildItem(ChildItem):
+            age = 20
+            eye_color = Field()
+
+        item = GrandChildItem()
+        self.assertEqual(item.get('name'), 'John')
+        self.assertEqual(item.get('age'), 20)
+        self.assertRaises(KeyError, item.__getitem__, 'eye_color')
+
+        class GrandGrandChildItem(GrandChildItem):
+            pass
+
+        item = GrandGrandChildItem()
+        self.assertEqual(item.get('name'), 'John')
+        self.assertEqual(item.get('age'), 20)
+        self.assertRaises(KeyError, item.__getitem__, 'eye_color')
 
     def test_metaclass_multiple_inheritance_diamond(self):
         class A(Item):

@@ -46,11 +46,16 @@ class ItemMeta(ABCMeta):
         new_bases = tuple(base._class for base in bases if hasattr(base, '_class'))
         _class = super(ItemMeta, mcs).__new__(mcs, 'x_' + class_name, new_bases, attrs)
 
-        fields = getattr(_class, 'fields', {})
+        fields = {}
+        for base in bases:
+            fields.update(getattr(base, 'fields', {}))
+        fields.update(getattr(_class, 'fields', {}))
         new_attrs = {}
         for n in dir(_class):
             v = getattr(_class, n)
             if isinstance(v, Field):
+                fields[n] = v
+            elif n in fields:
                 fields[n] = v
             elif n in attrs:
                 new_attrs[n] = attrs[n]
@@ -59,6 +64,7 @@ class ItemMeta(ABCMeta):
         new_attrs['_class'] = _class
         if classcell is not None:
             new_attrs['__classcell__'] = classcell
+            
         return super(ItemMeta, mcs).__new__(mcs, class_name, bases, new_attrs)
 
 
@@ -75,7 +81,10 @@ class DictItem(MutableMapping, BaseItem):
 
     def __init__(self, *args, **kwargs):
         self._values = {}
-        if args or kwargs:  # avoid creating dict for most common case
+        for k, v in self.fields.items():
+            if v:
+                self[k] = v
+        if args or kwargs: # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
