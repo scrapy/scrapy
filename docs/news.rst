@@ -288,7 +288,13 @@ Backward-incompatible changes
     :class:`~scrapy.http.Request` objects instead of arbitrary Python data
     structures.
 
-*   This version of scrapy breaks custom schedulers 
+*   An additional `crawler` paramter has been added to the `__init__` method of
+    the `scrapy.core.scheduler.Scheduler` class. Custom scheduler subclassses 
+    don't accept binary parameters in their `__init__` method. This version of
+    scrapy breaks custom schedulers.
+
+    For more information:
+    Refer to: https://docs.scrapy.org/en/latest/topics/settings.html#scheduler
 
 See also :ref:`1.7-deprecation-removals` below.
 
