@@ -1,5 +1,4 @@
 """Download handlers for http and https schemes"""
-import logging
 import asyncio
 
 import aiohttp
@@ -8,10 +7,8 @@ from twisted.internet import defer
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 
-logger = logging.getLogger(__name__)
 
-
-class HTTPDownloadHandler(object):
+class HTTPDownloadHandler:
 
     def __init__(self, settings):
         self.settings = settings
@@ -21,9 +18,11 @@ class HTTPDownloadHandler(object):
 
     async def _download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        headers=list((k.decode('latin1'), v.decode('latin1'))
-                     for k, vs in request.headers.items()
-                     for v in vs)
+        headers = list(
+            (k.decode("latin1"), v.decode("latin1"))
+            for k, vs in request.headers.items()
+            for v in vs
+        )
 
         jar = aiohttp.DummyCookieJar()
         async with aiohttp.ClientSession(auto_decompress=False, cookie_jar=jar) as session:
