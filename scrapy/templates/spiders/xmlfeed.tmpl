@@ -10,8 +10,8 @@ class $classname(XMLFeedSpider):
     itertag = 'item' # change it accordingly
 
     def parse_node(self, response, selector):
-        i = {}
-        #i['url'] = selector.select('url').extract()
-        #i['name'] = selector.select('name').extract()
-        #i['description'] = selector.select('description').extract()
-        return i
+        item = {}
+        #item['url'] = selector.select('url').get()
+        #item['name'] = selector.select('name').get()
+        #item['description'] = selector.select('description').get()
+        return item

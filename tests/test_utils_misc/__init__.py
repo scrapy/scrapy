@@ -1,13 +1,14 @@
 import sys
 import os
 import unittest
+from unittest import mock
 
 from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, walk_modules
+from scrapy.utils.misc import arg_to_iter, create_instance, load_object, set_environ, walk_modules
 
-from tests import mock
 
 __doctests__ = ['scrapy.utils.misc']
+
 
 class UtilsMiscTestCase(unittest.TestCase):
 
@@ -73,7 +74,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(list(arg_to_iter(100)), [100])
         self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1, 2, 3])), [1, 2, 3])
-        self.assertEqual(list(arg_to_iter({'a':1})), [{'a': 1}])
+        self.assertEqual(list(arg_to_iter({'a': 1})), [{'a': 1}])
         self.assertEqual(list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")])
 
     def test_create_instance(self):
@@ -129,6 +130,19 @@ class UtilsMiscTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             create_instance(m, None, None)
+
+    def test_set_environ(self):
+        assert os.environ.get('some_test_environ') is None
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') is None
+
+        os.environ['some_test_environ'] = 'test'
+        assert os.environ.get('some_test_environ') == 'test'
+        with set_environ(some_test_environ='test_value'):
+            assert os.environ.get('some_test_environ') == 'test_value'
+        assert os.environ.get('some_test_environ') == 'test'
+
 
 if __name__ == "__main__":
     unittest.main()

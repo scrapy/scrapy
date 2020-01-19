@@ -29,7 +29,7 @@ class MediaDownloadSpider(SimpleSpider):
                     for href in response.xpath('''
                         //table[thead/tr/th="Filename"]
                             /tbody//a/@href
-                        ''').extract()],
+                        ''').getall()],
         }
         yield item
 

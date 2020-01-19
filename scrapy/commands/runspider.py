@@ -60,14 +60,13 @@ class Command(ScrapyCommand):
             else:
                 self.settings.set('FEED_URI', opts.output, priority='cmdline')
             feed_exporters = without_none_values(self.settings.getwithbase('FEED_EXPORTERS'))
-            valid_output_formats = feed_exporters.keys()
             if not opts.output_format:
                 opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
-            if opts.output_format not in valid_output_formats:
+            if opts.output_format not in feed_exporters:
                 raise UsageError("Unrecognized output format '%s', set one"
                                  " using the '-t' switch or as a file extension"
                                  " from the supported list %s" % (opts.output_format,
-                                                                  tuple(valid_output_formats)))
+                                                                  tuple(feed_exporters)))
             self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
 
     def run(self, args, opts):

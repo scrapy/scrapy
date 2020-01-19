@@ -30,7 +30,7 @@ In case of status 200 request, response.headers will come with two keys:
 
 import re
 from io import BytesIO
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
@@ -59,8 +59,11 @@ class ReceivedDataProtocol(Protocol):
     def close(self):
         self.body.close() if self.filename else self.body.seek(0)
 
-_CODE_RE = re.compile("\d+")
+_CODE_RE = re.compile(r"\d+")
+
+
 class FTPDownloadHandler(object):
+    lazy = False
 
     CODE_MAPPING = {
         "550": 404,
@@ -109,4 +112,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=to_bytes(message))
         raise result.type(result.value)
-

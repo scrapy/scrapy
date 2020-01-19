@@ -1,24 +1,5 @@
-import sys
-import six
-from six.moves import copyreg
+import copyreg
 
-if sys.version_info[0] == 2:
-    from urlparse import urlparse
-
-    # workaround for https://bugs.python.org/issue7904 - Python < 2.7
-    if urlparse('s3://bucket/key').netloc != 'bucket':
-        from urlparse import uses_netloc
-        uses_netloc.append('s3')
-
-    # workaround for https://bugs.python.org/issue9374 - Python < 2.7.4
-    if urlparse('s3://bucket/key?key=value').query != 'key=value':
-        from urlparse import uses_query
-        uses_query.append('s3')
-
-# Enable asyncio reactor
-if six.PY3:
-    from twisted.internet import asyncioreactor
-    asyncioreactor.install()
 
 # Undo what Twisted's perspective broker adds to pickle register
 # to prevent bugs like Twisted#7989 while serializing requests

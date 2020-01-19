@@ -1,10 +1,13 @@
 import re
 import unittest
+from warnings import catch_warnings
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
+from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from tests import get_testdata
 
@@ -288,7 +291,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
 
             def process_value(value):
-                m = re.search("javascript:goToPage\('(.*?)'", value)
+                m = re.search(r"javascript:goToPage\('(.*?)'", value)
                 if m:
                     return m.group(1)
 
@@ -322,7 +325,7 @@ class Base:
                 Link(url=page4_url, text=u'href with whitespaces'),
             ])
 
-            lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+            lx = self.extractor_cls(attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=())
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
@@ -360,7 +363,7 @@ class Base:
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
             ])
 
-            lx = self.extractor_cls(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+            lx = self.extractor_cls(tags=("a", "img"), attrs=("href", "src"), deny_extensions=())
             self.assertEqual(lx.extract_links(response), [
                 Link(url='http://example.com/sample2.html', text=u'sample 2'),
                 Link(url='http://example.com/sample2.jpg', text=u''),
@@ -479,6 +482,59 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
         ])
 
+    def test_link_restrict_text(self):
+        html = b"""
+        <a href="http://example.org/item1.html">Pic of a cat</a>
+        <a href="http://example.org/item2.html">Pic of a dog</a>
+        <a href="http://example.org/item3.html">Pic of a cow</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        # Simple text inclusion test
+        lx = self.extractor_cls(restrict_text='dog')
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
+        ])
+        # Unique regex test
+        lx = self.extractor_cls(restrict_text=r'of.*dog')
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
+        ])
+        # Multiple regex test
+        lx = self.extractor_cls(restrict_text=[r'of.*dog', r'of.*cat'])
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Pic of a cat', nofollow=False),
+            Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
+        ])
+
     @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
+
+    def test_filteringlinkextractor_deprecation_warning(self):
+        """Make sure the FilteringLinkExtractor deprecation warning is not
+        issued for LxmlLinkExtractor"""
+        with catch_warnings(record=True) as warnings:
+            LxmlLinkExtractor()
+            self.assertEqual(len(warnings), 0)
+
+            class SubclassedLxmlLinkExtractor(LxmlLinkExtractor):
+                pass
+
+            SubclassedLxmlLinkExtractor()
+            self.assertEqual(len(warnings), 0)
+
+
+class FilteringLinkExtractorTest(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        args = [None] * 10
+        with catch_warnings(record=True) as warnings:
+            FilteringLinkExtractor(*args)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedFilteringLinkExtractor(FilteringLinkExtractor):
+                pass
+            SubclassedFilteringLinkExtractor(*args)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)

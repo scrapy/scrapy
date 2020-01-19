@@ -11,6 +11,7 @@ from twisted.python import log as twisted_log
 import scrapy
 from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import is_asyncio_reactor_installed
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -32,7 +33,7 @@ class TopLevelFormatter(logging.Filter):
 
     Since it can't be set for just one logger (it won't propagate for its
     children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
+    ``loggers`` list where it should act.
     """
 
     def __init__(self, loggers=None):
@@ -148,6 +149,8 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
+    if is_asyncio_reactor_installed():
+        logger.debug("Asyncio reactor is installed")
 
 
 class StreamLogger(object):

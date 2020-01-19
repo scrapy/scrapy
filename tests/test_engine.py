@@ -10,9 +10,10 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-from __future__ import print_function
-import sys, os, re
-from six.moves.urllib.parse import urlparse
+import os
+import re
+import sys
+from urllib.parse import urlparse
 
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
@@ -40,9 +41,9 @@ class TestSpider(Spider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
 
-    itemurl_re = re.compile("item\d+.html")
-    name_re = re.compile("<h1>(.*?)</h1>", re.M)
-    price_re = re.compile(">Price: \$(.*?)<", re.M)
+    itemurl_re = re.compile(r"item\d+.html")
+    name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
+    price_re = re.compile(r">Price: \$(.*?)<", re.M)
 
     item_cls = TestItem
 
@@ -90,8 +91,8 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
-            % port.getHost().port)
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
+              % port.getHost().port)
     return port
 
 
@@ -103,6 +104,7 @@ class CrawlerRun(object):
         self.respplug = []
         self.reqplug = []
         self.reqdropped = []
+        self.reqreached = []
         self.itemerror = []
         self.itemresp = []
         self.signals_catched = {}
@@ -124,6 +126,7 @@ class CrawlerRun(object):
         self.crawler.signals.connect(self.item_error, signals.item_error)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
+        self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(start_urls=start_urls)
         self.spider = self.crawler.spider
@@ -155,6 +158,9 @@ class CrawlerRun(object):
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
 
+    def request_reached(self, request, spider):
+        self.reqreached.append((request, spider))
+
     def request_dropped(self, request, spider):
         self.reqdropped.append((request, spider))
 
@@ -173,7 +179,6 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-
         for spider in TestSpider, DictItemsSpider:
             self.run = CrawlerRun(spider)
             yield self.run.run()
@@ -183,11 +188,15 @@ class EngineTest(unittest.TestCase):
             self._assert_scraped_items()
             self._assert_signals_catched()
 
+    @defer.inlineCallbacks
+    def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
         self._assert_scheduled_requests(urls_to_visit=7)
         self._assert_dropped_requests()
 
+    @defer.inlineCallbacks
+    def test_crawler_itemerror(self):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
@@ -212,6 +221,8 @@ class EngineTest(unittest.TestCase):
         responses_count = len(self.run.respplug)
         self.assertEqual(scheduled_requests_count,
                          dropped_requests_count + responses_count)
+        self.assertEqual(len(self.run.reqreached),
+                         responses_count)
 
     def _assert_dropped_requests(self):
         self.assertEqual(len(self.run.reqdropped), 1)
@@ -219,6 +230,7 @@ class EngineTest(unittest.TestCase):
     def _assert_downloaded_responses(self):
         # response tests
         self.assertEqual(8, len(self.run.respplug))
+        self.assertEqual(8, len(self.run.reqreached))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
@@ -262,7 +274,6 @@ class EngineTest(unittest.TestCase):
                          self.run.signals_catched[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_catched[signals.spider_idle])
-        self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
 

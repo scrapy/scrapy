@@ -30,6 +30,8 @@ Python `import search path`_.
 
 .. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
 
+.. _populating-settings:
+
 Populating the settings
 =======================
 
@@ -158,6 +160,27 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: ASYNCIO_REACTOR
+
+ASYNCIO_REACTOR
+---------------
+
+Default: ``False``
+
+Whether to install and require the Twisted reactor that uses the asyncio loop.
+
+When this option is set to ``True``, Scrapy will require
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
+install this reactor if no reactor is installed yet, such as when using the
+``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
+manually. If a different reactor is installed outside Scrapy, it will raise an
+exception.
+
+The default value for this option is currently ``False`` to maintain backward
+compatibility and avoid possible problems caused by using a different Twisted
+reactor.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -178,35 +201,45 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
-.. setting:: BOT_NAME
+.. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
 ----------------
 
 Default: ``None``
 
-Endpoint URL used for S3-like self-hosted storage. Storage like Minio or s3.scality.
+Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 
-.. setting:: AWS_ENDPOINT_URL
+.. setting:: AWS_USE_SSL
 
 AWS_USE_SSL
 -----------
 
 Default: ``None``
 
-Use this option if you want to disable SSL connection for communication with S3 or S3-like storage.
-By default SSL will be used.
+Use this option if you want to disable SSL connection for communication with
+S3 or S3-like storage. By default SSL will be used.
 
-.. setting:: AWS_USE_SSL
+.. setting:: AWS_VERIFY
 
 AWS_VERIFY
 ----------
 
 Default: ``None``
 
-Verify SSL connection between Scrapy and S3 or S3-like storage. By default SSL verification will occur.
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default
+SSL verification will occur.
 
-.. setting:: AWS_VERIFY
+.. setting:: AWS_REGION_NAME
+
+AWS_REGION_NAME
+---------------
+
+Default: ``None``
+
+The name of the region associated with the AWS client.
+
+.. setting:: BOT_NAME
 
 BOT_NAME
 --------
@@ -214,8 +247,7 @@ BOT_NAME
 Default: ``'scrapybot'``
 
 The name of the bot implemented by this Scrapy project (also known as the
-project name). This will be used to construct the User-Agent by default, and
-also for logging.
+project name). This name will be used for the logging too.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
@@ -318,16 +350,16 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the request priority based on its depth:
+An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
+a :class:`~scrapy.http.Request` based on its depth.
 
-- if zero (default), no priority adjustment is made from depth
-- **a positive value will decrease the priority, i.e. higher depth
-  requests will be processed later** ; this is commonly used when doing
-  breadth-first crawls (BFO)
-- a negative value will increase priority, i.e., higher depth requests
-  will be processed sooner (DFO)
+The priority of a request is adjusted as follows::
 
-See also: :ref:`faq-bfo-dfo` about tuning Scrapy for BFO or DFO.
+    request.priority = request.priority - ( depth * DEPTH_PRIORITY )
+
+As depth increases, positive values of ``DEPTH_PRIORITY`` decrease request
+priority (BFO), while negative values increase request priority (DFO). See
+also :ref:`faq-bfo-dfo`.
 
 .. note::
 
@@ -425,9 +457,29 @@ or even enable client-side authentication (and various other things).
     which uses the platform's certificates to validate remote endpoints.
     **This is only available if you use Twisted>=14.0.**
 
-If you do use a custom ContextFactory, make sure it accepts a ``method``
-parameter at init (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`).
+If you do use a custom ContextFactory, make sure its ``__init__`` method
+accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
+parameter (``bool``) and a ``tls_ciphers`` parameter (see
+:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
+
+DOWNLOADER_CLIENT_TLS_CIPHERS
+-----------------------------
+
+Default: ``'DEFAULT'``
+
+Use  this setting to customize the TLS/SSL ciphers used by the default
+HTTP/1.1 downloader.
+
+The setting should contain a string in the `OpenSSL cipher list format`_,
+these ciphers will be used as client ciphers. Changing this setting may be
+necessary to access certain HTTPS websites: for example, you may need to use
+``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
+specific cipher that is not included in ``DEFAULT`` if a website requires it.
+
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -454,6 +506,20 @@ This setting must be one of these string values:
 
     We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
     or above (Twisted>=14.0 if you can).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+-------------------------------------
+
+Default: ``False``
+
+Setting this to ``True`` will enable DEBUG level messages about TLS connection
+parameters after establishing HTTPS connections. The kind of information logged
+depends on the versions of OpenSSL and pyOpenSSL.
+
+This setting is only used for the default
+:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -525,6 +591,8 @@ amount of time between requests, but uses a random interval between 0.5 * :setti
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
 
+.. _spider-download_delay-attribute:
+
 You can also change this setting per spider by setting ``download_delay``
 spider attribute.
 
@@ -586,7 +654,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: `1073741824` (1024MB)
+Default: ``1073741824`` (1024MB)
 
 The maximum response size (in bytes) that downloader will download.
 
@@ -607,7 +675,7 @@ If you want to disable it set to 0.
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: `33554432` (32MB)
+Default: ``33554432`` (32MB)
 
 The response size (in bytes) that downloader will start to warn.
 
@@ -745,6 +813,7 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
 FTP_PASSWORD
@@ -763,6 +832,7 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://tools.ietf.org/html/rfc1635
 
+.. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
 FTP_USER
@@ -835,7 +905,7 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messsages. Refer to the `Python logging documentation`_ for the whole list of available
+String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
 placeholders.
 
 .. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
@@ -852,6 +922,15 @@ in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the 
 directives.
 
 .. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+
+.. setting:: LOG_FORMATTER
+
+LOG_FORMATTER
+-------------
+
+Default: :class:`scrapy.logformatter.LogFormatter`
+
+The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
 
 .. setting:: LOG_LEVEL
 
@@ -871,7 +950,7 @@ LOG_STDOUT
 Default: ``False``
 
 If ``True``, all standard output (and error) of your process will be redirected
-to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
+to the log. For example if you ``print('hello')`` it will appear in the Scrapy
 log.
 
 .. setting:: LOG_SHORT_NAMES
@@ -883,6 +962,16 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. setting:: LOGSTATS_INTERVAL
+
+LOGSTATS_INTERVAL
+-----------------
+
+Default: ``60.0``
+
+The interval (in seconds) between each logging printout of the stats
+by :class:`~scrapy.extensions.logstats.LogStats`.
 
 .. setting:: MEMDEBUG_ENABLED
 
@@ -1090,6 +1179,28 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
 
+.. setting:: ROBOTSTXT_PARSER
+
+ROBOTSTXT_PARSER
+----------------
+
+Default: ``'scrapy.robotstxt.ProtegoRobotParser'``
+
+The parser backend to use for parsing ``robots.txt`` files. For more information see
+:ref:`topics-dlmw-robots`.
+
+.. setting:: ROBOTSTXT_USER_AGENT
+
+ROBOTSTXT_USER_AGENT
+^^^^^^^^^^^^^^^^^^^^
+
+Default: ``None``
+
+The user agent string to use for matching in the robots.txt file. If ``None``,
+the User-Agent header you are sending with the request or the
+:setting:`USER_AGENT` setting (in that order) will be used for determining
+the user agent to use in the robots.txt file.
+
 .. setting:: SCHEDULER
 
 SCHEDULER
@@ -1142,9 +1253,14 @@ Type of in-memory queue used by scheduler. Other available type is:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-Default: ``'queuelib.PriorityQueue'``
+Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Type of priority queue used by scheduler.
+Type of priority queue used by the scheduler. Another available type is
+``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
+``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
+does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 .. setting:: SPIDER_CONTRACTS
 
@@ -1169,7 +1285,7 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled by default in Scrapy. You should
+A dict containing the Scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
 
@@ -1200,7 +1316,7 @@ SPIDER_LOADER_WARN_ONLY
 
 Default: ``False``
 
-By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
 it will fail loudly if there is any ``ImportError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
@@ -1343,7 +1459,10 @@ USER_AGENT
 
 Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
-The default User-Agent to use when crawling, unless overridden.
+The default User-Agent to use when crawling, unless overridden. This user agent is
+also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
+if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
+there is no overridding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:

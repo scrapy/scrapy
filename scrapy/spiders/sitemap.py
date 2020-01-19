@@ -1,6 +1,5 @@
 import re
 import logging
-import six
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
@@ -22,7 +21,7 @@ class SitemapSpider(Spider):
         super(SitemapSpider, self).__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
-            if isinstance(c, six.string_types):
+            if isinstance(c, str):
                 c = getattr(self, c)
             self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
@@ -30,6 +29,14 @@ class SitemapSpider(Spider):
     def start_requests(self):
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
+
+    def sitemap_filter(self, entries):
+        """This method can be used to filter sitemap entries by their
+        attributes, for example, you can filter locs with lastmod greater
+        than a given date (see docs).
+        """
+        for entry in entries:
+            yield entry
 
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
@@ -43,12 +50,14 @@ class SitemapSpider(Spider):
                 return
 
             s = Sitemap(body)
+            it = self.sitemap_filter(s)
+
             if s.type == 'sitemapindex':
-                for loc in iterloc(s, self.sitemap_alternate_links):
+                for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
-                for loc in iterloc(s, self.sitemap_alternate_links):
+                for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
                             yield Request(loc, callback=c)
@@ -76,7 +85,7 @@ class SitemapSpider(Spider):
 
 
 def regex(x):
-    if isinstance(x, six.string_types):
+    if isinstance(x, str):
         return re.compile(x)
     return x
 

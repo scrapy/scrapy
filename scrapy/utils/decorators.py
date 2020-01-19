@@ -34,6 +34,7 @@ def defers(func):
         return defer.maybeDeferred(func, *a, **kw)
     return wrapped
 
+
 def inthread(func):
     """Decorator to call a function in a thread and return a deferred with the
     result

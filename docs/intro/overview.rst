@@ -26,7 +26,7 @@ http://quotes.toscrape.com, following the pagination::
 
 
     class QuotesSpider(scrapy.Spider):
-        name = "quotes"
+        name = 'quotes'
         start_urls = [
             'http://quotes.toscrape.com/tag/humor/',
         ]
@@ -34,11 +34,11 @@ http://quotes.toscrape.com, following the pagination::
         def parse(self, response):
             for quote in response.css('div.quote'):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.xpath('span/small/text()').extract_first(),
+                    'author': quote.xpath('span/small/text()').get(),
+                    'text': quote.css('span.text::text').get(),
                 }
 
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr("href")').get()
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
 

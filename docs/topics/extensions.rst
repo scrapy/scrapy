@@ -19,7 +19,7 @@ settings, just like any other Scrapy code.
 It is customary for extensions to prefix their settings with their own name, to
 avoid collision with existing (and future) extensions. For example, a
 hypothetic extension to handle `Google Sitemaps`_ would use settings like
-`GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
+``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
 .. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
 
@@ -28,7 +28,7 @@ Loading & activating extensions
 
 Extensions are loaded and activated at startup by instantiating a single
 instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class constructor (``__init__`` method).
+code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
@@ -183,7 +183,7 @@ Telnet console extension
 .. module:: scrapy.extensions.telnet
    :synopsis: Telnet console
 
-.. class:: scrapy.extensions.telnet.TelnetConsole
+.. class:: TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging.
@@ -200,7 +200,7 @@ Memory usage extension
 .. module:: scrapy.extensions.memusage
    :synopsis: Memory usage extension
 
-.. class:: scrapy.extensions.memusage.MemoryUsage
+.. class:: MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
@@ -228,7 +228,7 @@ Memory debugger extension
 .. module:: scrapy.extensions.memdebug
    :synopsis: Memory debugger extension
 
-.. class:: scrapy.extensions.memdebug.MemoryDebugger
+.. class:: MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
@@ -244,7 +244,7 @@ Close spider extension
 .. module:: scrapy.extensions.closespider
    :synopsis: Close spider extension
 
-.. class:: scrapy.extensions.closespider.CloseSpider
+.. class:: CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -317,7 +317,7 @@ StatsMailer extension
 .. module:: scrapy.extensions.statsmailer
    :synopsis: StatsMailer extension
 
-.. class:: scrapy.extensions.statsmailer.StatsMailer
+.. class:: StatsMailer
 
 This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
@@ -333,7 +333,7 @@ Debugging extensions
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.extensions.debug.StackTraceDump
+.. class:: StackTraceDump
 
 Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
 signal is received. The information dumped is the following:
@@ -362,13 +362,13 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 Debugger extension
 ~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.extensions.debug.Debugger
+.. class:: Debugger
 
 Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`.
+For more info see `Debugging in Python`_.
 
 This extension only works on POSIX-compliant platforms (ie. not Windows).
 
