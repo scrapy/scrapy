@@ -152,6 +152,7 @@ class TextResponse(Response):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
 
