@@ -3,8 +3,22 @@ import unittest
 from collections.abc import Mapping, MutableMapping
 
 from scrapy.http import Request
-from scrapy.utils.datatypes import CaselessDict, LocalCache, LocalWeakReferencedCache, SequenceExclude
+from scrapy.item import Field, Item
+from scrapy.utils.datatypes import (
+    CaselessDict,
+    get_item_field,
+    LocalCache,
+    LocalWeakReferencedCache,
+    SequenceExclude,
+    set_item_field,
+)
 from scrapy.utils.python import garbage_collect
+
+try:
+    from dataclasses import make_dataclass, field
+except ImportError:
+    make_dataclass = None
+    field = None
 
 
 __doctests__ = ['scrapy.utils.datatypes']
@@ -317,6 +331,64 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
+
+
+class TestItem(Item):
+    name = Field()
+    value = Field()
+    url = Field()
+
+
+if make_dataclass:
+    DataClassItem = make_dataclass(
+        "DataClassItem",
+        [
+            ("name", list, field(default_factory=str)),
+            ("value", list, field(default_factory=int)),
+            ("url", list, field(default_factory=str)),
+        ],
+    )
+else:
+    DataClassItem = None
+
+
+class GetSetItemFieldsTestCase(unittest.TestCase):
+
+    def test_set_item_field(self):
+        for cls in filter(None, [dict, TestItem, DataClassItem]):
+            item = cls()
+            set_item_field(item, "name", "foobar")
+            set_item_field(item, "url", "https://example.org")
+            self.assertEqual(get_item_field(item, "name"), "foobar")
+            self.assertEqual(get_item_field(item, "url"), "https://example.org")
+
+    def test_get_default(self):
+        for cls in [dict, TestItem]:
+            item = cls()
+            self.assertEqual(get_item_field(item, "value", default=42), 42)
+            self.assertEqual(get_item_field(item, "url", default="nothing"), "nothing")
+
+    @unittest.skipIf(not DataClassItem, "dataclasses module is not available")
+    def test_non_existent_field_dataclass(self):
+        item = DataClassItem()
+        self.assertEqual(get_item_field(item, "nonexistent"), None)
+        self.assertEqual(get_item_field(item, "nonexistent", 123), 123)
+        with self.assertRaises(KeyError):
+            set_item_field(item, "nonexistent", "some value")
+
+    def test_non_existent_field_dict(self):
+        item = dict()
+        self.assertEqual(get_item_field(item, "nonexistent"), None)
+        self.assertEqual(get_item_field(item, "nonexistent", 123), 123)
+        set_item_field(item, "nonexistent", "some value")
+        self.assertEqual(get_item_field(item, "nonexistent"), "some value")
+
+    def test_non_existent_field_item(self):
+        item = TestItem()
+        self.assertEqual(get_item_field(item, "nonexistent"), None)
+        self.assertEqual(get_item_field(item, "nonexistent", 123), 123)
+        with self.assertRaises(KeyError):
+            set_item_field(item, "nonexistent", "some value")
 
 
 if __name__ == "__main__":

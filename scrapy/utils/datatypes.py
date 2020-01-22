@@ -309,6 +309,12 @@ def set_item_field(item, field_name, value):
     Set item fields on both "regular" and dataclass-based items
     """
     if is_dataclass_instance(item):
-        setattr(item, field_name, value)
+        if not hasattr(item, "_field_names"):
+            from dataclasses import fields
+            item._field_names = [f.name for f in fields(item)]
+        if field_name in item._field_names:
+            setattr(item, field_name, value)
+        else:
+            raise KeyError("%s does not support field: %s" % (item.__class__.__name__, field_name))
     else:
         item[field_name] = value
