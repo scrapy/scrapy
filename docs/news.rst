@@ -290,7 +290,7 @@ Backward-incompatible changes
 
 *   An additional `crawler` paramter has been added to the `__init__` method of
     the `scrapy.core.scheduler.Scheduler` class. Custom scheduler subclassses 
-    don't accept binary parameters in their `__init__` method. This version of
+    don't accept arbitrary parameters in their `__init__` method. This version of
     scrapy breaks custom schedulers.
 
     For more information:
