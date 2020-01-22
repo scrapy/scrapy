@@ -269,9 +269,9 @@ class FTPFilesStore(object):
     def persist_file(self, path, buf, info, meta=None, headers=None):     
         path = '%s/%s' % (self.basedir, path)
         return threads.deferToThread(
-            ftp_store_file, path,buf,
-            self.host, self.port,self.username,
-            self.password, self.USE_ACTIVE_MODE
+            ftp_store_file, path=path, file=buf,
+            host=self.host, port=self.port, username=self.username,
+            password=self.password, use_active_mode=self.USE_ACTIVE_MODE
         )
             
     def stat_file(self, path, info):

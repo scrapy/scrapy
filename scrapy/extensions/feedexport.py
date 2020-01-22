@@ -175,9 +175,9 @@ class FTPFeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         ftp_store_file(
-            self.path, file, self.host,
-            self.port, self.username, 
-            self.password, self.use_active_mode
+            path=self.path, file=file, host=self.host,
+            port=self.port, username=self.username, 
+            password=self.password, use_active_mode=self.use_active_mode
         )
 
 
