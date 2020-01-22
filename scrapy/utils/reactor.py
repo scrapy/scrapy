@@ -1,4 +1,9 @@
-from twisted.internet import error
+import asyncio
+from contextlib import suppress
+
+from twisted.internet import asyncioreactor, error
+
+from scrapy.utils.misc import load_object
 
 
 def listen_tcp(portrange, host, factory):
@@ -42,3 +47,31 @@ class CallLaterOnce(object):
     def __call__(self):
         self._call = None
         return self._func(*self._a, **self._kw)
+
+
+def install_twisted_reactor(settings):
+    """
+    Install a (potentially) non-default Twisted reactor. If the ASYNCIO_REACTOR
+    setting is False and the TWISTED_REACTOR is not set, no installation is
+    attempted, resulting in the default reactor for the platform being used.
+
+    The ASYNCIO_REACTOR setting takes precedence over the TWISTED_REACTOR one.
+    """
+    path = settings.get("TWISTED_REACTOR")
+    if (
+        settings.getbool("ASYNCIO_REACTOR")
+        or path == "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+    ):
+        with suppress(error.ReactorAlreadyInstalledError):
+            asyncioreactor.install(asyncio.get_event_loop())
+    elif path:
+        *module, _ = path.split(".")
+        installer_path = module + ["install"]
+        installer = load_object(".".join(installer_path))
+        with suppress(error.ReactorAlreadyInstalledError):
+            installer()
+
+
+def is_asyncio_reactor_installed():
+    from twisted.internet import reactor
+    return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)
