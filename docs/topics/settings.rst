@@ -181,6 +181,8 @@ The default value for this option is currently ``False`` to maintain backward
 compatibility and avoid possible problems caused by using a different Twisted
 reactor.
 
+This setting takes precedence over :setting:`TWISTED_REACTOR`.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -1462,6 +1464,22 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR
+
+TWISTED_REACTOR
+---------------
+
+Default: ``None``
+
+The full path of a specific Twisted reactor, for instance
+:class:`twisted.internet.epollreactor.EPollReactor`. If set to ``None``, Scrapy will
+not attempt to install any specific reactor, and Twisted will choose the default
+one for the current platform.
+See https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
+for additional information.
+
+The :setting:`ASYNCIO_REACTOR` setting takes precedence over this one.
 
 
 .. setting:: URLLENGTH_LIMIT
