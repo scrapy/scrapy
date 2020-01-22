@@ -616,19 +616,24 @@ instance; you still have to yield this Request.
 You can also pass a selector to ``response.follow`` instead of a string;
 this selector should extract necessary attributes::
 
-    href = response.css('li.next a::attr(href)')[0]
-    yield response.follow(href, callback=self.parse)
+    for href in response.css('ul.pager a::attr(href)'):
+        yield response.follow(href, callback=self.parse)
 
 For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
 attribute automatically. So the code can be shortened further::
 
-    a = response.css('li.next a')[0]
-    yield response.follow(a, callback=self.parse)
+    for a in response.css('ul.pager a'):
+        yield response.follow(a, callback=self.parse)
 
 To create multiple requests from an iterable, you can use
 :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead::
 
-    yield from response.follow_all(response.css('a'), callback=self.parse)
+    anchors = response.css('ul.pager a')
+    yield from response.follow_all(anchors, callback=self.parse)
+
+or, shortening it further::
+
+    yield from response.follow_all(css='ul.pager a', callback=self.parse)
 
 
 More examples and patterns
