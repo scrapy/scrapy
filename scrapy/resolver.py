@@ -94,14 +94,12 @@ class CachingHostnameResolver:
                     dnscache[hostName] = self.resolution
 
         try:
-            result = dnscache[hostName]
+            return dnscache[hostName]
         except KeyError:
-            result = self.original_resolver.resolveHostName(
+            return self.original_resolver.resolveHostName(
                 CachingResolutionReceiver(),
                 hostName,
                 portNumber,
                 addressTypes,
                 transportSemantics
             )
-        finally:
-            return result
