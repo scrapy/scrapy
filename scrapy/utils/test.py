@@ -67,7 +67,7 @@ def get_gcs_content_and_delete(bucket, path):
 
 
 def get_ftp_content_and_delete(
-        path, host, port,username,
+        path, host, port, username,
         password, use_active_mode=False):
     from ftplib import FTP
     ftp = FTP()

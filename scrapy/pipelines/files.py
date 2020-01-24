@@ -13,7 +13,6 @@ from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from ftplib import FTP
 from io import BytesIO
-from six.moves.urllib.parse import urlparse
 from urllib.parse import urlparse
 
 from twisted.internet import defer, threads
@@ -276,7 +275,7 @@ class FTPFilesStore(object):
         self.password = u.password or self.FTP_PASSWORD
         self.basedir = u.path.rstrip('/')
 
-    def persist_file(self, path, buf, info, meta=None, headers=None): 
+    def persist_file(self, path, buf, info, meta=None, headers=None):
         path = '%s/%s' % (self.basedir, path)
         return threads.deferToThread(
             ftp_store_file, path=path, file=buf,
