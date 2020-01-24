@@ -19,7 +19,7 @@ class Base:
         escapes_whitespace = False
 
         def setUp(self):
-            body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+            body = get_testdata('link_extractor', 'linkextractor.html')
             self.response = HtmlResponse(url='http://example.com/index', body=body)
 
         def test_urls_type(self):

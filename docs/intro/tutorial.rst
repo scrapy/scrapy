@@ -616,21 +616,25 @@ instance; you still have to yield this Request.
 You can also pass a selector to ``response.follow`` instead of a string;
 this selector should extract necessary attributes::
 
-    for href in response.css('li.next a::attr(href)'):
+    for href in response.css('ul.pager a::attr(href)'):
         yield response.follow(href, callback=self.parse)
 
 For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
 attribute automatically. So the code can be shortened further::
 
-    for a in response.css('li.next a'):
+    for a in response.css('ul.pager a'):
         yield response.follow(a, callback=self.parse)
 
-.. note::
+To create multiple requests from an iterable, you can use
+:meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead::
 
-    ``response.follow(response.css('li.next a'))`` is not valid because
-    ``response.css`` returns a list-like object with selectors for all results,
-    not a single selector. A ``for`` loop like in the example above, or
-    ``response.follow(response.css('li.next a')[0])`` is fine.
+    anchors = response.css('ul.pager a')
+    yield from response.follow_all(anchors, callback=self.parse)
+
+or, shortening it further::
+
+    yield from response.follow_all(css='ul.pager a', callback=self.parse)
+
 
 More examples and patterns
 --------------------------
@@ -647,13 +651,11 @@ this time for scraping author information::
         start_urls = ['http://quotes.toscrape.com/']
 
         def parse(self, response):
-            # follow links to author pages
-            for href in response.css('.author + a::attr(href)'):
-                yield response.follow(href, self.parse_author)
+            author_page_links = response.css('.author + a')
+            yield from response.follow_all(author_links, self.parse_author)
 
-            # follow pagination links
-            for href in response.css('li.next a::attr(href)'):
-                yield response.follow(href, self.parse)
+            pagination_links = response.css('li.next a')
+            yield from response.follow_all(pagination_links, self.parse)
 
         def parse_author(self, response):
             def extract_with_css(query):
@@ -669,8 +671,10 @@ This spider will start from the main page, it will follow all the links to the
 authors pages calling the ``parse_author`` callback for each of them, and also
 the pagination links with the ``parse`` callback as we saw before.
 
-Here we're passing callbacks to ``response.follow`` as positional arguments
-to make the code shorter; it also works for ``scrapy.Request``.
+Here we're passing callbacks to
+:meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` as positional
+arguments to make the code shorter; it also works for
+:class:`~scrapy.http.Request`.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
