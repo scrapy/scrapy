@@ -66,8 +66,9 @@ def get_gcs_content_and_delete(bucket, path):
     return content, acl, blob
 
 
-def get_ftp_content_and_delete(path, host ,port,
-        username, password, use_active_mode=False):
+def get_ftp_content_and_delete(
+        path, host, port,username,
+        password, use_active_mode=False):
     from ftplib import FTP
     ftp = FTP()
     ftp.connect(host, port)
@@ -75,6 +76,7 @@ def get_ftp_content_and_delete(path, host ,port,
     if use_active_mode:
         ftp.set_pasv(False)
     ftp_data = []
+
     def buffer_data(data):
         ftp_data.append(data)
     ftp.retrbinary('RETR %s' % path, buffer_data)
@@ -82,7 +84,7 @@ def get_ftp_content_and_delete(path, host ,port,
     ftp.cwd(dirname)
     ftp.delete(filename)
     return "".join(ftp_data)
-    
+
 
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it

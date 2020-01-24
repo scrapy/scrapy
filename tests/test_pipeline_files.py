@@ -367,6 +367,7 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
 
+
 class TestFTPFileStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
@@ -386,9 +387,11 @@ class TestFTPFileStore(unittest.TestCase):
         self.assertIn('checksum', stat)
         self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
         path = '%s/%s' % (store.basedir, path)
-        content = get_ftp_content_and_delete(path, store.host, store.port,
+        content = get_ftp_content_and_delete(
+            path, store.host, store.port,
             store.username, store.password, store.USE_ACTIVE_MODE)
         self.assertEqual(data.decode(), content)
+
 
 class ItemWithFiles(Item):
     file_urls = Field()
