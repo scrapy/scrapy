@@ -143,7 +143,7 @@ class Response(object_ref):
 
     def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None):
+                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Generator[Request, None, None]
         """
         Return an iterable of :class:`~.Request` instances to follow all links
