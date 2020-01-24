@@ -97,7 +97,6 @@ For Files Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
-
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
@@ -190,7 +189,7 @@ policy::
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
-Because Scrapy uses ``boto`` / ``botocore`` internally you can also use other S3-like storages. Storages like
+Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like
 self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::
 
     AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
@@ -460,8 +459,9 @@ See here the methods that you can override in your custom Files Pipeline:
       * ``success`` is a boolean which is ``True`` if the image was downloaded
         successfully or ``False`` if it failed for some reason
 
-      * ``file_info_or_error`` is a dict containing the following keys (if success
-        is ``True``) or a `Twisted Failure`_ if there was a problem.
+      * ``file_info_or_error`` is a dict containing the following keys (if
+        success is ``True``) or a :exc:`~twisted.python.failure.Failure` if
+        there was a problem.
 
         * ``url`` - the url where the file was downloaded from. This is the url of
           the request returned from the :meth:`~get_media_requests`
@@ -576,7 +576,7 @@ See here the methods that you can override in your custom Images Pipeline:
 Custom Images pipeline example
 ==============================
 
-Here is a full example of the Images Pipeline whose methods are examplified
+Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
@@ -596,5 +596,12 @@ above::
             item['image_paths'] = image_paths
             return item
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+
+To enable your custom media pipeline component you must add its class import path to the
+:setting:`ITEM_PIPELINES` setting, like in the following example::
+
+   ITEM_PIPELINES = {
+       'myproject.pipelines.MyImagesPipeline': 300
+   }
+
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5

@@ -1,6 +1,4 @@
-from __future__ import print_function
 import time
-import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
 
@@ -96,4 +94,3 @@ class Command(ScrapyCommand):
             result.printErrors()
             result.printSummary(start, stop)
             self.exitcode = int(not result.wasSuccessful())
-

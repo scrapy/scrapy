@@ -1,13 +1,13 @@
-import unittest
-import six
 from functools import partial
+import unittest
 
-from scrapy.loader import ItemLoader
-from scrapy.loader.processors import Join, Identity, TakeFirst, \
-    Compose, MapCompose, SelectJmes
-from scrapy.item import Item, Field
-from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
+from scrapy.item import Item, Field
+from scrapy.loader import ItemLoader
+from scrapy.loader.processors import (Compose, Identity, Join,
+                                      MapCompose, SelectJmes, TakeFirst)
+from scrapy.selector import Selector
+
 
 # test items
 class NameItem(Item):
@@ -61,7 +61,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         item = il.load_item()
         assert item is i
-        self.assertEqual(item['summary'], u'lala')
+        self.assertEqual(item['summary'], [u'lala'])
         self.assertEqual(item['name'], [u'marta'])
 
     def test_load_item_using_custom_loader(self):
@@ -155,7 +155,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_get_value(self):
         il = NameItemLoader()
-        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), six.text_type.upper))
+        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), str.upper))
         self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
         self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
 
@@ -256,7 +256,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
-            name_in = MapCompose(TestItemLoader.name_in, six.text_type.swapcase)
+            name_in = MapCompose(TestItemLoader.name_in, str.swapcase)
 
         il = ChildItemLoader()
         il.add_value('name', u'marta')
@@ -264,7 +264,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_in = MapCompose(DefaultedItemLoader.default_input_processor, six.text_type.swapcase)
+            name_in = MapCompose(DefaultedItemLoader.default_input_processor, str.swapcase)
 
         il = ChildDefaultedItemLoader()
         il.add_value('name', u'marta')
@@ -419,43 +419,6 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], u'rabbit.hole')
         self.assertEqual(item['summary'], u'rabbithole')
 
-    def test_create_item_from_dict(self):
-        class TestItem(Item):
-            title = Field()
-
-        class TestItemLoader(ItemLoader):
-            default_item_class = TestItem
-
-        input_item = {'title': 'Test item title 1'}
-        il = TestItemLoader(item=input_item)
-        # Getting output value mustn't remove value from item
-        self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
-        })
-        self.assertEqual(il.get_output_value('title'), 'Test item title 1')
-        self.assertEqual(il.load_item(), {
-            'title': 'Test item title 1',
-        })
-
-        input_item = {'title': 'Test item title 2'}
-        il = TestItemLoader(item=input_item)
-        # Values from dict must be added to item _values
-        self.assertEqual(il._values.get('title'), 'Test item title 2')
-
-        input_item = {'title': [u'Test item title 3', u'Test item 4']}
-        il = TestItemLoader(item=input_item)
-        # Same rules must work for lists
-        self.assertEqual(il._values.get('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-        self.assertEqual(il.get_output_value('title'),
-                         [u'Test item title 3', u'Test item 4'])
-        self.assertEqual(il.load_item(), {
-            'title': [u'Test item title 3', u'Test item 4'],
-        })
-
     def test_error_input_processor(self):
         class TestItem(Item):
             name = Field()
@@ -493,6 +456,220 @@ class BasicItemLoaderTest(unittest.TestCase):
                           [u'marta', u'other'], Compose(float))
 
 
+class InitializationTestMixin(object):
+
+    item_class = None
+
+    def test_keep_single_value(self):
+        """Loaded item should contain values from the initial item"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo']})
+
+    def test_keep_list(self):
+        """Loaded item should contain values from the initial item"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+
+    def test_add_value_singlevalue_singlevalue(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        il.add_value('name', 'bar')
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+
+    def test_add_value_singlevalue_list(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        il.add_value('name', ['item', 'loader'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'item', 'loader']})
+
+    def test_add_value_list_singlevalue(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        il.add_value('name', 'qwerty')
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'qwerty']})
+
+    def test_add_value_list_list(self):
+        """Values added after initialization should be appended"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        il.add_value('name', ['item', 'loader'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'item', 'loader']})
+
+    def test_get_output_value_singlevalue(self):
+        """Getting output value must not remove value from item"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il.get_output_value('name'), ['foo'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(loaded_item, dict({'name': ['foo']}))
+
+    def test_get_output_value_list(self):
+        """Getting output value must not remove value from item"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il.get_output_value('name'), ['foo', 'bar'])
+        loaded_item = il.load_item()
+        self.assertIsInstance(loaded_item, self.item_class)
+        self.assertEqual(loaded_item, dict({'name': ['foo', 'bar']}))
+
+    def test_values_single(self):
+        """Values from initial item must be added to loader._values"""
+        input_item = self.item_class(name='foo')
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il._values.get('name'), ['foo'])
+
+    def test_values_list(self):
+        """Values from initial item must be added to loader._values"""
+        input_item = self.item_class(name=['foo', 'bar'])
+        il = ItemLoader(item=input_item)
+        self.assertEqual(il._values.get('name'), ['foo', 'bar'])
+
+
+class InitializationFromDictTest(InitializationTestMixin, unittest.TestCase):
+    item_class = dict
+
+
+class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
+    item_class = NameItem
+
+
+class BaseNoInputReprocessingLoader(ItemLoader):
+    title_in = MapCompose(str.upper)
+    title_out = TakeFirst()
+
+
+class NoInputReprocessingDictLoader(BaseNoInputReprocessingLoader):
+    default_item_class = dict
+
+
+class NoInputReprocessingFromDictTest(unittest.TestCase):
+    """
+    Loaders initialized from loaded items must not reprocess fields (dict instances)
+    """
+    def test_avoid_reprocessing_with_initial_values_single(self):
+        il = NoInputReprocessingDictLoader(item=dict(title='foo'))
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, dict(title='foo'))
+        self.assertEqual(NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title='foo'))
+
+    def test_avoid_reprocessing_with_initial_values_list(self):
+        il = NoInputReprocessingDictLoader(item=dict(title=['foo', 'bar']))
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, dict(title='foo'))
+        self.assertEqual(NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title='foo'))
+
+    def test_avoid_reprocessing_without_initial_values_single(self):
+        il = NoInputReprocessingDictLoader()
+        il.add_value('title', 'foo')
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, dict(title='FOO'))
+        self.assertEqual(NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title='FOO'))
+
+    def test_avoid_reprocessing_without_initial_values_list(self):
+        il = NoInputReprocessingDictLoader()
+        il.add_value('title', ['foo', 'bar'])
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, dict(title='FOO'))
+        self.assertEqual(NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title='FOO'))
+
+
+class NoInputReprocessingItem(Item):
+    title = Field()
+
+
+class NoInputReprocessingItemLoader(BaseNoInputReprocessingLoader):
+    default_item_class = NoInputReprocessingItem
+
+
+class NoInputReprocessingFromItemTest(unittest.TestCase):
+    """
+    Loaders initialized from loaded items must not reprocess fields (BaseItem instances)
+    """
+    def test_avoid_reprocessing_with_initial_values_single(self):
+        il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title='foo'))
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, {'title': 'foo'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+    def test_avoid_reprocessing_with_initial_values_list(self):
+        il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title=['foo', 'bar']))
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, {'title': 'foo'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'foo'})
+
+    def test_avoid_reprocessing_without_initial_values_single(self):
+        il = NoInputReprocessingItemLoader()
+        il.add_value('title', 'FOO')
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, {'title': 'FOO'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'FOO'})
+
+    def test_avoid_reprocessing_without_initial_values_list(self):
+        il = NoInputReprocessingItemLoader()
+        il.add_value('title', ['foo', 'bar'])
+        il_loaded = il.load_item()
+        self.assertEqual(il_loaded, {'title': 'FOO'})
+        self.assertEqual(NoInputReprocessingItemLoader(item=il_loaded).load_item(), {'title': 'FOO'})
+
+
+class TestOutputProcessorDict(unittest.TestCase):
+    def test_output_processor(self):
+
+        class TempDict(dict):
+            def __init__(self, *args, **kwargs):
+                super(TempDict, self).__init__(self, *args, **kwargs)
+                self.setdefault('temp', 0.3)
+
+        class TempLoader(ItemLoader):
+            default_item_class = TempDict
+            default_input_processor = Identity()
+            default_output_processor = Compose(TakeFirst())
+
+        loader = TempLoader()
+        item = loader.load_item()
+        self.assertIsInstance(item, TempDict)
+        self.assertEqual(dict(item), {'temp': 0.3})
+
+
+class TestOutputProcessorItem(unittest.TestCase):
+    def test_output_processor(self):
+
+        class TempItem(Item):
+            temp = Field()
+
+            def __init__(self, *args, **kwargs):
+                super(TempItem, self).__init__(self, *args, **kwargs)
+                self.setdefault('temp', 0.3)
+
+        class TempLoader(ItemLoader):
+            default_item_class = TempItem
+            default_input_processor = Identity()
+            default_output_processor = Compose(TakeFirst())
+
+        loader = TempLoader()
+        item = loader.load_item()
+        self.assertIsInstance(item, TempItem)
+        self.assertEqual(dict(item), {'temp': 0.3})
+
+
 class ProcessorsTest(unittest.TestCase):
 
     def test_take_first(self):
@@ -510,7 +687,7 @@ class ProcessorsTest(unittest.TestCase):
         self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
         self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
         self.assertEqual(proc(['hello', 'world']), u'hello world')
-        self.assertIsInstance(proc(['hello', 'world']), six.text_type)
+        self.assertIsInstance(proc(['hello', 'world']), str)
 
     def test_compose(self):
         proc = Compose(lambda v: v[0], str.upper)
@@ -523,17 +700,17 @@ class ProcessorsTest(unittest.TestCase):
         self.assertRaises(ValueError, proc, 'hello')
 
     def test_mapcompose(self):
-        filter_world = lambda x: None if x == 'world' else x
-        proc = MapCompose(filter_world, six.text_type.upper)
+        def filter_world(x):
+            return None if x == 'world' else x
+        proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
-        proc = MapCompose(filter_world, six.text_type.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
-        proc = MapCompose(filter_world, six.text_type.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertRaises(ValueError, proc, [1])
         proc = MapCompose(filter_world, lambda x: x + 1)
         self.assertRaises(ValueError, proc, 'hello')
-
 
 
 class SelectortemLoaderTest(unittest.TestCase):
@@ -548,11 +725,11 @@ class SelectortemLoaderTest(unittest.TestCase):
     </html>
     """)
 
-    def test_constructor(self):
+    def test_init_method(self):
         l = TestItemLoader()
         self.assertEqual(l.selector, None)
 
-    def test_constructor_errors(self):
+    def test_init_method_errors(self):
         l = TestItemLoader()
         self.assertRaises(RuntimeError, l.add_xpath, 'url', '//a/@href')
         self.assertRaises(RuntimeError, l.replace_xpath, 'url', '//a/@href')
@@ -561,7 +738,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertRaises(RuntimeError, l.replace_css, 'name', '#name::text')
         self.assertRaises(RuntimeError, l.get_css, '#name::text')
 
-    def test_constructor_with_selector(self):
+    def test_init_method_with_selector(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
@@ -569,7 +746,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_selector_css(self):
+    def test_init_method_with_selector_css(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
@@ -577,14 +754,14 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_response(self):
+    def test_init_method_with_response(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
-    def test_constructor_with_response_css(self):
+    def test_init_method_with_response_css(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 
@@ -672,7 +849,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
         self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-            [u'http://www.scrapy.org', u'/images/logo.png'])
+                         [u'http://www.scrapy.org', u'/images/logo.png'])
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)
@@ -720,7 +897,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
@@ -735,7 +912,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_output_value('name'), [u'marta'])
         self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'),  [u'marta'])
+        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
@@ -791,28 +968,76 @@ class SubselectorLoaderTest(unittest.TestCase):
 
 
 class SelectJmesTestCase(unittest.TestCase):
-        test_list_equals = {
-            'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
-            'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
-            'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-            'dict': (
-                'foo.bar[*].name',
-                {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
-                ['one', 'two']
-            ),
-            'list': ('[1]', [1, 2], 2)
-        }
+    test_list_equals = {
+        'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
+        'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
+        'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+        'dict': (
+            'foo.bar[*].name',
+            {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
+            ['one', 'two']
+        ),
+        'list': ('[1]', [1, 2], 2)
+    }
 
-        def test_output(self):
-            for l in self.test_list_equals:
-                expr, test_list, expected = self.test_list_equals[l]
-                test = SelectJmes(expr)(test_list)
-                self.assertEqual(
-                    test,
-                    expected,
-                    msg='test "{}" got {} expected {}'.format(l, test, expected)
-                )
+    def test_output(self):
+        for l in self.test_list_equals:
+            expr, test_list, expected = self.test_list_equals[l]
+            test = SelectJmes(expr)(test_list)
+            self.assertEqual(
+                test,
+                expected,
+                msg='test "{}" got {} expected {}'.format(l, test, expected)
+            )
+
+
+# Functions as processors
+
+def function_processor_strip(iterable):
+    return [x.strip() for x in iterable]
+
+
+def function_processor_upper(iterable):
+    return [x.upper() for x in iterable]
+
+
+class FunctionProcessorItem(Item):
+    foo = Field(
+        input_processor=function_processor_strip,
+        output_processor=function_processor_upper,
+    )
+
+
+class FunctionProcessorItemLoader(ItemLoader):
+    default_item_class = FunctionProcessorItem
+
+
+class FunctionProcessorDictLoader(ItemLoader):
+    default_item_class = dict
+    foo_in = function_processor_strip
+    foo_out = function_processor_upper
+
+
+class FunctionProcessorTestCase(unittest.TestCase):
+
+    def test_processor_defined_in_item(self):
+        lo = FunctionProcessorItemLoader()
+        lo.add_value('foo', '  bar  ')
+        lo.add_value('foo', ['  asdf  ', '  qwerty  '])
+        self.assertEqual(
+            dict(lo.load_item()),
+            {'foo': ['BAR', 'ASDF', 'QWERTY']}
+        )
+
+    def test_processor_defined_in_item_loader(self):
+        lo = FunctionProcessorDictLoader()
+        lo.add_value('foo', '  bar  ')
+        lo.add_value('foo', ['  asdf  ', '  qwerty  '])
+        self.assertEqual(
+            dict(lo.load_item()),
+            {'foo': ['BAR', 'ASDF', 'QWERTY']}
+        )
 
 
 if __name__ == "__main__":

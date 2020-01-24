@@ -3,10 +3,7 @@ This module provides some commonly used processors for Item Loaders.
 
 See documentation in docs/topics/loaders.rst
 """
-try:
-    from collections import ChainMap
-except ImportError:
-    from scrapy.utils.datatypes import MergeDict as ChainMap
+from collections import ChainMap
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.loader.common import wrap_loader_context

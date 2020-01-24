@@ -1,5 +1,6 @@
 import gzip
 import inspect
+from unittest import mock
 import warnings
 from io import BytesIO
 
@@ -14,10 +15,7 @@ from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
-
-from tests import mock
 
 
 class SpiderTest(unittest.TestCase):
@@ -42,12 +40,12 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(list(start_requests), [])
 
     def test_spider_args(self):
-        """Constructor arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         spider = self.spider_class('example.com', foo='bar')
         self.assertEqual(spider.foo, 'bar')
 
     def test_spider_without_name(self):
-        """Constructor arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         self.assertRaises(ValueError, self.spider_class)
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
 
@@ -176,6 +174,26 @@ class CrawlSpiderTest(SpiderTest):
     </div>
     </body></html>"""
     spider_class = CrawlSpider
+
+    def test_rule_without_link_extractor(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
 
     def test_process_links(self):
 
@@ -365,6 +383,14 @@ class CrawlSpiderTest(SpiderTest):
         spider = self.spider_class.from_crawler(crawler, 'example.com')
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
+
+    def test_start_url(self):
+        spider = self.spider_class("example.com")
+        spider.start_url = 'https://www.example.com'
+
+        with self.assertRaisesRegex(AttributeError,
+                                    r'^Crawling could not start.*$'):
+            list(spider.start_requests())
 
 
 class SitemapSpiderTest(SpiderTest):

@@ -5,12 +5,7 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
-import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from io import BytesIO
 
 from PIL import Image
 
@@ -135,7 +130,7 @@ class ImagesPipeline(FilesPipeline):
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in six.iteritems(self.thumbs):
+        for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf

@@ -21,11 +21,6 @@ if 'COV_CORE_CONFIG' in os.environ:
     os.environ['COV_CORE_CONFIG'] = os.path.join(_sourceroot,
                                                  os.environ['COV_CORE_CONFIG'])
 
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
-
 tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                              'sample_data')
 
@@ -35,18 +30,3 @@ def get_testdata(*paths):
     path = os.path.join(tests_datadir, *paths)
     with open(path, 'rb') as f:
         return f.read()
-
-
-# FIXME: delete after dropping py2 support
-# Monkey patch the unittest module to prevent the
-# DeprecationWarning about assertRaisesRegexp -> assertRaisesRegex
-import six
-if six.PY2:
-    import unittest
-    import twisted.trial.unittest
-    if not getattr(unittest.TestCase, 'assertRegex', None):
-        unittest.TestCase.assertRegex = unittest.TestCase.assertRegexpMatches
-    if not getattr(unittest.TestCase, 'assertRaisesRegex', None):
-        unittest.TestCase.assertRaisesRegex = unittest.TestCase.assertRaisesRegexp
-    if not getattr(twisted.trial.unittest.TestCase, 'assertRaisesRegex', None):
-        twisted.trial.unittest.TestCase.assertRaisesRegex = twisted.trial.unittest.TestCase.assertRaisesRegexp

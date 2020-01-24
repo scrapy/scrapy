@@ -10,8 +10,7 @@ import logging
 import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-import six
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from ftplib import FTP
 
 from zope.interface import Interface, implementer
@@ -65,7 +64,7 @@ class StdoutFeedStorage(object):
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
-            _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
+            _stdout = sys.stdout.buffer
         self._stdout = _stdout
 
     def open(self, spider):
@@ -162,7 +161,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
-        self.password = u.password
+        self.password = unquote(u.password)
         self.path = u.path
         self.use_active_mode = use_active_mode
 
@@ -194,9 +193,9 @@ class FeedExporter(object):
 
     def __init__(self, settings):
         self.settings = settings
-        self.urifmt = settings['FEED_URI']
-        if not self.urifmt:
+        if not settings['FEED_URI']:
             raise NotConfigured
+        self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')
@@ -237,7 +236,9 @@ class FeedExporter(object):
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
-            return
+            # We need to call slot.storage.store nonetheless to get the file
+            # properly closed.
+            return defer.maybeDeferred(slot.storage.store, slot.file)
         if self._exporting:
             slot.exporter.finish_exporting()
             self._exporting = False

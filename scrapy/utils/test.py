@@ -2,9 +2,10 @@
 This module contains some assorted functions used in tests
 """
 
+import asyncio
+import os
 from __future__ import absolute_import
 from posixpath import split
-import os
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
@@ -33,6 +34,7 @@ def skip_if_no_boto():
     except NotConfigured as e:
         raise SkipTest(e)
 
+
 def get_s3_content_and_delete(bucket, path, with_key=False):
     """ Get content from s3 key, and delete key afterwards.
     """
@@ -52,6 +54,7 @@ def get_s3_content_and_delete(bucket, path, with_key=False):
         bucket.delete_key(path)
     return (content, key) if with_key else content
 
+
 def get_gcs_content_and_delete(bucket, path):
     from google.cloud import storage
     client = storage.Client(project=os.environ.get('GCS_PROJECT_ID'))
@@ -61,6 +64,7 @@ def get_gcs_content_and_delete(bucket, path):
     acl = list(blob.acl)  # loads acl before it will be deleted
     bucket.delete_blob(path)
     return content, acl, blob
+
 
 def get_ftp_content_and_delete(path, host ,port,
         username, password, use_active_mode=False):
@@ -79,6 +83,7 @@ def get_ftp_content_and_delete(path, host ,port,
     ftp.delete(filename)
     return "".join(ftp_data)
     
+
 def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
@@ -90,11 +95,13 @@ def get_crawler(spidercls=None, settings_dict=None):
     runner = CrawlerRunner(settings_dict)
     return runner.create_crawler(spidercls or Spider)
 
+
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
     scrapy_path = import_module('scrapy').__path__[0]
     return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
+
 
 def get_testenv():
     """Return a OS environment dict suitable to fork processes that need to import
@@ -104,8 +111,16 @@ def get_testenv():
     env['PYTHONPATH'] = get_pythonpath()
     return env
 
+
 def assert_samelines(testcase, text1, text2, msg=None):
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+
+def get_from_asyncio_queue(value):
+    q = asyncio.Queue()
+    getter = q.get()
+    q.put_nowait(value)
+    return getter

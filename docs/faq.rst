@@ -69,11 +69,11 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 and Python 3.4+
+Scrapy is supported under Python 3.5+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
 PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
+Python 2 support was dropped in Scrapy 2.0.
 
 .. note::
     For Python 3 support on Windows, it is recommended to use
@@ -140,7 +140,7 @@ setting the following settings::
 
 While pending requests are below the configured values of
 :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
+:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
 concurrently. As a result, the first few requests of a crawl rarely follow the
 desired order. Lowering those settings to ``1`` enforces the desired order, but
 it significantly slows down the crawl as a whole.
@@ -338,7 +338,7 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this puspose. For example::
+method for this purpose. For example::
 
     from copy import deepcopy
 
