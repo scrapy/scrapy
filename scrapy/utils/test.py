@@ -2,10 +2,10 @@
 This module contains some assorted functions used in tests
 """
 
-import asyncio
-import os
 from __future__ import absolute_import
 from posixpath import split
+import asyncio
+import os
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
