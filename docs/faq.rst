@@ -353,6 +353,13 @@ method for this purpose. For example::
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 
+Does Scrapy support IPv6 addresses?
+-----------------------------------
+
+Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Note that by doing so, you lose the ability to set a specific timeout for DNS requests
+(the value of the :setting:`DNS_TIMEOUT` setting is ignored).
+
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)

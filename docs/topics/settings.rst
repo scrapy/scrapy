@@ -397,6 +397,19 @@ Default: ``10000``
 
 DNS in-memory cache size.
 
+.. setting:: DNS_RESOLVER
+
+DNS_RESOLVER
+------------
+
+Default: ``'scrapy.resolver.CachingThreadedResolver'``
+
+The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
+supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
+but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
+take the :setting:`DNS_TIMEOUT` setting into account.
+
 .. setting:: DNS_TIMEOUT
 
 DNS_TIMEOUT
