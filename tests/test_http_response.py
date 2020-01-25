@@ -566,6 +566,11 @@ class TextResponseTest(BaseResponseTest):
         )
         self.assertEqual(req.encoding, 'cp1251')
 
+    def test_follow_flags(self):
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
+
     def test_follow_all_css(self):
         expected = [
             'http://example.com/sample3.html',
