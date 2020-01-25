@@ -167,8 +167,9 @@ class BaseResponseTest(unittest.TestCase):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
     def test_follow_flags(self):
-        res = self.response.follow('http://example.com/', flags=['cached', 'allowed'])
-        self.assertEqual(res.flags, ['cached', 'allowed'])
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
 
     # Response.follow_all
 
