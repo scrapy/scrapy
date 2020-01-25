@@ -72,6 +72,7 @@ setup(
         'pyOpenSSL>=16.2.0',
         'queuelib>=1.4.2',
         'service_identity>=16.0.0',
+        'pyasn1>=0.4.8',
         'w3lib>=1.17.0',
         'zope.interface>=4.1.3',
         'protego>=0.1.15',
