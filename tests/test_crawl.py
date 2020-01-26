@@ -1,6 +1,7 @@
 import json
 import logging
 from ipaddress import IPv4Address
+from socket import gethostbyname
 from urllib.parse import urlparse
 
 from testfixtures import LogCapture
@@ -313,15 +314,6 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_dns_server_ip_address(self):
-        from socket import gethostbyname
-
-        crawler = self.runner.create_crawler(SingleRequestSpider)
-        url = 'https://example.org'
-        yield crawler.crawl(seed=url)
-        ip_address = crawler.spider.meta['responses'][0].ip_address
-        self.assertIsInstance(ip_address, IPv4Address)
-        self.assertEqual(str(ip_address), gethostbyname(urlparse(url).netloc))
-
         crawler = self.runner.create_crawler(SingleRequestSpider)
         url = self.mockserver.url('/status?n=200')
         yield crawler.crawl(seed=url, mockserver=self.mockserver)

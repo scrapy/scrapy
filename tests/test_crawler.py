@@ -107,6 +107,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
 
     def test_spider_custom_settings_log_level(self):
         log_file = self.mktemp()
+
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
@@ -323,3 +324,10 @@ class CrawlerProcessSubprocess(unittest.TestCase):
             "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
             "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
         ]))
+
+    def test_response_ip_address(self):
+        log = self.run_script("ip_address.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Host: not.a.real.domain", log)
+        self.assertIn("Type: <class 'ipaddress.IPv4Address'>", log)
+        self.assertIn("IP address: 127.0.0.1", log)
