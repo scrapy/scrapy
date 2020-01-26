@@ -612,10 +612,7 @@ Response objects
     :type request: :class:`Request` object
 
     :param ip_address: The IP address of the server from which the Response originated.
-    :type ip_address: :class:`ipaddress.IPv4Address` object
-
-    .. FIXME: Add ipaddress.IPv6Address once it's supported
-
+    :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
     .. attribute:: Response.url
 
