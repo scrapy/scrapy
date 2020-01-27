@@ -107,12 +107,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     if isinstance(exception_result, Failure):
                         raise
                     return exception_result
+                if _isiterable(result):
+                    result = _evaluate_iterable(result, method_index+1, recovered)
                 else:
-                    if _isiterable(result):
-                        result = _evaluate_iterable(result, method_index+1, recovered)
-                    else:
-                        msg = "Middleware {} must return an iterable, got {}"
-                        raise _InvalidOutput(msg.format(_fname(method), type(result)))
+                    msg = "Middleware {} must return an iterable, got {}"
+                    raise _InvalidOutput(msg.format(_fname(method), type(result)))
 
             return MutableChain(result, recovered)
 
