@@ -482,6 +482,7 @@ class _ResponseReader(protocol.Protocol):
             signal=signals.bytes_received,
             data=bodyBytes,
             request=self._request,
+            spider=self._crawler.spider,
         )
 
         if self._maxsize and self._bytes_received > self._maxsize:

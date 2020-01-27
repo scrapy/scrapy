@@ -159,7 +159,7 @@ class CrawlerRun(object):
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
-    def bytes_received(self, data, request):
+    def bytes_received(self, data, request, spider):
         self.bytes[request] += data
 
     def request_scheduled(self, request, spider):

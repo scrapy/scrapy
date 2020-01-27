@@ -162,7 +162,7 @@ bytes_received
 --------------
 
 .. signal:: bytes_received
-.. function:: bytes_received(data, request)
+.. function:: bytes_received(data, request, spider)
 
     Sent by the HTTP 1.1 download handler when a group of bytes is
     received for a specific request.
@@ -174,6 +174,9 @@ bytes_received
 
     :param request: the request that generated the response
     :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider associated with the response
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 spider_closed
 -------------
