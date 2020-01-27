@@ -165,7 +165,8 @@ bytes_received
 .. function:: bytes_received(data, request, spider)
 
     Sent by the HTTP 1.1 download handler when a group of bytes is
-    received for a specific request.
+    received for a specific request. This signal might be fired
+    multiple times for the same request.
 
     This signal does not support returning deferreds from its handlers.
 
