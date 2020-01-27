@@ -418,6 +418,9 @@ class SitemapSpiderTest(SpiderTest):
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
         self.assertSitemapBody(r, None)
 
+        r = Response(url="http://www.example.com", body=b"")
+        self.assertSitemapBody(r, None)
+
     def test_get_sitemap_body_gzip_headers(self):
         r = Response(url="http://www.example.com/sitemap", body=self.GZBODY,
                      headers={"content-type": "application/gzip"})
