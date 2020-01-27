@@ -109,7 +109,7 @@ class CrawlerRun(object):
         self.reqreached = []
         self.itemerror = []
         self.itemresp = []
-        self.bytes = defaultdict(lambda: b"")
+        self.bytes = defaultdict(lambda: list())
         self.signals_caught = {}
         self.spider_class = spider_class
 
@@ -160,7 +160,7 @@ class CrawlerRun(object):
         self.itemresp.append((item, response))
 
     def bytes_received(self, data, request, spider):
-        self.bytes[request] += data
+        self.bytes[request].append(data)
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
@@ -274,17 +274,18 @@ class EngineTest(unittest.TestCase):
     def _assert_bytes_received(self):
         self.assertEqual(8, len(self.run.bytes))
         for request, data in self.run.bytes.items():
+            joined_data = b"".join(data)
             if self.run.getpath(request.url) == "/":
-                self.assertEqual(data, get_testdata("test_site", "index.html"))
+                self.assertEqual(joined_data, get_testdata("test_site", "index.html"))
             elif self.run.getpath(request.url) == "/item1.html":
-                self.assertEqual(data, get_testdata("test_site", "item1.html"))
+                self.assertEqual(joined_data, get_testdata("test_site", "item1.html"))
             elif self.run.getpath(request.url) == "/item2.html":
-                self.assertEqual(data, get_testdata("test_site", "item2.html"))
+                self.assertEqual(joined_data, get_testdata("test_site", "item2.html"))
             elif self.run.getpath(request.url) == "/redirected":
-                self.assertEqual(data, b"Redirected here")
+                self.assertEqual(joined_data, b"Redirected here")
             elif self.run.getpath(request.url) == '/redirect':
                 self.assertEqual(
-                    data,
+                    joined_data,
                     b"\n<html>\n"
                     b"    <head>\n"
                     b"        <meta http-equiv=\"refresh\" content=\"0;URL=/redirected\">\n"
@@ -296,7 +297,7 @@ class EngineTest(unittest.TestCase):
                 )
             elif self.run.getpath(request.url) == "/tem999.html":
                 self.assertEqual(
-                    data,
+                    joined_data,
                     b"\n<html>\n"
                     b"  <head><title>404 - No Such Resource</title></head>\n"
                     b"  <body>\n"
