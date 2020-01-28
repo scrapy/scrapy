@@ -2,6 +2,7 @@ import hashlib
 import tempfile
 import unittest
 import shutil
+import os
 from testfixtures import LogCapture
 
 from scrapy.dupefilters import RFPDupeFilter
@@ -128,6 +129,26 @@ class RFPDupeFilterTest(unittest.TestCase):
         assert case_insensitive_dupefilter.request_seen(r2)
 
         case_insensitive_dupefilter.close('finished')
+
+    def test_seenreq_newlines(self):
+        """ Checks against adding duplicate \r to
+        line endings on Windows platforms. """
+
+        r1 = Request('http://scrapytest.org/1')
+
+        path = tempfile.mkdtemp()
+        try:
+            df = RFPDupeFilter(path)
+            df.open()
+            df.request_seen(r1)
+            df.close('finished')
+
+            with open(os.path.join(path, 'requests.seen'), 'rb') as seen_file:
+                line = next(seen_file).decode()
+                assert not line.endswith('\r\r\n')
+
+        finally:
+            shutil.rmtree(path)
 
     def test_log(self):
         with LogCapture() as l:
