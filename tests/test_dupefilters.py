@@ -85,17 +85,21 @@ class RFPDupeFilterTest(unittest.TestCase):
         path = tempfile.mkdtemp()
         try:
             df = RFPDupeFilter(path)
-            df.open()
-            assert not df.request_seen(r1)
-            assert df.request_seen(r1)
-            df.close('finished')
+            try:
+                df.open()
+                assert not df.request_seen(r1)
+                assert df.request_seen(r1)
+            finally:
+                df.close('finished')
 
             df2 = RFPDupeFilter(path)
-            df2.open()
-            assert df2.request_seen(r1)
-            assert not df2.request_seen(r2)
-            assert df2.request_seen(r2)
-            df2.close('finished')
+            try:
+                df2.open()
+                assert df2.request_seen(r1)
+                assert not df2.request_seen(r2)
+                assert df2.request_seen(r2)
+            finally:
+                df2.close('finished')
         finally:
             shutil.rmtree(path)
 
