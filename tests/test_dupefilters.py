@@ -3,6 +3,7 @@ import tempfile
 import unittest
 import shutil
 import os
+import sys
 from testfixtures import LogCapture
 
 from scrapy.dupefilters import RFPDupeFilter
@@ -150,6 +151,10 @@ class RFPDupeFilterTest(unittest.TestCase):
             with open(os.path.join(path, 'requests.seen'), 'rb') as seen_file:
                 line = next(seen_file).decode()
                 assert not line.endswith('\r\r\n')
+                if sys.platform == 'win32':
+                    assert line.endswith('\r\n')
+                else:
+                    assert line.endswith('\n')
 
         finally:
             shutil.rmtree(path)
