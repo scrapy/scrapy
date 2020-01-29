@@ -112,6 +112,7 @@ class CrawlerRun(object):
         self.itemerror = []
         self.itemresp = []
         self.bytes = defaultdict(lambda: list())
+        self.bytes_source = set()
         self.signals_caught = {}
         self.spider_class = spider_class
 
@@ -165,8 +166,9 @@ class CrawlerRun(object):
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
-    def bytes_received(self, data, request, spider):
+    def bytes_received(self, data, request, spider, source):
         self.bytes[request].append(data)
+        self.bytes_source.add(source)
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
@@ -279,6 +281,7 @@ class EngineTest(unittest.TestCase):
 
     def _assert_bytes_received(self):
         self.assertEqual(9, len(self.run.bytes))
+        self.assertEqual(self.run.bytes_source, set(["http11"]))
         for request, data in self.run.bytes.items():
             joined_data = b"".join(data)
             if self.run.getpath(request.url) == "/":

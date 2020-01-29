@@ -32,8 +32,9 @@ logger = logging.getLogger(__name__)
 class HTTP11DownloadHandler:
     lazy = False
 
-    def __init__(self, settings, crawler=None):
+    def __init__(self, settings, crawler=None, source="http11"):
         self.crawler = crawler
+        self.source = source
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -67,8 +68,8 @@ class HTTP11DownloadHandler:
         self._disconnect_timeout = 1
 
     @classmethod
-    def from_crawler(cls, crawler):
-        return cls(crawler.settings, crawler)
+    def from_crawler(cls, crawler, **kwargs):
+        return cls(crawler.settings, crawler, **kwargs)
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
@@ -79,6 +80,7 @@ class HTTP11DownloadHandler:
             warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self.crawler,
+            source=self.source,
         )
         return agent.download_request(request)
 
@@ -275,7 +277,7 @@ class ScrapyAgent:
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
-                 maxsize=0, warnsize=0, fail_on_dataloss=True, crawler=None):
+                 maxsize=0, warnsize=0, fail_on_dataloss=True, crawler=None, source=None):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -285,6 +287,7 @@ class ScrapyAgent:
         self._fail_on_dataloss = fail_on_dataloss
         self._txresponse = None
         self._crawler = crawler
+        self._source = source
 
     def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
@@ -421,6 +424,7 @@ class ScrapyAgent:
                 warnsize,
                 fail_on_dataloss,
                 self._crawler,
+                self._source,
             )
         )
 
@@ -457,7 +461,9 @@ class _RequestBodyProducer:
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request, maxsize, warnsize, fail_on_dataloss, crawler):
+    def __init__(
+        self, finished, txresponse, request, maxsize, warnsize, fail_on_dataloss, crawler, source
+    ):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
@@ -469,6 +475,7 @@ class _ResponseReader(protocol.Protocol):
         self._reached_warnsize = False
         self._bytes_received = 0
         self._crawler = crawler
+        self._source = source
 
     def dataReceived(self, bodyBytes):
         # This maybe called several times after cancel was called with buffered data.
@@ -483,6 +490,7 @@ class _ResponseReader(protocol.Protocol):
             data=bodyBytes,
             request=self._request,
             spider=self._crawler.spider,
+            source=self._source,
         )
 
         if self._maxsize and self._bytes_received > self._maxsize:
