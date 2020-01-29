@@ -12,6 +12,7 @@ module with the ``runserver`` argument::
 
 import os
 import re
+import string
 import sys
 from collections import defaultdict
 from urllib.parse import urlparse
@@ -90,6 +91,7 @@ def start_test_site(debug=False):
     r = static.File(root_dir)
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
+    r.putChild(b"random", static.Data(string.ascii_letters.encode("utf8") * 2**14, "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
@@ -117,8 +119,12 @@ class CrawlerRun(object):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        start_urls = [self.geturl("/"), self.geturl("/redirect"),
-                      self.geturl("/redirect")]  # a duplicate
+        start_urls = [
+            self.geturl("/"),
+            self.geturl("/redirect"),
+            self.geturl("/redirect"),  # duplicate
+            self.geturl("/random"),
+        ]
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
@@ -190,7 +196,7 @@ class EngineTest(unittest.TestCase):
             self.run = CrawlerRun(spider)
             yield self.run.run()
             self._assert_visited_urls()
-            self._assert_scheduled_requests(urls_to_visit=8)
+            self._assert_scheduled_requests(urls_to_visit=9)
             self._assert_downloaded_responses()
             self._assert_scraped_items()
             self._assert_signals_caught()
@@ -200,7 +206,7 @@ class EngineTest(unittest.TestCase):
     def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
-        self._assert_scheduled_requests(urls_to_visit=7)
+        self._assert_scheduled_requests(urls_to_visit=8)
         self._assert_dropped_requests()
 
     @defer.inlineCallbacks
@@ -237,8 +243,8 @@ class EngineTest(unittest.TestCase):
 
     def _assert_downloaded_responses(self):
         # response tests
-        self.assertEqual(8, len(self.run.respplug))
-        self.assertEqual(8, len(self.run.reqreached))
+        self.assertEqual(9, len(self.run.respplug))
+        self.assertEqual(9, len(self.run.reqreached))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
@@ -272,7 +278,7 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('200', item['price'])
 
     def _assert_bytes_received(self):
-        self.assertEqual(8, len(self.run.bytes))
+        self.assertEqual(9, len(self.run.bytes))
         for request, data in self.run.bytes.items():
             joined_data = b"".join(data)
             if self.run.getpath(request.url) == "/":
@@ -306,6 +312,8 @@ class EngineTest(unittest.TestCase):
                     b"  </body>\n"
                     b"</html>\n"
                 )
+            elif self.run.getpath(request.url) == "/random":
+                self.assertTrue(len(data) > 1)  # signal was fired multiple times
 
     def _assert_signals_caught(self):
         assert signals.engine_started in self.run.signals_caught
