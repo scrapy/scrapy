@@ -268,7 +268,7 @@ class ScrapyProxyAgent(Agent):
         )
 
 
-class ScrapyAgent(object):
+class ScrapyAgent:
 
     _Agent = Agent
     _ProxyAgent = ScrapyProxyAgent
@@ -438,7 +438,7 @@ class ScrapyAgent(object):
 
 
 @implementer(IBodyProducer)
-class _RequestBodyProducer(object):
+class _RequestBodyProducer:
 
     def __init__(self, body):
         self.body = body
