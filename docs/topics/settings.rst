@@ -160,29 +160,6 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
-.. setting:: ASYNCIO_REACTOR
-
-ASYNCIO_REACTOR
----------------
-
-Default: ``False``
-
-Whether to install and require the Twisted reactor that uses the asyncio loop.
-
-When this option is set to ``True``, Scrapy will require
-:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
-install this reactor if no reactor is installed yet, such as when using the
-``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
-:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
-manually. If a different reactor is installed outside Scrapy, it will raise an
-exception.
-
-The default value for this option is currently ``False`` to maintain backward
-compatibility and avoid possible problems caused by using a different Twisted
-reactor.
-
-This setting takes precedence over :setting:`TWISTED_REACTOR`.
-
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -1473,15 +1450,20 @@ TWISTED_REACTOR
 Default: ``None``
 
 Full path of a specific Twisted reactor, for instance
-:class:`twisted.internet.selectreactor.SelectReactor`.
-If set to ``None`` (the default), Scrapy will not attempt to install any
-specific reactor, and the default one defined by Twisted for the current
-platform will be used. For additional information, see
-https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
+:class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+Scrapy will install this reactor if no other is installed yet, such as when
+using the ``scrapy`` program or the :class:`~scrapy.crawler.CrawlerProcess` class.
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you need to
+install the correct reactor manually.
+An exception will be raised if the installation fails.
 
-:setting:`ASYNCIO_REACTOR` takes precedence over :setting:`TWISTED_REACTOR`,
-i.e. if :setting:`ASYNCIO_REACTOR` is ``True``, Scrapy will ignore the value
-of :setting:`TWISTED_REACTOR`.
+The default value for this option is currently ``None``, which means that Scrapy
+will not attempt to install any specific reactor, and the default one defined by
+Twisted for the current platform will be used. This is to maintain backward
+compatibility and avoid possible problems caused by using a non-default reactor.
+
+For additional information, please see
+https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
 
 
 .. setting:: URLLENGTH_LIMIT

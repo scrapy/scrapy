@@ -296,11 +296,13 @@ class BadSpider(scrapy.Spider):
         self.assertIn("badspider.py", log)
 
     def test_asyncio_enabled_true(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=True'])
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+        ])
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_false(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=False'])
+        log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 

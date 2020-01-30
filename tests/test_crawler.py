@@ -254,27 +254,37 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
-            runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+            runner = CrawlerRunner(settings={
+                "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            })
         else:
-            msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
+            msg = r"The installed reactor \(.*?\) does not match the TWISTED_REACTOR setting \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+                runner = CrawlerRunner(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_true(self):
         with LogCapture(level=logging.DEBUG) as log:
             if self.reactor_pytest == 'asyncio':
-                runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
+                runner = CrawlerProcess(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
                 yield runner.crawl(NoRequestsSpider)
                 self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
             else:
-                msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
+                msg = r"The installed reactor \(.*?\) does not match the TWISTED_REACTOR setting \(.*?\)"
                 with self.assertRaisesRegex(Exception, msg):
-                    runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
+                    runner = CrawlerProcess(settings={
+                        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                    })
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_false(self):
-        runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': False})
+        runner = CrawlerProcess(settings={
+            "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+        })
         with LogCapture(level=logging.DEBUG) as log:
             yield runner.crawl(NoRequestsSpider)
             self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))

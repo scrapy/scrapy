@@ -49,27 +49,29 @@ class CallLaterOnce(object):
         return self._func(*self._a, **self._kw)
 
 
-def install_twisted_reactor(settings):
-    """
-    Install a (potentially) non-default Twisted reactor. If the ASYNCIO_REACTOR
-    setting is False and the TWISTED_REACTOR is not set, no installation is
-    attempted, resulting in the default reactor for the platform being used.
+def install_reactor(TWISTED_REACTOR=None):
+    if TWISTED_REACTOR:
+        reactor_class = load_object(TWISTED_REACTOR)
+        if reactor_class is asyncioreactor.AsyncioSelectorReactor:
+            with suppress(error.ReactorAlreadyInstalledError):
+                asyncioreactor.install(asyncio.get_event_loop())
+        else:
+            *module, _ = TWISTED_REACTOR.split(".")
+            installer_path = module + ["install"]
+            installer = load_object(".".join(installer_path))
+            with suppress(error.ReactorAlreadyInstalledError):
+                installer()
 
-    The ASYNCIO_REACTOR setting takes precedence over the TWISTED_REACTOR one.
-    """
-    path = settings.get("TWISTED_REACTOR")
-    if (
-        settings.getbool("ASYNCIO_REACTOR")
-        or path == "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-    ):
-        with suppress(error.ReactorAlreadyInstalledError):
-            asyncioreactor.install(asyncio.get_event_loop())
-    elif path:
-        *module, _ = path.split(".")
-        installer_path = module + ["install"]
-        installer = load_object(".".join(installer_path))
-        with suppress(error.ReactorAlreadyInstalledError):
-            installer()
+
+def verify_installed_reactor(TWISTED_REACTOR):
+    if TWISTED_REACTOR:
+        from twisted.internet import reactor
+        reactor_class = load_object(TWISTED_REACTOR)
+        if not isinstance(reactor, reactor_class):
+            msg = "The installed reactor ({}.{}) does not match the TWISTED_REACTOR setting ({})"
+            raise Exception(msg.format(
+                reactor.__module__, reactor.__class__.__name__, TWISTED_REACTOR
+            ))
 
 
 def is_asyncio_reactor_installed():

@@ -22,7 +22,7 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-from scrapy.utils.reactor import install_twisted_reactor, is_asyncio_reactor_installed
+from scrapy.utils.reactor import install_reactor, verify_installed_reactor
 
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class CrawlerRunner:
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
-        self._handle_custom_reactor()
+        self._handle_twisted_reactor()
 
     @property
     def spiders(self):
@@ -232,11 +232,8 @@ class CrawlerRunner:
         while self._active:
             yield defer.DeferredList(self._active)
 
-    def _handle_custom_reactor(self):
-        if self.settings.getbool('ASYNCIO_REACTOR') and not is_asyncio_reactor_installed():
-            raise Exception(
-                "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed."
-            )
+    def _handle_twisted_reactor(self):
+        verify_installed_reactor(self.settings.get('TWISTED_REACTOR'))
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -325,9 +322,9 @@ class CrawlerProcess(CrawlerRunner):
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
 
-    def _handle_custom_reactor(self):
-        install_twisted_reactor(self.settings)
-        super()._handle_custom_reactor()
+    def _handle_twisted_reactor(self):
+        install_reactor(self.settings.get("TWISTED_REACTOR"))
+        super()._handle_twisted_reactor()
 
 
 def _get_spider_loader(settings):
