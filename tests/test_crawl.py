@@ -6,13 +6,14 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
+from scrapy import signals
 from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
                            SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
-                           AsyncDefSpider, AsyncDefAsyncioSpider)
+                           AsyncDefSpider, AsyncDefAsyncioSpider, AsyncDefAsyncioReturnSpider)
 
 
 class CrawlTestCase(TestCase):
@@ -326,3 +327,19 @@ with multiples lines
         with LogCapture() as log:
             yield runner.join()
         self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_list(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReturnSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        self.assertIn({'id': 1}, items)
+        self.assertIn({'id': 2}, items)

@@ -106,6 +106,17 @@ class AsyncDefAsyncioSpider(SimpleSpider):
         self.logger.info("Got response %d" % status)
 
 
+class AsyncDefAsyncioReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+        return [{'id': 1}, {'id': 2}]
+
+
 class ItemSpider(FollowAllSpider):
 
     name = 'item'
