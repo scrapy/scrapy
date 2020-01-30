@@ -216,5 +216,5 @@ BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
 Install a specific Twisted reactor
 ==================================
 
-If the crawl is exceeding the system's underlying capabilities, you might want to try
-installing a specific Twisted reactor using the :setting:`TWISTED_REACTOR` setting.
+If the crawl is exceeding the system's capabilities, you might want to try
+installing a specific Twisted reactor, via the :setting:`TWISTED_REACTOR` setting.
