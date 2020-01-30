@@ -353,6 +353,8 @@ method for this purpose. For example::
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 
+.. _faq-ipv6-support:
+
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
@@ -361,6 +363,17 @@ Note that by doing so, you lose the ability to set a specific timeout for DNS re
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
 
+.. _faq-specific-reactor:
+
+How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?
+--------------------------------------------------------------------------------------------
+
+This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
+Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
+different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search

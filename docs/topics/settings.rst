@@ -1449,13 +1449,14 @@ TWISTED_REACTOR
 
 Default: ``None``
 
-Full path of a specific Twisted reactor, for instance
+Full path of a given Twisted reactor, for instance:
 :class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+
 Scrapy will install this reactor if no other is installed yet, such as when
-using the ``scrapy`` program or the :class:`~scrapy.crawler.CrawlerProcess` class.
-If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you need to
-install the correct reactor manually.
-An exception will be raised if the installation fails.
+the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class. If you are using the
+:class:`~scrapy.crawler.CrawlerRunner` class, you need to install the correct
+reactor manually. An exception will be raised if the installation fails.
 
 The default value for this option is currently ``None``, which means that Scrapy
 will not attempt to install any specific reactor, and the default one defined by
