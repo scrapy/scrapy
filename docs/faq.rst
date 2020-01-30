@@ -366,7 +366,7 @@ Note that by doing so, you lose the ability to set a specific timeout for DNS re
 .. _faq-specific-reactor:
 
 How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?
---------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
 
 This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
 Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
