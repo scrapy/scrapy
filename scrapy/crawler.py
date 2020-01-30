@@ -4,34 +4,35 @@ import signal
 import warnings
 
 from twisted.internet import defer
-from zope.interface.verify import verifyClass, DoesNotImplement
+from zope.interface.verify import DoesNotImplement, verifyClass
 
-from scrapy import Spider
+from scrapy import signals, Spider
 from scrapy.core.engine import ExecutionEngine
-from scrapy.resolver import CachingThreadedResolver
-from scrapy.interfaces import ISpiderLoader
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
+from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
-from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-from scrapy.utils.misc import load_object
 from scrapy.utils.log import (
-    LogCounterHandler, configure_logging, log_scrapy_info,
-    get_scrapy_root_handler, install_scrapy_root_handler)
-from scrapy import signals
+    configure_logging,
+    get_scrapy_root_handler,
+    install_scrapy_root_handler,
+    log_scrapy_info,
+    LogCounterHandler,
+)
+from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
 logger = logging.getLogger(__name__)
 
 
-class Crawler(object):
+class Crawler:
 
     def __init__(self, spidercls, settings=None):
         if isinstance(spidercls, Spider):
-            raise ValueError(
-                'The spidercls argument must be a class, not an object')
+            raise ValueError('The spidercls argument must be a class, not an object')
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -110,7 +111,7 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class CrawlerRunner(object):
+class CrawlerRunner:
     """
     This is a convenient helper class that keeps track of, manages and runs
     crawlers inside an already setup :mod:`~twisted.internet.reactor`.
@@ -303,23 +304,13 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        reactor.installResolver(self._get_dns_resolver())
+        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _get_dns_resolver(self):
-        from twisted.internet import reactor
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = self.settings.getint('DNSCACHE_SIZE')
-        else:
-            cache_size = 0
-        return CachingThreadedResolver(
-            reactor=reactor,
-            cache_size=cache_size,
-            timeout=self.settings.getfloat('DNS_TIMEOUT')
-        )
 
     def _graceful_stop_reactor(self):
         d = self.stop()

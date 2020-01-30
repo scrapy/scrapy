@@ -140,7 +140,7 @@ setting the following settings::
 
 While pending requests are below the configured values of
 :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
+:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
 concurrently. As a result, the first few requests of a crawl rarely follow the
 desired order. Lowering those settings to ``1`` enforces the desired order, but
 it significantly slows down the crawl as a whole.
@@ -352,6 +352,13 @@ method for this purpose. For example::
                 if isinstance(item, (BaseItem, dict)):
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
+
+Does Scrapy support IPv6 addresses?
+-----------------------------------
+
+Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Note that by doing so, you lose the ability to set a specific timeout for DNS requests
+(the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
 
 .. _user agents: https://en.wikipedia.org/wiki/User_agent

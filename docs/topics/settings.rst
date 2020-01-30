@@ -397,6 +397,19 @@ Default: ``10000``
 
 DNS in-memory cache size.
 
+.. setting:: DNS_RESOLVER
+
+DNS_RESOLVER
+------------
+
+Default: ``'scrapy.resolver.CachingThreadedResolver'``
+
+The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
+supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
+but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
+take the :setting:`DNS_TIMEOUT` setting into account.
+
 .. setting:: DNS_TIMEOUT
 
 DNS_TIMEOUT
@@ -1261,6 +1274,17 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE
+----------------------------
+Default: ``5_000_000``
+
+Soft limit (in bytes) for response data being processed.
+
+While the sum of the sizes of all responses being processed is above this value,
+Scrapy does not process new requests.
 
 .. setting:: SPIDER_CONTRACTS
 

@@ -60,6 +60,7 @@ DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
+DNS_RESOLVER = 'scrapy.resolver.CachingThreadedResolver'
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
@@ -253,6 +254,8 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
