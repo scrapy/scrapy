@@ -1472,14 +1472,16 @@ TWISTED_REACTOR
 
 Default: ``None``
 
-The full path of a specific Twisted reactor, for instance
-:class:`twisted.internet.epollreactor.EPollReactor`. If set to ``None``, Scrapy will
-not attempt to install any specific reactor, and Twisted will choose the default
-one for the current platform.
-See https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
-for additional information.
+Full path of a specific Twisted reactor, for instance
+:class:`twisted.internet.selectreactor.SelectReactor`.
+If set to ``None`` (the default), Scrapy will not attempt to install any
+specific reactor, and the default one defined by Twisted for the current
+platform will be used. For additional information, see
+https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
 
-The :setting:`ASYNCIO_REACTOR` setting takes precedence over this one.
+:setting:`ASYNCIO_REACTOR` takes precedence over :setting:`TWISTED_REACTOR`,
+i.e. if :setting:`ASYNCIO_REACTOR` is ``True``, Scrapy will ignore the value
+of :setting:`TWISTED_REACTOR`.
 
 
 .. setting:: URLLENGTH_LIMIT

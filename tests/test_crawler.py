@@ -323,3 +323,18 @@ class CrawlerProcessSubprocess(unittest.TestCase):
             "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
             "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
         ]))
+
+    def test_reactor_select(self):
+        log = self.run_script("twisted_reactor_select.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
+
+    def test_reactor_poll(self):
+        log = self.run_script("twisted_reactor_poll.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.pollreactor.PollReactor", log)
+
+    def test_reactor_asyncio(self):
+        log = self.run_script("twisted_reactor_asyncio.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
