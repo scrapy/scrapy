@@ -2,7 +2,8 @@ from unittest import TestCase
 
 from pytest import mark
 
-from scrapy.utils.asyncio import is_asyncio_reactor_installed, install_asyncio_reactor
+from scrapy.settings import Settings
+from scrapy.utils.reactor import is_asyncio_reactor_installed, install_twisted_reactor
 
 
 @mark.usefixtures('reactor_pytest')
@@ -14,4 +15,5 @@ class AsyncioTest(TestCase):
 
     def test_install_asyncio_reactor(self):
         # this should do nothing
-        install_asyncio_reactor()
+        settings = Settings({"ASYNCIO_REACTOR": True})
+        install_twisted_reactor(settings)
