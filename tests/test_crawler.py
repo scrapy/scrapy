@@ -266,7 +266,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
             if self.reactor_pytest == 'asyncio':
                 runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
                 yield runner.crawl(NoRequestsSpider)
-                self.assertIn("Asyncio reactor is installed", str(log))
+                self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
             else:
                 msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
                 with self.assertRaisesRegex(Exception, msg):
@@ -277,7 +277,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': False})
         with LogCapture(level=logging.DEBUG) as log:
             yield runner.crawl(NoRequestsSpider)
-            self.assertNotIn("Asyncio reactor is installed", str(log))
+            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
 
 
 class CrawlerProcessSubprocess(unittest.TestCase):
@@ -294,17 +294,17 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_simple(self):
         log = self.run_script('simple.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertNotIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_reactor(self):
         log = self.run_script('asyncio_enabled_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')

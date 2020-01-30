@@ -297,11 +297,11 @@ class BadSpider(scrapy.Spider):
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=True'])
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=False'])
-        self.assertNotIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 
 class BenchCommandTest(CommandTest):
