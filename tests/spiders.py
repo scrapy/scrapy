@@ -1,14 +1,18 @@
 """
 Some spiders used for testing and benchmarking
 """
+import asyncio
 import time
 from urllib.parse import urlencode
+
+from twisted.internet import defer
 
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.spiders.crawl import CrawlSpider, Rule
+from scrapy.utils.test import get_from_asyncio_queue
 
 
 class MockServerSpider(Spider):
@@ -81,6 +85,36 @@ class SimpleSpider(MetaSpider):
 
     def parse(self, response):
         self.logger.info("Got response %d" % response.status)
+
+
+class AsyncDefSpider(SimpleSpider):
+
+    name = 'asyncdef'
+
+    async def parse(self, response):
+        await defer.succeed(42)
+        self.logger.info("Got response %d" % response.status)
+
+
+class AsyncDefAsyncioSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+
+
+class AsyncDefAsyncioReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+        return [{'id': 1}, {'id': 2}]
 
 
 class ItemSpider(FollowAllSpider):
