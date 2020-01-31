@@ -233,7 +233,8 @@ class CrawlerRunner:
             yield defer.DeferredList(self._active)
 
     def _handle_twisted_reactor(self):
-        verify_installed_reactor(self.settings.get('TWISTED_REACTOR'))
+        if self.settings.get("TWISTED_REACTOR"):
+            verify_installed_reactor(self.settings["TWISTED_REACTOR"])
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -323,7 +324,8 @@ class CrawlerProcess(CrawlerRunner):
             pass
 
     def _handle_twisted_reactor(self):
-        install_reactor(self.settings.get("TWISTED_REACTOR"))
+        if self.settings.get("TWISTED_REACTOR"):
+            install_reactor(self.settings["TWISTED_REACTOR"])
         super()._handle_twisted_reactor()
 
 

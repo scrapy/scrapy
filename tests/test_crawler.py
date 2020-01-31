@@ -258,7 +258,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             })
         else:
-            msg = r"The installed reactor \(.*?\) does not match the TWISTED_REACTOR setting \(.*?\)"
+            msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
                 runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
@@ -274,7 +274,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                 yield runner.crawl(NoRequestsSpider)
                 self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
             else:
-                msg = r"The installed reactor \(.*?\) does not match the TWISTED_REACTOR setting \(.*?\)"
+                msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
                 with self.assertRaisesRegex(Exception, msg):
                     runner = CrawlerProcess(settings={
                         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",

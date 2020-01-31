@@ -49,29 +49,27 @@ class CallLaterOnce(object):
         return self._func(*self._a, **self._kw)
 
 
-def install_reactor(TWISTED_REACTOR=None):
-    if TWISTED_REACTOR:
-        reactor_class = load_object(TWISTED_REACTOR)
-        if reactor_class is asyncioreactor.AsyncioSelectorReactor:
-            with suppress(error.ReactorAlreadyInstalledError):
-                asyncioreactor.install(asyncio.get_event_loop())
-        else:
-            *module, _ = TWISTED_REACTOR.split(".")
-            installer_path = module + ["install"]
-            installer = load_object(".".join(installer_path))
-            with suppress(error.ReactorAlreadyInstalledError):
-                installer()
+def install_reactor(reactor_path):
+    reactor_class = load_object(reactor_path)
+    if reactor_class is asyncioreactor.AsyncioSelectorReactor:
+        with suppress(error.ReactorAlreadyInstalledError):
+            asyncioreactor.install(asyncio.get_event_loop())
+    else:
+        *module, _ = reactor_path.split(".")
+        installer_path = module + ["install"]
+        installer = load_object(".".join(installer_path))
+        with suppress(error.ReactorAlreadyInstalledError):
+            installer()
 
 
-def verify_installed_reactor(TWISTED_REACTOR):
-    if TWISTED_REACTOR:
-        from twisted.internet import reactor
-        reactor_class = load_object(TWISTED_REACTOR)
-        if not isinstance(reactor, reactor_class):
-            msg = "The installed reactor ({}.{}) does not match the TWISTED_REACTOR setting ({})"
-            raise Exception(msg.format(
-                reactor.__module__, reactor.__class__.__name__, TWISTED_REACTOR
-            ))
+def verify_installed_reactor(reactor_path):
+    from twisted.internet import reactor
+    reactor_class = load_object(reactor_path)
+    if not isinstance(reactor, reactor_class):
+        msg = "The installed reactor ({}.{}) does not match the requested one ({})".format(
+            reactor.__module__, reactor.__class__.__name__, reactor_path
+        )
+        raise Exception(msg)
 
 
 def is_asyncio_reactor_installed():
