@@ -345,6 +345,7 @@ with multiples lines
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
 
+    @defer.inlineCallbacks
     def test_response_ssl_certificate_none(self):
         crawler = self.runner.create_crawler(SingleRequestSpider)
         url = self.mockserver.url("/echo?body=test", is_secure=False)
