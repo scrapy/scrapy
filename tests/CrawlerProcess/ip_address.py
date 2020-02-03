@@ -21,7 +21,7 @@ class MockThreadedResolver(ThreadedResolver):
     def from_crawler(cls, crawler, reactor):
         return cls(reactor)
 
-    def install_on_reactor(self,):
+    def install_on_reactor(self):
         self.reactor.installResolver(self)
 
     def getHostByName(self, name, timeout=None):
