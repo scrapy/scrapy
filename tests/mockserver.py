@@ -257,9 +257,9 @@ class MockDNSServer():
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), keyfile),
-         os.path.join(os.path.dirname(__file__), certfile),
-         )
+        os.path.join(os.path.dirname(__file__), keyfile),
+        os.path.join(os.path.dirname(__file__), certfile),
+    )
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.2+ because it unconditionally enables some strong ciphers
