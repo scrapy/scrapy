@@ -246,8 +246,11 @@ class MockDNSResolver:
 class MockDNSServer():
 
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', 'dns'],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
                           stdout=PIPE, env=get_testenv())
+        host, port = self.proc.stdout.readline().strip().decode('ascii').split(":")
+        self.host = host
+        self.port = int(port)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -292,11 +295,11 @@ if __name__ == "__main__":
         clients = [MockDNSResolver()]
         factory = DNSServerFactory(clients=clients)
         protocol = dns.DNSDatagramProtocol(controller=factory)
-        reactor.listenUDP(10053, protocol)
-        reactor.listenTCP(10053, factory)
+        listener = reactor.listenUDP(0, protocol)
 
         def print_listening():
-            print("DNS server running on port 10053")
+            host = listener.getHost()
+            print("%s:%s" % (host.host, host.port))
 
     reactor.callWhenRunning(print_listening)
     reactor.run()
