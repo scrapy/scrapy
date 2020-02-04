@@ -243,7 +243,7 @@ class MockDNSResolver:
         return defer.succeed(self._resolve(name))
 
 
-class MockDNSServer():
+class MockDNSServer:
 
     def __enter__(self):
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
