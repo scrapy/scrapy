@@ -353,8 +353,6 @@ method for this purpose. For example::
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 
-.. _faq-ipv6-support:
-
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
