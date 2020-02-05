@@ -5,6 +5,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
+
 class SignalCatcherSpider(Spider):
     name = 'signal_catcher'
 
