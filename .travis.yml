@@ -16,6 +16,8 @@ matrix:
       python: 3.5
     - env: TOXENV=pinned
       python: 3.5
+    - env: TOXENV=py35-asyncio
+      python: 3.5.2
     - env: TOXENV=py36
       python: 3.6
     - env: TOXENV=py37
@@ -23,6 +25,8 @@ matrix:
     - env: TOXENV=py38
       python: 3.8
     - env: TOXENV=extra-deps
+      python: 3.8
+    - env: TOXENV=py38-asyncio
       python: 3.8
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml

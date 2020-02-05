@@ -160,6 +160,27 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: ASYNCIO_REACTOR
+
+ASYNCIO_REACTOR
+---------------
+
+Default: ``False``
+
+Whether to install and require the Twisted reactor that uses the asyncio loop.
+
+When this option is set to ``True``, Scrapy will require
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
+install this reactor if no reactor is installed yet, such as when using the
+``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
+manually. If a different reactor is installed outside Scrapy, it will raise an
+exception.
+
+The default value for this option is currently ``False`` to maintain backward
+compatibility and avoid possible problems caused by using a different Twisted
+reactor.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -375,6 +396,19 @@ DNSCACHE_SIZE
 Default: ``10000``
 
 DNS in-memory cache size.
+
+.. setting:: DNS_RESOLVER
+
+DNS_RESOLVER
+------------
+
+Default: ``'scrapy.resolver.CachingThreadedResolver'``
+
+The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
+supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
+but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
+take the :setting:`DNS_TIMEOUT` setting into account.
 
 .. setting:: DNS_TIMEOUT
 
@@ -1240,6 +1274,17 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE
+----------------------------
+Default: ``5_000_000``
+
+Soft limit (in bytes) for response data being processed.
+
+While the sum of the sizes of all responses being processed is above this value,
+Scrapy does not process new requests.
 
 .. setting:: SPIDER_CONTRACTS
 

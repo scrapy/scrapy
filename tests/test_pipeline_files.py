@@ -12,12 +12,23 @@ from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, GCSFilesStore, S3FilesStore
+from scrapy.pipelines.files import (
+    FilesPipeline,
+    FSFilesStore,
+    FTPFilesStore,
+    GCSFilesStore,
+    S3FilesStore,
+)
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.python import is_dataclass_instance
-from scrapy.utils.test import (assert_aws_environ, assert_gcs_environ,
-                               get_gcs_content_and_delete, get_s3_content_and_delete)
+from scrapy.utils.test import (
+    assert_aws_environ,
+    assert_gcs_environ,
+    get_ftp_content_and_delete,
+    get_gcs_content_and_delete,
+    get_s3_content_and_delete,
+)
 
 
 try:
@@ -406,6 +417,31 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+
+class TestFTPFileStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        uri = os.environ.get('FTP_TEST_FILE_URI')
+        if not uri:
+            raise unittest.SkipTest("No FTP URI available for testing")
+        data = b"TestFTPFilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = 'full/filename'
+        store = FTPFilesStore(uri)
+        empty_dict = yield store.stat_file(path, info=None)
+        self.assertEqual(empty_dict, {})
+        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
+        stat = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', stat)
+        self.assertIn('checksum', stat)
+        self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
+        path = '%s/%s' % (store.basedir, path)
+        content = get_ftp_content_and_delete(
+            path, store.host, store.port,
+            store.username, store.password, store.USE_ACTIVE_MODE)
+        self.assertEqual(data.decode(), content)
 
 
 class ItemWithFiles(Item):

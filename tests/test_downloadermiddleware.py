@@ -1,5 +1,9 @@
+import asyncio
 from unittest import mock
 
+from pytest import mark
+from twisted.internet import defer
+from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
@@ -7,7 +11,7 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from scrapy.utils.python import to_bytes
 
 
@@ -177,3 +181,75 @@ class ProcessExceptionInvalidOutput(ManagerTestCase):
         dfd.addBoth(results.append)
         self.assertIsInstance(results[0], Failure)
         self.assertIsInstance(results[0].value, _InvalidOutput)
+
+
+class MiddlewareUsingDeferreds(ManagerTestCase):
+    """Middlewares using Deferreds should work"""
+
+    def test_deferred(self):
+        resp = Response('http://example.com/index.html')
+
+        class DeferredMiddleware:
+            def cb(self, result):
+                return result
+
+            def process_request(self, request, spider):
+                d = Deferred()
+                d.addCallback(self.cb)
+                d.callback(resp)
+                return d
+
+        self.mwman._add_middleware(DeferredMiddleware())
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)
+
+
+class MiddlewareUsingCoro(ManagerTestCase):
+    """Middlewares using asyncio coroutines should work"""
+
+    def test_asyncdef(self):
+        resp = Response('http://example.com/index.html')
+
+        class CoroMiddleware:
+            async def process_request(self, request, spider):
+                await defer.succeed(42)
+                return resp
+
+        self.mwman._add_middleware(CoroMiddleware())
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)
+
+    @mark.only_asyncio()
+    def test_asyncdef_asyncio(self):
+        resp = Response('http://example.com/index.html')
+
+        class CoroMiddleware:
+            async def process_request(self, request, spider):
+                await asyncio.sleep(0.1)
+                result = await get_from_asyncio_queue(resp)
+                return result
+
+        self.mwman._add_middleware(CoroMiddleware())
+        req = Request('http://example.com/index.html')
+        download_func = mock.MagicMock()
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
+        self.assertFalse(download_func.called)
