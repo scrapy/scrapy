@@ -59,12 +59,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)
 
-        def _evaluate_iterable(iterable, method_index, recover_to):
+        def _evaluate_iterable(iterable, exception_processor_index, recover_to):
             try:
                 for r in iterable:
                     yield r
             except Exception as ex:
-                exception_result = process_spider_exception(Failure(ex), method_index)
+                exception_result = process_spider_exception(Failure(ex), exception_processor_index)
                 if isinstance(exception_result, Failure):
                     raise
                 recover_to.extend(exception_result)
