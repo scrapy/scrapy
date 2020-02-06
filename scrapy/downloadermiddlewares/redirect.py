@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlparse
 from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
@@ -37,6 +38,9 @@ class BaseRedirectMiddleware(object):
                 [request.url]
             redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + \
                 [reason]
+            fingerprints = request.meta.get('redirect_fingerprints', set())
+            fingerprint = request_fingerprint(request)
+            redirected.meta['redirect_fingerprints'] = fingerprints | {fingerprint}
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
