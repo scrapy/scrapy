@@ -1449,7 +1449,7 @@ TWISTED_REACTOR
 
 Default: ``None``
 
-Full path of a given Twisted reactor, for instance:
+Import path of a given Twisted reactor, for instance:
 :class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
 Scrapy will install this reactor if no other is installed yet, such as when
