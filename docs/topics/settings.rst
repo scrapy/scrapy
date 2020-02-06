@@ -1046,8 +1046,6 @@ See :ref:`topics-extensions-ref-memusage`.
 MEMUSAGE_CHECK_INTERVAL_SECONDS
 -------------------------------
 
-.. versionadded:: 1.1
-
 Default: ``60.0``
 
 Scope: ``scrapy.extensions.memusage``
@@ -1335,8 +1333,6 @@ The class that will be used for loading spiders, which must implement the
 
 SPIDER_LOADER_WARN_ONLY
 -----------------------
-
-.. versionadded:: 1.3.3
 
 Default: ``False``
 

@@ -212,8 +212,6 @@ The following settings can be used to configure the cookie middleware:
 Multiple cookie sessions per spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.15
-
 There is support for keeping multiple cookie sessions per spider by using the
 :reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
 (session), but you can pass an identifier to use different ones.
@@ -470,8 +468,6 @@ DBM storage backend
 
 .. class:: DbmCacheStorage
 
-    .. versionadded:: 0.13
-
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
     By default, it uses the :mod:`dbm`, but you can change it with the
@@ -544,14 +540,9 @@ settings:
 HTTPCACHE_ENABLED
 ^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.11
-
 Default: ``False``
 
 Whether the HTTP cache will be enabled.
-
-.. versionchanged:: 0.11
-   Before 0.11, :setting:`HTTPCACHE_DIR` was used to enable cache.
 
 .. setting:: HTTPCACHE_EXPIRATION_SECS
 
@@ -564,9 +555,6 @@ Expiration time for cached requests, in seconds.
 
 Cached requests older than this time will be re-downloaded. If zero, cached
 requests will never expire.
-
-.. versionchanged:: 0.11
-   Before 0.11, zero meant cached requests always expire.
 
 .. setting:: HTTPCACHE_DIR
 
@@ -583,8 +571,6 @@ project data dir. For more info see: :ref:`topics-project-structure`.
 
 HTTPCACHE_IGNORE_HTTP_CODES
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.10
 
 Default: ``[]``
 
@@ -604,8 +590,6 @@ If enabled, requests not found in the cache will be ignored instead of downloade
 HTTPCACHE_IGNORE_SCHEMES
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.10
-
 Default: ``['file']``
 
 Don't cache responses with these URI schemes.
@@ -624,8 +608,6 @@ The class which implements the cache storage backend.
 HTTPCACHE_DBM_MODULE
 ^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
@@ -636,8 +618,6 @@ The database module to use in the :ref:`DBM storage backend
 HTTPCACHE_POLICY
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.18
-
 Default: ``'scrapy.extensions.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
@@ -646,8 +626,6 @@ The class which implements the cache policy.
 
 HTTPCACHE_GZIP
 ^^^^^^^^^^^^^^
-
-.. versionadded:: 1.0
 
 Default: ``False``
 
@@ -658,8 +636,6 @@ This setting is specific to the Filesystem backend.
 
 HTTPCACHE_ALWAYS_STORE
 ^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``False``
 
@@ -678,8 +654,6 @@ responses you feed to the cache middleware.
 
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``[]``
 
@@ -729,8 +703,6 @@ HttpProxyMiddleware
 
 .. module:: scrapy.downloadermiddlewares.httpproxy
    :synopsis: Http Proxy Middleware
-
-.. versionadded:: 0.8
 
 .. reqmeta:: proxy
 
@@ -815,8 +787,6 @@ RedirectMiddleware settings
 REDIRECT_ENABLED
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``True``
 
 Whether the Redirect middleware will be enabled.
@@ -856,8 +826,6 @@ MetaRefreshMiddleware settings
 
 METAREFRESH_ENABLED
 ^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.17
 
 Default: ``True``
 
@@ -916,8 +884,6 @@ RetryMiddleware Settings
 
 RETRY_ENABLED
 ^^^^^^^^^^^^^
-
-.. versionadded:: 0.13
 
 Default: ``True``
 
@@ -1172,8 +1138,6 @@ AjaxCrawlMiddleware Settings
 
 AJAXCRAWL_ENABLED
 ^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.21
 
 Default: ``False``
 
