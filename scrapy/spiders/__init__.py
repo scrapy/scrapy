@@ -62,23 +62,8 @@ class Spider(object_ref):
                 "Crawling could not start: 'start_urls' not found "
                 "or empty (but found 'start_url' attribute instead, "
                 "did you miss an 's'?)")
-        if method_is_overridden(cls, Spider, 'make_requests_from_url'):
-            warnings.warn(
-                "Spider.make_requests_from_url method is deprecated; it "
-                "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead (see %s.%s)." % (
-                    cls.__module__, cls.__name__
-                ),
-            )
-            for url in self.start_urls:
-                yield self.make_requests_from_url(url)
-        else:
-            for url in self.start_urls:
-                yield Request(url, dont_filter=True)
-
-    def make_requests_from_url(self, url):
-        """ This method is deprecated. """
-        return Request(url, dont_filter=True)
+        for url in self.start_urls:
+            yield Request(url)
 
     def parse(self, response):
         raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
