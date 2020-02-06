@@ -191,6 +191,12 @@ In any case, if something is covered in a docstring, use the
 documentation instead of duplicating the docstring in files within the
 ``docs/`` directory.
 
+Documentation updates that cover new, modified or deprecated features must use
+Sphinx’s :rst:dir:`versionadded`, :rst:dir:`versionchanged`, and
+:rst:dir:`deprecated` directives. Use ``VERSION`` as version, we will replace
+it with the actual version right before the corresponding release. We remove
+all these directives right before the release of a major Scrapy version.
+
 Tests
 =====
 
