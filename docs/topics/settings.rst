@@ -1464,7 +1464,7 @@ Twisted for the current platform will be used. This is to maintain backward
 compatibility and avoid possible problems caused by using a non-default reactor.
 
 For additional information, please see
-https://twistedmatrix.com/documents/current/core/howto/choosing-reactor.html
+:doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT
