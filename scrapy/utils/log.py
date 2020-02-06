@@ -149,7 +149,7 @@ def log_scrapy_info(settings):
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
     from twisted.internet import reactor
-    logger.debug("Using reactor: %s.%s" % (reactor.__module__, reactor.__class__.__name__))
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
 
 class StreamLogger(object):
