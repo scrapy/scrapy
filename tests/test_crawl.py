@@ -14,8 +14,8 @@ from tests.mockserver import MockServer
 from tests.spiders import (
     AsyncDefAsyncioReturnSpider,
     AsyncDefAsyncioSpider,
-    AsyncDefSpider, 
-    BrokenStartRequestsSpider, 
+    AsyncDefSpider,
+    BrokenStartRequestsSpider,
     CrawlSpiderWithErrback,
     CrawlSpiderWithParseMethod,
     DelaySpider,
