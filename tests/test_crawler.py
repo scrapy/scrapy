@@ -255,30 +255,38 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
-            runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+            runner = CrawlerRunner(settings={
+                "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            })
         else:
-            msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
+            msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(settings={'ASYNCIO_REACTOR': True})
+                runner = CrawlerRunner(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_true(self):
         with LogCapture(level=logging.DEBUG) as log:
             if self.reactor_pytest == 'asyncio':
-                runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
+                runner = CrawlerProcess(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
                 yield runner.crawl(NoRequestsSpider)
-                self.assertIn("Asyncio reactor is installed", str(log))
+                self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
             else:
-                msg = "ASYNCIO_REACTOR is on but the Twisted asyncio reactor is not installed"
+                msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
                 with self.assertRaisesRegex(Exception, msg):
-                    runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': True})
+                    runner = CrawlerProcess(settings={
+                        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                    })
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_false(self):
-        runner = CrawlerProcess(settings={'ASYNCIO_REACTOR': False})
+        runner = CrawlerProcess(settings={"TWISTED_REACTOR": None})
         with LogCapture(level=logging.DEBUG) as log:
             yield runner.crawl(NoRequestsSpider)
-            self.assertNotIn("Asyncio reactor is installed", str(log))
+            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
 
 
 class ScriptRunnerMixin:
@@ -297,17 +305,17 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
     def test_simple(self):
         log = self.run_script('simple.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertNotIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_reactor(self):
         log = self.run_script('asyncio_enabled_reactor.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
@@ -326,6 +334,21 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
             "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
         ]))
+
+    def test_reactor_select(self):
+        log = self.run_script("twisted_reactor_select.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
+
+    def test_reactor_poll(self):
+        log = self.run_script("twisted_reactor_poll.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.pollreactor.PollReactor", log)
+
+    def test_reactor_asyncio(self):
+        log = self.run_script("twisted_reactor_asyncio.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):

@@ -13,7 +13,6 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.utils.asyncio import install_asyncio_reactor, is_asyncio_reactor_installed
 from scrapy.utils.log import (
     configure_logging,
     get_scrapy_root_handler,
@@ -23,6 +22,7 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+from scrapy.utils.reactor import install_reactor, verify_installed_reactor
 
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class CrawlerRunner:
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
-        self._handle_asyncio_reactor()
+        self._handle_twisted_reactor()
 
     @property
     def spiders(self):
@@ -232,10 +232,9 @@ class CrawlerRunner:
         while self._active:
             yield defer.DeferredList(self._active)
 
-    def _handle_asyncio_reactor(self):
-        if self.settings.getbool('ASYNCIO_REACTOR') and not is_asyncio_reactor_installed():
-            raise Exception("ASYNCIO_REACTOR is on but the Twisted asyncio "
-                            "reactor is not installed.")
+    def _handle_twisted_reactor(self):
+        if self.settings.get("TWISTED_REACTOR"):
+            verify_installed_reactor(self.settings["TWISTED_REACTOR"])
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -324,10 +323,10 @@ class CrawlerProcess(CrawlerRunner):
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
 
-    def _handle_asyncio_reactor(self):
-        if self.settings.getbool('ASYNCIO_REACTOR'):
-            install_asyncio_reactor()
-        super()._handle_asyncio_reactor()
+    def _handle_twisted_reactor(self):
+        if self.settings.get("TWISTED_REACTOR"):
+            install_reactor(self.settings["TWISTED_REACTOR"])
+        super()._handle_twisted_reactor()
 
 
 def _get_spider_loader(settings):

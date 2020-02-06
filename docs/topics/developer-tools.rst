@@ -142,7 +142,7 @@ a use case:
 
 Say you want to find the ``Next`` button on the page. Type ``Next`` into the 
 search bar on the top right of the `Inspector`. You should get two results. 
-The first is a ``li`` tag with the ``class="text"``, the second the text 
+The first is a ``li`` tag with the ``class="next"``, the second the text 
 of an ``a`` tag. Right click on the ``a`` tag and select ``Scroll into View``.
 If you hover over the tag, you'll see the button highlighted. From here
 we could easily create a :ref:`Link Extractor <topics-link-extractors>` to 

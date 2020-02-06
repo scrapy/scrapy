@@ -2,14 +2,14 @@
 Helper functions for dealing with Twisted deferreds
 """
 import asyncio
-from functools import wraps
 import inspect
+from functools import wraps
 
 from twisted.internet import defer, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 
 def defer_fail(_failure):
