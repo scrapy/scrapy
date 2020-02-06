@@ -1,17 +1,29 @@
 import json
 import logging
 
+from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
+from scrapy import signals
 from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
-from tests.spiders import (BrokenStartRequestsSpider, CrawlSpiderWithErrback,
-                           CrawlSpiderWithParseMethod, DelaySpider, SimpleSpider,
-                           DuplicateStartRequestsSpider, FollowAllSpider, SingleRequestSpider)
+from tests.spiders import (
+    AsyncDefAsyncioReturnSpider,
+    AsyncDefAsyncioSpider,
+    AsyncDefSpider, 
+    BrokenStartRequestsSpider, 
+    CrawlSpiderWithErrback,
+    CrawlSpiderWithParseMethod,
+    DelaySpider,
+    DuplicateStartRequestsSpider,
+    FollowAllSpider,
+    SimpleSpider,
+    SingleRequestSpider,
+)
 
 
 class CrawlTestCase(TestCase):
@@ -333,3 +345,35 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
         self.assertIn("[errback] status 501", str(log))
+
+    @defer.inlineCallbacks
+    def test_async_def_parse(self):
+        self.runner.crawl(AsyncDefSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield self.runner.join()
+        self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse(self):
+        runner = CrawlerRunner({"ASYNCIO_REACTOR": True})
+        runner.crawl(AsyncDefAsyncioSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield runner.join()
+        self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_list(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReturnSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        self.assertIn({'id': 1}, items)
+        self.assertIn({'id': 2}, items)

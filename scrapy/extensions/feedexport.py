@@ -7,18 +7,16 @@ See documentation in docs/topics/feed-exports.rst
 import os
 import sys
 import logging
-import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 from urllib.parse import urlparse, unquote
-from ftplib import FTP
 
 from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
 from scrapy import signals
-from scrapy.utils.ftp import ftp_makedirs_cwd
+from scrapy.utils.ftp import ftp_store_file
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
@@ -173,16 +171,11 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
     def _store_in_thread(self, file):
-        file.seek(0)
-        ftp = FTP()
-        ftp.connect(self.host, self.port)
-        ftp.login(self.username, self.password)
-        if self.use_active_mode:
-            ftp.set_pasv(False)
-        dirname, filename = posixpath.split(self.path)
-        ftp_makedirs_cwd(ftp, dirname)
-        ftp.storbinary('STOR %s' % filename, file)
-        ftp.quit()
+        ftp_store_file(
+            path=self.path, file=file, host=self.host,
+            port=self.port, username=self.username,
+            password=self.password, use_active_mode=self.use_active_mode
+        )
 
 
 class SpiderSlot(object):

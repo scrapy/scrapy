@@ -3,34 +3,36 @@ import pprint
 import signal
 import warnings
 
-from twisted.internet import reactor, defer
-from zope.interface.verify import verifyClass, DoesNotImplement
+from twisted.internet import defer
+from zope.interface.verify import DoesNotImplement, verifyClass
 
-from scrapy import Spider
+from scrapy import signals, Spider
 from scrapy.core.engine import ExecutionEngine
-from scrapy.resolver import CachingThreadedResolver
-from scrapy.interfaces import ISpiderLoader
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
+from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-from scrapy.utils.misc import load_object
 from scrapy.utils.log import (
-    LogCounterHandler, configure_logging, log_scrapy_info,
-    get_scrapy_root_handler, install_scrapy_root_handler)
-from scrapy import signals
+    configure_logging,
+    get_scrapy_root_handler,
+    install_scrapy_root_handler,
+    log_scrapy_info,
+    LogCounterHandler,
+)
+from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+from scrapy.utils.reactor import install_reactor, verify_installed_reactor
 
 
 logger = logging.getLogger(__name__)
 
 
-class Crawler(object):
+class Crawler:
 
     def __init__(self, spidercls, settings=None):
         if isinstance(spidercls, Spider):
-            raise ValueError(
-                'The spidercls argument must be a class, not an object')
+            raise ValueError('The spidercls argument must be a class, not an object')
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -109,7 +111,7 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class CrawlerRunner(object):
+class CrawlerRunner:
     """
     This is a convenient helper class that keeps track of, manages and runs
     crawlers inside an already setup :mod:`~twisted.internet.reactor`.
@@ -136,6 +138,7 @@ class CrawlerRunner(object):
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
+        self._handle_twisted_reactor()
 
     @property
     def spiders(self):
@@ -229,6 +232,10 @@ class CrawlerRunner(object):
         while self._active:
             yield defer.DeferredList(self._active)
 
+    def _handle_twisted_reactor(self):
+        if self.settings.get("TWISTED_REACTOR"):
+            verify_installed_reactor(self.settings["TWISTED_REACTOR"])
+
 
 class CrawlerProcess(CrawlerRunner):
     """
@@ -261,6 +268,7 @@ class CrawlerProcess(CrawlerRunner):
         log_scrapy_info(self.settings)
 
     def _signal_shutdown(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
         logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
@@ -268,6 +276,7 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
+        from twisted.internet import reactor
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown',
@@ -286,6 +295,7 @@ class CrawlerProcess(CrawlerRunner):
         :param boolean stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
+        from twisted.internet import reactor
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
@@ -293,22 +303,13 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        reactor.installResolver(self._get_dns_resolver())
+        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _get_dns_resolver(self):
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = self.settings.getint('DNSCACHE_SIZE')
-        else:
-            cache_size = 0
-        return CachingThreadedResolver(
-            reactor=reactor,
-            cache_size=cache_size,
-            timeout=self.settings.getfloat('DNS_TIMEOUT')
-        )
 
     def _graceful_stop_reactor(self):
         d = self.stop()
@@ -316,10 +317,16 @@ class CrawlerProcess(CrawlerRunner):
         return d
 
     def _stop_reactor(self, _=None):
+        from twisted.internet import reactor
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+    def _handle_twisted_reactor(self):
+        if self.settings.get("TWISTED_REACTOR"):
+            install_reactor(self.settings["TWISTED_REACTOR"])
+        super()._handle_twisted_reactor()
 
 
 def _get_spider_loader(settings):

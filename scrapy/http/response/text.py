@@ -5,17 +5,19 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+from contextlib import suppress
+from typing import Generator
 from urllib.parse import urljoin
 
 import parsel
-from w3lib.encoding import html_to_unicode, resolve_encoding, \
-    html_body_declared_encoding, http_content_type_encoding
+from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
+                            http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
 
-from scrapy.http.request import Request
+from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
+from scrapy.utils.response import get_base_url
 
 
 class TextResponse(Response):
@@ -40,7 +42,7 @@ class TextResponse(Response):
         if isinstance(body, str):
             if self._encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                    type(self).__name__)
+                                type(self).__name__)
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)
@@ -86,8 +88,8 @@ class TextResponse(Response):
         if self._cached_benc is None:
             content_type = to_unicode(self.headers.get(b'Content-Type', b''))
             benc, ubody = html_to_unicode(content_type, self.body,
-                    auto_detect_fun=self._auto_detect_fun,
-                    default_encoding=self._DEFAULT_ENCODING)
+                                          auto_detect_fun=self._auto_detect_fun,
+                                          default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc
@@ -126,13 +128,14 @@ class TextResponse(Response):
         It accepts the same arguments as ``Request.__init__`` method,
         but ``url`` can be not only an absolute URL, but also
 
-        * a relative URL;
-        * a scrapy.link.Link object (e.g. a link extractor result);
-        * an attribute Selector (not SelectorList) - e.g.
+        * a relative URL
+        * a :class:`~scrapy.link.Link` object, e.g. the result of
+          :ref:`topics-link-extractors`
+        * a :class:`~scrapy.selector.Selector` object for a ``<link>`` or ``<a>`` element, e.g.
+          ``response.css('a.my_link')[0]``
+        * an attribute :class:`~scrapy.selector.Selector` (not SelectorList), e.g.
           ``response.css('a::attr(href)')[0]`` or
-          ``response.xpath('//img/@src')[0]``.
-        * a Selector for ``<a>`` or ``<link>`` element, e.g.
-          ``response.css('a.my_link')[0]``.
+          ``response.xpath('//img/@src')[0]``
 
         See :ref:`response-follow-example` for usage examples.
         """
@@ -141,7 +144,66 @@ class TextResponse(Response):
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
         encoding = self.encoding if encoding is None else encoding
-        return super(TextResponse, self).follow(url, callback,
+        return super(TextResponse, self).follow(
+            url=url,
+            callback=callback,
+            method=method,
+            headers=headers,
+            body=body,
+            cookies=cookies,
+            meta=meta,
+            encoding=encoding,
+            priority=priority,
+            dont_filter=dont_filter,
+            errback=errback,
+            cb_kwargs=cb_kwargs,
+        )
+
+    def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
+                   cookies=None, meta=None, encoding=None, priority=0,
+                   dont_filter=False, errback=None, cb_kwargs=None,
+                   css=None, xpath=None):
+        # type: (...) -> Generator[Request, None, None]
+        """
+        A generator that produces :class:`~.Request` instances to follow all
+        links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s
+        ``__init__`` method, except that each ``urls`` element does not need to be
+        an absolute URL, it can be any of the following:
+
+        * a relative URL
+        * a :class:`~scrapy.link.Link` object, e.g. the result of
+          :ref:`topics-link-extractors`
+        * a :class:`~scrapy.selector.Selector` object for a ``<link>`` or ``<a>`` element, e.g.
+          ``response.css('a.my_link')[0]``
+        * an attribute :class:`~scrapy.selector.Selector` (not SelectorList), e.g.
+          ``response.css('a::attr(href)')[0]`` or
+          ``response.xpath('//img/@src')[0]``
+
+        In addition, ``css`` and ``xpath`` arguments are accepted to perform the link extraction
+        within the ``follow_all`` method (only one of ``urls``, ``css`` and ``xpath`` is accepted).
+
+        Note that when passing a ``SelectorList`` as argument for the ``urls`` parameter or
+        using the ``css`` or ``xpath`` parameters, this method will not produce requests for
+        selectors from which links cannot be obtained (for instance, anchor tags without an
+        ``href`` attribute)
+        """
+        arg_count = len(list(filter(None, (urls, css, xpath))))
+        if arg_count != 1:
+            raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
+        if not urls:
+            if css:
+                urls = self.css(css)
+            if xpath:
+                urls = self.xpath(xpath)
+        if isinstance(urls, parsel.SelectorList):
+            selectors = urls
+            urls = []
+            for sel in selectors:
+                with suppress(_InvalidSelector):
+                    urls.append(_url_from_selector(sel))
+        return super(TextResponse, self).follow_all(
+            urls=urls,
+            callback=callback,
             method=method,
             headers=headers,
             body=body,
@@ -155,18 +217,24 @@ class TextResponse(Response):
         )
 
 
+class _InvalidSelector(ValueError):
+    """
+    Raised when a URL cannot be obtained from a Selector
+    """
+
+
 def _url_from_selector(sel):
     # type: (parsel.Selector) -> str
     if isinstance(sel.root, str):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
-        raise ValueError("Unsupported selector: %s" % sel)
+        raise _InvalidSelector("Unsupported selector: %s" % sel)
     if sel.root.tag not in ('a', 'link'):
-        raise ValueError("Only <a> and <link> elements are supported; got <%s>" %
-                         sel.root.tag)
+        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" %
+                               sel.root.tag)
     href = sel.root.get('href')
     if href is None:
-        raise ValueError("<%s> element has no href attribute: %s" %
-                         (sel.root.tag, sel))
+        raise _InvalidSelector("<%s> element has no href attribute: %s" %
+                               (sel.root.tag, sel))
     return strip_html5_whitespace(href)
