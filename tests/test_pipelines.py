@@ -43,6 +43,34 @@ class AsyncDefAsyncioPipeline:
         return item
 
 
+class OrderPipeline:
+    name = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def __init__(self, crawler):
+        self.crawler = crawler
+
+    def open_spider(self, spider):
+        self.crawler.call_list.append(('open_spider', self.name))
+
+    def process_item(self, item, spider):
+        self.crawler.call_list.append(('process_item', self.name))
+        return item
+
+    def close_spider(self, spider):
+        self.crawler.call_list.append(('close_spider', self.name))
+
+class Pipeline1(OrderPipeline):
+    name = '1'
+
+
+class Pipeline2(OrderPipeline):
+    name = '2'
+
+
 class ItemSpider(Spider):
     name = 'itemspider'
 
@@ -66,9 +94,14 @@ class PipelineTestCase(unittest.TestCase):
         self.assertTrue(item.get('pipeline_passed'))
         self.items.append(item)
 
-    def _create_crawler(self, pipeline_class):
+    def _create_crawler(self, *pipeline_classes, **extra_settings):
         settings = {
-            'ITEM_PIPELINES': {__name__ + '.' + pipeline_class.__name__: 1},
+            'ITEM_PIPELINES': {
+                __name__ + '.' + pipeline_class.__name__: value
+                for value, pipeline_class in
+                enumerate(pipeline_classes, start=1)
+            },
+            **extra_settings,
         }
         crawler = get_crawler(ItemSpider, settings)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
@@ -99,3 +132,18 @@ class PipelineTestCase(unittest.TestCase):
         crawler = self._create_crawler(AsyncDefAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 1)
+
+    @defer.inlineCallbacks
+    def test_pipeline_method_order(self):
+        expected_call_list = [
+            ('open_spider', '1'),
+            ('open_spider', '2'),
+            ('process_item', '1'),
+            ('process_item', '2'),
+            ('close_spider', '1'),
+            ('close_spider', '2'),
+        ]
+        crawler = self._create_crawler(Pipeline1, Pipeline2)
+        crawler.call_list = []
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(crawler.call_list, expected_call_list)

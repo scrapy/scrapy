@@ -25,11 +25,10 @@ class MiddlewareManager(object):
         raise NotImplementedError
 
     @classmethod
-    def from_settings(cls, settings, crawler=None):
-        mwlist = cls._get_mwlist_from_settings(settings)
+    def _load_middlewares(cls, middleware_list, settings, crawler):
         middlewares = []
         enabled = []
-        for clspath in mwlist:
+        for clspath in middleware_list:
             try:
                 mwcls = load_object(clspath)
                 mw = create_instance(mwcls, settings, crawler)
@@ -46,6 +45,12 @@ class MiddlewareManager(object):
                     {'componentname': cls.component_name,
                      'enabledlist': pprint.pformat(enabled)},
                     extra={'crawler': crawler})
+        return middlewares
+
+    @classmethod
+    def from_settings(cls, settings, crawler=None):
+        middleware_list = cls._get_mwlist_from_settings(settings)
+        middlewares = cls._load_middlewares(middleware_list, settings, crawler)
         return cls(*middlewares)
 
     @classmethod

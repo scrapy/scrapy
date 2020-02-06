@@ -192,6 +192,7 @@ IMAGES_STORE_GCS_ACL = ''
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
+ITEM_PIPELINE_CLOSE_SPIDER_ORDER = 'asc'
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
 

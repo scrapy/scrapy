@@ -856,6 +856,26 @@ Default: ``"anonymous"``
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
 
+.. setting:: ITEM_PIPELINE_CLOSE_SPIDER_ORDER
+
+ITEM_PIPELINE_CLOSE_SPIDER_ORDER
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``'asc'``
+
+Determines the order in which the ``close_spider`` methods of
+:ref:`item pipelines <topics-item-pipeline>` are called.
+
+Possible values:
+
+-   ``'asc'``
+
+    From lower to higher values of :setting:`ITEM_PIPELINES`.
+
+-   ``'desc'``
+
+    From higher to lower values of :setting:`ITEM_PIPELINES`.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
