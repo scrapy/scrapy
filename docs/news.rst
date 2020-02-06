@@ -3,8 +3,60 @@
 Release notes
 =============
 
-.. note:: Scrapy 1.x will be the last series supporting Python 2. Scrapy 2.0,
-          planned for Q4 2019 or Q1 2020, will support **Python 3 only**.
+.. _release-2.0.0:
+
+Scrapy 2.0.0 (2020-02-2?)
+-------------------------
+
+Highlights:
+
+…
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+…
+
+See also :ref:`2.0.0-deprecation-removals` below.
+
+
+New features
+~~~~~~~~~~~~
+
+…
+
+
+Bug fixes
+~~~~~~~~~
+
+…
+
+
+Documentation
+~~~~~~~~~~~~~
+
+…
+
+
+.. _2.0.0-deprecation-removals:
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+…
+
+
+Deprecations
+~~~~~~~~~~~~
+
+…
+
+
+Other changes
+~~~~~~~~~~~~~
+
+…
+
 
 .. _release-1.8.0:
 
