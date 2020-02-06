@@ -11,7 +11,7 @@ class SignalCatcherSpider(Spider):
 
     def __init__(self, crawler, url, *args, **kwargs):
         super(SignalCatcherSpider, self).__init__(*args, **kwargs)
-        crawler.signals.connect(self.on_response_download,
+        crawler.signals.connect(self.on_request_left,
                                 signal=request_left_downloader)
         self.caught_times = 0
         self.start_urls = [url]
@@ -21,7 +21,7 @@ class SignalCatcherSpider(Spider):
         spider = cls(crawler, *args, **kwargs)
         return spider
 
-    def on_response_download(self, request, spider):
+    def on_request_left(self, request, spider):
         self.caught_times = self.caught_times + 1
 
 
