@@ -301,7 +301,7 @@ request_left_downloader
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.http.Request` left downloader even in case of
+    Sent when a :class:`~scrapy.http.Request` leaves the downloader even in case of
     failure.
 
     The signal does not support returning deferreds from their handlers.
