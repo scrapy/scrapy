@@ -45,12 +45,9 @@ class RFPDupeFilter(BaseDupeFilter):
 
     def request_seen(self, request):
         fp = self.request_fingerprint(request)
-        redirect_fps = request.meta.get('redirect_fingerprints', set())
-        if fp in redirect_fps:
-            assert fp in self.fingerprints
-            return False
         if fp in self.fingerprints:
-            return True
+            redirect_fps = request.meta.get('redirect_fingerprints', set())
+            return fp not in redirect_fps
         self.fingerprints.add(fp)
         if self.file:
             self.file.write(fp + os.linesep)
