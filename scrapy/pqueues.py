@@ -158,7 +158,6 @@ class DownloaderAwarePriorityQueue(object):
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
-
     def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(self.crawler,
                                    self.downstream_queue_cls,
