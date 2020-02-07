@@ -1,11 +1,5 @@
 import hashlib
 import logging
-from collections import namedtuple
-
-from queuelib import PriorityQueue
-
-from scrapy.utils.reqser import request_to_dict, request_from_dict
-
 
 logger = logging.getLogger(__name__)
 
