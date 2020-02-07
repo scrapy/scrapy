@@ -1,15 +1,10 @@
-import six
 import json
 import copy
-import warnings
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
-
-from . import default_settings
+from scrapy.settings import default_settings
 
 
 SETTINGS_PRIORITIES = {
@@ -27,7 +22,7 @@ def get_settings_priority(priority):
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
     numerical value, or directly returns a given numerical priority.
     """
-    if isinstance(priority, six.string_types):
+    if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
     else:
         return priority
@@ -177,7 +172,7 @@ class BaseSettings(MutableMapping):
         :type default: any
         """
         value = self.get(name, default or [])
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = value.split(',')
         return list(value)
 
@@ -198,7 +193,7 @@ class BaseSettings(MutableMapping):
         :type default: any
         """
         value = self.get(name, default or {})
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = json.loads(value)
         return dict(value)
 
@@ -288,7 +283,7 @@ class BaseSettings(MutableMapping):
         :type priority: string or int
         """
         self._assert_mutability()
-        if isinstance(module, six.string_types):
+        if isinstance(module, str):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
@@ -317,14 +312,14 @@ class BaseSettings(MutableMapping):
         :type priority: string or int
         """
         self._assert_mutability()
-        if isinstance(values, six.string_types):
+        if isinstance(values, str):
             values = json.loads(values)
         if values is not None:
             if isinstance(values, BaseSettings):
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, values.getpriority(name))
             else:
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, priority)
 
     def delete(self, name, priority='project'):
@@ -381,7 +376,7 @@ class BaseSettings(MutableMapping):
 
     def _to_dict(self):
         return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in six.iteritems(self)}
+                for k, v in self.items()}
 
     def copy_to_dict(self):
         """
@@ -404,30 +399,6 @@ class BaseSettings(MutableMapping):
             p.text(repr(self))
         else:
             p.text(pformat(self.copy_to_dict()))
-
-    @property
-    def overrides(self):
-        warnings.warn("`Settings.overrides` attribute is deprecated and won't "
-                      "be supported in Scrapy 0.26, use "
-                      "`Settings.set(name, value, priority='cmdline')` instead",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        try:
-            o = self._overrides
-        except AttributeError:
-            self._overrides = o = _DictProxy(self, 'cmdline')
-        return o
-
-    @property
-    def defaults(self):
-        warnings.warn("`Settings.defaults` attribute is deprecated and won't "
-                      "be supported in Scrapy 0.26, use "
-                      "`Settings.set(name, value, priority='default')` instead",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        try:
-            o = self._defaults
-        except AttributeError:
-            self._defaults = o = _DictProxy(self, 'default')
-        return o
 
 
 class _DictProxy(MutableMapping):
@@ -473,33 +444,10 @@ class Settings(BaseSettings):
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name, val in six.iteritems(self):
+        for name, val in self.items():
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)
-
-
-class CrawlerSettings(Settings):
-
-    def __init__(self, settings_module=None, **kw):
-        self.settings_module = settings_module
-        Settings.__init__(self, **kw)
-
-    def __getitem__(self, opt_name):
-        if opt_name in self.overrides:
-            return self.overrides[opt_name]
-        if self.settings_module and hasattr(self.settings_module, opt_name):
-            return getattr(self.settings_module, opt_name)
-        if opt_name in self.defaults:
-            return self.defaults[opt_name]
-        return Settings.__getitem__(self, opt_name)
-
-    def __str__(self):
-        return "<CrawlerSettings module=%r>" % self.settings_module
-
-CrawlerSettings = create_deprecated_class(
-    'CrawlerSettings', CrawlerSettings,
-    new_class_path='scrapy.settings.Settings')
 
 
 def iter_default_settings():

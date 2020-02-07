@@ -35,7 +35,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_response_selector_html(self):
-        xpath = 'response.xpath("//p[@class=\'one\']/text()").extract()[0]'
+        xpath = 'response.xpath("//p[@class=\'one\']/text()").get()'
         _, out, _ = yield self.execute([self.url('/html'), '-c', xpath])
         self.assertEqual(out.strip(), b'Works')
 
@@ -61,7 +61,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_fetch_redirect_follow_302(self):
-        """Test that calling `fetch(url)` follows HTTP redirects by default."""
+        """Test that calling ``fetch(url)`` follows HTTP redirects by default."""
         url = self.url('/redirect-no-meta-refresh')
         code = "fetch('{0}')"
         errcode, out, errout = yield self.execute(['-c', code.format(url)])
@@ -71,7 +71,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_fetch_redirect_not_follow_302(self):
-        """Test that calling `fetch(url, redirect=False)` disables automatic redirects."""
+        """Test that calling ``fetch(url, redirect=False)`` disables automatic redirects."""
         url = self.url('/redirect-no-meta-refresh')
         code = "fetch('{0}', redirect=False)"
         errcode, out, errout = yield self.execute(['-c', code.format(url)])

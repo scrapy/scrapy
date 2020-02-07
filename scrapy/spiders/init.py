@@ -29,4 +29,3 @@ class InitSpider(Spider):
         spider
         """
         return self.initialized()
-

@@ -6,8 +6,8 @@ See documentation in docs/topics/shell.rst
 from threading import Thread
 
 from scrapy.commands import ScrapyCommand
-from scrapy.shell import Shell
 from scrapy.http import Request
+from scrapy.shell import Shell
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 from scrapy.utils.url import guess_scheme
 
@@ -28,7 +28,8 @@ class Command(ScrapyCommand):
         return "Interactive scraping console"
 
     def long_desc(self):
-        return "Interactive console for scraping the given url"
+        return ("Interactive console for scraping the given url or file. "
+                "Use ./file.html syntax or full path for local file.")
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

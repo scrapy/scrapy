@@ -17,9 +17,9 @@ import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
 
-import six
-
 AJAXCRAWL_ENABLED = False
+
+ASYNCIO_REACTOR = False
 
 AUTOTHROTTLE_ENABLED = False
 AUTOTHROTTLE_DEBUG = False
@@ -55,11 +55,12 @@ DEFAULT_REQUEST_HEADERS = {
 }
 
 DEPTH_LIMIT = 0
-DEPTH_STATS = True
+DEPTH_STATS_VERBOSE = False
 DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
+DNS_RESOLVER = 'scrapy.resolver.CachingThreadedResolver'
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
@@ -85,8 +86,10 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
-DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
-                                     # also allowing negotiation
+DOWNLOADER_CLIENT_TLS_CIPHERS = 'DEFAULT'
+# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
+DOWNLOADER_CLIENT_TLS_METHOD = 'TLS'
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}
 
@@ -158,6 +161,9 @@ FEED_EXPORTERS_BASE = {
 }
 FEED_EXPORT_INDENT = 0
 
+FEED_STORAGE_FTP_ACTIVE = False
+FEED_STORAGE_S3_ACL = ''
+
 FILES_STORE_S3_ACL = 'private'
 FILES_STORE_GCS_ACL = ''
 
@@ -174,7 +180,7 @@ HTTPCACHE_ALWAYS_STORE = False
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
-HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
+HTTPCACHE_DBM_MODULE = 'dbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
@@ -219,6 +225,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
+METAREFRESH_IGNORE_TAGS = ['script', 'noscript']
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
@@ -236,15 +243,19 @@ REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
+ROBOTSTXT_PARSER = 'scrapy.robotstxt.ProtegoRobotParser'
+ROBOTSTXT_USER_AGENT = None
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
-SCHEDULER_PRIORITY_QUEUE = 'queuelib.PriorityQueue'
+SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
@@ -277,10 +288,13 @@ USER_AGENT = 'Scrapy/%s (+https://scrapy.org)' % import_module('scrapy').__versi
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
+TELNETCONSOLE_USERNAME = 'scrapy'
+TELNETCONSOLE_PASSWORD = None
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
     'scrapy.contracts.default.UrlContract': 1,
+    'scrapy.contracts.default.CallbackKeywordArgumentsContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,
 }

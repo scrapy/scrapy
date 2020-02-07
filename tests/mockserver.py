@@ -1,8 +1,11 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
+import json
+import os
+import random
+import sys
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 
+from OpenSSL import SSL
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -13,8 +16,8 @@ from twisted.web.util import redirectTo
 from twisted.internet import reactor, ssl
 from twisted.internet.task import deferLater
 
-
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
 
 
 def getarg(request, name, default=None, type=None):
@@ -161,6 +164,12 @@ class Drop(Partial):
             request.finish()
 
 
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
 class Root(Resource):
 
     def __init__(self):
@@ -174,10 +183,11 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
-        except:
+        except Exception:
             pass
         self.putChild(b"redirect-to", RedirectTo())
 
@@ -192,35 +202,55 @@ class MockServer():
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
+
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
-        self.proc.stdout.readline()
+        http_address = self.proc.stdout.readline().strip().decode('ascii')
+        https_address = self.proc.stdout.readline().strip().decode('ascii')
+
+        self.http_address = http_address
+        self.https_address = https_address
+
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
-        self.proc.wait()
-        time.sleep(0.2)
+        self.proc.communicate()
+
+    def url(self, path, is_secure=False):
+        host = self.http_address.replace('0.0.0.0', '127.0.0.1')
+        if is_secure:
+            host = self.https_address
+        return host + path
 
 
-def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt'):
-    return ssl.DefaultOpenSSLContextFactory(
+def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
+    factory = ssl.DefaultOpenSSLContextFactory(
          os.path.join(os.path.dirname(__file__), keyfile),
          os.path.join(os.path.dirname(__file__), certfile),
          )
+    if cipher_string:
+        ctx = factory.getContext()
+        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        ctx.set_cipher_list(to_bytes(cipher_string))
+    return factory
 
 
 if __name__ == "__main__":
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(8998, factory)
+    httpPort = reactor.listenTCP(0, factory)
     contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(8999, factory, contextFactory)
+    httpsPort = reactor.listenSSL(0, factory, contextFactory)
 
     def print_listening():
         httpHost = httpPort.getHost()
         httpsHost = httpsPort.getHost()
-        print("Mock server running at http://%s:%d and https://%s:%d" % (
-            httpHost.host, httpHost.port, httpsHost.host, httpsHost.port))
+        httpAddress = 'http://%s:%d' % (httpHost.host, httpHost.port)
+        httpsAddress = 'https://%s:%d' % (httpsHost.host, httpsHost.port)
+        print(httpAddress)
+        print(httpsAddress)
+
     reactor.callWhenRunning(print_listening)
     reactor.run()

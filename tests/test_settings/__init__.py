@@ -1,18 +1,15 @@
-import six
 import unittest
-import warnings
+from unittest import mock
 
 from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
-                             CrawlerSettings, SETTINGS_PRIORITIES,
-                             get_settings_priority)
-from tests import mock
+                             SETTINGS_PRIORITIES, get_settings_priority)
 from . import default_settings
 
 
 class SettingsGlobalFuncsTest(unittest.TestCase):
 
     def test_get_settings_priority(self):
-        for prio_str, prio_num in six.iteritems(SETTINGS_PRIORITIES):
+        for prio_str, prio_num in SETTINGS_PRIORITIES.items():
             self.assertEqual(get_settings_priority(prio_str), prio_num)
         self.assertEqual(get_settings_priority(99), 99)
 
@@ -45,14 +42,14 @@ class SettingsAttributeTest(unittest.TestCase):
         new_dict = {'three': 11, 'four': 21}
         attribute.set(new_dict, 10)
         self.assertIsInstance(attribute.value, BaseSettings)
-        six.assertCountEqual(self, attribute.value, new_dict)
-        six.assertCountEqual(self, original_settings, original_dict)
+        self.assertCountEqual(attribute.value, new_dict)
+        self.assertCountEqual(original_settings, original_dict)
 
         new_settings = BaseSettings({'five': 12}, 0)
         attribute.set(new_settings, 0)  # Insufficient priority
-        six.assertCountEqual(self, attribute.value, new_dict)
+        self.assertCountEqual(attribute.value, new_dict)
         attribute.set(new_settings, 10)
-        six.assertCountEqual(self, attribute.value, new_settings)
+        self.assertCountEqual(attribute.value, new_settings)
 
     def test_repr(self):
         self.assertEqual(repr(self.attribute),
@@ -60,9 +57,6 @@ class SettingsAttributeTest(unittest.TestCase):
 
 
 class BaseSettingsTest(unittest.TestCase):
-
-    if six.PY3:
-        assertItemsEqual = unittest.TestCase.assertCountEqual
 
     def setUp(self):
         self.settings = BaseSettings()
@@ -153,10 +147,10 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.setmodule(
             'tests.test_settings.default_settings', 10)
 
-        self.assertItemsEqual(six.iterkeys(self.settings.attributes),
-                              six.iterkeys(ctrl_attributes))
+        self.assertCountEqual(self.settings.attributes.keys(),
+                              ctrl_attributes.keys())
 
-        for key in six.iterkeys(ctrl_attributes):
+        for key in ctrl_attributes.keys():
             attr = self.settings.attributes[key]
             ctrl_attr = ctrl_attributes[key]
             self.assertEqual(attr.value, ctrl_attr.value)
@@ -232,7 +226,7 @@ class BaseSettingsTest(unittest.TestCase):
         }
         settings = self.settings
         settings.attributes = {key: SettingsAttribute(value, 0) for key, value
-                               in six.iteritems(test_configuration)}
+                               in test_configuration.items()}
 
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))
@@ -281,9 +275,8 @@ class BaseSettingsTest(unittest.TestCase):
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
                           'HASNOBASE': BaseSettings({3: 3000}, 'default')})
         s['TEST'].set(2, 200, 'cmdline')
-        six.assertCountEqual(self, s.getwithbase('TEST'),
-                             {1: 1, 2: 200, 3: 30})
-        six.assertCountEqual(self, s.getwithbase('HASNOBASE'), s['HASNOBASE'])
+        self.assertCountEqual(s.getwithbase('TEST'), {1: 1, 2: 200, 3: 30})
+        self.assertCountEqual(s.getwithbase('HASNOBASE'), s['HASNOBASE'])
         self.assertEqual(s.getwithbase('NONEXISTENT'), {})
 
     def test_maxpriority(self):
@@ -341,40 +334,8 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertTrue(frozencopy.frozen)
         self.assertIsNot(frozencopy, self.settings)
 
-    def test_deprecated_attribute_overrides(self):
-        self.settings.set('BAR', 'fuz', priority='cmdline')
-        with warnings.catch_warnings(record=True) as w:
-            self.settings.overrides['BAR'] = 'foo'
-            self.assertIn("Settings.overrides", str(w[0].message))
-            self.assertEqual(self.settings.get('BAR'), 'foo')
-            self.assertEqual(self.settings.overrides.get('BAR'), 'foo')
-            self.assertIn('BAR', self.settings.overrides)
-
-            self.settings.overrides.update(BAR='bus')
-            self.assertEqual(self.settings.get('BAR'), 'bus')
-            self.assertEqual(self.settings.overrides.get('BAR'), 'bus')
-
-            self.settings.overrides.setdefault('BAR', 'fez')
-            self.assertEqual(self.settings.get('BAR'), 'bus')
-
-            self.settings.overrides.setdefault('FOO', 'fez')
-            self.assertEqual(self.settings.get('FOO'), 'fez')
-            self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
-
-    def test_deprecated_attribute_defaults(self):
-        self.settings.set('BAR', 'fuz', priority='default')
-        with warnings.catch_warnings(record=True) as w:
-            self.settings.defaults['BAR'] = 'foo'
-            self.assertIn("Settings.defaults", str(w[0].message))
-            self.assertEqual(self.settings.get('BAR'), 'foo')
-            self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
-            self.assertIn('BAR', self.settings.defaults)
-
 
 class SettingsTest(unittest.TestCase):
-
-    if six.PY3:
-        assertItemsEqual = unittest.TestCase.assertCountEqual
 
     def setUp(self):
         self.settings = Settings()
@@ -420,34 +381,6 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(len(mydict), 1)
         self.assertIn('key', mydict)
         self.assertEqual(mydict['key'], 'val')
-
-
-class CrawlerSettingsTest(unittest.TestCase):
-
-    def test_deprecated_crawlersettings(self):
-        def _get_settings(settings_dict=None):
-            settings_module = type('SettingsModuleMock', (object,), settings_dict or {})
-            return CrawlerSettings(settings_module)
-
-        with warnings.catch_warnings(record=True) as w:
-            settings = _get_settings()
-            self.assertIn("CrawlerSettings is deprecated", str(w[0].message))
-
-            # test_global_defaults
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 180)
-
-            # test_defaults
-            settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 99)
-
-            # test_settings_module
-            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 3)
-
-            # test_overrides
-            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
-            settings.overrides['DOWNLOAD_TIMEOUT'] = '15'
-            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 15)
 
 
 if __name__ == "__main__":

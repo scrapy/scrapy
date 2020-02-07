@@ -29,7 +29,8 @@ Each item pipeline component is a Python class that must implement the following
 
    This method is called for every item pipeline component. :meth:`process_item`
    must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a `Twisted Deferred`_ or raise
+   (or any descendant class) object, return a
+   :class:`~twisted.internet.defer.Deferred` or raise
    :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
@@ -67,8 +68,6 @@ Additionally, they may also implement the following methods:
    :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
-.. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
-
 Item pipeline example
 =====================
 
@@ -87,8 +86,8 @@ contain a price::
         vat_factor = 1.15
 
         def process_item(self, item, spider):
-            if item['price']:
-                if item['price_excludes_vat']:
+            if item.get('price'):
+                if item.get('price_excludes_vat'):
                     item['price'] = item['price'] * self.vat_factor
                 return item
             else:
@@ -166,7 +165,8 @@ method and how to clean up the resources properly.::
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return Deferred_ from :meth:`process_item` method.
+This example demonstrates how to return a
+:class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
 It uses Splash_ to render screenshot of item url. Pipeline
 makes request to locally running instance of Splash_. After request is downloaded
 and Deferred callback fires, it saves item to a file and adds filename to an item.
@@ -209,7 +209,6 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
             return item
 
 .. _Splash: https://splash.readthedocs.io/en/stable/
-.. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
 -----------------

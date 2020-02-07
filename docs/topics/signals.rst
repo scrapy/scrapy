@@ -50,10 +50,10 @@ Here is a simple example showing how you can catch signals and perform some acti
 Deferred signal handlers
 ========================
 
-Some signals support returning `Twisted deferreds`_ from their handlers, see
-the :ref:`topics-signals-ref` below to know which ones.
+Some signals support returning :class:`~twisted.internet.defer.Deferred`
+objects from their handlers, see the :ref:`topics-signals-ref` below to know
+which ones.
 
-.. _Twisted deferreds: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 .. _topics-signals-ref:
 
@@ -135,6 +135,29 @@ item_dropped
         to be dropped
     :type exception: :exc:`~scrapy.exceptions.DropItem` exception
 
+item_error
+------------
+
+.. signal:: item_error
+.. function:: item_error(item, response, spider, failure)
+
+    Sent when a :ref:`topics-item-pipeline` generates an error (ie. raises
+    an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
+
+    This signal supports returning deferreds from their handlers.
+
+    :param item: the item dropped from the :ref:`topics-item-pipeline`
+    :type item: dict or :class:`~scrapy.item.Item` object
+
+    :param response: the response being processed when the exception was raised
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider which raised the exception
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
+
 spider_closed
 -------------
 
@@ -213,8 +236,8 @@ spider_error
 
     This signal does not support returning deferreds from their handlers.
 
-    :param failure: the exception raised as a Twisted `Failure`_ object
-    :type failure: `Failure`_ object
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
 
     :param response: the response being processed when the exception was raised
     :type response: :class:`~scrapy.http.Response` object
@@ -251,6 +274,22 @@ request_dropped
     The signal does not support returning deferreds from their handlers.
 
     :param request: the request that reached the scheduler
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+request_reached_downloader
+---------------------------
+
+.. signal:: request_reached_downloader
+.. function:: request_reached_downloader(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request` reached downloader.
+
+    The signal does not support returning deferreds from their handlers.
+
+    :param request: the request that reached downloader
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
@@ -294,5 +333,3 @@ response_downloaded
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spiders.Spider` object
-
-.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

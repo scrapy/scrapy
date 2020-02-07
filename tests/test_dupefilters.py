@@ -2,13 +2,64 @@ import hashlib
 import tempfile
 import unittest
 import shutil
+from testfixtures import LogCapture
 
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
+from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.job import job_dir
+from scrapy.utils.test import get_crawler
+from tests.spiders import SimpleSpider
+
+
+class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(crawler.settings), debug)
+        df.method = 'from_crawler'
+        return df
+
+
+class FromSettingsRFPDupeFilter(RFPDupeFilter):
+
+    @classmethod
+    def from_settings(cls, settings):
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        df = cls(job_dir(settings), debug)
+        df.method = 'from_settings'
+        return df
+
+
+class DirectDupeFilter(object):
+    method = 'n/a'
 
 
 class RFPDupeFilterTest(unittest.TestCase):
+
+    def test_df_from_crawler_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
+                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_crawler')
+
+    def test_df_from_settings_scheduler(self):
+        settings = {'DUPEFILTER_DEBUG': True,
+                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertTrue(scheduler.df.debug)
+        self.assertEqual(scheduler.df.method, 'from_settings')
+
+    def test_df_direct_scheduler(self):
+        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        self.assertEqual(scheduler.df.method, 'n/a')
 
     def test_filter(self):
         dupefilter = RFPDupeFilter()
@@ -77,3 +128,57 @@ class RFPDupeFilterTest(unittest.TestCase):
         assert case_insensitive_dupefilter.request_seen(r2)
 
         case_insensitive_dupefilter.close('finished')
+
+    def test_log(self):
+        with LogCapture() as l:
+            settings = {'DUPEFILTER_DEBUG': False,
+                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+            crawler = get_crawler(SimpleSpider, settings_dict=settings)
+            scheduler = Scheduler.from_crawler(crawler)
+            spider = SimpleSpider.from_crawler(crawler)
+
+            dupefilter = scheduler.df
+            dupefilter.open()
+
+            r1 = Request('http://scrapytest.org/index.html')
+            r2 = Request('http://scrapytest.org/index.html')
+
+            dupefilter.log(r1, spider)
+            dupefilter.log(r2, spider)
+
+            assert crawler.stats.get_value('dupefilter/filtered') == 2
+            l.check_present(('scrapy.dupefilters', 'DEBUG',
+                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
+                ' - no more duplicates will be shown'
+                ' (see DUPEFILTER_DEBUG to show all duplicates)')))
+
+            dupefilter.close('finished')
+
+    def test_log_debug(self):
+        with LogCapture() as l:
+            settings = {'DUPEFILTER_DEBUG': True,
+                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+            crawler = get_crawler(SimpleSpider, settings_dict=settings)
+            scheduler = Scheduler.from_crawler(crawler)
+            spider = SimpleSpider.from_crawler(crawler)
+
+            dupefilter = scheduler.df
+            dupefilter.open()
+
+            r1 = Request('http://scrapytest.org/index.html')
+            r2 = Request('http://scrapytest.org/index.html',
+                headers={'Referer': 'http://scrapytest.org/INDEX.html'}
+            )
+
+            dupefilter.log(r1, spider)
+            dupefilter.log(r2, spider)
+
+            assert crawler.stats.get_value('dupefilter/filtered') == 2
+            l.check_present(('scrapy.dupefilters', 'DEBUG',
+                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
+                ' (referer: None)')))
+            l.check_present(('scrapy.dupefilters', 'DEBUG',
+                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
+                ' (referer: http://scrapytest.org/INDEX.html)')))
+
+            dupefilter.close('finished')

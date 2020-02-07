@@ -1,16 +1,16 @@
 import logging
 import inspect
 
-import six
-
 from scrapy.spiders import Spider
-from scrapy.utils.misc import  arg_to_iter
+from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.misc import arg_to_iter
+
 
 logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):
-    return arg_to_iter(result)
+    return arg_to_iter(deferred_from_coro(result))
 
 
 def iter_spider_classes(module):
@@ -21,12 +21,13 @@ def iter_spider_classes(module):
     # singleton in scrapy.spider.spiders
     from scrapy.spiders import Spider
 
-    for obj in six.itervalues(vars(module)):
+    for obj in vars(module).values():
         if inspect.isclass(obj) and \
            issubclass(obj, Spider) and \
            obj.__module__ == module.__name__ and \
            getattr(obj, 'name', None):
             yield obj
+
 
 def spidercls_for_request(spider_loader, request, default_spidercls=None,
                           log_none=False, log_multiple=False):

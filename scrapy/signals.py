@@ -13,12 +13,14 @@ spider_closed = object()
 spider_error = object()
 request_scheduled = object()
 request_dropped = object()
+request_reached_downloader = object()
 response_received = object()
 response_downloaded = object()
 item_scraped = object()
 item_dropped = object()
+item_error = object()
 
-# for backwards compatibility
+# for backward compatibility
 stats_spider_opened = spider_opened
 stats_spider_closing = spider_closed
 stats_spider_closed = spider_closed
