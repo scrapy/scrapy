@@ -60,9 +60,9 @@ class ScrapyPriorityQueue:
         self.key = key
         self.queues = {}
         self.curprio = None
-        self.read_prios(startprios)
+        self.init_prios(startprios)
 
-    def read_prios(self, startprios):
+    def init_prios(self, startprios):
         if not startprios:
             return
 
