@@ -2,7 +2,6 @@
 Scheduler queues
 """
 
-import errno
 import marshal
 import os
 import os.path
