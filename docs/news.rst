@@ -288,6 +288,13 @@ Backward-incompatible changes
     :class:`~scrapy.http.Request` objects instead of arbitrary Python data
     structures.
 
+*   An additional ``crawler`` parameter has been added to the ``__init__`` method
+    of the :class:`scrapy.core.scheduler.Scheduler` class. 
+    Custom scheduler subclasses which don't accept arbitrary parameters in 
+    their ``__init__`` method might break because of this change.
+
+    For more information, refer to the documentation for the :setting:`SCHEDULER` setting.
+
 See also :ref:`1.7-deprecation-removals` below.
 
 

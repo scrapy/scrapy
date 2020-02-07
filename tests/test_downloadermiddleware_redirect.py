@@ -300,19 +300,21 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         body = ('''<noscript><meta http-equiv="refresh" '''
                 '''content="0;URL='http://example.org/newpage'"></noscript>''')
         rsp = HtmlResponse(req.url, body=body.encode())
-        response = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(response, Response)
+        req2 = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, 'http://example.org/newpage')
 
-    def test_ignore_tags_empty_list(self):
-        crawler = get_crawler(Spider, {'METAREFRESH_IGNORE_TAGS': []})
+    def test_ignore_tags_1_x_list(self):
+        """Test that Scrapy 1.x behavior remains possible"""
+        settings = {'METAREFRESH_IGNORE_TAGS': ['script', 'noscript']}
+        crawler = get_crawler(Spider, settings)
         mw = MetaRefreshMiddleware.from_crawler(crawler)
         req = Request(url='http://example.org')
         body = ('''<noscript><meta http-equiv="refresh" '''
                 '''content="0;URL='http://example.org/newpage'"></noscript>''')
         rsp = HtmlResponse(req.url, body=body.encode())
-        req2 = mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
-        self.assertEqual(req2.url, 'http://example.org/newpage')
+        response = mw.process_response(req, rsp, self.spider)
+        assert isinstance(response, Response)
 
 if __name__ == "__main__":
     unittest.main()

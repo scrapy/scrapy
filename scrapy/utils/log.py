@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
+from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -149,8 +148,8 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
-    if is_asyncio_reactor_installed():
-        logger.debug("Asyncio reactor is installed")
+    from twisted.internet import reactor
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
 
 class StreamLogger(object):

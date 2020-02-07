@@ -211,3 +211,10 @@ If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
 BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
 <broad-crawls-concurrency>` you should :ref:`debug your memory leaks
 <topics-leaks>`.
+
+
+Install a specific Twisted reactor
+==================================
+
+If the crawl is exceeding the system's capabilities, you might want to try
+installing a specific Twisted reactor, via the :setting:`TWISTED_REACTOR` setting.
