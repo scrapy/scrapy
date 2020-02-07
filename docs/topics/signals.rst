@@ -304,7 +304,7 @@ request_left_downloader
     Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
     failure.
 
-    The signal does not support returning deferreds from their handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the downloader
     :type request: :class:`~scrapy.http.Request` object
