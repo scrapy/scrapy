@@ -59,7 +59,7 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     checks = list()
 
-    def start_requests(self):
+    def start_requests_with_control(self):
         data = {'key': 'value', 'number': 123}
         yield Request(self.mockserver.url('/first'), self.parse_first, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_with'), self.parse_general, cb_kwargs=data)
