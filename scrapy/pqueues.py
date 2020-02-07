@@ -38,7 +38,7 @@ class ScrapyPriorityQueue:
         * close()
         * __len__()
 
-    The constructor receives a downstream_queue_cls argument, which is a class
+    ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls argument, which is a class
     used to instantiate a new (internal) queue when a new priority is allocated.
 
     Only integer priorities should be used. Lower numbers are higher
