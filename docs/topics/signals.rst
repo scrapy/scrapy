@@ -306,7 +306,7 @@ request_left_downloader
 
     The signal does not support returning deferreds from their handlers.
 
-    :param request: the request that reached downloader
+    :param request: the request that reached the downloader
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
