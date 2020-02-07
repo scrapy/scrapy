@@ -117,6 +117,24 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
         return [{'id': 1}, {'id': 2}]
 
 
+class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_reqs_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        req_id = response.meta.get('req_id', 0)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d, req_id %d" % (status, req_id))
+        if req_id > 0:
+            return
+        reqs = []
+        for i in range(1, 3):
+            req = Request(self.start_urls[0], dont_filter=True, meta={'req_id': i})
+            reqs.append(req)
+        return reqs
+
+
 class ItemSpider(FollowAllSpider):
 
     name = 'item'

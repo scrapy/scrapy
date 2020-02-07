@@ -12,6 +12,7 @@ from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (
+    AsyncDefAsyncioReqsReturnSpider,
     AsyncDefAsyncioReturnSpider,
     AsyncDefAsyncioSpider,
     AsyncDefSpider,
@@ -364,7 +365,7 @@ class CrawlSpiderTestCase(TestCase):
 
     @mark.only_asyncio()
     @defer.inlineCallbacks
-    def test_async_def_asyncio_parse_list(self):
+    def test_async_def_asyncio_parse_items_list(self):
         items = []
 
         def _on_item_scraped(item):
@@ -377,3 +378,12 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_reqs_list(self):
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReqsReturnSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        for req_id in range(3):
+            self.assertIn("Got response 200, req_id %d" % req_id, str(log))
