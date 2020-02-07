@@ -63,6 +63,7 @@ class OrderPipeline:
     def close_spider(self, spider):
         self.crawler.call_list.append(('close_spider', self.name))
 
+
 class Pipeline1(OrderPipeline):
     name = '1'
 
