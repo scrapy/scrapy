@@ -6,7 +6,7 @@ from scrapy.squeues import (
     MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
     PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
     PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
-    )
+)
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
