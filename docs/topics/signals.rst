@@ -296,7 +296,7 @@ request_reached_downloader
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_left_downloader
----------------------------
+-----------------------
 
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
