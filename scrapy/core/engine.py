@@ -123,7 +123,6 @@ class ExecutionEngine(object):
                 request = next(slot.start_requests)
                 if request == spider.WaitUntilQueueEmpty:
                     break
-                self.crawl(request, spider)
 
             except StopIteration:
                 slot.start_requests = None
@@ -131,6 +130,8 @@ class ExecutionEngine(object):
                 slot.start_requests = None
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
+            else:
+                self.crawl(request, spider)
 
         while not self._needs_backout(spider):
             if not self._next_request_from_scheduler(spider):
