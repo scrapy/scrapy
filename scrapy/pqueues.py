@@ -1,6 +1,8 @@
 import hashlib
 import logging
 
+from scrapy.utils.misc import create_instance
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,8 +70,10 @@ class ScrapyPriorityQueue:
         self.curprio = min(startprios)
 
     def qfactory(self, key):
-        return self.downstream_queue_cls(self.crawler,
-                                         self.key + '/' + str(key))
+        return create_instance(self.downstream_queue_cls,
+                               None,
+                               self.crawler,
+                               self.key + '/' + str(key))
 
     def priority(self, request):
         return -request.priority

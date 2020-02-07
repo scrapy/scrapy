@@ -50,6 +50,10 @@ def _scrapy_serialization_queue(queue_class):
             self.spider = crawler.spider
             super(ScrapyRequestQueue, self).__init__(key)
 
+        @classmethod
+        def from_crawler(cls, crawler, key, *args, **kwargs):
+            return cls(crawler, key)
+
         def push(self, request):
             request = request_to_dict(request, self.spider)
             return super(ScrapyRequestQueue, self).push(request)
@@ -69,8 +73,9 @@ def _scrapy_serialization_queue(queue_class):
 def _scrapy_non_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
-        def __init__(self, crawler, key):
-            super(ScrapyRequestQueue, self).__init__()
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            return cls()
 
     return ScrapyRequestQueue
 
