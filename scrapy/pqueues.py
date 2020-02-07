@@ -25,7 +25,8 @@ def _path_safe(text):
 
 class ScrapyPriorityQueue:
     """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). The internal queue must implement the following methods:
+    FIFO queues). It uses one internal queue for each priority. The internal
+    queue must implement the following methods:
 
         * push(obj)
         * pop()
