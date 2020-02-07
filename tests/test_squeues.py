@@ -2,11 +2,11 @@ import pickle
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
-        MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
-        MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
-        PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-        PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
-        )
+    MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
+    MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
+    PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
+    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+    )
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
