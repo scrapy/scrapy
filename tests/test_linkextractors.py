@@ -2,8 +2,6 @@ import re
 import unittest
 from warnings import catch_warnings
 
-import pytest
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
@@ -214,7 +212,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
             links = self.extractor_cls(restrict_xpaths='//p').extract_links(response)
             self.assertEqual(links,
-                             [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
+                             [Link(url='http://example.org/%E2%99%A5/you?c=%A4', text=u'text')])
 
         def test_restrict_xpaths_concat_in_handle_data(self):
             """html entities cause SGMLParser to call handle_data hook twice"""
@@ -506,7 +504,6 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
         ])
 
-    @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 
