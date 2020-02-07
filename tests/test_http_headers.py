@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):
@@ -83,9 +84,6 @@ class HeadersTest(unittest.TestCase):
         self.assertSortedEqual(h.keys(),
                                [b'X-Forwarded-For', b'Content-Type'])
         self.assertSortedEqual(h.items(),
-                               [(b'X-Forwarded-For', [b'ip1', b'ip2']),
-                                (b'Content-Type', [b'text/html'])])
-        self.assertSortedEqual(h.iteritems(),
                                [(b'X-Forwarded-For', [b'ip1', b'ip2']),
                                 (b'Content-Type', [b'text/html'])])
         self.assertSortedEqual(h.values(), [b'ip2', b'text/html'])

@@ -5,7 +5,7 @@ Scheduler queues
 import marshal
 import os
 import os.path
-from six.moves import cPickle as pickle
+import pickle
 
 from queuelib import queue
 

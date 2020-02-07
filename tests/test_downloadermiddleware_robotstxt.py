@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+from unittest import mock
+
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
@@ -9,7 +10,6 @@ from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
-from tests import mock
 from tests.test_robotstxt_interface import rerp_available, reppy_available
 
 
@@ -163,6 +163,15 @@ Disallow: /some/randome/page.html
         d = self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
         d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
         return d
+
+    def test_robotstxt_user_agent_setting(self):
+        crawler = self._get_successful_crawler()
+        crawler.settings.set('ROBOTSTXT_USER_AGENT', 'Examplebot')
+        crawler.settings.set('USER_AGENT', 'Mozilla/5.0 (X11; Linux x86_64)')
+        middleware = RobotsTxtMiddleware(crawler)
+        rp = mock.MagicMock(return_value=True)
+        middleware.process_request_2(rp, Request('http://site.local/allowed'), None)
+        rp.allowed.assert_called_once_with('http://site.local/allowed', 'Examplebot')
 
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used

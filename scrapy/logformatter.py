@@ -8,11 +8,12 @@ from scrapy.utils.request import referer_str
 SCRAPEDMSG = u"Scraped from %(src)s" + os.linesep + "%(item)s"
 DROPPEDMSG = u"Dropped: %(exception)s" + os.linesep + "%(item)s"
 CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
+ERRORMSG = u"'Error processing %(item)s'"
 
 
 class LogFormatter(object):
     """Class for generating log messages for different actions.
-    
+
     All methods must return a dictionary listing the parameters ``level``, ``msg``
     and ``args`` which are going to be used for constructing the log message when
     calling ``logging.log``.
@@ -29,6 +30,10 @@ class LogFormatter(object):
     *   ``args`` should be a tuple or dict with the formatting placeholders for ``msg``.
         The final log message is computed as ``msg % args``.
 
+    Users can define their own ``LogFormatter`` class if they want to customize how
+    each action is logged or if they want to omit it entirely. In order to omit
+    logging an action the method must return ``None``.
+
     Here is an example on how to create a custom log formatter to lower the severity level of
     the log message when an item is dropped from the pipeline::
 
@@ -43,7 +48,7 @@ class LogFormatter(object):
                         }
                     }
     """
-    
+
     def crawled(self, request, response, spider):
         """Logs a message when the crawler finds a webpage."""
         request_flags = ' %s' % str(request.flags) if request.flags else ''
@@ -84,6 +89,16 @@ class LogFormatter(object):
             'msg': DROPPEDMSG,
             'args': {
                 'exception': exception,
+                'item': item,
+            }
+        }
+
+    def error(self, item, exception, response, spider):
+        """Logs a message when an item causes an error while it is passing through the item pipeline."""
+        return {
+            'level': logging.ERROR,
+            'msg': ERRORMSG,
+            'args': {
                 'item': item,
             }
         }

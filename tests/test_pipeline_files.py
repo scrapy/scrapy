@@ -1,26 +1,23 @@
 import os
 import random
 import time
-import hashlib
-import warnings
+from io import BytesIO
 from tempfile import mkdtemp
 from shutil import rmtree
-from six.moves.urllib.parse import urlparse
-from six import BytesIO
+from unittest import mock
+from urllib.parse import urlparse
 
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore, FTPFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
+from scrapy.utils.test import get_ftp_content_and_delete
 from scrapy.utils.boto import is_botocore
-
-from tests import mock
 
 
 def _mocked_download_func(request, info):
@@ -57,6 +54,11 @@ class FilesPipelineTestCase(unittest.TestCase):
                                    response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
+                         'full/76c00cef2ef669ae65052661f68d451162829507')
+        self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
+                                    //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
+                         'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
@@ -364,6 +366,31 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+
+class TestFTPFileStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        uri = os.environ.get('FTP_TEST_FILE_URI')
+        if not uri:
+            raise unittest.SkipTest("No FTP URI available for testing")
+        data = b"TestFTPFilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = 'full/filename'
+        store = FTPFilesStore(uri)
+        empty_dict = yield store.stat_file(path, info=None)
+        self.assertEqual(empty_dict, {})
+        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
+        stat = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', stat)
+        self.assertIn('checksum', stat)
+        self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
+        path = '%s/%s' % (store.basedir, path)
+        content = get_ftp_content_and_delete(
+            path, store.host, store.port,
+            store.username, store.password, store.USE_ACTIVE_MODE)
+        self.assertEqual(data.decode(), content)
 
 
 class ItemWithFiles(Item):

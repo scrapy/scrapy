@@ -1,11 +1,12 @@
 import logging
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,10 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if 'Location' not in response.headers or response.status not in allowed_status:
             return response
 
-        location = safe_url_string(response.headers['location'])
+        location = safe_url_string(response.headers['Location'])
+        if response.headers['Location'].startswith(b'//'):
+            request_scheme = urlparse(request.url).scheme
+            location = request_scheme + '://' + location.lstrip('/')
 
         redirected_url = urljoin(request.url, location)
 

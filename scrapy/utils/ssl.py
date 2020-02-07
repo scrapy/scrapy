@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import OpenSSL
 import OpenSSL._util as pyOpenSSLutil
 
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
+
+
+# The OpenSSL symbol is present since 1.1.1 but it's not currently supported in any version of pyOpenSSL.
+# Using the binding directly, as this code does, requires cryptography 2.4.
+SSL_OP_NO_TLSv1_3 = getattr(pyOpenSSLutil.lib, 'SSL_OP_NO_TLSv1_3', 0)
 
 
 def ffi_buf_to_string(buf):
-    return to_native_str(pyOpenSSLutil.ffi.string(buf))
+    return to_unicode(pyOpenSSLutil.ffi.string(buf))
 
 
 def x509name_to_string(x509name):
@@ -48,3 +54,10 @@ def get_temp_key_info(ssl_object):
         key_info.append(ffi_buf_to_string(pyOpenSSLutil.lib.OBJ_nid2sn(key_type)))
     key_info.append('%s bits' % pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key))
     return ', '.join(key_info)
+
+
+def get_openssl_version():
+    system_openssl = OpenSSL.SSL.SSLeay_version(
+        OpenSSL.SSL.SSLEAY_VERSION
+    ).decode('ascii', errors='replace')
+    return '{} ({})'.format(OpenSSL.version.__version__, system_openssl)
