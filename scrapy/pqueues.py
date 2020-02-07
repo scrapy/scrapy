@@ -29,7 +29,7 @@ def _path_safe(text):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class ScrapyPriorityQueue(object):
+class ScrapyPriorityQueue:
     """A priority queue implemented using multiple internal queues (typically,
     FIFO queues). The internal queue must implement the following methods:
 
