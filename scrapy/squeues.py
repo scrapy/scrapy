@@ -20,7 +20,7 @@ def _with_mkdir(queue_class):
         def __init__(self, path, *args, **kwargs):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
-                os.makedirs(dirname)
+                os.makedirs(dirname, exist_ok=True)
 
             super(DirectoriesCreated, self).__init__(path, *args, **kwargs)
 
