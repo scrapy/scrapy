@@ -47,7 +47,7 @@ class MemoryUsage(object):
     def get_virtual_size(self):
         size = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
         if sys.platform != 'darwin':
-            # on Mac OS X ru_maxrss is in bytes, on Linux it is in KB
+            # on macOS ru_maxrss is in bytes, on Linux it is in KB
             size *= 1024
         return size
 
