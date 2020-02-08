@@ -237,7 +237,7 @@ class BaseResponseTest(unittest.TestCase):
         self._assert_followed_all_urls(links, expected)
 
     def test_follow_all_flags(self):
-        re = Response('http://www.example.com/')
+        re = self.response_class('http://www.example.com/')
         urls = [
             'http://www.example.com/',
             'http://www.example.com/2',
@@ -581,6 +581,17 @@ class TextResponseTest(BaseResponseTest):
         res = self.response_class('http://example.com/')
         fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
         self.assertEqual(fol.flags, ['cached', 'allowed'])
+
+    def test_follow_all_flags(self):
+        re = self.response_class('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2',
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])    
 
     def test_follow_all_css(self):
         expected = [
