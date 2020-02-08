@@ -591,7 +591,7 @@ class TextResponseTest(BaseResponseTest):
         ]
         fol = re.follow_all(urls, flags=['cached', 'allowed'])
         for req in fol:
-            self.assertEqual(req.flags, ['cached', 'allowed'])    
+            self.assertEqual(req.flags, ['cached', 'allowed'])
 
     def test_follow_all_css(self):
         expected = [
