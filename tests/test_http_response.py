@@ -240,7 +240,7 @@ class BaseResponseTest(unittest.TestCase):
         re = Response('http://www.example.com/')
         urls = [
             'http://www.example.com/',
-            'http://www.example.com/2', 
+            'http://www.example.com/2',
             'http://www.example.com/foo',
         ]
         fol = re.follow_all(urls, flags=['cached', 'allowed'])
