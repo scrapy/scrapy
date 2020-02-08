@@ -236,6 +236,17 @@ class BaseResponseTest(unittest.TestCase):
         expected = [u.replace(' ', '%20') for u in absolute]
         self._assert_followed_all_urls(links, expected)
 
+    def test_follow_all_flags(self):
+        re = Response('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2', 
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])
+
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
