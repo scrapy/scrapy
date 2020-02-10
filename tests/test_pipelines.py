@@ -184,3 +184,11 @@ class PipelineTestCase(unittest.TestCase):
         crawler.call_list = []
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(crawler.call_list, expected_call_list)
+
+    @defer.inlineCallbacks
+    def test_pipeline_method_order_invalid_value(self):
+        settings = {'ITEM_PIPELINE_CLOSE_SPIDER_ORDER': 'invalid'}
+        crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
+        with self.assertRaises(ValueError):
+            crawler.crawl(mockserver=self.mockserver)
+        # TODO: Fix “twisted.trial.util.DirtyReactorAggregateError: Reactor was unclean.”
