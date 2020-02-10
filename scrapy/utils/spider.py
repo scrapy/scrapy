@@ -14,18 +14,6 @@ def iterate_spider_output(result):
 
 
 def _is_concrete_spider(spider_class, require_name):
-    """Return ``True`` if `spider_class` is a :ref:`concrete
-    <abstract-and-concrete-spiders>` :class:`~scrapy.spiders.Spider` subclass.
-
-    If `require_name` is ``True`` (default), any
-    :class:`~scrapy.spiders.Spider` subclass with a non-empty
-    :class:`~scrapy.spiders.Spider.name` and not decorated with
-    :func:`~scrapy.spiders.abstractspider` is considered a concrete spider.
-
-    If `require_name` is ``False``, any :class:`~scrapy.spiders.Spider`
-    subclass not decorated with :func:`~scrapy.spiders.abstractspider` is
-    considered a concrete spider.
-    """
     return (
         inspect.isclass(spider_class)
         and issubclass(spider_class, Spider)
