@@ -12,7 +12,6 @@ module with the ``runserver`` argument::
 
 import os
 import re
-import string
 import sys
 from collections import defaultdict
 from urllib.parse import urlparse
@@ -91,7 +90,8 @@ def start_test_site(debug=False):
     r = static.File(root_dir)
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
-    r.putChild(b"random", static.Data(string.ascii_letters.encode("utf8") * 2**14, "text/plain"))
+    numbers = [str(x).encode("utf8") for x in range(2**14)]
+    r.putChild(b"numbers", static.Data(b"".join(numbers), "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
@@ -124,7 +124,7 @@ class CrawlerRun(object):
             self.geturl("/"),
             self.geturl("/redirect"),
             self.geturl("/redirect"),  # duplicate
-            self.geturl("/random"),
+            self.geturl("/numbers"),
         ]
 
         for name, signal in vars(signals).items():
@@ -315,8 +315,12 @@ class EngineTest(unittest.TestCase):
                     b"  </body>\n"
                     b"</html>\n"
                 )
-            elif self.run.getpath(request.url) == "/random":
-                self.assertTrue(len(data) > 1)  # signal was fired multiple times
+            elif self.run.getpath(request.url) == "/numbers":
+                # signal was fired multiple times
+                self.assertTrue(len(data) > 1)
+                # bytes were received in order
+                numbers = [str(x).encode("utf8") for x in range(2**14)]
+                self.assertEqual(joined_data, b"".join(numbers))
 
     def _assert_signals_caught(self):
         assert signals.engine_started in self.run.signals_caught
