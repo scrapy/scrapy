@@ -845,7 +845,7 @@ spider:
 
 For example::
 
-    from scrapy import abstractspider, Spider
+    from scrapy.spiders import abstractspider, Spider
 
     @abstractspider
     class MyBaseSpider(Spider):
