@@ -13,7 +13,7 @@ from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 class CookiesMiddlewareTest(TestCase):
 
     def assertCookieValEqual(self, first, second, msg=None):
-        cookievaleq = lambda cv: re.split(';\s*', cv.decode('latin1'))
+        cookievaleq = lambda cv: re.split(r';\s*', cv.decode('latin1'))
         return self.assertEqual(
             sorted(cookievaleq(first)),
             sorted(cookievaleq(second)), msg)

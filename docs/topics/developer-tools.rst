@@ -39,7 +39,7 @@ Therefore, you should keep in mind the following things:
 .. _topics-inspector:
 
 Inspecting a website
-===================================
+====================
 
 By far the most handy feature of the Developer Tools is the `Inspector` 
 feature, which allows you to inspect the underlying HTML code of 
@@ -79,13 +79,23 @@ sections and tags of a webpage, which greatly improves readability. You can
 expand and collapse a tag by clicking on the arrow in front of it or by double
 clicking directly on the tag. If we expand the ``span`` tag with the ``class=
 "text"`` we will see the quote-text we clicked on. The `Inspector` lets you
-copy XPaths to selected elements. Let's try it out: Right-click on the ``span`` 
-tag, select ``Copy > XPath`` and paste it in the scrapy shell like so::
+copy XPaths to selected elements. Let's try it out.
+
+First open the Scrapy shell at http://quotes.toscrape.com/ in a terminal:
+
+.. code-block:: none
 
     $ scrapy shell "http://quotes.toscrape.com/"
-    (...)
-    >>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
-    ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”]
+
+Then, back to your web browser, right-click on the ``span`` tag, select
+``Copy > XPath`` and paste it in the Scrapy shell like so:
+
+.. invisible-code-block: python
+
+    response = load_response('http://quotes.toscrape.com/', 'quotes.html')
+
+>>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
+['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”']
 
 Adding ``text()`` at the end we are able to extract the first quote with this 
 basic selector. But this XPath is not really that clever. All it does is
@@ -112,13 +122,13 @@ see each quote:
 
 With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using 
-the `has-class-extension`_:: 
+the `has-class-extension`_:
 
-    >>> response.xpath('//span[has-class("text")]/text()').getall()
-   ['"The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”,
-    '“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
-    '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
-    (...)]
+>>> response.xpath('//span[has-class("text")]/text()').getall()
+['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”',
+'“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
+'“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
+...]
 
 And with one simple, cleverer XPath we are able to extract all quotes from 
 the page. We could have constructed a loop over our first XPath to increase 
@@ -132,7 +142,7 @@ a use case:
 
 Say you want to find the ``Next`` button on the page. Type ``Next`` into the 
 search bar on the top right of the `Inspector`. You should get two results. 
-The first is a ``li`` tag with the ``class="text"``, the second the text 
+The first is a ``li`` tag with the ``class="next"``, the second the text 
 of an ``a`` tag. Right click on the ``a`` tag and select ``Scroll into View``.
 If you hover over the tag, you'll see the button highlighted. From here
 we could easily create a :ref:`Link Extractor <topics-link-extractors>` to 
@@ -159,7 +169,11 @@ The page is quite similar to the basic `quotes.toscrape.com`_-page,
 but instead of the above-mentioned ``Next`` button, the page 
 automatically loads new quotes when you scroll to the bottom. We 
 could go ahead and try out different XPaths directly, but instead 
-we'll check another quite useful command from the scrapy shell::
+we'll check another quite useful command from the Scrapy shell:
+
+.. skip: next
+
+.. code-block:: none
 
   $ scrapy shell "quotes.toscrape.com/scroll"
   (...)
@@ -203,7 +217,7 @@ where our quotes are coming from:
 First click on the request with the name ``scroll``. On the right 
 you can now inspect the request. In ``Headers`` you'll find details
 about the request headers, such as the URL, the method, the IP-address,
-and so on. We'll ignore the other tabs and click directly on ``Reponse``.
+and so on. We'll ignore the other tabs and click directly on ``Response``.
 
 What you should see in the ``Preview`` pane is the rendered HTML-code, 
 that is exactly what we saw when we called ``view(response)`` in the 
@@ -252,9 +266,33 @@ If the handy ``has_next`` element is ``true`` (try loading
 `quotes.toscrape.com/api/quotes?page=10`_ in your browser or a
 page-number greater than 10), we increment the ``page`` attribute 
 and ``yield`` a new request, inserting the incremented page-number 
-into our ``url``. 
+into our ``url``.
 
-You can see that with a few inspections in the `Network`-tool we 
+.. _requests-from-curl:
+
+In more complex websites, it could be difficult to easily reproduce the
+requests, as we could need to add ``headers`` or ``cookies`` to make it work.
+In those cases you can export the requests in `cURL <https://curl.haxx.se/>`_
+format, by right-clicking on each of them in the network tool and using the
+:meth:`~scrapy.http.Request.from_curl()` method to generate an equivalent
+request::
+
+    from scrapy import Request
+
+    request = Request.from_curl(
+        "curl 'http://quotes.toscrape.com/api/quotes?page=1' -H 'User-Agent: Mozil"
+        "la/5.0 (X11; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0' -H 'Acce"
+        "pt: */*' -H 'Accept-Language: ca,en-US;q=0.7,en;q=0.3' --compressed -H 'X"
+        "-Requested-With: XMLHttpRequest' -H 'Proxy-Authorization: Basic QFRLLTAzM"
+        "zEwZTAxLTk5MWUtNDFiNC1iZWRmLTJjNGI4M2ZiNDBmNDpAVEstMDMzMTBlMDEtOTkxZS00MW"
+        "I0LWJlZGYtMmM0YjgzZmI0MGY0' -H 'Connection: keep-alive' -H 'Referer: http"
+        "://quotes.toscrape.com/scroll' -H 'Cache-Control: max-age=0'")
+
+Alternatively, if you want to know the arguments needed to recreate that
+request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
+function to get a dictionary with the equivalent arguments.
+
+As you can see, with a few inspections in the `Network`-tool we
 were able to easily replicate the dynamic requests of the scrolling 
 functionality of the page. Crawling dynamic pages can be quite
 daunting and pages can be very complex, but it (mostly) boils down
@@ -262,7 +300,7 @@ to identifying the correct request and replicating it in your spider.
 
 .. _Developer Tools: https://en.wikipedia.org/wiki/Web_development_tools
 .. _quotes.toscrape.com: http://quotes.toscrape.com
-.. _quotes.toscrape.com/scroll: quotes.toscrape.com/scroll/
+.. _quotes.toscrape.com/scroll: http://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
 

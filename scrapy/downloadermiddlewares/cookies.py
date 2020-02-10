@@ -1,12 +1,11 @@
-import os
-import six
 import logging
 from collections import defaultdict
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class CookiesMiddleware(object):
 
     def _debug_cookie(self, request, spider):
         if self.debug:
-            cl = [to_native_str(c, errors='replace')
+            cl = [to_unicode(c, errors='replace')
                   for c in request.headers.getlist('Cookie')]
             if cl:
                 cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
@@ -62,7 +61,7 @@ class CookiesMiddleware(object):
 
     def _debug_set_cookie(self, response, spider):
         if self.debug:
-            cl = [to_native_str(c, errors='replace')
+            cl = [to_unicode(c, errors='replace')
                   for c in response.headers.getlist('Set-Cookie')]
             if cl:
                 cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)
@@ -82,8 +81,10 @@ class CookiesMiddleware(object):
 
     def _get_request_cookies(self, jar, request):
         if isinstance(request.cookies, dict):
-            cookie_list = [{'name': k, 'value': v} for k, v in \
-                    six.iteritems(request.cookies)]
+            cookie_list = [
+                {'name': k, 'value': v}
+                for k, v in request.cookies.items()
+            ]
         else:
             cookie_list = request.cookies
 

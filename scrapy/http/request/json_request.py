@@ -1,5 +1,5 @@
 """
-This module implements the JSONRequest class which is a more convenient class
+This module implements the JsonRequest class which is a more convenient class
 (than Request) to generate JSON Requests.
 
 See documentation in docs/topics/request-response.rst
@@ -10,9 +10,10 @@ import json
 import warnings
 
 from scrapy.http.request import Request
+from scrapy.utils.deprecate import create_deprecated_class
 
 
-class JSONRequest(Request):
+class JsonRequest(Request):
     def __init__(self, *args, **kwargs):
         dumps_kwargs = copy.deepcopy(kwargs.pop('dumps_kwargs', {}))
         dumps_kwargs.setdefault('sort_keys', True)
@@ -31,7 +32,7 @@ class JSONRequest(Request):
             if 'method' not in kwargs:
                 kwargs['method'] = 'POST'
 
-        super(JSONRequest, self).__init__(*args, **kwargs)
+        super(JsonRequest, self).__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'application/json')
         self.headers.setdefault('Accept', 'application/json, text/javascript, */*; q=0.01')
 
@@ -46,8 +47,11 @@ class JSONRequest(Request):
         elif not body_passed and data_passed:
             kwargs['body'] = self._dumps(data)
 
-        return super(JSONRequest, self).replace(*args, **kwargs)
+        return super(JsonRequest, self).replace(*args, **kwargs)
 
     def _dumps(self, data):
         """Convert to JSON """
         return json.dumps(data, **self._dumps_kwargs)
+
+
+JSONRequest = create_deprecated_class("JSONRequest", JsonRequest)

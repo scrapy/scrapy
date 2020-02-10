@@ -1,12 +1,16 @@
-pytest==3.6.3
-pytest-twisted
-pytest-cov==2.5.1
-testfixtures
+# Tests requirements
 jmespath
-leveldb; sys_platform != "win32"
-botocore
+mitmproxy; python_version >= '3.6'
+mitmproxy<4.0.0; python_version < '3.6'
+pytest
+pytest-cov
+pytest-twisted >= 1.11
+pytest-xdist
+sybil
+testfixtures
+
 # optional for shell wrapper tests
 bpython
-ipython
 brotlipy
+ipython
 pywin32; sys_platform == "win32"

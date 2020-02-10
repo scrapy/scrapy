@@ -158,6 +158,7 @@ Solving specific problems
    topics/practices
    topics/broad-crawls
    topics/developer-tools
+   topics/dynamic-content
    topics/leaks
    topics/media-pipeline
    topics/deploy
@@ -169,7 +170,7 @@ Solving specific problems
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.
@@ -182,6 +183,9 @@ Solving specific problems
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
+
+:doc:`topics/dynamic-content`
+    Read webpage data that is loaded dynamically.
 
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.

@@ -1,8 +1,8 @@
-from __future__ import print_function
 import unittest
 from scrapy.http import Request
 from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
     request_authenticate, request_httprepr
+
 
 class UtilsRequestTest(unittest.TestCase):
 
@@ -17,7 +17,7 @@ class UtilsRequestTest(unittest.TestCase):
         self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2))
 
         # make sure caching is working
-        self.assertEqual(request_fingerprint(r1), _fingerprint_cache[r1][None])
+        self.assertEqual(request_fingerprint(r1), _fingerprint_cache[r1][(None, False)])
 
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")
@@ -41,6 +41,13 @@ class UtilsRequestTest(unittest.TestCase):
 
         self.assertEqual(request_fingerprint(r3, include_headers=['accept-language', 'sessionid']),
                          request_fingerprint(r3, include_headers=['SESSIONID', 'Accept-Language']))
+
+        r1 = Request("http://www.example.com/test.html")
+        r2 = Request("http://www.example.com/test.html#fragment")
+        self.assertEqual(request_fingerprint(r1), request_fingerprint(r2))
+        self.assertEqual(request_fingerprint(r1), request_fingerprint(r1, keep_fragments=True))
+        self.assertNotEqual(request_fingerprint(r2), request_fingerprint(r2, keep_fragments=True))
+        self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2, keep_fragments=True))
 
         r1 = Request("http://www.example.com")
         r2 = Request("http://www.example.com", method='POST')

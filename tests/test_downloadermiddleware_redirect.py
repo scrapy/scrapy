@@ -106,6 +106,22 @@ class RedirectMiddlewareTest(unittest.TestCase):
         del rsp.headers['Location']
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
+    def test_redirect_302_relative(self):
+        url = 'http://www.example.com/302'
+        url2 = '///i8n.example2.com/302'
+        url3 = 'http://i8n.example2.com/302'
+        req = Request(url, method='HEAD')
+        rsp = Response(url, headers={'Location': url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, url3)
+        self.assertEqual(req2.method, 'HEAD')
+
+        # response without Location header but with status code is 3XX should be ignored
+        del rsp.headers['Location']
+        assert self.mw.process_response(req, rsp, self.spider) is rsp
+
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
@@ -138,6 +154,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
+    def test_redirect_reasons(self):
+        req1 = Request('http://scrapytest.org/first')
+        rsp1 = Response('http://scrapytest.org/first', headers={'Location': '/redirected1'}, status=301)
+        req2 = self.mw.process_response(req1, rsp1, self.spider)
+        rsp2 = Response('http://scrapytest.org/redirected1', headers={'Location': '/redirected2'}, status=301)
+        req3 = self.mw.process_response(req2, rsp2, self.spider)
+
+        self.assertEqual(req2.meta['redirect_reasons'], [301])
+        self.assertEqual(req3.meta['redirect_reasons'], [301, 301])
 
     def test_spider_handling(self):
         smartspider = self.crawler._create_spider('smarty')
@@ -259,6 +285,36 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
 
+    def test_redirect_reasons(self):
+        req1 = Request('http://scrapytest.org/first')
+        rsp1 = HtmlResponse('http://scrapytest.org/first', body=self._body(url='/redirected'))
+        req2 = self.mw.process_response(req1, rsp1, self.spider)
+        rsp2 = HtmlResponse('http://scrapytest.org/redirected', body=self._body(url='/redirected1'))
+        req3 = self.mw.process_response(req2, rsp2, self.spider)
+
+        self.assertEqual(req2.meta['redirect_reasons'], ['meta refresh'])
+        self.assertEqual(req3.meta['redirect_reasons'], ['meta refresh', 'meta refresh'])
+
+    def test_ignore_tags_default(self):
+        req = Request(url='http://example.org')
+        body = ('''<noscript><meta http-equiv="refresh" '''
+                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        rsp = HtmlResponse(req.url, body=body.encode())
+        req2 = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, 'http://example.org/newpage')
+
+    def test_ignore_tags_1_x_list(self):
+        """Test that Scrapy 1.x behavior remains possible"""
+        settings = {'METAREFRESH_IGNORE_TAGS': ['script', 'noscript']}
+        crawler = get_crawler(Spider, settings)
+        mw = MetaRefreshMiddleware.from_crawler(crawler)
+        req = Request(url='http://example.org')
+        body = ('''<noscript><meta http-equiv="refresh" '''
+                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        rsp = HtmlResponse(req.url, body=body.encode())
+        response = mw.process_response(req, rsp, self.spider)
+        assert isinstance(response, Response)
 
 if __name__ == "__main__":
     unittest.main()

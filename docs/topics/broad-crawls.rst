@@ -39,23 +39,49 @@ you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
+.. _broad-crawls-scheduler-priority-queue:
+
+Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
+=================================================
+
+Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
+It works best during single-domain crawl. It does not work well with crawling
+many different domains in parallel
+
+To apply the recommended priority queue use::
+
+    SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
+.. _broad-crawls-concurrency:
+
 Increase concurrency
 ====================
 
 Concurrency is the number of requests that are processed in parallel. There is
-a global limit and a per-domain limit.
+a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
+can be set either per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) or per
+IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
+
+.. note:: The scheduler priority queue :ref:`recommended for broad crawls
+          <broad-crawls-scheduler-priority-queue>` does not support
+          :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
-to increase it will depend on how much CPU you crawler will have available. A
-good starting point is ``100``, but the best way to find out is by doing some
-trials and identifying at what concurrency your Scrapy process gets CPU
-bounded. For optimum performance, you should pick a concurrency where CPU usage
-is at 80-90%.
+to increase it will depend on how much CPU and memory you crawler will have
+available.
 
-To increase the global concurrency use::
+A good starting point is ``100``::
 
     CONCURRENT_REQUESTS = 100
+
+But the best way to find out is by doing some trials and identifying at what
+concurrency your Scrapy process gets CPU bounded. For optimum performance, you
+should pick a concurrency where CPU usage is at 80-90%.
+
+Increasing concurrency also increases memory usage. If memory usage is a
+concern, you might need to lower your global concurrency limit accordingly.
+
 
 Increase Twisted IO thread pool maximum size
 ============================================
@@ -85,7 +111,7 @@ When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
 ``INFO`` log level. In order to save CPU (and log storage requirements) you
 should not use ``DEBUG`` log level when preforming large broad crawls in
-production. Using ``DEBUG`` level when developing your (broad) crawler may be 
+production. Using ``DEBUG`` level when developing your (broad) crawler may be
 fine though.
 
 To set the log level use::
@@ -163,3 +189,32 @@ It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 
 .. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+
+.. _broad-crawls-bfo:
+
+Crawl in BFO order
+==================
+
+:ref:`Scrapy crawls in DFO order by default <faq-bfo-dfo>`.
+
+In broad crawls, however, page crawling tends to be faster than page
+processing. As a result, unprocessed early requests stay in memory until the
+final depth is reached, which can significantly increase memory usage.
+
+:ref:`Crawl in BFO order <faq-bfo-dfo>` instead to save memory.
+
+
+Be mindful of memory leaks
+==========================
+
+If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
+BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
+<broad-crawls-concurrency>` you should :ref:`debug your memory leaks
+<topics-leaks>`.
+
+
+Install a specific Twisted reactor
+==================================
+
+If the crawl is exceeding the system's capabilities, you might want to try
+installing a specific Twisted reactor, via the :setting:`TWISTED_REACTOR` setting.

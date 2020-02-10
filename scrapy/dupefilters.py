@@ -1,9 +1,9 @@
-from __future__ import print_function
 import os
 import logging
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
+
 
 class BaseDupeFilter(object):
 
@@ -49,7 +49,7 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + os.linesep)
+            self.file.write(fp + '\n')
 
     def request_fingerprint(self, request):
         return request_fingerprint(request)

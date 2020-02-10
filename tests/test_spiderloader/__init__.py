@@ -84,8 +84,8 @@ class SpiderLoaderTest(unittest.TestCase):
         module = 'tests.test_spiderloader.test_spiders.spider1'
         runner = CrawlerRunner({'SPIDER_MODULES': [module]})
 
-        self.assertRaisesRegexp(KeyError, 'Spider not found',
-                                runner.create_crawler, 'spider2')
+        self.assertRaisesRegex(KeyError, 'Spider not found',
+                               runner.create_crawler, 'spider2')
 
         crawler = runner.create_crawler('spider1')
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
@@ -108,6 +108,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
             spiders = spider_loader.list()
             self.assertEqual(spiders, [])
+
 
 class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 

@@ -50,10 +50,10 @@ Here is a simple example showing how you can catch signals and perform some acti
 Deferred signal handlers
 ========================
 
-Some signals support returning `Twisted deferreds`_ from their handlers, see
-the :ref:`topics-signals-ref` below to know which ones.
+Some signals support returning :class:`~twisted.internet.defer.Deferred`
+objects from their handlers, see the :ref:`topics-signals-ref` below to know
+which ones.
 
-.. _Twisted deferreds: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 .. _topics-signals-ref:
 
@@ -155,8 +155,8 @@ item_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.spiders.Spider` object
 
-    :param failure: the exception raised as a Twisted `Failure`_ object
-    :type failure: `Failure`_ object
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
 
 spider_closed
 -------------
@@ -236,8 +236,8 @@ spider_error
 
     This signal does not support returning deferreds from their handlers.
 
-    :param failure: the exception raised as a Twisted `Failure`_ object
-    :type failure: `Failure`_ object
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
 
     :param response: the response being processed when the exception was raised
     :type response: :class:`~scrapy.http.Response` object
@@ -295,6 +295,23 @@ request_reached_downloader
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+request_left_downloader
+-----------------------
+
+.. signal:: request_left_downloader
+.. function:: request_left_downloader(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
+    failure.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param request: the request that reached the downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
 response_received
 -----------------
 
@@ -333,5 +350,3 @@ response_downloaded
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spiders.Spider` object
-
-.. _Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

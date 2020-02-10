@@ -5,12 +5,7 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
-import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from io import BytesIO
 
 from PIL import Image
 
@@ -99,6 +94,11 @@ class ImagesPipeline(FilesPipeline):
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
 
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
+
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
@@ -130,7 +130,7 @@ class ImagesPipeline(FilesPipeline):
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in six.iteritems(self.thumbs):
+        for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
@@ -165,69 +165,9 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
-        def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('ImagesPipeline.image_key(url) and file_key(url) methods are deprecated, '
-                          'please use file_path(request, response=None, info=None) instead',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
-
-        # check if called from image_key or file_key with url as first argument
-        if not isinstance(request, Request):
-            _warn()
-            url = request
-        else:
-            url = request.url
-
-        # detect if file_key() or image_key() methods have been overridden
-        if not hasattr(self.file_key, '_base'):
-            _warn()
-            return self.file_key(url)
-        elif not hasattr(self.image_key, '_base'):
-            _warn()
-            return self.image_key(url)
-        ## end of deprecation warning block
-
-        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
+        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
-        def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
-            warnings.warn('ImagesPipeline.thumb_key(url) method is deprecated, please use '
-                          'thumb_path(request, thumb_id, response=None, info=None) instead',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
-
-        # check if called from thumb_key with url as first argument
-        if not isinstance(request, Request):
-            _warn()
-            url = request
-        else:
-            url = request.url
-
-        # detect if thumb_key() method has been overridden
-        if not hasattr(self.thumb_key, '_base'):
-            _warn()
-            return self.thumb_key(url, thumb_id)
-        ## end of deprecation warning block
-
-        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()  # change to request.url after deprecation
+        thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
-
-    # deprecated
-    def file_key(self, url):
-        return self.image_key(url)
-    file_key._base = True
-
-    # deprecated
-    def image_key(self, url):
-        return self.file_path(url)
-    image_key._base = True
-
-    # deprecated
-    def thumb_key(self, url, thumb_id):
-        return self.thumb_path(url, thumb_id)
-    thumb_key._base = True

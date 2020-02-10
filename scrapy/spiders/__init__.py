@@ -10,8 +10,6 @@ from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
 
 
@@ -52,15 +50,6 @@ class Spider(object_ref):
         spider._set_crawler(crawler)
         return spider
 
-    def set_crawler(self, crawler):
-        warnings.warn("set_crawler is deprecated, instantiate and bound the "
-                      "spider to this crawler with from_crawler method "
-                      "instead.",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        assert not hasattr(self, 'crawler'), "Spider already bounded to a " \
-                                             "crawler"
-        self._set_crawler(crawler)
-
     def _set_crawler(self, crawler):
         self.crawler = crawler
         self.settings = crawler.settings
@@ -68,6 +57,11 @@ class Spider(object_ref):
 
     def start_requests(self):
         cls = self.__class__
+        if not self.start_urls and hasattr(self, 'start_url'):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)")
         if method_is_overridden(cls, Spider, 'make_requests_from_url'):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "
@@ -109,23 +103,7 @@ class Spider(object_ref):
     __repr__ = __str__
 
 
-BaseSpider = create_deprecated_class('BaseSpider', Spider)
-
-
-class ObsoleteClass(object):
-    def __init__(self, message):
-        self.message = message
-
-    def __getattr__(self, name):
-        raise AttributeError(self.message)
-
-spiders = ObsoleteClass(
-    '"from scrapy.spider import spiders" no longer works - use '
-    '"from scrapy.spiderloader import SpiderLoader" and instantiate '
-    'it with your project settings"'
-)
-
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
-from scrapy.spiders.sitemap import SitemapSpider
+from scrapy.spiders.crawl import CrawlSpider, Rule  # noqa: F401
+from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider  # noqa: F401
+from scrapy.spiders.sitemap import SitemapSpider  # noqa: F401
