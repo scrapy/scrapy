@@ -861,12 +861,10 @@ in ``Request`` meta.
 ITEM_PIPELINE_CLOSE_SPIDER_ORDER
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``'asc'``
+Default: ``'desc'``
 
 Determines the order in which the ``close_spider`` methods of
-:ref:`item pipelines <topics-item-pipeline>` are called.
-
-Possible values:
+:ref:`item pipelines <topics-item-pipeline>` are called:
 
 -   ``'asc'``
 
@@ -875,6 +873,10 @@ Possible values:
 -   ``'desc'``
 
     From higher to lower values of :setting:`ITEM_PIPELINES`.
+
+The current default value, ``'desc'``, will switch to ``'asc'`` in a future
+version of Scrapy (see :issue:`2645`. Because of that, Scrapy logs a warning
+unless a value is explicitly set for this variable.
 
 .. setting:: ITEM_PIPELINES
 

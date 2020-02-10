@@ -1,4 +1,5 @@
 import asyncio
+from warnings import catch_warnings
 
 from pytest import mark
 from twisted.internet import defer
@@ -135,7 +136,25 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(len(self.items), 1)
 
     @defer.inlineCallbacks
-    def test_pipeline_method_order(self):
+    def test_pipeline_method_order_default(self):
+        expected_call_list = [
+            ('open_spider', '1'),
+            ('open_spider', '2'),
+            ('process_item', '1'),
+            ('process_item', '2'),
+            ('close_spider', '2'),
+            ('close_spider', '1'),
+        ]
+        crawler = self._create_crawler(Pipeline1, Pipeline2)
+        crawler.call_list = []
+        with catch_warnings(record=True) as warnings:
+            yield crawler.crawl(mockserver=self.mockserver)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("ITEM_PIPELINE_CLOSE_SPIDER_ORDER", str(warnings[0].message))
+        self.assertEqual(crawler.call_list, expected_call_list)
+
+    @defer.inlineCallbacks
+    def test_pipeline_method_order_asc(self):
         expected_call_list = [
             ('open_spider', '1'),
             ('open_spider', '2'),
@@ -144,7 +163,24 @@ class PipelineTestCase(unittest.TestCase):
             ('close_spider', '1'),
             ('close_spider', '2'),
         ]
-        crawler = self._create_crawler(Pipeline1, Pipeline2)
+        settings = {'ITEM_PIPELINE_CLOSE_SPIDER_ORDER': 'asc'}
+        crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
+        crawler.call_list = []
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertEqual(crawler.call_list, expected_call_list)
+
+    @defer.inlineCallbacks
+    def test_pipeline_method_order_desc(self):
+        expected_call_list = [
+            ('open_spider', '1'),
+            ('open_spider', '2'),
+            ('process_item', '1'),
+            ('process_item', '2'),
+            ('close_spider', '2'),
+            ('close_spider', '1'),
+        ]
+        settings = {'ITEM_PIPELINE_CLOSE_SPIDER_ORDER': 'desc'}
+        crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
         crawler.call_list = []
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(crawler.call_list, expected_call_list)

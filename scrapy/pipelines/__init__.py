@@ -4,6 +4,9 @@ Item pipeline
 See documentation in docs/item-pipeline.rst
 """
 
+from warnings import warn
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_f_from_coro_f
@@ -27,6 +30,13 @@ class ItemPipelineManager(MiddlewareManager):
 
     def __init__(self, *middlewares, settings):
         self._close_spider_order = settings.get('ITEM_PIPELINE_CLOSE_SPIDER_ORDER')
+        if self._close_spider_order is None:
+            warn("The default value of the ITEM_PIPELINE_CLOSE_SPIDER_ORDER "
+                 "setting will change from 'desc' to 'asc' in a future "
+                 "version of Scrapy. To remove this warning, give the "
+                 "ITEM_PIPELINE_CLOSE_SPIDER_ORDER setting a explicit value.",
+                 ScrapyDeprecationWarning)
+            self._close_spider_order = 'desc'
         if self._close_spider_order not in self._close_spider_order_values:
             raise ValueError(
                 'Invalid ITEM_PIPELINE_CLOSE_SPIDER_ORDER value: {}. '
