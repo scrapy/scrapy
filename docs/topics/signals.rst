@@ -279,7 +279,7 @@ request_scheduled
     Sent when the engine schedules a :class:`~scrapy.http.Request`, to be
     downloaded later.
 
-    The signal does not support returning deferreds from its handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.http.Request` object
@@ -296,7 +296,7 @@ request_dropped
     Sent when a :class:`~scrapy.http.Request`, scheduled by the engine to be
     downloaded later, is rejected by the scheduler.
 
-    The signal does not support returning deferreds from its handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.http.Request` object
@@ -312,7 +312,7 @@ request_reached_downloader
 
     Sent when a :class:`~scrapy.http.Request` reached downloader.
 
-    The signal does not support returning deferreds from its handlers.
+    This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached downloader
     :type request: :class:`~scrapy.http.Request` object
