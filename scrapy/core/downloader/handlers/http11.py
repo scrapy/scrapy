@@ -417,14 +417,14 @@ class ScrapyAgent:
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(
             _ResponseReader(
-                d,
-                txresponse,
-                request,
-                maxsize,
-                warnsize,
-                fail_on_dataloss,
-                self._crawler,
-                self._source,
+                finished=d,
+                txresponse=txresponse,
+                request=request,
+                maxsize=maxsize,
+                warnsize=warnsize,
+                fail_on_dataloss=fail_on_dataloss,
+                crawler=self._crawler,
+                source=self._source,
             )
         )
 
