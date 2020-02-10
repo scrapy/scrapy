@@ -392,9 +392,12 @@ with multiples lines
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         yield crawler.crawl(mockserver=self.mockserver)
         itemcount = crawler.stats.get_value('item_scraped_count')
-        self.assertEqual(itemcount, 80)
-        for i in [0, 3, 21, 22, 207, 311]:  # some random items
+        self.assertEqual(itemcount, 156)
+        # some random items
+        for i in [1, 4, 21, 22, 207, 311]:
             self.assertIn({'index': i}, items)
+        for i in [10, 30, 122]:
+            self.assertIn({'index2': i}, items)
 
     @mark.only_asyncio()
     @defer.inlineCallbacks
