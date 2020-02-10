@@ -13,6 +13,20 @@ from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import method_is_overridden
 
 
+def abstractspider(decorated_cls):
+    """Marks a :class:`~scrapy.spiders.Spider` subclass as an :ref:`abstract
+    spider <abstract-and-concrete-spiders>`."""
+
+    @classmethod
+    def is_abstract(cls):
+        if cls is decorated_cls:
+            return True
+        return super(decorated_cls, cls).is_abstract()
+
+    decorated_cls.is_abstract = is_abstract
+    return decorated_cls
+
+
 class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
@@ -24,11 +38,13 @@ class Spider(object_ref):
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
-        elif not getattr(self, 'name', None):
-            raise ValueError("%s must have a name" % type(self).__name__)
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
+
+    @classmethod
+    def is_abstract(cls):
+        return cls is Spider
 
     @property
     def logger(self):

@@ -11,7 +11,7 @@ import warnings
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Spider
+from scrapy.spiders import abstractspider, Spider
 from scrapy.utils.python import get_func_args
 from scrapy.utils.spider import iterate_spider_output
 
@@ -66,6 +66,7 @@ class Rule(object):
         return self.process_request(*args)
 
 
+@abstractspider
 class CrawlSpider(Spider):
 
     rules = ()

@@ -1310,6 +1310,30 @@ Default: ``'scrapy.spiderloader.SpiderLoader'``
 The class that will be used for loading spiders, which must implement the
 :ref:`topics-api-spiderloader`.
 
+.. setting:: SPIDER_LOADER_REQUIRE_NAME
+
+SPIDER_LOADER_REQUIRE_NAME
+--------------------------
+
+Default: ``True``
+
+By default, when loading spiders, Scrapy only loads
+:class:`~scrapy.spiders.Spider` subclasses that have a
+:class:`~scrapy.spiders.Spider.name` unless they are decorated with
+:func:`~scrapy.spiders.abstractspider`.
+
+If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``, Scrapy loads all Spider
+subclasses unless they are decorated with
+:func:`~scrapy.spiders.abstractspider`. If they do not have a
+:class:`~scrapy.spiders.Spider.name`, their fully-qualified class name is used
+as a name.
+
+In a future version of Scrapy, the :setting:`SPIDER_LOADER_REQUIRE_NAME`
+setting will no longer be available, and Scrapy will always behave as if
+:setting:`SPIDER_LOADER_REQUIRE_NAME` were ``False``. Set
+:setting:`SPIDER_LOADER_REQUIRE_NAME` to ``False`` now to future-proof your
+spiders.
+
 .. setting:: SPIDER_LOADER_WARN_ONLY
 
 SPIDER_LOADER_WARN_ONLY

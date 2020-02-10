@@ -814,3 +814,41 @@ Combine SitemapSpider with other sources of urls::
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
+
+
+.. _abstract-and-concrete-spiders:
+
+Abstract and Concrete Spiders
+=============================
+
+Abstract spiders are :class:`~scrapy.spiders.Spider` subclasses that are
+not loaded by the default spider loader (see :setting:`SPIDER_LOADER_CLASS`).
+Abstract spiders cannot be executed, they can only be subclassed to create
+other spiders.
+
+To be able to use a spider, you must mark it as a concrete spider.
+
+How you mark a spider as a concrete spider depends on the value of the
+:setting:`SPIDER_LOADER_REQUIRE_NAME` setting:
+
+-   If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), add a
+    non-empty :class:`~scrapy.spiders.Spider.name` to a spider to make it a
+    concrete spider.
+
+-   If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``, all spiders are
+    considered concrete spiders by default. Use
+    :func:`~scrapy.spiders.abstractspider` to mark a spider as an abstract
+    spider:
+
+    .. autodecorator:: scrapy.spiders.abstractspider
+
+    For example::
+
+        from scrapy import abstractspider, Spider
+
+        @abstractspider
+        class MyBaseSpider(Spider):
+            pass
+
+        class MySpider(MyBaseSpider):
+            pass

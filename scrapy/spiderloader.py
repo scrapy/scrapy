@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-from collections import defaultdict
 import traceback
-import warnings
+from collections import defaultdict
+from warnings import warn
 
 from zope.interface import implementer
 
 from scrapy.interfaces import ISpiderLoader
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
@@ -17,6 +17,14 @@ class SpiderLoader(object):
     in a Scrapy project.
     """
     def __init__(self, settings):
+        self.require_name = settings.getbool('SPIDER_LOADER_REQUIRE_NAME')
+        if self.require_name:
+            warn('SPIDER_LOADER_REQUIRE_NAME is True. In a future version of '
+                 'Scrapy, the SPIDER_LOADER_REQUIRE_NAME setting will be '
+                 'removed, and Scrapy will always behave as if '
+                 'SPIDER_LOADER_REQUIRE_NAME were False. To remove this '
+                 'warning, set SPIDER_LOADER_REQUIRE_NAME to False.',
+                 ScrapyDeprecationWarning)
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
         self._spiders = {}
@@ -33,12 +41,15 @@ class SpiderLoader(object):
             msg = ("There are several spiders with the same name:\n\n"
                    "{}\n\n  This can cause unexpected behavior.".format(
                         "\n\n".join(dupes)))
-            warnings.warn(msg, UserWarning)
+            warn(msg, UserWarning)
 
     def _load_spiders(self, module):
-        for spcls in iter_spider_classes(module):
-            self._found[spcls.name].append((module.__name__, spcls.__name__))
-            self._spiders[spcls.name] = spcls
+        classes = iter_spider_classes(module, require_name=self.require_name)
+        for spcls in classes:
+            qualname = '.'.join((module.__name__, spcls.__name__))
+            name = getattr(spcls, 'name', None) or qualname
+            self._found[name].append((module.__name__, spcls.__name__))
+            self._spiders[name] = spcls
 
     def _load_all_spiders(self):
         for name in self.spider_modules:
@@ -50,7 +61,7 @@ class SpiderLoader(object):
                     msg = ("\n{tb}Could not load spiders from module '{modname}'. "
                            "See above traceback for details.".format(
                                 modname=name, tb=traceback.format_exc()))
-                    warnings.warn(msg, RuntimeWarning)
+                    warn(msg, RuntimeWarning)
                 else:
                     raise
         self._check_name_duplicates()

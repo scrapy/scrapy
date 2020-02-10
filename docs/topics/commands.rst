@@ -312,8 +312,8 @@ list
 * Syntax: ``scrapy list``
 * Requires project: *yes*
 
-List all available spiders in the current project. The output is one spider per
-line.
+List all :ref:`concrete spiders <abstract-and-concrete-spiders>` available in
+the current project. The output is one spider per line.
 
 Usage example::
 

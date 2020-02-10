@@ -13,19 +13,46 @@ def iterate_spider_output(result):
     return arg_to_iter(deferred_from_coro(result))
 
 
-def iter_spider_classes(module):
-    """Return an iterator over all spider classes defined in the given module
-    that can be instantiated (ie. which have name)
-    """
-    # this needs to be imported here until get rid of the spider manager
-    # singleton in scrapy.spider.spiders
-    from scrapy.spiders import Spider
+def _is_concrete_spider(spider_class, require_name):
+    """Return ``True`` if `spider_class` is a :ref:`concrete
+    <abstract-and-concrete-spiders>` :class:`~scrapy.spiders.Spider` subclass.
 
+    If `require_name` is ``True`` (default), any
+    :class:`~scrapy.spiders.Spider` subclass with a non-empty
+    :class:`~scrapy.spiders.Spider.name` and not decorated with
+    :func:`~scrapy.spiders.abstractspider` is considered a concrete spider.
+
+    If `require_name` is ``False``, any :class:`~scrapy.spiders.Spider`
+    subclass not decorated with :func:`~scrapy.spiders.abstractspider` is
+    considered a concrete spider.
+    """
+    return (
+        inspect.isclass(spider_class)
+        and issubclass(spider_class, Spider)
+        and not spider_class.is_abstract()
+        and (
+            getattr(spider_class, 'name', None)
+            or not require_name
+        )
+    )
+
+
+def iter_spider_classes(module, *, require_name=True):
+    """Return an iterator over all :ref:`concrete spider
+    <abstract-and-concrete-spiders>` classes defined in the given module.
+
+    If `require_name` is ``True`` (default), any
+    :class:`~scrapy.spiders.Spider` subclass with a non-empty
+    :class:`~scrapy.spiders.Spider.name` and not decorated with
+    :func:`~scrapy.spiders.abstractspider` is considered a concrete spider.
+
+    If `require_name` is ``False``, any :class:`~scrapy.spiders.Spider`
+    subclass not decorated with :func:`~scrapy.spiders.abstractspider` is
+    considered a concrete spider.
+    """
     for obj in vars(module).values():
-        if inspect.isclass(obj) and \
-           issubclass(obj, Spider) and \
-           obj.__module__ == module.__name__ and \
-           getattr(obj, 'name', None):
+        if (_is_concrete_spider(obj, require_name)
+                and obj.__module__ == module.__name__):
             yield obj
 
 

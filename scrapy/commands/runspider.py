@@ -79,7 +79,9 @@ class Command(ScrapyCommand):
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
             raise UsageError("Unable to load %r: %s\n" % (filename, e))
-        spclasses = list(iter_spider_classes(module))
+        require_name = self.settings.getbool('SPIDER_LOADER_REQUIRE_NAME')
+        spclasses = list(iter_spider_classes(module,
+                                             require_name=require_name))
         if not spclasses:
             raise UsageError("No spider found in file: %s\n" % filename)
         spidercls = spclasses.pop()

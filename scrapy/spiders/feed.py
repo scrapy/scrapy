@@ -4,13 +4,14 @@ for scraping from an XML feed.
 
 See documentation in docs/topics/spiders.rst
 """
-from scrapy.spiders import Spider
+from scrapy.spiders import abstractspider, Spider
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.selector import Selector
 from scrapy.exceptions import NotConfigured, NotSupported
 
 
+@abstractspider
 class XMLFeedSpider(Spider):
     """
     This class intends to be the base class for spiders that scrape
@@ -91,6 +92,7 @@ class XMLFeedSpider(Spider):
             selector.register_namespace(prefix, uri)
 
 
+@abstractspider
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,

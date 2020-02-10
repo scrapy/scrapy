@@ -45,9 +45,8 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(spider.foo, 'bar')
 
     def test_spider_without_name(self):
-        """``__init__`` method arguments are assigned to spider attributes"""
-        self.assertRaises(ValueError, self.spider_class)
-        self.assertRaises(ValueError, self.spider_class, somearg='foo')
+        spider = self.spider_class()
+        self.assertIsNone(spider.name)
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
