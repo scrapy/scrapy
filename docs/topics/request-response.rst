@@ -685,7 +685,9 @@ Response objects
     .. attribute:: Response.certificate
 
         A :class:`twisted.internet.ssl.Certificate` object representing
-        the server's SSL certificate. Only populated for ``https`` responses.
+        the server's SSL certificate.
+        
+        Only populated for ``https`` responses, ``None`` otherwise.
 
     .. method:: Response.copy()
 
