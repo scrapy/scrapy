@@ -153,3 +153,20 @@ def deferred_f_from_coro_f(coro_f):
     def f(*coro_args, **coro_kwargs):
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
     return f
+
+
+def maybeDeferred_coro(f, *args, **kw):
+    """ Copy of defer.maybeDeferred that also converts coroutines to Deferreds. """
+    try:
+        result = f(*args, **kw)
+    except:  # noqa: E722
+        return defer.fail(failure.Failure(captureVars=defer.Deferred.debug))
+
+    if isinstance(result, defer.Deferred):
+        return result
+    elif _isfuture(result) or inspect.isawaitable(result):
+        return deferred_from_coro(result)
+    elif isinstance(result, failure.Failure):
+        return defer.fail(result)
+    else:
+        return defer.succeed(result)
