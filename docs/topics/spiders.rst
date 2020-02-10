@@ -836,19 +836,20 @@ How you mark a spider as a concrete spider depends on the value of the
     concrete spider.
 
 -   If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``, all spiders are
-    considered concrete spiders by default. Use
-    :func:`~scrapy.spiders.abstractspider` to mark a spider as an abstract
-    spider:
+    considered concrete spiders by default.
 
-    .. autodecorator:: scrapy.spiders.abstractspider
+Use :func:`~scrapy.spiders.abstractspider` to mark a spider as an abstract
+spider:
 
-    For example::
+.. autodecorator:: scrapy.spiders.abstractspider
 
-        from scrapy import abstractspider, Spider
+For example::
 
-        @abstractspider
-        class MyBaseSpider(Spider):
-            pass
+    from scrapy import abstractspider, Spider
 
-        class MySpider(MyBaseSpider):
-            pass
+    @abstractspider
+    class MyBaseSpider(Spider):
+        pass
+
+    class MySpider(MyBaseSpider):
+        pass
