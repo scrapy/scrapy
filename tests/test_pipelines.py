@@ -150,7 +150,8 @@ class PipelineTestCase(unittest.TestCase):
         with catch_warnings(record=True) as warnings:
             yield crawler.crawl(mockserver=self.mockserver)
             self.assertEqual(len(warnings), 1)
-            self.assertIn("ITEM_PIPELINE_CLOSE_SPIDER_ORDER", str(warnings[0].message))
+            self.assertIn("ITEM_PIPELINE_CLOSE_SPIDER_ORDER",
+                          str(warnings[0].message))
         self.assertEqual(crawler.call_list, expected_call_list)
 
     @defer.inlineCallbacks
@@ -191,4 +192,5 @@ class PipelineTestCase(unittest.TestCase):
         crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
         with self.assertRaises(ValueError):
             crawler.crawl(mockserver=self.mockserver)
-        # TODO: Fix “twisted.trial.util.DirtyReactorAggregateError: Reactor was unclean.”
+        # TODO: Fix “twisted.trial.util.DirtyReactorAggregateError: Reactor was
+        # unclean.”
