@@ -10,12 +10,22 @@ Scrapy 2.0.0 (2020-02-2?)
 
 Highlights:
 
-…
+*   Python 2 support has been removed
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-…
+*   Python 2 support has been removed (:issue:`4091`, :issue:`4114`,
+    :issue:`4115`, :issue:`4121`, :issue:`4138`)
+
+*   File extensions that
+    :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    ignores by default now also include: ``7z``, ``7zip``, ``apk``, ``bz2``,
+    ``cdr``, ``dmg``, ``ico``, ``iso``, ``tar``, ``tar.gz``, ``webm``, ``xz``
+    (:issue:`1837`, :issue:`2067`, :issue:`4066`)
+
+*   Overridden settings are now logged in a different format, in line with the
+    logging of enabled extensions and similar (:issue:`4199`)
 
 See also :ref:`2.0.0-deprecation-removals` below.
 
@@ -23,19 +33,84 @@ See also :ref:`2.0.0-deprecation-removals` below.
 New features
 ~~~~~~~~~~~~
 
-…
+*   Item loader processors can now be regular functions, they no longer need to
+    be methods (:issue:`3899`)
+
+*   :class:`~scrapy.logformatter.LogFormatter` now supports an
+    :class:`~scrapy.logformatter.LogFormatter.error` method for exceptions
+    raised during item processing by pipelines (:issue:`3986`, :issue:`3989`,
+    :issue:`4176`)
+
+*   The :setting:`FEED_URI` setting now supports :class:`pathlib.Path` values
+    (:issue:`3731`, :issue:`4074`)
+
+*   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
+    exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
+    attribute nor reimplement :class:`~scrapy.spiders.Spider.start_requests`,
+    but have a ``start_url`` attribute (:issue:`4133`, :issue:`4170`)
+
+*   A new ``keep_fragments`` parameter of
+    :func:`scrapy.utils.request.request_fingerprint` allows to generate
+    different fingerprints for requests with different fragments in their URL
+    (:issue:`4104`)
+
+*   :class:`scrapy.utils.python.MutableChain.__iter__` now returns ``self``,
+    `allowing it to be used as a sequence <https://lgtm.com/rules/4850080/>`_
+    (:issue:`4153`)
 
 
 Bug fixes
 ~~~~~~~~~
 
-…
+*   Support redirects to URLs starting with 3 slashes: ``///`` (:issue:`4032`,
+    :issue:`4042`)
+
+*   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
+    because they have a colon (:issue:`2552`, :issue:`4094`)
+
+*   Z shell completion now looks for ``.html`` files, not ``.http`` files
+    (:issue:`4122`)
+
+*   Adding items to a :class:`scrapy.utils.datatypes.LocalCache` object without
+    a ``limit`` defined no longer raises a :exc:`TypeError` exception
+    (:issue:`4123`)
 
 
 Documentation
 ~~~~~~~~~~~~~
 
-…
+-   API documentation now links to an online view of the corresponding source
+    code (:issue:`4148`)
+
+-   Links to unexisting documentation pages now allow access to the sidebar
+    (:issue:`4152`, :issue:`4169`)
+
+-   Cross-references within our documentation now display a tooltip when
+    hovered (:issue:`4173`, :issue:`4183`)
+
+-   Clarified how :class:`~scrapy.loader.ItemLoader.item` works (:issue:`3574`,
+    :issue:`4099`)
+
+-   Clarified that :func:`logging.basicConfig` should not be used when also
+    using :class:`~scrapy.crawler.CrawlerProcess` (:issue:`2149`,
+    :issue:`2352`, :issue:`3146`, :issue:`3960`)
+
+-   Clarified the requirements for :class:`~scrapy.http.Request` objects
+    :ref:`when using persistence <request-serialization>` (:issue:`4124`,
+    :issue:`4139`)
+
+-   Documentation examples are now checked as part of our test suite and we
+    have fixed some of the issues detected (:issue:`4142`, :issue:`4146`,
+    :issue:`4171`, :issue:`4184`)
+
+-   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
+    (:issue:`4059`)
+
+-   Improved consistency when referring to the ``__init__`` method of an object
+    (:issue:`4086`, :issue:`4088`)
+
+-   Extended :mod:`~sphinx.ext.intersphinx` usage (:issue:`4147`,
+    :issue:`4172`, :issue:`4185`, :issue:`4194`)
 
 
 .. _2.0.0-deprecation-removals:
@@ -43,19 +118,40 @@ Documentation
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
-…
+*   LevelDB support has been removed (:issue:`4112`)
 
 
 Deprecations
 ~~~~~~~~~~~~
 
-…
+*   :class:`scrapy.utils.python.MutableChain.next` is deprecated, use
+    :func:`next` or :class:`scrapy.utils.python.MutableChain.__next__` instead
+    (:issue:`4153`)
 
 
 Other changes
 ~~~~~~~~~~~~~
 
-…
+-   Re-enabled proxy ``CONNECT`` tests (:issue:`2545`, :issue:`4114`)
+
+-   Added Bandit_ security checks to our test suite (:issue:`4162`)
+
+-   Added Flake8_ style checks to our test suite and applied some of the
+    corresponding changes (:issue:`3944`, :issue:`3945`, :issue:`4137`,
+    :issue:`4157`, :issue:`4167`, :issue:`4174`, :issue:`4186`)
+
+-   Improved test coverage (:issue:`4097`)
+
+-   Started reporting slowest tests (:issue:`4163`)
+
+-   Fixed tests (:issue:`4014`, :issue:`4095`)
+
+-   Fixed typos (:issue:`4128`)
+
+-   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`, :issue:`4210`)
+
+.. _Bandit: https://bandit.readthedocs.io/
+.. _Flake8: https://flake8.pycqa.org/en/latest/
 
 
 .. _release-1.8.0:

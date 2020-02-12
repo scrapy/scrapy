@@ -68,6 +68,9 @@ Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if you spider doesn't rely
 on cookies.
 
+
+.. _request-serialization:
+
 Request serialization
 ---------------------
 
