@@ -25,6 +25,16 @@ tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                              'sample_data')
 
 
+# Settings that, while not part of the default settings for backward
+# compatibility reasons, are encouraged in the documentation.
+#
+# Not using these settings can cause some backward-compatibility warnings to be
+# logged, breaking tests that check logged warnings.
+FUTURE_PROOF_SETTINGS = {
+    'SPIDER_LOADER_REQUIRE_NAME': False,
+}
+
+
 def get_testdata(*paths):
     """Return test data"""
     path = os.path.join(tests_datadir, *paths)

@@ -17,6 +17,8 @@ from scrapy.settings import Settings
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 
+from tests import FUTURE_PROOF_SETTINGS
+
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -101,7 +103,8 @@ class SpiderLoaderTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             module = 'tests.test_spiderloader.test_spiders.doesnotexist'
-            settings = Settings({'SPIDER_MODULES': [module],
+            settings = Settings({**FUTURE_PROOF_SETTINGS,
+                                 'SPIDER_MODULES': [module],
                                  'SPIDER_LOADER_WARN_ONLY': True})
             spider_loader = SpiderLoader.from_settings(settings)
             self.assertIn("Could not load spiders from module", str(w[0].message))
@@ -133,8 +136,9 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
 
-            self.assertEqual(len(w), 1)
-            msg = str(w[0].message)
+            # We ignore the warning about SPIDER_LOADER_REQUIRE_NAME
+            self.assertEqual(len(w), 2)
+            msg = str(w[1].message)
             self.assertIn("several spiders with the same name", msg)
             self.assertIn("'spider3'", msg)
 
@@ -152,8 +156,9 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
 
-            self.assertEqual(len(w), 1)
-            msg = str(w[0].message)
+            # We ignore the warning about SPIDER_LOADER_REQUIRE_NAME
+            self.assertEqual(len(w), 2)
+            msg = str(w[1].message)
             self.assertIn("several spiders with the same name", msg)
             self.assertIn("'spider1'", msg)
             self.assertIn("'spider2'", msg)

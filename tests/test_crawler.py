@@ -20,6 +20,8 @@ from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
 
+from tests import FUTURE_PROOF_SETTINGS
+
 
 class BaseCrawlerTest(unittest.TestCase):
 
@@ -31,7 +33,7 @@ class BaseCrawlerTest(unittest.TestCase):
 class CrawlerTestCase(BaseCrawlerTest):
 
     def setUp(self):
-        self.crawler = Crawler(DefaultSpider, Settings())
+        self.crawler = Crawler(DefaultSpider, FUTURE_PROOF_SETTINGS)
 
     def test_deprecated_attribute_spiders(self):
         with warnings.catch_warnings(record=True) as w:
@@ -173,7 +175,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
 
     def test_deprecated_attribute_spiders(self):
         with warnings.catch_warnings(record=True) as w:
-            runner = CrawlerRunner(Settings())
+            runner = CrawlerRunner(FUTURE_PROOF_SETTINGS)
             spiders = runner.spiders
             self.assertEqual(len(w), 1)
             self.assertIn("CrawlerRunner.spiders", str(w[0].message))
