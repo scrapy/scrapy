@@ -14,7 +14,6 @@ from tests import get_testdata
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
         extractor_cls = None
-        escapes_whitespace = False
 
         def setUp(self):
             body = get_testdata('link_extractor', 'linkextractor.html')
@@ -28,10 +27,7 @@ class Base:
 
         def test_extract_all_links(self):
             lx = self.extractor_cls()
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -308,10 +304,7 @@ class Base:
 
         def test_attrs(self):
             lx = self.extractor_cls(attrs="href")
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
