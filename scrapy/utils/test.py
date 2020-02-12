@@ -120,11 +120,13 @@ def assert_samelines(testcase, text1, text2, msg=None):
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
 
+
 def get_from_asyncio_queue(value):
     q = asyncio.Queue()
     getter = q.get()
     q.put_nowait(value)
     return getter
+
 
 def mock_google_cloud_storage():
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
