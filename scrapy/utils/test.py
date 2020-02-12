@@ -2,14 +2,13 @@
 This module contains some assorted functions used in tests
 """
 
-from __future__ import absolute_import
-from posixpath import split
 import asyncio
 import os
+from posixpath import split
+from unittest import mock
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
-from tests import mock
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore
