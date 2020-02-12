@@ -416,7 +416,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
         class MyFilesPipeline(FilesPipeline):
 
-            def file_path(self, request, response, info):
+            def file_path(self, request, response=None, info=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
       By default the :meth:`file_path` method returns
