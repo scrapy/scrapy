@@ -166,6 +166,10 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
+    def test_follow_flags(self):
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
 
     # Response.follow_all
 
@@ -231,6 +235,17 @@ class BaseResponseTest(unittest.TestCase):
         links = map(Link, absolute)
         expected = [u.replace(' ', '%20') for u in absolute]
         self._assert_followed_all_urls(links, expected)
+
+    def test_follow_all_flags(self):
+        re = self.response_class('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2',
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])
 
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
@@ -561,6 +576,22 @@ class TextResponseTest(BaseResponseTest):
             response=resp2,
         )
         self.assertEqual(req.encoding, 'cp1251')
+
+    def test_follow_flags(self):
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
+
+    def test_follow_all_flags(self):
+        re = self.response_class('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2',
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])
 
     def test_follow_all_css(self):
         expected = [

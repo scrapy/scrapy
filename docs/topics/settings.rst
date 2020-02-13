@@ -160,27 +160,6 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
-.. setting:: ASYNCIO_REACTOR
-
-ASYNCIO_REACTOR
----------------
-
-Default: ``False``
-
-Whether to install and require the Twisted reactor that uses the asyncio loop.
-
-When this option is set to ``True``, Scrapy will require
-:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
-install this reactor if no reactor is installed yet, such as when using the
-``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
-:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
-manually. If a different reactor is installed outside Scrapy, it will raise an
-exception.
-
-The default value for this option is currently ``False`` to maintain backward
-compatibility and avoid possible problems caused by using a different Twisted
-reactor.
-
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -1462,6 +1441,30 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR
+
+TWISTED_REACTOR
+---------------
+
+Default: ``None``
+
+Import path of a given Twisted reactor, for instance:
+:class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+
+Scrapy will install this reactor if no other is installed yet, such as when
+the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class. If you are using the
+:class:`~scrapy.crawler.CrawlerRunner` class, you need to install the correct
+reactor manually. An exception will be raised if the installation fails.
+
+The default value for this option is currently ``None``, which means that Scrapy
+will not attempt to install any specific reactor, and the default one defined by
+Twisted for the current platform will be used. This is to maintain backward
+compatibility and avoid possible problems caused by using a non-default reactor.
+
+For additional information, please see
+:doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT
