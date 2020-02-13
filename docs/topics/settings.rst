@@ -875,7 +875,7 @@ Determines the order in which the ``close_spider`` methods of
     From higher to lower values of :setting:`ITEM_PIPELINES`.
 
 The current default value, ``'desc'``, will switch to ``'asc'`` in a future
-version of Scrapy (see :issue:`2645`. Because of that, Scrapy logs a warning
+version of Scrapy (see :issue:`2645`). Because of that, Scrapy logs a warning
 unless a value is explicitly set for this variable.
 
 .. setting:: ITEM_PIPELINES
