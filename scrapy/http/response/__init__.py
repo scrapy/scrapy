@@ -25,6 +25,16 @@ class Response(object_ref):
         self.flags = [] if flags is None else list(flags)
 
     @property
+    def cb_kwargs(self):
+        try:
+            return self.request.cb_kwargs
+        except AttributeError:
+            raise AttributeError(
+                "Response.cb_kwargs not available, this response "
+                "is not tied to any request"
+            )
+
+    @property
     def meta(self):
         try:
             return self.request.meta
