@@ -46,7 +46,7 @@ def inthread(func):
 
 
 try:
-    from dataclasses import fields
+    from dataclasses import fields as dataclass_fields
 except ImportError:
     pass
 else:
@@ -56,16 +56,14 @@ else:
         """
 
         def __getitem__(self, key):
-            if not hasattr(self, "_field_names"):
-                self._field_names = [f.name for f in fields(self)]
-            if key in self._field_names:
+            field_names = [f.name for f in dataclass_fields(self)]
+            if key in field_names:
                 return getattr(self, key)
             raise KeyError(key)
 
         def __setitem__(self, key, value):
-            if not hasattr(self, "_field_names"):
-                self._field_names = [f.name for f in fields(self)]
-            if key in self._field_names:
+            field_names = [f.name for f in dataclass_fields(self)]
+            if key in field_names:
                 setattr(self, key, value)
             else:
                 raise KeyError("%s does not support field: %s" % (self.__class__.__name__, key))

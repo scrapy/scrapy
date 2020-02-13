@@ -294,27 +294,26 @@ class SequenceExclude(object):
         return item not in self.seq
 
 
-def get_item_field(item, field_name, default=None):
+def get_item_field(item, name, default=None):
     """
     Access item fields on both "regular" and dataclass-based items
     """
     if is_dataclass_instance(item):
-        return getattr(item, field_name, default)
+        return getattr(item, name, default)
     else:
-        return item.get(field_name, default)
+        return item.get(name, default)
 
 
-def set_item_field(item, field_name, value):
+def set_item_field(item, name, value):
     """
     Set item fields on both "regular" and dataclass-based items
     """
     if is_dataclass_instance(item):
-        if not hasattr(item, "_field_names"):
-            from dataclasses import fields
-            item._field_names = [f.name for f in fields(item)]
-        if field_name in item._field_names:
-            setattr(item, field_name, value)
+        from dataclasses import fields as dataclass_fields
+        field_names = [f.name for f in dataclass_fields(item)]
+        if name in field_names:
+            setattr(item, name, value)
         else:
-            raise KeyError("%s does not support field: %s" % (item.__class__.__name__, field_name))
+            raise KeyError("%s does not support field: %s" % (item.__class__.__name__, name))
     else:
-        item[field_name] = value
+        item[name] = value
