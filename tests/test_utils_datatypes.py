@@ -348,8 +348,15 @@ if make_dataclass:
             ("url", list, field(default_factory=str)),
         ],
     )
+
+    from scrapy.utils.decorators import subscriptable_dataclass
+
+    @subscriptable_dataclass
+    class SubscriptableDataclassItem(DataClassItem):
+        pass
 else:
     DataClassItem = None
+    SubscriptableDataclassItem = None
 
 
 class GetSetItemFieldsTestCase(unittest.TestCase):
@@ -389,6 +396,25 @@ class GetSetItemFieldsTestCase(unittest.TestCase):
         self.assertEqual(get_item_field(item, "nonexistent", 123), 123)
         with self.assertRaises(KeyError):
             set_item_field(item, "nonexistent", "some value")
+
+
+class SubscriptableDataclassItemTestCase(unittest.TestCase):
+
+    @unittest.skipIf(not SubscriptableDataclassItem, "dataclasses module is not available")
+    def test_subscriptable_dataclass_item(self):
+        item = SubscriptableDataclassItem()
+        item["name"] = "foobar"
+        item["url"] = "https://example.org"
+        self.assertEqual(item["name"], "foobar")
+        self.assertEqual(item["url"], "https://example.org")
+
+    @unittest.skipIf(not SubscriptableDataclassItem, "dataclasses module is not available")
+    def test_subscriptable_dataclass_item_non_existent_field(self):
+        item = SubscriptableDataclassItem()
+        with self.assertRaises(KeyError):
+            print(item["nonexistent"])
+        with self.assertRaises(KeyError):
+            item["nonexistent"] = "foobar"
 
 
 if __name__ == "__main__":
