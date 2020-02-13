@@ -4,7 +4,13 @@ from unittest import mock
 from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
+from scrapy.item import ABCMeta, BaseItem, DictItem, Field, Item, ItemMeta
+from scrapy.utils.misc import is_item_like
+
+try:
+    from dataclasses import make_dataclass
+except ImportError:
+    make_dataclass = None
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -322,6 +328,46 @@ class DictItemTest(unittest.TestCase):
             subclassed_dict_item = SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+
+class IsItemLikeTest(unittest.TestCase):
+
+    def test_true_item(self):
+        self.assertTrue(is_item_like(BaseItem()))
+        self.assertTrue(is_item_like(Item()))
+
+    def test_true_item_subclass(self):
+        class BaseItemSubclass(BaseItem):
+            pass
+
+        class ItemSubclass(Item):
+            pass
+
+        self.assertTrue(is_item_like(BaseItemSubclass()))
+        self.assertTrue(is_item_like(ItemSubclass()))
+
+    def test_true_dict(self):
+        self.assertTrue(is_item_like(dict()))
+
+    def test_true_dict_subclass(self):
+        class DictSubclass(dict):
+            pass
+
+        self.assertTrue(is_item_like(DictSubclass()))
+
+    @unittest.skipIf(not make_dataclass, "dataclasses module is not available")
+    def test_true_dataclass(self):
+        DataClassItem = make_dataclass("DataClassItem", [("name", str)])
+        self.assertTrue(is_item_like(DataClassItem(name="foobar")))
+
+    def test_false(self):
+        class NotAnItem:
+            pass
+
+        self.assertFalse(is_item_like(NotAnItem()))
+        self.assertFalse(is_item_like(Item))
+        self.assertFalse(is_item_like(ScrapyDeprecationWarning))
+        self.assertFalse(is_item_like(ScrapyDeprecationWarning()))
 
 
 if __name__ == "__main__":

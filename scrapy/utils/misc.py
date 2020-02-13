@@ -35,6 +35,13 @@ def arg_to_iter(arg):
 
 
 def is_item_like(obj):
+    """
+    Returns True if *obj* is considered a Scrapy *item*, False otherwise.
+
+    An object is considered an *item* if it is:
+    - a scrapy.item.BaseItem or dict instance (or any subclass)
+    - a dataclass object
+    """
     return isinstance(obj, (BaseItem, dict)) or is_dataclass_instance(obj)
 
 
