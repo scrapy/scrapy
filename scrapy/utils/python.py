@@ -24,7 +24,7 @@ except ImportError:
         raise ImportError("no module named 'dataclasses'")
 else:
     def is_dataclass_instance(obj):
-        return not isinstance(obj, type) and is_dataclass(obj)
+        return is_dataclass(obj) and not isinstance(obj, type)
 
 
 def flatten(x):
