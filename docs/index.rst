@@ -165,6 +165,7 @@ Solving specific problems
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/asyncio
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -204,6 +205,9 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
+
+:doc:`topics/asyncio`
+    Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
 
 .. _extending-scrapy:
 

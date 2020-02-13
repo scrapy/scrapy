@@ -31,6 +31,8 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
+
+        If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: string
 
     :param callback: the function that will be called with the response of this

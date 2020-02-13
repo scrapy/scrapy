@@ -12,26 +12,54 @@ Highlights:
 
 *   Python 2 support has been removed
 
+*   Added experimental :mod:`asyncio` support
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *   Python 2 support has been removed (:issue:`4091`, :issue:`4114`,
-    :issue:`4115`, :issue:`4121`, :issue:`4138`)
+    :issue:`4115`, :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`)
 
 *   File extensions that
     :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
-    ignores by default now also include: ``7z``, ``7zip``, ``apk``, ``bz2``,
-    ``cdr``, ``dmg``, ``ico``, ``iso``, ``tar``, ``tar.gz``, ``webm``, ``xz``
-    (:issue:`1837`, :issue:`2067`, :issue:`4066`)
+    ignores by default now also include ``7z``, ``7zip``, ``apk``, ``bz2``,
+    ``cdr``, ``dmg``, ``ico``, ``iso``, ``tar``, ``tar.gz``, ``webm``, and
+    ``xz`` (:issue:`1837`, :issue:`2067`, :issue:`4066`)
 
 *   Overridden settings are now logged in a different format, in line with the
     logging of enabled extensions and similar (:issue:`4199`)
 
-See also :ref:`2.0.0-deprecation-removals` below.
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   LevelDB support has been removed (:issue:`4112`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   :class:`scrapy.linkextractors.FilteringLinkExtractor` is deprecated, use
+    :class:`scrapy.linkextractors.LinkExtractor
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` instead (:issue:`4045`)
+
+*   The ``noconnect`` query string argument of proxy URLs is deprecated and
+    should be removed from proxy URLs (:issue:`4198`)
+
+*   :class:`MutableChain.next <scrapy.utils.python.MutableChain.next>` is
+    deprecated, use :func:`next` or
+    :class:`MutableChain.__next__ <scrapy.utils.python.MutableChain.__next__>`
+    instead (:issue:`4153`)
 
 
 New features
 ~~~~~~~~~~~~
+
+*   Added :doc:`experimental support <topics/asyncio>` for :mod:`asyncio`
+    (:issue:`4010`)
+
+*   :class:`~scrapy.spiders.Rule` now accepts an ``errback`` parameter
+    (:issue:`4000`)
 
 *   Item loader processors can now be regular functions, they no longer need to
     be methods (:issue:`3899`)
@@ -44,10 +72,20 @@ New features
 *   The :setting:`FEED_URI` setting now supports :class:`pathlib.Path` values
     (:issue:`3731`, :issue:`4074`)
 
+*   Scrapy logs a warning when it detects a request callback or errback that
+    is a generator (e.g. uses ``yield``) that also returns a value, since the
+    returned value would be lost (:issue:`3484`, :issue:`3869`)
+
 *   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
     exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
     attribute nor reimplement :class:`~scrapy.spiders.Spider.start_requests`,
     but have a ``start_url`` attribute (:issue:`4133`, :issue:`4170`)
+
+*   :class:`~scrapy.exporters.BaseItemExporter` subclasses may now use
+    ``super().__init__(**kwargs)`` instead of ``self._configure(kwargs)`` in
+    their ``__init__`` method, passing ``dont_fail=True`` to the parent
+    ``__init__`` if needed, and accessing ``kwargs`` at ``self._kwargs`` after
+    calling their parent ``__init__`` (:issue:`4193`)
 
 *   A new ``keep_fragments`` parameter of
     :func:`scrapy.utils.request.request_fingerprint` allows to generate
@@ -68,6 +106,9 @@ Bug fixes
 *   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
     because they have a colon (:issue:`2552`, :issue:`4094`)
 
+*   Fix the encoding of attach names in :class:`~scrapy.mail.MailSender`
+    (:issue:`4229`, :issue:`4239`)
+
 *   Z shell completion now looks for ``.html`` files, not ``.http`` files
     (:issue:`4122`)
 
@@ -75,80 +116,90 @@ Bug fixes
     a ``limit`` defined no longer raises a :exc:`TypeError` exception
     (:issue:`4123`)
 
+*   Fixed a typo in the message of the :exc:`ValueError` exception raised when
+    :func:`scrapy.utils.misc.create_instance` gets both ``settings`` and
+    ``crawler`` set to ``None`` (:issue:`4128`)
+
 
 Documentation
 ~~~~~~~~~~~~~
 
--   API documentation now links to an online view of the corresponding source
+*   API documentation now links to an online view of the corresponding source
     code (:issue:`4148`)
 
--   Links to unexisting documentation pages now allow access to the sidebar
+*   Links to unexisting documentation pages now allow access to the sidebar
     (:issue:`4152`, :issue:`4169`)
 
--   Cross-references within our documentation now display a tooltip when
+*   Cross-references within our documentation now display a tooltip when
     hovered (:issue:`4173`, :issue:`4183`)
 
--   Clarified how :class:`~scrapy.loader.ItemLoader.item` works (:issue:`3574`,
+*   Improved the documentation about :meth:`LinkExtractor.extract_links
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` and
+    simplified :ref:`topics-link-extractors` (:issue:`4045`)
+
+*   Clarified how :class:`~scrapy.loader.ItemLoader.item` works (:issue:`3574`,
     :issue:`4099`)
 
--   Clarified that :func:`logging.basicConfig` should not be used when also
+*   Clarified that :func:`logging.basicConfig` should not be used when also
     using :class:`~scrapy.crawler.CrawlerProcess` (:issue:`2149`,
     :issue:`2352`, :issue:`3146`, :issue:`3960`)
 
--   Clarified the requirements for :class:`~scrapy.http.Request` objects
+*   Clarified the requirements for :class:`~scrapy.http.Request` objects
     :ref:`when using persistence <request-serialization>` (:issue:`4124`,
     :issue:`4139`)
 
--   Documentation examples are now checked as part of our test suite and we
+*   Documentation examples are now checked as part of our test suite and we
     have fixed some of the issues detected (:issue:`4142`, :issue:`4146`,
-    :issue:`4171`, :issue:`4184`)
+    :issue:`4171`, :issue:`4184`, :issue:`4190`)
 
--   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
+*   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
     (:issue:`4059`)
 
--   Improved consistency when referring to the ``__init__`` method of an object
+*   Fixed typos (:issue:`4247`)
+
+*   Improved consistency when referring to the ``__init__`` method of an object
     (:issue:`4086`, :issue:`4088`)
 
--   Extended :mod:`~sphinx.ext.intersphinx` usage (:issue:`4147`,
+*   Fixed an inconsistency between code and output in :ref:`intro-overview`
+    (:issue:`4213`)
+
+*   Extended :mod:`~sphinx.ext.intersphinx` usage (:issue:`4147`,
     :issue:`4172`, :issue:`4185`, :issue:`4194`)
 
+*   We now use a recent version of Python to build the documentation
+    (:issue:`4140`, :issue:`4249`)
 
-.. _2.0.0-deprecation-removals:
-
-Deprecation removals
-~~~~~~~~~~~~~~~~~~~~
-
-*   LevelDB support has been removed (:issue:`4112`)
+*   Cleaned up documentation (:issue:`4143`)
 
 
-Deprecations
-~~~~~~~~~~~~
+Quality assurance
+~~~~~~~~~~~~~~~~~
 
-*   :class:`scrapy.utils.python.MutableChain.next` is deprecated, use
-    :func:`next` or :class:`scrapy.utils.python.MutableChain.__next__` instead
-    (:issue:`4153`)
+*   Re-enabled proxy ``CONNECT`` tests (:issue:`2545`, :issue:`4114`)
 
+*   Added Bandit_ security checks to our test suite (:issue:`4162`,
+    :issue:`4181`)
 
-Other changes
-~~~~~~~~~~~~~
-
--   Re-enabled proxy ``CONNECT`` tests (:issue:`2545`, :issue:`4114`)
-
--   Added Bandit_ security checks to our test suite (:issue:`4162`)
-
--   Added Flake8_ style checks to our test suite and applied some of the
+*   Added Flake8_ style checks to our test suite and applied some of the
     corresponding changes (:issue:`3944`, :issue:`3945`, :issue:`4137`,
-    :issue:`4157`, :issue:`4167`, :issue:`4174`, :issue:`4186`)
+    :issue:`4157`, :issue:`4167`, :issue:`4174`, :issue:`4186`, :issue:`4195`,
+    :issue:`4238`, :issue:`4246`)
 
--   Improved test coverage (:issue:`4097`)
+*   Improved test coverage (:issue:`4097`, :issue:`4218`, :issue:`4236`)
 
--   Started reporting slowest tests (:issue:`4163`)
+*   Started reporting slowest tests, and improved the performance of some of
+    them (:issue:`4163`, :issue:`4164`)
 
--   Fixed tests (:issue:`4014`, :issue:`4095`)
+*   Fixed tests (:issue:`4014`, :issue:`4095`)
 
--   Fixed typos (:issue:`4128`)
+*   Refactored tests (:issue:`4244`)
 
--   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`, :issue:`4210`)
+*   Modified the :doc:`tox <tox:index>` configuration to allow running tests
+    with any Python version, run Bandit_ and Flake8_ tests by default, and
+    enforce a minimum tox version programmatically (:issue:`4179`)
+
+*   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`,
+    :issue:`4210`, :issue:`4212`)
 
 .. _Bandit: https://bandit.readthedocs.io/
 .. _Flake8: https://flake8.pycqa.org/en/latest/
