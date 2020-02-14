@@ -46,6 +46,7 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-deferred:
 
 Deferred signal handlers
 ========================

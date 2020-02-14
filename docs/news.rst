@@ -11,13 +11,20 @@ Scrapy 2.0.0 (2020-02-2?)
 Highlights:
 
 * Python 2 support has been removed
-* Added experimental :mod:`asyncio` support
+* :doc:`Experimental asyncio support <topics/asyncio>`
+* New :meth:`Response.follow_all <scrapy.http.Response.follow_all>` method
+* :ref:`FTP support <media-pipeline-ftp>` for media pipelines
+* IPv6 support through :setting:`DNS_RESOLVER`
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*   Python 2 support has been removed (:issue:`4091`, :issue:`4114`,
-    :issue:`4115`, :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`)
+*   Python 2 support has been removed, following `Python 2 end-of-life on
+    January 1, 2020`_ (:issue:`4091`, :issue:`4114`, :issue:`4115`,
+    :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`, :issue:`4304`)
+
+*   Retry gaveups (see :setting:`RETRY_TIMES`) are now logged as errors instead
+    of as debug information (:issue:`3171`, :issue:`3566`)
 
 *   File extensions that
     :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
@@ -25,8 +32,23 @@ Backward-incompatible changes
     ``cdr``, ``dmg``, ``ico``, ``iso``, ``tar``, ``tar.gz``, ``webm``, and
     ``xz`` (:issue:`1837`, :issue:`2067`, :issue:`4066`)
 
-*   Overridden settings are now logged in a different format, in line with the
-    logging of enabled extensions and similar (:issue:`4199`)
+*   The :setting:`METAREFRESH_IGNORE_TAGS` setting is now an empty list by
+    default, following web browser behavior (:issue:`3844`, :issue:`4311`)
+
+*   The
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    now includes spaces after commas in the value of the ``Accept-Encoding``
+    header that it sets, following web browser behavior (:issue:`4293`)
+
+*   The ``__init__`` method of download handlers (see
+    :setting:`DOWNLOAD_HANDLERS`) no longer receives a ``settings`` parameter;
+    use the ``from_settings`` or ``from_crawler`` class methods to expose such
+    a parameter to your custom download handlers (:issue:`4126`)
+
+*   Overridden settings are now logged in a different format more in line with
+    similar information logged at startup (:issue:`4199`)
+
+.. _Python 2 end-of-life on January 1, 2020: https://www.python.org/doc/sunset-python-2/
 
 
 Deprecation removals
@@ -37,6 +59,9 @@ Deprecation removals
 
 Deprecations
 ~~~~~~~~~~~~
+
+*   Using environment variables prefixed with ``SCRAPY_`` to override settings
+    is deprecated (:issue:`4300`)
 
 *   :class:`scrapy.linkextractors.FilteringLinkExtractor` is deprecated, use
     :class:`scrapy.linkextractors.LinkExtractor
@@ -54,14 +79,44 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
-*   Added :doc:`experimental support <topics/asyncio>` for :mod:`asyncio`
-    (:issue:`4010`)
+*   Added :doc:`experimental support for asyncio <topics/asyncio>`
+    (:issue:`4010`, :issue:`4259`, :issue:`4269`, :issue:`4270`, :issue:`4271`,
+    :issue:`4316`)
+
+*   The new :meth:`Response.follow_all <scrapy.http.Response.follow_all>`
+    method offers the same functionality as
+    :meth:`Response.follow <scrapy.http.Response.follow>` but supports an
+    iterable of URLs as input and returns an iterable of requests
+    (:issue:`2582`, :issue:`4057`, :issue:`4286`)
+
+*   :ref:`Media pipelines <topics-media-pipeline>` now support :ref:`FTP
+    storage <media-pipeline-ftp>` (:issue:`3928`, :issue:`3961`)
+
+*   A new :setting:`DNS_RESOLVER` setting allows enabling IPv6 support
+    (:issue:`1031`, :issue:`4227`)
+
+*   A new :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` setting allows configuring
+    the existing soft limit that pauses request downloads when the total
+    response data being processed is too high (:issue:`1410`, :issue:`3551`)
+
+*   A new :setting:`TWISTED_REACTOR` setting allows customizing the
+    :mod:`~twisted.internet.reactor` that Scrapy uses, allowing to
+    :doc:`enable asyncio support <topics/asyncio>` or deal with a
+    :ref:`common macOS issue <faq-specific-reactor>` (:issue:`2905`,
+    :issue:`4294`)
+
+*   :meth:`Response.follow <scrapy.http.Response.follow>` now supports a
+    ``flags`` parameter, for consistency with :class:`~scrapy.http.Request`
+    (:issue:`4277`, :issue:`4279`)
+
+*   Item loader processors can now be regular functions, they no longer need to
+    be methods (:issue:`3899`)
 
 *   :class:`~scrapy.spiders.Rule` now accepts an ``errback`` parameter
     (:issue:`4000`)
 
-*   Item loader processors can now be regular functions, they no longer need to
-    be methods (:issue:`3899`)
+*   :class:`~scrapy.http.Request` no longer requires a ``callback`` parameter
+    when an ``errback`` parameter is specified (:issue:`3586`, :issue:`4008`)
 
 *   :class:`~scrapy.logformatter.LogFormatter` now supports an
     :class:`~scrapy.logformatter.LogFormatter.error` method for exceptions
@@ -71,9 +126,12 @@ New features
 *   The :setting:`FEED_URI` setting now supports :class:`pathlib.Path` values
     (:issue:`3731`, :issue:`4074`)
 
+*   A new :signal:`request_left_downloader` signal is sent when a request
+    leaves the downloader (:issue:`4303`)
+
 *   Scrapy logs a warning when it detects a request callback or errback that
-    is a generator (e.g. uses ``yield``) that also returns a value, since the
-    returned value would be lost (:issue:`3484`, :issue:`3869`)
+    uses ``yield`` but also returns a value, since the returned value would be
+    lost (:issue:`3484`, :issue:`3869`)
 
 *   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
     exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
@@ -91,6 +149,10 @@ New features
     different fingerprints for requests with different fragments in their URL
     (:issue:`4104`)
 
+*   Download handlers (see :setting:`DOWNLOAD_HANDLERS`) may now use the
+    ``from_settings`` and ``from_crawler`` class methods that other Scrapy
+    components already supported (:issue:`4126`)
+
 *   :class:`scrapy.utils.python.MutableChain.__iter__` now returns ``self``,
     `allowing it to be used as a sequence <https://lgtm.com/rules/4850080/>`_
     (:issue:`4153`)
@@ -99,20 +161,29 @@ New features
 Bug fixes
 ~~~~~~~~~
 
-*   Support redirects to URLs starting with 3 slashes: ``///`` (:issue:`4032`,
-    :issue:`4042`)
+*   The first spider middleware (see :setting:`SPIDER_MIDDLEWARES`) now also
+    processes exceptions raised from callbacks that are generators
+    (:issue:`4260`, :issue:`4272`)
+
+*   Redirects to URLs starting with 3 slashes (``///``) are now supported
+    (:issue:`4032`, :issue:`4042`)
 
 *   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
     because they have a colon (:issue:`2552`, :issue:`4094`)
 
-*   Fix the encoding of attach names in :class:`~scrapy.mail.MailSender`
-    (:issue:`4229`, :issue:`4239`)
+*   The right encoding is now used for attach names in
+    :class:`~scrapy.mail.MailSender` (:issue:`4229`, :issue:`4239`)
 
-*   Z shell completion now looks for ``.html`` files, not ``.http`` files
-    (:issue:`4122`)
+*   :class:`~scrapy.dupefilters.RFPDupeFilter`, the default
+    :setting:`DUPEFILTER_CLASS`, no longer writes an extra ``\r`` character on
+    each line in Windows, which made the size of the ``requests.seen`` file
+    unnecessarily large on that platform (:issue:`4283`)
 
-*   Adding items to a :class:`scrapy.utils.datatypes.LocalCache` object without
-    a ``limit`` defined no longer raises a :exc:`TypeError` exception
+*   Z shell auto-completion now looks for ``.html`` files, not ``.http`` files,
+    and covers the ``-h`` command-line switch (:issue:`4122`, :issue:`4291`)
+
+*   Adding items to a :class:`~scrapy.utils.datatypes.LocalCache` object
+    without a ``limit`` defined no longer raises a :exc:`TypeError` exception
     (:issue:`4123`)
 
 *   Fixed a typo in the message of the :exc:`ValueError` exception raised when
@@ -123,8 +194,8 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
-*   API documentation now links to an online view of the corresponding source
-    code (:issue:`4148`)
+*   API documentation now links to an online, syntax-highlighted view of the
+    corresponding source code (:issue:`4148`)
 
 *   Links to unexisting documentation pages now allow access to the sidebar
     (:issue:`4152`, :issue:`4169`)
@@ -136,8 +207,8 @@ Documentation
     <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` and
     simplified :ref:`topics-link-extractors` (:issue:`4045`)
 
-*   Clarified how :class:`~scrapy.loader.ItemLoader.item` works (:issue:`3574`,
-    :issue:`4099`)
+*   Clarified how :class:`ItemLoader.item <scrapy.loader.ItemLoader.item>`
+    works (:issue:`3574`, :issue:`4099`)
 
 *   Clarified that :func:`logging.basicConfig` should not be used when also
     using :class:`~scrapy.crawler.CrawlerProcess` (:issue:`2149`,
@@ -147,6 +218,15 @@ Documentation
     :ref:`when using persistence <request-serialization>` (:issue:`4124`,
     :issue:`4139`)
 
+*   Clarified how to install a :ref:`custom image pipeline
+    <media-pipeline-example>` (:issue:`4034`, :issue:`4252`)
+
+*   Fixed the signatures of the ``file_path`` method in :ref:`media pipeline
+    <topics-media-pipeline>` examples (:issue:`4290`)
+
+*   Covered a backward-incompatible change in Scrapy 1.7.0 affecting custom
+    :class:`~scrapy.core.scheduler.Scheduler` subclasses (:issue:`4274`)
+
 *   Documentation examples are now checked as part of our test suite and we
     have fixed some of the issues detected (:issue:`4142`, :issue:`4146`,
     :issue:`4171`, :issue:`4184`, :issue:`4190`)
@@ -154,7 +234,8 @@ Documentation
 *   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
     (:issue:`4059`)
 
-*   Fixed typos (:issue:`4247`)
+*   Fixed logic issues, broken links and typos (:issue:`4247`, :issue:`4258`,
+    :issue:`4282`, :issue:`4288`, :issue:`4305`)
 
 *   Improved consistency when referring to the ``__init__`` method of an object
     (:issue:`4086`, :issue:`4088`)
@@ -163,12 +244,12 @@ Documentation
     (:issue:`4213`)
 
 *   Extended :mod:`~sphinx.ext.intersphinx` usage (:issue:`4147`,
-    :issue:`4172`, :issue:`4185`, :issue:`4194`)
+    :issue:`4172`, :issue:`4185`, :issue:`4194`, :issue:`4197`)
 
 *   We now use a recent version of Python to build the documentation
     (:issue:`4140`, :issue:`4249`)
 
-*   Cleaned up documentation (:issue:`4143`)
+*   Cleaned up documentation (:issue:`4143`, :issue:`4275`)
 
 
 Quality assurance
@@ -189,9 +270,8 @@ Quality assurance
 *   Started reporting slowest tests, and improved the performance of some of
     them (:issue:`4163`, :issue:`4164`)
 
-*   Fixed tests (:issue:`4014`, :issue:`4095`)
-
-*   Refactored tests (:issue:`4244`)
+*   Fixed broken tests and refactored some tests (:issue:`4014`, :issue:`4095`,
+    :issue:`4244`)
 
 *   Modified the :doc:`tox <tox:index>` configuration to allow running tests
     with any Python version, run Bandit_ and Flake8_ tests by default, and
@@ -486,12 +566,12 @@ Backward-incompatible changes
     :class:`~scrapy.http.Request` objects instead of arbitrary Python data
     structures.
 
-*   An additional ``crawler`` parameter has been added to the ``__init__`` method
-    of the :class:`scrapy.core.scheduler.Scheduler` class. 
-    Custom scheduler subclasses which don't accept arbitrary parameters in 
-    their ``__init__`` method might break because of this change.
+*   An additional ``crawler`` parameter has been added to the ``__init__``
+    method of the :class:`~scrapy.core.scheduler.Scheduler` class. Custom
+    scheduler subclasses which don't accept arbitrary parameters in their
+    ``__init__`` method might break because of this change.
 
-    For more information, refer to the documentation for the :setting:`SCHEDULER` setting.
+    For more information, see :setting:`SCHEDULER`.
 
 See also :ref:`1.7-deprecation-removals` below.
 

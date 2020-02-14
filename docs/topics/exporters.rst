@@ -148,7 +148,7 @@ BaseItemExporter
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
-   .. versionadded:: 2.0.0
+   .. versionadded:: 2.0
       ``dont_fail``.
 
    .. method:: export_item(item)

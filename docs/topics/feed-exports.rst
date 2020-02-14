@@ -236,7 +236,7 @@ supported URI schemes.
 
 This setting is required for enabling the feed exports.
 
-.. versionchanged:: 2.0.0
+.. versionchanged:: 2.0
    Added :class:`pathlib.Path` support.
 
 .. setting:: FEED_FORMAT

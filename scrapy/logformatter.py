@@ -96,7 +96,7 @@ class LogFormatter(object):
     def error(self, item, exception, response, spider):
         """Logs a message when an item causes an error while it is passing through the item pipeline.
 
-        .. versionadded:: 2.0.0
+        .. versionadded:: 2.0
         """
         return {
             'level': logging.ERROR,
