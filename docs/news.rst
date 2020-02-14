@@ -10,9 +10,8 @@ Scrapy 2.0.0 (2020-02-2?)
 
 Highlights:
 
-*   Python 2 support has been removed
-
-*   Added experimental :mod:`asyncio` support
+* Python 2 support has been removed
+* Added experimental :mod:`asyncio` support
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
