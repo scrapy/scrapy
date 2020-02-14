@@ -107,7 +107,7 @@ class Response(object_ref):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None):
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -124,6 +124,7 @@ class Response(object_ref):
         elif url is None:
             raise ValueError("url can't be None")
         url = self.urljoin(url)
+
         return Request(
             url=url,
             callback=callback,
@@ -137,11 +138,12 @@ class Response(object_ref):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
     def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None):
+                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Generator[Request, None, None]
         """
         Return an iterable of :class:`~.Request` instances to follow all links
@@ -169,6 +171,7 @@ class Response(object_ref):
                 dont_filter=dont_filter,
                 errback=errback,
                 cb_kwargs=cb_kwargs,
+                flags=flags,
             )
             for url in urls
         )
