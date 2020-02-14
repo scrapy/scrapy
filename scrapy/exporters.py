@@ -23,7 +23,7 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
 
 class BaseItemExporter(object):
 
-    def __init__(self, dont_fail=False, **kwargs):
+    def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
 
