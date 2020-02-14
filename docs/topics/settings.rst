@@ -1449,22 +1449,32 @@ TWISTED_REACTOR
 
 Default: ``None``
 
-Import path of a given Twisted reactor, for instance:
-:class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+Import path of a given :mod:`~twisted.internet.reactor`.
 
-Scrapy will install this reactor if no other is installed yet, such as when
-the ``scrapy`` CLI program is invoked or when using the
-:class:`~scrapy.crawler.CrawlerProcess` class. If you are using the
-:class:`~scrapy.crawler.CrawlerRunner` class, you need to install the correct
-reactor manually. An exception will be raised if the installation fails.
+Scrapy will install this reactor if no other reactor is installed yet, such as
+when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class.
 
-The default value for this option is currently ``None``, which means that Scrapy
-will not attempt to install any specific reactor, and the default one defined by
-Twisted for the current platform will be used. This is to maintain backward
-compatibility and avoid possible problems caused by using a non-default reactor.
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+need to install the correct reactor manually. You can do that using
+:func:`~scrapy.utils.reactor.install_reactor`:
 
-For additional information, please see
-:doc:`core/howto/choosing-reactor`.
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
+If a reactor is already installed,
+:func:`~scrapy.utils.reactor.install_reactor` has no effect.
+
+:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
+:exc:`Exception` if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting.
+
+The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
+means that Scrapy will not attempt to install any specific reactor, and the
+default reactor defined by Twisted for the current platform will be used. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT
