@@ -675,7 +675,7 @@ Response objects
     .. attribute:: Response.cb_kwargs
 
         A shortcut to the :attr:`Request.cb_kwargs` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.cb_kwargs``).
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 
         Unlike the :attr:`Response.request` attribute, the
         :attr:`Response.cb_kwargs` attribute is propagated along redirects and
