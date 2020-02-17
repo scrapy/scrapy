@@ -301,7 +301,7 @@ FEED_STORE_EMPTY
 
 Default: ``False``
 
-Whether to export empty feeds (ie. feeds with no items).
+Whether to export empty feeds (i.e. feeds with no items).
 
 .. setting:: FEED_STORAGES
 
