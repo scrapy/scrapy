@@ -381,6 +381,8 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
+.. versionadded:: 2.0
+
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
@@ -1258,6 +1260,9 @@ does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
+
+.. versionadded:: 2.0
+
 Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
@@ -1446,6 +1451,8 @@ in the ``project`` subdirectory.
 
 TWISTED_REACTOR
 ---------------
+
+.. versionadded:: 2.0
 
 Default: ``None``
 

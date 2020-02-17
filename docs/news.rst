@@ -70,10 +70,10 @@ Deprecations
 *   The ``noconnect`` query string argument of proxy URLs is deprecated and
     should be removed from proxy URLs (:issue:`4198`)
 
-*   :class:`MutableChain.next <scrapy.utils.python.MutableChain.next>` is
-    deprecated, use :func:`next` or
-    :class:`MutableChain.__next__ <scrapy.utils.python.MutableChain.__next__>`
-    instead (:issue:`4153`)
+*   The :meth:`next <scrapy.utils.python.MutableChain.next>` method of
+    :class:`scrapy.utils.python.MutableChain` is deprecated, use the global
+    :func:`next` function or :meth:`MutableChain.__next__
+    <scrapy.utils.python.MutableChain.__next__>` instead (:issue:`4153`)
 
 
 New features
@@ -109,8 +109,8 @@ New features
     ``flags`` parameter, for consistency with :class:`~scrapy.http.Request`
     (:issue:`4277`, :issue:`4279`)
 
-*   Item loader processors can now be regular functions, they no longer need to
-    be methods (:issue:`3899`)
+*   :ref:`Item loader processors <topics-loaders-processors>` can now be
+    regular functions, they no longer need to be methods (:issue:`3899`)
 
 *   :class:`~scrapy.spiders.Rule` now accepts an ``errback`` parameter
     (:issue:`4000`)
@@ -182,7 +182,7 @@ Bug fixes
 *   Z shell auto-completion now looks for ``.html`` files, not ``.http`` files,
     and covers the ``-h`` command-line switch (:issue:`4122`, :issue:`4291`)
 
-*   Adding items to a :class:`~scrapy.utils.datatypes.LocalCache` object
+*   Adding items to a :class:`scrapy.utils.datatypes.LocalCache` object
     without a ``limit`` defined no longer raises a :exc:`TypeError` exception
     (:issue:`4123`)
 
@@ -225,14 +225,14 @@ Documentation
     <topics-media-pipeline>` examples (:issue:`4290`)
 
 *   Covered a backward-incompatible change in Scrapy 1.7.0 affecting custom
-    :class:`~scrapy.core.scheduler.Scheduler` subclasses (:issue:`4274`)
+    :class:`scrapy.core.scheduler.Scheduler` subclasses (:issue:`4274`)
+
+*   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
+    (:issue:`4059`)
 
 *   Documentation examples are now checked as part of our test suite and we
     have fixed some of the issues detected (:issue:`4142`, :issue:`4146`,
     :issue:`4171`, :issue:`4184`, :issue:`4190`)
-
-*   Improved the ``README.rst`` and ``CODE_OF_CONDUCT.md`` files
-    (:issue:`4059`)
 
 *   Fixed logic issues, broken links and typos (:issue:`4247`, :issue:`4258`,
     :issue:`4282`, :issue:`4288`, :issue:`4305`)

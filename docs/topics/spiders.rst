@@ -421,7 +421,7 @@ Crawling rules
    instance as first parameter.
 
    .. versionadded:: 2.0
-      ``errback``.
+      The *errback* parameter.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~

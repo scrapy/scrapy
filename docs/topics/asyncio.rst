@@ -15,7 +15,7 @@ Installing the asyncio reactor
 ==============================
 
 To enable :mod:`asyncio` support, set the :setting:`TWISTED_REACTOR` setting to
-``twisted.internet.asyncioreactor.AsyncioSelectorReactor``.
+``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``.
 
 If you are using :class:`~scrapy.crawler.CrawlerRunner`, you also need to
 install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
@@ -28,8 +28,9 @@ reactor manually. You can do that using
 Coroutine support
 =================
 
-The following callables may be defined as coroutines and use
-:ref:`coroutine syntax <async>`:
+The following callables may be defined as coroutines, and hence use
+:ref:`coroutine syntax <async>` and :mod:`asyncio`, as well as
+:mod:`asyncio`-based libraries:
 
 -   :class:`~scrapy.http.Request` callbacks.
 

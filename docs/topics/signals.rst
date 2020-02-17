@@ -302,6 +302,8 @@ request_left_downloader
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
 
+    .. versionadded:: 2.0
+
     Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
     failure.
 

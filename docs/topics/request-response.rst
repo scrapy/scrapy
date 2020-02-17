@@ -127,6 +127,10 @@ Request objects
        :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
+
+       .. versionchanged:: 2.0
+          The *callback* parameter is no longer required when the *errback*
+          parameter is specified.
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.

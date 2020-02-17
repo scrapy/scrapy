@@ -146,6 +146,8 @@ Where:
 FTP server storage
 ------------------
 
+.. versionadded:: 2.0
+
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
 Scrapy will automatically upload the files to the server.
 

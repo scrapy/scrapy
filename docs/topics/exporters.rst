@@ -149,7 +149,7 @@ BaseItemExporter
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
    .. versionadded:: 2.0
-      ``dont_fail``.
+      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 
