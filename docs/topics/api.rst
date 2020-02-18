@@ -69,7 +69,10 @@ SpiderLoader API
    :synopsis: The spider loader
 
 .. autointerface:: scrapy.interfaces.ISpiderLoader
-   :members:
+   :members: from_settings, load, list, find_by_request
+..
+    Members listed explicitly due to
+    https://bitbucket.org/birkenfeld/sphinx-contrib/issues/208
 
 .. _topics-api-signals:
 
