@@ -173,7 +173,7 @@ def _request_deferred(request):
 
     This returns a Deferred whose first pair of callbacks are the request
     callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
+    callback/errback is executed (i.e. when the request is downloaded)
 
     WARNING: Do not call request.replace() until after the deferred is called.
     """
