@@ -664,7 +664,7 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
@@ -760,7 +760,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class

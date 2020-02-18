@@ -22,7 +22,7 @@ Job directory
 
 To enable persistence support you just need to define a *job directory* through
 the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (ie. a spider run).  It's important to note that
+keep the state of a single job (i.e. a spider run).  It's important to note that
 this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
