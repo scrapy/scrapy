@@ -44,7 +44,7 @@ class BaseRobotParserTest:
 
     def test_allowed_wildcards(self):
         robotstxt_robotstxt_body = """User-agent: first
-                                Disallow: /disallowed/*/end$    
+                                Disallow: /disallowed/*/end$
 
                                 User-agent: second
                                 Allow: /*allowed

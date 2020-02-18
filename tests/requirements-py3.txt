@@ -4,7 +4,7 @@ mitmproxy; python_version >= '3.6'
 mitmproxy<4.0.0; python_version < '3.6'
 pytest
 pytest-cov
-pytest-twisted
+pytest-twisted >= 1.11
 pytest-xdist
 sybil
 testfixtures

@@ -110,7 +110,7 @@ ties the response lifetime to the requests' one, and that would definitely
 cause memory leaks.
 
 Let's see how we can discover the cause (without knowing it
-a-priori, of course) by using the ``trackref`` tool.
+a priori, of course) by using the ``trackref`` tool.
 
 After the crawler is running for a few minutes and we notice its memory usage
 has grown a lot, we can enter its telnet console and check the live
@@ -132,21 +132,21 @@ and check the code of the spider to discover the nasty line that is
 generating the leaks (passing response references inside requests).
 
 Sometimes extra information about live objects can be helpful.
-Let's check the oldest response::
+Let's check the oldest response:
 
-    >>> from scrapy.utils.trackref import get_oldest
-    >>> r = get_oldest('HtmlResponse')
-    >>> r.url
-    'http://www.somenastyspider.com/product.php?pid=123'
+>>> from scrapy.utils.trackref import get_oldest
+>>> r = get_oldest('HtmlResponse')
+>>> r.url
+'http://www.somenastyspider.com/product.php?pid=123'
 
 If you want to iterate over all objects, instead of getting the oldest one, you
-can use the :func:`scrapy.utils.trackref.iter_all` function::
+can use the :func:`scrapy.utils.trackref.iter_all` function:
 
-    >>> from scrapy.utils.trackref import iter_all
-    >>> [r.url for r in iter_all('HtmlResponse')]
-    ['http://www.somenastyspider.com/product.php?pid=123',
-     'http://www.somenastyspider.com/product.php?pid=584',
-    ...
+>>> from scrapy.utils.trackref import iter_all
+>>> [r.url for r in iter_all('HtmlResponse')]
+['http://www.somenastyspider.com/product.php?pid=123',
+ 'http://www.somenastyspider.com/product.php?pid=584',
+...]
 
 Too many spiders?
 -----------------
@@ -155,10 +155,10 @@ If your project has too many spiders executed in parallel,
 the output of :func:`prefs()` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclases). For
-example, this won't show any live references to spiders::
+example, this won't show any live references to spiders:
 
-    >>> from scrapy.spiders import Spider
-    >>> prefs(ignore=Spider)
+>>> from scrapy.spiders import Spider
+>>> prefs(ignore=Spider)
 
 .. module:: scrapy.utils.trackref
    :synopsis: Track references of live objects
@@ -214,41 +214,41 @@ If you use ``pip``, you can install Guppy with the following command::
 
 The telnet console also comes with a built-in shortcut (``hpy``) for accessing
 Guppy heap objects. Here's an example to view all Python objects available in
-the heap using Guppy::
+the heap using Guppy:
 
-    >>> x = hpy.heap()
-    >>> x.bytype
-    Partition of a set of 297033 objects. Total size = 52587824 bytes.
-     Index  Count   %     Size   % Cumulative  % Type
-         0  22307   8 16423880  31  16423880  31 dict
-         1 122285  41 12441544  24  28865424  55 str
-         2  68346  23  5966696  11  34832120  66 tuple
-         3    227   0  5836528  11  40668648  77 unicode
-         4   2461   1  2222272   4  42890920  82 type
-         5  16870   6  2024400   4  44915320  85 function
-         6  13949   5  1673880   3  46589200  89 types.CodeType
-         7  13422   5  1653104   3  48242304  92 list
-         8   3735   1  1173680   2  49415984  94 _sre.SRE_Pattern
-         9   1209   0   456936   1  49872920  95 scrapy.http.headers.Headers
-    <1676 more rows. Type e.g. '_.more' to view.>
+>>> x = hpy.heap()
+>>> x.bytype
+Partition of a set of 297033 objects. Total size = 52587824 bytes.
+ Index  Count   %     Size   % Cumulative  % Type
+     0  22307   8 16423880  31  16423880  31 dict
+     1 122285  41 12441544  24  28865424  55 str
+     2  68346  23  5966696  11  34832120  66 tuple
+     3    227   0  5836528  11  40668648  77 unicode
+     4   2461   1  2222272   4  42890920  82 type
+     5  16870   6  2024400   4  44915320  85 function
+     6  13949   5  1673880   3  46589200  89 types.CodeType
+     7  13422   5  1653104   3  48242304  92 list
+     8   3735   1  1173680   2  49415984  94 _sre.SRE_Pattern
+     9   1209   0   456936   1  49872920  95 scrapy.http.headers.Headers
+<1676 more rows. Type e.g. '_.more' to view.>
 
 You can see that most space is used by dicts. Then, if you want to see from
-which attribute those dicts are referenced, you could do::
+which attribute those dicts are referenced, you could do:
 
-    >>> x.bytype[0].byvia
-    Partition of a set of 22307 objects. Total size = 16423880 bytes.
-     Index  Count   %     Size   % Cumulative  % Referred Via:
-         0  10982  49  9416336  57   9416336  57 '.__dict__'
-         1   1820   8  2681504  16  12097840  74 '.__dict__', '.func_globals'
-         2   3097  14  1122904   7  13220744  80
-         3    990   4   277200   2  13497944  82 "['cookies']"
-         4    987   4   276360   2  13774304  84 "['cache']"
-         5    985   4   275800   2  14050104  86 "['meta']"
-         6    897   4   251160   2  14301264  87 '[2]'
-         7      1   0   196888   1  14498152  88 "['moduleDict']", "['modules']"
-         8    672   3   188160   1  14686312  89 "['cb_kwargs']"
-         9     27   0   155016   1  14841328  90 '[1]'
-    <333 more rows. Type e.g. '_.more' to view.>
+>>> x.bytype[0].byvia
+Partition of a set of 22307 objects. Total size = 16423880 bytes.
+ Index  Count   %     Size   % Cumulative  % Referred Via:
+     0  10982  49  9416336  57   9416336  57 '.__dict__'
+     1   1820   8  2681504  16  12097840  74 '.__dict__', '.func_globals'
+     2   3097  14  1122904   7  13220744  80
+     3    990   4   277200   2  13497944  82 "['cookies']"
+     4    987   4   276360   2  13774304  84 "['cache']"
+     5    985   4   275800   2  14050104  86 "['meta']"
+     6    897   4   251160   2  14301264  87 '[2]'
+     7      1   0   196888   1  14498152  88 "['moduleDict']", "['modules']"
+     8    672   3   188160   1  14686312  89 "['cb_kwargs']"
+     9     27   0   155016   1  14841328  90 '[1]'
+<333 more rows. Type e.g. '_.more' to view.>
 
 As you can see, the Guppy module is very powerful but also requires some deep
 knowledge about Python internals. For more info about Guppy, refer to the
@@ -269,32 +269,32 @@ If you use ``pip``, you can install muppy with the following command::
     pip install Pympler
 
 Here's an example to view all Python objects available in
-the heap using muppy::
+the heap using muppy:
 
-    >>> from pympler import muppy
-    >>> all_objects = muppy.get_objects()
-    >>> len(all_objects)
-    28667
-    >>> from pympler import summary
-    >>> suml = summary.summarize(all_objects)
-    >>> summary.print_(suml)
-                                   types |   # objects |   total size
-    ==================================== | =========== | ============
-                             <class 'str |        9822 |      1.10 MB
-                            <class 'dict |        1658 |    856.62 KB
-                            <class 'type |         436 |    443.60 KB
-                            <class 'code |        2974 |    419.56 KB
-              <class '_io.BufferedWriter |           2 |    256.34 KB
-                             <class 'set |         420 |    159.88 KB
-              <class '_io.BufferedReader |           1 |    128.17 KB
-              <class 'wrapper_descriptor |        1130 |     88.28 KB
-                           <class 'tuple |        1304 |     86.57 KB
-                         <class 'weakref |        1013 |     79.14 KB
-      <class 'builtin_function_or_method |         958 |     67.36 KB
-               <class 'method_descriptor |         865 |     60.82 KB
-                     <class 'abc.ABCMeta |          62 |     59.96 KB
-                            <class 'list |         446 |     58.52 KB
-                             <class 'int |        1425 |     43.20 KB
+>>> from pympler import muppy
+>>> all_objects = muppy.get_objects()
+>>> len(all_objects)
+28667
+>>> from pympler import summary
+>>> suml = summary.summarize(all_objects)
+>>> summary.print_(suml)
+                               types |   # objects |   total size
+==================================== | =========== | ============
+                         <class 'str |        9822 |      1.10 MB
+                        <class 'dict |        1658 |    856.62 KB
+                        <class 'type |         436 |    443.60 KB
+                        <class 'code |        2974 |    419.56 KB
+          <class '_io.BufferedWriter |           2 |    256.34 KB
+                         <class 'set |         420 |    159.88 KB
+          <class '_io.BufferedReader |           1 |    128.17 KB
+          <class 'wrapper_descriptor |        1130 |     88.28 KB
+                       <class 'tuple |        1304 |     86.57 KB
+                     <class 'weakref |        1013 |     79.14 KB
+  <class 'builtin_function_or_method |         958 |     67.36 KB
+           <class 'method_descriptor |         865 |     60.82 KB
+                 <class 'abc.ABCMeta |          62 |     59.96 KB
+                        <class 'list |         446 |     58.52 KB
+                         <class 'int |        1425 |     43.20 KB
 
 For more info about muppy, refer to the `muppy documentation`_.
 

@@ -84,77 +84,74 @@ notice the API is very similar to the `dict API`_.
 Creating items
 --------------
 
-::
+>>> product = Product(name='Desktop PC', price=1000)
+>>> print(product)
+Product(name='Desktop PC', price=1000)
 
-    >>> product = Product(name='Desktop PC', price=1000)
-    >>> print(product)
-    Product(name='Desktop PC', price=1000)
 
 Getting field values
 --------------------
 
-::
+>>> product['name']
+Desktop PC
+>>> product.get('name')
+Desktop PC
 
-    >>> product['name']
-    Desktop PC
-    >>> product.get('name')
-    Desktop PC
+>>> product['price']
+1000
 
-    >>> product['price']
-    1000
+>>> product['last_updated']
+Traceback (most recent call last):
+    ...
+KeyError: 'last_updated'
 
-    >>> product['last_updated']
-    Traceback (most recent call last):
-        ...
-    KeyError: 'last_updated'
+>>> product.get('last_updated', 'not set')
+not set
 
-    >>> product.get('last_updated', 'not set')
-    not set
+>>> product['lala'] # getting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'lala'
 
-    >>> product['lala'] # getting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'lala'
+>>> product.get('lala', 'unknown field')
+'unknown field'
 
-    >>> product.get('lala', 'unknown field')
-    'unknown field'
+>>> 'name' in product  # is name field populated?
+True
 
-    >>> 'name' in product  # is name field populated?
-    True
+>>> 'last_updated' in product  # is last_updated populated?
+False
 
-    >>> 'last_updated' in product  # is last_updated populated?
-    False
+>>> 'last_updated' in product.fields  # is last_updated a declared field?
+True
 
-    >>> 'last_updated' in product.fields  # is last_updated a declared field?
-    True
+>>> 'lala' in product.fields  # is lala a declared field?
+False
 
-    >>> 'lala' in product.fields  # is lala a declared field?
-    False
 
 Setting field values
 --------------------
 
-::
+>>> product['last_updated'] = 'today'
+>>> product['last_updated']
+today
 
-    >>> product['last_updated'] = 'today'
-    >>> product['last_updated']
-    today
+>>> product['lala'] = 'test' # setting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
 
-    >>> product['lala'] = 'test' # setting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
 
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_::
+To access all populated values, just use the typical `dict API`_:
 
-    >>> product.keys()
-    ['price', 'name']
+>>> product.keys()
+['price', 'name']
 
-    >>> product.items()
-    [('price', 1000), ('name', 'Desktop PC')]
+>>> product.items()
+[('price', 1000), ('name', 'Desktop PC')]
 
 
 .. _copying-items:
@@ -194,20 +191,21 @@ To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
 Other common tasks
 ------------------
 
-Creating dicts from items::
+Creating dicts from items:
 
-    >>> dict(product) # create a dict from all populated values
-    {'price': 1000, 'name': 'Desktop PC'}
+>>> dict(product) # create a dict from all populated values
+{'price': 1000, 'name': 'Desktop PC'}
 
-Creating items from dicts::
+Creating items from dicts:
 
-    >>> Product({'name': 'Laptop PC', 'price': 1500})
-    Product(price=1500, name='Laptop PC')
+>>> Product({'name': 'Laptop PC', 'price': 1500})
+Product(price=1500, name='Laptop PC')
 
-    >>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
+>>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
+
 
 Extending Items
 ===============

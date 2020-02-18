@@ -73,8 +73,7 @@ class MailSender(object):
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
-                    % attach_name)
+                part.add_header('Content-Disposition', 'attachment', filename=attach_name)
                 msg.attach(part)
         else:
             msg.set_payload(body)

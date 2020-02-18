@@ -58,6 +58,7 @@ DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
+DNS_RESOLVER = 'scrapy.resolver.CachingThreadedResolver'
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
@@ -84,8 +85,8 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 DOWNLOADER_CLIENT_TLS_CIPHERS = 'DEFAULT'
-DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
-                                     # also allowing negotiation
+# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
+DOWNLOADER_CLIENT_TLS_METHOD = 'TLS'
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}
@@ -222,7 +223,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
-METAREFRESH_IGNORE_TAGS = ['script', 'noscript']
+METAREFRESH_IGNORE_TAGS = []
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
@@ -253,6 +254,8 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
@@ -287,6 +290,8 @@ TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
 TELNETCONSOLE_USERNAME = 'scrapy'
 TELNETCONSOLE_PASSWORD = None
+
+TWISTED_REACTOR = None
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {

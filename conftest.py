@@ -1,11 +1,18 @@
+from pathlib import Path
+
 import pytest
+
+
+def _py_files(folder):
+    return (str(p) for p in Path(folder).rglob('*.py'))
 
 
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
+    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    *_py_files("tests/CrawlerProcess")
 ]
-
 
 for line in open('tests/ignores.txt'):
     file_path = line.strip()
@@ -27,3 +34,18 @@ def pytest_collection_modifyitems(session, config, items):
             items[:] = [item for item in items if isinstance(item, Flake8Item)]
     except ImportError:
         pass
+
+
+@pytest.fixture(scope='class')
+def reactor_pytest(request):
+    if not request.cls:
+        # doctests
+        return
+    request.cls.reactor_pytest = request.config.getoption("--reactor")
+    return request.cls.reactor_pytest
+
+
+@pytest.fixture(autouse=True)
+def only_asyncio(request, reactor_pytest):
+    if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
+        pytest.skip('This test is only run with --reactor=asyncio')

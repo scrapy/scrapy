@@ -199,7 +199,7 @@ CookiesMiddleware
 
    This middleware enables working with sites that require cookies, such as
    those that use sessions. It keeps track of cookies sent by web servers, and
-   send them back on subsequent requests (from that spider), just like web
+   sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
 The following settings can be used to configure the cookie middleware:
@@ -672,7 +672,7 @@ sometimes a more nuanced policy is desirable.
 
 This setting still respects ``Cache-Control: no-store`` directives in responses.
 If you don't want that, filter ``no-store`` out of the Cache-Control headers in
-responses you feedto the cache middleware.
+responses you feed to the cache middleware.
 
 .. setting:: HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 
@@ -686,7 +686,7 @@ Default: ``[]``
 List of Cache-Control directives in responses to be ignored.
 
 Sites often set "no-store", "no-cache", "must-revalidate", etc., but get
-upset at the traffic a spider can generate if it respects those
+upset at the traffic a spider can generate if it actually respects those
 directives. This allows to selectively ignore Cache-Control directives
 that are known to be unimportant for the sites being crawled.
 
@@ -868,7 +868,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``['script', 'noscript']``
+Default: ``[]``
 
 Meta tags within these tags are ignored.
 

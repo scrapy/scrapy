@@ -295,6 +295,23 @@ request_reached_downloader
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+request_left_downloader
+-----------------------
+
+.. signal:: request_left_downloader
+.. function:: request_left_downloader(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
+    failure.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param request: the request that reached the downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
 response_received
 -----------------
 

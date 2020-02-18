@@ -50,7 +50,8 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = open(os.path.join(path, 'requests.seen'), 'ab+')
+            request_seen_path = os.path.join(path, 'requests.seen')
+            self.file = open(request_seen_path, 'ab+', newline='\n')
             self.file.seek(0)
             for escaped_key in self.file:
                 self.keys.add(_unescape_line_breaks(escaped_key[:-1]))

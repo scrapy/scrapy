@@ -2,14 +2,15 @@ import logging
 import inspect
 
 from scrapy.spiders import Spider
-from scrapy.utils.misc import  arg_to_iter
+from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.misc import arg_to_iter
 
 
 logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):
-    return arg_to_iter(result)
+    return arg_to_iter(deferred_from_coro(result))
 
 
 def iter_spider_classes(module):

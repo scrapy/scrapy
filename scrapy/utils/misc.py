@@ -1,13 +1,18 @@
 """Helper functions which don't fit anywhere else"""
+import ast
+import inspect
 import os
 import re
 import hashlib
+import warnings
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
+from textwrap import dedent
 
 from w3lib.html import replace_entities
 
+from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
@@ -161,3 +166,44 @@ def set_environ(**kwargs):
                 del os.environ[k]
             else:
                 os.environ[k] = v
+
+
+_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+
+
+def is_generator_with_return_value(callable):
+    """
+    Returns True if a callable is a generator function which includes a
+    'return' statement with a value different than None, False otherwise
+    """
+    if callable in _generator_callbacks_cache:
+        return _generator_callbacks_cache[callable]
+
+    def returns_none(return_node):
+        value = return_node.value
+        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+
+    if inspect.isgeneratorfunction(callable):
+        tree = ast.parse(dedent(inspect.getsource(callable)))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Return) and not returns_none(node):
+                _generator_callbacks_cache[callable] = True
+                return _generator_callbacks_cache[callable]
+
+    _generator_callbacks_cache[callable] = False
+    return _generator_callbacks_cache[callable]
+
+
+def warn_on_generator_with_return_value(spider, callable):
+    """
+    Logs a warning if a callable is a generator function and includes
+    a 'return' statement with a value different than None
+    """
+    if is_generator_with_return_value(callable):
+        warnings.warn(
+            'The "{}.{}" method is a generator and includes a "return" statement with a '
+            'value different than None. This could lead to unexpected behaviour. Please see '
+            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+            'for details about the semantics of the "return" statement within generators'
+            .format(spider.__class__.__name__, callable.__name__), stacklevel=2,
+        )
