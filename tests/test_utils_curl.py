@@ -1,7 +1,6 @@
 import unittest
 import warnings
 
-from six import assertRaisesRegex
 from w3lib.http import basic_auth_header
 
 from scrapy import Request
@@ -177,8 +176,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
     def test_too_few_arguments_error(self):
-        assertRaisesRegex(
-            self,
+        self.assertRaisesRegex(
             ValueError,
             r"too few arguments|the following arguments are required:\s*url",
             lambda: curl_to_request_kwargs("curl"),
@@ -194,8 +192,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
         # case 2: ignore_unknown_options=False (raise exception):
-        assertRaisesRegex(
-            self,
+        self.assertRaisesRegex(
             ValueError,
             "Unrecognized options:.*--bar.*--baz",
             lambda: curl_to_request_kwargs(

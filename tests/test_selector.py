@@ -1,9 +1,9 @@
-import warnings
 import weakref
+
 from twisted.trial import unittest
+
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import Selector
-from lxml import etree
 
 
 class SelectorTestCase(unittest.TestCase):

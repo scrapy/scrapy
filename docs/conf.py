@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys
+from datetime import datetime
 from os import path
 
 # If your extensions are in another directory, add it here. If the directory
@@ -50,8 +51,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Scrapy'
-copyright = u'2008–2018, Scrapy developers'
+project = 'Scrapy'
+copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -195,8 +196,8 @@ htmlhelp_basename = 'Scrapydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Scrapy.tex', u'Scrapy Documentation',
-   u'Scrapy developers', 'manual'),
+  ('index', 'Scrapy.tex', 'Scrapy Documentation',
+   'Scrapy developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -269,6 +270,10 @@ coverage_ignore_pyobjects = [
 
     # Never documented before, and deprecated now.
     r'^scrapy\.item\.DictItem$',
+    r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
+
+    # Implementation detail of LxmlLinkExtractor
+    r'^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor',
 ]
 
 
@@ -276,7 +281,17 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
+    'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
+    'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
 }
+
+
+# Options for sphinx-hoverxref options
+# ------------------------------------
+
+hoverxref_auto_ref = True

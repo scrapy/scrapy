@@ -1,11 +1,12 @@
 #compdef scrapy
 _scrapy() {
     local context state state_descr line
+    local ret=1
     typeset -A opt_args
     _arguments \
-	"(- 1 *)--help[Help]" \
+	"(- 1 *)"{-h,--help}"[Help]" \
 	"1: :->command" \
-	"*:: :->args"
+	"*:: :->args" && ret=0
 
     case $state in
 	command)
@@ -134,6 +135,8 @@ _scrapy() {
 	    esac
 	    ;;
     esac
+
+    return ret
 }
 
 _scrapy_cmds() {

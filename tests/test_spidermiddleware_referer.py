@@ -1,8 +1,7 @@
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 from unittest import TestCase
 import warnings
 
-from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -549,8 +548,8 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                 (301, 'http://scrapytest.org/3'),
                 (301, 'http://scrapytest.org/4'),
             ),
-            b'http://scrapytest.org/1', # expected initial referer
-            b'http://scrapytest.org/1', # expected referer for the redirection request
+            b'http://scrapytest.org/1',  # expected initial referer
+            b'http://scrapytest.org/1',  # expected referer for the redirection request
         ),
         (   'https://scrapytest.org/1',
             'https://scrapytest.org/2',
@@ -610,8 +609,8 @@ class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
                 (301, 'http://scrapytest.org/3'),
                 (301, 'http://scrapytest.org/4'),
             ),
-            None, # expected initial "Referer"
-            None, # expected "Referer" for the redirection request
+            None,  # expected initial "Referer"
+            None,  # expected "Referer" for the redirection request
         ),
         (   'https://scrapytest.org/1',
             'https://scrapytest.org/2',
@@ -649,8 +648,8 @@ class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
                 (301, 'http://scrapytest.org/103'),
                 (301, 'http://scrapytest.org/104'),
             ),
-            b'http://scrapytest.org/101', # expected initial "Referer"
-            b'http://scrapytest.org/101', # expected referer for the redirection request
+            b'http://scrapytest.org/101',  # expected initial "Referer"
+            b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
         (   'https://scrapytest.org/201',
             'https://scrapytest.org/202',
@@ -758,8 +757,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
                 (301, 'http://scrapytest.org/103'),
                 (301, 'http://scrapytest.org/104'),
             ),
-            b'http://scrapytest.org/101', # expected initial referer
-            b'http://scrapytest.org/101', # expected referer for the redirection request
+            b'http://scrapytest.org/101',  # expected initial referer
+            b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
         (   'https://scrapytest.org/201',
             'https://scrapytest.org/202',
@@ -828,8 +827,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
                 (301, 'http://scrapytest.org/103'),
                 (301, 'http://scrapytest.org/104'),
             ),
-            b'http://scrapytest.org/101', # expected initial referer
-            b'http://scrapytest.org/101', # expected referer for the redirection request
+            b'http://scrapytest.org/101',  # expected initial referer
+            b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
         (   'https://scrapytest.org/201',
             'https://scrapytest.org/202',
