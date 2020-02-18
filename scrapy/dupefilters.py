@@ -41,7 +41,7 @@ def _unescape_line_breaks(data):
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
-    def __init__(self, path=None, debug=False,
+    def __init__(self, path=None, debug=False, *,
                  key_builder=default_request_key_builder):
         self.file = None
         self.build_key = key_builder
@@ -59,7 +59,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
         key_builder = load_object(settings['REQUEST_KEY_BUILDER'])
-        return cls(job_dir(settings), debug, key_builder)
+        return cls(job_dir(settings), debug, key_builder=key_builder)
 
     def request_seen(self, request):
         key = self.build_key(request)

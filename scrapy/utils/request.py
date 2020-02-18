@@ -28,11 +28,11 @@ def default_request_key_hasher(data, request):
 
 
 class RequestKeyBuilder:
-    """Callable that, given a :class:`request <scrapy.http.Request>` it returns
-    an immutable object that uniquely identifies `request`.
+    """Callable that, given a :class:`request <scrapy.http.Request>`, returns
+    :class:`bytes` that uniquely identify *request*.
 
-    `url_processor` (default: :func:`w3lib.url.canonicalize_url`) processes the
-    `request` URL, and allows things like sorting URL query string parameters,
+    *url_processor* (default: :func:`w3lib.url.canonicalize_url`) processes the
+    *request* URL, and allows things like sorting URL query string parameters,
     so that two requests with the same URL query string parameters in different
     order still share the same request key.
 
@@ -59,26 +59,35 @@ class RequestKeyBuilder:
 
             request_key_buider = RequestKeyBuilder(url_processor=url_processor)
 
-    `headers` allows taking into account all or some headers. Use a list of
+    *headers* allows taking into account all or some headers. Use a list of
     strings to indicate which headers to include (header names are case
-    insensitive), or use ``True`` for all headers.
+    insensitive), or use ``True`` to include all headers.
 
-    `meta` allows taking into account all or some :attr:`Request.meta
+    *cb_kwargs* allows taking into account all or some :attr:`Request.cb_kwargs
+    <scrapy.http.Request.cb_kwargs>` keys. Use a list of strings to indicate
+    which callback keyword parameter keys to include, or use ``True`` for all
+    callback keyword parameter keys.
+
+    *meta* allows taking into account all or some :attr:`Request.meta
     <scrapy.http.Request.meta>` keys. Use a list of strings to indicate which
     meta keys to include, or use ``True`` for all meta keys.
 
-    `post_processor` is a function that receives the generated request key
-    object and the request itself, and must return either the received request
-    key or a new request key. It uses
+    *post_processor* is a function that receives a list of key-value tuples
+    containing key request data (based in the ``__init__`` parameters) and the
+    source request object, and returns a request key as :class:`bytes`. It uses
     :func:`~scrapy.utils.request.default_request_key_hasher` by default.
     """
 
     def __init__(self, url_processor=canonicalize_url, headers=None,
-                 meta=None, post_processor=default_request_key_hasher):
+                 meta=None, cb_kwargs=None,
+                 post_processor=default_request_key_hasher):
         self._cache = WeakKeyDictionary()
         self._headers = headers
         if self._headers and self._headers is not True:
             self._headers = sorted(self._headers)
+        self._cb_kwargs = cb_kwargs
+        if self._cb_kwargs and self._cb_kwargs is not True:
+            self._cb_kwargs = sorted(self._cb_kwargs)
         self._meta = meta
         if self._meta and self._meta is not True:
             self._meta = sorted(self._meta)
@@ -114,6 +123,18 @@ class RequestKeyBuilder:
                     )
             if headers:
                 data.append(headers)
+
+        if self._cb_kwargs:
+            cb_kwargs_keys = self._cb_kwargs
+            if cb_kwargs_keys is True:
+                cb_kwargs_keys = sorted(request.cb_kwargs)
+            cb_kwargs = []
+            for cb_kwargs_key in cb_kwargs_keys:
+                if cb_kwargs_key in request.cb_kwargs:
+                    cb_kwargs.append((cb_kwargs_key,
+                                      request.cb_kwargs[cb_kwargs_key]))
+            if cb_kwargs:
+                data.append(cb_kwargs)
 
         if self._meta:
             meta_keys = self._meta

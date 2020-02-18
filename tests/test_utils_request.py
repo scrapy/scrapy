@@ -34,6 +34,12 @@ class DefaultRequestKeyBuilderTest(unittest.TestCase):
         self.assertEqual(default_request_key_builder(r1),
                          default_request_key_builder(r2))
 
+    def test_cb_kwargs(self):
+        r1 = Request("https://example.com")
+        r2 = r1.replace(cb_kwargs={'a': 'b'})
+        self.assertEqual(default_request_key_builder(r1),
+                         default_request_key_builder(r2))
+
     def test_meta(self):
         r1 = Request("https://example.com")
         r2 = r1.replace(meta={'a': 'b'})
@@ -138,6 +144,57 @@ class RequestKeyBuilderTest(unittest.TestCase):
 
         builder1 = default_request_key_builder
         builder2 = RequestKeyBuilder(headers=['a'])
+
+        self.assertEqual(builder1(request), builder2(request))
+
+    def test_cb_kwargs_all(self):
+        r1 = Request("http://www.example.com/")
+        r2 = r1.replace(cb_kwargs={'a': 'b'})
+
+        builder = RequestKeyBuilder(cb_kwargs=True)
+
+        self.assertNotEqual(builder(r1), builder(r2))
+
+    def test_cb_kwargs_builder_order(self):
+        request = Request("http://www.example.com/",
+                          cb_kwargs={'a': 'b', 'c': 'd'})
+
+        builder1 = RequestKeyBuilder(cb_kwargs=['a', 'c'])
+        builder2 = RequestKeyBuilder(cb_kwargs=['c', 'a'])
+
+        self.assertEqual(builder1(request), builder2(request))
+
+    def test_cb_kwargs_case(self):
+        r1 = Request("http://www.example.com/", cb_kwargs={'a': 'b'})
+        r2 = r1.replace(cb_kwargs={'A': 'b'})
+
+        builder = RequestKeyBuilder(cb_kwargs=['a'])
+
+        self.assertNotEqual(builder(r1), builder(r2))
+
+    def test_cb_kwargs_differ(self):
+        r1 = Request("http://www.example.com/")
+        r2 = r1.replace(cb_kwargs={'a': 'b'})
+
+        builder1 = default_request_key_builder
+        builder2 = RequestKeyBuilder(cb_kwargs=['a'])
+
+        self.assertNotEqual(builder1(r2), builder2(r2))
+        self.assertNotEqual(builder2(r1), builder2(r2))
+
+    def test_cb_kwargs_order(self):
+        r1 = Request("http://www.example.com/", cb_kwargs={'a': 'b', 'c': 'd'})
+        r2 = r1.replace(cb_kwargs={'c': 'd', 'a': 'b'})
+
+        builder = RequestKeyBuilder(cb_kwargs=['a', 'c'])
+
+        self.assertEqual(builder(r1), builder(r2))
+
+    def test_cb_kwargs_same_key_if_none(self):
+        request = Request("http://www.example.com/")
+
+        builder1 = default_request_key_builder
+        builder2 = RequestKeyBuilder(cb_kwargs=['a'])
 
         self.assertEqual(builder1(request), builder2(request))
 

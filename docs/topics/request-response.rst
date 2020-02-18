@@ -317,11 +317,11 @@ Request keys
 There are some aspects of scraping, such as filtering out duplicate requests
 (see :setting:`DUPEFILTER_CLASS`) or caching responses (see
 :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`), where you
-need the ability to generate a unique key from a :attr:`~scrapy.http.Request`
+need the ability to generate a unique key from a :class:`~scrapy.http.Request`
 object, so that you can check if two different ``Request`` objects match.
 
 You often do not need to worry about request keys, the default request
-key builder (see :setting:`REQUEST_KEY_BUILDER`) works for most projects.
+key builder works for most projects.
 
 However, there is no universal way to generate a unique key from a request,
 because different situations require comparing requests differently. For
@@ -330,9 +330,7 @@ fragments, exclude certain URL query parameters, include some or all headers,
 etc.
 
 To change how the key of your requests is built, use the
-:setting:`REQUEST_KEY_BUILDER` setting. If you need to get a request key in
-your own code, for example in a middleware, make sure you use the function from
-the :setting:`REQUEST_KEY_BUILDER` setting.
+:setting:`REQUEST_KEY_BUILDER` setting.
 
 .. setting:: REQUEST_KEY_BUILDER
 
@@ -342,8 +340,7 @@ REQUEST_KEY_BUILDER
 Default: ``'scrapy.utils.request.default_request_key_builder'``
 
 The import path of a callable that receives a :attr:`~scrapy.http.Request`
-object as its only argument, and must return :class:`bytes` that uniquely
-identify that request.
+object and returns :class:`bytes` that uniquely identify that request.
 
 The default request key builder takes into account a canonical version
 (:func:`w3lib.url.canonicalize_url`) of
@@ -351,9 +348,7 @@ The default request key builder takes into account a canonical version
 :attr:`request.method <scrapy.http.Request.method>` and
 :attr:`request.body <scrapy.http.Request.body>`. It then generates an
 `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash of the
-:mod:`pickle`-serialized result, which means there is a real but
-`extremely small <https://stackoverflow.com/a/1867252>`_ chance of two
-requests with different keys being considered the same.
+:mod:`pickle`-serialized result.
 
 If you want to customize your request key builder, for most use cases you can
 use :class:`~scrapy.utils.request.RequestKeyBuilder`. For example::

@@ -705,10 +705,10 @@ The class used to detect and filter duplicate requests.
 
 The default (``RFPDupeFilter``) filters based on the
 :setting:`REQUEST_KEY_BUILDER` setting. In order to change the way duplicates
-are checked you can either change :setting:`REQUEST_KEY_BUILDER` or subclass
-``RFPDupeFilter`` and override its ``request_fingerprint`` method. This method
-should accept scrapy :class:`~scrapy.http.Request` object and return its
-fingerprint (a string).
+are checked change :setting:`REQUEST_KEY_BUILDER` or subclass
+``RFPDupeFilter`` and override its ``build_key`` method. This method
+should accept a :class:`~scrapy.http.Request` object and return its key as
+:class:`bytes`.
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
