@@ -5,6 +5,7 @@ import warnings
 import tempfile
 import shutil
 import string
+import sys
 from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
@@ -12,6 +13,7 @@ from unittest import mock
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
 
+import pytest
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -590,78 +592,75 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
         yield self.assertExportedJsonLines(items, rows_jl)
 
-        # edge case: FEED_EXPORT_FIELDS==[] means the same as default None
+    @defer.inlineCallbacks
+    def test_export_items_empty_field_list(self):
+        # FEED_EXPORT_FIELDS==[] means the same as default None
+        items = [{'foo': 'bar'}]
+        header = ["foo"]
+        rows = [{'foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': []}
-        yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
-        yield self.assertExportedJsonLines(items, rows_jl, settings)
+        yield self.assertExportedCsv(items, header, rows, ordered=False)
+        yield self.assertExportedJsonLines(items, rows, settings)
 
-        # it is possible to override fields using FEED_EXPORT_FIELDS
-        header = ["foo", "baz", "hello"]
+    @defer.inlineCallbacks
+    def test_export_items_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
         settings = {'FEED_EXPORT_FIELDS': header}
-        rows = [
-            {'foo': 'bar1', 'baz': '',      'hello': ''},
-            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
-            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '',     'baz': '',      'hello': 'world4'},
-        ]
-        yield self.assertExported(items, header, rows,
-                                  settings=settings, ordered=True)
+        yield self.assertExported(items, header, rows, settings=settings)
 
-        # fields may be defined as a comma-separated list
-        header = ["foo", "baz", "hello"]
+    @defer.inlineCallbacks
+    def test_export_items_comma_separated_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
         settings = {'FEED_EXPORT_FIELDS': ",".join(header)}
-        rows = [
-            {'foo': 'bar1', 'baz': '',      'hello': ''},
-            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
-            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '',     'baz': '',      'hello': 'world4'},
-        ]
-        yield self.assertExported(items, header, rows,
-                                  settings=settings, ordered=True)
+        yield self.assertExported(items, header, rows, settings=settings)
 
-        # fields may also be defined as a JSON array
-        header = ["foo", "baz", "hello"]
+    @defer.inlineCallbacks
+    def test_export_items_json_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
         settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
-        rows = [
-            {'foo': 'bar1', 'baz': '',      'hello': ''},
-            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
-            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '',     'baz': '',      'hello': 'world4'},
-        ]
-        yield self.assertExported(items, header, rows,
-                                  settings=settings, ordered=True)
+        yield self.assertExported(items, header, rows, settings=settings)
 
-        # custom output field names can be specified
+    @defer.inlineCallbacks
+    def test_export_items_field_names(self):
+        items = [{'foo': 'bar'}]
         header = OrderedDict((
             ("foo", "Foo"),
-            ("baz", "Baz"),
-            ("hello", "Hello"),
         ))
+        rows = [{'Foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': header}
-        rows = [
-            {'Foo': 'bar1', 'Baz': '',      'Hello': ''},
-            {'Foo': 'bar2', 'Baz': '',      'Hello': 'world2'},
-            {'Foo': 'bar3', 'Baz': 'quux3', 'Hello': ''},
-            {'Foo': '',     'Baz': '',      'Hello': 'world4'},
-        ]
         yield self.assertExported(items, list(header.values()), rows,
-                                  settings=settings, ordered=True)
+                                  settings=settings)
 
-        # custom output field names can be specified as a JSON object
+    @pytest.mark.skipif(sys.version_info < (3, 7),
+                        reason='Only official in Python 3.7+')
+    @defer.inlineCallbacks
+    def test_export_items_dict_field_names(self):
+        items = [{'foo': 'bar'}]
+        header = {
+            'baz': 'Baz',
+            'foo': 'Foo',
+        }
+        rows = [{'Baz': '', 'Foo': 'bar'}]
+        settings = {'FEED_EXPORT_FIELDS': header}
+        yield self.assertExported(items, ['Baz', 'Foo'], rows,
+                                  settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_json_field_names(self):
+        items = [{'foo': 'bar'}]
         header = OrderedDict((
             ("foo", "Foo"),
-            ("baz", "Baz"),
-            ("hello", "Hello"),
         ))
+        rows = [{'Foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
-        rows = [
-            {'Foo': 'bar1', 'Baz': '',      'Hello': ''},
-            {'Foo': 'bar2', 'Baz': '',      'Hello': 'world2'},
-            {'Foo': 'bar3', 'Baz': 'quux3', 'Hello': ''},
-            {'Foo': '',     'Baz': '',      'Hello': 'world4'},
-        ]
         yield self.assertExported(items, list(header.values()), rows,
-                                  settings=settings, ordered=True)
+                                  settings=settings)
 
     @defer.inlineCallbacks
     def test_export_dicts(self):
@@ -697,7 +696,7 @@ class FeedExportTest(unittest.TestCase):
                 {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}
             ]
             yield self.assertExported(items, ['foo', 'baz', 'egg'], rows,
-                                      settings=settings, ordered=True)
+                                      settings=settings)
 
             # export a subset of columns
             settings = {'FEED_EXPORT_FIELDS': 'egg,baz'}
@@ -706,7 +705,7 @@ class FeedExportTest(unittest.TestCase):
                 {'egg': 'spam2', 'baz': 'quux2'}
             ]
             yield self.assertExported(items, ['egg', 'baz'], rows,
-                                      settings=settings, ordered=True)
+                                      settings=settings)
 
     @defer.inlineCallbacks
     def test_export_encoding(self):

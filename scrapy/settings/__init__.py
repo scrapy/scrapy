@@ -207,8 +207,7 @@ class BaseSettings(MutableMapping):
         If it is a string it will be evaluated as JSON, or as a comma-separated
         list of strings as a fallback.
 
-        For example, settings populated through environment variables will
-        return:
+        For example, settings populated from the command line will return:
 
         -   ``OrdetedDict([('key1', 'value1'), ('key2', 'value2')])`` if set to
             ``'{"key1": "value1", "key2": "value2"}'``
@@ -223,7 +222,7 @@ class BaseSettings(MutableMapping):
         """
         value = self.get(name, default)
         if value is None:
-            return {}
+            return OrderedDict()
         if isinstance(value, str):
             try:
                 return json.loads(value, object_pairs_hook=OrderedDict)
