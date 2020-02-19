@@ -17,6 +17,7 @@ from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+from scrapy.spiders import WaitUntilQueueEmpty
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class ExecutionEngine(object):
         while not self._needs_backout(spider) and slot.start_requests:
             try:
                 request = next(slot.start_requests)
-                if request == spider.WaitUntilQueueEmpty:
+                if request == WaitUntilQueueEmpty:
                     break
 
             except StopIteration:

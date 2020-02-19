@@ -14,8 +14,10 @@ from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import iflatten
 
 
+WaitUntilQueueEmpty = object()
+
+
 class Spider(object_ref):
-    WaitUntilQueueEmpty = object()
 
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
@@ -80,7 +82,7 @@ class Spider(object_ref):
                 yield Request(url, dont_filter=True)
 
     def start_requests_with_control(self):
-        sig = self.WaitUntilQueueEmpty
+        sig = WaitUntilQueueEmpty
         gen_ = ((r, sig) if r != sig else (r,) for r in self.start_requests())
         return iflatten(gen_)
 
