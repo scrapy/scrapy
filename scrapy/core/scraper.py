@@ -18,7 +18,6 @@ from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 
 
-
 logger = logging.getLogger(__name__)
 
 
