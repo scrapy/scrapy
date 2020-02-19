@@ -26,11 +26,6 @@ from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.decorators import defers
 
-try:
-    import guppy
-    hpy = guppy.hpy()
-except ImportError:
-    hpy = None
 
 logger = logging.getLogger(__name__)
 
