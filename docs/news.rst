@@ -21,7 +21,8 @@ Backward-incompatible changes
 
 *   Python 2 support has been removed, following `Python 2 end-of-life on
     January 1, 2020`_ (:issue:`4091`, :issue:`4114`, :issue:`4115`,
-    :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`, :issue:`4304`)
+    :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`, :issue:`4304`,
+    :issue:`4309`)
 
 *   Retry gaveups (see :setting:`RETRY_TIMES`) are now logged as errors instead
     of as debug information (:issue:`3171`, :issue:`3566`)
@@ -235,7 +236,7 @@ Documentation
     :issue:`4171`, :issue:`4184`, :issue:`4190`)
 
 *   Fixed logic issues, broken links and typos (:issue:`4247`, :issue:`4258`,
-    :issue:`4282`, :issue:`4288`, :issue:`4305`)
+    :issue:`4282`, :issue:`4288`, :issue:`4305`, :issue:`4338`)
 
 *   Improved consistency when referring to the ``__init__`` method of an object
     (:issue:`4086`, :issue:`4088`)
