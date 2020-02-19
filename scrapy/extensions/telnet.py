@@ -105,7 +105,7 @@ class TelnetConsole(protocol.ServerFactory):
             'est': lambda: print_engine_status(self.crawler.engine),
             'p': pprint.pprint,
             'prefs': print_live_refs,
-            'hpy': hpy,
+            'hpy': None,
             'help': "This is Scrapy telnet console. For more info see: "
                     "https://docs.scrapy.org/en/latest/topics/telnetconsole.html",
         }
