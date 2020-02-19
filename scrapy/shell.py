@@ -126,7 +126,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['sel'] = _SelectorProxy(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
@@ -192,15 +191,3 @@ def _request_deferred(request):
 
     request.callback, request.errback = d.callback, d.errback
     return d
-
-
-class _SelectorProxy(object):
-
-    def __init__(self, response):
-        self._proxiedresponse = response
-
-    def __getattr__(self, name):
-        warnings.warn('"sel" shortcut is deprecated. Use "response.xpath()", '
-                      '"response.css()" or "response.selector" instead',
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        return getattr(self._proxiedresponse.selector, name)
