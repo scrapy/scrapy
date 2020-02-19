@@ -5,14 +5,13 @@ See documentation in docs/topics/shell.rst
 """
 import os
 import signal
-import warnings
 
 from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.settings import Settings
