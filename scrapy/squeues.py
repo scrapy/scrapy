@@ -4,7 +4,6 @@ Scheduler queues
 
 import marshal
 import os
-import os.path
 import pickle
 
 from queuelib import queue
