@@ -72,6 +72,22 @@ class BaseResponseTest(unittest.TestCase):
         r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
         assert r1.meta is req.meta
 
+    def test_copy_cb_kwargs(self):
+        req = Request("http://www.example.com")
+        req.cb_kwargs['foo'] = 'bar'
+        r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
+        assert r1.cb_kwargs is req.cb_kwargs
+
+    def test_unavailable_meta(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.meta not available'):
+            r1.meta
+
+    def test_unavailable_cb_kwargs(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.cb_kwargs not available'):
+            r1.cb_kwargs
+
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
 
