@@ -30,7 +30,7 @@ class UrlUtilsTest(unittest.TestCase):
 
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
-        self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+        self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
     def test_url_is_from_spider(self):
         spider = Spider(name='example.com')
