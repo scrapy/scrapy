@@ -83,5 +83,6 @@ class UtilsRequestTest(unittest.TestCase):
         request_httprepr(Request("file:///tmp/foo.txt"))
         request_httprepr(Request("ftp://localhost/tmp/foo.txt"))
 
+
 if __name__ == "__main__":
     unittest.main()
