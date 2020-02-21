@@ -47,7 +47,7 @@ class AjaxCrawlMiddleware(object):
             return response
 
         # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url+'#!')
+        ajax_crawl_request = request.replace(url=request.url + '#!')
         logger.debug("Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
                      {'ajax_crawl_request': ajax_crawl_request, 'request': request},
                      extra={'spider': spider})

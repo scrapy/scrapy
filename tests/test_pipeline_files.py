@@ -359,7 +359,7 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], 'zc2oVgXkbQr2EQdSdw3OPA==')
         u = urlparse(uri)
-        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
+        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:] + path)
         self.assertEqual(content, data)
         self.assertEqual(blob.metadata, {'foo': 'bar'})
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
