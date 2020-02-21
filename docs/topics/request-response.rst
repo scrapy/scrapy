@@ -680,6 +680,8 @@ Response objects
 
     .. attribute:: Response.cb_kwargs
 
+        .. versionadded:: 2.0
+
         A shortcut to the :attr:`Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 

@@ -55,6 +55,10 @@ Backward-incompatible changes
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
+*   The :ref:`Scrapy shell <topics-shell>` no longer provides a `sel` function,
+    use :meth:`response.css <scrapy.http.Response.css>` or
+    :meth:`response.xpath <scrapy.http.Response.xpath>` instead (:issue:`4347`)
+
 *   LevelDB support has been removed (:issue:`4112`)
 
 
@@ -106,6 +110,10 @@ New features
     :ref:`common macOS issue <faq-specific-reactor>` (:issue:`2905`,
     :issue:`4294`)
 
+*   The new :attr:`Response.cb_kwargs <scrapy.http.Response.cb_kwargs>`
+    attribute serves as a shortcut for :attr:`Response.request.cb_kwargs
+    <scrapy.http.Request.cb_kwargs>` (:issue:`4331`)
+
 *   :meth:`Response.follow <scrapy.http.Response.follow>` now supports a
     ``flags`` parameter, for consistency with :class:`~scrapy.http.Request`
     (:issue:`4277`, :issue:`4279`)
@@ -119,10 +127,20 @@ New features
 *   :class:`~scrapy.http.Request` no longer requires a ``callback`` parameter
     when an ``errback`` parameter is specified (:issue:`3586`, :issue:`4008`)
 
-*   :class:`~scrapy.logformatter.LogFormatter` now supports an
-    :class:`~scrapy.logformatter.LogFormatter.error` method for exceptions
-    raised during item processing by pipelines (:issue:`3986`, :issue:`3989`,
-    :issue:`4176`)
+*   :class:`~scrapy.logformatter.LogFormatter` now supports some additional
+    methods:
+
+    *   :class:`~scrapy.logformatter.LogFormatter.download_error` for
+        download errors
+
+    *   :class:`~scrapy.logformatter.LogFormatter.item_error` for exceptions
+        raised during item processing by :ref:`item pipelines
+        <topics-item-pipeline>`
+
+    *   :class:`~scrapy.logformatter.LogFormatter.spider_error` for exceptions
+        raised from :ref:`spider callbacks <topics-spiders>`
+
+    (:issue:`374`, :issue:`3986`, :issue:`3989`, :issue:`4176`, :issue:`4188`)
 
 *   The :setting:`FEED_URI` setting now supports :class:`pathlib.Path` values
     (:issue:`3731`, :issue:`4074`)
@@ -161,6 +179,11 @@ New features
 
 Bug fixes
 ~~~~~~~~~
+
+*   :class:`LinkExtractor.extract_links
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` no longer
+    re-encodes the query string or URLs from non-UTF-8 responses in UTF-8
+    (:issue:`998`, :issue:`1403`, :issue:`1949`, :issue:`4321`)
 
 *   The first spider middleware (see :setting:`SPIDER_MIDDLEWARES`) now also
     processes exceptions raised from callbacks that are generators
@@ -264,7 +287,7 @@ Quality assurance
 *   Added Flake8_ style checks to our test suite and applied some of the
     corresponding changes (:issue:`3944`, :issue:`3945`, :issue:`4137`,
     :issue:`4157`, :issue:`4167`, :issue:`4174`, :issue:`4186`, :issue:`4195`,
-    :issue:`4238`, :issue:`4246`)
+    :issue:`4238`, :issue:`4246`, :issue:`4355`)
 
 *   Improved test coverage (:issue:`4097`, :issue:`4218`, :issue:`4236`)
 
