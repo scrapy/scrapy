@@ -364,6 +364,18 @@ started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
 
+.. reqmeta:: download_slot
+
+download_slot
+----------------
+
+The website domain to which the request is destined. It is used to provide info
+when :setting:`AUTOTHROTTLE_ENABLED` is set to `True`. This meta key only becomes
+available when the response has been downloaded. While most other meta keys are
+used to control Scrapy behavior, this one is supposed to be read-only.
+See also: :ref:`topics-autothrottle` and its
+:setting:`AUTOTHROTTLE_ENABLED` option.
+
 .. reqmeta:: download_fail_on_dataloss
 
 download_fail_on_dataloss
