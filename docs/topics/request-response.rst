@@ -664,13 +664,25 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
         the original :attr:`Request.meta` sent from your spider.
 
         .. seealso:: :attr:`Request.meta` attribute
+
+    .. attribute:: Response.cb_kwargs
+
+        A shortcut to the :attr:`Request.cb_kwargs` attribute of the
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
+
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.cb_kwargs` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.cb_kwargs` sent
+        from your spider.
+
+        .. seealso:: :attr:`Request.cb_kwargs` attribute
 
     .. attribute:: Response.flags
 
@@ -760,7 +772,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class

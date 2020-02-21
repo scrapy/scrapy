@@ -42,6 +42,7 @@ def gunzip(data):
                 raise
     return b''.join(output_list)
 
+
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search
 

@@ -147,7 +147,6 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
-
     @defer.inlineCallbacks
     def test_pipelines(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
