@@ -396,7 +396,7 @@ The FormRequest class extends the base :class:`Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
-.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
+.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 

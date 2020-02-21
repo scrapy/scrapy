@@ -299,8 +299,8 @@ The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
 using something like
-`ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
-or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
+`ast.literal_eval <https://docs.python.org/3/library/ast.html#ast.literal_eval>`_
+or `json.loads <https://docs.python.org/3/library/json.html#json.loads>`_
 and then set it as an attribute.
 Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
@@ -811,6 +811,6 @@ Combine SitemapSpider with other sources of urls::
 
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
