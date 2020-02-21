@@ -259,6 +259,7 @@ class ItemTest(unittest.TestCase):
         with catch_warnings(record=True) as warnings:
             item = Item()
             self.assertEqual(len(warnings), 0)
+
             class SubclassedItem(Item):
                 pass
             subclassed_item = SubclassedItem()

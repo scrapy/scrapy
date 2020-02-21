@@ -81,34 +81,17 @@ Python packages can be installed either globally (a.k.a system wide),
 or in user-space. We do not recommend installing Scrapy system wide.
 
 Instead, we recommend that you install Scrapy within a so-called
-"virtual environment" (`virtualenv`_).
-Virtualenvs allow you to not conflict with already-installed Python
+"virtual environment" (:mod:`venv`).
+Virtual environments allow you to not conflict with already-installed Python
 system packages (which could break some of your system tools and scripts),
 and still install packages normally with ``pip`` (without ``sudo`` and the likes).
 
-To get started with virtual environments, see `virtualenv installation instructions`_.
-To install it globally (having it globally installed actually helps here),
-it should be a matter of running::
+See :ref:`tut-venv` on how to create your virtual environment.
 
-    $ [sudo] pip install virtualenv
-
-Check this `user guide`_ on how to create your virtualenv.
-
-.. note::
-    If you use Linux or OS X, `virtualenvwrapper`_ is a handy tool to create virtualenvs.
-
-Once you have created a virtualenv, you can install Scrapy inside it with ``pip``,
+Once you have created a virtual environment, you can install Scrapy inside it with ``pip``,
 just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
-
-Python virtualenvs can be created to use Python 2 by default, or Python 3 by default. As Scrapy
-only supports Python 3, make sure you created a Python 3 virtualenv.
-
-.. _virtualenv: https://virtualenv.pypa.io
-.. _virtualenv installation instructions: https://virtualenv.pypa.io/en/stable/installation/
-.. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/install.html
-.. _user guide: https://virtualenv.pypa.io/en/stable/userguide/
 
 
 .. _intro-install-platform-notes:
@@ -205,14 +188,11 @@ solutions:
 
       brew update; brew upgrade python
 
-* *(Optional)* Install Scrapy inside an isolated python environment.
+*   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
+    <intro-using-virtualenv>`.
 
   This method is a workaround for the above OS X issue, but it's an overall
   good practice for managing dependencies and can complement the first method.
-
-  `virtualenv`_ is a tool you can use to create virtual environments in python.
-  We recommended reading a tutorial like
-  http://docs.python-guide.org/en/latest/dev/virtualenvs/ to get started.
 
 After any of these workarounds you should be able to install Scrapy::
 

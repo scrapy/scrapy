@@ -15,7 +15,7 @@ def iterate_spider_output(result):
 
 def iter_spider_classes(module):
     """Return an iterator over all spider classes defined in the given module
-    that can be instantiated (ie. which have name)
+    that can be instantiated (i.e. which have name)
     """
     # this needs to be imported here until get rid of the spider manager
     # singleton in scrapy.spider.spiders

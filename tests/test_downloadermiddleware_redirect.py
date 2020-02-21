@@ -68,7 +68,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(r, Response)
         assert r is rsp
 
-
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
@@ -121,7 +120,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
         assert self.mw.process_response(req, rsp, self.spider) is rsp
-
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
@@ -178,6 +176,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
     def test_request_meta_handling(self):
         url = 'http://www.example.com/301'
         url2 = 'http://www.example.com/redirected'
+
         def _test_passthrough(req):
             rsp = Response(url, headers={'Location': url2}, status=301, request=req)
             r = self.mw.process_response(req, rsp, self.spider)
@@ -315,6 +314,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         rsp = HtmlResponse(req.url, body=body.encode())
         response = mw.process_response(req, rsp, self.spider)
         assert isinstance(response, Response)
+
 
 if __name__ == "__main__":
     unittest.main()

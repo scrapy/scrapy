@@ -37,8 +37,8 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be a class, function, variable or an instance.
-    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
     try:

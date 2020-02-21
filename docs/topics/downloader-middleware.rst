@@ -259,8 +259,8 @@ COOKIES_DEBUG
 
 Default: ``False``
 
-If enabled, Scrapy will log all cookies sent in requests (ie. ``Cookie``
-header) and all cookies received in responses (ie. ``Set-Cookie`` header).
+If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
+header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
 
 Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 

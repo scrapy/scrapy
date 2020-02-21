@@ -286,7 +286,6 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         self.assertEqual(pipeline.files_result_field, "this")
         self.assertEqual(pipeline.files_urls_field, "that")
 
-
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of FilesPipeline,
         but uses attribute names for default pipeline (without prefixing

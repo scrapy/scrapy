@@ -83,7 +83,6 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
 
 
-
 class UtilsConfTestCase(unittest.TestCase):
 
     def test_arglist_to_dict(self):

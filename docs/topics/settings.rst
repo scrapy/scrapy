@@ -248,7 +248,7 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
@@ -258,7 +258,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 
 Default: ``8``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
 
 See also: :ref:`topics-autothrottle` and its
@@ -272,7 +272,7 @@ CONCURRENT_REQUESTS_PER_IP
 
 Default: ``0``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single IP. If non-zero, the
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
 used instead. In other words, concurrency limits will be applied per IP, not

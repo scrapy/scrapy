@@ -104,7 +104,6 @@ class BinaryIsTextTest(unittest.TestCase):
         assert not binary_is_text(b"\x02\xa3")
 
 
-
 class UtilsPythonTestCase(unittest.TestCase):
 
     def test_equal_attributes(self):
@@ -215,13 +214,13 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
-
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
         self.assertEqual(without_none_values((1, None, 3, 4)), (1, 3, 4))
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
 
 if __name__ == "__main__":
     unittest.main()
