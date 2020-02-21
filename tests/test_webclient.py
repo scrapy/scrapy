@@ -294,6 +294,7 @@ class WebClientTestCase(unittest.TestCase):
         finished = self.assertFailure(
             getPage(self.getURL("wait"), timeout=0.000001),
             defer.TimeoutError)
+
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
             # anything.

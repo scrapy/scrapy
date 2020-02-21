@@ -119,7 +119,6 @@ class BinaryIsTextTest(unittest.TestCase):
         assert not binary_is_text(b"\x02\xa3")
 
 
-
 class UtilsPythonTestCase(unittest.TestCase):
 
     def test_equal_attributes(self):
@@ -230,7 +229,6 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
-
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
         self.assertEqual(without_none_values((1, None, 3, 4)), (1, 3, 4))
@@ -243,7 +241,10 @@ class DataclassItemsTestCase(unittest.TestCase):
 
     @unittest.skipIf(not make_dataclass, "dataclasses module is not available")
     def test_dataclasses_asdict(self):
-        TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
+        TestDataClass = make_dataclass(
+            "TestDataClass",
+            [("name", str), ("url", str), ("price", int)],
+        )
         self.assertTrue(is_dataclass_instance(TestDataClass("Name", "URL", 10)))
         self.assertEqual(
             dataclass_asdict(TestDataClass("Name", "URL", 10)),

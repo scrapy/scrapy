@@ -5,11 +5,11 @@ from urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
-from w3lib.url import canonicalize_url
+from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
-from scrapy.utils.python import unique as unique_list, to_unicode
+from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.linkextractors import FilteringLinkExtractor
 
@@ -66,7 +66,7 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            url = to_unicode(url, encoding=response_encoding)
+            url = safe_url_string(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',

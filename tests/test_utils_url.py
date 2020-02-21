@@ -201,6 +201,7 @@ def create_skipped_scheme_t(args):
         assert url.startswith(args[1])
     return do_expected
 
+
 for k, args in enumerate ([
             ('/index',                              'file://'),
             ('/index.html',                         'file://'),

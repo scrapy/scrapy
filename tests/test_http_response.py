@@ -72,6 +72,22 @@ class BaseResponseTest(unittest.TestCase):
         r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
         assert r1.meta is req.meta
 
+    def test_copy_cb_kwargs(self):
+        req = Request("http://www.example.com")
+        req.cb_kwargs['foo'] = 'bar'
+        r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
+        assert r1.cb_kwargs is req.cb_kwargs
+
+    def test_unavailable_meta(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.meta not available'):
+            r1.meta
+
+    def test_unavailable_cb_kwargs(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.cb_kwargs not available'):
+            r1.cb_kwargs
+
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
 
@@ -166,6 +182,7 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
+
     def test_follow_flags(self):
         res = self.response_class('http://example.com/')
         fol = res.follow('http://example.com/', flags=['cached', 'allowed'])

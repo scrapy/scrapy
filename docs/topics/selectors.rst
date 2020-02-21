@@ -986,7 +986,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//h1")
 
@@ -1013,7 +1013,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object::
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   of :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//product")
 
