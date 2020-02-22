@@ -286,7 +286,6 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         self.assertEqual(pipeline.files_result_field, "this")
         self.assertEqual(pipeline.files_urls_field, "that")
 
-
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of FilesPipeline,
         but uses attribute names for default pipeline (without prefixing
@@ -360,7 +359,7 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], 'zc2oVgXkbQr2EQdSdw3OPA==')
         u = urlparse(uri)
-        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
+        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:] + path)
         self.assertEqual(content, data)
         self.assertEqual(blob.metadata, {'foo': 'bar'})
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)

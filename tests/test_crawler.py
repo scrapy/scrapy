@@ -107,6 +107,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
 
     def test_spider_custom_settings_log_level(self):
         log_file = self.mktemp()
+
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
