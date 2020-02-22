@@ -21,7 +21,7 @@ from scrapy.core.spidermw import SpiderMiddlewareManager
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class ScraperSlot(object):
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -77,7 +77,7 @@ class Scraper(object):
     @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot(self.crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE'))
+        self.slot = ScraperSlot(self.crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE'))
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):

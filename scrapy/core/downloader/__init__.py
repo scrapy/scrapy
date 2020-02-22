@@ -13,7 +13,7 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
 
 
-class Slot(object):
+class DownloaderSlot(object):
     """Downloader slot"""
 
     def __init__(self, concurrency, delay, randomize_delay):
@@ -46,7 +46,7 @@ class Slot(object):
 
     def __str__(self):
         return (
-            "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
+            "<DownloaderSlot concurrency=%r delay=%0.2f randomize_delay=%r "
             "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
                 self.concurrency, self.delay, self.randomize_delay,
                 len(self.active), len(self.queue), len(self.transferring),
@@ -101,7 +101,7 @@ class Downloader(object):
         if key not in self.slots:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
             conc, delay = _get_concurrency_delay(conc, spider, self.settings)
-            self.slots[key] = Slot(conc, delay, self.randomize_delay)
+            self.slots[key] = DownloaderSlot(conc, delay, self.randomize_delay)
 
         return key, self.slots[key]
 
