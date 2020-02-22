@@ -609,7 +609,10 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: :class:`Request` object
+    :type request: scrapy.http.Request
+
+    :param certificate: an object representing the server's SSL certificate.
+    :type certificate: twisted.internet.ssl.Certificate
 
     .. attribute:: Response.url
 
@@ -690,6 +693,13 @@ Response objects
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.certificate
+
+        A :class:`twisted.internet.ssl.Certificate` object representing
+        the server's SSL certificate.
+        
+        Only populated for ``https`` responses, ``None`` otherwise.
 
     .. method:: Response.copy()
 
