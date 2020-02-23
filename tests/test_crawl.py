@@ -441,13 +441,15 @@ with multiples lines
         self.assertEqual(cert.getIssuer().commonName, b"localhost")
 
     @defer.inlineCallbacks
-    def test_dns_server_ip_address(self):
+    def test_dns_server_ip_address_none(self):
         crawler = self.runner.create_crawler(SingleRequestSpider)
         url = self.mockserver.url('/status?n=200')
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         ip_address = crawler.spider.meta['responses'][0].ip_address
         self.assertIsNone(ip_address)
 
+    @defer.inlineCallbacks
+    def test_dns_server_ip_address(self):
         crawler = self.runner.create_crawler(SingleRequestSpider)
         url = self.mockserver.url('/echo?body=test')
         expected_netloc, _ = urlparse(url).netloc.split(':')

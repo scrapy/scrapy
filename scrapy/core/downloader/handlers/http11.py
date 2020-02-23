@@ -1,11 +1,11 @@
 """Download handlers for http and https schemes"""
 
+import ipaddress
 import logging
 import re
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from ipaddress import ip_address
 from time import time
 from urllib.parse import urldefrag
 
@@ -468,7 +468,7 @@ class _ResponseReader(protocol.Protocol):
                 self._certificate = ssl.Certificate(self.transport._producer.getPeerCertificate())
 
         if self._ip_address is None:
-            self._ip_address = ip_address(self.transport._producer.getPeer().host)
+            self._ip_address = ipaddress.ip_address(self.transport._producer.getPeer().host)
 
     def dataReceived(self, bodyBytes):
         # This maybe called several times after cancel was called with buffered data.
