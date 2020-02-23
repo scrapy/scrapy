@@ -29,7 +29,7 @@ class CachingThreadedResolver(ThreadedResolver):
             cache_size = 0
         return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
 
-    def install_on_reactor(self):
+    def install_on_reactor(self,):
         self.reactor.installResolver(self)
 
     def getHostByName(self, name, timeout=None):
