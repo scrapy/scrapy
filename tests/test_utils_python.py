@@ -153,7 +153,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+        class _Weakme(object):
+            pass
+
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()

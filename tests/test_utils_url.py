@@ -202,7 +202,7 @@ def create_skipped_scheme_t(args):
     return do_expected
 
 
-for k, args in enumerate ([
+for k, args in enumerate([
             ('/index',                              'file://'),
             ('/index.html',                         'file://'),
             ('./index.html',                        'file://'),
@@ -230,7 +230,7 @@ for k, args in enumerate ([
         ], start=1):
     t_method = create_guess_scheme_t(args)
     t_method.__name__ = 'test_uri_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
 for k, args in enumerate([
@@ -239,7 +239,7 @@ for k, args in enumerate([
         ], start=1):
     t_method = create_skipped_scheme_t(args)
     t_method.__name__ = 'test_uri_skipped_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 
 class StripUrl(unittest.TestCase):
