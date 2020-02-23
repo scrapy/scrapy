@@ -212,7 +212,7 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
 .. note::
 
    Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (ie. ``&`` character)
+   command-line, otherwise urls containing arguments (i.e. ``&`` character)
    will not work.
 
    On Windows, use double quotes instead::

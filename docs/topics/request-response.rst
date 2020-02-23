@@ -609,7 +609,10 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: :class:`Request` object
+    :type request: scrapy.http.Request
+
+    :param certificate: an object representing the server's SSL certificate.
+    :type certificate: twisted.internet.ssl.Certificate
 
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
@@ -667,7 +670,7 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
@@ -675,12 +678,31 @@ Response objects
 
         .. seealso:: :attr:`Request.meta` attribute
 
+    .. attribute:: Response.cb_kwargs
+
+        A shortcut to the :attr:`Request.cb_kwargs` attribute of the
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
+
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.cb_kwargs` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.cb_kwargs` sent
+        from your spider.
+
+        .. seealso:: :attr:`Request.cb_kwargs` attribute
+
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.certificate
+
+        A :class:`twisted.internet.ssl.Certificate` object representing
+        the server's SSL certificate.
+        
+        Only populated for ``https`` responses, ``None`` otherwise.
 
     .. attribute:: Response.ip_address
 
@@ -771,7 +793,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class

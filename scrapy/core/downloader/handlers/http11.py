@@ -3,12 +3,13 @@
 import logging
 import re
 import warnings
+from contextlib import suppress
 from io import BytesIO
 from ipaddress import ip_address
 from time import time
 from urllib.parse import urldefrag
 
-from twisted.internet import defer, protocol, reactor
+from twisted.internet import defer, protocol, reactor, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
@@ -419,11 +420,12 @@ class ScrapyAgent(object):
         return d
 
     def _cb_bodydone(self, result, request, url):
-        txresponse, body, flags, ip_address = result
+        txresponse, body, flags, certificate, ip_address = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, status=status, headers=headers, body=body, flags=flags, ip_address=ip_address)
+        return respcls(url=url, status=status, headers=headers, body=body,
+                       flags=flags, certificate=certificate, ip_address=ip_address)
 
 
 @implementer(IBodyProducer)
@@ -457,9 +459,14 @@ class _ResponseReader(protocol.Protocol):
         self._fail_on_dataloss_warned = False
         self._reached_warnsize = False
         self._bytes_received = 0
+        self._certificate = None
         self._ip_address = None
 
     def connectionMade(self):
+        if self._certificate is None:
+            with suppress(AttributeError):
+                self._certificate = ssl.Certificate(self.transport._producer.getPeerCertificate())
+
         if self._ip_address is None:
             self._ip_address = ip_address(self.transport._producer.getPeer().host)
 
@@ -494,16 +501,22 @@ class _ResponseReader(protocol.Protocol):
 
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
-            self._finished.callback((self._txresponse, body, None, self._ip_address))
+            self._finished.callback(
+                (self._txresponse, body, None, self._certificate, self._ip_address)
+            )
             return
 
         if reason.check(PotentialDataLoss):
-            self._finished.callback((self._txresponse, body, ['partial'], self._ip_address))
+            self._finished.callback(
+                (self._txresponse, body, ['partial'], self._certificate, self._ip_address)
+            )
             return
 
         if reason.check(ResponseFailed) and any(r.check(_DataLoss) for r in reason.value.reasons):
             if not self._fail_on_dataloss:
-                self._finished.callback((self._txresponse, body, ['dataloss'], self._ip_address))
+                self._finished.callback(
+                    (self._txresponse, body, ['dataloss'], self._certificate, self._ip_address)
+                )
                 return
 
             elif not self._fail_on_dataloss_warned:

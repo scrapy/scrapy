@@ -121,7 +121,7 @@ class TextResponse(Response):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None):
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -157,11 +157,12 @@ class TextResponse(Response):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
     def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding=None, priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None,
+                   dont_filter=False, errback=None, cb_kwargs=None, flags=None,
                    css=None, xpath=None):
         # type: (...) -> Generator[Request, None, None]
         """
@@ -214,6 +215,7 @@ class TextResponse(Response):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
 

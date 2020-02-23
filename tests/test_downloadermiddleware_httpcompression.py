@@ -245,7 +245,7 @@ class HttpCompressionTest(TestCase):
         response.headers['Content-Type'] = 'application/gzip'
         request = response.request
         request.method = 'HEAD'
-        response = response.replace(body = None)
+        response = response.replace(body=None)
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
         self.assertEqual(response.body, b'')

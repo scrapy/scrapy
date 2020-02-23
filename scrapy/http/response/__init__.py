@@ -17,14 +17,26 @@ from scrapy.utils.trackref import object_ref
 
 class Response(object_ref):
 
-    def __init__(self, url, status=200, headers=None, body=b'', flags=None, request=None, ip_address=None):
+    def __init__(self, url, status=200, headers=None, body=b'', flags=None,
+                 request=None, certificate=None, ip_address=None):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
         self._set_url(url)
         self.request = request
         self.flags = [] if flags is None else list(flags)
+        self.certificate = certificate
         self.ip_address = ip_address
+
+    @property
+    def cb_kwargs(self):
+        try:
+            return self.request.cb_kwargs
+        except AttributeError:
+            raise AttributeError(
+                "Response.cb_kwargs not available, this response "
+                "is not tied to any request"
+            )
 
     @property
     def meta(self):
@@ -77,7 +89,8 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body', 'request', 'flags', 'ip_address']:
+        for x in ['url', 'status', 'headers', 'body',
+                  'request', 'flags', 'certificate', 'ip_address']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -108,7 +121,7 @@ class Response(object_ref):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None):
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -125,6 +138,7 @@ class Response(object_ref):
         elif url is None:
             raise ValueError("url can't be None")
         url = self.urljoin(url)
+
         return Request(
             url=url,
             callback=callback,
@@ -138,11 +152,12 @@ class Response(object_ref):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
     def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None):
+                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Generator[Request, None, None]
         """
         Return an iterable of :class:`~.Request` instances to follow all links
@@ -170,6 +185,7 @@ class Response(object_ref):
                 dont_filter=dont_filter,
                 errback=errback,
                 cb_kwargs=cb_kwargs,
+                flags=flags,
             )
             for url in urls
         )

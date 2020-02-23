@@ -12,7 +12,10 @@ collect_ignore = [
     "scrapy/utils/testsite.py",
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
+    # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
+    # Py36-only parts of respective tests
+    *_py_files("tests/py36"),
 ]
 
 for line in open('tests/ignores.txt'):

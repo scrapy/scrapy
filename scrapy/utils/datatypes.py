@@ -175,12 +175,12 @@ class SiteNode(object):
         node.parent = self
 
     def to_string(self, level=0):
-        s = "%s%s\n" % ('  '*level, self.url)
+        s = "%s%s\n" % ('  ' * level, self.url)
         if self.itemnames:
             for n in self.itemnames:
-                s += "%sScraped: %s\n" % ('  '*(level+1), n)
+                s += "%sScraped: %s\n" % ('  ' * (level + 1), n)
         for node in self.children:
-            s += node.to_string(level+1)
+            s += node.to_string(level + 1)
         return s
 
 

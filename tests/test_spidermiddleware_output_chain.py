@@ -125,7 +125,7 @@ class NotGeneratorCallbackSpider(Spider):
         yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
-        return [{'test': 1}, {'test': 1/0}]
+        return [{'test': 1}, {'test': 1 / 0}]
 
 
 # ================================================================================

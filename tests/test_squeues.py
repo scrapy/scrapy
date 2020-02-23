@@ -1,7 +1,12 @@
 import pickle
 
 from queuelib.tests import test_queue as t
-from scrapy.squeues import MarshalFifoDiskQueue, MarshalLifoDiskQueue, PickleFifoDiskQueue, PickleLifoDiskQueue
+from scrapy.squeues import (
+    MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
+    MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
+    PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
+    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+)
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
@@ -31,7 +36,9 @@ def nonserializable_object_test(self):
         self.assertRaises(ValueError, q.push, lambda x: x)
     else:
         # Use a different unpickleable object
-        class A(object): pass
+        class A(object):
+            pass
+
         a = A()
         a.__reduce__ = a.__reduce_ex__ = None
         self.assertRaises(ValueError, q.push, a)
