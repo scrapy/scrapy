@@ -1,15 +1,18 @@
-===============
-asyncio support
-===============
+=======
+asyncio
+=======
 
 .. versionadded:: 2.0
 
-Scrapy has partial support for :mod:`asyncio` and
-:ref:`coroutine syntax <async>`.
+Scrapy has partial support :mod:`asyncio`. After you :ref:`install the asyncio
+reactor <install-asyncio>`, you may use :mod:`asyncio` and
+:mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
 .. warning:: :mod:`asyncio` support in Scrapy is experimental. Future Scrapy
              versions may introduce related API and behavior changes without a
              deprecation period or warning.
+
+.. _install-asyncio:
 
 Installing the asyncio reactor
 ==============================
@@ -23,29 +26,3 @@ reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`::
 
     install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
-
-
-Coroutine support
-=================
-
-The following callables may be defined as coroutines, and hence use
-:ref:`coroutine syntax <async>` and :mod:`asyncio`, as well as
-:mod:`asyncio`-based libraries:
-
--   :class:`~scrapy.http.Request` callbacks.
-
-    However, you cannot use ``yield``. If you need to output multiple items or
-    requests, return an iterable (e.g. a list) instead.
-
--   The :meth:`process_item` method of
-    :ref:`item pipelines <topics-item-pipeline>`.
-
--   The
-    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`,
-    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`,
-    and
-    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
-    methods of
-    :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
-
--   :ref:`Signal handlers that support deferreds <signal-deferred>`.

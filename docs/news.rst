@@ -11,7 +11,8 @@ Scrapy 2.0.0 (2020-02-2?)
 Highlights:
 
 * Python 2 support has been removed
-* :doc:`Experimental asyncio support <topics/asyncio>`
+* :doc:`Partial <topics/coroutines>` :ref:`coroutine syntax <async>` support
+  and :doc:`experimental <topics/asyncio>` :mod:`asyncio` support
 * New :meth:`Response.follow_all <scrapy.http.Response.follow_all>` method
 * :ref:`FTP support <media-pipeline-ftp>` for media pipelines
 * IPv6 support through :setting:`DNS_RESOLVER`
@@ -84,9 +85,10 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
-*   Added :doc:`experimental support for asyncio <topics/asyncio>`
-    (:issue:`4010`, :issue:`4259`, :issue:`4269`, :issue:`4270`, :issue:`4271`,
-    :issue:`4316`)
+* Added :doc:`partial support <topics/coroutines>` for Python’s :ref:`coroutine
+  syntax <async>` and :doc:`experimental support <topics/asyncio>` for
+  :mod:`asyncio` and :mod:`asyncio`-powered libraries (:issue:`4010`,
+  :issue:`4259`, :issue:`4269`, :issue:`4270`, :issue:`4271`, :issue:`4316`)
 
 *   The new :meth:`Response.follow_all <scrapy.http.Response.follow_all>`
     method offers the same functionality as
