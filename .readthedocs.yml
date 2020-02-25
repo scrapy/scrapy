@@ -1,6 +1,7 @@
 version: 2
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: true
 python:
   # For available versions, see:
   # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-image
