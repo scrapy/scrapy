@@ -7,7 +7,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
-from scrapy.utils.conf import arglist_to_dict
+from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class Command(ScrapyCommand):
-
     requires_project = True
 
     spider = None
@@ -56,6 +55,10 @@ class Command(ScrapyCommand):
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
             help="print each depth level one by one")
+        parser.add_option("-o", "--output", metavar="FILE", action="append",
+            help="dump scraped items into FILE (use - for stdout)")
+        parser.add_option("-t", "--output-format", metavar="FORMAT",
+            help="format to use for dumping items with -o")
 
     @property
     def max_level(self):
@@ -206,7 +209,7 @@ class Command(ScrapyCommand):
                     req.meta['_depth'] = depth + 1
                     req.meta['_callback'] = req.callback
                     req.callback = callback
-                return requests
+                return items + requests
 
         # update request meta if any extra meta was passed through the --meta/-m opts.
         if opts.meta:
@@ -233,6 +236,9 @@ class Command(ScrapyCommand):
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+        if opts.output:
+            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
+            self.settings.set('FEEDS', feeds, priority='cmdline')
 
     def process_request_meta(self, opts):
         if opts.meta:
