@@ -52,6 +52,109 @@ Backward-incompatible changes
 
 .. _Python 2 end-of-life on January 1, 2020: https://www.python.org/doc/sunset-python-2/
 
+Changes to scheduler queue classes
+**********************************
+
+We have refactored the :class:`scrapy.core.scheduler.Scheduler` class to make
+it easier to implement custom scheduler queue classes (see
+:setting:`SCHEDULER_PRIORITY_QUEUE`, :setting:`SCHEDULER_DISK_QUEUE` and
+:setting:`SCHEDULER_MEMORY_QUEUE`).
+
+The following changes may impact any custom queue classes of all types:
+
+*   The ``push`` method no longer receives a second positional parameter
+    containing ``request.priority * -1``. If you need that value, get it
+    from the first positional parameter, ``request``, instead, or use
+    the new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
+    method in :class:`scrapy.core.scheduler.ScrapyPriorityQueue`
+    subclasses.
+
+The following changes may impact custom priority queue classes:
+
+*   In the ``__init__`` method or the ``from_crawler`` or ``from_settings``
+    class methods:
+
+    *   The parameter that used to contain a factory function,
+        ``qfactory``, is now passed as a keyword parameter named
+        ``downstream_queue_cls``.
+
+    *   A new keyword parameter has been added: ``key``. It is a string
+        that is always an empty string for memory queues and indicates the
+        :setting:`JOB_DIR` value for disk queues.
+
+    *   The parameter for disk queues that contains data from the previous
+        crawl, ``startprios`` or ``slot_startprios``, is now passed as a
+        keyword parameter named ``startprios``.
+
+    *   The ``serialize`` parameter is no longer passed. The disk queue
+        class must take care of request serialization on its own before
+        writing to disk, using the
+        :func:`~scrapy.utils.reqser.request_to_dict` and
+        :func:`~scrapy.utils.reqser.request_from_dict` functions from the
+        :mod:`scrapy.utils.reqser` module.
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` and
+:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` classes from
+:mod:`scrapy.core.scheduler` and may affect subclasses:
+
+*   In the ``__init__`` method, most of the changes described above apply.
+
+    ``__init__`` may still receive all parameters as positional parameters,
+    however:
+
+    *   ``downstream_queue_cls``, which replaced ``qfactory``, must be
+        instantiated differently.
+
+        ``qfactory`` was instantiated with a priority value (integer).
+
+        Instances of ``downstream_queue_cls`` should be created using
+        the new
+        :meth:`ScrapyPriorityQueue.qfactory <scrapy.core.scheduler.ScrapyPriorityQueue.qfactory>`
+        or
+        :meth:`DownloaderAwarePriorityQueue.pqfactory <scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqfactory>`
+        methods.
+
+    *   The new ``key`` parameter displaced the ``startprios``
+        parameter 1 position to the right.
+
+*   The following class attributes have been added:
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.crawler`
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.downstream_queue_cls`
+        (details above)
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.key` (details above)
+
+*   The ``serialize`` attribute has been removed (details above)
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` class and may affect
+subclasses:
+
+*   A new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
+    method has been added which, given a request, returns
+    ``request.priority * -1``.
+
+    It is used in :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.push`
+    to make up for the removal of its ``priority`` parameter.
+
+*   The ``spider`` attribute has been removed. Use
+    :attr:`crawler.spider <scrapy.core.scheduler.ScrapyPriorityQueue.crawler>`
+    instead.
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` class and may
+affect subclasses:
+
+*   A new :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqueues`
+    attribute offers a mapping of downloader slot names to the
+    corresponding instances of
+    :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
+
+(:issue:`3884`)
+
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -61,6 +164,10 @@ Deprecation removals
     :meth:`response.xpath <scrapy.http.Response.xpath>` instead (:issue:`4347`)
 
 *   LevelDB support has been removed (:issue:`4112`)
+
+*   The following functions have been removed from :mod:`scrapy.utils.python`:
+    ``isbinarytext``, ``is_writable``, ``setattr_default``, ``stringify_dict``
+    (:issue:`4362`)
 
 
 Deprecations
@@ -85,10 +192,11 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
-* Added :doc:`partial support <topics/coroutines>` for Python’s :ref:`coroutine
-  syntax <async>` and :doc:`experimental support <topics/asyncio>` for
-  :mod:`asyncio` and :mod:`asyncio`-powered libraries (:issue:`4010`,
-  :issue:`4259`, :issue:`4269`, :issue:`4270`, :issue:`4271`, :issue:`4316`)
+*   Added :doc:`partial support <topics/coroutines>` for Python’s
+    :ref:`coroutine syntax <async>` and :doc:`experimental support
+    <topics/asyncio>` for :mod:`asyncio` and :mod:`asyncio`-powered libraries
+    (:issue:`4010`, :issue:`4259`, :issue:`4269`, :issue:`4270`, :issue:`4271`,
+    :issue:`4316`, :issue:`4318`)
 
 *   The new :meth:`Response.follow_all <scrapy.http.Response.follow_all>`
     method offers the same functionality as
@@ -98,6 +206,11 @@ New features
 
 *   :ref:`Media pipelines <topics-media-pipeline>` now support :ref:`FTP
     storage <media-pipeline-ftp>` (:issue:`3928`, :issue:`3961`)
+
+*   The new :attr:`Response.certificate <scrapy.http.Response.certificate>`
+    attribute exposes the SSL certificate of the server as a
+    :class:`twisted.internet.ssl.Certificate` object for HTTPS responses
+    (:issue:`2726`, :issue:`4054`)
 
 *   A new :setting:`DNS_RESOLVER` setting allows enabling IPv6 support
     (:issue:`1031`, :issue:`4227`)
@@ -162,8 +275,9 @@ New features
 *   :class:`~scrapy.exporters.BaseItemExporter` subclasses may now use
     ``super().__init__(**kwargs)`` instead of ``self._configure(kwargs)`` in
     their ``__init__`` method, passing ``dont_fail=True`` to the parent
-    ``__init__`` if needed, and accessing ``kwargs`` at ``self._kwargs`` after
-    calling their parent ``__init__`` (:issue:`4193`)
+    ``__init__`` method if needed, and accessing ``kwargs`` at ``self._kwargs``
+    after calling their parent ``__init__`` method (:issue:`4193`,
+    :issue:`4370`)
 
 *   A new ``keep_fragments`` parameter of
     :func:`scrapy.utils.request.request_fingerprint` allows to generate
@@ -286,10 +400,10 @@ Quality assurance
 *   Added Bandit_ security checks to our test suite (:issue:`4162`,
     :issue:`4181`)
 
-*   Added Flake8_ style checks to our test suite and applied some of the
+*   Added Flake8_ style checks to our test suite and applied many of the
     corresponding changes (:issue:`3944`, :issue:`3945`, :issue:`4137`,
     :issue:`4157`, :issue:`4167`, :issue:`4174`, :issue:`4186`, :issue:`4195`,
-    :issue:`4238`, :issue:`4246`, :issue:`4355`)
+    :issue:`4238`, :issue:`4246`, :issue:`4355`, :issue:`4360`, :issue:`4365`)
 
 *   Improved test coverage (:issue:`4097`, :issue:`4218`, :issue:`4236`)
 
@@ -304,7 +418,7 @@ Quality assurance
     enforce a minimum tox version programmatically (:issue:`4179`)
 
 *   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`,
-    :issue:`4210`, :issue:`4212`)
+    :issue:`4210`, :issue:`4212`, :issue:`4369`)
 
 .. _Bandit: https://bandit.readthedocs.io/
 .. _Flake8: https://flake8.pycqa.org/en/latest/
