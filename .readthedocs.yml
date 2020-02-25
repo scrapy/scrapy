@@ -8,3 +8,4 @@ python:
   version: 3.7  # Keep in sync with .travis.yml
   install:
     - requirements: docs/requirements.txt
+    - path: .

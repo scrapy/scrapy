@@ -62,7 +62,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     python_requires='>=3.5',
-    # Keep in sync with docs/requirements.txt
     install_requires=[
         'Twisted>=17.9.0',
         'cryptography>=2.0',
