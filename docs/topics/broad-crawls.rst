@@ -188,7 +188,7 @@ AjaxCrawlMiddleware helps to crawl them correctly.
 It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 
-.. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+.. _ajax crawlable: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
 
 .. _broad-crawls-bfo:
 

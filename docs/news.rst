@@ -26,7 +26,7 @@ Backward-incompatible changes
 *   Python 3.4 is no longer supported, and some of the minimum requirements of
     Scrapy have also changed:
 
-    *   cssselect_ 0.9.1
+    *   :doc:`cssselect <cssselect:index>` 0.9.1
     *   cryptography_ 2.0
     *   lxml_ 3.5.0
     *   pyOpenSSL_ 16.2.0
@@ -1616,7 +1616,7 @@ Deprecations and Removals
   + ``scrapy.utils.datatypes.SiteNode``
 
 - The previously bundled ``scrapy.xlib.pydispatch`` library was deprecated and
-  replaced by `pydispatcher <https://pypi.python.org/pypi/PyDispatcher>`_.
+  replaced by `pydispatcher <https://pypi.org/project/PyDispatcher/>`_.
 
 
 Relocations
@@ -2450,7 +2450,7 @@ Other
 ~~~~~
 
 - Dropped Python 2.6 support (:issue:`448`)
-- Add `cssselect`_ python package as install dependency
+- Add :doc:`cssselect <cssselect:index>` python package as install dependency
 - Drop libxml2 and multi selector's backend support, `lxml`_ is required from now on.
 - Minimum Twisted version increased to 10.0.0, dropped Twisted 8.0 support.
 - Running test suite now requires ``mock`` python library (:issue:`390`)
@@ -3047,17 +3047,16 @@ Scrapy 0.7
 First release of Scrapy.
 
 
-.. _AJAX crawleable urls: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started?csw=1
+.. _AJAX crawleable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
 .. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
 .. _Creating a pull request: https://help.github.com/en/articles/creating-a-pull-request
 .. _cryptography: https://cryptography.io/en/latest/
-.. _cssselect: https://github.com/scrapy/cssselect/
-.. _docstrings: https://docs.python.org/glossary.html#term-docstring
-.. _KeyboardInterrupt: https://docs.python.org/library/exceptions.html#KeyboardInterrupt
+.. _docstrings: https://docs.python.org/3/glossary.html#term-docstring
+.. _KeyboardInterrupt: https://docs.python.org/3/library/exceptions.html#KeyboardInterrupt
 .. _LevelDB: https://github.com/google/leveldb
-.. _lxml: http://lxml.de/
+.. _lxml: https://lxml.de/
 .. _marshal: https://docs.python.org/2/library/marshal.html
 .. _parsel.csstranslator.GenericTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.GenericTranslator
 .. _parsel.csstranslator.HTMLTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.HTMLTranslator
@@ -3068,11 +3067,11 @@ First release of Scrapy.
 .. _queuelib: https://github.com/scrapy/queuelib
 .. _registered with IANA: https://www.iana.org/assignments/media-types/media-types.xhtml
 .. _resource: https://docs.python.org/2/library/resource.html
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 .. _scrapely: https://github.com/scrapy/scrapely
 .. _service_identity: https://service-identity.readthedocs.io/en/stable/
 .. _six: https://six.readthedocs.io/
-.. _tox: https://pypi.python.org/pypi/tox
+.. _tox: https://pypi.org/project/tox/
 .. _Twisted: https://twistedmatrix.com/trac/
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _w3lib: https://github.com/scrapy/w3lib

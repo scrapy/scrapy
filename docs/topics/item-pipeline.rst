@@ -158,8 +158,8 @@ method and how to clean up the resources properly.::
             self.db[self.collection_name].insert_one(dict(item))
             return item
 
-.. _MongoDB: https://www.mongodb.org/
-.. _pymongo: https://api.mongodb.org/python/current/
+.. _MongoDB: https://www.mongodb.com/
+.. _pymongo: https://api.mongodb.com/python/current/
 
 
 Take screenshot of item

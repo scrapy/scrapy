@@ -141,7 +141,7 @@ item_error
 .. signal:: item_error
 .. function:: item_error(item, response, spider, failure)
 
-    Sent when a :ref:`topics-item-pipeline` generates an error (ie. raises
+    Sent when a :ref:`topics-item-pipeline` generates an error (i.e. raises
     an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
 
     This signal supports returning deferreds from their handlers.
@@ -232,7 +232,7 @@ spider_error
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
 
-    Sent when a spider callback generates an error (ie. raises an exception).
+    Sent when a spider callback generates an error (i.e. raises an exception).
 
     This signal does not support returning deferreds from their handlers.
 
