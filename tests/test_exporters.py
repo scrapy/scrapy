@@ -312,6 +312,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)

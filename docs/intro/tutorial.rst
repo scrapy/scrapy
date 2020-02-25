@@ -212,7 +212,7 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
 .. note::
 
    Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (ie. ``&`` character)
+   command-line, otherwise urls containing arguments (i.e. ``&`` character)
    will not work.
 
    On Windows, use double quotes instead::
@@ -306,7 +306,7 @@ with a selector (see :ref:`topics-developer-tools`).
 visually selected elements, which works in many browsers.
 
 .. _regular expressions: https://docs.python.org/3/library/re.html
-.. _Selector Gadget: http://selectorgadget.com/
+.. _Selector Gadget: https://selectorgadget.com/
 
 
 XPath: a brief intro
@@ -337,7 +337,7 @@ recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-.. _XPath: https://www.w3.org/TR/xpath
+.. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 
 Extracting quotes and authors

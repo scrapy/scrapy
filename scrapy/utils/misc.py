@@ -37,8 +37,8 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be a class, function, variable or an instance.
-    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
     try:
@@ -46,7 +46,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot+1:]
+    module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
 
     try:

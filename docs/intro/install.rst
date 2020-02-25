@@ -65,7 +65,7 @@ please refer to their respective installation instructions:
 * `lxml installation`_
 * `cryptography installation`_
 
-.. _lxml installation: http://lxml.de/installation.html
+.. _lxml installation: https://lxml.de/installation.html
 .. _cryptography installation: https://cryptography.io/en/latest/installation/
 
 
@@ -253,11 +253,11 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/en/latest/installing/
 .. _lxml: https://lxml.de/index.html
-.. _parsel: https://pypi.python.org/pypi/parsel
-.. _w3lib: https://pypi.python.org/pypi/w3lib
-.. _twisted: https://twistedmatrix.com/
-.. _cryptography: https://cryptography.io/
-.. _pyOpenSSL: https://pypi.python.org/pypi/pyOpenSSL
+.. _parsel: https://pypi.org/project/parsel/
+.. _w3lib: https://pypi.org/project/w3lib/
+.. _twisted: https://twistedmatrix.com/trac/
+.. _cryptography: https://cryptography.io/en/latest/
+.. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
 .. _homebrew: https://brew.sh/
