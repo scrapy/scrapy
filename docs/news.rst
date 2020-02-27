@@ -47,8 +47,8 @@ Backward-incompatible changes
     use the ``from_settings`` or ``from_crawler`` class methods to expose such
     a parameter to your custom download handlers (:issue:`4126`)
 
-*   Overridden settings are now logged in a different format more in line with
-    similar information logged at startup (:issue:`4199`)
+*   Overridden settings are now logged in a different format. This is more in
+    line with similar information logged at startup (:issue:`4199`)
 
 .. _Python 2 end-of-life on January 1, 2020: https://www.python.org/doc/sunset-python-2/
 
@@ -314,7 +314,7 @@ Bug fixes
 *   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
     because they have a colon (:issue:`2552`, :issue:`4094`)
 
-*   The right encoding is now used for attach names in
+*   The correct encoding is now used for attach names in
     :class:`~scrapy.mail.MailSender` (:issue:`4229`, :issue:`4239`)
 
 *   :class:`~scrapy.dupefilters.RFPDupeFilter`, the default
