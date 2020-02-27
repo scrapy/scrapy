@@ -78,11 +78,11 @@ def get_project_settings():
     scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
                       k.startswith('SCRAPY_')}
     valid_envvars = {
-        'SCRAPY_CHECK',
-        'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE',
-        'SCRAPY_PROJECT',
-        'SCRAPY_PYTHON_SHELL',
-        'SCRAPY_SETTINGS_MODULE',
+        'CHECK',
+        'PICKLED_SETTINGS_TO_OVERRIDE',
+        'PROJECT',
+        'PYTHON_SHELL',
+        'SETTINGS_MODULE',
     }
     setting_envvars = {k for k in scrapy_envvars if k not in valid_envvars}
     if setting_envvars:
