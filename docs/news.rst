@@ -23,7 +23,7 @@ Backward-incompatible changes
 *   Python 2 support has been removed, following `Python 2 end-of-life on
     January 1, 2020`_ (:issue:`4091`, :issue:`4114`, :issue:`4115`,
     :issue:`4121`, :issue:`4138`, :issue:`4231`, :issue:`4242`, :issue:`4304`,
-    :issue:`4309`)
+    :issue:`4309`, :issue:`4373`)
 
 *   Retry gaveups (see :setting:`RETRY_TIMES`) are now logged as errors instead
     of as debug information (:issue:`3171`, :issue:`3566`)
@@ -296,6 +296,9 @@ New features
 Bug fixes
 ~~~~~~~~~
 
+*   The :command:`crawl` command now also exits with exit code 1 when an
+    exception happens before the crawling starts (:issue:`4175`, :issue:`4207`)
+
 *   :class:`LinkExtractor.extract_links
     <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` no longer
     re-encodes the query string or URLs from non-UTF-8 responses in UTF-8
@@ -375,7 +378,8 @@ Documentation
     :issue:`4171`, :issue:`4184`, :issue:`4190`)
 
 *   Fixed logic issues, broken links and typos (:issue:`4247`, :issue:`4258`,
-    :issue:`4282`, :issue:`4288`, :issue:`4305`, :issue:`4338`)
+    :issue:`4282`, :issue:`4288`, :issue:`4305`, :issue:`4338`, :issue:`4359`,
+    :issue:`4361`)
 
 *   Improved consistency when referring to the ``__init__`` method of an object
     (:issue:`4086`, :issue:`4088`)
@@ -418,7 +422,7 @@ Quality assurance
     enforce a minimum tox version programmatically (:issue:`4179`)
 
 *   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`,
-    :issue:`4210`, :issue:`4212`, :issue:`4369`)
+    :issue:`4210`, :issue:`4212`, :issue:`4369`, :issue:`4376`, :issue:`4378`)
 
 .. _Bandit: https://bandit.readthedocs.io/
 .. _Flake8: https://flake8.pycqa.org/en/latest/
