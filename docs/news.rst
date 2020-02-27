@@ -15,6 +15,8 @@ Highlights:
   and :doc:`experimental <topics/asyncio>` :mod:`asyncio` support
 * New :meth:`Response.follow_all <scrapy.http.Response.follow_all>` method
 * :ref:`FTP support <media-pipeline-ftp>` for media pipelines
+* New :attr:`Response.certificate <scrapy.http.Response.certificate>`
+  attribute
 * IPv6 support through :setting:`DNS_RESOLVER`
 
 Backward-incompatible changes
