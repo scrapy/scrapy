@@ -55,10 +55,10 @@ Backward-incompatible changes
 Changes to scheduler queue classes
 **********************************
 
-We have refactored the :class:`scrapy.core.scheduler.Scheduler` class to make
-it easier to implement custom scheduler queue classes (see
-:setting:`SCHEDULER_PRIORITY_QUEUE`, :setting:`SCHEDULER_DISK_QUEUE` and
-:setting:`SCHEDULER_MEMORY_QUEUE`).
+We have refactored the :class:`scrapy.core.scheduler.Scheduler` class and
+related queue classes (see :setting:`SCHEDULER_PRIORITY_QUEUE`,
+:setting:`SCHEDULER_DISK_QUEUE` and :setting:`SCHEDULER_MEMORY_QUEUE`) to make
+it easier to implement custom scheduler queue classes.
 
 The following changes may impact any custom queue classes of all types:
 
@@ -92,6 +92,11 @@ The following changes may impact custom priority queue classes:
         :func:`~scrapy.utils.reqser.request_to_dict` and
         :func:`~scrapy.utils.reqser.request_from_dict` functions from the
         :mod:`scrapy.utils.reqser` module.
+
+The following changes may impact custom disk and memory queue classes:
+
+*   The signature of the ``__init__`` method is now
+    ``__init__(self, crawler, key)``.
 
 The following changes affect specifically the
 :class:`~scrapy.core.scheduler.ScrapyPriorityQueue` and
@@ -224,6 +229,9 @@ New features
     :doc:`enable asyncio support <topics/asyncio>` or deal with a
     :ref:`common macOS issue <faq-specific-reactor>` (:issue:`2905`,
     :issue:`4294`)
+
+*   Scheduler disk and memory queues may now use the class methods
+    ``from_crawler`` or ``from_settings`` (:issue:`3884`)
 
 *   The new :attr:`Response.cb_kwargs <scrapy.http.Response.cb_kwargs>`
     attribute serves as a shortcut for :attr:`Response.request.cb_kwargs
