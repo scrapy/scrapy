@@ -162,6 +162,8 @@ method and how to clean up the resources properly.::
 .. _pymongo: https://api.mongodb.com/python/current/
 
 
+.. _ScreenshotPipeline:
+
 Take screenshot of item
 -----------------------
 
