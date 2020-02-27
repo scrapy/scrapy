@@ -174,9 +174,9 @@ affect subclasses:
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
-*   The :ref:`Scrapy shell <topics-shell>` no longer provides a `sel` function,
-    use :meth:`response.css <scrapy.http.Response.css>` or
-    :meth:`response.xpath <scrapy.http.Response.xpath>` instead (:issue:`4347`)
+*   The :ref:`Scrapy shell <topics-shell>` no longer provides a `sel` proxy
+    object, use :meth:`response.selector <scrapy.http.Response.selector>`
+    instead (:issue:`4347`)
 
 *   LevelDB support has been removed (:issue:`4112`)
 
