@@ -44,10 +44,18 @@ Backward-incompatible changes
     now includes spaces after commas in the value of the ``Accept-Encoding``
     header that it sets, following web browser behavior (:issue:`4293`)
 
-*   The ``__init__`` method of download handlers (see
-    :setting:`DOWNLOAD_HANDLERS`) no longer receives a ``settings`` parameter;
-    use the ``from_settings`` or ``from_crawler`` class methods to expose such
-    a parameter to your custom download handlers (:issue:`4126`)
+*   The ``__init__`` method of custom download handlers (see
+    :setting:`DOWNLOAD_HANDLERS`) or subclasses of the following downloader
+    handlers  no longer receives a ``settings`` parameter:
+
+    *   :class:`scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler`
+
+    *   :class:`scrapy.core.downloader.handlers.file.FileDownloadHandler`
+
+    Use the ``from_settings`` or ``from_crawler`` class methods to expose such
+    a parameter to your custom download handlers.
+
+    (:issue:`4126`)
 
 *   Overridden settings are now logged in a different format. This is more in
     line with similar information logged at startup (:issue:`4199`)
