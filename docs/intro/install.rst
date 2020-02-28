@@ -166,7 +166,7 @@ you can install Scrapy with ``pip`` after that::
 .. _intro-install-macos:
 
 macOS
---------
+-----
 
 Building Scrapy's dependencies requires the presence of a C compiler and
 development headers. On macOS this is typically provided by Apple’s Xcode
