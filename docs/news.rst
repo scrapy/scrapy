@@ -189,7 +189,7 @@ Deprecations
 ~~~~~~~~~~~~
 
 *   Using environment variables prefixed with ``SCRAPY_`` to override settings
-    is deprecated (:issue:`4300`)
+    is deprecated (:issue:`4300`, :issue:`4374`, :issue:`4375`)
 
 *   :class:`scrapy.linkextractors.FilteringLinkExtractor` is deprecated, use
     :class:`scrapy.linkextractors.LinkExtractor
@@ -433,7 +433,7 @@ Quality assurance
     them (:issue:`4163`, :issue:`4164`)
 
 *   Fixed broken tests and refactored some tests (:issue:`4014`, :issue:`4095`,
-    :issue:`4244`)
+    :issue:`4244`, :issue:`4268`, :issue:`4372`)
 
 *   Modified the :doc:`tox <tox:index>` configuration to allow running tests
     with any Python version, run Bandit_ and Flake8_ tests by default, and
