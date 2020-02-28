@@ -57,21 +57,22 @@ There are several use cases for coroutines in Scrapy. Code that would
 return Deferreds when written for previous Scrapy versions, such as downloader
 middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
-    def _update_item(self, data, item):
-        item['field'] = data
-        return item
+    class DbPipeline():
+        def _update_item(self, data, item):
+            item['field'] = data
+            return item
 
-    def process_item(self, item, spider):
-        dfd = db.get_some_data(item['id'])
-        dfd.addCallback(self._update_item, item)
-        return dfd
+        def process_item(self, item, spider):
+            dfd = db.get_some_data(item['id'])
+            dfd.addCallback(self._update_item, item)
+            return dfd
 
 becomes::
 
-    async def process_item(self, item, spider):
-        data = await db.get_some_data(item['id'])
-        item['field'] = data
-        return item
+    class DbPipeline():
+        async def process_item(self, item, spider):
+            item['field'] = await db.get_some_data(item['id'])
+            return item
 
 Coroutines may be used to call asynchronous libraries that use either Deferreds
 or coroutines::
@@ -85,8 +86,9 @@ or coroutines::
             async with session.get('https://additional.url') as additional_response:
                 additional_data = await r.text()
 
-.. note:: Most coroutine libraries use :mod:`asyncio` and require
-          :doc:`enabling asyncio support in Scrapy<asyncio>`.
+.. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
+          :mod:`asyncio` loop and to use them you need to
+          :doc:`enable asyncio support in Scrapy<asyncio>`.
 
 Common use cases for asynchronous code include:
 
@@ -98,3 +100,5 @@ Common use cases for asynchronous code include:
 * calling asynchronous Scrapy methods like `ExecutionEngine.download` (like
   :ref:`the screenshot pipeline example<ScreenshotPipeline>` but without
   managing Deferreds).
+
+.. _aio-libs: https://github.com/aio-libs
