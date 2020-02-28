@@ -341,19 +341,20 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
 
-        self.assertExportResult(i3,
+        self.assertExportResult(
+            i3,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
-                b'<item>'
-                    b'<age>'
-                        b'<age>'
-                            b'<age>22</age>'
-                            b'<name>foo\xc2\xa3hoo</name>'
-                        b'</age>'
-                        b'<name>bar</name>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
+            b'<item>'
+            b'<age>'
+            b'<age>'
+            b'<age>22</age>'
+            b'<name>foo\xc2\xa3hoo</name>'
+            b'</age>'
+            b'<name>bar</name>'
+            b'</age>'
+            b'<name>buz</name>'
+            b'</item>'
             b'</items>'
         )
 
@@ -362,30 +363,32 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', v2={"egg": ["spam"]})
         i3 = TestItem(name=u'buz', age=[i1, i2])
 
-        self.assertExportResult(i3,
+        self.assertExportResult(
+            i3,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
-                b'<item>'
-                    b'<age>'
-                        b'<value><name>foo</name></value>'
-                        b'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
+            b'<item>'
+            b'<age>'
+            b'<value><name>foo</name></value>'
+            b'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
+            b'</age>'
+            b'<name>buz</name>'
+            b'</item>'
             b'</items>'
         )
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
-        self.assertExportResult(item,
+        self.assertExportResult(
+            item,
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<items>'
-               b'<item>'
-                   b'<float>3.14</float>'
-                   b'<boolean>False</boolean>'
-                   b'<number>22</number>'
-                   b'<time>2015-01-01 01:01:01</time>'
-               b'</item>'
+            b'<item>'
+            b'<float>3.14</float>'
+            b'<boolean>False</boolean>'
+            b'<number>22</number>'
+            b'<time>2015-01-01 01:01:01</time>'
+            b'</item>'
             b'</items>'
         )
 

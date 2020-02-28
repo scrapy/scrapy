@@ -56,7 +56,7 @@ class MediaPipeline(object):
         class_name = self.__class__.__name__
         formatted_key = "{}_{}".format(class_name.upper(), key)
         if class_name == base_class_name or not base_class_name \
-            or (settings and not settings.get(formatted_key)):
+                or (settings and not settings.get(formatted_key)):
             return key
         return formatted_key
 

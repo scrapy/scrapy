@@ -197,8 +197,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             r1 = Request('http://scrapytest.org/index.html')
             r2 = Request('http://scrapytest.org/index.html',
-                headers={'Referer': 'http://scrapytest.org/INDEX.html'}
-            )
+                         headers={'Referer': 'http://scrapytest.org/INDEX.html'})
 
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)

@@ -487,7 +487,7 @@ class TestSettingsPolicyByName(TestCase):
                 (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
                 (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
                 (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+        ]:
             settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
@@ -503,7 +503,7 @@ class TestSettingsPolicyByName(TestCase):
                 (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
                 (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
                 (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+        ]:
             settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
@@ -541,7 +541,8 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
 
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.UnsafeUrlPolicy'}
     scenarii = [
-        (   'http://scrapytest.org/1',      # parent
+        (
+            'http://scrapytest.org/1',      # parent
             'http://scrapytest.org/2',      # target
             (
                 # redirections: code, URL
@@ -551,7 +552,8 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             b'http://scrapytest.org/1',  # expected initial referer
             b'http://scrapytest.org/1',  # expected referer for the redirection request
         ),
-        (   'https://scrapytest.org/1',
+        (
+            'https://scrapytest.org/1',
             'https://scrapytest.org/2',
             (
                 # redirecting to non-secure URL
@@ -560,7 +562,8 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             b'https://scrapytest.org/1',
             b'https://scrapytest.org/1',
         ),
-        (   'https://scrapytest.org/1',
+        (
+            'https://scrapytest.org/1',
             'https://scrapytest.com/2',
             (
                 # redirecting to non-secure URL: different origin
@@ -602,7 +605,8 @@ class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
     """
     settings = {'REFERRER_POLICY': 'no-referrer'}
     scenarii = [
-        (   'http://scrapytest.org/1',      # parent
+        (
+            'http://scrapytest.org/1',      # parent
             'http://scrapytest.org/2',      # target
             (
                 # redirections: code, URL
@@ -612,7 +616,8 @@ class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
             None,  # expected initial "Referer"
             None,  # expected "Referer" for the redirection request
         ),
-        (   'https://scrapytest.org/1',
+        (
+            'https://scrapytest.org/1',
             'https://scrapytest.org/2',
             (
                 (301, 'http://scrapytest.org/3'),
@@ -620,7 +625,8 @@ class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
             None,
             None,
         ),
-        (   'https://scrapytest.org/1',
+        (
+            'https://scrapytest.org/1',
             'https://example.com/2',    # different origin
             (
                 (301, 'http://scrapytest.com/3'),
@@ -641,7 +647,8 @@ class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
     """
     settings = {'REFERRER_POLICY': 'same-origin'}
     scenarii = [
-        (   'http://scrapytest.org/101',      # origin
+        (
+            'http://scrapytest.org/101',      # origin
             'http://scrapytest.org/102',      # target
             (
                 # redirections: code, URL
@@ -651,7 +658,8 @@ class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
             b'http://scrapytest.org/101',  # expected initial "Referer"
             b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
-        (   'https://scrapytest.org/201',
+        (
+            'https://scrapytest.org/201',
             'https://scrapytest.org/202',
             (
                 # redirecting from secure to non-secure URL == different origin
@@ -660,7 +668,8 @@ class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/201',
             None,
         ),
-        (   'https://scrapytest.org/301',
+        (
+            'https://scrapytest.org/301',
             'https://scrapytest.org/302',
             (
                 # different domain == different origin
@@ -683,7 +692,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
     """
     settings = {'REFERRER_POLICY': POLICY_STRICT_ORIGIN}
     scenarii = [
-        (   'http://scrapytest.org/101',
+        (
+            'http://scrapytest.org/101',
             'http://scrapytest.org/102',
             (
                 (301, 'http://scrapytest.org/103'),
@@ -692,7 +702,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
             b'http://scrapytest.org/',  # send origin
             b'http://scrapytest.org/',  # redirects to same origin: send origin
         ),
-        (   'https://scrapytest.org/201',
+        (
+            'https://scrapytest.org/201',
             'https://scrapytest.org/202',
             (
                 # redirecting to non-secure URL: no referrer
@@ -701,7 +712,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/',
             None,
         ),
-        (   'https://scrapytest.org/301',
+        (
+            'https://scrapytest.org/301',
             'https://scrapytest.org/302',
             (
                 # redirecting to non-secure URL (different domain): no referrer
@@ -710,7 +722,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/',
             None,
         ),
-        (   'http://scrapy.org/401',
+        (
+            'http://scrapy.org/401',
             'http://example.com/402',
             (
                 (301, 'http://scrapytest.org/403'),
@@ -718,7 +731,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
             b'http://scrapy.org/',
             b'http://scrapy.org/',
         ),
-        (   'https://scrapy.org/501',
+        (
+            'https://scrapy.org/501',
             'https://example.com/502',
             (
                 # HTTPS all along, so origin referrer is kept as-is
@@ -728,7 +742,8 @@ class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
             b'https://scrapy.org/',
             b'https://scrapy.org/',
         ),
-        (   'https://scrapytest.org/601',
+        (
+            'https://scrapytest.org/601',
             'http://scrapytest.org/602',                # TLS to non-TLS: no referrer
             (
                 (301, 'https://scrapytest.org/603'),    # TLS URL again: (still) no referrer
@@ -750,7 +765,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
     """
     settings = {'REFERRER_POLICY': POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
     scenarii = [
-        (   'http://scrapytest.org/101',      # origin
+        (
+            'http://scrapytest.org/101',      # origin
             'http://scrapytest.org/102',      # target + redirection
             (
                 # redirections: code, URL
@@ -760,7 +776,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'http://scrapytest.org/101',  # expected initial referer
             b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
-        (   'https://scrapytest.org/201',
+        (
+            'https://scrapytest.org/201',
             'https://scrapytest.org/202',
             (
                 # redirecting to non-secure URL: send origin
@@ -769,7 +786,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/201',
             b'https://scrapytest.org/',
         ),
-        (   'https://scrapytest.org/301',
+        (
+            'https://scrapytest.org/301',
             'https://scrapytest.org/302',
             (
                 # redirecting to non-secure URL (different domain): send origin
@@ -778,7 +796,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/301',
             b'https://scrapytest.org/',
         ),
-        (   'http://scrapy.org/401',
+        (
+            'http://scrapy.org/401',
             'http://example.com/402',
             (
                 (301, 'http://scrapytest.org/403'),
@@ -786,7 +805,8 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'http://scrapy.org/',
             b'http://scrapy.org/',
         ),
-        (   'https://scrapy.org/501',
+        (
+            'https://scrapy.org/501',
             'https://example.com/502',
             (
                 # all different domains: send origin
@@ -796,10 +816,11 @@ class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapy.org/',
             b'https://scrapy.org/',
         ),
-        (   'https://scrapytest.org/301',
-            'http://scrapytest.org/302',                # TLS to non-TLS: send origin
+        (
+            'https://scrapytest.org/301',
+            'http://scrapytest.org/302',  # TLS to non-TLS: send origin
             (
-                (301, 'https://scrapytest.org/303'),    # TLS URL again: send origin (also)
+                (301, 'https://scrapytest.org/303'),  # TLS URL again: send origin (also)
             ),
             b'https://scrapytest.org/',
             b'https://scrapytest.org/',
@@ -820,7 +841,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
     """
     settings = {'REFERRER_POLICY': POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
     scenarii = [
-        (   'http://scrapytest.org/101',      # origin
+        (
+            'http://scrapytest.org/101',      # origin
             'http://scrapytest.org/102',      # target + redirection
             (
                 # redirections: code, URL
@@ -830,7 +852,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'http://scrapytest.org/101',  # expected initial referer
             b'http://scrapytest.org/101',  # expected referer for the redirection request
         ),
-        (   'https://scrapytest.org/201',
+        (
+            'https://scrapytest.org/201',
             'https://scrapytest.org/202',
             (
                 # redirecting to non-secure URL: do not send the "Referer" header
@@ -839,7 +862,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/201',
             None,
         ),
-        (   'https://scrapytest.org/301',
+        (
+            'https://scrapytest.org/301',
             'https://scrapytest.org/302',
             (
                 # redirecting to non-secure URL (different domain): send origin
@@ -848,7 +872,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapytest.org/301',
             None,
         ),
-        (   'http://scrapy.org/401',
+        (
+            'http://scrapy.org/401',
             'http://example.com/402',
             (
                 (301, 'http://scrapytest.org/403'),
@@ -856,7 +881,8 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'http://scrapy.org/',
             b'http://scrapy.org/',
         ),
-        (   'https://scrapy.org/501',
+        (
+            'https://scrapy.org/501',
             'https://example.com/502',
             (
                 # all different domains: send origin
@@ -866,10 +892,11 @@ class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
             b'https://scrapy.org/',
             b'https://scrapy.org/',
         ),
-        (   'https://scrapytest.org/601',
-            'http://scrapytest.org/602',                # TLS to non-TLS: do not send "Referer"
+        (
+            'https://scrapytest.org/601',
+            'http://scrapytest.org/602',  # TLS to non-TLS: do not send "Referer"
             (
-                (301, 'https://scrapytest.org/603'),    # TLS URL again: (still) send nothing
+                (301, 'https://scrapytest.org/603'),  # TLS URL again: (still) send nothing
             ),
             None,
             None,

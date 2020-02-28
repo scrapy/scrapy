@@ -826,7 +826,7 @@ class S3TestCase(unittest.TestCase):
             'Content-Type': 'image/jpeg',
             'Date': date,
             'Content-Length': '94328',
-            })
+        })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
@@ -910,7 +910,7 @@ class S3TestCase(unittest.TestCase):
              "?response-content-disposition=my puppy.jpg"),
             method='GET',
             headers={'Date': date},
-            )
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(

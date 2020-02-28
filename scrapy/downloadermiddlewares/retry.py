@@ -13,8 +13,8 @@ import logging
 
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+    ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
 from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import NotConfigured

@@ -22,7 +22,7 @@ class CloseSpider(object):
             'itemcount': crawler.settings.getint('CLOSESPIDER_ITEMCOUNT'),
             'pagecount': crawler.settings.getint('CLOSESPIDER_PAGECOUNT'),
             'errorcount': crawler.settings.getint('CLOSESPIDER_ERRORCOUNT'),
-            }
+        }
 
         if not any(self.close_on.values()):
             raise NotConfigured
