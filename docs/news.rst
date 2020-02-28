@@ -1076,7 +1076,7 @@ Cleanups & Refactoring
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - Tests: remove temp files and folders (:issue:`2570`),
-  fixed ProjectUtilsTest on OS X (:issue:`2569`),
+  fixed ProjectUtilsTest on macOS (:issue:`2569`),
   use portable pypy for Linux on Travis CI (:issue:`2710`)
 - Separate building request from ``_requests_to_follow`` in CrawlSpider (:issue:`2562`)
 - Remove “Python 3 progress” badge (:issue:`2567`)
@@ -1645,7 +1645,7 @@ Bugfixes
 - Makes ``_monkeypatches`` more robust (:issue:`1634`).
 - Fixed bug on ``XMLItemExporter`` with non-string fields in
   items (:issue:`1738`).
-- Fixed startproject command in OS X (:issue:`1635`).
+- Fixed startproject command in macOS (:issue:`1635`).
 - Fixed :class:`~scrapy.exporters.PythonItemExporter` and CSVExporter for
   non-string item types (:issue:`1737`).
 - Various logging related fixes (:issue:`1294`, :issue:`1419`, :issue:`1263`,
@@ -1713,12 +1713,12 @@ Scrapy 1.0.4 (2015-12-30)
 - Typos corrections (:commit:`7067117`)
 - fix typos in downloader-middleware.rst and exceptions.rst, middlware -> middleware (:commit:`32f115c`)
 - Add note to Ubuntu install section about Debian compatibility (:commit:`23fda69`)
-- Replace alternative OSX install workaround with virtualenv (:commit:`98b63ee`)
+- Replace alternative macOS install workaround with virtualenv (:commit:`98b63ee`)
 - Reference Homebrew's homepage for installation instructions (:commit:`1925db1`)
 - Add oldest supported tox version to contributing docs (:commit:`5d10d6d`)
 - Note in install docs about pip being already included in python>=2.7.9 (:commit:`85c980e`)
 - Add non-python dependencies to Ubuntu install section in the docs (:commit:`fbd010d`)
-- Add OS X installation section to docs (:commit:`d8f4cba`)
+- Add macOS installation section to docs (:commit:`d8f4cba`)
 - DOC(ENH): specify path to rtd theme explicitly (:commit:`de73b1a`)
 - minor: scrapy.Spider docs grammar (:commit:`1ddcc7b`)
 - Make common practices sample code match the comments (:commit:`1b85bcf`)
@@ -2571,7 +2571,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
 - added from_crawler method to spiders
 - added system tests with mock server
-- more improvements to Mac OS compatibility (thanks Alex Cepoi)
+- more improvements to macOS compatibility (thanks Alex Cepoi)
 - several more cleanups to singletons and multi-spider support (thanks Nicolas Ramirez)
 - support custom download slots
 - added --spider option to "shell" command.
@@ -2647,7 +2647,7 @@ Scrapy 0.16.3 (released 2012-12-07)
 
 - Remove concurrency limitation when using download delays and still ensure inter-request delays are enforced (:commit:`487b9b5`)
 - add error details when image pipeline fails (:commit:`8232569`)
-- improve mac os compatibility (:commit:`8dcf8aa`)
+- improve macOS compatibility (:commit:`8dcf8aa`)
 - setup.py: use README.rst to populate long_description (:commit:`7b5310d`)
 - doc: removed obsolete references to ClientForm (:commit:`80f9bb6`)
 - correct docs for default storage backend (:commit:`2aa491b`)

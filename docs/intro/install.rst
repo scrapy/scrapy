@@ -12,7 +12,7 @@ under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
-and OS X.
+and macOS.
 
 To install Scrapy using ``conda``, run::
 
@@ -148,11 +148,11 @@ you can install Scrapy with ``pip`` after that::
 
 .. _intro-install-macos:
 
-Mac OS X
---------
+macOS
+-----
 
 Building Scrapy's dependencies requires the presence of a C compiler and
-development headers. On OS X this is typically provided by Apple’s Xcode
+development headers. On macOS this is typically provided by Apple’s Xcode
 development tools. To install the Xcode command line tools open a terminal
 window and run::
 
@@ -191,7 +191,7 @@ solutions:
 *   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
     <intro-using-virtualenv>`.
 
-  This method is a workaround for the above OS X issue, but it's an overall
+  This method is a workaround for the above macOS issue, but it's an overall
   good practice for managing dependencies and can complement the first method.
 
 After any of these workarounds you should be able to install Scrapy::
@@ -207,7 +207,7 @@ For PyPy3, only Linux installation was tested.
 
 Most Scrapy dependencides now have binary wheels for CPython, but not for PyPy.
 This means that these dependecies will be built during installation.
-On OS X, you are likely to face an issue with building Cryptography dependency,
+On macOS, you are likely to face an issue with building Cryptography dependency,
 solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
 that is to ``brew install openssl`` and then export the flags that this command
