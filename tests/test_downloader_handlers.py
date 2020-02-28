@@ -348,7 +348,7 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_payload(self):
-        body = b'1'*100  # PayloadResource requires body length to be 100
+        body = b'1' * 100  # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
@@ -812,7 +812,7 @@ class S3TestCase(unittest.TestCase):
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
-        date ='Tue, 27 Mar 2007 19:36:42 +0000'
+        date = 'Tue, 27 Mar 2007 19:36:42 +0000'
         req = Request('s3://johnsmith/photos/puppy.jpg', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)

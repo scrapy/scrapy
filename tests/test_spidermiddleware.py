@@ -94,7 +94,7 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
-                1/0
+                1 / 0
 
         self.mwman._add_middleware(ProcessSpiderExceptionReturnNoneMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())

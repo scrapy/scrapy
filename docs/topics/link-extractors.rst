@@ -49,7 +49,7 @@ LxmlLinkExtractor
     :type allow: a regular expression (or list of)
 
     :param deny: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be excluded (ie. not
+        that the (absolute) urls must match in order to be excluded (i.e. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
     :type deny: a regular expression (or list of)
