@@ -186,7 +186,7 @@ prevents ``pip`` from updating system packages. This has to be addressed to
 successfully install Scrapy and its dependencies. Here are some proposed
 solutions:
 
-* *(Recommended)* **Don't** use system python. Install a new, updated version
+* *(Recommended)* **Don't** use system Python. Install a new, updated version
   that doesn't conflict with the rest of your system. Here's how to do it using
   the `homebrew`_ package manager:
 
