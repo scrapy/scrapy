@@ -97,8 +97,7 @@ Common use cases for asynchronous code include:
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);
-* calling asynchronous Scrapy methods like `ExecutionEngine.download` (like
-  :ref:`the screenshot pipeline example<ScreenshotPipeline>` but without
-  managing Deferreds).
+* calling asynchronous Scrapy methods like ``ExecutionEngine.download`` (see
+  :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
