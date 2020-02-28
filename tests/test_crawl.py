@@ -37,7 +37,7 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_fixed_delay(self):
-        yield self._test_delay(total=3, delay=0.1)
+        yield self._test_delay(total=3, delay=0.2)
 
     @defer.inlineCallbacks
     def test_randomized_delay(self):
