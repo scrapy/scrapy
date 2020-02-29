@@ -64,7 +64,7 @@ class ItemMeta(ABCMeta):
         new_attrs['_class'] = _class
         if classcell is not None:
             new_attrs['__classcell__'] = classcell
-            
+
         return super(ItemMeta, mcs).__new__(mcs, class_name, bases, new_attrs)
 
 
@@ -84,7 +84,7 @@ class DictItem(MutableMapping, BaseItem):
         for k, v in self.fields.items():
             if v:
                 self[k] = v
-        if args or kwargs: # avoid creating dict for most common case
+        if args or kwargs:  # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
