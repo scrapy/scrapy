@@ -57,7 +57,7 @@ There are several use cases for coroutines in Scrapy. Code that would
 return Deferreds when written for previous Scrapy versions, such as downloader
 middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
-    class DbPipeline():
+    class DbPipeline:
         def _update_item(self, data, item):
             item['field'] = data
             return item
@@ -69,22 +69,27 @@ middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
 becomes::
 
-    class DbPipeline():
+    class DbPipeline:
         async def process_item(self, item, spider):
             item['field'] = await db.get_some_data(item['id'])
             return item
 
-Coroutines may be used to call asynchronous libraries that use either Deferreds
-or coroutines::
+Coroutines may be used to call asynchronous code. This includes other
+coroutines, functions that return Deferreds and functions that return
+`awaitable objects`_ such as :class:`~asyncio.Future`. This means you can use
+many useful Python libraries providing such code::
 
-    async def parse_with_deferred(self, response):
-        additional_response = await treq.get('https://additional.url')
-        additional_data = await treq.content(additional_response)
+    class MySpider(Spider):
+        [...]
 
-    async def parse_with_asyncio(self, response):
-        async with aiohttp.ClientSession() as session:
-            async with session.get('https://additional.url') as additional_response:
-                additional_data = await r.text()
+        async def parse_with_deferred(self, response):
+            additional_response = await treq.get('https://additional.url')
+            additional_data = await treq.content(additional_response)
+
+        async def parse_with_asyncio(self, response):
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://additional.url') as additional_response:
+                    additional_data = await r.text()
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
           :mod:`asyncio` loop and to use them you need to
@@ -101,3 +106,4 @@ Common use cases for asynchronous code include:
   :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
+.. _awaitable objects: https://docs.python.org/3/glossary.html#term-awaitable
