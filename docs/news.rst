@@ -57,118 +57,16 @@ Backward-incompatible changes
 
     (:issue:`4126`)
 
+*   We have refactored the :class:`scrapy.core.scheduler.Scheduler` class and
+    related queue classes (see :setting:`SCHEDULER_PRIORITY_QUEUE`,
+    :setting:`SCHEDULER_DISK_QUEUE` and :setting:`SCHEDULER_MEMORY_QUEUE`) to
+    make it easier to implement custom scheduler queue classes. See
+    :ref:`2-0-0-scheduler-queue-changes` below for details.
+
 *   Overridden settings are now logged in a different format. This is more in
     line with similar information logged at startup (:issue:`4199`)
 
 .. _Python 2 end-of-life on January 1, 2020: https://www.python.org/doc/sunset-python-2/
-
-Changes to scheduler queue classes
-**********************************
-
-We have refactored the :class:`scrapy.core.scheduler.Scheduler` class and
-related queue classes (see :setting:`SCHEDULER_PRIORITY_QUEUE`,
-:setting:`SCHEDULER_DISK_QUEUE` and :setting:`SCHEDULER_MEMORY_QUEUE`) to make
-it easier to implement custom scheduler queue classes.
-
-The following changes may impact any custom queue classes of all types:
-
-*   The ``push`` method no longer receives a second positional parameter
-    containing ``request.priority * -1``. If you need that value, get it
-    from the first positional parameter, ``request``, instead, or use
-    the new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
-    method in :class:`scrapy.core.scheduler.ScrapyPriorityQueue`
-    subclasses.
-
-The following changes may impact custom priority queue classes:
-
-*   In the ``__init__`` method or the ``from_crawler`` or ``from_settings``
-    class methods:
-
-    *   The parameter that used to contain a factory function,
-        ``qfactory``, is now passed as a keyword parameter named
-        ``downstream_queue_cls``.
-
-    *   A new keyword parameter has been added: ``key``. It is a string
-        that is always an empty string for memory queues and indicates the
-        :setting:`JOB_DIR` value for disk queues.
-
-    *   The parameter for disk queues that contains data from the previous
-        crawl, ``startprios`` or ``slot_startprios``, is now passed as a
-        keyword parameter named ``startprios``.
-
-    *   The ``serialize`` parameter is no longer passed. The disk queue
-        class must take care of request serialization on its own before
-        writing to disk, using the
-        :func:`~scrapy.utils.reqser.request_to_dict` and
-        :func:`~scrapy.utils.reqser.request_from_dict` functions from the
-        :mod:`scrapy.utils.reqser` module.
-
-The following changes may impact custom disk and memory queue classes:
-
-*   The signature of the ``__init__`` method is now
-    ``__init__(self, crawler, key)``.
-
-The following changes affect specifically the
-:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` and
-:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` classes from
-:mod:`scrapy.core.scheduler` and may affect subclasses:
-
-*   In the ``__init__`` method, most of the changes described above apply.
-
-    ``__init__`` may still receive all parameters as positional parameters,
-    however:
-
-    *   ``downstream_queue_cls``, which replaced ``qfactory``, must be
-        instantiated differently.
-
-        ``qfactory`` was instantiated with a priority value (integer).
-
-        Instances of ``downstream_queue_cls`` should be created using
-        the new
-        :meth:`ScrapyPriorityQueue.qfactory <scrapy.core.scheduler.ScrapyPriorityQueue.qfactory>`
-        or
-        :meth:`DownloaderAwarePriorityQueue.pqfactory <scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqfactory>`
-        methods.
-
-    *   The new ``key`` parameter displaced the ``startprios``
-        parameter 1 position to the right.
-
-*   The following class attributes have been added:
-
-    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.crawler`
-
-    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.downstream_queue_cls`
-        (details above)
-
-    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.key` (details above)
-
-*   The ``serialize`` attribute has been removed (details above)
-
-The following changes affect specifically the
-:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` class and may affect
-subclasses:
-
-*   A new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
-    method has been added which, given a request, returns
-    ``request.priority * -1``.
-
-    It is used in :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.push`
-    to make up for the removal of its ``priority`` parameter.
-
-*   The ``spider`` attribute has been removed. Use
-    :attr:`crawler.spider <scrapy.core.scheduler.ScrapyPriorityQueue.crawler>`
-    instead.
-
-The following changes affect specifically the
-:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` class and may
-affect subclasses:
-
-*   A new :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqueues`
-    attribute offers a mapping of downloader slot names to the
-    corresponding instances of
-    :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
-
-(:issue:`3884`)
 
 
 Deprecation removals
@@ -444,6 +342,112 @@ Quality assurance
 
 .. _Bandit: https://bandit.readthedocs.io/
 .. _Flake8: https://flake8.pycqa.org/en/latest/
+
+
+.. _2-0-0-scheduler-queue-changes:
+
+Changes to scheduler queue classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following changes may impact any custom queue classes of all types:
+
+*   The ``push`` method no longer receives a second positional parameter
+    containing ``request.priority * -1``. If you need that value, get it
+    from the first positional parameter, ``request``, instead, or use
+    the new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
+    method in :class:`scrapy.core.scheduler.ScrapyPriorityQueue`
+    subclasses.
+
+The following changes may impact custom priority queue classes:
+
+*   In the ``__init__`` method or the ``from_crawler`` or ``from_settings``
+    class methods:
+
+    *   The parameter that used to contain a factory function,
+        ``qfactory``, is now passed as a keyword parameter named
+        ``downstream_queue_cls``.
+
+    *   A new keyword parameter has been added: ``key``. It is a string
+        that is always an empty string for memory queues and indicates the
+        :setting:`JOB_DIR` value for disk queues.
+
+    *   The parameter for disk queues that contains data from the previous
+        crawl, ``startprios`` or ``slot_startprios``, is now passed as a
+        keyword parameter named ``startprios``.
+
+    *   The ``serialize`` parameter is no longer passed. The disk queue
+        class must take care of request serialization on its own before
+        writing to disk, using the
+        :func:`~scrapy.utils.reqser.request_to_dict` and
+        :func:`~scrapy.utils.reqser.request_from_dict` functions from the
+        :mod:`scrapy.utils.reqser` module.
+
+The following changes may impact custom disk and memory queue classes:
+
+*   The signature of the ``__init__`` method is now
+    ``__init__(self, crawler, key)``.
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` and
+:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` classes from
+:mod:`scrapy.core.scheduler` and may affect subclasses:
+
+*   In the ``__init__`` method, most of the changes described above apply.
+
+    ``__init__`` may still receive all parameters as positional parameters,
+    however:
+
+    *   ``downstream_queue_cls``, which replaced ``qfactory``, must be
+        instantiated differently.
+
+        ``qfactory`` was instantiated with a priority value (integer).
+
+        Instances of ``downstream_queue_cls`` should be created using
+        the new
+        :meth:`ScrapyPriorityQueue.qfactory <scrapy.core.scheduler.ScrapyPriorityQueue.qfactory>`
+        or
+        :meth:`DownloaderAwarePriorityQueue.pqfactory <scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqfactory>`
+        methods.
+
+    *   The new ``key`` parameter displaced the ``startprios``
+        parameter 1 position to the right.
+
+*   The following class attributes have been added:
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.crawler`
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.downstream_queue_cls`
+        (details above)
+
+    *   :attr:`~scrapy.core.scheduler.ScrapyPriorityQueue.key` (details above)
+
+*   The ``serialize`` attribute has been removed (details above)
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.ScrapyPriorityQueue` class and may affect
+subclasses:
+
+*   A new :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.priority`
+    method has been added which, given a request, returns
+    ``request.priority * -1``.
+
+    It is used in :meth:`~scrapy.core.scheduler.ScrapyPriorityQueue.push`
+    to make up for the removal of its ``priority`` parameter.
+
+*   The ``spider`` attribute has been removed. Use
+    :attr:`crawler.spider <scrapy.core.scheduler.ScrapyPriorityQueue.crawler>`
+    instead.
+
+The following changes affect specifically the
+:class:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue` class and may
+affect subclasses:
+
+*   A new :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.pqueues`
+    attribute offers a mapping of downloader slot names to the
+    corresponding instances of
+    :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
+
+(:issue:`3884`)
 
 
 .. _release-1.8.0:
