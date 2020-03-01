@@ -9,8 +9,8 @@ reactor <install-asyncio>`, you may use :mod:`asyncio` and
 :mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
 .. warning:: :mod:`asyncio` support in Scrapy is experimental. Future Scrapy
-             versions may introduce related API and behavior changes without a
-             deprecation period or warning.
+             versions may introduce related changes without a deprecation
+             period or warning.
 
 .. _install-asyncio:
 
