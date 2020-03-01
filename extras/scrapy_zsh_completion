@@ -1,11 +1,12 @@
 #compdef scrapy
 _scrapy() {
     local context state state_descr line
+    local ret=1
     typeset -A opt_args
     _arguments \
-	"(- 1 *)--help[Help]" \
+	"(- 1 *)"{-h,--help}"[Help]" \
 	"1: :->command" \
-	"*:: :->args"
+	"*:: :->args" && ret=0
 
     case $state in
 	command)
@@ -61,7 +62,7 @@ _scrapy() {
 			'-c[evaluate the code in the shell, print the result and exit]:code:(CODE)'
 			'--no-redirect[do not handle HTTP 3xx status codes and print response as-is]'
 			'--spider[use this spider]:spider:_scrapy_spiders'
-			'::file:_files -g \*.http'
+			'::file:_files -g \*.html'
 			'::URL:_httpie_urls'
 		    )
 		    _scrapy_glb_opts $options
@@ -134,6 +135,8 @@ _scrapy() {
 	    esac
 	    ;;
     esac
+
+    return ret
 }
 
 _scrapy_cmds() {

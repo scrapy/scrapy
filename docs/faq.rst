@@ -22,8 +22,8 @@ In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _jinja2: http://jinja.pocoo.org/
+.. _lxml: https://lxml.de/
+.. _jinja2: https://palletsprojects.com/p/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -69,11 +69,11 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 2.7 and Python 3.5+
+Scrapy is supported under Python 3.5+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 2.6 support was dropped starting at Scrapy 0.20.
 Python 3 support was added in Scrapy 1.1.
 PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
+Python 2 support was dropped in Scrapy 2.0.
 
 .. note::
     For Python 3 support on Windows, it is recommended to use
@@ -140,7 +140,7 @@ setting the following settings::
 
 While pending requests are below the configured values of
 :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
+:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
 concurrently. As a result, the first few requests of a crawl rarely follow the
 desired order. Lowering those settings to ``1`` enforces the desired order, but
 it significantly slows down the crawl as a whole.
@@ -269,7 +269,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -338,7 +338,7 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this puspose. For example::
+method for this purpose. For example::
 
     from copy import deepcopy
 
@@ -353,7 +353,25 @@ method for this puspose. For example::
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 
+Does Scrapy support IPv6 addresses?
+-----------------------------------
 
+Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Note that by doing so, you lose the ability to set a specific timeout for DNS requests
+(the value of the :setting:`DNS_TIMEOUT` setting is ignored).
+
+
+.. _faq-specific-reactor:
+
+How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?
+----------------------------------------------------------------------------------------------
+
+This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
+Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
+different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search

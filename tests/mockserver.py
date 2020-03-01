@@ -1,7 +1,9 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
+import json
+import os
+import random
+import sys
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 
 from OpenSSL import SSL
 from twisted.web.server import Site, NOT_DONE_YET
@@ -162,6 +164,12 @@ class Drop(Partial):
             request.finish()
 
 
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
 class Root(Resource):
 
     def __init__(self):
@@ -175,6 +183,7 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
@@ -206,8 +215,7 @@ class MockServer():
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
-        self.proc.wait()
-        time.sleep(0.2)
+        self.proc.communicate()
 
     def url(self, path, is_secure=False):
         host = self.http_address.replace('0.0.0.0', '127.0.0.1')

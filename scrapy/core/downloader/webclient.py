@@ -1,5 +1,5 @@
 from time import time
-from six.moves.urllib.parse import urlparse, urlunparse, urldefrag
+from urllib.parse import urlparse, urlunparse, urldefrag
 
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
@@ -42,7 +42,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = b'\n'
 
     def connectionMade(self):
-        self.headers = Headers() # bucket for response headers
+        self.headers = Headers()  # bucket for response headers
 
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
@@ -88,9 +88,9 @@ class ScrapyHTTPPageGetter(HTTPClient):
         if self.factory.url.startswith(b'https'):
             self.transport.stopProducing()
 
-        self.factory.noPage(\
-                defer.TimeoutError("Getting %s took longer than %s seconds." % \
-                (self.factory.url, self.factory.timeout)))
+        self.factory.noPage(
+                defer.TimeoutError("Getting %s took longer than %s seconds." %
+                                   (self.factory.url, self.factory.timeout)))
 
 
 class ScrapyHTTPClientFactory(HTTPClientFactory):
@@ -140,7 +140,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.headers['Content-Length'] = 0
 
     def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time-self.start_time
+        request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)
@@ -157,4 +157,3 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
-

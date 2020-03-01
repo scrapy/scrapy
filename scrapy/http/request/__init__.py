@@ -4,7 +4,6 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-import six
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
@@ -32,7 +31,6 @@ class Request(object_ref):
             raise TypeError('callback must be a callable, got %s' % type(callback).__name__)
         if errback is not None and not callable(errback):
             raise TypeError('errback must be a callable, got %s' % type(errback).__name__)
-        assert callback or not errback, "Cannot use errback without a callback"
         self.callback = callback
         self.errback = errback
 
@@ -60,13 +58,13 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if not isinstance(url, six.string_types):
+        if not isinstance(url, str):
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
 
-        if ':' not in self._url:
+        if ('://' not in self._url) and (not self._url.startswith('data:')):
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))

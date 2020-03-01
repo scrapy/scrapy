@@ -29,7 +29,8 @@ Each item pipeline component is a Python class that must implement the following
 
    This method is called for every item pipeline component. :meth:`process_item`
    must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a `Twisted Deferred`_ or raise
+   (or any descendant class) object, return a
+   :class:`~twisted.internet.defer.Deferred` or raise
    :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
@@ -66,8 +67,6 @@ Additionally, they may also implement the following methods:
    :param crawler: crawler that uses this pipeline
    :type crawler: :class:`~scrapy.crawler.Crawler` object
 
-
-.. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Item pipeline example
 =====================
@@ -159,14 +158,15 @@ method and how to clean up the resources properly.::
             self.db[self.collection_name].insert_one(dict(item))
             return item
 
-.. _MongoDB: https://www.mongodb.org/
-.. _pymongo: https://api.mongodb.org/python/current/
+.. _MongoDB: https://www.mongodb.com/
+.. _pymongo: https://api.mongodb.com/python/current/
 
 
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return Deferred_ from :meth:`process_item` method.
+This example demonstrates how to return a
+:class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
 It uses Splash_ to render screenshot of item url. Pipeline
 makes request to locally running instance of Splash_. After request is downloaded
 and Deferred callback fires, it saves item to a file and adds filename to an item.
@@ -209,7 +209,6 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
             return item
 
 .. _Splash: https://splash.readthedocs.io/en/stable/
-.. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
 -----------------

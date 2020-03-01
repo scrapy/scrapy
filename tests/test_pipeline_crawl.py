@@ -26,10 +26,9 @@ class MediaDownloadSpider(SimpleSpider):
             self.media_key: [],
             self.media_urls_key: [
                 self._process_url(response.urljoin(href))
-                    for href in response.xpath('''
-                        //table[thead/tr/th="Filename"]
-                            /tbody//a/@href
-                        ''').getall()],
+                for href in response.xpath(
+                    '//table[thead/tr/th="Filename"]/tbody//a/@href'
+                ).getall()],
         }
         yield item
 
@@ -99,8 +98,9 @@ class FileDownloadCrawlTestCase(TestCase):
         if self.expected_checksums is not None:
             checksums = set(
                 i['checksum']
-                    for item in items
-                        for i in item[self.media_key])
+                for item in items
+                for i in item[self.media_key]
+            )
             self.assertEqual(checksums, self.expected_checksums)
 
         # check that the image files where actually written to the media store

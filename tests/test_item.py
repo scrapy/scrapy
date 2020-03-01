@@ -1,12 +1,10 @@
 import sys
 import unittest
+from unittest import mock
 from warnings import catch_warnings
-
-import six
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
-from tests import mock
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -62,12 +60,8 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
 
-        if six.PY2:
-            self.assertEqual(itemrepr,
-                             "{'name': u'John Doe', 'number': 123}")
-        else:
-            self.assertEqual(itemrepr,
-                             "{'name': 'John Doe', 'number': 123}")
+        self.assertEqual(itemrepr,
+                         "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')
@@ -155,13 +149,15 @@ class ItemTest(unittest.TestCase):
             fields = {'load': Field(default='A')}
             save = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
         class C(Item):
             fields = {'load': Field(default='C')}
             save = Field(default='C')
 
-        class D(B, C): pass
+        class D(B, C):
+            pass
 
         item = D(save='X', load='Y')
         self.assertEqual(item['save'], 'X')
@@ -170,7 +166,8 @@ class ItemTest(unittest.TestCase):
             'save': {'default': 'A'}})
 
         # D class inverted
-        class E(C, B): pass
+        class E(C, B):
+            pass
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
@@ -183,7 +180,8 @@ class ItemTest(unittest.TestCase):
             save = Field(default='A')
             load = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
         class C(A):
             fields = {'update': Field(default='C')}
@@ -212,14 +210,16 @@ class ItemTest(unittest.TestCase):
             fields = {'load': Field(default='A')}
             save = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
         class C(object):
             fields = {'load': Field(default='C')}
             not_allowed = Field(default='not_allowed')
             save = Field(default='C')
 
-        class D(B, C): pass
+        class D(B, C):
+            pass
 
         self.assertRaises(KeyError, D, not_allowed='value')
         self.assertEqual(D(save='X')['save'], 'X')
@@ -227,7 +227,8 @@ class ItemTest(unittest.TestCase):
             'load': {'default': 'A'}})
 
         # D class inverted
-        class E(C, B): pass
+        class E(C, B):
+            pass
 
         self.assertRaises(KeyError, E, not_allowed='value')
         self.assertEqual(E(save='X')['save'], 'X')
@@ -245,7 +246,7 @@ class ItemTest(unittest.TestCase):
     def test_copy(self):
         class TestItem(Item):
             name = Field()
-        item = TestItem({'name':'lower'})
+        item = TestItem({'name': 'lower'})
         copied_item = item.copy()
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
@@ -265,6 +266,7 @@ class ItemTest(unittest.TestCase):
         with catch_warnings(record=True) as warnings:
             item = Item()
             self.assertEqual(len(warnings), 0)
+
             class SubclassedItem(Item):
                 pass
             subclassed_item = SubclassedItem()
@@ -306,7 +308,7 @@ class ItemMetaTest(unittest.TestCase):
 class ItemMetaClassCellRegression(unittest.TestCase):
 
     def test_item_meta_classcell_regression(self):
-        class MyItem(six.with_metaclass(ItemMeta, Item)):
+        class MyItem(Item, metaclass=ItemMeta):
             def __init__(self, *args, **kwargs):
                 # This call to super() trigger the __classcell__ propagation
                 # requirement. When not done properly raises an error:

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
-from six.moves.urllib.parse import urlparse
-
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme,
-                              parse_url, strip_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url)
+
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -33,7 +30,7 @@ class UrlUtilsTest(unittest.TestCase):
 
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
-        self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+        self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
     def test_url_is_from_spider(self):
         spider = Spider(name='example.com')
@@ -187,6 +184,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
 class GuessSchemeTest(unittest.TestCase):
     pass
 
+
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
@@ -195,6 +193,7 @@ def create_guess_scheme_t(args):
                 args[0], url, args[1])
     return do_expected
 
+
 def create_skipped_scheme_t(args):
     def do_expected(self):
         raise unittest.SkipTest(args[2])
@@ -202,7 +201,8 @@ def create_skipped_scheme_t(args):
         assert url.startswith(args[1])
     return do_expected
 
-for k, args in enumerate ([
+
+for k, args in enumerate([
             ('/index',                              'file://'),
             ('/index.html',                         'file://'),
             ('./index.html',                        'file://'),
@@ -230,7 +230,7 @@ for k, args in enumerate ([
         ], start=1):
     t_method = create_guess_scheme_t(args)
     t_method.__name__ = 'test_uri_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
 for k, args in enumerate([
@@ -239,7 +239,7 @@ for k, args in enumerate([
         ], start=1):
     t_method = create_skipped_scheme_t(args)
     t_method.__name__ = 'test_uri_skipped_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 
 class StripUrl(unittest.TestCase):

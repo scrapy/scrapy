@@ -1,16 +1,22 @@
 import json
 import logging
+import sys
 
+from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.ssl import Certificate
 from twisted.trial.unittest import TestCase
 
-from scrapy.http import Request
+from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
 from scrapy.utils.python import to_unicode
-from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
+from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
+                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
+                           AsyncDefSpider, AsyncDefAsyncioSpider, AsyncDefAsyncioReturnSpider,
+                           AsyncDefAsyncioReqsReturnSpider)
 
 
 class CrawlTestCase(TestCase):
@@ -30,25 +36,44 @@ class CrawlTestCase(TestCase):
         self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
 
     @defer.inlineCallbacks
-    def test_delay(self):
-        # short to long delays
-        yield self._test_delay(0.2, False)
-        yield self._test_delay(1, False)
-        # randoms
-        yield self._test_delay(0.2, True)
-        yield self._test_delay(1, True)
+    def test_fixed_delay(self):
+        yield self._test_delay(total=3, delay=0.2)
 
     @defer.inlineCallbacks
-    def _test_delay(self, delay, randomize):
-        settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
+    def test_randomized_delay(self):
+        yield self._test_delay(total=3, delay=0.1, randomize=True)
+
+    @defer.inlineCallbacks
+    def _test_delay(self, total, delay, randomize=False):
+        crawl_kwargs = dict(
+            maxlatency=delay * 2,
+            mockserver=self.mockserver,
+            total=total,
+        )
+        tolerance = (1 - (0.6 if randomize else 0.2))
+
+        settings = {"DOWNLOAD_DELAY": delay,
+                    'RANDOMIZE_DOWNLOAD_DELAY': randomize}
         crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
-        yield crawler.crawl(maxlatency=delay * 2, mockserver=self.mockserver)
-        t = crawler.spider.times
-        totaltime = t[-1] - t[0]
-        avgd = totaltime / (len(t) - 1)
-        tolerance = 0.6 if randomize else 0.2
-        self.assertTrue(avgd > delay * (1 - tolerance),
-                        "download delay too small: %s" % avgd)
+        yield crawler.crawl(**crawl_kwargs)
+        times = crawler.spider.times
+        total_time = times[-1] - times[0]
+        average = total_time / (len(times) - 1)
+        self.assertTrue(average > delay * tolerance,
+                        "download delay too small: %s" % average)
+
+        # Ensure that the same test parameters would cause a failure if no
+        # download delay is set. Otherwise, it means we are using a combination
+        # of ``total`` and ``delay`` values that are too small for the test
+        # code above to have any meaning.
+        settings["DOWNLOAD_DELAY"] = 0
+        crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
+        yield crawler.crawl(**crawl_kwargs)
+        times = crawler.spider.times
+        total_time = times[-1] - times[0]
+        average = total_time / (len(times) - 1)
+        self.assertFalse(average > delay / tolerance,
+                         "test total or delay values are too small")
 
     @defer.inlineCallbacks
     def test_timeout_success(self):
@@ -140,7 +165,7 @@ class CrawlTestCase(TestCase):
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
-        from six.moves.urllib.parse import urlencode
+        from urllib.parse import urlencode
         query = urlencode({'raw': '''\
 HTTP/1.1 200 OK
 Server: Apache-Coyote/1.1
@@ -277,3 +302,137 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_with_errback(self):
+        self.runner.crawl(CrawlSpiderWithErrback, mockserver=self.mockserver)
+
+        with LogCapture() as log:
+            yield self.runner.join()
+
+        self.assertIn("[callback] status 200", str(log))
+        self.assertIn("[callback] status 201", str(log))
+        self.assertIn("[errback] status 404", str(log))
+        self.assertIn("[errback] status 500", str(log))
+
+    @defer.inlineCallbacks
+    def test_async_def_parse(self):
+        self.runner.crawl(AsyncDefSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield self.runner.join()
+        self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse(self):
+        runner = CrawlerRunner({"ASYNCIO_REACTOR": True})
+        runner.crawl(AsyncDefAsyncioSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        with LogCapture() as log:
+            yield runner.join()
+        self.assertIn("Got response 200", str(log))
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_items_list(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReturnSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        self.assertIn({'id': 1}, items)
+        self.assertIn({'id': 2}, items)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse(self):
+        from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 1)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_loop(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 10)
+        for i in range(10):
+            self.assertIn({'foo': i}, items)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_complex(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        yield crawler.crawl(mockserver=self.mockserver)
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 156)
+        # some random items
+        for i in [1, 4, 21, 22, 207, 311]:
+            self.assertIn({'index': i}, items)
+        for i in [10, 30, 122]:
+            self.assertIn({'index2': i}, items)
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_reqs_list(self):
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReqsReturnSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        for req_id in range(3):
+            self.assertIn("Got response 200, req_id %d" % req_id, str(log))
+
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate_none(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=False)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta['responses'][0].certificate)
+
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")
+
+    @mark.xfail(reason="Responses with no body return early and contain no certificate")
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate_empty_response(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/status?n=200", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")

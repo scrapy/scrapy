@@ -3,18 +3,15 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
-
 import os
 import signal
-import warnings
 
-from twisted.internet import reactor, threads, defer
+from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.settings import Settings
@@ -100,6 +97,7 @@ class Shell(object):
         return spider
 
     def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
@@ -127,7 +125,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['sel'] = _SelectorProxy(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
@@ -174,7 +171,7 @@ def _request_deferred(request):
 
     This returns a Deferred whose first pair of callbacks are the request
     callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
+    callback/errback is executed (i.e. when the request is downloaded)
 
     WARNING: Do not call request.replace() until after the deferred is called.
     """
@@ -193,15 +190,3 @@ def _request_deferred(request):
 
     request.callback, request.errback = d.callback, d.errback
     return d
-
-
-class _SelectorProxy(object):
-
-    def __init__(self, response):
-        self._proxiedresponse = response
-
-    def __getattr__(self, name):
-        warnings.warn('"sel" shortcut is deprecated. Use "response.xpath()", '
-                      '"response.css()" or "response.selector" instead',
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        return getattr(self._proxiedresponse.selector, name)

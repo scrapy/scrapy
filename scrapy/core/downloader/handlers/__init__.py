@@ -1,19 +1,20 @@
 """Download handlers for different schemes"""
 
 import logging
+
 from twisted.internet import defer
-import six
-from scrapy.exceptions import NotSupported, NotConfigured
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import load_object
-from scrapy.utils.python import without_none_values
+
 from scrapy import signals
+from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.python import without_none_values
 
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadHandlers(object):
+class DownloadHandlers:
 
     def __init__(self, crawler):
         self._crawler = crawler
@@ -22,7 +23,7 @@ class DownloadHandlers(object):
         self._notconfigured = {}  # remembers failed handlers
         handlers = without_none_values(
             crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
-        for scheme, clspath in six.iteritems(handlers):
+        for scheme, clspath in handlers.items():
             self._schemes[scheme] = clspath
             self._load_handler(scheme, skip_lazy=True)
 
@@ -48,7 +49,11 @@ class DownloadHandlers(object):
             dhcls = load_object(path)
             if skip_lazy and getattr(dhcls, 'lazy', True):
                 return None
-            dh = dhcls(self._crawler.settings)
+            dh = create_instance(
+                objcls=dhcls,
+                settings=self._crawler.settings,
+                crawler=self._crawler,
+            )
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
             return None

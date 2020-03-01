@@ -5,12 +5,7 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
-import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from io import BytesIO
 
 from PIL import Image
 
@@ -99,6 +94,11 @@ class ImagesPipeline(FilesPipeline):
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
 
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
+
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
@@ -130,7 +130,7 @@ class ImagesPipeline(FilesPipeline):
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in six.iteritems(self.thumbs):
+        for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf

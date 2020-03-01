@@ -99,12 +99,12 @@ The storages backends supported out of the box are:
 
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
- * :ref:`topics-feed-storage-s3` (requires botocore_ or boto_)
+ * :ref:`topics-feed-storage-s3` (requires botocore_)
  * :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
 not available. For example, the S3 backend is only available if the botocore_
-or boto_ library is installed (Scrapy supports boto_ only on Python 2).
+library is installed.
 
 
 .. _topics-feed-uri-params:
@@ -182,7 +182,7 @@ The feeds are stored on `Amazon S3`_.
    * ``s3://mybucket/path/to/export.csv``
    * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
- * Required external libraries: `botocore`_ (Python 2 and Python 3) or `boto`_ (Python 2 only)
+ * Required external libraries: `botocore`_
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -301,7 +301,7 @@ FEED_STORE_EMPTY
 
 Default: ``False``
 
-Whether to export empty feeds (ie. feeds with no items).
+Whether to export empty feeds (i.e. feeds with no items).
 
 .. setting:: FEED_STORAGES
 
@@ -399,6 +399,5 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _boto: https://github.com/boto/boto
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl

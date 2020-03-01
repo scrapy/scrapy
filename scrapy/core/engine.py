@@ -25,7 +25,7 @@ class Slot(object):
 
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
-        self.inprogress = set() # requests in progress
+        self.inprogress = set()  # requests in progress
         self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
@@ -230,6 +230,7 @@ class ExecutionEngine(object):
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):

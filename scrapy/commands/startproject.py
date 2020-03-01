@@ -1,4 +1,3 @@
-from __future__ import print_function
 import re
 import os
 import string
@@ -44,8 +43,8 @@ class Command(ScrapyCommand):
                 return False
 
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
-            print('Error: Project names must begin with a letter and contain'\
-                    ' only\nletters, numbers and underscores')
+            print('Error: Project names must begin with a letter and contain'
+                  ' only\nletters, numbers and underscores')
         elif _module_exists(project_name):
             print('Error: Module %r already exists' % project_name)
         else:
@@ -119,4 +118,3 @@ class Command(ScrapyCommand):
         _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
             join(scrapy.__path__[0], 'templates')
         return join(_templates_base_dir, 'project')
-

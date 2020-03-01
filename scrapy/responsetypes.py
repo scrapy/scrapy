@@ -2,15 +2,13 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO
-import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import binary_is_text, to_bytes, to_native_str
+from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
 class ResponseTypes(object):
@@ -37,7 +35,7 @@ class ResponseTypes(object):
         self.mimetypes = MimeTypes()
         mimedata = get_data('scrapy', 'mime.types').decode('utf8')
         self.mimetypes.readfp(StringIO(mimedata))
-        for mimetype, cls in six.iteritems(self.CLASSES):
+        for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype):
@@ -55,12 +53,12 @@ class ResponseTypes(object):
         header """
         if content_encoding:
             return Response
-        mimetype = to_native_str(content_type).split(';')[0].strip().lower()
+        mimetype = to_unicode(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_native_str(content_disposition,
+            filename = to_unicode(content_disposition,
                 encoding='latin-1', errors='replace').split(';')[1].split('=')[1]
             filename = filename.strip('"\'')
             return self.from_filename(filename)
@@ -117,5 +115,6 @@ class ResponseTypes(object):
         if cls is Response and body is not None:
             cls = self.from_body(body)
         return cls
+
 
 responsetypes = ResponseTypes()

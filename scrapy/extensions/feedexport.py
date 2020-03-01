@@ -7,19 +7,16 @@ See documentation in docs/topics/feed-exports.rst
 import os
 import sys
 import logging
-import posixpath
 from tempfile import NamedTemporaryFile
 from datetime import datetime
-import six
-from six.moves.urllib.parse import urlparse, unquote
-from ftplib import FTP
+from urllib.parse import urlparse, unquote
 
 from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
 from scrapy import signals
-from scrapy.utils.ftp import ftp_makedirs_cwd
+from scrapy.utils.ftp import ftp_store_file
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
@@ -65,7 +62,7 @@ class StdoutFeedStorage(object):
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
-            _stdout = sys.stdout if six.PY2 else sys.stdout.buffer
+            _stdout = sys.stdout.buffer
         self._stdout = _stdout
 
     def open(self, spider):
@@ -174,16 +171,11 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
     def _store_in_thread(self, file):
-        file.seek(0)
-        ftp = FTP()
-        ftp.connect(self.host, self.port)
-        ftp.login(self.username, self.password)
-        if self.use_active_mode:
-            ftp.set_pasv(False)
-        dirname, filename = posixpath.split(self.path)
-        ftp_makedirs_cwd(ftp, dirname)
-        ftp.storbinary('STOR %s' % filename, file)
-        ftp.quit()
+        ftp_store_file(
+            path=self.path, file=file, host=self.host,
+            port=self.port, username=self.username,
+            password=self.password, use_active_mode=self.use_active_mode
+        )
 
 
 class SpiderSlot(object):
@@ -199,9 +191,9 @@ class FeedExporter(object):
 
     def __init__(self, settings):
         self.settings = settings
-        self.urifmt = settings['FEED_URI']
-        if not self.urifmt:
+        if not settings['FEED_URI']:
             raise NotConfigured
+        self.urifmt = str(settings['FEED_URI'])
         self.format = settings['FEED_FORMAT'].lower()
         self.export_encoding = settings['FEED_EXPORT_ENCODING']
         self.storages = self._load_components('FEED_STORAGES')

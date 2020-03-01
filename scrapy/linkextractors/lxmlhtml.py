@@ -1,16 +1,15 @@
 """
 Link extractor based on lxml.html
 """
-import six
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 import lxml.etree as etree
 from w3lib.html import strip_html5_whitespace
-from w3lib.url import canonicalize_url
+from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
-from scrapy.utils.python import unique as unique_list, to_native_str
+from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.linkextractors import FilteringLinkExtractor
 
@@ -22,8 +21,8 @@ _collect_string_content = etree.XPath("string()")
 
 
 def _nons(tag):
-    if isinstance(tag, six.string_types):
-        if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE)+1] == XHTML_NAMESPACE:
+    if isinstance(tag, str):
+        if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE:
             return tag.split('}')[-1]
     return tag
 
@@ -67,7 +66,7 @@ class LxmlParserLinkExtractor(object):
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            url = to_native_str(url, encoding=response_encoding)
+            url = safe_url_string(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
@@ -117,6 +116,14 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
                                                 restrict_text=restrict_text)
 
     def extract_links(self, response):
+        """Returns a list of :class:`~scrapy.link.Link` objects from the
+        specified :class:`response <scrapy.http.Response>`.
+
+        Only links that match the settings passed to the ``__init__`` method of
+        the link extractor are returned.
+
+        Duplicate links are omitted.
+        """
         base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [subdoc

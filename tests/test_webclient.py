@@ -3,7 +3,6 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
-import six
 import shutil
 
 import OpenSSL.SSL
@@ -52,22 +51,22 @@ class ParseUrlTestCase(unittest.TestCase):
     ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
     ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
     ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
-    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip+':100', lip, 100, '/foo?c=v&c2=v2')),
+    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
 
     ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
     ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
     ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
     ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
     ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1:12345/foo",    ('http', lip+':12345', lip, 12345, '/foo')),
+    ("http://127.0.0.1:12345/foo",    ('http', lip + ':12345', lip, 12345, '/foo')),
     ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
     ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
     ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
     ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
-    ("https://127.0.0.1:12345/",      ('https', lip+':12345', lip, 12345, '/')),
+    ("https://127.0.0.1:12345/",      ('https', lip + ':12345', lip, 12345, '/')),
 
     ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
     ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
@@ -77,26 +76,6 @@ class ParseUrlTestCase(unittest.TestCase):
             test = tuple(
                 to_bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEqual(client._parse(url), test, url)
-
-    def test_externalUnicodeInterference(self):
-        """
-        L{client._parse} should return C{str} for the scheme, host, and path
-        elements of its return tuple, even when passed an URL which has
-        previously been passed to L{urlparse} as a C{unicode} string.
-        """
-        if not six.PY2:
-            raise unittest.SkipTest(
-                "Applies only to Py2, as urls can be ONLY unicode on Py3")
-        badInput = u'http://example.com/path'
-        goodInput = badInput.encode('ascii')
-        self._parse(badInput)  # cache badInput in urlparse_cached
-        scheme, netloc, host, port, path = self._parse(goodInput)
-        self.assertTrue(isinstance(scheme, str))
-        self.assertTrue(isinstance(netloc, str))
-        self.assertTrue(isinstance(host, str))
-        self.assertTrue(isinstance(path, str))
-        self.assertTrue(isinstance(port, int))
-
 
 
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
@@ -315,10 +294,11 @@ class WebClientTestCase(unittest.TestCase):
         finished = self.assertFailure(
             getPage(self.getURL("wait"), timeout=0.000001),
             defer.TimeoutError)
+
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
             # anything.
-            connected = list(six.iterkeys(self.wrapper.protocols))
+            connected = list(self.wrapper.protocols.keys())
             # There might be nothing here if the server managed to already see
             # that the connection was lost.
             if connected:

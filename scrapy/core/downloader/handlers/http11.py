@@ -1,36 +1,38 @@
 """Download handlers for http and https schemes"""
 
-import re
 import logging
+import re
+import warnings
+from contextlib import suppress
 from io import BytesIO
 from time import time
-import warnings
-from six.moves.urllib.parse import urldefrag
+from urllib.parse import urldefrag
 
-from zope.interface import implementer
-from twisted.internet import defer, reactor, protocol
+from twisted.internet import defer, protocol, reactor, ssl
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import TimeoutError
+from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
+from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
-from twisted.internet.error import TimeoutError
-from twisted.web.http import _DataLoss, PotentialDataLoss
-from twisted.web.client import Agent, ResponseDone, HTTPConnectionPool, ResponseFailed, URI
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from zope.interface import implementer
 
+from scrapy.core.downloader.tls import openssl_methods
+from scrapy.core.downloader.webclient import _parse
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
-from scrapy.core.downloader.webclient import _parse
-from scrapy.core.downloader.tls import openssl_methods
-from scrapy.utils.misc import load_object, create_instance
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 
 logger = logging.getLogger(__name__)
 
 
-class HTTP11DownloadHandler(object):
+class HTTP11DownloadHandler:
     lazy = False
 
-    def __init__(self, settings):
+    def __init__(self, settings, crawler=None):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -40,17 +42,17 @@ class HTTP11DownloadHandler(object):
         # try method-aware context factory
         try:
             self._contextFactory = create_instance(
-                self._contextFactoryClass,
+                objcls=self._contextFactoryClass,
                 settings=settings,
-                crawler=None,
+                crawler=crawler,
                 method=self._sslMethod,
             )
         except TypeError:
             # use context factory defaults
             self._contextFactory = create_instance(
-                self._contextFactoryClass,
+                objcls=self._contextFactoryClass,
                 settings=settings,
-                crawler=None,
+                crawler=crawler,
             )
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
@@ -62,6 +64,10 @@ class HTTP11DownloadHandler(object):
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
         self._disconnect_timeout = 1
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings, crawler)
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
@@ -174,7 +180,7 @@ def tunnel_request_data(host, port, proxy_auth_header=None):
     r"""
     Return binary content of a CONNECT request.
 
-    >>> from scrapy.utils.python import to_native_str as s
+    >>> from scrapy.utils.python import to_unicode as s
     >>> s(tunnel_request_data("example.com", 8080))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
     >>> s(tunnel_request_data("example.com", 8080, b"123"))
@@ -285,6 +291,12 @@ class ScrapyAgent(object):
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
+            if omitConnectTunnel:
+                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
+                              "If you use Crawlera, it doesn't require this mode anymore, "
+                              "so you should update scrapy-crawlera to 1.3.0+ "
+                              "and remove '?noconnect' from the Crawlera URL.",
+                              ScrapyDeprecationWarning)
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
@@ -371,7 +383,7 @@ class ScrapyAgent(object):
     def _cb_bodyready(self, txresponse, request):
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
-            return txresponse, b'', None
+            return txresponse, b'', None, None
 
         maxsize = request.meta.get('download_maxsize', self._maxsize)
         warnsize = request.meta.get('download_warnsize', self._warnsize)
@@ -407,11 +419,12 @@ class ScrapyAgent(object):
         return d
 
     def _cb_bodydone(self, result, request, url):
-        txresponse, body, flags = result
+        txresponse, body, flags, certificate = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
+        return respcls(url=url, status=status, headers=headers, body=body,
+                       flags=flags, certificate=certificate)
 
 
 @implementer(IBodyProducer)
@@ -445,6 +458,12 @@ class _ResponseReader(protocol.Protocol):
         self._fail_on_dataloss_warned = False
         self._reached_warnsize = False
         self._bytes_received = 0
+        self._certificate = None
+
+    def connectionMade(self):
+        if self._certificate is None:
+            with suppress(AttributeError):
+                self._certificate = ssl.Certificate(self.transport._producer.getPeerCertificate())
 
     def dataReceived(self, bodyBytes):
         # This maybe called several times after cancel was called with buffered data.
@@ -477,16 +496,16 @@ class _ResponseReader(protocol.Protocol):
 
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
-            self._finished.callback((self._txresponse, body, None))
+            self._finished.callback((self._txresponse, body, None, self._certificate))
             return
 
         if reason.check(PotentialDataLoss):
-            self._finished.callback((self._txresponse, body, ['partial']))
+            self._finished.callback((self._txresponse, body, ['partial'], self._certificate))
             return
 
         if reason.check(ResponseFailed) and any(r.check(_DataLoss) for r in reason.value.reasons):
             if not self._fail_on_dataloss:
-                self._finished.callback((self._txresponse, body, ['dataloss']))
+                self._finished.callback((self._txresponse, body, ['dataloss'], self._certificate))
                 return
 
             elif not self._fail_on_dataloss_warned:

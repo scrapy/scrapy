@@ -1,7 +1,6 @@
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-import six
 
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
@@ -161,9 +160,4 @@ class CallbackKeywordArgumentsTestCase(TestCase):
         self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
         self.assertEqual(str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'")
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
-        # py2 and py3 messages are different
-        exc_message = str(exceptions['takes_more'].exc_info[1])
-        if six.PY2:
-            self.assertEqual(exc_message, "parse_takes_more() takes exactly 5 arguments (4 given)")
-        elif six.PY3:
-            self.assertEqual(exc_message, "parse_takes_more() missing 1 required positional argument: 'other'")
+        self.assertEqual(str(exceptions['takes_more'].exc_info[1]), "parse_takes_more() missing 1 required positional argument: 'other'")

@@ -1,7 +1,3 @@
-from __future__ import print_function
-
-import sys
-
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
@@ -144,10 +140,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and if we're running on Python 3 ...
-        if sys.version_info.major >= 3:
-            # ... it should have the returnValue exception set as its context
-            self.assertEqual(failure.value.__context__, def_gen_return_exc)
+        # ... and it should have the returnValue exception set as its context
+        self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
         fp = request_fingerprint(request)
@@ -244,10 +238,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, rsp1), (False, fail)])
         m = self.pipe._mockcalled
         # only once
-        self.assertEqual(m[0], 'get_media_requests') # first hook called
+        self.assertEqual(m[0], 'get_media_requests')  # first hook called
         self.assertEqual(m.count('get_media_requests'), 1)
         self.assertEqual(m.count('item_completed'), 1)
-        self.assertEqual(m[-1], 'item_completed') # last hook called
+        self.assertEqual(m[-1], 'item_completed')  # last hook called
         # twice, one per request
         self.assertEqual(m.count('media_to_download'), 2)
         # one to handle success and other for failure
@@ -258,7 +252,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request('http://url')
-        item = dict(requests=req) # pass a single item
+        item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         assert request_fingerprint(req) in self.info.downloaded
@@ -310,6 +304,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)

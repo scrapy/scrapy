@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from collections import defaultdict
 import traceback
 import warnings
@@ -29,7 +28,7 @@ class SpiderLoader(object):
                                 module=mod, cls=cls, name=name)
                            for (mod, cls) in locations)
                  for name, locations in self._found.items()
-                 if len(locations)>1]
+                 if len(locations) > 1]
         if dupes:
             msg = ("There are several spiders with the same name:\n\n"
                    "{}\n\n  This can cause unexpected behavior.".format(

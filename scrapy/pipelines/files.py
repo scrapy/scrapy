@@ -5,21 +5,15 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+import logging
 import mimetypes
 import os
-import os.path
 import time
-import logging
-from email.utils import parsedate_tz, mktime_tz
-from six.moves.urllib.parse import urlparse
 from collections import defaultdict
-import six
-
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+from email.utils import parsedate_tz, mktime_tz
+from ftplib import FTP
+from io import BytesIO
+from urllib.parse import urlparse
 
 from twisted.internet import defer, threads
 
@@ -33,6 +27,8 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.ftp import ftp_store_file
+
 
 logger = logging.getLogger(__name__)
 
@@ -158,14 +154,14 @@ class S3FilesStore(object):
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in six.iteritems(meta or {})},
+                Metadata={k: str(v) for k, v in (meta or {}).items()},
                 ACL=self.POLICY,
                 **extra)
         else:
             b = self._get_boto_bucket()
             k = b.new_key(key_name)
             if meta:
-                for metakey, metavalue in six.iteritems(meta):
+                for metakey, metavalue in meta.items():
                     k.set_metadata(metakey, str(metavalue))
             h = self.HEADERS.copy()
             if headers:
@@ -206,7 +202,7 @@ class S3FilesStore(object):
             'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
         })
         extra = {}
-        for key, value in six.iteritems(headers):
+        for key, value in headers.items():
             try:
                 kwarg = mapping[key]
             except KeyError:
@@ -254,13 +250,56 @@ class GCSFilesStore(object):
     def persist_file(self, path, buf, info, meta=None, headers=None):
         blob = self.bucket.blob(self.prefix + path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in six.iteritems(meta or {})}
+        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
             content_type=self._get_content_type(headers),
             predefined_acl=self.POLICY
         )
+
+
+class FTPFilesStore(object):
+
+    FTP_USERNAME = None
+    FTP_PASSWORD = None
+    USE_ACTIVE_MODE = None
+
+    def __init__(self, uri):
+        assert uri.startswith('ftp://')
+        u = urlparse(uri)
+        self.port = u.port
+        self.host = u.hostname
+        self.port = int(u.port or 21)
+        self.username = u.username or self.FTP_USERNAME
+        self.password = u.password or self.FTP_PASSWORD
+        self.basedir = u.path.rstrip('/')
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        path = '%s/%s' % (self.basedir, path)
+        return threads.deferToThread(
+            ftp_store_file, path=path, file=buf,
+            host=self.host, port=self.port, username=self.username,
+            password=self.password, use_active_mode=self.USE_ACTIVE_MODE
+        )
+
+    def stat_file(self, path, info):
+        def _stat_file(path):
+            try:
+                ftp = FTP()
+                ftp.connect(self.host, self.port)
+                ftp.login(self.username, self.password)
+                if self.USE_ACTIVE_MODE:
+                    ftp.set_pasv(False)
+                file_path = "%s/%s" % (self.basedir, path)
+                last_modified = float(ftp.voidcmd("MDTM %s" % file_path)[4:].strip())
+                m = hashlib.md5()
+                ftp.retrbinary('RETR %s' % file_path, m.update)
+                return {'last_modified': last_modified, 'checksum': m.hexdigest()}
+            # The file doesn't exist
+            except Exception:
+                return {}
+        return threads.deferToThread(_stat_file, path)
 
 
 class FilesPipeline(MediaPipeline):
@@ -289,6 +328,7 @@ class FilesPipeline(MediaPipeline):
         'file': FSFilesStore,
         's3': S3FilesStore,
         'gs': GCSFilesStore,
+        'ftp': FTPFilesStore
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
@@ -335,6 +375,11 @@ class FilesPipeline(MediaPipeline):
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
+
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)

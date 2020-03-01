@@ -170,7 +170,7 @@ Solving specific problems
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.

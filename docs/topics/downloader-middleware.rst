@@ -199,7 +199,7 @@ CookiesMiddleware
 
    This middleware enables working with sites that require cookies, such as
    those that use sessions. It keeps track of cookies sent by web servers, and
-   send them back on subsequent requests (from that spider), just like web
+   sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
 The following settings can be used to configure the cookie middleware:
@@ -259,8 +259,8 @@ COOKIES_DEBUG
 
 Default: ``False``
 
-If enabled, Scrapy will log all cookies sent in requests (ie. ``Cookie``
-header) and all cookies received in responses (ie. ``Set-Cookie`` header).
+If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
+header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
 
 Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 
@@ -474,7 +474,7 @@ DBM storage backend
 
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
-    By default, it uses the anydbm_ module, but you can change it with the
+    By default, it uses the :mod:`dbm`, but you can change it with the
     :setting:`HTTPCACHE_DBM_MODULE` setting.
 
 .. _httpcache-storage-custom:
@@ -626,7 +626,7 @@ HTTPCACHE_DBM_MODULE
 
 .. versionadded:: 0.13
 
-Default: ``'anydbm'``
+Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
 <httpcache-storage-dbm>`. This setting is specific to the DBM backend.
@@ -672,7 +672,7 @@ sometimes a more nuanced policy is desirable.
 
 This setting still respects ``Cache-Control: no-store`` directives in responses.
 If you don't want that, filter ``no-store`` out of the Cache-Control headers in
-responses you feedto the cache middleware.
+responses you feed to the cache middleware.
 
 .. setting:: HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 
@@ -686,7 +686,7 @@ Default: ``[]``
 List of Cache-Control directives in responses to be ignored.
 
 Sites often set "no-store", "no-cache", "must-revalidate", etc., but get
-upset at the traffic a spider can generate if it respects those
+upset at the traffic a spider can generate if it actually respects those
 directives. This allows to selectively ignore Cache-Control directives
 that are known to be unimportant for the sites being crawled.
 
@@ -709,7 +709,7 @@ HttpCompressionMiddleware
    provided `brotlipy`_ is installed.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.python.org/pypi/brotlipy
+.. _brotlipy: https://pypi.org/project/brotlipy/
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -868,7 +868,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``['script', 'noscript']``
+Default: ``[]``
 
 Meta tags within these tags are ignored.
 
@@ -1038,7 +1038,7 @@ Based on `RobotFileParser
 * is Python's built-in robots.txt_ parser
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * lacks support for wildcard matching
 
@@ -1061,7 +1061,7 @@ Based on `Reppy <https://github.com/seomoz/reppy/>`_:
   <https://github.com/seomoz/rep-cpp>`_
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1086,7 +1086,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 * implemented in Python
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1115,7 +1115,7 @@ implementing the methods described below.
 .. autoclass:: RobotParser
    :members:
 
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 
 DownloaderStats
 ---------------
@@ -1155,7 +1155,7 @@ AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
    on meta-fragment html tag. See
-   https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
    for more info.
 
    .. note::
@@ -1202,4 +1202,3 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
-.. _anydbm: https://docs.python.org/2/library/anydbm.html

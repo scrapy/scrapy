@@ -10,13 +10,10 @@ from contextlib import contextmanager
 from threading import Timer
 
 from twisted.trial import unittest
-from twisted.internet import defer
 
 import scrapy
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
-from scrapy.utils.testsite import SiteTest
-from scrapy.utils.testproc import ProcessTest
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 
@@ -56,7 +53,7 @@ class ProjectTest(unittest.TestCase):
         finally:
             timer.cancel()
 
-        return p, to_native_str(stdout), to_native_str(stderr)
+        return p, to_unicode(stdout), to_unicode(stderr)
 
 
 class StartprojectTest(ProjectTest):
@@ -297,6 +294,16 @@ class BadSpider(scrapy.Spider):
         print(log)
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
+
+    def test_asyncio_enabled_true(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+        ])
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_asyncio_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[])
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 
 class BenchCommandTest(CommandTest):

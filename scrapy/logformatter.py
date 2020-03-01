@@ -5,14 +5,18 @@ from twisted.python.failure import Failure
 
 from scrapy.utils.request import referer_str
 
-SCRAPEDMSG = u"Scraped from %(src)s" + os.linesep + "%(item)s"
-DROPPEDMSG = u"Dropped: %(exception)s" + os.linesep + "%(item)s"
-CRAWLEDMSG = u"Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
+SCRAPEDMSG = "Scraped from %(src)s" + os.linesep + "%(item)s"
+DROPPEDMSG = "Dropped: %(exception)s" + os.linesep + "%(item)s"
+CRAWLEDMSG = "Crawled (%(status)s) %(request)s%(request_flags)s (referer: %(referer)s)%(response_flags)s"
+ITEMERRORMSG = "Error processing %(item)s"
+SPIDERERRORMSG = "Spider error processing %(request)s (referer: %(referer)s)"
+DOWNLOADERRORMSG_SHORT = "Error downloading %(request)s"
+DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 
 
 class LogFormatter(object):
     """Class for generating log messages for different actions.
-    
+
     All methods must return a dictionary listing the parameters ``level``, ``msg``
     and ``args`` which are going to be used for constructing the log message when
     calling ``logging.log``.
@@ -47,7 +51,7 @@ class LogFormatter(object):
                         }
                     }
     """
-    
+
     def crawled(self, request, response, spider):
         """Logs a message when the crawler finds a webpage."""
         request_flags = ' %s' % str(request.flags) if request.flags else ''
@@ -90,6 +94,41 @@ class LogFormatter(object):
                 'exception': exception,
                 'item': item,
             }
+        }
+
+    def item_error(self, item, exception, response, spider):
+        """Logs a message when an item causes an error while it is passing through the item pipeline."""
+        return {
+            'level': logging.ERROR,
+            'msg': ITEMERRORMSG,
+            'args': {
+                'item': item,
+            }
+        }
+
+    def spider_error(self, failure, request, response, spider):
+        """Logs an error message from a spider."""
+        return {
+            'level': logging.ERROR,
+            'msg': SPIDERERRORMSG,
+            'args': {
+                'request': request,
+                'referer': referer_str(request),
+            }
+        }
+
+    def download_error(self, failure, request, spider, errmsg=None):
+        """Logs a download error message from a spider (typically coming from the engine)."""
+        args = {'request': request}
+        if errmsg:
+            msg = DOWNLOADERRORMSG_LONG
+            args['errmsg'] = errmsg
+        else:
+            msg = DOWNLOADERRORMSG_SHORT
+        return {
+            'level': logging.ERROR,
+            'msg': msg,
+            'args': args,
         }
 
     @classmethod
