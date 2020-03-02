@@ -15,7 +15,6 @@ import re
 import sys
 from urllib.parse import urlparse
 
-from pytest import mark
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
 from twisted.trial import unittest
