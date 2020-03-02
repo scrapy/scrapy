@@ -52,26 +52,58 @@ Deferred signal handlers
 ========================
 
 Some signals support returning :class:`~twisted.internet.defer.Deferred`
-objects from their handlers, see the :ref:`topics-signals-ref` below to know
-which ones.
+objects from their handlers, allowing you to run asynchronous code that
+does not block Scrapy. If a signal handler returns a
+:class:`~twisted.internet.defer.Deferred`, Scrapy waits for that
+:class:`~twisted.internet.defer.Deferred` to fire.
 
-.. note::
-
-    If a signal handler returns a :class:`~twisted.internet.defer.Deferred`,
-    the spider waits for that :class:`~twisted.internet.defer.Deferred` to fire.
-    The signal handler can also return a :class:`~twisted.internet.defer.Deferred`
-    obtained from some async operation which will fire as the operation is finished.
-
-Here is a simple example for a general signal handler returning :class:`~twisted.internet.defer.Deferred`:
+Let's take an example:
 ::
 
-    def signal_handler():
-        d = getDeferredFromSomewhere()
-        # Add callbacks here, eg:
-        d.addCallback(success_callback)
-        d.addErrback(error_callback)
+    class SignalSpider(scrapy.Spider):
+        name = 'signals'
+        start_urls = ['http://quotes.toscrape.com/page/1/']
 
-        return d # This will be called after the signal has fired
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            spider = super(SignalSpider, cls).from_crawler(crawler, *args, **kwargs)
+            crawler.signals.connect(spider.item_scrapped, signal=signals.item_scraped)
+            return spider
+
+        def item_scrapped(self, item):
+            # Send the scrapped item to the server
+            dfd = treq.post(
+                'http://localhost:3000/add',
+                json.dumps({
+                    'text': item['text'],
+                    'author': item['author'],
+                    'tags': item['tags'],
+                }).encode('ascii'),
+                headers={b'Content-Type': [b'application/json']}
+            )
+            dfd.addCallback(print_response)
+
+            # Next item will be scrapped only after dfd is fired
+            # As items are processed in parallel many dfd will
+            # be fired at the same time (refer settings['CONCURRENT_ITEMS'])
+            # hence, next batch of items will be processed after all
+            # dfd's are fired
+            return dfd
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {
+                    'text': quote.css('span.text::text').get(),
+                    'author': quote.css('small.author::text').get(),
+                    'tags': quote.css('div.tags a.tag::text').getall(),
+                }
+            next_page = response.css('li.next a::attr(href)').get()
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse)
+
+See the :ref:`topics-signals-ref` below to know which signals support
+:class:`~twisted.internet.defer.Deferred`
 
 .. _topics-signals-ref:
 
@@ -220,57 +252,6 @@ spider_opened
 
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.spiders.Spider` object
-
-Let's extend our DmozSpider example:
-::
-
-    class DmozSpider(Spider):
-        name = "dmoz"
-        allowed_domains = ["dmoz.org"]
-        start_urls = [
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/",
-        ]
-
-        @classmethod
-        def from_crawler(cls, crawler, *args, **kwargs):
-            spider = super(DmozSpider, cls).from_crawler(crawler, *args, **kwargs)
-            crawler.signals.connect(spider.spider_opened, signal=signals.spider_opened)
-            crawler.signals.connect(spider.item_scrapped, signal=signals.item_scraped)
-            crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
-            return spider
-
-        def spider_opened(self, spider):
-            # Opens a stream to a server to send live data
-
-            # dfd will be fired after spider_opened signal is received
-            dfd = getInitStreamDeferred()
-            return dfd
-
-        def item_scrapped(self, item, response, spider):
-            # Send the item received using the stream connection
-
-            # sendData returns a Deferred having success callback
-            # after item is successfully received by the server
-            # and an errback to log any problem
-            dfd = sendData(item)
-
-            # Next item will be scrapped only after dfd is fired
-            # As items are processed in parallel many dfd will
-            # be fired at the same time (refer settings['CONCURRENT_ITEMS'])
-            # hence, next batch of items will be processed as all
-            # dfd's are fired
-            return dfd
-
-        def spider_closed(self, spider, reason):
-            # Gracefully closes the stream connection
-            # dfd will be fired after `spider_closed` signal is received
-            dfd = closeStreamDeferred()
-            return dfd
-
-        def parse(self, response):
-            pass
-
 
 spider_idle
 -----------
