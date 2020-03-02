@@ -207,7 +207,6 @@ class EngineTest(unittest.TestCase):
         yield self.run.run()
         self._assert_items_error()
 
-    @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_crawler_startrequests_asyncdef(self):
         self.run = CrawlerRun(StartRequestsAsyncDefSpider)
