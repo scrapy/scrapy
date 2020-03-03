@@ -50,6 +50,8 @@ class CallLaterOnce(object):
 
 
 def install_reactor(reactor_path):
+    """Installs the :mod:`~twisted.internet.reactor` with the specified
+    import path."""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
@@ -63,6 +65,9 @@ def install_reactor(reactor_path):
 
 
 def verify_installed_reactor(reactor_path):
+    """Raises :exc:`Exception` if the installed
+    :mod:`~twisted.internet.reactor` does not match the specified import
+    path."""
     from twisted.internet import reactor
     reactor_class = load_object(reactor_path)
     if not isinstance(reactor, reactor_class):

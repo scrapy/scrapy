@@ -325,7 +325,7 @@ with multiples lines
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse(self):
-        runner = CrawlerRunner({"ASYNCIO_REACTOR": True})
+        runner = CrawlerRunner({"TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor"})
         runner.crawl(AsyncDefAsyncioSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
         with LogCapture() as log:
             yield runner.join()
