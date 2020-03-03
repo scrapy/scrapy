@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.0.0:
 
-Scrapy 2.0.0 (2020-02-2?)
+Scrapy 2.0.0 (2020-03-03)
 -------------------------
 
 Highlights:
