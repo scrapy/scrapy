@@ -294,8 +294,8 @@ Documentation
     :issue:`4171`, :issue:`4184`, :issue:`4190`)
 
 *   Fixed logic issues, broken links and typos (:issue:`4247`, :issue:`4258`,
-    :issue:`4282`, :issue:`4288`, :issue:`4305`, :issue:`4338`, :issue:`4359`,
-    :issue:`4361`)
+    :issue:`4282`, :issue:`4288`, :issue:`4305`, :issue:`4308`, :issue:`4323`,
+    :issue:`4338`, :issue:`4359`, :issue:`4361`)
 
 *   Improved consistency when referring to the ``__init__`` method of an object
     (:issue:`4086`, :issue:`4088`)
