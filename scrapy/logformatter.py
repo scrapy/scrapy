@@ -97,7 +97,11 @@ class LogFormatter(object):
         }
 
     def item_error(self, item, exception, response, spider):
-        """Logs a message when an item causes an error while it is passing through the item pipeline."""
+        """Logs a message when an item causes an error while it is passing
+        through the item pipeline.
+
+        .. versionadded:: 2.0
+        """
         return {
             'level': logging.ERROR,
             'msg': ITEMERRORMSG,
@@ -107,7 +111,10 @@ class LogFormatter(object):
         }
 
     def spider_error(self, failure, request, response, spider):
-        """Logs an error message from a spider."""
+        """Logs an error message from a spider.
+
+        .. versionadded:: 2.0
+        """
         return {
             'level': logging.ERROR,
             'msg': SPIDERERRORMSG,
@@ -118,7 +125,11 @@ class LogFormatter(object):
         }
 
     def download_error(self, failure, request, spider, errmsg=None):
-        """Logs a download error message from a spider (typically coming from the engine)."""
+        """Logs a download error message from a spider (typically coming from
+        the engine).
+
+        .. versionadded:: 2.0
+        """
         args = {'request': request}
         if errmsg:
             msg = DOWNLOADERRORMSG_LONG

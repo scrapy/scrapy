@@ -31,6 +31,8 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
+
+        If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: string
 
     :param callback: the function that will be called with the response of this
@@ -125,6 +127,10 @@ Request objects
        :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
+
+       .. versionchanged:: 2.0
+          The *callback* parameter is no longer required when the *errback*
+          parameter is specified.
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -396,7 +402,7 @@ The FormRequest class extends the base :class:`Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
-.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
+.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 
@@ -679,6 +685,8 @@ Response objects
         .. seealso:: :attr:`Request.meta` attribute
 
     .. attribute:: Response.cb_kwargs
+
+        .. versionadded:: 2.0
 
         A shortcut to the :attr:`Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
