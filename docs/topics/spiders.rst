@@ -420,6 +420,9 @@ Crawling rules
    It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
    instance as first parameter.
 
+   .. versionadded:: 2.0
+      The *errback* parameter.
+
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
 

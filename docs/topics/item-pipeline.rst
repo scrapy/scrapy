@@ -162,14 +162,16 @@ method and how to clean up the resources properly.::
 .. _pymongo: https://api.mongodb.com/python/current/
 
 
+.. _ScreenshotPipeline:
+
 Take screenshot of item
 -----------------------
 
 This example demonstrates how to return a
 :class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
 It uses Splash_ to render screenshot of item url. Pipeline
-makes request to locally running instance of Splash_. After request is downloaded
-and Deferred callback fires, it saves item to a file and adds filename to an item.
+makes request to locally running instance of Splash_. After request is downloaded,
+it saves the screenshot to a file and adds filename to the item.
 
 ::
 
@@ -184,15 +186,12 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        def process_item(self, item, spider):
+        async def process_item(self, item, spider):
             encoded_item_url = quote(item["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url)
-            dfd = spider.crawler.engine.download(request, spider)
-            dfd.addBoth(self.return_item, item)
-            return dfd
+            response = await spider.crawler.engine.download(request, spider)
 
-        def return_item(self, response, item):
             if response.status != 200:
                 # Error happened, return item.
                 return item

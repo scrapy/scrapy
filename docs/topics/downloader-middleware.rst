@@ -872,6 +872,10 @@ Default: ``[]``
 
 Meta tags within these tags are ignored.
 
+.. versionchanged:: 2.0
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``['script', 'noscript']`` to ``[]``.
+
 .. setting:: METAREFRESH_MAXDELAY
 
 METAREFRESH_MAXDELAY
