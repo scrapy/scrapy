@@ -93,8 +93,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
     def __init__(self, settings):
         super(MetaRefreshMiddleware, self).__init__(settings)
         self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
-        self._maxdelay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY',
-                                         settings.getint('METAREFRESH_MAXDELAY'))
+        self._maxdelay = settings.getint('METAREFRESH_MAXDELAY')
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_redirect', False) or request.method == 'HEAD' or \
