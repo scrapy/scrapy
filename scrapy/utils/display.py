@@ -7,6 +7,8 @@ from pprint import pformat as pformat_
 
 
 def _colorize(text, colorize=True):
+    if sys.platform == "win32" and sys.stdout.isatty():
+        colorize = False
     if not colorize or not sys.stdout.isatty():
         return text
     try:
