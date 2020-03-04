@@ -1,0 +1,497 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../topics/media-pipeline.rst:5
+msgid "Downloading and processing files and images"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:9
+msgid "Scrapy provides reusable :doc:`item pipelines </topics/item-pipeline>` for downloading files attached to a particular item (for example, when you scrape products and also want to download their images locally). These pipelines share a bit of functionality and structure (we refer to them as media pipelines), but typically you'll either use the Files Pipeline or the Images Pipeline."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:15
+msgid "Both pipelines implement these features:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:17
+msgid "Avoid re-downloading media that was downloaded recently"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:18
+msgid "Specifying where to store the media (filesystem directory, Amazon S3 bucket, Google Cloud Storage bucket)"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:21
+msgid "The Images Pipeline has a few extra functions for processing images:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:23
+msgid "Convert all downloaded images to a common format (JPG) and mode (RGB)"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:24
+msgid "Thumbnail generation"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:25
+msgid "Check images width/height to make sure they meet a minimum constraint"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:27
+msgid "The pipelines also keep an internal queue of those media URLs which are currently being scheduled for download, and connect those responses that arrive containing the same media to that queue. This avoids downloading the same media more than once when it's shared by several items."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:33
+msgid "Using the Files Pipeline"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:35
+msgid "The typical workflow, when using the :class:`FilesPipeline` goes like this:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:38
+msgid "In a Spider, you scrape an item and put the URLs of the desired into a ``file_urls`` field."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:41
+msgid "The item is returned from the spider and goes to the item pipeline."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:43
+msgid "When the item reaches the :class:`FilesPipeline`, the URLs in the ``file_urls`` field are scheduled for download using the standard Scrapy scheduler and downloader (which means the scheduler and downloader middlewares are reused), but with a higher priority, processing them before other pages are scraped. The item remains \"locked\" at that particular pipeline stage until the files have finish downloading (or fail for some reason)."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:50
+msgid "When the files are downloaded, another field (``files``) will be populated with the results. This field will contain a list of dicts with information about the downloaded files, such as the downloaded path, the original scraped url (taken from the ``file_urls`` field) , and the file checksum. The files in the list of the ``files`` field will retain the same order of the original ``file_urls`` field. If some file failed downloading, an error will be logged and the file won't be present in the ``files`` field."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:60
+msgid "Using the Images Pipeline"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:62
+msgid "Using the :class:`ImagesPipeline` is a lot like using the :class:`FilesPipeline`, except the default field names used are different: you use ``image_urls`` for the image URLs of an item and it will populate an ``images`` field for the information about the downloaded images."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:67
+msgid "The advantage of using the :class:`ImagesPipeline` for image files is that you can configure some extra functions like generating thumbnails and filtering the images based on their size."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:71
+msgid "The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to JPEG/RGB format, so you need to install this library in order to use it. `Python Imaging Library`_ (PIL) should also work in most cases, but it is known to cause troubles in some setups, so we recommend to use `Pillow`_ instead of PIL."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:84
+msgid "Enabling your Media Pipeline"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:89
+msgid "To enable your media pipeline you must first add it to your project :setting:`ITEM_PIPELINES` setting."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:92
+msgid "For Images Pipeline, use::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:96
+msgid "For Files Pipeline, use::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:101
+msgid "You can also use both the Files and Images Pipeline at the same time."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:104
+msgid "Then, configure the target storage setting to a valid value that will be used for storing the downloaded images. Otherwise the pipeline will remain disabled, even if you include it in the :setting:`ITEM_PIPELINES` setting."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:108
+msgid "For the Files Pipeline, set the :setting:`FILES_STORE` setting::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:112
+msgid "For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:117
+msgid "Supported Storage"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:120
+msgid "File system storage"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:122
+msgid "The files are stored using a `SHA1 hash`_ of their URLs for the file names."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:124
+msgid "For example, the following image URL::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:128
+msgid "Whose ``SHA1 hash`` is::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:132
+msgid "Will be downloaded and stored in the following file::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:136
+#: ../../topics/media-pipeline.rst:344
+msgid "Where:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:138
+msgid "``<IMAGES_STORE>`` is the directory defined in :setting:`IMAGES_STORE` setting for the Images Pipeline."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:141
+msgid "``full`` is a sub-directory to separate full images from thumbnails (if used). For more info see :ref:`topics-images-thumbnails`."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:147
+msgid "FTP server storage"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:151
+msgid ":setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server. Scrapy will automatically upload the files to the server."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:154
+msgid ":setting:`FILES_STORE` and :setting:`IMAGES_STORE` should be written in one of the following forms::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:160
+msgid "If ``username`` and ``password`` are not provided, they are taken from the :setting:`FTP_USER` and :setting:`FTP_PASSWORD` settings respectively."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:163
+msgid "FTP supports two different connection modes: active or passive. Scrapy uses the passive connection mode by default. To use the active connection mode instead, set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:168
+msgid "Amazon S3 storage"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:173
+msgid ":setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will automatically upload the files to the bucket."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:176
+msgid "For example, this is a valid :setting:`IMAGES_STORE` value::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:180
+msgid "You can modify the Access Control List (ACL) policy used for the stored files, which is defined by the :setting:`FILES_STORE_S3_ACL` and :setting:`IMAGES_STORE_S3_ACL` settings. By default, the ACL is set to ``private``. To make the files publicly available use the ``public-read`` policy::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:188
+msgid "For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:190
+msgid "Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:195
+msgid "For self-hosting you also might feel the need not to use SSL and not to verify SSL connection::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:205
+msgid "Google Cloud Storage"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:211
+msgid ":setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:216
+msgid "For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:221
+msgid "For information about authentication, see this `documentation`_."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:225
+msgid "You can modify the Access Control List (ACL) policy used for the stored files, which is defined by the :setting:`FILES_STORE_GCS_ACL` and :setting:`IMAGES_STORE_GCS_ACL` settings. By default, the ACL is set to ``''`` (empty string) which means that Cloud Storage applies the bucket's default object ACL to the object. To make the files publicly available use the ``publicRead`` policy::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:234
+msgid "For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:239
+msgid "Usage example"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:246
+msgid "In order to use a media pipeline first, :ref:`enable it <topics-media-pipeline-enabling>`."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:249
+msgid "Then, if a spider returns a dict with the URLs key (``file_urls`` or ``image_urls``, for the Files or Images Pipeline respectively), the pipeline will put the results under respective key (``files`` or ``images``)."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:253
+msgid "If you prefer to use :class:`~.Item`, then define a custom item with the necessary fields, like in this example for Images Pipeline::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:264
+msgid "If you want to use another field name for the URLs key or for the results key, it is also possible to override it."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:267
+msgid "For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or :setting:`FILES_RESULT_FIELD` settings::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:273
+msgid "For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or :setting:`IMAGES_RESULT_FIELD` settings::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:279
+msgid "If you need something more complex and want to override the custom pipeline behaviour, see :ref:`topics-media-pipeline-override`."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:282
+msgid "If you have multiple image pipelines inheriting from ImagePipeline and you want to have different settings in different pipelines you can set setting keys preceded with uppercase name of your pipeline class. E.g. if your pipeline is called MyPipeline and you want to have custom IMAGES_URLS_FIELD you define setting MYPIPELINE_IMAGES_URLS_FIELD and your custom settings will be used."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:290
+msgid "Additional features"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:293
+msgid "File expiration"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:298
+msgid "The Image Pipeline avoids downloading files that were downloaded recently. To adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which specifies the delay in number of days::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:309
+msgid "The default value for both settings is 90 days."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:311
+msgid "If you have pipeline that subclasses FilesPipeline and you'd like to have different setting for it you can set setting keys preceded by uppercase class name. E.g. given pipeline class called MyPipeline you can set setting key:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:315
+msgid "MYPIPELINE_FILES_EXPIRES = 180"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:317
+msgid "and pipeline class MyPipeline will have expiration time set to 180."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:322
+msgid "Thumbnail generation for images"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:324
+msgid "The Images Pipeline can automatically create thumbnails of the downloaded images."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:329
+msgid "In order to use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary where the keys are the thumbnail names and the values are their dimensions."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:332
+#: ../../topics/media-pipeline.rst:372
+msgid "For example::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:339
+msgid "When you use this feature, the Images Pipeline will create thumbnails of the each specified size with this format::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:346
+msgid "``<size_name>`` is the one specified in the :setting:`IMAGES_THUMBS` dictionary keys (``small``, ``big``, etc)"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:349
+msgid "``<image_id>`` is the `SHA1 hash`_ of the image url"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:353
+msgid "Example of image files stored using ``small`` and ``big`` thumbnail names::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:359
+msgid "The first one is the full image, as downloaded from the site."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:362
+msgid "Filtering out small images"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:368
+msgid "When using the Images Pipeline, you can drop images which are too small, by specifying the minimum allowed size in the :setting:`IMAGES_MIN_HEIGHT` and :setting:`IMAGES_MIN_WIDTH` settings."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:378
+msgid "The size constraints don't affect thumbnail generation at all."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:380
+msgid "It is possible to set just one size constraint or both. When setting both of them, only images that satisfy both minimum sizes will be saved. For the above example, images of sizes (105 x 105) or (105 x 200) or (200 x 105) will all be dropped because at least one dimension is shorter than the constraint."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:385
+msgid "By default, there are no size constraints, so all images are processed."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:388
+msgid "Allowing redirections"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:392
+msgid "By default media pipelines ignore redirects, i.e. an HTTP redirection to a media file URL request will mean the media download is considered failed."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:395
+msgid "To handle media redirections, set this setting to ``True``::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:402
+msgid "Extending the Media Pipelines"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:407
+msgid "See here the methods that you can override in your custom Files Pipeline:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:413
+#: ../../topics/media-pipeline.rst:527
+msgid "This method is called once per downloaded item. It returns the download path of the file originating from the specified :class:`response <scrapy.http.Response>`."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:417
+#: ../../topics/media-pipeline.rst:531
+msgid "In addition to ``response``, this method receives the original :class:`request <scrapy.Request>` and :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:421
+#: ../../topics/media-pipeline.rst:535
+msgid "You can override this method to customize the download path of each file."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:423
+#: ../../topics/media-pipeline.rst:537
+msgid "For example, if file URLs end like regular paths (e.g. ``https://example.com/a/b/c/foo.png``), you can use the following approach to download all files into the ``files`` folder with their original filenames (e.g. ``files/foo.png``)::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:438
+#: ../../topics/media-pipeline.rst:552
+msgid "By default the :meth:`file_path` method returns ``full/<request URL hash>.<extension>``."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:443
+msgid "As seen on the workflow, the pipeline will get the URLs of the images to download from the item. In order to do this, you can override the :meth:`~get_media_requests` method and return a Request for each file URL::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:452
+msgid "Those requests will be processed by the pipeline and, when they have finished downloading, the results will be sent to the :meth:`~item_completed` method, as a list of 2-element tuples. Each tuple will contain ``(success, file_info_or_error)`` where:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:457
+msgid "``success`` is a boolean which is ``True`` if the image was downloaded successfully or ``False`` if it failed for some reason"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:460
+msgid "``file_info_or_error`` is a dict containing the following keys (if success is ``True``) or a :exc:`~twisted.python.failure.Failure` if there was a problem."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:464
+msgid "``url`` - the url where the file was downloaded from. This is the url of the request returned from the :meth:`~get_media_requests` method."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:468
+msgid "``path`` - the path (relative to :setting:`FILES_STORE`) where the file was stored"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:471
+msgid "``checksum`` - a `MD5 hash`_ of the image contents"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:473
+msgid "The list of tuples received by :meth:`~item_completed` is guaranteed to retain the same order of the requests returned from the :meth:`~get_media_requests` method."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:477
+msgid "Here's a typical value of the ``results`` argument::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:486
+msgid "By default the :meth:`get_media_requests` method returns ``None`` which means there are no files to download for the item."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:491
+msgid "The :meth:`FilesPipeline.item_completed` method called when all file requests for a single item have completed (either finished downloading, or failed for some reason)."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:495
+msgid "The :meth:`~item_completed` method must return the output that will be sent to subsequent item pipeline stages, so you must return (or drop) the item, as you would in any pipeline."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:499
+msgid "Here is an example of the :meth:`~item_completed` method where we store the downloaded file paths (passed in results) in the ``file_paths`` item field, and we drop the item if it doesn't contain any files::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:512
+#: ../../topics/media-pipeline.rst:571
+msgid "By default, the :meth:`item_completed` method returns the item."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:518
+msgid "See here the methods that you can override in your custom Images Pipeline:"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:522
+msgid "The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`, customizing the field names and adding custom behavior for images."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:557
+msgid "Works the same way as :meth:`FilesPipeline.get_media_requests` method, but using a different field name for image urls."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:560
+msgid "Must return a Request for each image URL."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:564
+msgid "The :meth:`ImagesPipeline.item_completed` method is called when all image requests for a single item have completed (either finished downloading, or failed for some reason)."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:568
+msgid "Works the same way as :meth:`FilesPipeline.item_completed` method, but using a different field names for storing image downloading results."
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:577
+msgid "Custom Images pipeline example"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:579
+msgid "Here is a full example of the Images Pipeline whose methods are exemplified above::"
+msgstr ""
+
+#: ../../topics/media-pipeline.rst:600
+msgid "To enable your custom media pipeline component you must add its class import path to the :setting:`ITEM_PIPELINES` setting, like in the following example::"
+msgstr ""

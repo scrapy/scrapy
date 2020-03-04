@@ -259,6 +259,57 @@ And their unit-tests are in::
 
     tests/test_loader.py
 
+
+Documentation Translation
+-------------------------
+
+You can use the following command to update the contents of the
+``docs/locales/`` folder, which contains Gettext catalog template files
+(``.pot``) and message catalog files (``.po``)::
+
+    tox -e docs-i18n
+
+Translators can transform catalog template files into message catalog files
+(``.po``) mapping source English messages to their translations in a different
+language. Those message catalog files must be placed into
+``docs/locales/<language code>/LC_MESSAGES/``.
+
+To build the documentation in a language other than English, using the compiled
+message catalog files from the ``locales/`` folder, use
+``-D language=<language>``, for example::
+
+    tox -e docs -- -D language=ru
+
+When translating message catalog files, you will find reStructuredText syntax
+used, and you must be careful not to break the syntax or references when
+translating. Please, get familiar with reStructuredText syntax before you start
+working on a translation.
+
+These are some common pieces of reStructuredText syntax that you may find in
+English messages, and guidelines for handling them in your translations:
+
+-   ``word_`` cannot be translated. If you need to translate ``word``, send
+    a pull request to transform it into ```word <word>`__``, or open an issue
+    requesting such a change.
+
+-   ```multiple words`_`` cannot be translated. If you need to translate
+    ``multiple words``, send a pull request to transform it into ```multiple
+    words <multiple words>`__``, or open an issue requesting such a change.
+
+-   ```text <target>`_`` allows translating ``text``. If ``target`` is a URL,
+    it may be translated as well.
+
+    If target is not a URL, but you would like to
+    change the target URL to a localized equivalent URL, send a pull request
+    to replace ``target`` with the actual URL, or open an issue requesting such
+    a change.
+
+-   ``:ref:`id``` will be automatically replaced by the translation
+    of the title of the referenced page or section.
+
+-   ``:ref:`text <id>``` allows translating ``text``.
+
+
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://reddit.com/r/scrapy

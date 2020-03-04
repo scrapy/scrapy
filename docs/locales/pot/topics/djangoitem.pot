@@ -1,0 +1,33 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../topics/djangoitem.rst:7
+msgid "DjangoItem"
+msgstr ""
+
+#: ../../topics/djangoitem.rst:9
+msgid "DjangoItem has been moved into a separate project."
+msgstr ""
+
+#: ../../topics/djangoitem.rst:11
+msgid "It is hosted at:"
+msgstr ""
+
+#: ../../topics/djangoitem.rst:13
+msgid "https://github.com/scrapy-plugins/scrapy-djangoitem"
+msgstr ""

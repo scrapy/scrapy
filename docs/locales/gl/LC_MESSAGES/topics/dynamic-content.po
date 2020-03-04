@@ -1,0 +1,366 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../topics/dynamic-content.rst:5
+msgid "Selecting dynamically-loaded content"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:7
+msgid ""
+"Some webpages show the desired data when you load them in a web browser. "
+"However, when you download them using Scrapy, you cannot reach the "
+"desired data using :ref:`selectors <topics-selectors>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:11
+msgid ""
+"When this happens, the recommended approach is to :ref:`find the data "
+"source <topics-finding-data-source>` and extract the data from it."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:15
+msgid ""
+"If you fail to do that, and you can nonetheless access the desired data "
+"through the :ref:`DOM <topics-livedom>` from your web browser, see :ref"
+":`topics-javascript-rendering`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:22
+msgid "Finding the data source"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:24
+msgid "To extract the desired data, you must first find its source location."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:26
+msgid ""
+"If the data is in a non-text-based format, such as an image or a PDF "
+"document, use the :ref:`network tool <topics-network-tool>` of your web "
+"browser to find the corresponding request, and :ref:`reproduce it "
+"<topics-reproducing-requests>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:31
+msgid ""
+"If your web browser lets you select the desired data as text, the data "
+"may be defined in embedded JavaScript code, or loaded from an external "
+"resource in a text-based format."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:35
+msgid ""
+"In that case, you can use a tool like wgrep_ to find the URL of that "
+"resource."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:37
+msgid ""
+"If the data turns out to come from the original URL itself, you must "
+":ref:`inspect the source code of the webpage <topics-inspecting-source>` "
+"to determine where the data is located."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:41
+msgid ""
+"If the data comes from a different URL, you will need to :ref:`reproduce "
+"the corresponding request <topics-reproducing-requests>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:47
+msgid "Inspecting the source code of a webpage"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:49
+msgid ""
+"Sometimes you need to inspect the source code of a webpage (not the "
+":ref:`DOM <topics-livedom>`) to determine where some desired data is "
+"located."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:52
+msgid ""
+"Use Scrapy’s :command:`fetch` command to download the webpage contents as"
+" seen by Scrapy::"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:57
+msgid ""
+"If the desired data is in embedded JavaScript code within a ``<script/>``"
+" element, see :ref:`topics-parsing-javascript`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:60
+msgid ""
+"If you cannot find the desired data, first make sure it’s not just "
+"Scrapy: download the webpage with an HTTP client like curl_ or wget_ and "
+"see if the information can be found in the response they get."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:64
+msgid ""
+"If they get a response with the desired data, modify your Scrapy "
+":class:`~scrapy.http.Request` to match that of the other HTTP client. For"
+" example, try using the same user-agent string (:setting:`USER_AGENT`) or"
+" the same :attr:`~scrapy.http.Request.headers`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:69
+msgid ""
+"If they also get a response without the desired data, you’ll need to take"
+" steps to make your request more similar to that of the web browser. See "
+":ref:`topics-reproducing-requests`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:76
+msgid "Reproducing requests"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:78
+msgid ""
+"Sometimes we need to reproduce a request the way our web browser performs"
+" it."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:80
+msgid ""
+"Use the :ref:`network tool <topics-network-tool>` of your web browser to "
+"see how your web browser performs the desired request, and try to "
+"reproduce that request with Scrapy."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:84
+msgid ""
+"It might be enough to yield a :class:`~scrapy.http.Request` with the same"
+" HTTP method and URL. However, you may also need to reproduce the body, "
+"headers and form parameters (see :class:`~scrapy.http.FormRequest`) of "
+"that request."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:88
+msgid ""
+"As all major browsers allow to export the requests in `cURL "
+"<https://curl.haxx.se/>`_ format, Scrapy incorporates the method "
+":meth:`~scrapy.http.Request.from_curl()` to generate an equivalent "
+":class:`~scrapy.http.Request` from a cURL command. To get more "
+"information visit :ref:`request from curl <requests-from-curl>` inside "
+"the network tool section."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:95
+msgid ""
+"Once you get the expected response, you can :ref:`extract the desired "
+"data from it <topics-handling-response-formats>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:98
+msgid ""
+"You can reproduce any request with Scrapy. However, some times "
+"reproducing all necessary requests may not seem efficient in developer "
+"time. If that is your case, and crawling speed is not a major concern for"
+" you, you can alternatively consider :ref:`JavaScript pre-rendering "
+"<topics-javascript-rendering>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:103
+msgid ""
+"If you get the expected response `sometimes`, but not always, the issue "
+"is probably not your request, but the target server. The target server "
+"might be buggy, overloaded, or :ref:`banning <bans>` some of your "
+"requests."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:110
+msgid "Handling different response formats"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:112
+msgid ""
+"Once you have a response with the desired data, how you extract the "
+"desired data from it depends on the type of response:"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:115
+msgid ""
+"If the response is HTML or XML, use :ref:`selectors <topics-selectors>` "
+"as usual."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:118
+msgid ""
+"If the response is JSON, use `json.loads`_ to load the desired data from "
+":attr:`response.text <scrapy.http.TextResponse.text>`::"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:123
+msgid ""
+"If the desired data is inside HTML or XML code embedded within JSON data,"
+" you can load that HTML or XML code into a "
+":class:`~scrapy.selector.Selector` and then :ref:`use it <topics-"
+"selectors>` as usual::"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:130
+msgid ""
+"If the response is JavaScript, or HTML with a ``<script/>`` element "
+"containing the desired data, see :ref:`topics-parsing-javascript`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:133
+msgid ""
+"If the response is CSS, use a `regular expression`_ to extract the "
+"desired data from :attr:`response.text <scrapy.http.TextResponse.text>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:138
+msgid ""
+"If the response is an image or another format based on images (e.g. PDF),"
+" read the response as bytes from :attr:`response.body "
+"<scrapy.http.TextResponse.body>` and use an OCR solution to extract the "
+"desired data as text."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:143
+msgid ""
+"For example, you can use pytesseract_. To read a table from a PDF, "
+"`tabula-py`_ may be a better choice."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:146
+msgid ""
+"If the response is SVG, or HTML with embedded SVG containing the desired "
+"data, you may be able to extract the desired data using :ref:`selectors "
+"<topics-selectors>`, since SVG is based on XML."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:150
+msgid ""
+"Otherwise, you might need to convert the SVG code into a raster image, "
+"and :ref:`handle that raster image <topics-parsing-images>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:156
+msgid "Parsing JavaScript code"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:158
+msgid ""
+"If the desired data is hardcoded in JavaScript, you first need to get the"
+" JavaScript code:"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:161
+msgid ""
+"If the JavaScript code is in a JavaScript file, simply read "
+":attr:`response.text <scrapy.http.TextResponse.text>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:164
+msgid ""
+"If the JavaScript code is within a ``<script/>`` element of an HTML page,"
+" use :ref:`selectors <topics-selectors>` to extract the text within that "
+"``<script/>`` element."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:168
+msgid ""
+"Once you have a string with the JavaScript code, you can extract the "
+"desired data from it:"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:171
+msgid ""
+"You might be able to use a `regular expression`_ to extract the desired "
+"data in JSON format, which you can then parse with `json.loads`_."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:174
+msgid ""
+"For example, if the JavaScript code contains a separate line like ``var "
+"data = {\"field\": \"value\"};`` you can extract that data as follows:"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:182
+msgid ""
+"Otherwise, use js2xml_ to convert the JavaScript code into an XML "
+"document that you can parse using :ref:`selectors <topics-selectors>`."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:185
+msgid ""
+"For example, if the JavaScript code contains ``var data = {field: "
+"\"value\"};`` you can extract that data as follows:"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:200
+msgid "Pre-rendering JavaScript"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:202
+msgid ""
+"On webpages that fetch data from additional requests, reproducing those "
+"requests that contain the desired data is the preferred approach. The "
+"effort is often worth the result: structured, complete data with minimum "
+"parsing time and network transfer."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:207
+msgid ""
+"However, sometimes it can be really hard to reproduce certain requests. "
+"Or you may need something that no request can give you, such as a "
+"screenshot of a webpage as seen in a web browser."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:211
+msgid ""
+"In these cases use the Splash_ JavaScript-rendering service, along with "
+"`scrapy-splash`_ for seamless integration."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:214
+msgid ""
+"Splash returns as HTML the :ref:`DOM <topics-livedom>` of a webpage, so "
+"that you can parse it with :ref:`selectors <topics-selectors>`. It "
+"provides great flexibility through configuration_ or scripting_."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:218
+msgid ""
+"If you need something beyond what Splash offers, such as interacting with"
+" the DOM on-the-fly from Python code instead of using a previously-"
+"written script, or handling multiple web browser windows, you might need "
+"to :ref:`use a headless browser <topics-headless-browsing>` instead."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:229
+msgid "Using a headless browser"
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:231
+msgid ""
+"A `headless browser`_ is a special web browser that provides an API for "
+"automation."
+msgstr ""
+
+#: ../../topics/dynamic-content.rst:234
+msgid ""
+"The easiest way to use a headless browser with Scrapy is to use "
+"Selenium_, along with `scrapy-selenium`_ for seamless integration."
+msgstr ""
+

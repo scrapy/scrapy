@@ -22,19 +22,22 @@ Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
 Scrapy.
 
-If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
+If you're already familiar with other languages, and want to learn Python
+quickly, the `Python Tutorial <Python Tutorial>`__ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
 may be useful to you: 
 
-* `Automate the Boring Stuff With Python`_
+* `Automate the Boring Stuff With Python <Automate the Boring Stuff With Python>`__
 
-* `How To Think Like a Computer Scientist`_ 
+* `How To Think Like a Computer Scientist <How To Think Like a Computer Scientist>`__
 
-* `Learn Python 3 The Hard Way`_ 
+* `Learn Python 3 The Hard Way <Learn Python 3 The Hard Way>`__
 
-You can also take a look at `this list of Python resources for non-programmers`_,
-as well as the `suggested resources in the learnpython-subreddit`_. 
+You can also take a look at `this list of Python resources for non-programmers
+<this list of Python resources for non-programmers>`__, as well as the
+`suggested resources in the learnpython-subreddit <suggested resources in the
+learnpython-subreddit>`__.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
@@ -288,7 +291,7 @@ to be scraped, you can at least get **some** data.
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
 the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_:
+expressions <regular expressions>`__:
 
 >>> response.css('title::text').re(r'Quotes.*')
 ['Quotes to Scrape']

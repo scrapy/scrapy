@@ -1,0 +1,243 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../topics/practices.rst:5
+msgid "Common Practices"
+msgstr ""
+
+#: ../../topics/practices.rst:7
+msgid ""
+"This section documents common practices when using Scrapy. These are "
+"things that cover many topics and don't often fall into any other "
+"specific section."
+msgstr ""
+
+#: ../../topics/practices.rst:13
+msgid "Run Scrapy from a script"
+msgstr ""
+
+#: ../../topics/practices.rst:15
+msgid ""
+"You can use the :ref:`API <topics-api>` to run Scrapy from a script, "
+"instead of the typical way of running Scrapy via ``scrapy crawl``."
+msgstr ""
+
+#: ../../topics/practices.rst:18
+msgid ""
+"Remember that Scrapy is built on top of the Twisted asynchronous "
+"networking library, so you need to run it inside the Twisted reactor."
+msgstr ""
+
+#: ../../topics/practices.rst:21
+msgid ""
+"The first utility you can use to run your spiders is "
+":class:`scrapy.crawler.CrawlerProcess`. This class will start a Twisted "
+"reactor for you, configuring the logging and setting shutdown handlers. "
+"This class is the one used by all Scrapy commands."
+msgstr ""
+
+#: ../../topics/practices.rst:26
+msgid "Here's an example showing how to run a single spider with it."
+msgstr ""
+
+#: ../../topics/practices.rst:45
+msgid ""
+"Define settings within dictionary in CrawlerProcess. Make sure to check "
+":class:`~scrapy.crawler.CrawlerProcess` documentation to get acquainted "
+"with its usage details."
+msgstr ""
+
+#: ../../topics/practices.rst:48
+msgid ""
+"If you are inside a Scrapy project there are some additional helpers you "
+"can use to import those components within the project. You can "
+"automatically import your spiders passing their name to "
+":class:`~scrapy.crawler.CrawlerProcess`, and use ``get_project_settings``"
+" to get a :class:`~scrapy.settings.Settings` instance with your project "
+"settings."
+msgstr ""
+
+#: ../../topics/practices.rst:54
+msgid ""
+"What follows is a working example of how to do that, using the "
+"`testspiders`_ project as example."
+msgstr ""
+
+#: ../../topics/practices.rst:68
+msgid ""
+"There's another Scrapy utility that provides more control over the "
+"crawling process: :class:`scrapy.crawler.CrawlerRunner`. This class is a "
+"thin wrapper that encapsulates some simple helpers to run multiple "
+"crawlers, but it won't start or interfere with existing reactors in any "
+"way."
+msgstr ""
+
+#: ../../topics/practices.rst:73
+msgid ""
+"Using this class the reactor should be explicitly run after scheduling "
+"your spiders. It's recommended you use "
+":class:`~scrapy.crawler.CrawlerRunner` instead of "
+":class:`~scrapy.crawler.CrawlerProcess` if your application is already "
+"using Twisted and you want to run Scrapy in the same reactor."
+msgstr ""
+
+#: ../../topics/practices.rst:78
+msgid ""
+"Note that you will also have to shutdown the Twisted reactor yourself "
+"after the spider is finished. This can be achieved by adding callbacks to"
+" the deferred returned by the :meth:`CrawlerRunner.crawl "
+"<scrapy.crawler.CrawlerRunner.crawl>` method."
+msgstr ""
+
+#: ../../topics/practices.rst:83
+msgid ""
+"Here's an example of its usage, along with a callback to manually stop "
+"the reactor after ``MySpider`` has finished running."
+msgstr ""
+
+#: ../../topics/practices.rst:104
+msgid ":doc:`twisted:core/howto/reactor-basics`"
+msgstr ""
+
+#: ../../topics/practices.rst:109
+msgid "Running multiple spiders in the same process"
+msgstr ""
+
+#: ../../topics/practices.rst:111
+msgid ""
+"By default, Scrapy runs a single spider per process when you run ``scrapy"
+" crawl``. However, Scrapy supports running multiple spiders per process "
+"using the :ref:`internal API <topics-api>`."
+msgstr ""
+
+#: ../../topics/practices.rst:115
+msgid "Here is an example that runs multiple spiders simultaneously:"
+msgstr ""
+
+#: ../../topics/practices.rst:135
+msgid "Same example using :class:`~scrapy.crawler.CrawlerRunner`:"
+msgstr ""
+
+#: ../../topics/practices.rst:161
+msgid ""
+"Same example but running the spiders sequentially by chaining the "
+"deferreds:"
+msgstr ""
+
+#: ../../topics/practices.rst:189
+msgid ":ref:`run-from-script`."
+msgstr ""
+
+#: ../../topics/practices.rst:194
+msgid "Distributed crawls"
+msgstr ""
+
+#: ../../topics/practices.rst:196
+msgid ""
+"Scrapy doesn't provide any built-in facility for running crawls in a "
+"distribute (multi-server) manner. However, there are some ways to "
+"distribute crawls, which vary depending on how you plan to distribute "
+"them."
+msgstr ""
+
+#: ../../topics/practices.rst:200
+msgid ""
+"If you have many spiders, the obvious way to distribute the load is to "
+"setup many Scrapyd instances and distribute spider runs among those."
+msgstr ""
+
+#: ../../topics/practices.rst:203
+msgid ""
+"If you instead want to run a single (big) spider through many machines, "
+"what you usually do is partition the urls to crawl and send them to each "
+"separate spider. Here is a concrete example:"
+msgstr ""
+
+#: ../../topics/practices.rst:207
+msgid ""
+"First, you prepare the list of urls to crawl and put them into separate "
+"files/urls::"
+msgstr ""
+
+#: ../../topics/practices.rst:214
+msgid ""
+"Then you fire a spider run on 3 different Scrapyd servers. The spider "
+"would receive a (spider) argument ``part`` with the number of the "
+"partition to crawl::"
+msgstr ""
+
+#: ../../topics/practices.rst:225
+msgid "Avoiding getting banned"
+msgstr ""
+
+#: ../../topics/practices.rst:227
+msgid ""
+"Some websites implement certain measures to prevent bots from crawling "
+"them, with varying degrees of sophistication. Getting around those "
+"measures can be difficult and tricky, and may sometimes require special "
+"infrastructure. Please consider contacting `commercial support`_ if in "
+"doubt."
+msgstr ""
+
+#: ../../topics/practices.rst:232
+msgid "Here are some tips to keep in mind when dealing with these kinds of sites:"
+msgstr ""
+
+#: ../../topics/practices.rst:234
+msgid ""
+"rotate your user agent from a pool of well-known ones from browsers "
+"(google around to get a list of them)"
+msgstr ""
+
+#: ../../topics/practices.rst:236
+msgid ""
+"disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use "
+"cookies to spot bot behaviour"
+msgstr ""
+
+#: ../../topics/practices.rst:238
+msgid "use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting."
+msgstr ""
+
+#: ../../topics/practices.rst:239
+msgid ""
+"if possible, use `Google cache`_ to fetch pages, instead of hitting the "
+"sites directly"
+msgstr ""
+
+#: ../../topics/practices.rst:241
+msgid ""
+"use a pool of rotating IPs. For example, the free `Tor project`_ or paid "
+"services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a "
+"super proxy that you can attach your own proxies to."
+msgstr ""
+
+#: ../../topics/practices.rst:244
+msgid ""
+"use a highly distributed downloader that circumvents bans internally, so "
+"you can just focus on parsing clean pages. One example of such "
+"downloaders is `Crawlera`_"
+msgstr ""
+
+#: ../../topics/practices.rst:248
+msgid ""
+"If you are still unable to prevent your bot getting banned, consider "
+"contacting `commercial support`_."
+msgstr ""
+

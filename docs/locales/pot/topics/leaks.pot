@@ -1,0 +1,253 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../topics/leaks.rst:5
+msgid "Debugging memory leaks"
+msgstr ""
+
+#: ../../topics/leaks.rst:7
+msgid "In Scrapy, objects such as Requests, Responses and Items have a finite lifetime: they are created, used for a while, and finally destroyed."
+msgstr ""
+
+#: ../../topics/leaks.rst:10
+msgid "From all those objects, the Request is probably the one with the longest lifetime, as it stays waiting in the Scheduler queue until it's time to process it. For more info see :ref:`topics-architecture`."
+msgstr ""
+
+#: ../../topics/leaks.rst:14
+msgid "As these Scrapy objects have a (rather long) lifetime, there is always the risk of accumulating them in memory without releasing them properly and thus causing what is known as a \"memory leak\"."
+msgstr ""
+
+#: ../../topics/leaks.rst:18
+msgid "To help debugging memory leaks, Scrapy provides a built-in mechanism for tracking objects references called :ref:`trackref <topics-leaks-trackrefs>`, and you can also use a third-party library called :ref:`Guppy <topics-leaks-guppy>` for more advanced memory debugging (see below for more info). Both mechanisms must be used from the :ref:`Telnet Console <topics-telnetconsole>`."
+msgstr ""
+
+#: ../../topics/leaks.rst:26
+msgid "Common causes of memory leaks"
+msgstr ""
+
+#: ../../topics/leaks.rst:28
+msgid "It happens quite often (sometimes by accident, sometimes on purpose) that the Scrapy developer passes objects referenced in Requests (for example, using the :attr:`~scrapy.http.Request.cb_kwargs` or :attr:`~scrapy.http.Request.meta` attributes or the request callback function) and that effectively bounds the lifetime of those referenced objects to the lifetime of the Request. This is, by far, the most common cause of memory leaks in Scrapy projects, and a quite difficult one to debug for newcomers."
+msgstr ""
+
+#: ../../topics/leaks.rst:36
+msgid "In big projects, the spiders are typically written by different people and some of those spiders could be \"leaking\" and thus affecting the rest of the other (well-written) spiders when they get to run concurrently, which, in turn, affects the whole crawling process."
+msgstr ""
+
+#: ../../topics/leaks.rst:41
+msgid "The leak could also come from a custom middleware, pipeline or extension that you have written, if you are not releasing the (previously allocated) resources properly. For example, allocating resources on :signal:`spider_opened` but not releasing them on :signal:`spider_closed` may cause problems if you're running :ref:`multiple spiders per process <run-multiple-spiders>`."
+msgstr ""
+
+#: ../../topics/leaks.rst:48
+msgid "Too Many Requests?"
+msgstr ""
+
+#: ../../topics/leaks.rst:50
+msgid "By default Scrapy keeps the request queue in memory; it includes :class:`~scrapy.http.Request` objects and all objects referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.cb_kwargs` and :attr:`~scrapy.http.Request.meta`). While not necessarily a leak, this can take a lot of memory. Enabling :ref:`persistent job queue <topics-jobs>` could help keeping memory usage in control."
+msgstr ""
+
+#: ../../topics/leaks.rst:61
+msgid "Debugging memory leaks with ``trackref``"
+msgstr ""
+
+#: ../../topics/leaks.rst:63
+msgid ":mod:`trackref` is a module provided by Scrapy to debug the most common cases of memory leaks. It basically tracks the references to all live Requests, Responses, Item and Selector objects."
+msgstr ""
+
+#: ../../topics/leaks.rst:67
+msgid "You can enter the telnet console and inspect how many objects (of the classes mentioned above) are currently alive using the ``prefs()`` function which is an alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::"
+msgstr ""
+
+#: ../../topics/leaks.rst:81
+msgid "As you can see, that report also shows the \"age\" of the oldest object in each class. If you're running multiple spiders per process chances are you can figure out which spider is leaking by looking at the oldest request or response. You can get the oldest object of each class using the :func:`~scrapy.utils.trackref.get_oldest` function (from the telnet console)."
+msgstr ""
+
+#: ../../topics/leaks.rst:88
+msgid "Which objects are tracked?"
+msgstr ""
+
+#: ../../topics/leaks.rst:90
+msgid "The objects tracked by ``trackrefs`` are all from these classes (and all its subclasses):"
+msgstr ""
+
+#: ../../topics/leaks.rst:93
+msgid ":class:`scrapy.http.Request`"
+msgstr ""
+
+#: ../../topics/leaks.rst:94
+msgid ":class:`scrapy.http.Response`"
+msgstr ""
+
+#: ../../topics/leaks.rst:95
+msgid ":class:`scrapy.item.Item`"
+msgstr ""
+
+#: ../../topics/leaks.rst:96
+msgid ":class:`scrapy.selector.Selector`"
+msgstr ""
+
+#: ../../topics/leaks.rst:97
+msgid ":class:`scrapy.spiders.Spider`"
+msgstr ""
+
+#: ../../topics/leaks.rst:100
+msgid "A real example"
+msgstr ""
+
+#: ../../topics/leaks.rst:102
+msgid "Let's see a concrete example of a hypothetical case of memory leaks. Suppose we have some spider with a line similar to this one::"
+msgstr ""
+
+#: ../../topics/leaks.rst:108
+msgid "That line is passing a response reference inside a request which effectively ties the response lifetime to the requests' one, and that would definitely cause memory leaks."
+msgstr ""
+
+#: ../../topics/leaks.rst:112
+msgid "Let's see how we can discover the cause (without knowing it a priori, of course) by using the ``trackref`` tool."
+msgstr ""
+
+#: ../../topics/leaks.rst:115
+msgid "After the crawler is running for a few minutes and we notice its memory usage has grown a lot, we can enter its telnet console and check the live references::"
+msgstr ""
+
+#: ../../topics/leaks.rst:127
+msgid "The fact that there are so many live responses (and that they're so old) is definitely suspicious, as responses should have a relatively short lifetime compared to Requests. The number of responses is similar to the number of requests, so it looks like they are tied in a some way. We can now go and check the code of the spider to discover the nasty line that is generating the leaks (passing response references inside requests)."
+msgstr ""
+
+#: ../../topics/leaks.rst:134
+msgid "Sometimes extra information about live objects can be helpful. Let's check the oldest response:"
+msgstr ""
+
+#: ../../topics/leaks.rst:142
+msgid "If you want to iterate over all objects, instead of getting the oldest one, you can use the :func:`scrapy.utils.trackref.iter_all` function:"
+msgstr ""
+
+#: ../../topics/leaks.rst:152
+msgid "Too many spiders?"
+msgstr ""
+
+#: ../../topics/leaks.rst:154
+msgid "If your project has too many spiders executed in parallel, the output of :func:`prefs()` can be difficult to read. For this reason, that function has a ``ignore`` argument which can be used to ignore a particular class (and all its subclases). For example, this won't show any live references to spiders:"
+msgstr ""
+
+#: ../../topics/leaks.rst:167
+msgid "scrapy.utils.trackref module"
+msgstr ""
+
+#: ../../topics/leaks.rst:169
+msgid "Here are the functions available in the :mod:`~scrapy.utils.trackref` module."
+msgstr ""
+
+#: ../../topics/leaks.rst:173
+msgid "Inherit from this class (instead of object) if you want to track live instances with the ``trackref`` module."
+msgstr ""
+
+#: ../../topics/leaks.rst:178
+msgid "Print a report of live references, grouped by class name."
+msgstr ""
+
+#: ../../topics/leaks.rst:0
+msgid "Parameters"
+msgstr ""
+
+#: ../../topics/leaks.rst:180
+msgid "if given, all objects from the specified class (or tuple of classes) will be ignored."
+msgstr ""
+
+#: ../../topics/leaks.rst:186
+msgid "Return the oldest object alive with the given class name, or ``None`` if none is found. Use :func:`print_live_refs` first to get a list of all tracked live objects per class name."
+msgstr ""
+
+#: ../../topics/leaks.rst:192
+msgid "Return an iterator over all objects alive with the given class name, or ``None`` if none is found. Use :func:`print_live_refs` first to get a list of all tracked live objects per class name."
+msgstr ""
+
+#: ../../topics/leaks.rst:199
+msgid "Debugging memory leaks with Guppy"
+msgstr ""
+
+#: ../../topics/leaks.rst:201
+msgid "``trackref`` provides a very convenient mechanism for tracking down memory leaks, but it only keeps track of the objects that are more likely to cause memory leaks (Requests, Responses, Items, and Selectors). However, there are other cases where the memory leaks could come from other (more or less obscure) objects. If this is your case, and you can't find your leaks using ``trackref``, you still have another resource: the `Guppy library`_. If you're using Python3, see :ref:`topics-leaks-muppy`."
+msgstr ""
+
+#: ../../topics/leaks.rst:211
+msgid "If you use ``pip``, you can install Guppy with the following command::"
+msgstr ""
+
+#: ../../topics/leaks.rst:215
+msgid "The telnet console also comes with a built-in shortcut (``hpy``) for accessing Guppy heap objects. Here's an example to view all Python objects available in the heap using Guppy:"
+msgstr ""
+
+#: ../../topics/leaks.rst:235
+msgid "You can see that most space is used by dicts. Then, if you want to see from which attribute those dicts are referenced, you could do:"
+msgstr ""
+
+#: ../../topics/leaks.rst:253
+msgid "As you can see, the Guppy module is very powerful but also requires some deep knowledge about Python internals. For more info about Guppy, refer to the `Guppy documentation`_."
+msgstr ""
+
+#: ../../topics/leaks.rst:262
+msgid "Debugging memory leaks with muppy"
+msgstr ""
+
+#: ../../topics/leaks.rst:263
+msgid "You can use muppy from `Pympler`_."
+msgstr ""
+
+#: ../../topics/leaks.rst:267
+msgid "If you use ``pip``, you can install muppy with the following command::"
+msgstr ""
+
+#: ../../topics/leaks.rst:271
+msgid "Here's an example to view all Python objects available in the heap using muppy:"
+msgstr ""
+
+#: ../../topics/leaks.rst:299
+msgid "For more info about muppy, refer to the `muppy documentation`_."
+msgstr ""
+
+#: ../../topics/leaks.rst:306
+msgid "Leaks without leaks"
+msgstr ""
+
+#: ../../topics/leaks.rst:308
+msgid "Sometimes, you may notice that the memory usage of your Scrapy process will only increase, but never decrease. Unfortunately, this could happen even though neither Scrapy nor your project are leaking memory. This is due to a (not so well) known problem of Python, which may not return released memory to the operating system in some cases. For more information on this issue see:"
+msgstr ""
+
+#: ../../topics/leaks.rst:314
+msgid "`Python Memory Management <https://www.evanjones.ca/python-memory.html>`_"
+msgstr ""
+
+#: ../../topics/leaks.rst:315
+msgid "`Python Memory Management Part 2 <https://www.evanjones.ca/python-memory-part2.html>`_"
+msgstr ""
+
+#: ../../topics/leaks.rst:316
+msgid "`Python Memory Management Part 3 <https://www.evanjones.ca/python-memory-part3.html>`_"
+msgstr ""
+
+#: ../../topics/leaks.rst:318
+msgid "The improvements proposed by Evan Jones, which are detailed in `this paper`_, got merged in Python 2.5, but this only reduces the problem, it doesn't fix it completely. To quote the paper:"
+msgstr ""
+
+#: ../../topics/leaks.rst:322
+msgid "*Unfortunately, this patch can only free an arena if there are no more objects allocated in it anymore. This means that fragmentation is a large issue. An application could have many megabytes of free memory, scattered throughout all the arenas, but it will be unable to free any of it. This is a problem experienced by all memory allocators. The only way to solve it is to move to a compacting garbage collector, which is able to move objects in memory. This would require significant changes to the Python interpreter.*"
+msgstr ""
+
+#: ../../topics/leaks.rst:332
+msgid "To keep memory consumption reasonable you can split the job into several smaller jobs or enable :ref:`persistent job queue <topics-jobs>` and stop/start spider from time to time."
+msgstr ""

@@ -1,0 +1,291 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../topics/autothrottle.rst:5
+msgid "AutoThrottle extension"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:7
+msgid ""
+"This is an extension for automatically throttling crawling speed based on"
+" load of both the Scrapy server and the website you are crawling."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:11
+msgid "Design goals"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:13
+msgid "be nicer to sites instead of using default download delay of zero"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:14
+msgid ""
+"automatically adjust Scrapy to the optimum crawling speed, so the user "
+"doesn't have to tune the download delays to find the optimum one. The "
+"user only needs to specify the maximum concurrent requests it allows, and"
+" the extension does the rest."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:22
+msgid "How it works"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:24
+msgid ""
+"AutoThrottle extension adjusts download delays dynamically to make spider"
+" send :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` concurrent requests on "
+"average to each remote website."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:28
+msgid ""
+"It uses download latency to compute the delays. The main idea is the "
+"following: if a server needs ``latency`` seconds to respond, a client "
+"should send a request each ``latency/N`` seconds to have ``N`` requests "
+"processed in parallel."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:33
+msgid ""
+"Instead of adjusting the delays one can just set a small fixed download "
+"delay and impose hard limits on concurrency using "
+":setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or "
+":setting:`CONCURRENT_REQUESTS_PER_IP` options. It will provide a similar "
+"effect, but there are some important differences:"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:39
+msgid ""
+"because the download delay is small there will be occasional bursts of "
+"requests;"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:41
+msgid ""
+"often non-200 (error) responses can be returned faster than regular "
+"responses, so with a small download delay and a hard concurrency limit "
+"crawler will be sending requests to server faster when server starts to "
+"return errors. But this is an opposite of what crawler should do - in "
+"case of errors it makes more sense to slow down: these errors may be "
+"caused by the high request rate."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:48
+msgid "AutoThrottle doesn't have these issues."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:51
+msgid "Throttling algorithm"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:53
+msgid ""
+"AutoThrottle algorithm adjusts download delays based on the following "
+"rules:"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:55
+msgid ""
+"spiders always start with a download delay of "
+":setting:`AUTOTHROTTLE_START_DELAY`;"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:57
+msgid ""
+"when a response is received, the target download delay is calculated as "
+"``latency / N`` where ``latency`` is a latency of the response, and ``N``"
+" is :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:60
+msgid ""
+"download delay for next requests is set to the average of previous "
+"download delay and the target download delay;"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:62
+msgid "latencies of non-200 responses are not allowed to decrease the delay;"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:63
+msgid ""
+"download delay can't become less than :setting:`DOWNLOAD_DELAY` or "
+"greater than :setting:`AUTOTHROTTLE_MAX_DELAY`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:66
+msgid ""
+"The AutoThrottle extension honours the standard Scrapy settings for "
+"concurrency and delay. This means that it will respect "
+":setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and "
+":setting:`CONCURRENT_REQUESTS_PER_IP` options and never set a download "
+"delay lower than :setting:`DOWNLOAD_DELAY`."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:74
+msgid ""
+"In Scrapy, the download latency is measured as the time elapsed between "
+"establishing the TCP connection and receiving the HTTP headers."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:77
+msgid ""
+"Note that these latencies are very hard to measure accurately in a "
+"cooperative multitasking environment because Scrapy may be busy "
+"processing a spider callback, for example, and unable to attend "
+"downloads. However, these latencies should still give a reasonable "
+"estimate of how busy Scrapy (and ultimately, the server) is, and this "
+"extension builds on that premise."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:84
+msgid "Settings"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:86
+msgid "The settings used to control the AutoThrottle extension are:"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:88
+msgid ":setting:`AUTOTHROTTLE_ENABLED`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:89
+msgid ":setting:`AUTOTHROTTLE_START_DELAY`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:90
+msgid ":setting:`AUTOTHROTTLE_MAX_DELAY`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:91
+msgid ":setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:92
+msgid ":setting:`AUTOTHROTTLE_DEBUG`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:93
+msgid ":setting:`CONCURRENT_REQUESTS_PER_DOMAIN`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:94
+msgid ":setting:`CONCURRENT_REQUESTS_PER_IP`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:95
+msgid ":setting:`DOWNLOAD_DELAY`"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:97
+msgid "For more information see :ref:`autothrottle-algorithm`."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:102
+msgid "AUTOTHROTTLE_ENABLED"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:104 ../../topics/autothrottle.rst:161
+msgid "Default: ``False``"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:106
+msgid "Enables the AutoThrottle extension."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:111
+msgid "AUTOTHROTTLE_START_DELAY"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:113
+msgid "Default: ``5.0``"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:115
+msgid "The initial download delay (in seconds)."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:120
+msgid "AUTOTHROTTLE_MAX_DELAY"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:122
+msgid "Default: ``60.0``"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:124
+msgid ""
+"The maximum download delay (in seconds) to be set in case of high "
+"latencies."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:129
+msgid "AUTOTHROTTLE_TARGET_CONCURRENCY"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:133
+msgid "Default: ``1.0``"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:135
+msgid ""
+"Average number of requests Scrapy should be sending in parallel to remote"
+" websites."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:138
+msgid ""
+"By default, AutoThrottle adjusts the delay to send a single concurrent "
+"request to each of the remote websites. Set this option to a higher value"
+" (e.g. ``2.0``) to increase the throughput and the load on remote "
+"servers. A lower ``AUTOTHROTTLE_TARGET_CONCURRENCY`` value (e.g. ``0.5``)"
+" makes the crawler more conservative and polite."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:144
+msgid ""
+"Note that :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and "
+":setting:`CONCURRENT_REQUESTS_PER_IP` options are still respected when "
+"AutoThrottle extension is enabled. This means that if "
+"``AUTOTHROTTLE_TARGET_CONCURRENCY`` is set to a value higher than "
+":setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or "
+":setting:`CONCURRENT_REQUESTS_PER_IP`, the crawler won't reach this "
+"number of concurrent requests."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:152
+msgid ""
+"At every given time point Scrapy can be sending more or less concurrent "
+"requests than ``AUTOTHROTTLE_TARGET_CONCURRENCY``; it is a suggested "
+"value the crawler tries to approach, not a hard limit."
+msgstr ""
+
+#: ../../topics/autothrottle.rst:159
+msgid "AUTOTHROTTLE_DEBUG"
+msgstr ""
+
+#: ../../topics/autothrottle.rst:163
+msgid ""
+"Enable AutoThrottle debug mode which will display stats on every response"
+" received, so you can see how the throttling parameters are being "
+"adjusted in real time."
+msgstr ""
+

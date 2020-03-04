@@ -1,0 +1,104 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../versioning.rst:5
+msgid "Versioning and API Stability"
+msgstr ""
+
+#: ../../versioning.rst:8
+msgid "Versioning"
+msgstr ""
+
+#: ../../versioning.rst:10
+msgid "There are 3 numbers in a Scrapy version: *A.B.C*"
+msgstr ""
+
+#: ../../versioning.rst:12
+msgid ""
+"*A* is the major version. This will rarely change and will signify very "
+"large changes."
+msgstr ""
+
+#: ../../versioning.rst:14
+msgid ""
+"*B* is the release number. This will include many changes including "
+"features and things that possibly break backward compatibility, although "
+"we strive to keep theses cases at a minimum."
+msgstr ""
+
+#: ../../versioning.rst:17
+msgid "*C* is the bugfix release number."
+msgstr ""
+
+#: ../../versioning.rst:19
+msgid ""
+"Backward-incompatibilities are explicitly mentioned in the :ref:`release "
+"notes <news>`, and may require special attention before upgrading."
+msgstr ""
+
+#: ../../versioning.rst:22
+msgid ""
+"Development releases do not follow 3-numbers version and are generally "
+"released as ``dev`` suffixed versions, e.g. ``1.3dev``."
+msgstr ""
+
+#: ../../versioning.rst:26
+msgid ""
+"With Scrapy 0.* series, Scrapy used `odd-numbered versions for "
+"development releases`_. This is not the case anymore from Scrapy 1.0 "
+"onwards."
+msgstr ""
+
+#: ../../versioning.rst:29
+msgid ""
+"Starting with Scrapy 1.0, all releases should be considered production-"
+"ready."
+msgstr ""
+
+#: ../../versioning.rst:31
+msgid "For example:"
+msgstr ""
+
+#: ../../versioning.rst:33
+msgid ""
+"*1.1.1* is the first bugfix release of the *1.1* series (safe to use in "
+"production)"
+msgstr ""
+
+#: ../../versioning.rst:38
+msgid "API Stability"
+msgstr ""
+
+#: ../../versioning.rst:40
+msgid "API stability was one of the major goals for the *1.0* release."
+msgstr ""
+
+#: ../../versioning.rst:42
+msgid ""
+"Methods or functions that start with a single dash (``_``) are private "
+"and should never be relied as stable."
+msgstr ""
+
+#: ../../versioning.rst:45
+msgid ""
+"Also, keep in mind that stable doesn't mean complete: stable APIs could "
+"grow new methods or functionality but the existing methods should keep "
+"working the same way."
+msgstr ""
+

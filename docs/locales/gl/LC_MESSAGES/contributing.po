@@ -1,0 +1,530 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-04 01:00+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../contributing.rst:5
+msgid "Contributing to Scrapy"
+msgstr ""
+
+#: ../../contributing.rst:9
+msgid ""
+"Double check that you are reading the most recent version of this "
+"document at https://docs.scrapy.org/en/master/contributing.html"
+msgstr ""
+
+#: ../../contributing.rst:12
+msgid "There are many ways to contribute to Scrapy. Here are some of them:"
+msgstr ""
+
+#: ../../contributing.rst:14
+msgid ""
+"Blog about Scrapy. Tell the world how you're using Scrapy. This will help"
+" newcomers with more examples and will help the Scrapy project to "
+"increase its visibility."
+msgstr ""
+
+#: ../../contributing.rst:18
+msgid ""
+"Report bugs and request features in the `issue tracker`_, trying to "
+"follow the guidelines detailed in `Reporting bugs`_ below."
+msgstr ""
+
+#: ../../contributing.rst:21
+msgid ""
+"Submit patches for new functionalities and/or bug fixes. Please read :ref"
+":`writing-patches` and `Submitting patches`_ below for details on how to "
+"write and submit a patch."
+msgstr ""
+
+#: ../../contributing.rst:25
+msgid ""
+"Join the `Scrapy subreddit`_ and share your ideas on how to improve "
+"Scrapy. We're always open to suggestions."
+msgstr ""
+
+#: ../../contributing.rst:28
+msgid ""
+"Answer Scrapy questions at `Stack Overflow "
+"<https://stackoverflow.com/questions/tagged/scrapy>`__."
+msgstr ""
+
+#: ../../contributing.rst:33
+msgid "Reporting bugs"
+msgstr ""
+
+#: ../../contributing.rst:37
+msgid ""
+"Please report security issues **only** to scrapy-"
+"security@googlegroups.com. This is a private list only open to trusted "
+"Scrapy developers, and its archives are not public."
+msgstr ""
+
+#: ../../contributing.rst:41
+msgid ""
+"Well-written bug reports are very helpful, so keep in mind the following "
+"guidelines when you're going to report a new bug."
+msgstr ""
+
+#: ../../contributing.rst:44
+msgid ""
+"check the :ref:`FAQ <faq>` first to see if your issue is addressed in a "
+"well-known question"
+msgstr ""
+
+#: ../../contributing.rst:47
+msgid ""
+"if you have a general question about Scrapy usage, please ask it at "
+"`Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__ "
+"(use \"scrapy\" tag)."
+msgstr ""
+
+#: ../../contributing.rst:51
+msgid ""
+"check the `open issues`_ to see if the issue has already been reported. "
+"If it has, don't dismiss the report, but check the ticket history and "
+"comments. If you have additional useful information, please leave a "
+"comment, or consider :ref:`sending a pull request <writing-patches>` with"
+" a fix."
+msgstr ""
+
+#: ../../contributing.rst:56
+msgid ""
+"search the `scrapy-users`_ list and `Scrapy subreddit`_ to see if it has "
+"been discussed there, or if you're not sure if what you're seeing is a "
+"bug. You can also ask in the ``#scrapy`` IRC channel."
+msgstr ""
+
+#: ../../contributing.rst:60
+msgid ""
+"write **complete, reproducible, specific bug reports**. The smaller the "
+"test case, the better. Remember that other developers won't have your "
+"project to reproduce the bug, so please include all relevant files "
+"required to reproduce it. See for example StackOverflow's guide on "
+"creating a `Minimal, Complete, and Verifiable example`_ exhibiting the "
+"issue."
+msgstr ""
+
+#: ../../contributing.rst:66
+msgid ""
+"the most awesome way to provide a complete reproducible example is to "
+"send a pull request which adds a failing test case to the Scrapy testing "
+"suite (see :ref:`submitting-patches`). This is helpful even if you don't "
+"have an intention to fix the issue yourselves."
+msgstr ""
+
+#: ../../contributing.rst:72
+msgid ""
+"include the output of ``scrapy version -v`` so developers working on your"
+" bug know exactly which version and platform it occurred on, which is "
+"often very helpful for reproducing it, or knowing if it was already "
+"fixed."
+msgstr ""
+
+#: ../../contributing.rst:81
+msgid "Writing patches"
+msgstr ""
+
+#: ../../contributing.rst:83
+msgid ""
+"The better a patch is written, the higher the chances that it'll get "
+"accepted and the sooner it will be merged."
+msgstr ""
+
+#: ../../contributing.rst:85
+msgid "Well-written patches should:"
+msgstr ""
+
+#: ../../contributing.rst:87
+msgid ""
+"contain the minimum amount of code required for the specific change. "
+"Small patches are easier to review and merge. So, if you're doing more "
+"than one change (or bug fix), please consider submitting one patch per "
+"change. Do not collapse multiple changes into a single patch. For big "
+"changes consider using a patch queue."
+msgstr ""
+
+#: ../../contributing.rst:93
+msgid "pass all unit-tests. See `Running tests`_ below."
+msgstr ""
+
+#: ../../contributing.rst:95
+msgid ""
+"include one (or more) test cases that check the bug fixed or the new "
+"functionality added. See `Writing tests`_ below."
+msgstr ""
+
+#: ../../contributing.rst:98
+msgid ""
+"if you're adding or changing a public (documented) API, please include "
+"the documentation changes in the same patch.  See `Documentation "
+"policies`_ below."
+msgstr ""
+
+#: ../../contributing.rst:102
+msgid ""
+"if you're adding a private API, please add a regular expression to the "
+"``coverage_ignore_pyobjects`` variable of ``docs/conf.py`` to exclude the"
+" new private API from documentation coverage checks."
+msgstr ""
+
+#: ../../contributing.rst:106
+msgid ""
+"To see if your private API is skipped properly, generate a documentation "
+"coverage report as follows::"
+msgstr ""
+
+#: ../../contributing.rst:114
+msgid "Submitting patches"
+msgstr ""
+
+#: ../../contributing.rst:116
+msgid ""
+"The best way to submit a patch is to issue a `pull request`_ on GitHub, "
+"optionally creating a new issue first."
+msgstr ""
+
+#: ../../contributing.rst:119
+msgid ""
+"Remember to explain what was fixed or the new functionality (what it is, "
+"why it's needed, etc). The more info you include, the easier will be for "
+"core developers to understand and accept your patch."
+msgstr ""
+
+#: ../../contributing.rst:123
+msgid ""
+"You can also discuss the new functionality (or bug fix) before creating "
+"the patch, but it's always good to have a patch ready to illustrate your "
+"arguments and show that you have put some additional thought into the "
+"subject. A good starting point is to send a pull request on GitHub. It "
+"can be simple enough to illustrate your idea, and leave "
+"documentation/tests for later, after the idea has been validated and "
+"proven useful. Alternatively, you can start a conversation in the `Scrapy"
+" subreddit`_ to discuss your idea first."
+msgstr ""
+
+#: ../../contributing.rst:131
+msgid ""
+"Sometimes there is an existing pull request for the problem you'd like to"
+" solve, which is stalled for some reason. Often the pull request is in a "
+"right direction, but changes are requested by Scrapy maintainers, and the"
+" original pull request author hasn't had time to address them. In this "
+"case consider picking up this pull request: open a new pull request with "
+"all commits from the original pull request, as well as additional changes"
+" to address the raised issues. Doing so helps a lot; it is not considered"
+" rude as soon as the original author is acknowledged by keeping his/her "
+"commits."
+msgstr ""
+
+#: ../../contributing.rst:141
+msgid ""
+"You can pull an existing pull request to a local branch by running ``git "
+"fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE`` (replace "
+"'upstream' with a remote name for scrapy repository, ``$PR_NUMBER`` with "
+"an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE`` with a name of "
+"the branch you want to create locally). See also: "
+"https://help.github.com/en/github/collaborating-with-issues-and-pull-"
+"requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-"
+"request-locally."
+msgstr ""
+
+#: ../../contributing.rst:148
+msgid ""
+"When writing GitHub pull requests, try to keep titles short but "
+"descriptive. E.g. For bug #411: \"Scrapy hangs if an exception raises in "
+"start_requests\" prefer \"Fix hanging when exception occurs in "
+"start_requests (#411)\" instead of \"Fix for #411\". Complete titles make"
+" it easy to skim through the issue tracker."
+msgstr ""
+
+#: ../../contributing.rst:154
+msgid ""
+"Finally, try to keep aesthetic changes (:pep:`8` compliance, unused "
+"imports removal, etc) in separate commits from functional changes. This "
+"will make pull requests easier to review and more likely to get merged."
+msgstr ""
+
+#: ../../contributing.rst:159
+msgid "Coding style"
+msgstr ""
+
+#: ../../contributing.rst:161
+msgid ""
+"Please follow these coding conventions when writing code for inclusion in"
+" Scrapy:"
+msgstr ""
+
+#: ../../contributing.rst:164
+msgid "Unless otherwise specified, follow :pep:`8`."
+msgstr ""
+
+#: ../../contributing.rst:166
+msgid ""
+"It's OK to use lines longer than 80 chars if it improves the code "
+"readability."
+msgstr ""
+
+#: ../../contributing.rst:169
+msgid ""
+"Don't put your name in the code you contribute; git provides enough "
+"metadata to identify author of the code. See "
+"https://help.github.com/en/github/using-git/setting-your-username-in-git "
+"for setup instructions."
+msgstr ""
+
+#: ../../contributing.rst:177
+msgid "Documentation policies"
+msgstr ""
+
+#: ../../contributing.rst:179
+msgid ""
+"For reference documentation of API members (classes, methods, etc.) use "
+"docstrings and make sure that the Sphinx documentation uses the "
+":mod:`~sphinx.ext.autodoc` extension to pull the docstrings. API "
+"reference documentation should follow docstring conventions (`PEP 257`_) "
+"and be IDE-friendly: short, to the point, and it may provide short "
+"examples."
+msgstr ""
+
+#: ../../contributing.rst:185
+msgid ""
+"Other types of documentation, such as tutorials or topics, should be "
+"covered in files within the ``docs/`` directory. This includes "
+"documentation that is specific to an API member, but goes beyond API "
+"reference documentation."
+msgstr ""
+
+#: ../../contributing.rst:189
+msgid ""
+"In any case, if something is covered in a docstring, use the "
+":mod:`~sphinx.ext.autodoc` extension to pull the docstring into the "
+"documentation instead of duplicating the docstring in files within the "
+"``docs/`` directory."
+msgstr ""
+
+#: ../../contributing.rst:195
+msgid "Tests"
+msgstr ""
+
+#: ../../contributing.rst:197
+msgid ""
+"Tests are implemented using the :doc:`Twisted unit-testing framework "
+"<twisted:core/development/policy/test-standard>`. Running tests requires "
+":doc:`tox <tox:index>`."
+msgstr ""
+
+#: ../../contributing.rst:204
+msgid "Running tests"
+msgstr ""
+
+#: ../../contributing.rst:206
+msgid "To run all tests::"
+msgstr ""
+
+#: ../../contributing.rst:210
+msgid "To run a specific test (say ``tests/test_loader.py``) use:"
+msgstr ""
+
+#: ../../contributing.rst:212
+msgid "``tox -- tests/test_loader.py``"
+msgstr ""
+
+#: ../../contributing.rst:214
+msgid ""
+"To run the tests on a specific :doc:`tox <tox:index>` environment, use "
+"``-e <name>`` with an environment name from ``tox.ini``. For example, to "
+"run the tests with Python 3.6 use::"
+msgstr ""
+
+#: ../../contributing.rst:220
+msgid ""
+"You can also specify a comma-separated list of environments, and use "
+":ref:`tox’s parallel mode <tox:parallel_mode>` to run the tests on "
+"multiple environments in parallel::"
+msgstr ""
+
+#: ../../contributing.rst:226
+msgid ""
+"To pass command-line options to :doc:`pytest <pytest:index>`, add them "
+"after ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` "
+"overrides the default positional arguments defined in ``tox.ini``, so you"
+" must include those default positional arguments (``scrapy tests``) after"
+" ``--`` as well::"
+msgstr ""
+
+#: ../../contributing.rst:233
+msgid ""
+"You can also use the `pytest-xdist`_ plugin. For example, to run all "
+"tests on the Python 3.6 :doc:`tox <tox:index>` environment using all your"
+" CPU cores::"
+msgstr ""
+
+#: ../../contributing.rst:238
+msgid ""
+"To see coverage report install :doc:`coverage <coverage:index>` (``pip "
+"install coverage``) and run:"
+msgstr ""
+
+#: ../../contributing.rst:241
+msgid "``coverage report``"
+msgstr ""
+
+#: ../../contributing.rst:243
+msgid ""
+"see output of ``coverage --help`` for more options like html or xml "
+"report."
+msgstr ""
+
+#: ../../contributing.rst:246
+msgid "Writing tests"
+msgstr ""
+
+#: ../../contributing.rst:248
+msgid ""
+"All functionality (including new features and bug fixes) must include a "
+"test case to check that it works as expected, so please include tests for"
+" your patches if you want them to get accepted sooner."
+msgstr ""
+
+#: ../../contributing.rst:252
+msgid ""
+"Scrapy uses unit-tests, which are located in the `tests/`_ directory. "
+"Their module name typically resembles the full path of the module they're"
+" testing. For example, the item loaders code is in::"
+msgstr ""
+
+#: ../../contributing.rst:258
+msgid "And their unit-tests are in::"
+msgstr ""
+
+#: ../../contributing.rst:264
+msgid "Documentation Translation"
+msgstr ""
+
+#: ../../contributing.rst:266
+msgid ""
+"You can use the following command to update the contents of the "
+"``docs/locales/`` folder, which contains Gettext catalog template files "
+"(``.pot``) and message catalog files (``.po``)::"
+msgstr ""
+
+#: ../../contributing.rst:272
+msgid ""
+"Translators can transform catalog template files into message catalog "
+"files (``.po``) mapping source English messages to their translations in "
+"a different language. Those message catalog files must be placed into "
+"``docs/locales/<language code>/LC_MESSAGES/``."
+msgstr ""
+
+#: ../../contributing.rst:277
+msgid ""
+"To build the documentation in a language other than English, using the "
+"compiled message catalog files from the ``locales/`` folder, use ``-D "
+"language=<language>``, for example::"
+msgstr ""
+
+#: ../../contributing.rst:283
+msgid ""
+"When translating message catalog files, you will find reStructuredText "
+"syntax used, and you must be careful not to break the syntax or "
+"references when translating. Please, get familiar with reStructuredText "
+"syntax before you start working on a translation."
+msgstr ""
+
+#: ../../contributing.rst:288
+msgid ""
+"These are some common pieces of reStructuredText syntax that you may find"
+" in English messages, and guidelines for handling them in your "
+"translations:"
+msgstr ""
+
+#: ../../contributing.rst:291
+msgid ""
+"``word_`` cannot be translated. If you need to translate ``word``, send a"
+" pull request to transform it into ```word <word>`__``, or open an issue "
+"requesting such a change."
+msgstr ""
+
+#: ../../contributing.rst:295
+msgid ""
+"```multiple words`_`` cannot be translated. If you need to translate "
+"``multiple words``, send a pull request to transform it into ```multiple "
+"words <multiple words>`__``, or open an issue requesting such a change."
+msgstr ""
+
+#: ../../contributing.rst:299
+msgid ""
+"```text <target>`_`` allows translating ``text``. If ``target`` is a URL,"
+" it may be translated as well."
+msgstr ""
+
+#: ../../contributing.rst:302
+msgid ""
+"If target is not a URL, but you would like to change the target URL to a "
+"localized equivalent URL, send a pull request to replace ``target`` with "
+"the actual URL, or open an issue requesting such a change."
+msgstr ""
+
+#: ../../contributing.rst:307
+msgid ""
+"``:ref:`id``` will be automatically replaced by the translation of the "
+"title of the referenced page or section."
+msgstr ""
+
+#: ../../contributing.rst:310
+msgid "``:ref:`text <id>``` allows translating ``text``."
+msgstr ""
+
+#~ msgid ""
+#~ "``word_`` cannot be translated. If you"
+#~ " need to translate ``word``, send a"
+#~ " pull request to transform it into"
+#~ " ```word <word>`_``, or open an issue"
+#~ " requesting such a change."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "```multiple words`_`` cannot be translated."
+#~ " If you need to translate ``multiple"
+#~ " words``, send a pull request to "
+#~ "transform it into ```multiple words "
+#~ "<multiple words>`_``, or open an issue"
+#~ " requesting such a change."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Scrapy maintainers use the following "
+#~ "command to generate a ``docs/pot/`` "
+#~ "folder with Gettext catalog template "
+#~ "files (``.pot``)::"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Those catalog template files can be "
+#~ "delivered to translators, who can "
+#~ "transform them into message catalog "
+#~ "files (``.po``) mapping source English "
+#~ "messages to their translations in a "
+#~ "different language."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Those message catalog files must be "
+#~ "placed into ``docs/locales/<language "
+#~ "code>/LC_MESSAGES/``."
+#~ msgstr ""
+

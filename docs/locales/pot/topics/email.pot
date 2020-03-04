@@ -1,0 +1,206 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../topics/email.rst:5
+msgid "Sending e-mail"
+msgstr ""
+
+#: ../../topics/email.rst:10
+msgid "Although Python makes sending e-mails relatively easy via the `smtplib`_ library, Scrapy provides its own facility for sending e-mails which is very easy to use and it's implemented using :doc:`Twisted non-blocking IO <twisted:core/howto/defer-intro>`, to avoid interfering with the non-blocking IO of the crawler. It also provides a simple API for sending attachments and it's very easy to configure, with a few :ref:`settings <topics-email-settings>`."
+msgstr ""
+
+#: ../../topics/email.rst:21
+msgid "Quick example"
+msgstr ""
+
+#: ../../topics/email.rst:23
+msgid "There are two ways to instantiate the mail sender. You can instantiate it using the standard ``__init__`` method::"
+msgstr ""
+
+#: ../../topics/email.rst:29
+msgid "Or you can instantiate it passing a Scrapy settings object, which will respect the :ref:`settings <topics-email-settings>`::"
+msgstr ""
+
+#: ../../topics/email.rst:34
+msgid "And here is how to use it to send an e-mail (without attachments)::"
+msgstr ""
+
+#: ../../topics/email.rst:39
+msgid "MailSender class reference"
+msgstr ""
+
+#: ../../topics/email.rst:41
+msgid "MailSender is the preferred class to use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO <twisted:core/howto/defer-intro>`, like the rest of the framework."
+msgstr ""
+
+#: ../../topics/email.rst:0
+#: ../../topics/email.rst:0
+#: ../../topics/email.rst:0
+msgid "Parameters"
+msgstr ""
+
+#: ../../topics/email.rst:47
+msgid "the SMTP host to use for sending the emails. If omitted, the :setting:`MAIL_HOST` setting will be used."
+msgstr ""
+
+#: ../../topics/email.rst:51
+msgid "the address used to send emails (in the ``From:`` header). If omitted, the :setting:`MAIL_FROM` setting will be used."
+msgstr ""
+
+#: ../../topics/email.rst:55
+msgid "the SMTP user. If omitted, the :setting:`MAIL_USER` setting will be used. If not given, no SMTP authentication will be performed."
+msgstr ""
+
+#: ../../topics/email.rst:60
+msgid "the SMTP pass for authentication."
+msgstr ""
+
+#: ../../topics/email.rst:63
+msgid "the SMTP port to connect to"
+msgstr ""
+
+#: ../../topics/email.rst:66
+msgid "enforce using SMTP STARTTLS"
+msgstr ""
+
+#: ../../topics/email.rst:69
+msgid "enforce using a secure SSL connection"
+msgstr ""
+
+#: ../../topics/email.rst:74
+msgid "Instantiate using a Scrapy settings object, which will respect :ref:`these Scrapy settings <topics-email-settings>`."
+msgstr ""
+
+#: ../../topics/email.rst:77
+#: ../../topics/email.rst:84
+msgid "the e-mail recipients"
+msgstr ""
+
+#: ../../topics/email.rst:82
+msgid "Send email to the given recipients."
+msgstr ""
+
+#: ../../topics/email.rst:87
+msgid "the subject of the e-mail"
+msgstr ""
+
+#: ../../topics/email.rst:90
+msgid "the e-mails to CC"
+msgstr ""
+
+#: ../../topics/email.rst:93
+msgid "the e-mail body"
+msgstr ""
+
+#: ../../topics/email.rst:96
+msgid "an iterable of tuples ``(attach_name, mimetype, file_object)`` where  ``attach_name`` is a string with the name that will appear on the e-mail's attachment, ``mimetype`` is the mimetype of the attachment and ``file_object`` is a readable file object with the contents of the attachment"
+msgstr ""
+
+#: ../../topics/email.rst:103
+msgid "the MIME type of the e-mail"
+msgstr ""
+
+#: ../../topics/email.rst:106
+msgid "the character encoding to use for the e-mail contents"
+msgstr ""
+
+#: ../../topics/email.rst:113
+msgid "Mail settings"
+msgstr ""
+
+#: ../../topics/email.rst:115
+msgid "These settings define the default ``__init__`` method values of the :class:`MailSender` class, and can be used to configure e-mail notifications in your project without writing any code (for those extensions and code that uses :class:`MailSender`)."
+msgstr ""
+
+#: ../../topics/email.rst:122
+msgid "MAIL_FROM"
+msgstr ""
+
+#: ../../topics/email.rst:124
+msgid "Default: ``'scrapy@localhost'``"
+msgstr ""
+
+#: ../../topics/email.rst:126
+msgid "Sender email to use (``From:`` header) for sending emails."
+msgstr ""
+
+#: ../../topics/email.rst:131
+msgid "MAIL_HOST"
+msgstr ""
+
+#: ../../topics/email.rst:133
+msgid "Default: ``'localhost'``"
+msgstr ""
+
+#: ../../topics/email.rst:135
+msgid "SMTP host to use for sending emails."
+msgstr ""
+
+#: ../../topics/email.rst:140
+msgid "MAIL_PORT"
+msgstr ""
+
+#: ../../topics/email.rst:142
+msgid "Default: ``25``"
+msgstr ""
+
+#: ../../topics/email.rst:144
+msgid "SMTP port to use for sending emails."
+msgstr ""
+
+#: ../../topics/email.rst:149
+msgid "MAIL_USER"
+msgstr ""
+
+#: ../../topics/email.rst:151
+#: ../../topics/email.rst:161
+msgid "Default: ``None``"
+msgstr ""
+
+#: ../../topics/email.rst:153
+msgid "User to use for SMTP authentication. If disabled no SMTP authentication will be performed."
+msgstr ""
+
+#: ../../topics/email.rst:159
+msgid "MAIL_PASS"
+msgstr ""
+
+#: ../../topics/email.rst:163
+msgid "Password to use for SMTP authentication, along with :setting:`MAIL_USER`."
+msgstr ""
+
+#: ../../topics/email.rst:168
+msgid "MAIL_TLS"
+msgstr ""
+
+#: ../../topics/email.rst:170
+#: ../../topics/email.rst:179
+msgid "Default: ``False``"
+msgstr ""
+
+#: ../../topics/email.rst:172
+msgid "Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connection, and upgrade it to a secure connection using SSL/TLS."
+msgstr ""
+
+#: ../../topics/email.rst:177
+msgid "MAIL_SSL"
+msgstr ""
+
+#: ../../topics/email.rst:181
+msgid "Enforce connecting using an SSL encrypted connection"
+msgstr ""

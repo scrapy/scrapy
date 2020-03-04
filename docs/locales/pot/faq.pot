@@ -1,0 +1,369 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../faq.rst:4
+msgid "Frequently Asked Questions"
+msgstr ""
+
+#: ../../faq.rst:9
+msgid "How does Scrapy compare to BeautifulSoup or lxml?"
+msgstr ""
+
+#: ../../faq.rst:11
+msgid "`BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is an application framework for writing web spiders that crawl web sites and extract data from them."
+msgstr ""
+
+#: ../../faq.rst:15
+msgid "Scrapy provides a built-in mechanism for extracting data (called :ref:`selectors <topics-selectors>`) but you can easily use `BeautifulSoup`_ (or `lxml`_) instead, if you feel more comfortable working with them. After all, they're just parsing libraries which can be imported and used from any Python code."
+msgstr ""
+
+#: ../../faq.rst:21
+msgid "In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like comparing `jinja2`_ to `Django`_."
+msgstr ""
+
+#: ../../faq.rst:30
+msgid "Can I use Scrapy with BeautifulSoup?"
+msgstr ""
+
+#: ../../faq.rst:32
+msgid "Yes, you can. As mentioned :ref:`above <faq-scrapy-bs-cmp>`, `BeautifulSoup`_ can be used for parsing HTML responses in Scrapy callbacks. You just have to feed the response's body into a ``BeautifulSoup`` object and extract whatever data you need from it."
+msgstr ""
+
+#: ../../faq.rst:38
+msgid "Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::"
+msgstr ""
+
+#: ../../faq.rst:62
+msgid "``BeautifulSoup`` supports several HTML/XML parsers. See `BeautifulSoup's official documentation`_ on which ones are available."
+msgstr ""
+
+#: ../../faq.rst:70
+msgid "What Python versions does Scrapy support?"
+msgstr ""
+
+#: ../../faq.rst:72
+msgid "Scrapy is supported under Python 3.5+ under CPython (default Python implementation) and PyPy (starting with PyPy 5.9). Python 3 support was added in Scrapy 1.1. PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5. Python 2 support was dropped in Scrapy 2.0."
+msgstr ""
+
+#: ../../faq.rst:79
+msgid "For Python 3 support on Windows, it is recommended to use Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`."
+msgstr ""
+
+#: ../../faq.rst:83
+msgid "Did Scrapy \"steal\" X from Django?"
+msgstr ""
+
+#: ../../faq.rst:85
+msgid "Probably, but we don't like that word. We think Django_ is a great open source project and an example to follow, so we've used it as an inspiration for Scrapy."
+msgstr ""
+
+#: ../../faq.rst:89
+msgid "We believe that, if something is already done well, there's no need to reinvent it. This concept, besides being one of the foundations for open source and free software, not only applies to software but also to documentation, procedures, policies, etc. So, instead of going through each problem ourselves, we choose to copy ideas from those projects that have already solved them properly, and focus on the real problems we need to solve."
+msgstr ""
+
+#: ../../faq.rst:96
+msgid "We'd be proud if Scrapy serves as an inspiration for other projects. Feel free to steal from us!"
+msgstr ""
+
+#: ../../faq.rst:100
+msgid "Does Scrapy work with HTTP proxies?"
+msgstr ""
+
+#: ../../faq.rst:102
+msgid "Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP Proxy downloader middleware. See :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`."
+msgstr ""
+
+#: ../../faq.rst:107
+msgid "How can I scrape an item with attributes in different pages?"
+msgstr ""
+
+#: ../../faq.rst:109
+msgid "See :ref:`topics-request-response-ref-request-callback-arguments`."
+msgstr ""
+
+#: ../../faq.rst:113
+msgid "Scrapy crashes with: ImportError: No module named win32api"
+msgstr ""
+
+#: ../../faq.rst:115
+msgid "You need to install `pywin32`_ because of `this Twisted bug`_."
+msgstr ""
+
+#: ../../faq.rst:121
+msgid "How can I simulate a user login in my spider?"
+msgstr ""
+
+#: ../../faq.rst:123
+msgid "See :ref:`topics-request-response-ref-request-userlogin`."
+msgstr ""
+
+#: ../../faq.rst:128
+msgid "Does Scrapy crawl in breadth-first or depth-first order?"
+msgstr ""
+
+#: ../../faq.rst:130
+msgid "By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which basically means that it crawls in `DFO order`_. This order is more convenient in most cases."
+msgstr ""
+
+#: ../../faq.rst:134
+msgid "If you do want to crawl in true `BFO order`_, you can do it by setting the following settings::"
+msgstr ""
+
+#: ../../faq.rst:141
+msgid "While pending requests are below the configured values of :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent concurrently. As a result, the first few requests of a crawl rarely follow the desired order. Lowering those settings to ``1`` enforces the desired order, but it significantly slows down the crawl as a whole."
+msgstr ""
+
+#: ../../faq.rst:150
+msgid "My Scrapy crawler has memory leaks. What can I do?"
+msgstr ""
+
+#: ../../faq.rst:152
+msgid "See :ref:`topics-leaks`."
+msgstr ""
+
+#: ../../faq.rst:154
+msgid "Also, Python has a builtin memory leak issue which is described in :ref:`topics-leaks-without-leaks`."
+msgstr ""
+
+#: ../../faq.rst:158
+msgid "How can I make Scrapy consume less memory?"
+msgstr ""
+
+#: ../../faq.rst:160
+msgid "See previous question."
+msgstr ""
+
+#: ../../faq.rst:163
+msgid "Can I use Basic HTTP Authentication in my spiders?"
+msgstr ""
+
+#: ../../faq.rst:165
+msgid "Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`."
+msgstr ""
+
+#: ../../faq.rst:168
+msgid "Why does Scrapy download pages in English instead of my native language?"
+msgstr ""
+
+#: ../../faq.rst:170
+msgid "Try changing the default `Accept-Language`_ request header by overriding the :setting:`DEFAULT_REQUEST_HEADERS` setting."
+msgstr ""
+
+#: ../../faq.rst:176
+msgid "Where can I find some example Scrapy projects?"
+msgstr ""
+
+#: ../../faq.rst:178
+msgid "See :ref:`intro-examples`."
+msgstr ""
+
+#: ../../faq.rst:181
+msgid "Can I run a spider without creating a project?"
+msgstr ""
+
+#: ../../faq.rst:183
+msgid "Yes. You can use the :command:`runspider` command. For example, if you have a spider written in a ``my_spider.py`` file you can run it with::"
+msgstr ""
+
+#: ../../faq.rst:188
+msgid "See :command:`runspider` command for more info."
+msgstr ""
+
+#: ../../faq.rst:191
+msgid "I get \"Filtered offsite request\" messages. How can I fix them?"
+msgstr ""
+
+#: ../../faq.rst:193
+msgid "Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a problem, so you may not need to fix them."
+msgstr ""
+
+#: ../../faq.rst:196
+msgid "Those messages are thrown by the Offsite Spider Middleware, which is a spider middleware (enabled by default) whose purpose is to filter out requests to domains outside the ones covered by the spider."
+msgstr ""
+
+#: ../../faq.rst:200
+msgid "For more info see: :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`."
+msgstr ""
+
+#: ../../faq.rst:204
+msgid "What is the recommended way to deploy a Scrapy crawler in production?"
+msgstr ""
+
+#: ../../faq.rst:206
+msgid "See :ref:`topics-deploy`."
+msgstr ""
+
+#: ../../faq.rst:209
+msgid "Can I use JSON for large exports?"
+msgstr ""
+
+#: ../../faq.rst:211
+msgid "It'll depend on how large your output is. See :ref:`this warning <json-with-large-data>` in :class:`~scrapy.exporters.JsonItemExporter` documentation."
+msgstr ""
+
+#: ../../faq.rst:216
+msgid "Can I return (Twisted) deferreds from signal handlers?"
+msgstr ""
+
+#: ../../faq.rst:218
+msgid "Some signals support returning deferreds from their handlers, others don't. See the :ref:`topics-signals-ref` to know which ones."
+msgstr ""
+
+#: ../../faq.rst:222
+msgid "What does the response status code 999 means?"
+msgstr ""
+
+#: ../../faq.rst:224
+msgid "999 is a custom response status code used by Yahoo sites to throttle requests. Try slowing down the crawling speed by using a download delay of ``2`` (or higher) in your spider::"
+msgstr ""
+
+#: ../../faq.rst:236
+msgid "Or by setting a global download delay in your project with the :setting:`DOWNLOAD_DELAY` setting."
+msgstr ""
+
+#: ../../faq.rst:240
+msgid "Can I call ``pdb.set_trace()`` from my spiders to debug them?"
+msgstr ""
+
+#: ../../faq.rst:242
+msgid "Yes, but you can also use the Scrapy shell which allows you to quickly analyze (and even modify) the response being processed by your spider, which is, quite often, more useful than plain old ``pdb.set_trace()``."
+msgstr ""
+
+#: ../../faq.rst:246
+msgid "For more info see :ref:`topics-shell-inspect-response`."
+msgstr ""
+
+#: ../../faq.rst:249
+msgid "Simplest way to dump all my scraped items into a JSON/CSV/XML file?"
+msgstr ""
+
+#: ../../faq.rst:251
+msgid "To dump into a JSON file::"
+msgstr ""
+
+#: ../../faq.rst:255
+msgid "To dump into a CSV file::"
+msgstr ""
+
+#: ../../faq.rst:259
+msgid "To dump into a XML file::"
+msgstr ""
+
+#: ../../faq.rst:263
+msgid "For more information see :ref:`topics-feed-exports`"
+msgstr ""
+
+#: ../../faq.rst:266
+msgid "What's this huge cryptic ``__VIEWSTATE`` parameter used in some forms?"
+msgstr ""
+
+#: ../../faq.rst:268
+msgid "The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For more info on how it works see `this page`_. Also, here's an `example spider`_ which scrapes one of these sites."
+msgstr ""
+
+#: ../../faq.rst:276
+msgid "What's the best way to parse big XML/CSV data feeds?"
+msgstr ""
+
+#: ../../faq.rst:278
+msgid "Parsing big feeds with XPath selectors can be problematic since they need to build the DOM of the entire feed in memory, and this can be quite slow and consume a lot of memory."
+msgstr ""
+
+#: ../../faq.rst:282
+msgid "In order to avoid parsing all the entire feed at once in memory, you can use the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators`` module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use under the cover."
+msgstr ""
+
+#: ../../faq.rst:288
+msgid "Does Scrapy manage cookies automatically?"
+msgstr ""
+
+#: ../../faq.rst:290
+msgid "Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them back on subsequent requests, like any regular web browser does."
+msgstr ""
+
+#: ../../faq.rst:293
+msgid "For more info see :ref:`topics-request-response` and :ref:`cookies-mw`."
+msgstr ""
+
+#: ../../faq.rst:296
+msgid "How can I see the cookies being sent and received from Scrapy?"
+msgstr ""
+
+#: ../../faq.rst:298
+msgid "Enable the :setting:`COOKIES_DEBUG` setting."
+msgstr ""
+
+#: ../../faq.rst:301
+msgid "How can I instruct a spider to stop itself?"
+msgstr ""
+
+#: ../../faq.rst:303
+msgid "Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For more info see: :exc:`~scrapy.exceptions.CloseSpider`."
+msgstr ""
+
+#: ../../faq.rst:307
+msgid "How can I prevent my Scrapy bot from getting banned?"
+msgstr ""
+
+#: ../../faq.rst:309
+msgid "See :ref:`bans`."
+msgstr ""
+
+#: ../../faq.rst:312
+msgid "Should I use spider arguments or settings to configure my spider?"
+msgstr ""
+
+#: ../../faq.rst:314
+msgid "Both :ref:`spider arguments <spiderargs>` and :ref:`settings <topics-settings>` can be used to configure your spider. There is no strict rule that mandates to use one or the other, but settings are more suited for parameters that, once set, don't change much, while spider arguments are meant to change more often, even on each spider run and sometimes are required for the spider to run at all (for example, to set the start url of a spider)."
+msgstr ""
+
+#: ../../faq.rst:321
+msgid "To illustrate with an example, assuming you have a spider that needs to log into a site to scrape data, and you only want to scrape data from a certain section of the site (which varies each time). In that case, the credentials to log in would be settings, while the url of the section to scrape would be a spider argument."
+msgstr ""
+
+#: ../../faq.rst:328
+msgid "I'm scraping a XML document and my XPath selector doesn't return any items"
+msgstr ""
+
+#: ../../faq.rst:330
+msgid "You may need to remove namespaces. See :ref:`removing-namespaces`."
+msgstr ""
+
+#: ../../faq.rst:335
+msgid "How to split an item into multiple items in an item pipeline?"
+msgstr ""
+
+#: ../../faq.rst:337
+msgid ":ref:`Item pipelines <topics-item-pipeline>` cannot yield multiple items per input item. :ref:`Create a spider middleware <custom-spider-middleware>` instead, and use its :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method for this purpose. For example::"
+msgstr ""
+
+#: ../../faq.rst:357
+msgid "Does Scrapy support IPv6 addresses?"
+msgstr ""
+
+#: ../../faq.rst:359
+msgid "Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``. Note that by doing so, you lose the ability to set a specific timeout for DNS requests (the value of the :setting:`DNS_TIMEOUT` setting is ignored)."
+msgstr ""
+
+#: ../../faq.rst:367
+msgid "How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?"
+msgstr ""
+
+#: ../../faq.rst:369
+msgid "This issue `has been reported`_ to appear when running broad crawls in macOS, where the default Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a different reactor is possible by using the :setting:`TWISTED_REACTOR` setting."
+msgstr ""

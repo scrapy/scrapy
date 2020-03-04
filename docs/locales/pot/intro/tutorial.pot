@@ -1,0 +1,474 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-04 01:00+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../intro/tutorial.rst:5
+msgid "Scrapy Tutorial"
+msgstr ""
+
+#: ../../intro/tutorial.rst:7
+msgid "In this tutorial, we'll assume that Scrapy is already installed on your system. If that's not the case, see :ref:`intro-install`."
+msgstr ""
+
+#: ../../intro/tutorial.rst:10
+msgid "We are going to scrape `quotes.toscrape.com <http://quotes.toscrape.com/>`_, a website that lists quotes from famous authors."
+msgstr ""
+
+#: ../../intro/tutorial.rst:13
+msgid "This tutorial will walk you through these tasks:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:15
+msgid "Creating a new Scrapy project"
+msgstr ""
+
+#: ../../intro/tutorial.rst:16
+msgid "Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data"
+msgstr ""
+
+#: ../../intro/tutorial.rst:17
+msgid "Exporting the scraped data using the command line"
+msgstr ""
+
+#: ../../intro/tutorial.rst:18
+msgid "Changing spider to recursively follow links"
+msgstr ""
+
+#: ../../intro/tutorial.rst:19
+#: ../../intro/tutorial.rst:706
+msgid "Using spider arguments"
+msgstr ""
+
+#: ../../intro/tutorial.rst:21
+msgid "Scrapy is written in Python_. If you're new to the language you might want to start by getting an idea of what the language is like, to get the most out of Scrapy."
+msgstr ""
+
+#: ../../intro/tutorial.rst:25
+msgid "If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial <Python Tutorial>`__ is a good resource."
+msgstr ""
+
+#: ../../intro/tutorial.rst:28
+msgid "If you're new to programming and want to start with Python, the following books may be useful to you:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:31
+msgid "`Automate the Boring Stuff With Python <Automate the Boring Stuff With Python>`__"
+msgstr ""
+
+#: ../../intro/tutorial.rst:33
+msgid "`How To Think Like a Computer Scientist <How To Think Like a Computer Scientist>`__"
+msgstr ""
+
+#: ../../intro/tutorial.rst:35
+msgid "`Learn Python 3 The Hard Way <Learn Python 3 The Hard Way>`__"
+msgstr ""
+
+#: ../../intro/tutorial.rst:37
+msgid "You can also take a look at `this list of Python resources for non-programmers <this list of Python resources for non-programmers>`__, as well as the `suggested resources in the learnpython-subreddit <suggested resources in the learnpython-subreddit>`__."
+msgstr ""
+
+#: ../../intro/tutorial.rst:52
+msgid "Creating a project"
+msgstr ""
+
+#: ../../intro/tutorial.rst:54
+msgid "Before you start scraping, you will have to set up a new Scrapy project. Enter a directory where you'd like to store your code and run::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:59
+msgid "This will create a ``tutorial`` directory with the following contents::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:80
+msgid "Our first Spider"
+msgstr ""
+
+#: ../../intro/tutorial.rst:82
+msgid "Spiders are classes that you define and that Scrapy uses to scrape information from a website (or a group of websites). They must subclass :class:`~scrapy.spiders.Spider` and define the initial requests to make, optionally how to follow links in the pages, and how to parse the downloaded page content to extract data."
+msgstr ""
+
+#: ../../intro/tutorial.rst:88
+msgid "This is the code for our first Spider. Save it in a file named ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:113
+msgid "As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>` and defines some attributes and methods:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:116
+msgid ":attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be unique within a project, that is, you can't set the same name for different Spiders."
+msgstr ""
+
+#: ../../intro/tutorial.rst:120
+msgid ":meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of Requests (you can return a list of requests or write a generator function) which the Spider will begin to crawl from. Subsequent requests will be generated successively from these initial requests."
+msgstr ""
+
+#: ../../intro/tutorial.rst:125
+msgid ":meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle the response downloaded for each of the requests made. The response parameter is an instance of :class:`~scrapy.http.TextResponse` that holds the page content and has further helpful methods to handle it."
+msgstr ""
+
+#: ../../intro/tutorial.rst:130
+msgid "The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting the scraped data as dicts and also finding new URLs to follow and creating new requests (:class:`~scrapy.http.Request`) from them."
+msgstr ""
+
+#: ../../intro/tutorial.rst:135
+msgid "How to run our spider"
+msgstr ""
+
+#: ../../intro/tutorial.rst:137
+msgid "To put our spider to work, go to the project's top level directory and run::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:141
+msgid "This command runs the spider with name ``quotes`` that we've just added, that will send some requests for the ``quotes.toscrape.com`` domain. You will get an output similar to this::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:157
+msgid "Now, check the files in the current directory. You should notice that two new files have been created: *quotes-1.html* and *quotes-2.html*, with the content for the respective URLs, as our ``parse`` method instructs."
+msgstr ""
+
+#: ../../intro/tutorial.rst:161
+msgid "If you are wondering why we haven't parsed the HTML yet, hold on, we will cover that soon."
+msgstr ""
+
+#: ../../intro/tutorial.rst:166
+msgid "What just happened under the hood?"
+msgstr ""
+
+#: ../../intro/tutorial.rst:168
+msgid "Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects returned by the ``start_requests`` method of the Spider. Upon receiving a response for each one, it instantiates :class:`~scrapy.http.Response` objects and calls the callback method associated with the request (in this case, the ``parse`` method) passing the response as argument."
+msgstr ""
+
+#: ../../intro/tutorial.rst:176
+msgid "A shortcut to the start_requests method"
+msgstr ""
+
+#: ../../intro/tutorial.rst:177
+msgid "Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs, you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute with a list of URLs. This list will then be used by the default implementation of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests for your spider::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:200
+msgid "The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each of the requests for those URLs, even though we haven't explicitly told Scrapy to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's default callback method, which is called for requests without an explicitly assigned callback."
+msgstr ""
+
+#: ../../intro/tutorial.rst:208
+msgid "Extracting data"
+msgstr ""
+
+#: ../../intro/tutorial.rst:210
+msgid "The best way to learn how to extract data with Scrapy is trying selectors using the :ref:`Scrapy shell <topics-shell>`. Run::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:217
+msgid "Remember to always enclose urls in quotes when running Scrapy shell from command-line, otherwise urls containing arguments (i.e. ``&`` character) will not work."
+msgstr ""
+
+#: ../../intro/tutorial.rst:221
+msgid "On Windows, use double quotes instead::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:225
+msgid "You will see something like::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:242
+msgid "Using the shell, you can try selecting elements using `CSS`_ with the response object:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:252
+msgid "The result of running ``response.css('title')`` is a list-like object called :class:`~scrapy.selector.SelectorList`, which represents a list of :class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements and allow you to run further queries to fine-grain the selection or extract the data."
+msgstr ""
+
+#: ../../intro/tutorial.rst:258
+msgid "To extract the text from the title above, you can do:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:263
+msgid "There are two things to note here: one is that we've added ``::text`` to the CSS query, to mean we want to select only the text elements directly inside ``<title>`` element.  If we don't specify ``::text``, we'd get the full title element, including its tags:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:271
+msgid "The other thing is that the result of calling ``.getall()`` is a list: it is possible that a selector returns more than one result, so we extract them all. When you know you just want the first result, as in this case, you can do:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:278
+msgid "As an alternative, you could've written:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:283
+msgid "However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList` instance avoids an ``IndexError`` and returns ``None`` when it doesn't find any element matching the selection."
+msgstr ""
+
+#: ../../intro/tutorial.rst:287
+msgid "There's a lesson here: for most scraping code, you want it to be resilient to errors due to things not being found on a page, so that even if some parts fail to be scraped, you can at least get **some** data."
+msgstr ""
+
+#: ../../intro/tutorial.rst:291
+msgid "Besides the :meth:`~scrapy.selector.SelectorList.getall` and :meth:`~scrapy.selector.SelectorList.get` methods, you can also use the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular expressions <regular expressions>`__:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:303
+msgid "In order to find the proper CSS selectors to use, you might find useful opening the response page from the shell in your web browser using ``view(response)``. You can use your browser's developer tools to inspect the HTML and come up with a selector (see :ref:`topics-developer-tools`)."
+msgstr ""
+
+#: ../../intro/tutorial.rst:308
+msgid "`Selector Gadget`_ is also a nice tool to quickly find CSS selector for visually selected elements, which works in many browsers."
+msgstr ""
+
+#: ../../intro/tutorial.rst:316
+msgid "XPath: a brief intro"
+msgstr ""
+
+#: ../../intro/tutorial.rst:318
+msgid "Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:325
+msgid "XPath expressions are very powerful, and are the foundation of Scrapy Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You can see that if you read closely the text representation of the selector objects in the shell."
+msgstr ""
+
+#: ../../intro/tutorial.rst:330
+msgid "While perhaps not as popular as CSS selectors, XPath expressions offer more power because besides navigating the structure, it can also look at the content. Using XPath, you're able to select things like: *select the link that contains the text \"Next Page\"*. This makes XPath very fitting to the task of scraping, and we encourage you to learn XPath even if you already know how to construct CSS selectors, it will make scraping much easier."
+msgstr ""
+
+#: ../../intro/tutorial.rst:337
+msgid "We won't cover much of XPath here, but you can read more about :ref:`using XPath with Scrapy Selectors here <topics-selectors>`. To learn more about XPath, we recommend `this tutorial to learn XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn \"how to think in XPath\" <http://plasmasturm.org/log/xpath101/>`_."
+msgstr ""
+
+#: ../../intro/tutorial.rst:347
+msgid "Extracting quotes and authors"
+msgstr ""
+
+#: ../../intro/tutorial.rst:349
+msgid "Now that you know a bit about selection and extraction, let's complete our spider by writing the code to extract the quotes from the web page."
+msgstr ""
+
+#: ../../intro/tutorial.rst:352
+msgid "Each quote in http://quotes.toscrape.com is represented by HTML elements that look like this:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:373
+msgid "Let's open up scrapy shell and play a bit to find out how to extract the data we want::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:378
+msgid "We get a list of selectors for the quote HTML elements with:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:385
+msgid "Each of the selectors returned by the query above allows us to run further queries over their sub-elements. Let's assign the first selector to a variable, so that we can run our CSS selectors directly on a particular quote:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:391
+msgid "Now, let's extract ``text``, ``author`` and the ``tags`` from that quote using the ``quote`` object we just created:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:401
+msgid "Given that the tags are a list of strings, we can use the ``.getall()`` method to get all of them:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:414
+msgid "Having figured out how to extract each bit, we can now iterate over all the quotes elements and put them together into a Python dictionary:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:427
+msgid "Extracting data in our spider"
+msgstr ""
+
+#: ../../intro/tutorial.rst:429
+msgid "Let's get back to our spider. Until now, it doesn't extract any data in particular, just saves the whole HTML page to a local file. Let's integrate the extraction logic above into our spider."
+msgstr ""
+
+#: ../../intro/tutorial.rst:433
+msgid "A Scrapy spider typically generates many dictionaries containing the data extracted from the page. To do that, we use the ``yield`` Python keyword in the callback, as you can see below::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:455
+msgid "If you run this spider, it will output the extracted data with the log::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:466
+msgid "Storing the scraped data"
+msgstr ""
+
+#: ../../intro/tutorial.rst:468
+msgid "The simplest way to store the scraped data is by using :ref:`Feed exports <topics-feed-exports>`, with the following command::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:473
+msgid "That will generate an ``quotes.json`` file containing all scraped items, serialized in `JSON`_."
+msgstr ""
+
+#: ../../intro/tutorial.rst:476
+msgid "For historic reasons, Scrapy appends to a given file instead of overwriting its contents. If you run this command twice without removing the file before the second time, you'll end up with a broken JSON file."
+msgstr ""
+
+#: ../../intro/tutorial.rst:480
+msgid "You can also use other formats, like `JSON Lines`_::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:484
+msgid "The `JSON Lines`_ format is useful because it's stream-like, you can easily append new records to it. It doesn't have the same problem of JSON when you run twice. Also, as each record is a separate line, you can process big files without having to fit everything in memory, there are tools like `JQ`_ to help doing that at the command-line."
+msgstr ""
+
+#: ../../intro/tutorial.rst:490
+msgid "In small projects (like the one in this tutorial), that should be enough. However, if you want to perform more complex things with the scraped items, you can write an :ref:`Item Pipeline <topics-item-pipeline>`. A placeholder file for Item Pipelines has been set up for you when the project is created, in ``tutorial/pipelines.py``. Though you don't need to implement any item pipelines if you just want to store the scraped items."
+msgstr ""
+
+#: ../../intro/tutorial.rst:502
+msgid "Following links"
+msgstr ""
+
+#: ../../intro/tutorial.rst:504
+msgid "Let's say, instead of just scraping the stuff from the first two pages from http://quotes.toscrape.com, you want quotes from all the pages in the website."
+msgstr ""
+
+#: ../../intro/tutorial.rst:507
+msgid "Now that you know how to extract data from pages, let's see how to follow links from them."
+msgstr ""
+
+#: ../../intro/tutorial.rst:510
+msgid "First thing is to extract the link to the page we want to follow.  Examining our page, we can see there is a link to the next page with the following markup:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:522
+msgid "We can try extracting it in the shell:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:527
+msgid "This gets the anchor element, but we want the attribute ``href``. For that, Scrapy supports a CSS extension that lets you select the attribute contents, like this:"
+msgstr ""
+
+#: ../../intro/tutorial.rst:534
+msgid "There is also an ``attrib`` property available (see :ref:`selecting-attributes` for more):"
+msgstr ""
+
+#: ../../intro/tutorial.rst:540
+msgid "Let's see now our spider modified to recursively follow the link to the next page, extracting data from it::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:566
+msgid "Now, after extracting the data, the ``parse()`` method looks for the link to the next page, builds a full absolute URL using the :meth:`~scrapy.http.Response.urljoin` method (since the links can be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages."
+msgstr ""
+
+#: ../../intro/tutorial.rst:573
+msgid "What you see here is Scrapy's mechanism of following links: when you yield a Request in a callback method, Scrapy will schedule that request to be sent and register a callback method to be executed when that request finishes."
+msgstr ""
+
+#: ../../intro/tutorial.rst:577
+msgid "Using this, you can build complex crawlers that follow links according to rules you define, and extract different kinds of data depending on the page it's visiting."
+msgstr ""
+
+#: ../../intro/tutorial.rst:581
+msgid "In our example, it creates a sort of loop, following all the links to the next page until it doesn't find one -- handy for crawling blogs, forums and other sites with pagination."
+msgstr ""
+
+#: ../../intro/tutorial.rst:589
+msgid "A shortcut for creating Requests"
+msgstr ""
+
+#: ../../intro/tutorial.rst:591
+msgid "As a shortcut for creating Request objects you can use :meth:`response.follow <scrapy.http.TextResponse.follow>`::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:615
+msgid "Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no need to call urljoin. Note that ``response.follow`` just returns a Request instance; you still have to yield this Request."
+msgstr ""
+
+#: ../../intro/tutorial.rst:619
+msgid "You can also pass a selector to ``response.follow`` instead of a string; this selector should extract necessary attributes::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:625
+msgid "For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href attribute automatically. So the code can be shortened further::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:631
+msgid "To create multiple requests from an iterable, you can use :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:637
+msgid "or, shortening it further::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:643
+msgid "More examples and patterns"
+msgstr ""
+
+#: ../../intro/tutorial.rst:645
+msgid "Here is another spider that illustrates callbacks and following links, this time for scraping author information::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:673
+msgid "This spider will start from the main page, it will follow all the links to the authors pages calling the ``parse_author`` callback for each of them, and also the pagination links with the ``parse`` callback as we saw before."
+msgstr ""
+
+#: ../../intro/tutorial.rst:677
+msgid "Here we're passing callbacks to :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` as positional arguments to make the code shorter; it also works for :class:`~scrapy.http.Request`."
+msgstr ""
+
+#: ../../intro/tutorial.rst:682
+msgid "The ``parse_author`` callback defines a helper function to extract and cleanup the data from a CSS query and yields the Python dict with the author data."
+msgstr ""
+
+#: ../../intro/tutorial.rst:685
+msgid "Another interesting thing this spider demonstrates is that, even if there are many quotes from the same author, we don't need to worry about visiting the same author page multiple times. By default, Scrapy filters out duplicated requests to URLs already visited, avoiding the problem of hitting servers too much because of a programming mistake. This can be configured by the setting :setting:`DUPEFILTER_CLASS`."
+msgstr ""
+
+#: ../../intro/tutorial.rst:692
+msgid "Hopefully by now you have a good understanding of how to use the mechanism of following links and callbacks with Scrapy."
+msgstr ""
+
+#: ../../intro/tutorial.rst:695
+msgid "As yet another example spider that leverages the mechanism of following links, check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic spider that implements a small rules engine that you can use to write your crawlers on top of it."
+msgstr ""
+
+#: ../../intro/tutorial.rst:700
+msgid "Also, a common pattern is to build an item with data from more than one page, using a :ref:`trick to pass additional data to the callbacks <topics-request-response-ref-request-callback-arguments>`."
+msgstr ""
+
+#: ../../intro/tutorial.rst:708
+msgid "You can provide command line arguments to your spiders by using the ``-a`` option when running them::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:713
+msgid "These arguments are passed to the Spider's ``__init__`` method and become spider attributes by default."
+msgstr ""
+
+#: ../../intro/tutorial.rst:716
+msgid "In this example, the value provided for the ``tag`` argument will be available via ``self.tag``. You can use this to make your spider fetch only quotes with a specific tag, building the URL based on the argument::"
+msgstr ""
+
+#: ../../intro/tutorial.rst:745
+msgid "If you pass the ``tag=humor`` argument to this spider, you'll notice that it will only visit URLs from the ``humor`` tag, such as ``http://quotes.toscrape.com/tag/humor``."
+msgstr ""
+
+#: ../../intro/tutorial.rst:749
+msgid "You can :ref:`learn more about handling spider arguments here <spiderargs>`."
+msgstr ""
+
+#: ../../intro/tutorial.rst:752
+msgid "Next steps"
+msgstr ""
+
+#: ../../intro/tutorial.rst:754
+msgid "This tutorial covered only the basics of Scrapy, but there's a lot of other features not mentioned here. Check the :ref:`topics-whatelse` section in :ref:`intro-overview` chapter for a quick overview of the most important ones."
+msgstr ""
+
+#: ../../intro/tutorial.rst:758
+msgid "You can continue from the section :ref:`section-basics` to know more about the command-line tool, spiders, selectors and other things the tutorial hasn't covered like modeling the scraped data. If you prefer to play with an example project, check the :ref:`intro-examples` section."
+msgstr ""

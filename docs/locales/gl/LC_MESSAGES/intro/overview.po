@@ -1,0 +1,223 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../intro/overview.rst:5
+msgid "Scrapy at a glance"
+msgstr ""
+
+#: ../../intro/overview.rst:7
+msgid ""
+"Scrapy is an application framework for crawling web sites and extracting "
+"structured data which can be used for a wide range of useful "
+"applications, like data mining, information processing or historical "
+"archival."
+msgstr ""
+
+#: ../../intro/overview.rst:11
+msgid ""
+"Even though Scrapy was originally designed for `web scraping`_, it can "
+"also be used to extract data using APIs (such as `Amazon Associates Web "
+"Services`_) or as a general purpose web crawler."
+msgstr ""
+
+#: ../../intro/overview.rst:17
+msgid "Walk-through of an example spider"
+msgstr ""
+
+#: ../../intro/overview.rst:19
+msgid ""
+"In order to show you what Scrapy brings to the table, we'll walk you "
+"through an example of a Scrapy Spider using the simplest way to run a "
+"spider."
+msgstr ""
+
+#: ../../intro/overview.rst:22
+msgid ""
+"Here's the code for a spider that scrapes famous quotes from website "
+"http://quotes.toscrape.com, following the pagination::"
+msgstr ""
+
+#: ../../intro/overview.rst:46
+msgid ""
+"Put this in a text file, name it to something like ``quotes_spider.py`` "
+"and run the spider using the :command:`runspider` command::"
+msgstr ""
+
+#: ../../intro/overview.rst:52
+msgid ""
+"When this finishes you will have in the ``quotes.json`` file a list of "
+"the quotes in JSON format, containing text and author, looking like this "
+"(reformatted here for better readability)::"
+msgstr ""
+
+#: ../../intro/overview.rst:72
+msgid "What just happened?"
+msgstr ""
+
+#: ../../intro/overview.rst:74
+msgid ""
+"When you ran the command ``scrapy runspider quotes_spider.py``, Scrapy "
+"looked for a Spider definition inside it and ran it through its crawler "
+"engine."
+msgstr ""
+
+#: ../../intro/overview.rst:77
+msgid ""
+"The crawl started by making requests to the URLs defined in the "
+"``start_urls`` attribute (in this case, only the URL for quotes in "
+"*humor* category) and called the default callback method ``parse``, "
+"passing the response object as an argument. In the ``parse`` callback, we"
+" loop through the quote elements using a CSS Selector, yield a Python "
+"dict with the extracted quote text and author, look for a link to the "
+"next page and schedule another request using the same ``parse`` method as"
+" callback."
+msgstr ""
+
+#: ../../intro/overview.rst:85
+msgid ""
+"Here you notice one of the main advantages about Scrapy: requests are "
+":ref:`scheduled and processed asynchronously <topics-architecture>`.  "
+"This means that Scrapy doesn't need to wait for a request to be finished "
+"and processed, it can send another request or do other things in the "
+"meantime. This also means that other requests can keep going even if some"
+" request fails or an error happens while handling it."
+msgstr ""
+
+#: ../../intro/overview.rst:92
+msgid ""
+"While this enables you to do very fast crawls (sending multiple "
+"concurrent requests at the same time, in a fault-tolerant way) Scrapy "
+"also gives you control over the politeness of the crawl through :ref:`a "
+"few settings <topics-settings-ref>`. You can do things like setting a "
+"download delay between each request, limiting amount of concurrent "
+"requests per domain or per IP, and even :ref:`using an auto-throttling "
+"extension <topics-autothrottle>` that tries to figure out these "
+"automatically."
+msgstr ""
+
+#: ../../intro/overview.rst:102
+msgid ""
+"This is using :ref:`feed exports <topics-feed-exports>` to generate the "
+"JSON file, you can easily change the export format (XML or CSV, for "
+"example) or the storage backend (FTP or `Amazon S3`_, for example).  You "
+"can also write an :ref:`item pipeline <topics-item-pipeline>` to store "
+"the items in a database."
+msgstr ""
+
+#: ../../intro/overview.rst:111
+msgid "What else?"
+msgstr ""
+
+#: ../../intro/overview.rst:113
+msgid ""
+"You've seen how to extract and store items from a website using Scrapy, "
+"but this is just the surface. Scrapy provides a lot of powerful features "
+"for making scraping easy and efficient, such as:"
+msgstr ""
+
+#: ../../intro/overview.rst:117
+msgid ""
+"Built-in support for :ref:`selecting and extracting <topics-selectors>` "
+"data from HTML/XML sources using extended CSS selectors and XPath "
+"expressions, with helper methods to extract using regular expressions."
+msgstr ""
+
+#: ../../intro/overview.rst:121
+msgid ""
+"An :ref:`interactive shell console <topics-shell>` (IPython aware) for "
+"trying out the CSS and XPath expressions to scrape data, very useful when"
+" writing or debugging your spiders."
+msgstr ""
+
+#: ../../intro/overview.rst:125
+msgid ""
+"Built-in support for :ref:`generating feed exports <topics-feed-exports>`"
+" in multiple formats (JSON, CSV, XML) and storing them in multiple "
+"backends (FTP, S3, local filesystem)"
+msgstr ""
+
+#: ../../intro/overview.rst:129
+msgid ""
+"Robust encoding support and auto-detection, for dealing with foreign, "
+"non-standard and broken encoding declarations."
+msgstr ""
+
+#: ../../intro/overview.rst:132
+msgid ""
+":ref:`Strong extensibility support <extending-scrapy>`, allowing you to "
+"plug in your own functionality using :ref:`signals <topics-signals>` and "
+"a well-defined API (middlewares, :ref:`extensions <topics-extensions>`, "
+"and :ref:`pipelines <topics-item-pipeline>`)."
+msgstr ""
+
+#: ../../intro/overview.rst:137
+msgid "Wide range of built-in extensions and middlewares for handling:"
+msgstr ""
+
+#: ../../intro/overview.rst:139
+msgid "cookies and session handling"
+msgstr ""
+
+#: ../../intro/overview.rst:140
+msgid "HTTP features like compression, authentication, caching"
+msgstr ""
+
+#: ../../intro/overview.rst:141
+msgid "user-agent spoofing"
+msgstr ""
+
+#: ../../intro/overview.rst:142
+msgid "robots.txt"
+msgstr ""
+
+#: ../../intro/overview.rst:143
+msgid "crawl depth restriction"
+msgstr ""
+
+#: ../../intro/overview.rst:144
+msgid "and more"
+msgstr ""
+
+#: ../../intro/overview.rst:146
+msgid ""
+"A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python "
+"console running inside your Scrapy process, to introspect and debug your "
+"crawler"
+msgstr ""
+
+#: ../../intro/overview.rst:150
+msgid ""
+"Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ "
+"and XML/CSV feeds, a media pipeline for :ref:`automatically downloading "
+"images <topics-media-pipeline>` (or any other media) associated with the "
+"scraped items, a caching DNS resolver, and much more!"
+msgstr ""
+
+#: ../../intro/overview.rst:156
+msgid "What's next?"
+msgstr ""
+
+#: ../../intro/overview.rst:158
+msgid ""
+"The next steps for you are to :ref:`install Scrapy <intro-install>`, "
+":ref:`follow through the tutorial <intro-tutorial>` to learn how to "
+"create a full-blown Scrapy project and `join the community`_. Thanks for "
+"your interest!"
+msgstr ""
+

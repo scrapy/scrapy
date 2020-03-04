@@ -1,0 +1,55 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../topics/benchmarking.rst:5
+msgid "Benchmarking"
+msgstr ""
+
+#: ../../topics/benchmarking.rst:9
+msgid ""
+"Scrapy comes with a simple benchmarking suite that spawns a local HTTP "
+"server and crawls it at the maximum possible speed. The goal of this "
+"benchmarking is to get an idea of how Scrapy performs in your hardware, "
+"in order to have a common baseline for comparisons. It uses a simple "
+"spider that does nothing and just follows links."
+msgstr ""
+
+#: ../../topics/benchmarking.rst:15
+msgid "To run it use::"
+msgstr ""
+
+#: ../../topics/benchmarking.rst:19
+msgid "You should see an output like this::"
+msgstr ""
+
+#: ../../topics/benchmarking.rst:80
+msgid ""
+"That tells you that Scrapy is able to crawl about 3000 pages per minute "
+"in the hardware where you run it. Note that this is a very simple spider "
+"intended to follow links, any custom spider you write will probably do "
+"more stuff which results in slower crawl rates. How slower depends on how"
+" much your spider does and how well it's written."
+msgstr ""
+
+#: ../../topics/benchmarking.rst:86
+msgid ""
+"In the future, more cases will be added to the benchmarking suite to "
+"cover other common scenarios."
+msgstr ""
+

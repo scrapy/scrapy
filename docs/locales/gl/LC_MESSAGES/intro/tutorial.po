@@ -1,0 +1,1044 @@
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+#
+# Adrián Chaves (Gallaecio) <adrian@chaves.io>, 2020.
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-04 01:00+0100\n"
+"PO-Revision-Date: 2020-03-04 01:04+0100\n"
+"Last-Translator: Adrián Chaves (Gallaecio) <adrian@chaves.io>\n"
+"Language: gl\n"
+"Language-Team: Galician <proxecto@trasno.gal>\n"
+"Plural-Forms: nplurals=2; plural=n != 1\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+"X-Generator: Lokalize 19.08.3\n"
+
+#: ../../intro/tutorial.rst:5
+msgid "Scrapy Tutorial"
+msgstr "Titorial de Scrapy"
+
+#: ../../intro/tutorial.rst:7
+msgid ""
+"In this tutorial, we'll assume that Scrapy is already installed on your "
+"system. If that's not the case, see :ref:`intro-install`."
+msgstr ""
+"Neste titorial enténdese que Scrapy xa está instalado no sistema. Se non "
+"o ten instalado, consulte :ref:`intro-install`."
+
+#: ../../intro/tutorial.rst:10
+msgid ""
+"We are going to scrape `quotes.toscrape.com "
+"<http://quotes.toscrape.com/>`_, a website that lists quotes from famous "
+"authors."
+msgstr ""
+"Imos extraer datos de `quotes.toscrape.com "
+"<http://quotes.toscrape.com/>`_, un sitio web que lista citas de autores "
+"famosos."
+
+#: ../../intro/tutorial.rst:13
+msgid "This tutorial will walk you through these tasks:"
+msgstr "Este titorial serviralle de guía para os seguintes pasos:"
+
+#: ../../intro/tutorial.rst:15
+msgid "Creating a new Scrapy project"
+msgstr "Crear un novo proxecto de Scrapy"
+
+#: ../../intro/tutorial.rst:16
+msgid ""
+"Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data"
+msgstr ""
+"Escribir unha :ref:`araña <topics-spiders>` para percorrer un sitio e "
+"extraer datos"
+
+#: ../../intro/tutorial.rst:17
+msgid "Exporting the scraped data using the command line"
+msgstr "Exportar os datos extraídos usando a liña de ordes"
+
+#: ../../intro/tutorial.rst:18
+msgid "Changing spider to recursively follow links"
+msgstr "Cambiar a araña para seguir ligazóns de maneira recursiva"
+
+#: ../../intro/tutorial.rst:19 ../../intro/tutorial.rst:706
+msgid "Using spider arguments"
+msgstr "Usar parámetros de arañas"
+
+#: ../../intro/tutorial.rst:21
+msgid ""
+"Scrapy is written in Python_. If you're new to the language you might "
+"want to start by getting an idea of what the language is like, to get the"
+" most out of Scrapy."
+msgstr ""
+"Scrapy está escrito en Python_. Se non ten familiaridade coa linguaxe, "
+"quizá lle interese empezar a facerse unha idea de como é, para poder "
+"sacarlle o maior partido a Scrapy."
+
+#: ../../intro/tutorial.rst:25
+msgid ""
+"If you're already familiar with other languages, and want to learn Python"
+" quickly, the `Python Tutorial <Python Tutorial>`__ is a good resource."
+msgstr ""
+"Se xa ten experiencia con outras linguaxes, e quere aprender Python "
+"rapidamente, un bo recurso sería o `titorial de Python (en inglés) "
+"<Python Tutorial>`__."
+
+#: ../../intro/tutorial.rst:28
+msgid ""
+"If you're new to programming and want to start with Python, the following"
+" books may be useful to you:"
+msgstr ""
+"Se é a primeira vez que programa e quere empezar con Python, pode que os "
+"seguintes libros lle resulten de utilidade:"
+
+#: ../../intro/tutorial.rst:31
+msgid ""
+"`Automate the Boring Stuff With Python <Automate the Boring Stuff With "
+"Python>`__"
+msgstr ""
+"`Automatizar as cousas aburridas con Python (en inglés) <Automate the "
+"Boring Stuff With Python>`__"
+
+#: ../../intro/tutorial.rst:33
+msgid ""
+"`How To Think Like a Computer Scientist <How To Think Like a Computer "
+"Scientist>`__"
+msgstr ""
+"`Como pensar como un científico informático (en inglés) <How To Think "
+"Like a Computer Scientist>`__"
+
+#: ../../intro/tutorial.rst:35
+msgid "`Learn Python 3 The Hard Way <Learn Python 3 The Hard Way>`__"
+msgstr ""
+"`Aprender Python 3 polas malas (en inglés) <Learn Python 3 The Hard "
+"Way>`__"
+
+#: ../../intro/tutorial.rst:37
+msgid ""
+"You can also take a look at `this list of Python resources for non-"
+"programmers <this list of Python resources for non-programmers>`__, as "
+"well as the `suggested resources in the learnpython-subreddit <suggested "
+"resources in the learnpython-subreddit>`__."
+msgstr ""
+"Tamén pode botarlle unha ollada a `esta lista de recursos de Python para "
+"xente que non sabe programar <this list of Python resources for non-"
+"programmers>`__, así como os `recursos suxeridos pola sección de Reddit "
+"sobre aprender Python <suggested resources in the learnpython-"
+"subreddit>`__."
+
+#: ../../intro/tutorial.rst:52
+msgid "Creating a project"
+msgstr "Crear un proxecto"
+
+#: ../../intro/tutorial.rst:54
+msgid ""
+"Before you start scraping, you will have to set up a new Scrapy project. "
+"Enter a directory where you'd like to store your code and run::"
+msgstr ""
+"Antes de empezar a extraer datos de Internet terá que preparar un "
+"proxecto de Scrapy. Entre no directorio no que queira almacenar o seu "
+"código e execute::"
+
+#: ../../intro/tutorial.rst:59
+msgid "This will create a ``tutorial`` directory with the following contents::"
+msgstr "Isto creará un directorio chamado ``tutorial`` co seguinte contido::"
+
+#: ../../intro/tutorial.rst:80
+msgid "Our first Spider"
+msgstr "A nosa primeira araña"
+
+#: ../../intro/tutorial.rst:82
+msgid ""
+"Spiders are classes that you define and that Scrapy uses to scrape "
+"information from a website (or a group of websites). They must subclass "
+":class:`~scrapy.spiders.Spider` and define the initial requests to make, "
+"optionally how to follow links in the pages, and how to parse the "
+"downloaded page content to extract data."
+msgstr ""
+"As arañas son clases que vostede define e que Scrapy usa para extraer "
+"información dun sitio web (ou dun grupo deles). Deben ser subclases de "
+":class:`~scrapy.spiders.Spider` e definir a solicitude inicial, e de "
+"maneira opcional como seguir ligazóns das páxinas, e como analizar o "
+"contido das páxinas descargadas para extraer datos."
+
+#: ../../intro/tutorial.rst:88
+msgid ""
+"This is the code for our first Spider. Save it in a file named "
+"``quotes_spider.py`` under the ``tutorial/spiders`` directory in your "
+"project::"
+msgstr ""
+"Este é o código para a súa primeira araña. Gárdeo nun ficheiro chamado "
+"``quotes_spider.py`` dentro do directorio ``tutorial/spiders`` do seu "
+"proxecto::"
+
+#: ../../intro/tutorial.rst:113
+msgid ""
+"As you can see, our Spider subclasses :class:`scrapy.Spider "
+"<scrapy.spiders.Spider>` and defines some attributes and methods:"
+msgstr ""
+"Como pode comprobar, a nosa araña é unha subclase de "
+":class:`scrapy.Spider <scrapy.spiders.Spider>` e define algúns atributos "
+"e métodos:"
+
+#: ../../intro/tutorial.rst:116
+msgid ""
+":attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be "
+"unique within a project, that is, you can't set the same name for "
+"different Spiders."
+msgstr ""
+":attr:`~scrapy.spiders.Spider.name`: identifica a araña. Debe ser único "
+"dentro do proxecto, é dicir, non pode usar o mesmo valor para arañas "
+"distintas."
+
+#: ../../intro/tutorial.rst:120
+msgid ""
+":meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of"
+" Requests (you can return a list of requests or write a generator "
+"function) which the Spider will begin to crawl from. Subsequent requests "
+"will be generated successively from these initial requests."
+msgstr ""
+":meth:`~scrapy.spiders.Spider.start_requests`: debe devolver un iterable "
+"de instancias de Request (pode devolver unha lista ou escribir unha "
+"función xeradora), que serán as solicitudes iniciais do percorrido da "
+"araña. O resto de solicitudes xerarase a raíz das respostas a estas "
+"solicitudes iniciais."
+
+#: ../../intro/tutorial.rst:125
+msgid ""
+":meth:`~scrapy.spiders.Spider.parse`: a method that will be called to "
+"handle the response downloaded for each of the requests made. The "
+"response parameter is an instance of :class:`~scrapy.http.TextResponse` "
+"that holds the page content and has further helpful methods to handle it."
+msgstr ""
+":meth:`~scrapy.spiders.Spider.parse`: un método ao que se chamará para "
+"xestionar a resposta descargada para cada unha das solicitudes "
+"realizadas. O parámetro ``response`` é unha instancia de "
+":class:`~scrapy.http.TextResponse` co contido da páxina e métodos "
+"adicionais útiles para manexalo."
+
+#: ../../intro/tutorial.rst:130
+msgid ""
+"The :meth:`~scrapy.spiders.Spider.parse` method usually parses the "
+"response, extracting the scraped data as dicts and also finding new URLs "
+"to follow and creating new requests (:class:`~scrapy.http.Request`) from "
+"them."
+msgstr ""
+"O método :meth:`~scrapy.spiders.Spider.parse` adoita analizar a resposta,"
+" extraer os datos como dicionarios e atopar novos URL que seguir mediante"
+" novas solicitudes (:class:`~scrapy.http.Request`)."
+
+#: ../../intro/tutorial.rst:135
+msgid "How to run our spider"
+msgstr "Como executar a nosa araña"
+
+#: ../../intro/tutorial.rst:137
+msgid ""
+"To put our spider to work, go to the project's top level directory and "
+"run::"
+msgstr ""
+"Para poñer en funcionamento a nosa araña, vaia ao directorio raíz do "
+"proxecto e execute::"
+
+#: ../../intro/tutorial.rst:141
+msgid ""
+"This command runs the spider with name ``quotes`` that we've just added, "
+"that will send some requests for the ``quotes.toscrape.com`` domain. You "
+"will get an output similar to this::"
+msgstr ""
+"Esta orde executa a araña nomeada ``quotes`` que acabamos de engadir, que"
+" enviará algunhas solicitudes ao dominio ``quotes.toscrape.com``. Obterá "
+"unha saída similar á seguinte::"
+
+#: ../../intro/tutorial.rst:157
+msgid ""
+"Now, check the files in the current directory. You should notice that two"
+" new files have been created: *quotes-1.html* and *quotes-2.html*, with "
+"the content for the respective URLs, as our ``parse`` method instructs."
+msgstr ""
+"A continuación revise os ficheiros do directorio actual. Deberon crearse "
+"dous novos ficheiros: *quotes-1.html* e *quotes-2.html*, co contido dos "
+"URL correspondentes, tal e como ordena o noso método ``parse``."
+
+#: ../../intro/tutorial.rst:161
+msgid ""
+"If you are wondering why we haven't parsed the HTML yet, hold on, we will"
+" cover that soon."
+msgstr ""
+"Se se pregunta por que aínda non analizamos o HTML, acougue, non habemos "
+"tardar en tratar ese tema."
+
+#: ../../intro/tutorial.rst:166
+msgid "What just happened under the hood?"
+msgstr "Que acaba de pasar internamente?"
+
+#: ../../intro/tutorial.rst:168
+msgid ""
+"Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` "
+"objects returned by the ``start_requests`` method of the Spider. Upon "
+"receiving a response for each one, it instantiates "
+":class:`~scrapy.http.Response` objects and calls the callback method "
+"associated with the request (in this case, the ``parse`` method) passing "
+"the response as argument."
+msgstr ""
+"Scrapy planifica os obxectos :class:`scrapy.Request "
+"<scrapy.http.Request>` que devolve o método ``start_requests`` da araña. "
+"Ao recibir a resposta a cada un, crea un obxecto "
+":class:`~scrapy.http.Response` e chama ao método de devolución de chamada"
+" asociado coa solicitude (neste caso, o método ``parse``) pasando a "
+"resposta como argumento."
+
+#: ../../intro/tutorial.rst:176
+msgid "A shortcut to the start_requests method"
+msgstr "Un atallo para o método start_requests"
+
+#: ../../intro/tutorial.rst:177
+msgid ""
+"Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` "
+"method that generates :class:`scrapy.Request <scrapy.http.Request>` "
+"objects from URLs, you can just define a "
+":attr:`~scrapy.spiders.Spider.start_urls` class attribute with a list of "
+"URLs. This list will then be used by the default implementation of "
+":meth:`~scrapy.spiders.Spider.start_requests` to create the initial "
+"requests for your spider::"
+msgstr ""
+"En vez de codificar un método "
+":meth:`~scrapy.spiders.Spider.start_requests` que xera obxectos "
+":class:`scrapy.Request <scrapy.http.Request>` a partir de varias URL, "
+"pode definir un atributo de clase "
+":attr:`~scrapy.spiders.Spider.start_urls` cunha lista de URL. A lista a "
+"usará o método :meth:`~scrapy.spiders.Spider.start_requests` "
+"predeterminado para crear as solicitudes iniciais da túa araña::"
+
+#: ../../intro/tutorial.rst:200
+msgid ""
+"The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle "
+"each of the requests for those URLs, even though we haven't explicitly "
+"told Scrapy to do so. This happens because "
+":meth:`~scrapy.spiders.Spider.parse` is Scrapy's default callback method,"
+" which is called for requests without an explicitly assigned callback."
+msgstr ""
+"Chamarase ao método :meth:`~scrapy.spiders.Spider.parse` para manexar "
+"cada unha das respostas ás solicitudes deses URL, aínda que non llo "
+"indicásemos de maneira explícita a Scrapy. Isto é porque "
+":meth:`~scrapy.spiders.Spider.parse` é o método de devolución de chamada "
+"predeterminado de Scrapy, ao que se chama por cada resposta a unha "
+"solicitude sen unha devolución de chamada asignada."
+
+#: ../../intro/tutorial.rst:208
+msgid "Extracting data"
+msgstr "Extraer datos"
+
+#: ../../intro/tutorial.rst:210
+msgid ""
+"The best way to learn how to extract data with Scrapy is trying selectors"
+" using the :ref:`Scrapy shell <topics-shell>`. Run::"
+msgstr ""
+"A mellor forma de aprender a extraer datos con Scrapy é probar selectores"
+" mediante o :ref:`intérprete de Scrapy <topics-shell>`. Execute::"
+
+#: ../../intro/tutorial.rst:217
+msgid ""
+"Remember to always enclose urls in quotes when running Scrapy shell from "
+"command-line, otherwise urls containing arguments (i.e. ``&`` character) "
+"will not work."
+msgstr ""
+"Non esqueza pór sempre entre comiñas os URL ao executar o intérprete de "
+"Scrapy desde a liña de ordes, senón os URL con argumentos (é dicir, co "
+"carácter ``&``) non funcionarán."
+
+#: ../../intro/tutorial.rst:221
+msgid "On Windows, use double quotes instead::"
+msgstr "En Windows, use comiñas dobres::"
+
+#: ../../intro/tutorial.rst:225
+msgid "You will see something like::"
+msgstr "Verá algo como::"
+
+#: ../../intro/tutorial.rst:242
+msgid ""
+"Using the shell, you can try selecting elements using `CSS`_ with the "
+"response object:"
+msgstr ""
+"Co intérprete pode intentar seleccionar elementos usando `CSS`_ co "
+"obxecto de resposta:"
+
+#: ../../intro/tutorial.rst:252
+msgid ""
+"The result of running ``response.css('title')`` is a list-like object "
+"called :class:`~scrapy.selector.SelectorList`, which represents a list of"
+" :class:`~scrapy.selector.Selector` objects that wrap around XML/HTML "
+"elements and allow you to run further queries to fine-grain the selection"
+" or extract the data."
+msgstr ""
+"O resultado de executar ``response.css('title')`` é un obxecto similar a "
+"unha lista chamado :class:`~scrapy.selector.SelectorList`, que representa"
+" a lista de obxectos :class:`~scrapy.selector.Selector` que representan "
+"elementos de XML ou HTML e lle permiten realizar consultas adicionais "
+"para afinar a selección ou extraer os datos."
+
+#: ../../intro/tutorial.rst:258
+msgid "To extract the text from the title above, you can do:"
+msgstr "Para extraer o texto do título de arriba, pode facer o seguinte:"
+
+#: ../../intro/tutorial.rst:263
+msgid ""
+"There are two things to note here: one is that we've added ``::text`` to "
+"the CSS query, to mean we want to select only the text elements directly "
+"inside ``<title>`` element.  If we don't specify ``::text``, we'd get the"
+" full title element, including its tags:"
+msgstr ""
+"Aquí cómpre salientar dúas cousas: por unha banda acabamos de engadir "
+"``::text`` á consulta de CSS, para indicar que queremos seleccionar só os"
+" elementos de texto que estean directamente dentro de elementos "
+"``<title>``.  Se non indicamos ``::text``, obteríamos o elemento de "
+"título completo, incluídas as etiquetas:"
+
+#: ../../intro/tutorial.rst:271
+msgid ""
+"The other thing is that the result of calling ``.getall()`` is a list: it"
+" is possible that a selector returns more than one result, so we extract "
+"them all. When you know you just want the first result, as in this case, "
+"you can do:"
+msgstr ""
+"Pola outra banda, o resultado de chamar a ``.getall()`` é unha lista: "
+"pode que o selector devolva máis dun resultado, así que extraémolos "
+"todos. Cando saiba que non quere máis que o primeiro resultado, como "
+"neste caso, pode facer o seguinte:"
+
+#: ../../intro/tutorial.rst:278
+msgid "As an alternative, you could've written:"
+msgstr "Alternativamente, puido escribir:"
+
+#: ../../intro/tutorial.rst:283
+msgid ""
+"However, using ``.get()`` directly on a "
+":class:`~scrapy.selector.SelectorList` instance avoids an ``IndexError`` "
+"and returns ``None`` when it doesn't find any element matching the "
+"selection."
+msgstr ""
+"Porén, ao usar ``.get()`` directamente nunha instancia de "
+":class:`~scrapy.selector.SelectorList` evitamos obter un ``IndexError``, "
+"xa que devolve ``None`` cando non atopa ningún elemento que coincida coa "
+"selección."
+
+#: ../../intro/tutorial.rst:287
+msgid ""
+"There's a lesson here: for most scraping code, you want it to be "
+"resilient to errors due to things not being found on a page, so that even"
+" if some parts fail to be scraped, you can at least get **some** data."
+msgstr ""
+"Velaquí unha lección: na meirande parte do código de extracción de datos,"
+" interésanos que o código resista aos errors causados por non atopar "
+"cousas nunha páxina, de xeito que aínda que non se poidan extraer todos "
+"os datos, polo menos extraeremos **algúns**."
+
+#: ../../intro/tutorial.rst:291
+msgid ""
+"Besides the :meth:`~scrapy.selector.SelectorList.getall` and "
+":meth:`~scrapy.selector.SelectorList.get` methods, you can also use the "
+":meth:`~scrapy.selector.SelectorList.re` method to extract using `regular"
+" expressions <regular expressions>`__:"
+msgstr ""
+"Ademais dos métodos :meth:`~scrapy.selector.SelectorList.getall` e "
+":meth:`~scrapy.selector.SelectorList.get`, tamén pode usar o método "
+":meth:`~scrapy.selector.SelectorList.re` para extraer mediante "
+"`expresións regulares <regular expressions>`__:"
+
+#: ../../intro/tutorial.rst:303
+msgid ""
+"In order to find the proper CSS selectors to use, you might find useful "
+"opening the response page from the shell in your web browser using "
+"``view(response)``. You can use your browser's developer tools to inspect"
+" the HTML and come up with a selector (see :ref:`topics-developer-"
+"tools`)."
+msgstr ""
+"Para atopar os selectores CSS axeitados para usar, pode que lle resulte "
+"útil abrir a páxina de resposta desde o intérprete no seu navegador web "
+"mediante ``view(response)``. Pode usar as ferramentas para "
+"desenvolvedores para inspeccionar o HTML e pensar un selector (consulte "
+":ref:`topics-developer-tools`)."
+
+#: ../../intro/tutorial.rst:308
+msgid ""
+"`Selector Gadget`_ is also a nice tool to quickly find CSS selector for "
+"visually selected elements, which works in many browsers."
+msgstr ""
+"`Selector Gadget`_ tamén é unha ferramenta útil para atopar rapidamente "
+"un selector de CSS para elementos seleccionados visualmente, e funciona "
+"en moitos navegadores."
+
+#: ../../intro/tutorial.rst:316
+msgid "XPath: a brief intro"
+msgstr "Unha breve introdución a XPath"
+
+#: ../../intro/tutorial.rst:318
+msgid ""
+"Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:"
+msgstr ""
+"Ademais de `CSS`_, os selectores de Scrapy tamén permiten usar expresións"
+" de `XPath`_:"
+
+#: ../../intro/tutorial.rst:325
+msgid ""
+"XPath expressions are very powerful, and are the foundation of Scrapy "
+"Selectors. In fact, CSS selectors are converted to XPath under-the-hood. "
+"You can see that if you read closely the text representation of the "
+"selector objects in the shell."
+msgstr ""
+"As expresións de XPath son moi potentes, e o piar sobre o que repousan os"
+" selectores de Scrapy. De feito, os selectores de CSS convértense a XPath"
+" internamente. Pode comprobalo se olla detidamente a representación de "
+"texto dos obxectos de selector no intérprete."
+
+#: ../../intro/tutorial.rst:330
+msgid ""
+"While perhaps not as popular as CSS selectors, XPath expressions offer "
+"more power because besides navigating the structure, it can also look at "
+"the content. Using XPath, you're able to select things like: *select the "
+"link that contains the text \"Next Page\"*. This makes XPath very fitting"
+" to the task of scraping, and we encourage you to learn XPath even if you"
+" already know how to construct CSS selectors, it will make scraping much "
+"easier."
+msgstr ""
+"Aínda que non son tan populares coma os selectores de CSS, as expresións "
+"de XPath ofrecen máis potencia porque ademais de navegar a estrutura "
+"tamén pode consultar o contido. Con XPath pode seleccionar cousas como: "
+"*a ligazón que contén o texto «Páxina seguinte»*. Isto fai a XPath moi "
+"axeitado para a extracción de datos, e recomendámoslle que aprenda XPath "
+"incluso se xa sabe construír selectores de CSS, facilitaralle moito a "
+"extracción de datos."
+
+#: ../../intro/tutorial.rst:337
+msgid ""
+"We won't cover much of XPath here, but you can read more about "
+":ref:`using XPath with Scrapy Selectors here <topics-selectors>`. To "
+"learn more about XPath, we recommend `this tutorial to learn XPath "
+"through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this "
+"tutorial to learn \"how to think in XPath\" "
+"<http://plasmasturm.org/log/xpath101/>`_."
+msgstr ""
+"Aquí nos vamos entrar en moito detalle sobre XPath, pero pode ler máis "
+"sobre o :ref:`uso de XPath con selectores de Scrapy aquí <topics-"
+"selectors>`. Para aprender máis sobre XPath, recomendámoslle `este "
+"titorial para aprender XPath mediante exemplos (en inglés) "
+"<http://zvon.org/comp/r/tut-XPath_1.html>`_, e `estoutro titorial para "
+"aprender a «pensar en XPath» (en inglés) "
+"<http://plasmasturm.org/log/xpath101/>`_."
+
+#: ../../intro/tutorial.rst:347
+msgid "Extracting quotes and authors"
+msgstr "Extraer citas e autores"
+
+#: ../../intro/tutorial.rst:349
+msgid ""
+"Now that you know a bit about selection and extraction, let's complete "
+"our spider by writing the code to extract the quotes from the web page."
+msgstr ""
+"Agora que xa sabe un pouco sobre seleccionar e extraer, completemos a "
+"araña escribindo o código para extraer as citas da páxina web."
+
+#: ../../intro/tutorial.rst:352
+msgid ""
+"Each quote in http://quotes.toscrape.com is represented by HTML elements "
+"that look like this:"
+msgstr ""
+"Cada cita de http://quotes.toscrape.com está representada por elementos "
+"de HTML co seguinte aspecto:"
+
+#: ../../intro/tutorial.rst:373
+msgid ""
+"Let's open up scrapy shell and play a bit to find out how to extract the "
+"data we want::"
+msgstr ""
+"Abramos o intérprete de Scrapy e fozar un pouco ata atopar como extraer "
+"os datos que queremos::"
+
+#: ../../intro/tutorial.rst:378
+msgid "We get a list of selectors for the quote HTML elements with:"
+msgstr ""
+"Para obter unha lista de selectores dos elementos de HTML de cita usamos:"
+
+#: ../../intro/tutorial.rst:385
+msgid ""
+"Each of the selectors returned by the query above allows us to run "
+"further queries over their sub-elements. Let's assign the first selector "
+"to a variable, so that we can run our CSS selectors directly on a "
+"particular quote:"
+msgstr ""
+"Cada un dos selectores que a consulta anterior devolve permítenos "
+"realizar consultas adicionais nos seus elementos subordinados. Asignemos "
+"o primeiro selector a unha variable, para podermos executar os nosos "
+"selectores de CSS directamente nunha cita concreta:"
+
+#: ../../intro/tutorial.rst:391
+msgid ""
+"Now, let's extract ``text``, ``author`` and the ``tags`` from that quote "
+"using the ``quote`` object we just created:"
+msgstr ""
+"Agora extraiamos ``text``, ``author`` e ``tags`` desa cita usando o "
+"obxecto ``quote`` que acabamos de crear:"
+
+#: ../../intro/tutorial.rst:401
+msgid ""
+"Given that the tags are a list of strings, we can use the ``.getall()`` "
+"method to get all of them:"
+msgstr ""
+"Dado que as etiquetas son unha lista de cadeas, podemos usar o método "
+"``.getall()`` para obtelas todas:"
+
+#: ../../intro/tutorial.rst:414
+msgid ""
+"Having figured out how to extract each bit, we can now iterate over all "
+"the quotes elements and put them together into a Python dictionary:"
+msgstr ""
+"Unha vez sabemos como extraer cada parte, podemos percorrer todos os "
+"elementos de cita e xuntalos nun dicionario de Python:"
+
+#: ../../intro/tutorial.rst:427
+msgid "Extracting data in our spider"
+msgstr "Extraer datos desde a nosa araña"
+
+#: ../../intro/tutorial.rst:429
+msgid ""
+"Let's get back to our spider. Until now, it doesn't extract any data in "
+"particular, just saves the whole HTML page to a local file. Let's "
+"integrate the extraction logic above into our spider."
+msgstr ""
+"Volvamos á nosa araña. De momento non extrae ningún dato concreto, "
+"simplemente garda a páxina de HTML enteira nun ficheiro local. Integremos"
+" a lóxica de extracción anterior na nosa araña."
+
+#: ../../intro/tutorial.rst:433
+msgid ""
+"A Scrapy spider typically generates many dictionaries containing the data"
+" extracted from the page. To do that, we use the ``yield`` Python keyword"
+" in the callback, as you can see below::"
+msgstr ""
+"Unha araña de Scrapy adoita xerar moitos dicionarios cos datos extraídos "
+"da páxina. Para facelo, usamos a palabra clave de Python ``yield`` na "
+"devolución de chamara, como pode ver a continuación::"
+
+#: ../../intro/tutorial.rst:455
+msgid ""
+"If you run this spider, it will output the extracted data with the log::"
+msgstr ""
+"Se executa esta araña, imprimirá na saída os datos extraídos co rexistro::"
+
+#: ../../intro/tutorial.rst:466
+msgid "Storing the scraped data"
+msgstr "Almacenar os datos extraídos"
+
+#: ../../intro/tutorial.rst:468
+msgid ""
+"The simplest way to store the scraped data is by using :ref:`Feed exports"
+" <topics-feed-exports>`, with the following command::"
+msgstr ""
+"A forma máis sinxela de almacenar os datos extraídos é usando as "
+":ref:`exportacións de fontes <topics-feed-exports>`, coa seguinte orde::"
+
+#: ../../intro/tutorial.rst:473
+msgid ""
+"That will generate an ``quotes.json`` file containing all scraped items, "
+"serialized in `JSON`_."
+msgstr ""
+"Isto xerará un ficheiro ``quotes.json`` que conterá todos os elementos "
+"extraídos, en formato `JSON`_."
+
+#: ../../intro/tutorial.rst:476
+msgid ""
+"For historic reasons, Scrapy appends to a given file instead of "
+"overwriting its contents. If you run this command twice without removing "
+"the file before the second time, you'll end up with a broken JSON file."
+msgstr ""
+"Por motivos históricos, Scrapy engade os novos datos ao ficheiro indicado"
+" en vez de substituír o seu contido. Se executa esta orde dúas veces sen "
+"eliminar o ficheiro antes da segunda execución, o ficheiro JSON "
+"resultante non será válido."
+
+#: ../../intro/tutorial.rst:480
+msgid "You can also use other formats, like `JSON Lines`_::"
+msgstr "Tamén pode usar outros formatos, como `JSON Lines`_::"
+
+#: ../../intro/tutorial.rst:484
+msgid ""
+"The `JSON Lines`_ format is useful because it's stream-like, you can "
+"easily append new records to it. It doesn't have the same problem of JSON"
+" when you run twice. Also, as each record is a separate line, you can "
+"process big files without having to fit everything in memory, there are "
+"tools like `JQ`_ to help doing that at the command-line."
+msgstr ""
+"O formato `JSON Lines`_ é útil porque é similar a unha transmisión, pode "
+"engadir facilmente novos rexistros a el. Non sofre do mesmo problema que "
+"JSON ao executar dúas veces. Ademais, como cada rexistro está nunha liña "
+"de seu, pode procesar ficheiros grandes sen ter que cargar todo en "
+"memoria, e existen ferramentas como `JQ`_ que permiten facelo desde a "
+"liña de ordes."
+
+#: ../../intro/tutorial.rst:490
+msgid ""
+"In small projects (like the one in this tutorial), that should be enough."
+" However, if you want to perform more complex things with the scraped "
+"items, you can write an :ref:`Item Pipeline <topics-item-pipeline>`. A "
+"placeholder file for Item Pipelines has been set up for you when the "
+"project is created, in ``tutorial/pipelines.py``. Though you don't need "
+"to implement any item pipelines if you just want to store the scraped "
+"items."
+msgstr ""
+"En proxectos pequenos, como o deste titorial, debería abondar con iso. "
+"Porén, se quere realizar cousas máis complexas cos elementos extraídos, "
+"pode crear unha :ref:`canalización de elementos <topics-item-pipeline>`. "
+"Ao crear o proxecto xerouse un ficheiro no que definir canalizacións de "
+"elementos, ``tutorial/pipelines.py``. Pero non ten por que definir "
+"ningunha canalización de elementos se non quere máis que almacenar os "
+"elementos extraídos."
+
+#: ../../intro/tutorial.rst:502
+msgid "Following links"
+msgstr "Seguir ligazóns"
+
+#: ../../intro/tutorial.rst:504
+msgid ""
+"Let's say, instead of just scraping the stuff from the first two pages "
+"from http://quotes.toscrape.com, you want quotes from all the pages in "
+"the website."
+msgstr ""
+"Digamos que, en vez de limitarnos a extraer cousas das primeiras dúas "
+"páxinas de http://quotes.toscrape.com, quere citas de todas as páxinas do"
+" sitio web."
+
+#: ../../intro/tutorial.rst:507
+msgid ""
+"Now that you know how to extract data from pages, let's see how to follow"
+" links from them."
+msgstr ""
+"Agora que sabe como extraer datos de páxinas, vexamos como seguir "
+"ligazóns delas."
+
+#: ../../intro/tutorial.rst:510
+msgid ""
+"First thing is to extract the link to the page we want to follow.  "
+"Examining our page, we can see there is a link to the next page with the "
+"following markup:"
+msgstr ""
+"O primeiro é extraer a ligazón á páxina que queremos seguir. Ao examinar "
+"a nosa páxina podemos ver que hai unha ligazón á páxina seguinte coas "
+"seguintes etiquetas:"
+
+#: ../../intro/tutorial.rst:522
+msgid "We can try extracting it in the shell:"
+msgstr "Podemos probar a extraela desde o intérprete:"
+
+#: ../../intro/tutorial.rst:527
+msgid ""
+"This gets the anchor element, but we want the attribute ``href``. For "
+"that, Scrapy supports a CSS extension that lets you select the attribute "
+"contents, like this:"
+msgstr ""
+"Isto obtén o elemento de áncora, pero queremos o atributo ``href``. Para "
+"iso Scrapy permite unha extensión de CSS que lle permite seleccionar o "
+"contido dun atributo así:"
+
+#: ../../intro/tutorial.rst:534
+msgid ""
+"There is also an ``attrib`` property available (see :ref:`selecting-"
+"attributes` for more):"
+msgstr ""
+"Tamén hai dispoñíbel unha propiedade ``attrib`` (consulte :ref"
+":`selecting-attributes` para máis información):"
+
+#: ../../intro/tutorial.rst:540
+msgid ""
+"Let's see now our spider modified to recursively follow the link to the "
+"next page, extracting data from it::"
+msgstr ""
+"Vexamos agora a nosa araña modificada para seguir de maneira recursiva a "
+"ligazón á páxina seguinte, extraendo datos dela::"
+
+#: ../../intro/tutorial.rst:566
+msgid ""
+"Now, after extracting the data, the ``parse()`` method looks for the link"
+" to the next page, builds a full absolute URL using the "
+":meth:`~scrapy.http.Response.urljoin` method (since the links can be "
+"relative) and yields a new request to the next page, registering itself "
+"as callback to handle the data extraction for the next page and to keep "
+"the crawling going through all the pages."
+msgstr ""
+"Agora, tras extraer os datos, o método ``parse()`` busca a ligazón á "
+"seguinte páxina, constrúe un URL absoluto mediante o método "
+":meth:`~scrapy.http.Response.urljoin` (dado que as ligazóns poden ser "
+"relativas) e produce (``yield``) unha nova solicitude para a páxina "
+"seguinte, rexistrándose a si mesmo como devolución de chamada para "
+"manexar a extracción de datos da seguinte páxina e para seguir "
+"percorrendo todas as páxinas."
+
+#: ../../intro/tutorial.rst:573
+msgid ""
+"What you see here is Scrapy's mechanism of following links: when you "
+"yield a Request in a callback method, Scrapy will schedule that request "
+"to be sent and register a callback method to be executed when that "
+"request finishes."
+msgstr ""
+"O que ve aquí é o mecanismo de Scrapy para seguir ligazóns: cando produce"
+" unha Request nun método de devolución de chamara, Scrapy planificará esa"
+" solicitude para enviala e rexistrará un método de devolución de chamada "
+"que executar cando a solicitude reciba unha resposta."
+
+#: ../../intro/tutorial.rst:577
+msgid ""
+"Using this, you can build complex crawlers that follow links according to"
+" rules you define, and extract different kinds of data depending on the "
+"page it's visiting."
+msgstr ""
+"Deste xeito pode construír lóxicas de percorrido complexas que seguen "
+"ligazóns segundo regras definidas por vostede, e extraen distintos tipos "
+"de datos segundo a páxina que están a visitar."
+
+#: ../../intro/tutorial.rst:581
+msgid ""
+"In our example, it creates a sort of loop, following all the links to the"
+" next page until it doesn't find one -- handy for crawling blogs, forums "
+"and other sites with pagination."
+msgstr ""
+"No exemplo, créase unha especie de bucle, seguindo todas as ligazóns á "
+"páxina seguinte ata que non se atopa ningunha máis; moi cómodo para "
+"percorrer blogs, foros e outros sitios web con paxinación."
+
+#: ../../intro/tutorial.rst:589
+msgid "A shortcut for creating Requests"
+msgstr "Un atallo para crear solicitudes"
+
+#: ../../intro/tutorial.rst:591
+msgid ""
+"As a shortcut for creating Request objects you can use "
+":meth:`response.follow <scrapy.http.TextResponse.follow>`::"
+msgstr ""
+"Como atallo para crear obxectos de Request pode usar "
+":meth:`response.follow <scrapy.http.TextResponse.follow>`::"
+
+#: ../../intro/tutorial.rst:615
+msgid ""
+"Unlike scrapy.Request, ``response.follow`` supports relative URLs "
+"directly - no need to call urljoin. Note that ``response.follow`` just "
+"returns a Request instance; you still have to yield this Request."
+msgstr ""
+"A diferenza de scrapy.Request, ``response.follow`` permite URL relativos "
+"directamente, sen necesidade de chamar a urljoin. Teña en conta que "
+"``response.follow`` só devolve unha instancia de Request; é "
+"responsabilidade de vostede producir (``yield``) esa instancia."
+
+#: ../../intro/tutorial.rst:619
+msgid ""
+"You can also pass a selector to ``response.follow`` instead of a string; "
+"this selector should extract necessary attributes::"
+msgstr ""
+"Tamén pode pasar a ``response.follow`` un selector en vez de unha cadea; "
+"o selector debería extraer os atributos necesarios::"
+
+#: ../../intro/tutorial.rst:625
+msgid ""
+"For ``<a>`` elements there is a shortcut: ``response.follow`` uses their "
+"href attribute automatically. So the code can be shortened further::"
+msgstr ""
+"Para os elementos ``<a>`` existe un atallo: ``response.follow`` usa o seu"
+" atributo href automaticamente. O que fai posíbel abreviar aínda máis o "
+"código::"
+
+#: ../../intro/tutorial.rst:631
+msgid ""
+"To create multiple requests from an iterable, you can use "
+":meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` "
+"instead::"
+msgstr ""
+"Para crear varias solicitudes desde un obxecto que se poida percorrer "
+"pode usar o método :meth:`response.follow_all "
+"<scrapy.http.TextResponse.follow_all>` no seu lugar::"
+
+#: ../../intro/tutorial.rst:637
+msgid "or, shortening it further::"
+msgstr "ou, abreviando aínda máis::"
+
+#: ../../intro/tutorial.rst:643
+msgid "More examples and patterns"
+msgstr "Máis exemplos e padróns"
+
+#: ../../intro/tutorial.rst:645
+msgid ""
+"Here is another spider that illustrates callbacks and following links, "
+"this time for scraping author information::"
+msgstr ""
+"Aquí ten outra araña que ilustra as devolucións de chamaras e o "
+"seguimento de ligazóns, desta vez para extraer información de autores::"
+
+#: ../../intro/tutorial.rst:673
+msgid ""
+"This spider will start from the main page, it will follow all the links "
+"to the authors pages calling the ``parse_author`` callback for each of "
+"them, and also the pagination links with the ``parse`` callback as we saw"
+" before."
+msgstr ""
+"Esta araña iniciarase desde a páxina principal, e seguirá todas as "
+"ligazóns ás páxinas de autores, para logo chamar á devolución de chamada "
+"``parse_author`` para cada unha, así como as ligazóns de paxinación coa "
+"devolución de chamada ``parse`` como xa vimos."
+
+#: ../../intro/tutorial.rst:677
+msgid ""
+"Here we're passing callbacks to :meth:`response.follow_all "
+"<scrapy.http.TextResponse.follow_all>` as positional arguments to make "
+"the code shorter; it also works for :class:`~scrapy.http.Request`."
+msgstr ""
+"Aquí pasámoslle devolucións de chamada a :meth:`response.follow_all "
+"<scrapy.http.TextResponse.follow_all>` como argumentos de posición para "
+"acurtar o código; tamén funciona con :class:`~scrapy.http.Request`."
+
+#: ../../intro/tutorial.rst:682
+msgid ""
+"The ``parse_author`` callback defines a helper function to extract and "
+"cleanup the data from a CSS query and yields the Python dict with the "
+"author data."
+msgstr ""
+"A devolución de chamada ``parse_author`` define unha función de "
+"asistencia para extraer e limpar os datos de unha consulta de CSS e "
+"produce o dicionario de Python cos datos do autor."
+
+#: ../../intro/tutorial.rst:685
+msgid ""
+"Another interesting thing this spider demonstrates is that, even if there"
+" are many quotes from the same author, we don't need to worry about "
+"visiting the same author page multiple times. By default, Scrapy filters "
+"out duplicated requests to URLs already visited, avoiding the problem of "
+"hitting servers too much because of a programming mistake. This can be "
+"configured by the setting :setting:`DUPEFILTER_CLASS`."
+msgstr ""
+"Outra cousa interesante que demostra esta araña é que, aínda que houber "
+"moitas citas dun mesmo autor, non nos temos que preocupar de que acabemos"
+" visitando a páxina dun mesmo autor varias veces. De maneira "
+"predeterminada, Scrapy ignora as solicitudes a URL xa visitadas, evitando"
+" o problema de enviar solicitudes de máis aos servidores a causa de erros"
+" de programación. Isto pode configurarse mediante a opción "
+":setting:`DUPEFILTER_CLASS`."
+
+#: ../../intro/tutorial.rst:692
+msgid ""
+"Hopefully by now you have a good understanding of how to use the "
+"mechanism of following links and callbacks with Scrapy."
+msgstr ""
+"Con sorte a estas alturas xa vai entendendo como usar o mecanismo de "
+"seguir ligazóns e de devolucións de chamadas de Scrapy."
+
+#: ../../intro/tutorial.rst:695
+msgid ""
+"As yet another example spider that leverages the mechanism of following "
+"links, check out the :class:`~scrapy.spiders.CrawlSpider` class for a "
+"generic spider that implements a small rules engine that you can use to "
+"write your crawlers on top of it."
+msgstr ""
+"A modo de exemplo adicional de araña que aproveita o mecanismo de seguir "
+"ligazóns, consulte a clase :class:`~scrapy.spiders.CrawlSpider`, unha "
+"araña xenérica cun pequeno motor de regras que pode usar para escribir "
+"arañas de percorrido."
+
+#: ../../intro/tutorial.rst:700
+msgid ""
+"Also, a common pattern is to build an item with data from more than one "
+"page, using a :ref:`trick to pass additional data to the callbacks "
+"<topics-request-response-ref-request-callback-arguments>`."
+msgstr ""
+"Outro padrón habitual consiste en construír un elemento con datos de máis"
+" dunha páxina, usando un :ref:`truco para pasar datos adicionais ás "
+"devolucións de chamadas <topics-request-response-ref-request-callback-"
+"arguments>`."
+
+#: ../../intro/tutorial.rst:708
+msgid ""
+"You can provide command line arguments to your spiders by using the "
+"``-a`` option when running them::"
+msgstr ""
+"Pode fornecer argumentos ás súas arañas desde a liña de ordes usando a "
+"opción ``-a`` ao executalas::"
+
+#: ../../intro/tutorial.rst:713
+msgid ""
+"These arguments are passed to the Spider's ``__init__`` method and become"
+" spider attributes by default."
+msgstr ""
+"Os argumentos pásanse ao método ``__init__`` da araña e de maneira "
+"predeterminada convértense en atributos da araña."
+
+#: ../../intro/tutorial.rst:716
+msgid ""
+"In this example, the value provided for the ``tag`` argument will be "
+"available via ``self.tag``. You can use this to make your spider fetch "
+"only quotes with a specific tag, building the URL based on the argument::"
+msgstr ""
+"Neste exemplo, o valor fornecido para o argumento ``tag`` estará "
+"dispoñíbel mediante ``self.tag``. Pode usar isto para facer que a súa "
+"araña só extraia citas que teñan asignada unha etiqueta concreta, "
+"construíndo o URL segundo o argumento::"
+
+#: ../../intro/tutorial.rst:745
+msgid ""
+"If you pass the ``tag=humor`` argument to this spider, you'll notice that"
+" it will only visit URLs from the ``humor`` tag, such as "
+"``http://quotes.toscrape.com/tag/humor``."
+msgstr ""
+"Se pasa o argumento ``tag=humor`` a esta araña, verá que só visitará os "
+"URL da etiqueta ``humor``, como ``http://quotes.toscrape.com/tag/humor``."
+
+#: ../../intro/tutorial.rst:749
+msgid ""
+"You can :ref:`learn more about handling spider arguments here "
+"<spiderargs>`."
+msgstr ""
+"Pode :ref:`aprender máis sobre manexar argumentos de arañas aquí "
+"<spiderargs>`."
+
+#: ../../intro/tutorial.rst:752
+msgid "Next steps"
+msgstr "Seguintes pasos"
+
+#: ../../intro/tutorial.rst:754
+msgid ""
+"This tutorial covered only the basics of Scrapy, but there's a lot of "
+"other features not mentioned here. Check the :ref:`topics-whatelse` "
+"section in :ref:`intro-overview` chapter for a quick overview of the most"
+" important ones."
+msgstr ""
+"Este titorial abordou os conceptos básicos de Scrapy, pero hai moitas "
+"outras funcionalidades alén das que vimos aquí. Consulte na sección :ref"
+":`topics-whatelse` do capítulo :ref:`intro-overview` un resumo das máis "
+"importantes."
+
+#: ../../intro/tutorial.rst:758
+msgid ""
+"You can continue from the section :ref:`section-basics` to know more "
+"about the command-line tool, spiders, selectors and other things the "
+"tutorial hasn't covered like modeling the scraped data. If you prefer to "
+"play with an example project, check the :ref:`intro-examples` section."
+msgstr ""
+"Pode continuar desde a sección :ref:`section-basics` para aprender máis "
+"sobre as ferramentas da liña de ordes, arañas, selectores e outras cousas"
+" non vistas no titorial, como modelar os datos extraídos. Se prefire "
+"fozar cun proxecto de exemplo, bote un ollo á sección :ref:`intro-"
+"examples`."
+
+#~ msgid "`Automate the Boring Stuff With Python`_"
+#~ msgstr ""
+
+#~ msgid "`How To Think Like a Computer Scientist`_"
+#~ msgstr ""
+
+#~ msgid "`Learn Python 3 The Hard Way`_"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "You can also take a look at "
+#~ "`this list of Python resources for "
+#~ "non-programmers`_, as well as the "
+#~ "`suggested resources in the learnpython-"
+#~ "subreddit`_."
+#~ msgstr ""
+

@@ -1,4 +1,5 @@
 Sphinx>=2.1
 sphinx-hoverxref
+sphinx-intl
 sphinx-notfound-page
 sphinx_rtd_theme

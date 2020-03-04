@@ -1,0 +1,377 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../topics/logging.rst:5
+msgid "Logging"
+msgstr ""
+
+#: ../../topics/logging.rst:8
+msgid ":mod:`scrapy.log` has been deprecated alongside its functions in favor of explicit calls to the Python standard logging. Keep reading to learn more about the new logging system."
+msgstr ""
+
+#: ../../topics/logging.rst:12
+msgid "Scrapy uses `Python's builtin logging system <https://docs.python.org/3/library/logging.html>`_ for event logging. We'll provide some simple examples to get you started, but for more advanced use-cases it's strongly suggested to read thoroughly its documentation."
+msgstr ""
+
+#: ../../topics/logging.rst:17
+msgid "Logging works out of the box, and can be configured to some extent with the Scrapy settings listed in :ref:`topics-logging-settings`."
+msgstr ""
+
+#: ../../topics/logging.rst:20
+msgid "Scrapy calls :func:`scrapy.utils.log.configure_logging` to set some reasonable defaults and handle those settings in :ref:`topics-logging-settings` when running commands, so it's recommended to manually call it if you're running Scrapy from scripts as described in :ref:`run-from-script`."
+msgstr ""
+
+#: ../../topics/logging.rst:28
+msgid "Log levels"
+msgstr ""
+
+#: ../../topics/logging.rst:30
+msgid "Python's builtin logging defines 5 different levels to indicate the severity of a given log message. Here are the standard ones, listed in decreasing order:"
+msgstr ""
+
+#: ../../topics/logging.rst:33
+msgid "``logging.CRITICAL`` - for critical errors (highest severity)"
+msgstr ""
+
+#: ../../topics/logging.rst:34
+msgid "``logging.ERROR`` - for regular errors"
+msgstr ""
+
+#: ../../topics/logging.rst:35
+msgid "``logging.WARNING`` - for warning messages"
+msgstr ""
+
+#: ../../topics/logging.rst:36
+msgid "``logging.INFO`` - for informational messages"
+msgstr ""
+
+#: ../../topics/logging.rst:37
+msgid "``logging.DEBUG`` - for debugging messages (lowest severity)"
+msgstr ""
+
+#: ../../topics/logging.rst:40
+msgid "How to log messages"
+msgstr ""
+
+#: ../../topics/logging.rst:42
+msgid "Here's a quick example of how to log a message using the ``logging.WARNING`` level::"
+msgstr ""
+
+#: ../../topics/logging.rst:48
+msgid "There are shortcuts for issuing log messages on any of the standard 5 levels, and there's also a general ``logging.log`` method which takes a given level as argument.  If needed, the last example could be rewritten as::"
+msgstr ""
+
+#: ../../topics/logging.rst:55
+msgid "On top of that, you can create different \"loggers\" to encapsulate messages. (For example, a common practice is to create different loggers for every module). These loggers can be configured independently, and they allow hierarchical constructions."
+msgstr ""
+
+#: ../../topics/logging.rst:60
+msgid "The previous examples use the root logger behind the scenes, which is a top level logger where all messages are propagated to (unless otherwise specified). Using ``logging`` helpers is merely a shortcut for getting the root logger explicitly, so this is also an equivalent of the last snippets::"
+msgstr ""
+
+#: ../../topics/logging.rst:69
+msgid "You can use a different logger just by getting its name with the ``logging.getLogger`` function::"
+msgstr ""
+
+#: ../../topics/logging.rst:76
+msgid "Finally, you can ensure having a custom logger for any module you're working on by using the ``__name__`` variable, which is populated with current module's path::"
+msgstr ""
+
+#: ../../topics/logging.rst:87
+msgid "Module logging, `HowTo <https://docs.python.org/2/howto/logging.html>`_"
+msgstr ""
+
+#: ../../topics/logging.rst:87
+msgid "Basic Logging Tutorial"
+msgstr ""
+
+#: ../../topics/logging.rst:89
+msgid "Module logging, `Loggers <https://docs.python.org/2/library/logging.html#logger-objects>`_"
+msgstr ""
+
+#: ../../topics/logging.rst:90
+msgid "Further documentation on loggers"
+msgstr ""
+
+#: ../../topics/logging.rst:95
+msgid "Logging from Spiders"
+msgstr ""
+
+#: ../../topics/logging.rst:97
+msgid "Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider instance, which can be accessed and used like this::"
+msgstr ""
+
+#: ../../topics/logging.rst:110
+msgid "That logger is created using the Spider's name, but you can use any custom Python logger you want. For example::"
+msgstr ""
+
+#: ../../topics/logging.rst:129
+msgid "Logging configuration"
+msgstr ""
+
+#: ../../topics/logging.rst:131
+msgid "Loggers on their own don't manage how messages sent through them are displayed. For this task, different \"handlers\" can be attached to any logger instance and they will redirect those messages to appropriate destinations, such as the standard output, files, emails, etc."
+msgstr ""
+
+#: ../../topics/logging.rst:136
+msgid "By default, Scrapy sets and configures a handler for the root logger, based on the settings below."
+msgstr ""
+
+#: ../../topics/logging.rst:142
+msgid "Logging settings"
+msgstr ""
+
+#: ../../topics/logging.rst:144
+msgid "These settings can be used to configure the logging:"
+msgstr ""
+
+#: ../../topics/logging.rst:146
+msgid ":setting:`LOG_FILE`"
+msgstr ""
+
+#: ../../topics/logging.rst:147
+msgid ":setting:`LOG_ENABLED`"
+msgstr ""
+
+#: ../../topics/logging.rst:148
+msgid ":setting:`LOG_ENCODING`"
+msgstr ""
+
+#: ../../topics/logging.rst:149
+msgid ":setting:`LOG_LEVEL`"
+msgstr ""
+
+#: ../../topics/logging.rst:150
+msgid ":setting:`LOG_FORMAT`"
+msgstr ""
+
+#: ../../topics/logging.rst:151
+msgid ":setting:`LOG_DATEFORMAT`"
+msgstr ""
+
+#: ../../topics/logging.rst:152
+msgid ":setting:`LOG_STDOUT`"
+msgstr ""
+
+#: ../../topics/logging.rst:153
+msgid ":setting:`LOG_SHORT_NAMES`"
+msgstr ""
+
+#: ../../topics/logging.rst:155
+msgid "The first couple of settings define a destination for log messages. If :setting:`LOG_FILE` is set, messages sent through the root logger will be redirected to a file named :setting:`LOG_FILE` with encoding :setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log messages will be displayed on the standard error. Lastly, if :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output."
+msgstr ""
+
+#: ../../topics/logging.rst:162
+msgid ":setting:`LOG_LEVEL` determines the minimum level of severity to display, those messages with lower severity will be filtered out. It ranges through the possible levels listed in :ref:`topics-logging-levels`."
+msgstr ""
+
+#: ../../topics/logging.rst:166
+msgid ":setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings used as layouts for all messages. Those strings can contain any placeholders listed in `logging's logrecord attributes docs <https://docs.python.org/2/library/logging.html#logrecord-attributes>`_ and `datetime's strftime and strptime directives <https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_ respectively."
+msgstr ""
+
+#: ../../topics/logging.rst:174
+msgid "If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy component that prints the log. It is unset by default, hence logs contain the Scrapy component responsible for that log output."
+msgstr ""
+
+#: ../../topics/logging.rst:179
+msgid "Command-line options"
+msgstr ""
+
+#: ../../topics/logging.rst:181
+msgid "There are command-line arguments, available for all commands, that you can use to override some of the Scrapy settings regarding logging."
+msgstr ""
+
+#: ../../topics/logging.rst:184
+msgid "``--logfile FILE``"
+msgstr ""
+
+#: ../../topics/logging.rst:185
+msgid "Overrides :setting:`LOG_FILE`"
+msgstr ""
+
+#: ../../topics/logging.rst:186
+msgid "``--loglevel/-L LEVEL``"
+msgstr ""
+
+#: ../../topics/logging.rst:187
+msgid "Overrides :setting:`LOG_LEVEL`"
+msgstr ""
+
+#: ../../topics/logging.rst:189
+msgid "``--nolog``"
+msgstr ""
+
+#: ../../topics/logging.rst:189
+msgid "Sets :setting:`LOG_ENABLED` to ``False``"
+msgstr ""
+
+#: ../../topics/logging.rst:193
+msgid "Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_"
+msgstr ""
+
+#: ../../topics/logging.rst:194
+msgid "Further documentation on available handlers"
+msgstr ""
+
+#: ../../topics/logging.rst:199
+msgid "Custom Log Formats"
+msgstr ""
+
+#: ../../topics/logging.rst:201
+msgid "A custom log format can be set for different actions by extending :class:`~scrapy.logformatter.LogFormatter` class and making :setting:`LOG_FORMATTER` point to your new class."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:1
+msgid "Class for generating log messages for different actions."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:3
+msgid "All methods must return a dictionary listing the parameters ``level``, ``msg`` and ``args`` which are going to be used for constructing the log message when calling ``logging.log``."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:7
+msgid "Dictionary keys for the method outputs:"
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:9
+msgid "``level`` is the log level for that action, you can use those from the `python logging library <https://docs.python.org/3/library/logging.html>`_ : ``logging.DEBUG``, ``logging.INFO``, ``logging.WARNING``, ``logging.ERROR`` and ``logging.CRITICAL``."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:13
+msgid "``msg`` should be a string that can contain different formatting placeholders. This string, formatted with the provided ``args``, is going to be the long message for that action."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:16
+msgid "``args`` should be a tuple or dict with the formatting placeholders for ``msg``. The final log message is computed as ``msg % args``."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:19
+msgid "Users can define their own ``LogFormatter`` class if they want to customize how each action is logged or if they want to omit it entirely. In order to omit logging an action the method must return ``None``."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter:23
+msgid "Here is an example on how to create a custom log formatter to lower the severity level of the log message when an item is dropped from the pipeline::"
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.crawled:1
+msgid "Logs a message when the crawler finds a webpage."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.download_error:1
+msgid "Logs a download error message from a spider (typically coming from the engine)."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.dropped:1
+msgid "Logs a message when an item is dropped while it is passing through the item pipeline."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.item_error:1
+msgid "Logs a message when an item causes an error while it is passing through the item pipeline."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.scraped:1
+msgid "Logs a message when an item is scraped by a spider."
+msgstr ""
+
+#: ../../../scrapy/logformatter.py:docstring of scrapy.logformatter.LogFormatter.spider_error:1
+msgid "Logs an error message from a spider."
+msgstr ""
+
+#: ../../topics/logging.rst:209
+msgid "Advanced customization"
+msgstr ""
+
+#: ../../topics/logging.rst:211
+msgid "Because Scrapy uses stdlib logging module, you can customize logging using all features of stdlib logging."
+msgstr ""
+
+#: ../../topics/logging.rst:214
+msgid "For example, let's say you're scraping a website which returns many HTTP 404 and 500 responses, and you want to hide all messages like this::"
+msgstr ""
+
+#: ../../topics/logging.rst:221
+msgid "The first thing to note is a logger name - it is in brackets: ``[scrapy.spidermiddlewares.httperror]``. If you get just ``[scrapy]`` then :setting:`LOG_SHORT_NAMES` is likely set to True; set it to False and re-run the crawl."
+msgstr ""
+
+#: ../../topics/logging.rst:226
+msgid "Next, we can see that the message has INFO level. To hide it we should set logging level for ``scrapy.spidermiddlewares.httperror`` higher than INFO; next level after INFO is WARNING. It could be done e.g. in the spider's ``__init__`` method::"
+msgstr ""
+
+#: ../../topics/logging.rst:242
+msgid "If you run this spider again then INFO messages from ``scrapy.spidermiddlewares.httperror`` logger will be gone."
+msgstr ""
+
+#: ../../topics/logging.rst:246
+msgid "scrapy.utils.log module"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:1
+msgid "Initialize logging defaults for Scrapy."
+msgstr ""
+
+#: ../../topics/logging.rst:0
+msgid "Parameters"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:3
+msgid "settings used to create and configure a handler for the root logger (default: None)."
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:7
+msgid "whether to install root logging handler (default: True)"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:11
+msgid "This function does:"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:13
+msgid "Route warnings and twisted logging through Python standard logging"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:14
+msgid "Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:15
+msgid "Route stdout to log if LOG_STDOUT setting is True"
+msgstr ""
+
+#: ../../../scrapy/utils/log.py:docstring of scrapy.utils.log.configure_logging:17
+msgid "When ``install_root_handler`` is True (default), this function also creates a handler for the root logger according to given settings (see :ref:`topics-logging-settings`). You can override default options using ``settings`` argument. When ``settings`` is empty or None, defaults are used."
+msgstr ""
+
+#: ../../topics/logging.rst:253
+msgid "``configure_logging`` is automatically called when using Scrapy commands or :class:`~scrapy.crawler.CrawlerProcess`, but needs to be called explicitly when running custom scripts using :class:`~scrapy.crawler.CrawlerRunner`. In that case, its usage is not required but it's recommended."
+msgstr ""
+
+#: ../../topics/logging.rst:258
+msgid "Another option when running custom scripts is to manually configure the logging. To do this you can use `logging.basicConfig()`_ to set a basic root handler."
+msgstr ""
+
+#: ../../topics/logging.rst:261
+msgid "Note that :class:`~scrapy.crawler.CrawlerProcess` automatically calls ``configure_logging``, so it is recommended to only use `logging.basicConfig()`_ together with :class:`~scrapy.crawler.CrawlerRunner`."
+msgstr ""
+
+#: ../../topics/logging.rst:265
+msgid "This is an example on how to redirect ``INFO`` or higher messages to a file::"
+msgstr ""
+
+#: ../../topics/logging.rst:276
+msgid "Refer to :ref:`run-from-script` for more details about using Scrapy this way."
+msgstr ""

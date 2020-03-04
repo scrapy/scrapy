@@ -1,0 +1,294 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2008–2020, Scrapy developers
+# This file is distributed under the same license as the Scrapy package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Scrapy 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-03 20:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../topics/shell.rst:5
+msgid "Scrapy shell"
+msgstr ""
+
+#: ../../topics/shell.rst:7
+msgid ""
+"The Scrapy shell is an interactive shell where you can try and debug your"
+" scraping code very quickly, without having to run the spider. It's meant"
+" to be used for testing data extraction code, but you can actually use it"
+" for testing any kind of code as it is also a regular Python shell."
+msgstr ""
+
+#: ../../topics/shell.rst:12
+msgid ""
+"The shell is used for testing XPath or CSS expressions and see how they "
+"work and what data they extract from the web pages you're trying to "
+"scrape. It allows you to interactively test your expressions while you're"
+" writing your spider, without having to run the spider to test every "
+"change."
+msgstr ""
+
+#: ../../topics/shell.rst:17
+msgid ""
+"Once you get familiarized with the Scrapy shell, you'll see that it's an "
+"invaluable tool for developing and debugging your spiders."
+msgstr ""
+
+#: ../../topics/shell.rst:21
+msgid "Configuring the shell"
+msgstr ""
+
+#: ../../topics/shell.rst:23
+msgid ""
+"If you have `IPython`_ installed, the Scrapy shell will use it (instead "
+"of the standard Python console). The `IPython`_ console is much more "
+"powerful and provides smart auto-completion and colorized output, among "
+"other things."
+msgstr ""
+
+#: ../../topics/shell.rst:27
+msgid ""
+"We highly recommend you install `IPython`_, specially if you're working "
+"on Unix systems (where `IPython`_ excels). See the `IPython installation "
+"guide`_ for more info."
+msgstr ""
+
+#: ../../topics/shell.rst:31
+msgid ""
+"Scrapy also has support for `bpython`_, and will try to use it where "
+"`IPython`_ is unavailable."
+msgstr ""
+
+#: ../../topics/shell.rst:34
+msgid ""
+"Through Scrapy's settings you can configure it to use any one of "
+"``ipython``, ``bpython`` or the standard ``python`` shell, regardless of "
+"which are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` "
+"environment variable; or by defining it in your :ref:`scrapy.cfg <topics-"
+"config-settings>`::"
+msgstr ""
+
+#: ../../topics/shell.rst:47
+msgid "Launch the shell"
+msgstr ""
+
+#: ../../topics/shell.rst:49
+msgid ""
+"To launch the Scrapy shell you can use the :command:`shell` command like "
+"this::"
+msgstr ""
+
+#: ../../topics/shell.rst:54
+msgid "Where the ``<url>`` is the URL you want to scrape."
+msgstr ""
+
+#: ../../topics/shell.rst:56
+msgid ""
+":command:`shell` also works for local files. This can be handy if you "
+"want to play around with a local copy of a web page. :command:`shell` "
+"understands the following syntaxes for local files::"
+msgstr ""
+
+#: ../../topics/shell.rst:68
+msgid ""
+"When using relative file paths, be explicit and prepend them with ``./`` "
+"(or ``../`` when relevant). ``scrapy shell index.html`` will not work as "
+"one might expect (and this is by design, not a bug)."
+msgstr ""
+
+#: ../../topics/shell.rst:73
+msgid ""
+"Because :command:`shell` favors HTTP URLs over File URIs, and "
+"``index.html`` being syntactically similar to ``example.com``, "
+":command:`shell` will treat ``index.html`` as a domain name and trigger a"
+" DNS lookup error::"
+msgstr ""
+
+#: ../../topics/shell.rst:84
+msgid ""
+":command:`shell` will not test beforehand if a file called ``index.html``"
+" exists in the current directory. Again, be explicit."
+msgstr ""
+
+#: ../../topics/shell.rst:89
+msgid "Using the shell"
+msgstr ""
+
+#: ../../topics/shell.rst:91
+msgid ""
+"The Scrapy shell is just a regular Python console (or `IPython`_ console "
+"if you have it available) which provides some additional shortcut "
+"functions for convenience."
+msgstr ""
+
+#: ../../topics/shell.rst:96
+msgid "Available Shortcuts"
+msgstr ""
+
+#: ../../topics/shell.rst:98
+msgid ""
+"``shelp()`` - print a help with the list of available objects and "
+"shortcuts"
+msgstr ""
+
+#: ../../topics/shell.rst:100
+msgid ""
+"``fetch(url[, redirect=True])`` - fetch a new response from the given URL"
+" and update all related objects accordingly. You can optionaly ask for "
+"HTTP 3xx redirections to not be followed by passing ``redirect=False``"
+msgstr ""
+
+#: ../../topics/shell.rst:104
+msgid ""
+"``fetch(request)`` - fetch a new response from the given request and "
+"update all related objects accordingly."
+msgstr ""
+
+#: ../../topics/shell.rst:107
+msgid ""
+"``view(response)`` - open the given response in your local web browser, "
+"for inspection. This will add a `\\<base\\> tag`_ to the response body in"
+" order for external links (such as images and style sheets) to display "
+"properly. Note, however, that this will create a temporary file in your "
+"computer, which won't be removed automatically."
+msgstr ""
+
+#: ../../topics/shell.rst:116
+msgid "Available Scrapy objects"
+msgstr ""
+
+#: ../../topics/shell.rst:118
+msgid ""
+"The Scrapy shell automatically creates some convenient objects from the "
+"downloaded page, like the :class:`~scrapy.http.Response` object and the "
+":class:`~scrapy.selector.Selector` objects (for both HTML and XML "
+"content)."
+msgstr ""
+
+#: ../../topics/shell.rst:123
+msgid "Those objects are:"
+msgstr ""
+
+#: ../../topics/shell.rst:125
+msgid "``crawler`` - the current :class:`~scrapy.crawler.Crawler` object."
+msgstr ""
+
+#: ../../topics/shell.rst:127
+msgid ""
+"``spider`` - the Spider which is known to handle the URL, or a "
+":class:`~scrapy.spiders.Spider` object if there is no spider found for "
+"the current URL"
+msgstr ""
+
+#: ../../topics/shell.rst:131
+msgid ""
+"``request`` - a :class:`~scrapy.http.Request` object of the last fetched "
+"page. You can modify this request using "
+":meth:`~scrapy.http.Request.replace` or fetch a new request (without "
+"leaving the shell) using the ``fetch`` shortcut."
+msgstr ""
+
+#: ../../topics/shell.rst:136
+msgid ""
+"``response`` - a :class:`~scrapy.http.Response` object containing the "
+"last fetched page"
+msgstr ""
+
+#: ../../topics/shell.rst:139
+msgid "``settings`` - the current :ref:`Scrapy settings <topics-settings>`"
+msgstr ""
+
+#: ../../topics/shell.rst:142
+msgid "Example of shell session"
+msgstr ""
+
+#: ../../topics/shell.rst:144
+msgid ""
+"Here's an example of a typical shell session where we start by scraping "
+"the https://scrapy.org page, and then proceed to scrape the "
+"https://old.reddit.com/ page. Finally, we modify the (Reddit) request "
+"method to POST and re-fetch it getting an error. We end the session by "
+"typing Ctrl-D (in Unix systems) or Ctrl-Z in Windows."
+msgstr ""
+
+#: ../../topics/shell.rst:150
+msgid ""
+"Keep in mind that the data extracted here may not be the same when you "
+"try it, as those pages are not static and could have changed by the time "
+"you test this. The only purpose of this example is to get you "
+"familiarized with how the Scrapy shell works."
+msgstr ""
+
+#: ../../topics/shell.rst:155
+msgid "First, we launch the shell::"
+msgstr ""
+
+#: ../../topics/shell.rst:159
+msgid ""
+"Then, the shell fetches the URL (using the Scrapy downloader) and prints "
+"the list of available objects and useful shortcuts (you'll notice that "
+"these lines all start with the ``[s]`` prefix)::"
+msgstr ""
+
+#: ../../topics/shell.rst:180
+msgid "After that, we can start playing with the objects:"
+msgstr ""
+
+#: ../../topics/shell.rst:225
+msgid "Invoking the shell from spiders to inspect responses"
+msgstr ""
+
+#: ../../topics/shell.rst:227
+msgid ""
+"Sometimes you want to inspect the responses that are being processed in a"
+" certain point of your spider, if only to check that response you expect "
+"is getting there."
+msgstr ""
+
+#: ../../topics/shell.rst:231
+msgid ""
+"This can be achieved by using the ``scrapy.shell.inspect_response`` "
+"function."
+msgstr ""
+
+#: ../../topics/shell.rst:233
+msgid "Here's an example of how you would call it from your spider::"
+msgstr ""
+
+#: ../../topics/shell.rst:254
+msgid "When you run the spider, you will get something similar to this::"
+msgstr ""
+
+#: ../../topics/shell.rst:265
+msgid "Then, you can check if the extraction code is working:"
+msgstr ""
+
+#: ../../topics/shell.rst:270
+msgid ""
+"Nope, it doesn't. So you can open the response in your web browser and "
+"see if it's the response you were expecting:"
+msgstr ""
+
+#: ../../topics/shell.rst:276
+msgid ""
+"Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and "
+"resume the crawling::"
+msgstr ""
+
+#: ../../topics/shell.rst:283
+msgid ""
+"Note that you can't use the ``fetch`` shortcut here since the Scrapy "
+"engine is blocked by the shell. However, after you leave the shell, the "
+"spider will continue crawling where it stopped, as shown above."
+msgstr ""
+
