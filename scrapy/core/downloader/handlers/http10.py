@@ -1,7 +1,5 @@
 """Download handlers for http and https schemes
 """
-from twisted.internet import reactor
-
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import to_unicode
 
@@ -26,6 +24,7 @@ class HTTP10DownloadHandler:
         return factory.deferred
 
     def _connect(self, factory):
+        from twisted.internet import reactor
         host, port = to_unicode(factory.host), factory.port
         if factory.scheme == b'https':
             client_context_factory = create_instance(
