@@ -7,8 +7,11 @@ from pprint import pformat as pformat_
 
 
 def _colorize(text, colorize=True):
-    if sys.platform == "win32" and sys.stdout.isatty():
-        colorize = False
+    if sys.platform == "win32":
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
     if not colorize or not sys.stdout.isatty():
         return text
     try:
