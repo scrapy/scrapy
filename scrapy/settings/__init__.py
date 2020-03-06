@@ -3,6 +3,7 @@ import copy
 from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
+import os
 
 from scrapy.settings import default_settings
 
@@ -26,6 +27,20 @@ def get_settings_priority(priority):
         return SETTINGS_PRIORITIES[priority]
     else:
         return priority
+
+
+def check_envr_var():
+    """Check for env variables and see if they are same as settings variables"""
+    envar = ['CHECK', 'PICKLED_SETTINGS_TO_OVERRIDE', 'SCRAPY_PROJECT',
+             'PYTHON_SHELL', 'SETTINGS_MODULE']
+    # Check if the env var are depreciated or not
+    if deprecated in os.environ:
+        print("Setting is deprecated")
+    # Check if the var are being read into settings
+    else:
+        for var in envar:
+            if var in os.environ and default_settings:
+                print("Variable cannot be read into settings")
 
 
 class SettingsAttribute(object):
