@@ -89,4 +89,5 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                     'from host "{}" (exception: {})'.format(
                         self._hostnameASCII, repr(e)))
 
+
 DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')

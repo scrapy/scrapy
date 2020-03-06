@@ -90,5 +90,6 @@ class ResponseTypesTest(unittest.TestCase):
         # check that mime.types files shipped with scrapy are loaded
         self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
 
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,12 +3,13 @@ Helper functions for dealing with Twisted deferreds
 """
 import asyncio
 import inspect
+from functools import wraps
 
 from twisted.internet import defer, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 
 def defer_fail(_failure):
@@ -140,3 +141,32 @@ def deferred_from_coro(o):
             # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
             return defer.Deferred.fromFuture(asyncio.ensure_future(o))
     return o
+
+
+def deferred_f_from_coro_f(coro_f):
+    """ Converts a coroutine function into a function that returns a Deferred.
+
+    The coroutine function will be called at the time when the wrapper is called. Wrapper args will be passed to it.
+    This is useful for callback chains, as callback functions are called with the previous callback result.
+    """
+    @wraps(coro_f)
+    def f(*coro_args, **coro_kwargs):
+        return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
+    return f
+
+
+def maybeDeferred_coro(f, *args, **kw):
+    """ Copy of defer.maybeDeferred that also converts coroutines to Deferreds. """
+    try:
+        result = f(*args, **kw)
+    except:  # noqa: E722
+        return defer.fail(failure.Failure(captureVars=defer.Deferred.debug))
+
+    if isinstance(result, defer.Deferred):
+        return result
+    elif _isfuture(result) or inspect.isawaitable(result):
+        return deferred_from_coro(result)
+    elif isinstance(result, failure.Failure):
+        return defer.fail(result)
+    else:
+        return defer.succeed(result)

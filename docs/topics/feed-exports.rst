@@ -236,6 +236,9 @@ supported URI schemes.
 
 This setting is required for enabling the feed exports.
 
+.. versionchanged:: 2.0
+   Added :class:`pathlib.Path` support.
+
 .. setting:: FEED_FORMAT
 
 FEED_FORMAT
@@ -301,7 +304,7 @@ FEED_STORE_EMPTY
 
 Default: ``False``
 
-Whether to export empty feeds (ie. feeds with no items).
+Whether to export empty feeds (i.e. feeds with no items).
 
 .. setting:: FEED_STORAGES
 

@@ -230,6 +230,7 @@ class ExecutionEngine(object):
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
