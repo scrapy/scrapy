@@ -709,7 +709,7 @@ HttpCompressionMiddleware
    provided `brotlipy`_ is installed.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.python.org/pypi/brotlipy
+.. _brotlipy: https://pypi.org/project/brotlipy/
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -871,6 +871,10 @@ METAREFRESH_IGNORE_TAGS
 Default: ``[]``
 
 Meta tags within these tags are ignored.
+
+.. versionchanged:: 2.0
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``['script', 'noscript']`` to ``[]``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -1038,7 +1042,7 @@ Based on `RobotFileParser
 * is Python's built-in robots.txt_ parser
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * lacks support for wildcard matching
 
@@ -1061,7 +1065,7 @@ Based on `Reppy <https://github.com/seomoz/reppy/>`_:
   <https://github.com/seomoz/rep-cpp>`_
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1086,7 +1090,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 * implemented in Python
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1115,7 +1119,7 @@ implementing the methods described below.
 .. autoclass:: RobotParser
    :members:
 
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 
 DownloaderStats
 ---------------
@@ -1155,7 +1159,7 @@ AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
    on meta-fragment html tag. See
-   https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
    for more info.
 
    .. note::

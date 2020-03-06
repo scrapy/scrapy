@@ -272,7 +272,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
         user_pipeline = pipeline_cls.from_settings(Settings(settings))
-        for pipe_cls_attr, settings_attr, pipe_inst_attr  in self.file_cls_attr_settings_map:
+        for pipe_cls_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             custom_value = settings.get(prefix + "_" + settings_attr)
             self.assertNotEqual(custom_value, self.default_cls_settings[pipe_cls_attr])
             self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
