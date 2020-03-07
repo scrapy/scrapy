@@ -55,21 +55,21 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
-    def _get_spider(self):
-        return Spider('foo')
+    def _get_spiderargs(self):
+        return dict(name='foo')
 
 
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
-    def _get_spider(self):
-      bad_hostname = urlparse('http:////scrapytest.org').hostname
-      return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+    def _get_spiderargs(self):
+        bad_hostname = urlparse('http:////scrapytest.org').hostname
+        return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
     def test_process_spider_output(self):
-      res = Response('http://scrapytest.org')
-      reqs = [Request('http://scrapytest.org/1')]
-      out = list(self.mw.process_spider_output(res, reqs, self.spider))
-      self.assertEqual(out, reqs)
+        res = Response('http://scrapytest.org')
+        reqs = [Request('http://scrapytest.org/1')]
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEqual(out, reqs)
 
 
 class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
