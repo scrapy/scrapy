@@ -9,7 +9,12 @@ import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
 from twisted.internet import reactor, defer
-from twisted.test.proto_helpers import StringTransport
+try:
+    from twisted.internet.testing import StringTransport
+except ImportError:
+    # deprecated in Twisted 19.7.0
+    # (remove once we bump our requirement past that version)
+    from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
