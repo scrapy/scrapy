@@ -182,9 +182,9 @@ class S3FeedStorageTest(unittest.TestCase):
                 create=True)
     def test_parse_credentials(self):
         try:
-            import boto  # noqa: F401
+            import botocore  # noqa: F401
         except ImportError:
-            raise unittest.SkipTest("S3FeedStorage requires boto")
+            raise unittest.SkipTest("S3FeedStorage requires botocore")
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
                            'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
