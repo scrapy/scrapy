@@ -94,23 +94,10 @@ class FileFeedStorage:
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None):
-        # BEGIN Backward compatibility for initialising without keys (and
-        # without using from_crawler)
-        no_defaults = access_key is None and secret_key is None
-        if no_defaults:
-            from scrapy.utils.project import get_project_settings
-            settings = get_project_settings()
-            if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
-                warnings.warn(
-                    "Initialising `scrapy.extensions.feedexport.S3FeedStorage` "
-                    "without AWS keys is deprecated. Please supply credentials or "
-                    "use the `from_crawler()` constructor.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2
-                )
-                access_key = settings['AWS_ACCESS_KEY_ID']
-                secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        # END Backward compatibility
+        no_keys = access_key is None and secret_key is None
+        if no_keys:
+            raise NotConfigured('%s is missing AWS credentials' %
+                                self.__class__.__name__)
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
