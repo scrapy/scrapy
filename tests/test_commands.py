@@ -305,6 +305,16 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    def test_custom_asyncio_loop_enabled_true(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'ASYNCIO_LOOP=uvloop'
+        ])
+        self.assertIn("Using loop: uvloop", log)
+
+    def test_custom_asyncio_loop_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[])
+        self.assertIn("Using default asyncio loop", log)
+
 
 class BenchCommandTest(CommandTest):
 

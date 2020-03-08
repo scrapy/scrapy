@@ -14,4 +14,4 @@ class AsyncioTest(TestCase):
 
     def test_install_asyncio_reactor(self):
         # this should do nothing
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor", None)    
