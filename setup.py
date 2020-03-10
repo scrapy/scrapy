@@ -75,6 +75,7 @@ setup(
         'w3lib>=1.17.0',
         'zope.interface>=4.1.3',
         'protego>=0.1.15',
+        'redis>= 3.4.1', #added the current release of redis-py interface library
     ],
     extras_require=extras_require,
 )
