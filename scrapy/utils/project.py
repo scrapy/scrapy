@@ -15,7 +15,7 @@ DATADIR_CFG_SECTION = 'datadir'
 
 
 def inside_project():
-    scrapy_module = os.environ.get('SCRAPY_SETTINGS_MODULE')
+    scrapy_module = os.environ.get(ENVVAR)
     if scrapy_module is not None:
         try:
             import_module(scrapy_module)
@@ -61,10 +61,11 @@ def data_path(path, createdir=False):
 def get_project_settings():
     if ENVVAR not in os.environ:
         project = os.environ.get('SCRAPY_PROJECT', 'default')
-        init_env(project)
+        settings_module_path = init_env(project)
+    else:
+        settings_module_path = os.environ.get(ENVVAR)
 
     settings = Settings()
-    settings_module_path = os.environ.get(ENVVAR)
     if settings_module_path:
         settings.setmodule(settings_module_path, priority='project')
 
