@@ -10,17 +10,18 @@ from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 
 
-ENVVAR = 'SCRAPY_SETTINGS_MODULE'
+SCRAPY_SETTINGS_MODULE = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'
 
 
 def inside_project():
-    scrapy_module = os.environ.get(ENVVAR)
-    if scrapy_module is not None:
+    settings_module_path = os.environ.get(SCRAPY_SETTINGS_MODULE)
+    if settings_module_path is not None:
         try:
-            import_module(scrapy_module)
+            import_module(settings_module_path)
         except ImportError as exc:
-            warnings.warn("Cannot import scrapy settings module %s: %s" % (scrapy_module, exc))
+            warnings.warn("Cannot import scrapy settings module %s: %s" %
+                          (settings_module_path, exc))
         else:
             return True
     return bool(closest_scrapy_cfg())
@@ -59,11 +60,11 @@ def data_path(path, createdir=False):
 
 
 def get_project_settings():
-    if ENVVAR not in os.environ:
+    if SCRAPY_SETTINGS_MODULE in os.environ:
+        settings_module_path = os.environ.get(SCRAPY_SETTINGS_MODULE)
+    else:
         project = os.environ.get('SCRAPY_PROJECT', 'default')
         settings_module_path = init_env(project)
-    else:
-        settings_module_path = os.environ.get(ENVVAR)
 
     settings = Settings()
     if settings_module_path:
