@@ -3,7 +3,12 @@ import warnings
 
 from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
 from scrapy.settings import BaseSettings, Settings
-from scrapy.utils.conf import build_component_list, arglist_to_dict, feed_process_params_from_cli
+from scrapy.utils.conf import (
+    arglist_to_dict,
+    build_component_list,
+    feed_complete_default_values_from_settings,
+    feed_process_params_from_cli
+)
 
 
 class BuildComponentListTest(unittest.TestCase):
@@ -134,6 +139,44 @@ class FeedExportConfigTestCase(unittest.TestCase):
             {'stdout:': {'format': 'pickle'}},
             feed_process_params_from_cli(settings, ['-:pickle'])
         )
+
+    def test_feed_complete_default_values_from_settings_empty(self):
+        feed = {}
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+            "FEED_URI_PARAMS": (1, 2, 3, 4),
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "custom encoding",
+            "fields": ["f1", "f2", "f3"],
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": (1, 2, 3, 4),
+        })
+
+    def test_feed_complete_default_values_from_settings_non_empty(self):
+        feed = {
+            "encoding": "other encoding",
+            "fields": None,
+        }
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "other encoding",
+            "fields": None,
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": None,
+        })
 
 
 if __name__ == "__main__":
