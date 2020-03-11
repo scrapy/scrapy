@@ -3,11 +3,12 @@ pprint and pformat wrappers with colorization support
 """
 
 import sys
+import platform
 from pprint import pformat as pformat_
 
 
 def _colorize(text, colorize=True):
-    if sys.platform == "win32":
+    if sys.platform == "win32" and platform.release() == "10" and platform.version() >= "10.0.14393":
         import ctypes
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
