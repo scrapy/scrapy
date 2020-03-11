@@ -426,12 +426,11 @@ class ScrapyAgent(object):
         return d
 
     def _cb_bodydone(self, result, request, url):
-        status = int(result["txresponse"].code)
         headers = Headers(result["txresponse"].headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
         return respcls(
             url=url,
-            status=status,
+            status=int(result["txresponse"].code),
             headers=headers,
             body=result["body"],
             flags=result["flags"],
