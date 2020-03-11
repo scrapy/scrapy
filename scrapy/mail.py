@@ -111,8 +111,8 @@ class MailSender(object):
 
     def _sendmail(self, to_addrs, msg):
         # Import twisted.mail here because it is not available in python3
-        from twisted.mail.smtp import ESMTPSenderFactory
         from twisted.internet import reactor
+        from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
         factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
