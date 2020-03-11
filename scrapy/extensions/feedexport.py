@@ -4,6 +4,7 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
+import io
 import os
 import sys
 import logging
@@ -21,7 +22,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import without_none_values
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.boto import is_botocore, S3Writer
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,39 @@ class S3FeedStorage(BlockingFeedStorage):
             kwargs = {'policy': self.acl} if self.acl else {}
             key.set_contents_from_file(file, **kwargs)
             key.close()
+
+
+class S3MultipartFeedStorage(S3FeedStorage):
+    """S3 Feed Storage that uses the Multipart Upload feature to export items.
+
+    This Feed Storage writes items to the S3 Bucket during crawler execution.
+    It doesn't wait for the spider to be completed to start exporting items.
+    Therefore, we can save disk space writing data directly to Amazon S3 using
+    a small amount of RAM to buffer some data (50 MiB default).
+    """
+    DEFAULT_BUFFER_SIZE = 52428800  # 50 MiB
+
+    def __init__(self, uri):
+        """Setup S3Writer using default S3FeedStorage credentials."""
+        super(S3MultipartFeedStorage, self).__init__(uri)
+        self.writer = S3Writer(
+            self.access_key,
+            self.secret_key,
+            self.bucketname,
+            self.keyname
+        )
+
+    def open(self, spider):
+        """Create a Buffered Writer using the S3Writer to optimize data upload.
+
+        Default buffer size is 50 MiB.
+        """
+        return io.BufferedWriter(self.writer, self.DEFAULT_BUFFER_SIZE)
+
+    def _store_in_thread(self, buffered_file):
+        """Flush/close buffered data and complete the Multipart Upload."""
+        buffered_file.close()
+        self.writer.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
