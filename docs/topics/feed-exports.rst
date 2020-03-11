@@ -249,7 +249,7 @@ For instance::
             'fields': None,
             'indent': 4,
         }, 
-        'items.xml': {
+        '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
             'encoding': 'latin1',
