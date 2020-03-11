@@ -1,13 +1,30 @@
+import six
 import sys
 import os
 from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.commands import ScrapyCommand
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import UsageError, NotConfigured
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.python import without_none_values
 
+
+def _fix_overloading_modules(fname, abspath):
+    if six.PY2:
+        import imp
+        module = imp.load_source(fname, abspath)
+    else:
+        try:
+            from importlib.machinery import SourceFileLoader
+            module = SourceFileLoader(fname, abspath).load_module()
+        except ImportError:
+            try:
+                spec = importlib.util.spec_from_file_location(fname, abspath)
+                module = importlib.util.module_from_spec(spec)
+            except ImportError:
+                raise NotConfigured("Spider file colliding with %s module must be renamed" % fname)
+    return module
 
 def _import_file(filepath):
     abspath = os.path.abspath(filepath)
@@ -19,6 +36,8 @@ def _import_file(filepath):
         sys.path = [dirname] + sys.path
     try:
         module = import_module(fname)
+        if module.__file__ != abspath:
+            module = _fix_overloading_modules(fname, abspath)
     finally:
         if dirname:
             sys.path.pop(0)
