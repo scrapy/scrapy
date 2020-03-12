@@ -290,6 +290,8 @@ Default: ``False``
 
 Pass all responses, regardless of its status code.
 
+.. reqmeta:: allow_offsite
+
 OffsiteMiddleware
 -----------------
 
@@ -322,10 +324,10 @@ OffsiteMiddleware
    :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
-   If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
-   set, the offsite middleware will allow the request even if its domain is not
-   listed in allowed domains.
 
+   If the request has ``allow_offsite`` set to ``True`` in
+   :attr:`Request.meta <scrapy.http.Request.meta>` the offsite middleware will allow the request to go through
+   even if its domain is not listed in allowed domains.
 
 RefererMiddleware
 -----------------
