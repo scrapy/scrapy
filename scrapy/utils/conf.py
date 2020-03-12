@@ -113,16 +113,14 @@ def get_sources(use_closest=True):
 
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
-    if 'encoding' not in out:
-        out['encoding'] = settings['FEED_EXPORT_ENCODING']
-    if 'fields' not in out:
-        out['fields'] = settings.getlist('FEED_EXPORT_FIELDS') or None
-    if 'indent' not in out:
-        out['indent'] = None if settings['FEED_EXPORT_INDENT'] is None else settings.getint('FEED_EXPORT_INDENT')
-    if 'store_empty' not in out:
-        out['store_empty'] = settings.getbool('FEED_STORE_EMPTY')
-    if 'uri_params' not in out:
-        out['uri_params'] = settings['FEED_URI_PARAMS']
+    out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
+    out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
+    out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
+    out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
+    if settings["FEED_EXPORT_INDENT"] is None:
+        out.setdefault("indent", None)
+    else:
+        out.setdefault("indent", settings.getint("FEED_EXPORT_INDENT"))
     return out
 
 
