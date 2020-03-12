@@ -46,6 +46,7 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-deferred:
 
 Deferred signal handlers
 ========================
@@ -141,7 +142,7 @@ item_error
 .. signal:: item_error
 .. function:: item_error(item, response, spider, failure)
 
-    Sent when a :ref:`topics-item-pipeline` generates an error (ie. raises
+    Sent when a :ref:`topics-item-pipeline` generates an error (i.e. raises
     an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
 
     This signal supports returning deferreds from its handlers.
@@ -257,7 +258,7 @@ spider_error
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
 
-    Sent when a spider callback generates an error (ie. raises an exception).
+    Sent when a spider callback generates an error (i.e. raises an exception).
 
     This signal does not support returning deferreds from its handlers.
 
@@ -315,6 +316,25 @@ request_reached_downloader
     This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+request_left_downloader
+-----------------------
+
+.. signal:: request_left_downloader
+.. function:: request_left_downloader(request, spider)
+
+    .. versionadded:: 2.0
+
+    Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
+    failure.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param request: the request that reached the downloader
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request

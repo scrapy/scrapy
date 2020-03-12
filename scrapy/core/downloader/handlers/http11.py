@@ -3,11 +3,12 @@
 import logging
 import re
 import warnings
+from contextlib import suppress
 from io import BytesIO
 from time import time
 from urllib.parse import urldefrag
 
-from twisted.internet import defer, protocol, reactor
+from twisted.internet import defer, protocol, reactor, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
@@ -389,7 +390,7 @@ class ScrapyAgent:
     def _cb_bodyready(self, txresponse, request):
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
-            return txresponse, b'', None
+            return txresponse, b'', None, None
 
         maxsize = request.meta.get('download_maxsize', self._maxsize)
         warnsize = request.meta.get('download_warnsize', self._warnsize)
@@ -434,11 +435,12 @@ class ScrapyAgent:
         return d
 
     def _cb_bodydone(self, result, request, url):
-        txresponse, body, flags = result
+        txresponse, body, flags, certificate = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
+        return respcls(url=url, status=status, headers=headers, body=body,
+                       flags=flags, certificate=certificate)
 
 
 @implementer(IBodyProducer)
@@ -474,8 +476,14 @@ class _ResponseReader(protocol.Protocol):
         self._fail_on_dataloss_warned = False
         self._reached_warnsize = False
         self._bytes_received = 0
+        self._certificate = None
         self._crawler = crawler
         self._source = source
+
+    def connectionMade(self):
+        if self._certificate is None:
+            with suppress(AttributeError):
+                self._certificate = ssl.Certificate(self.transport._producer.getPeerCertificate())
 
     def dataReceived(self, bodyBytes):
         # This maybe called several times after cancel was called with buffered data.
@@ -516,16 +524,16 @@ class _ResponseReader(protocol.Protocol):
 
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
-            self._finished.callback((self._txresponse, body, None))
+            self._finished.callback((self._txresponse, body, None, self._certificate))
             return
 
         if reason.check(PotentialDataLoss):
-            self._finished.callback((self._txresponse, body, ['partial']))
+            self._finished.callback((self._txresponse, body, ['partial'], self._certificate))
             return
 
         if reason.check(ResponseFailed) and any(r.check(_DataLoss) for r in reason.value.reasons):
             if not self._fail_on_dataloss:
-                self._finished.callback((self._txresponse, body, ['dataloss']))
+                self._finished.callback((self._txresponse, body, ['dataloss'], self._certificate))
                 return
 
             elif not self._fail_on_dataloss_warned:

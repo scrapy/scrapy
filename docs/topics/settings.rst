@@ -160,27 +160,6 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
-.. setting:: ASYNCIO_REACTOR
-
-ASYNCIO_REACTOR
----------------
-
-Default: ``False``
-
-Whether to install and require the Twisted reactor that uses the asyncio loop.
-
-When this option is set to ``True``, Scrapy will require
-:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
-install this reactor if no reactor is installed yet, such as when using the
-``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
-:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
-manually. If a different reactor is installed outside Scrapy, it will raise an
-exception.
-
-The default value for this option is currently ``False`` to maintain backward
-compatibility and avoid possible problems caused by using a different Twisted
-reactor.
-
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -269,7 +248,7 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
@@ -279,7 +258,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 
 Default: ``8``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
 
 See also: :ref:`topics-autothrottle` and its
@@ -293,7 +272,7 @@ CONCURRENT_REQUESTS_PER_IP
 
 Default: ``0``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single IP. If non-zero, the
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
 used instead. In other words, concurrency limits will be applied per IP, not
@@ -401,6 +380,8 @@ DNS in-memory cache size.
 
 DNS_RESOLVER
 ------------
+
+.. versionadded:: 2.0
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -1279,6 +1260,9 @@ does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
+
+.. versionadded:: 2.0
+
 Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
@@ -1462,6 +1446,42 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR
+
+TWISTED_REACTOR
+---------------
+
+.. versionadded:: 2.0
+
+Default: ``None``
+
+Import path of a given :mod:`~twisted.internet.reactor`.
+
+Scrapy will install this reactor if no other reactor is installed yet, such as
+when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class.
+
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+need to install the correct reactor manually. You can do that using
+:func:`~scrapy.utils.reactor.install_reactor`:
+
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
+If a reactor is already installed,
+:func:`~scrapy.utils.reactor.install_reactor` has no effect.
+
+:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
+:exc:`Exception` if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting.
+
+The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
+means that Scrapy will not attempt to install any specific reactor, and the
+default reactor defined by Twisted for the current platform will be used. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT

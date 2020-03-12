@@ -31,6 +31,8 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
+
+        If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: string
 
     :param callback: the function that will be called with the response of this
@@ -125,6 +127,10 @@ Request objects
        :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
+
+       .. versionchanged:: 2.0
+          The *callback* parameter is no longer required when the *errback*
+          parameter is specified.
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -396,7 +402,7 @@ The FormRequest class extends the base :class:`Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
-.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
+.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 
@@ -609,7 +615,10 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: :class:`Request` object
+    :type request: scrapy.http.Request
+
+    :param certificate: an object representing the server's SSL certificate.
+    :type certificate: twisted.internet.ssl.Certificate
 
     .. attribute:: Response.url
 
@@ -664,7 +673,7 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
@@ -672,12 +681,33 @@ Response objects
 
         .. seealso:: :attr:`Request.meta` attribute
 
+    .. attribute:: Response.cb_kwargs
+
+        .. versionadded:: 2.0
+
+        A shortcut to the :attr:`Request.cb_kwargs` attribute of the
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
+
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.cb_kwargs` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.cb_kwargs` sent
+        from your spider.
+
+        .. seealso:: :attr:`Request.cb_kwargs` attribute
+
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.certificate
+
+        A :class:`twisted.internet.ssl.Certificate` object representing
+        the server's SSL certificate.
+        
+        Only populated for ``https`` responses, ``None`` otherwise.
 
     .. method:: Response.copy()
 
@@ -760,7 +790,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class
