@@ -4,7 +4,7 @@ import warnings
 
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
-from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, URLWarning
+from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, URLWarning, PortWarning
 from scrapy.utils.test import get_crawler
 
 
@@ -26,7 +26,8 @@ class TestOffsiteMiddleware(TestCase):
                        Request('http://scrapy.org/1'),
                        Request('http://sub.scrapy.org/1'),
                        Request('http://offsite.tld/letmepass', dont_filter=True),
-                       Request('http://scrapy.test.org/')]
+                       Request('http://scrapy.test.org/'),
+                       Request('http://scrapy.test.org:8000/')]
         offsite_reqs = [Request('http://scrapy2.org'),
                        Request('http://offsite.tld/'),
                        Request('http://offsite.tld/scrapytest.org'),
@@ -80,3 +81,13 @@ class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
             warnings.simplefilter("always")
             self.mw.get_host_regex(self.spider)
             assert issubclass(w[-1].category, URLWarning)
+
+
+class TestOffsiteMiddleware6(TestOffsiteMiddleware4):
+
+    def test_get_host_regex(self):
+        self.spider.allowed_domains = ['scrapytest.org:8000', 'scrapy.org', 'scrapy.test.org']
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.mw.get_host_regex(self.spider)
+            assert issubclass(w[-1].category, PortWarning)
