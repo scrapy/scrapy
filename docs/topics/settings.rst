@@ -1474,11 +1474,11 @@ If a reactor is already installed,
 :meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
 :exc:`Exception` if the installed reactor does not match the
 :setting:`TWISTED_REACTOR` setting; therfore, having top-level
-:mod:`~twisted.internet.reactor` imports in project files & imported
-3rd party libraries will make Scrapy raise :exc:`Exception` when
+:mod:`~twisted.internet.reactor` imports in project files and imported
+third-party libraries will make Scrapy raise :exc:`Exception` when
 it checks which reactor is installed.
 
-In order to use the reactor installed by scrapy::
+In order to use the reactor installed by Scrapy::
 
     import scrapy
     from twisted.internet import reactor
