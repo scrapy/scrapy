@@ -47,4 +47,5 @@ class TestProcessProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         self.exitcode = status.value.exitCode
+        from twisted.internet import reactor
         reactor.callLater(0, self.deferred.callback, self)
