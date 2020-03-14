@@ -51,7 +51,7 @@ class CallLaterOnce(object):
 
 def install_reactor(reactor_path, event_loop_path):
     """Installs the :mod:`~twisted.internet.reactor` with the specified
-    import path.Also installs asyncio event loop as specified in the import
+    import path. Also installs the asyncio event loop with the specified import
     path if asyncio reactor is enabled"""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
