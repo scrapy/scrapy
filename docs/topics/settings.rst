@@ -1473,7 +1473,66 @@ If a reactor is already installed,
 
 :meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
 :exc:`Exception` if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting.
+:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:mod:`~twisted.internet.reactor` imports in project files and imported
+third-party libraries will make Scrapy raise :exc:`Exception` when
+it checks which reactor is installed.
+
+In order to use the reactor installed by Scrapy::
+
+    import scrapy
+    from twisted.internet import reactor
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+which raises :exc:`Exception`, becomes::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            from twisted.internet import reactor
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
 means that Scrapy will not attempt to install any specific reactor, and the
