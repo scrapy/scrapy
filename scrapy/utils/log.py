@@ -150,9 +150,11 @@ def log_scrapy_info(settings):
                     if name != "Scrapy")})
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
-    if reactor.__module__ == "twisted.internet.asyncioreactor" and reactor.__class__.__name__ == "AsyncioSelectorReactor":
+    from twisted.internet import asyncioreactor
+    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
         import asyncio
-        logger.debug("Using loop: %s", asyncio.get_event_loop().__module__)
+        loop = asyncio.get_event_loop()
+        logger.debug("Using loop: %s.%s", loop.__module__, loop.__class__.__name__)
 
 
 class StreamLogger(object):

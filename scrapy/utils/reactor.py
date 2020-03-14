@@ -5,6 +5,7 @@ from twisted.internet import asyncioreactor, error
 
 from scrapy.utils.misc import load_object
 
+from importlib import import_module
 
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
@@ -57,13 +58,12 @@ def install_reactor(reactor_path, event_loop_path):
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
             if event_loop_path is not None:
-                x = __import__(event_loop_path)
-                if x is not None:
-                    loop = x.new_event_loop()
-                    asyncio.set_event_loop(loop)
+                event_loop_module = import_module(event_loop_path)
+                event_loop = event_loop_module.new_event_loop()
+                asyncio.set_event_loop(event_loop)
             else:
-                loop = asyncio.get_event_loop()
-            asyncioreactor.install(loop)
+                event_loop = asyncio.get_event_loop()
+            asyncioreactor.install(event_loop)
     else:
         *module, _ = reactor_path.split(".")
         installer_path = module + ["install"]
