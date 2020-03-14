@@ -379,8 +379,8 @@ which means you might need to update your existing components
 Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
 decorator, which adds the appropriate methods in order to make ``dataclass`` objects
 capable of being accessed like dictionaries. This decorator is also useful when working with
-third-party components which deal with items (such as pipelines, middlewares, signal handlers,
-etc) and haven't been yet adapted to support dataclass-based items.
+third-party components which deal with items and haven't been yet adapted to
+support dataclass-based items.
 
 .. invisible-code-block: python
 

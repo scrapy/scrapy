@@ -9,9 +9,10 @@ Item Loaders
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
 <topics-items>`. Even though Items can be populated using their own
-dictionary-like API, Item Loaders provide a much more convenient API for
-populating them from a scraping process, by automating some common tasks like
-parsing the raw extracted data before assigning it.
+dictionary-like API (or by setting their attributes in the case of
+:ref:`dataclass-based items <faq-dataclass-items>`), Item Loaders provide a
+much more convenient API for populating them from a scraping process, by automating
+some common tasks like parsing the raw extracted data before assigning it.
 
 In other words, :ref:`Items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
@@ -25,8 +26,8 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with a dict-like object (e.g. Item or dict) or without one, in
-which case an Item is automatically instantiated in the Item Loader ``__init__`` method
+instantiate it with a Item-like object or without one, in which case an Item
+is automatically instantiated in the Item Loader ``__init__`` method
 using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
