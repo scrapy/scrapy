@@ -365,7 +365,7 @@ Note that by doing so, you lose the ability to set a specific timeout for DNS re
 Can I use dataclasses as items?
 -------------------------------
 
-Support for :class:`dataclasses.dataclass` objects as items was added in version 2.0.
+Support for :class:`dataclasses.dataclass` objects as items was added in version 2.1.
 This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
 
 Most of the examples in this documentation assume you are using either :class:`dict`
@@ -378,7 +378,9 @@ which means you might need to update your existing components
 
 Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
 decorator, which adds the appropriate methods in order to make ``dataclass`` objects
-capable of being accessed like dictionaries:
+capable of being accessed like dictionaries. This decorator is also useful when working with
+third-party components which deal with items (such as pipelines, middlewares, signal handlers,
+etc) and haven't been yet adapted to support dataclass-based items.
 
 .. invisible-code-block: python
 
