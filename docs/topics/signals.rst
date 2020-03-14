@@ -49,6 +49,7 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-deferred:
 
 Deferred signal handlers
 ========================
@@ -303,6 +304,8 @@ request_left_downloader
 
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
+
+    .. versionadded:: 2.0
 
     Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
     failure.

@@ -41,7 +41,7 @@ variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
 
 .. _IPython: https://ipython.org/
 .. _IPython installation guide: https://ipython.org/install.html
-.. _bpython: https://www.bpython-interpreter.org/
+.. _bpython: https://bpython-interpreter.org/
 
 Launch the shell
 ================
@@ -142,7 +142,7 @@ Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-https://scrapy.org page, and then proceed to scrape the https://reddit.com
+https://scrapy.org page, and then proceed to scrape the https://old.reddit.com/
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.
@@ -182,7 +182,7 @@ After that, we can start playing with the objects:
 >>> response.xpath('//title/text()').get()
 'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
->>> fetch("https://reddit.com")
+>>> fetch("https://old.reddit.com/")
 
 >>> response.xpath('//title/text()').get()
 'reddit: the front page of the internet'

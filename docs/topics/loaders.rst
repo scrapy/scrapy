@@ -136,6 +136,9 @@ with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
 
+.. versionchanged:: 2.0
+   Processors no longer need to be methods.
+
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
    input processors will be appended to an internal list (in the Loader)

@@ -140,7 +140,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.headers['Content-Length'] = 0
 
     def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time-self.start_time
+        request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)

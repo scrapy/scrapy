@@ -241,12 +241,12 @@ along with `scrapy-selenium`_ for seamless integration.
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
-.. _json.loads: https://docs.python.org/library/json.html#json.loads
+.. _json.loads: https://docs.python.org/3/library/json.html#json.loads
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _regular expression: https://docs.python.org/library/re.html
+.. _regular expression: https://docs.python.org/3/library/re.html
 .. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-.. _Selenium: https://www.seleniumhq.org/
+.. _Selenium: https://www.selenium.dev/
 .. _Splash: https://github.com/scrapinghub/splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/

@@ -104,7 +104,7 @@ class IterErrbackTest(unittest.TestCase):
         def iterbad():
             for x in range(10):
                 if x == 5:
-                    a = 1/0
+                    a = 1 / 0
                 yield x
 
         errors = []

@@ -46,7 +46,7 @@ class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir):
 
         settings = dict(
-                LOG_UNSERIALIZABLE_REQUESTS=False,
+                SCHEDULER_DEBUG=False,
                 SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
                 SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
                 SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
