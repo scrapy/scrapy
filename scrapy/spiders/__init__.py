@@ -78,6 +78,12 @@ class Spider(object_ref):
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
+        warnings.warn(
+            "Spider.make_requests_from_url method is deprecated: "
+            "it will be removed and not be called by the default "
+            "Spider.start_requests method in future Scrapy releases. "
+            "Please override Spider.start_requests method instead."
+        )
         return Request(url, dont_filter=True)
 
     def _parse(self, response, **kwargs):
