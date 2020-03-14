@@ -7,6 +7,7 @@ from scrapy.utils.misc import load_object
 
 from importlib import import_module
 
+
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
