@@ -2,13 +2,13 @@
 jmespath
 mitmproxy; python_version >= '3.6'
 mitmproxy<4.0.0; python_version < '3.6'
-uvloop
 pytest < 5.4
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
 sybil
 testfixtures
+uvloop
 
 # optional for shell wrapper tests
 bpython
