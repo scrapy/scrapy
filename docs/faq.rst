@@ -376,7 +376,7 @@ which means you might need to update your existing components
 :ref:`signal handlers <topics-signals>` handlers or
 :ref:`spider middlewares <topics-spider-middleware>`) to make them work correctly.
 
-Alternatively, you can use the ``scrapy.utils.decorators.subscriptable_dataclass``
+Alternatively, you can use the :function:scrapy.utils.decorators.subscriptable_dataclass``
 decorator, which adds the appropriate methods in order to make ``dataclass`` objects
 capable of being accessed like dictionaries. This decorator is also useful when working with
 third-party components which deal with items and haven't been yet adapted to
@@ -404,6 +404,15 @@ support dataclass-based items.
 InventoryItem(name='foobar', price=5)
 
 .. skip: end
+
+In addition, two helper functions are available to interact with items without
+having to check their base class. These functions are:
+
+.. autofunction:: scrapy.utils.datatypes.get_item_field
+
+and
+
+.. autofunction:: scrapy.utils.datatypes.set_item_field
 
 
 .. _faq-specific-reactor:
