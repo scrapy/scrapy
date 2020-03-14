@@ -88,4 +88,3 @@ def verify_installed_reactor(reactor_path):
 def is_asyncio_reactor_installed():
     from twisted.internet import reactor
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)
-
