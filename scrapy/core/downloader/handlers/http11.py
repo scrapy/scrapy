@@ -8,7 +8,7 @@ from io import BytesIO
 from time import time
 from urllib.parse import urldefrag
 
-from twisted.internet import defer, protocol, reactor, ssl
+from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
@@ -33,6 +33,7 @@ class HTTP11DownloadHandler:
     lazy = False
 
     def __init__(self, settings, crawler=None):
+        from twisted.internet import reactor
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -81,6 +82,7 @@ class HTTP11DownloadHandler:
         return agent.download_request(request)
 
     def close(self):
+        from twisted.internet import reactor
         d = self._pool.closeCachedConnections()
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
@@ -284,6 +286,7 @@ class ScrapyAgent(object):
         self._txresponse = None
 
     def _get_agent(self, request, timeout):
+        from twisted.internet import reactor
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
@@ -326,6 +329,7 @@ class ScrapyAgent(object):
         )
 
     def download_request(self, request):
+        from twisted.internet import reactor
         timeout = request.meta.get('download_timeout') or self._connectTimeout
         agent = self._get_agent(request, timeout)
 
