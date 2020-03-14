@@ -246,20 +246,37 @@ Usage example
 In order to use a media pipeline first, :ref:`enable it
 <topics-media-pipeline-enabling>`.
 
-Then, if a spider returns a dict with the URLs key (``file_urls`` or
+Then, if a spider returns a :class:`dict` with the URLs key (``file_urls`` or
 ``image_urls``, for the Files or Images Pipeline respectively), the pipeline will
 put the results under respective key (``files`` or ``images``).
 
-If you prefer to use :class:`~.Item`, then define a custom item with the
+If you prefer to use a custom :class:`~.Item` class, then define it with the
 necessary fields, like in this example for Images Pipeline::
 
     import scrapy
 
     class MyItem(scrapy.Item):
-
         # ... other item fields ...
         image_urls = scrapy.Field()
         images = scrapy.Field()
+
+Or as a :ref:`dataclass-based item <faq-dataclass-items>`::
+
+.. invisible-code-block: python
+
+  import sys
+
+.. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
+
+    from dataclasses import dataclass
+
+    @dataclass
+    class MyDataclassItem:
+        # ... other item fields ...
+        image_urls: list
+        images: list
+
+.. skip: end
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.

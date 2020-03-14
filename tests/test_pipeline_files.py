@@ -195,9 +195,6 @@ class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, uni
                     ("custom_files", list, dataclass_field(default_factory=list)),
                 ],
             )
-        print("="*100)
-        print(make_dataclass)
-        print("="*100)
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
