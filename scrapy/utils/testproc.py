@@ -47,4 +47,4 @@ class TestProcessProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         self.exitcode = status.value.exitCode
-        self.deferred.callback(self)
+        reactor.callLater(0, self.deferred.callback, self)
