@@ -220,22 +220,23 @@ The name of the region associated with the AWS client.
 
 .. setting:: ASYNCIO_LOOP
 
-ASYNCIO_LOOP
-------------
+ASYNCIO_EVENT_LOOP
+------------------
 
 Default: ``None``
 
-Import path of a given asyncio loop.
+Import path of a given asyncio event loop.
 
 If the asyncio reactor is enabled this setting can be used to specify the 
-asyncio loop to be used with it. Set the setting to the import path of the 
-desired asyncio loop. If the setting is set to ``None`` the default asyncio
-loop will be used.
+asyncio event loop to be used with it. Set the setting to the import path of the 
+desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
+event loop will be used.
 
 You can also specify the event loop path with the function :func:`~scrapy.utils.reactor.install_reactor`:
 
 .. autofunction:: scrapy.utils.reactor.install_reactor
 
+Note that the event loop class must inherit from ``asyncio.AbstractEventLoop``.
 
 .. setting:: BOT_NAME
 

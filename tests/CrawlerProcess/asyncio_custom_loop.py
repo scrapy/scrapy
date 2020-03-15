@@ -11,7 +11,7 @@ class NoRequestsSpider(scrapy.Spider):
 
 process = CrawlerProcess(settings={
     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-    "ASYNCIO_LOOP": "uvloop"
+    "ASYNCIO_EVENT_LOOP": "uvloop"
 })
 process.crawl(NoRequestsSpider)
 process.start()

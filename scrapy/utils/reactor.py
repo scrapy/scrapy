@@ -59,8 +59,8 @@ def install_reactor(reactor_path, event_loop_path=None):
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
             if event_loop_path is not None:
-                event_loop_module = import_module(event_loop_path)
-                event_loop = event_loop_module.new_event_loop()
+                event_loop_class = load_object(event_loop_path)
+                event_loop = event_loop_class()
                 asyncio.set_event_loop(event_loop)
             else:
                 event_loop = asyncio.get_event_loop()
