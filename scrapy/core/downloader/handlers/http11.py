@@ -8,7 +8,7 @@ from io import BytesIO
 from time import time
 from urllib.parse import urldefrag
 
-from twisted.internet import defer, protocol, reactor, ssl
+from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
@@ -34,8 +34,10 @@ class HTTP11DownloadHandler:
     lazy = False
 
     def __init__(self, settings, crawler=None, source="http11"):
-        self.crawler = crawler
-        self.source = source
+        self._crawler = crawler
+        self._source = source
+
+        from twisted.internet import reactor
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -80,12 +82,13 @@ class HTTP11DownloadHandler:
             maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
             warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
             fail_on_dataloss=self._fail_on_dataloss,
-            crawler=self.crawler,
-            source=self.source,
+            crawler=self._crawler,
+            source=self._source,
         )
         return agent.download_request(request)
 
     def close(self):
+        from twisted.internet import reactor
         d = self._pool.closeCachedConnections()
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
@@ -291,6 +294,7 @@ class ScrapyAgent:
         self._source = source
 
     def _get_agent(self, request, timeout):
+        from twisted.internet import reactor
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
@@ -333,6 +337,7 @@ class ScrapyAgent:
         )
 
     def download_request(self, request):
+        from twisted.internet import reactor
         timeout = request.meta.get('download_timeout') or self._connectTimeout
         agent = self._get_agent(request, timeout)
 
