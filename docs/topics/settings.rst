@@ -218,7 +218,7 @@ Default: ``None``
 
 The name of the region associated with the AWS client.
 
-.. setting:: ASYNCIO_LOOP
+.. setting:: ASYNCIO_EVENT_LOOP
 
 ASYNCIO_EVENT_LOOP
 ------------------
