@@ -259,7 +259,7 @@ class GCSFilesStore:
         )
 
 
-class FTPFilesStore(object):
+class FTPFilesStore:
 
     FTP_USERNAME = None
     FTP_PASSWORD = None

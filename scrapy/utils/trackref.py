@@ -20,8 +20,7 @@ live_refs = defaultdict(weakref.WeakKeyDictionary)
 
 
 class object_ref:
-    """Inherit from this class (instead of object) to a keep a record of live
-    instances"""
+    """Inherit from this class to a keep a record of live instances"""
 
     __slots__ = ()
 
