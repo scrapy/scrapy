@@ -7,15 +7,15 @@ import string
 import tempfile
 import warnings
 from io import BytesIO
-from pathlib import Path
 from string import ascii_letters, digits
 from unittest import mock
-from urllib.parse import urljoin, urlparse, quote
-from urllib.request import pathname2url
 
 import lxml.etree
+from pathlib import Path
 from twisted.internet import defer
 from twisted.trial import unittest
+from urllib.parse import urljoin, urlparse, quote
+from urllib.request import pathname2url
 from w3lib.url import path_to_file_uri
 from zope.interface.verify import verifyObject
 
@@ -27,7 +27,6 @@ from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, 
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
-
 from tests.mockserver import MockServer
 
 
@@ -359,6 +358,34 @@ class S3FeedStorageTest(unittest.TestCase):
             dict(policy='custom-acl'),
             key.set_contents_from_file.call_args
         )
+
+    def test_init_with_region(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            region='aws_mock_region'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.region, 'aws_mock_region')
+        self.assertEqual(storage.acl, None)
+
+    def test_from_crawler_with_region(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            'AWS_REGION_NAME': 'aws_mock_region'
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.region, 'aws_mock_region')
+        self.assertEqual(storage.acl, None)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):

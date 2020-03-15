@@ -216,7 +216,7 @@ AWS_REGION_NAME
 
 Default: ``None``
 
-The name of the region associated with the AWS client.
+The name of the region associated with the AWS client (e.g. ap-east-1).
 
 .. setting:: BOT_NAME
 

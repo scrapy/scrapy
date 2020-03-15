@@ -93,7 +93,7 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None, acl=None):
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None, region=None):
         # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
@@ -110,11 +110,13 @@ class S3FeedStorage(BlockingFeedStorage):
                 )
                 access_key = settings['AWS_ACCESS_KEY_ID']
                 secret_key = settings['AWS_SECRET_ACCESS_KEY']
+                region = settings['AWS_REGION_NAME']
         # END Backward compatibility
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
+        self.region = region
         self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
@@ -123,7 +125,9 @@ class S3FeedStorage(BlockingFeedStorage):
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
                 's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
+                aws_secret_access_key=self.secret_key,
+                region_name=region
+            )
         else:
             import boto
             self.connect_s3 = boto.connect_s3
@@ -134,7 +138,8 @@ class S3FeedStorage(BlockingFeedStorage):
             uri=uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
-            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None
+            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
+            region=crawler.settings['AWS_REGION_NAME'] or None
         )
 
     def _store_in_thread(self, file):
