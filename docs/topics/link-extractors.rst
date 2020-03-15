@@ -49,7 +49,7 @@ LxmlLinkExtractor
     :type allow: a regular expression (or list of)
 
     :param deny: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be excluded (ie. not
+        that the (absolute) urls must match in order to be excluded (i.e. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
     :type deny: a regular expression (or list of)
@@ -64,9 +64,13 @@ LxmlLinkExtractor
 
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links.
-        If not given, it will default to the
-        ``IGNORED_EXTENSIONS`` list defined in the
-        `scrapy.linkextractors`_ package.
+        If not given, it will default to
+        :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
+
+        .. versionchanged:: 2.0
+           :data:`~scrapy.linkextractors.IGNORED_EXTENSIONS` now includes
+           ``7z``, ``7zip``, ``apk``, ``bz2``, ``cdr``, ``dmg``, ``ico``,
+           ``iso``, ``tar``, ``tar.gz``, ``webm``, and ``xz``.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines

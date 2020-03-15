@@ -49,7 +49,7 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + os.linesep)
+            self.file.write(fp + '\n')
 
     def request_fingerprint(self, request):
         return request_fingerprint(request)

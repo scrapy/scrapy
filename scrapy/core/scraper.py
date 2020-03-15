@@ -16,7 +16,6 @@ from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.utils.request import referer_str
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ class Scraper:
     @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot()
+        self.slot = Slot(self.crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE'))
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
@@ -158,9 +157,9 @@ class Scraper:
         if isinstance(exc, CloseSpider):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
-        logger.error(
-            "Spider error processing %(request)s (referer: %(referer)s)",
-            {'request': request, 'referer': referer_str(request)},
+        logkws = self.logformatter.spider_error(_failure, request, response, spider)
+        logger.log(
+            *logformatter_adapter(logkws),
             exc_info=failure_to_exc_info(_failure),
             extra={'spider': spider}
         )
@@ -208,16 +207,21 @@ class Scraper:
         """
         if isinstance(download_failure, Failure) and not download_failure.check(IgnoreRequest):
             if download_failure.frames:
-                logger.error('Error downloading %(request)s',
-                             {'request': request},
-                             exc_info=failure_to_exc_info(download_failure),
-                             extra={'spider': spider})
+                logkws = self.logformatter.download_error(download_failure, request, spider)
+                logger.log(
+                    *logformatter_adapter(logkws),
+                    extra={'spider': spider},
+                    exc_info=failure_to_exc_info(download_failure),
+                )
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
-                    logger.error('Error downloading %(request)s: %(errmsg)s',
-                                 {'request': request, 'errmsg': errmsg},
-                                 extra={'spider': spider})
+                    logkws = self.logformatter.download_error(
+                        download_failure, request, spider, errmsg)
+                    logger.log(
+                        *logformatter_adapter(logkws),
+                        extra={'spider': spider},
+                    )
 
         if spider_failure is not download_failure:
             return spider_failure
@@ -236,7 +240,7 @@ class Scraper:
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
             else:
-                logkws = self.logformatter.error(item, ex, response, spider)
+                logkws = self.logformatter.item_error(item, ex, response, spider)
                 logger.log(*logformatter_adapter(logkws), extra={'spider': spider},
                            exc_info=failure_to_exc_info(output))
                 return self.signals.send_catch_log_deferred(

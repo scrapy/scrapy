@@ -116,4 +116,5 @@ class ResponseTypes:
             cls = self.from_body(body)
         return cls
 
+
 responsetypes = ResponseTypes()
