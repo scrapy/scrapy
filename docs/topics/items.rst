@@ -166,7 +166,7 @@ If your item contains mutable_ values like lists or dictionaries, a shallow
 copy will keep references to the same mutable values across all different
 copies.
 
-.. _mutable: https://docs.python.org/glossary.html#term-mutable
+.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
 
 For example, if you have an item with a list of tags, and you create a shallow
 copy of that item, both the original item and the copy have the same list of
@@ -177,7 +177,7 @@ If that is not the desired behavior, use a deep copy instead.
 
 See the `documentation of the copy module`_ for more information.
 
-.. _documentation of the copy module: https://docs.python.org/library/copy.html
+.. _documentation of the copy module: https://docs.python.org/3/library/copy.html
 
 To create a shallow copy of an item, you can either call
 :meth:`~scrapy.item.Item.copy` on an existing item

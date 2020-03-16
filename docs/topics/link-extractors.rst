@@ -64,9 +64,13 @@ LxmlLinkExtractor
 
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links.
-        If not given, it will default to the
-        ``IGNORED_EXTENSIONS`` list defined in the
-        `scrapy.linkextractors`_ package.
+        If not given, it will default to
+        :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
+
+        .. versionchanged:: 2.0
+           :data:`~scrapy.linkextractors.IGNORED_EXTENSIONS` now includes
+           ``7z``, ``7zip``, ``apk``, ``bz2``, ``cdr``, ``dmg``, ``ico``,
+           ``iso``, ``tar``, ``tar.gz``, ``webm``, and ``xz``.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines

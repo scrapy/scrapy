@@ -44,7 +44,7 @@ class SendCatchLogTest(unittest.TestCase):
 
     def error_handler(self, arg, handlers_called):
         handlers_called.add(self.error_handler)
-        a = 1/0
+        a = 1 / 0
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
