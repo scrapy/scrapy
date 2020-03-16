@@ -126,7 +126,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
 
-class SpiderLoaderWithWrongInterface(object):
+class SpiderLoaderWithWrongInterface:
 
     def unneeded_method(self):
         pass

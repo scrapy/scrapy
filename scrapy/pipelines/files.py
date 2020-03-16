@@ -37,7 +37,7 @@ class FileException(Exception):
     """General media error exception"""
 
 
-class FSFilesStore(object):
+class FSFilesStore:
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -75,7 +75,7 @@ class FSFilesStore(object):
             seen.add(dirname)
 
 
-class S3FilesStore(object):
+class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_ENDPOINT_URL = None
@@ -213,7 +213,7 @@ class S3FilesStore(object):
         return extra
 
 
-class GCSFilesStore(object):
+class GCSFilesStore:
 
     GCS_PROJECT_ID = None
 
@@ -259,7 +259,7 @@ class GCSFilesStore(object):
         )
 
 
-class FTPFilesStore(object):
+class FTPFilesStore:
 
     FTP_USERNAME = None
     FTP_PASSWORD = None

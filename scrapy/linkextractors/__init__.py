@@ -49,7 +49,7 @@ _matches = lambda url, regexs: any(r.search(url) for r in regexs)
 _is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
-class FilteringLinkExtractor(object):
+class FilteringLinkExtractor:
 
     _csstranslator = HTMLTranslator()
 
