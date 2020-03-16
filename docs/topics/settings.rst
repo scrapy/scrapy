@@ -236,7 +236,7 @@ You can also specify the event loop path with the function :func:`~scrapy.utils.
 
 .. autofunction:: scrapy.utils.reactor.install_reactor
 
-Note that the event loop class must inherit from ``asyncio.AbstractEventLoop``.
+Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
 
 .. setting:: BOT_NAME
 

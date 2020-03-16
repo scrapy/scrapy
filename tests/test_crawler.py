@@ -352,4 +352,4 @@ class CrawlerProcessSubprocess(unittest.TestCase):
         log = self.run_script("asyncio_custom_loop.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
-        self.assertIn("Using loop: uvloop", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)

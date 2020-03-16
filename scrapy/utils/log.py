@@ -154,7 +154,7 @@ def log_scrapy_info(settings):
     if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
         import asyncio
         loop = asyncio.get_event_loop()
-        logger.debug("Using loop: %s.%s", loop.__module__, loop.__class__.__name__)
+        logger.debug("Using asyncio event loop: %s.%s", loop.__module__, loop.__class__.__name__)
 
 
 class StreamLogger(object):

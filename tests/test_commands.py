@@ -309,13 +309,13 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor', '-s', 'ASYNCIO_EVENT_LOOP=uvloop.Loop'
         ])
-        self.assertIn("Using loop: uvloop.Loop", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
     def test_custom_asyncio_loop_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
         ])
-        self.assertIn("Using loop: asyncio.unix_events._UnixSelectorEventLoop", log)
+        self.assertIn("Using asyncio event loop: asyncio.unix_events._UnixSelectorEventLoop", log)
 
 
 class BenchCommandTest(CommandTest):
