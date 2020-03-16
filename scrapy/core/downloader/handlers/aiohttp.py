@@ -10,9 +10,6 @@ from scrapy.responsetypes import responsetypes
 
 class HTTPDownloadHandler:
 
-    def __init__(self, settings):
-        self.settings = settings
-
     def download_request(self, request, spider):
         return _force_deferred(self._download_request(request, spider))
 
