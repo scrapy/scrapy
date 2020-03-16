@@ -1,7 +1,7 @@
 import sys
 import os
 
-from twisted.internet import reactor, defer, protocol
+from twisted.internet import defer, protocol
 
 
 class ProcessTest(object):
@@ -11,6 +11,7 @@ class ProcessTest(object):
     cwd = os.getcwd()  # trial chdirs to temp dir
 
     def execute(self, args, check_code=True, settings=None):
+        from twisted.internet import reactor
         env = os.environ.copy()
         if settings is not None:
             env['SCRAPY_SETTINGS_MODULE'] = settings

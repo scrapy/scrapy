@@ -215,6 +215,10 @@ class BaseResponseTest(unittest.TestCase):
         links = map(Link, absolute)
         self._assert_followed_all_urls(links, absolute)
 
+    def test_follow_all_empty(self):
+        r = self.response_class("http://example.com")
+        self.assertEqual([], list(r.follow_all([])))
+
     def test_follow_all_invalid(self):
         r = self.response_class("http://example.com")
         if self.response_class == Response:

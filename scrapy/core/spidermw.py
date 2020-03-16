@@ -82,7 +82,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if _isiterable(result):
                     # stop exception handling by handing control over to the
                     # process_spider_output chain if an iterable has been returned
-                    return process_spider_output(result, method_index+1)
+                    return process_spider_output(result, method_index + 1)
                 elif result is None:
                     continue
                 else:
@@ -103,12 +103,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     # might fail directly if the output value is not a generator
                     result = method(response=response, result=result, spider=spider)
                 except Exception as ex:
-                    exception_result = process_spider_exception(Failure(ex), method_index+1)
+                    exception_result = process_spider_exception(Failure(ex), method_index + 1)
                     if isinstance(exception_result, Failure):
                         raise
                     return exception_result
                 if _isiterable(result):
-                    result = _evaluate_iterable(result, method_index+1, recovered)
+                    result = _evaluate_iterable(result, method_index + 1, recovered)
                 else:
                     msg = "Middleware {} must return an iterable, got {}"
                     raise _InvalidOutput(msg.format(_fname(method), type(result)))

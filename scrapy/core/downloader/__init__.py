@@ -3,7 +3,7 @@ from time import time
 from datetime import datetime
 from collections import deque
 
-from twisted.internet import reactor, defer, task
+from twisted.internet import defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
@@ -133,6 +133,7 @@ class Downloader(object):
         return deferred
 
     def _process_queue(self, spider, slot):
+        from twisted.internet import reactor
         if slot.latercall and slot.latercall.active():
             return
 

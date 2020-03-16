@@ -257,9 +257,9 @@ though neither Scrapy nor your project are leaking memory. This is due to a
 (not so well) known problem of Python, which may not return released memory to
 the operating system in some cases. For more information on this issue see:
 
-* `Python Memory Management <http://www.evanjones.ca/python-memory.html>`_
-* `Python Memory Management Part 2 <http://www.evanjones.ca/python-memory-part2.html>`_
-* `Python Memory Management Part 3 <http://www.evanjones.ca/python-memory-part3.html>`_
+* `Python Memory Management <https://www.evanjones.ca/python-memory.html>`_
+* `Python Memory Management Part 2 <https://www.evanjones.ca/python-memory-part2.html>`_
+* `Python Memory Management Part 3 <https://www.evanjones.ca/python-memory-part3.html>`_
 
 The improvements proposed by Evan Jones, which are detailed in `this paper`_,
 got merged in Python 2.5, but this only reduces the problem, it doesn't fix it
@@ -273,7 +273,7 @@ completely. To quote the paper:
     to move to a compacting garbage collector, which is able to move objects in
     memory. This would require significant changes to the Python interpreter.*
 
-.. _this paper: http://www.evanjones.ca/memoryallocator/
+.. _this paper: https://www.evanjones.ca/memoryallocator/
 
 To keep memory consumption reasonable you can split the job into several
 smaller jobs or enable :ref:`persistent job queue <topics-jobs>`

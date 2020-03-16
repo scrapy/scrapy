@@ -116,12 +116,6 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 Supported Storage
 =================
 
-File system is currently the only officially supported storage, but there are
-also support for storing files in `Amazon S3`_ and `Google Cloud Storage`_.
-
-.. _Amazon S3: https://aws.amazon.com/s3/
-.. _Google Cloud Storage: https://cloud.google.com/storage/
-
 File system storage
 -------------------
 
@@ -147,8 +141,12 @@ Where:
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
 
+.. _media-pipeline-ftp:
+
 FTP server storage
 ------------------
+
+.. versionadded:: 2.0
 
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
 Scrapy will automatically upload the files to the server.
@@ -572,6 +570,8 @@ See here the methods that you can override in your custom Images Pipeline:
 
       By default, the :meth:`item_completed` method returns the item.
 
+
+.. _media-pipeline-example:
 
 Custom Images pipeline example
 ==============================
