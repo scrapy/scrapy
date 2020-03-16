@@ -145,7 +145,6 @@ class CookiesMiddlewareTest(TestCase):
                 {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
                 {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'}]
 
-
         req = Request('http://scrapytest.org/', cookies=cookies)
         self.mw.process_request(req, self.spider)
 

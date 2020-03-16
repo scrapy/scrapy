@@ -387,7 +387,6 @@ class TestHelper(unittest.TestCase):
             self.assertTrue(type(r1) is type(r2))
             self.assertTrue(type(r1) is not type(r3))
 
-
     def _assert_type_and_value(self, a, b, obj):
         self.assertTrue(type(a) is type(b),
                         'Got {}, expected {} for {!r}'.format(type(a), type(b), obj))

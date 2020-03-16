@@ -110,6 +110,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         # ignore subclassing warnings
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', ScrapyDeprecationWarning)
+
             class UserClass(Deprecated):
                 pass
 
@@ -233,6 +234,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             AlsoDeprecated()
+
             class UserClass(AlsoDeprecated):
                 pass
 
@@ -247,6 +249,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         with mock.patch('inspect.stack', side_effect=IndexError):
             with warnings.catch_warnings(record=True) as w:
                 DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
+
                 class SubClass(DeprecatedName):
                     pass
 

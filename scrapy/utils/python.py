@@ -1,15 +1,14 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import gc
-import os
-import re
-import inspect
-import weakref
 import errno
+import gc
+import inspect
+import re
+import sys
+import weakref
 from functools import partial, wraps
 from itertools import chain
-import sys
 
 from scrapy.utils.decorators import deprecated
 
@@ -165,14 +164,6 @@ _BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 
-@deprecated("scrapy.utils.python.binary_is_text")
-def isbinarytext(text):
-    """ This function is deprecated.
-    Please use scrapy.utils.python.binary_is_text, which was created to be more
-    clear about the functions behavior: it is behaving inverted to this one. """
-    return not binary_is_text(text)
-
-
 def binary_is_text(data):
     """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
@@ -293,41 +284,6 @@ class WeakKeyCache(object):
         return self._weakdict[key]
 
 
-@deprecated
-def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
-    """Return a (new) dict with unicode keys (and values when "keys_only" is
-    False) of the given dict converted to strings. ``dct_or_tuples`` can be a
-    dict or a list of tuples, like any dict ``__init__`` method supports.
-    """
-    d = {}
-    for k, v in dict(dct_or_tuples).items():
-        k = k.encode(encoding) if isinstance(k, str) else k
-        if not keys_only:
-            v = v.encode(encoding) if isinstance(v, str) else v
-        d[k] = v
-    return d
-
-
-@deprecated
-def is_writable(path):
-    """Return True if the given path can be written (if it exists) or created
-    (if it doesn't exist)
-    """
-    if os.path.exists(path):
-        return os.access(path, os.W_OK)
-    else:
-        return os.access(os.path.dirname(path), os.W_OK)
-
-
-@deprecated
-def setattr_default(obj, name, value):
-    """Set attribute value, but only if it's not already set. Similar to
-    setdefault() for dicts.
-    """
-    if not hasattr(obj, name):
-        setattr(obj, name, value)
-
-
 def retry_on_eintr(function, *args, **kw):
     """Run a function and retry it while getting EINTR errors"""
     while True:
@@ -371,10 +327,11 @@ else:
         gc.collect()
 
 
-class MutableChain(object):
+class MutableChain:
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
+
     def __init__(self, *args):
         self.data = chain(*args)
 
