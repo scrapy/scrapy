@@ -183,7 +183,11 @@ class PipelineTestCase(unittest.TestCase):
         settings = {'ITEM_PIPELINE_CLOSE_SPIDER_ORDER': 'desc'}
         crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
         crawler.call_list = []
-        yield crawler.crawl(mockserver=self.mockserver)
+        with catch_warnings(record=True) as warnings:
+            yield crawler.crawl(mockserver=self.mockserver)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("ITEM_PIPELINE_CLOSE_SPIDER_ORDER",
+                          str(warnings[0].message))
         self.assertEqual(crawler.call_list, expected_call_list)
 
     @defer.inlineCallbacks

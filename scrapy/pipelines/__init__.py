@@ -31,11 +31,6 @@ class ItemPipelineManager(MiddlewareManager):
     def __init__(self, *middlewares, settings):
         self._close_spider_order = settings.get('ITEM_PIPELINE_CLOSE_SPIDER_ORDER')
         if self._close_spider_order is None:
-            warn("The default value of the ITEM_PIPELINE_CLOSE_SPIDER_ORDER "
-                 "setting will change from 'desc' to 'asc' in a future "
-                 "version of Scrapy. To remove this warning, give the "
-                 "ITEM_PIPELINE_CLOSE_SPIDER_ORDER setting a explicit value.",
-                 ScrapyDeprecationWarning)
             self._close_spider_order = 'desc'
         if self._close_spider_order not in self._close_spider_order_values:
             raise ValueError(
@@ -48,6 +43,12 @@ class ItemPipelineManager(MiddlewareManager):
                     ),
                 )
             )
+        if self._close_spider_order != 'asc':
+            warn("The ITEM_PIPELINE_CLOSE_SPIDER_ORDER setting will be "
+                 "removed from future versions of Scrapy, and the call order "
+                 "will always be ascending (asc). To remove this warning, set "
+                 "the ITEM_PIPELINE_CLOSE_SPIDER_ORDER setting to 'asc'.",
+                 ScrapyDeprecationWarning)
         super().__init__(*middlewares)
 
     def _add_middleware(self, pipe):
