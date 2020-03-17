@@ -14,13 +14,14 @@ matrix:
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
 
-    - env: TOXENV=py
-      python: 3.5
-    - env: TOXENV=pinned INSTALL_PYTHON_VERSION=3.5.0
+    - env: TOXENV=pinned
+      python: 3.5.0
+    - env: TOXENV=asyncio
+      python: 3.5.0  # We use additional code to support 3.5.3 and earlier
     - env: TOXENV=asyncio
       python: 3.5
-    # We use additional code to support 3.5.3 and earlier
-    - env: TOXENV=asyncio INSTALL_PYTHON_VERSION=3.5.0
+    - env: TOXENV=py
+      python: 3.5
 
     - env: TOXENV=py
       python: 3.6
@@ -44,18 +45,6 @@ install:
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-      elif [ "$INSTALL_PYTHON_VERSION" ]; then
-        if [ ! -d "Python-$INSTALL_PYTHON_VERSION" ]; then
-          wget "https://www.python.org/ftp/python/$INSTALL_PYTHON_VERSION/Python-$INSTALL_PYTHON_VERSION.tar.xz"
-          tar -axf Python-$INSTALL_PYTHON_VERSION.tar.xz
-          cd Python-$INSTALL_PYTHON_VERSION
-          ./configure --prefix=$(pwd)
-          make
-          make install
-          cd ..
-        fi
-        virtualenv --python="Python-$INSTALL_PYTHON_VERSION/bin/python3" "$HOME/virtualenvs/$INSTALL_PYTHON_VERSION"
-        source "$HOME/virtualenvs/$INSTALL_PYTHON_VERSION/bin/activate"
       fi
   - pip install -U tox twine wheel codecov
 
