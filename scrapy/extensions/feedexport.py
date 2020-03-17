@@ -94,10 +94,6 @@ class FileFeedStorage:
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None):
-        no_keys = access_key is None and secret_key is None
-        if no_keys:
-            raise NotConfigured('%s is missing AWS credentials' %
-                                self.__class__.__name__)
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key

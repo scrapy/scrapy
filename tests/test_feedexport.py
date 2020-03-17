@@ -21,7 +21,6 @@ from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import NotConfigured
 from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
                                           IFeedStorage, S3FeedStorage, StdoutFeedStorage)
@@ -187,9 +186,6 @@ class S3FeedStorageTest(unittest.TestCase):
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'uri_key')
         self.assertEqual(storage.secret_key, 'uri_secret')
-        # Instantiate without credentials
-        with self.assertRaises(NotConfigured):
-            S3FeedStorage('s3://mybucket/export.csv')
 
     @defer.inlineCallbacks
     def test_store(self):
