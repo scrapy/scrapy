@@ -170,7 +170,7 @@ class SkipMessagesLogFormatter(LogFormatter):
         return None
 
 
-class DropSomeItemsPipeline(object):
+class DropSomeItemsPipeline:
     drop = True
 
     def process_item(self, item, spider):
