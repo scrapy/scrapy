@@ -4,6 +4,7 @@ import string
 
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
+from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -20,6 +21,14 @@ def sanitize_module_name(module_name):
     if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
+
+
+def extract_domain(url):
+    """Extract domain name from URL string"""
+    o = urlparse(url)
+    if o.scheme == '' and o.netloc == '':
+        o = urlparse("//" + url.lstrip("/"))
+    return o.netloc
 
 
 class Command(ScrapyCommand):
@@ -59,7 +68,8 @@ class Command(ScrapyCommand):
         if len(args) != 2:
             raise UsageError()
 
-        name, domain = args[0:2]
+        name, url = args[0:2]
+        domain = extract_domain(url)
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
