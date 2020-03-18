@@ -249,6 +249,8 @@ class FeedExporter:
                 raise NotConfigured
 
     def open_spider(self, spider):
+        if self.storage_batch:
+            self.feeds = {self._get_uri_of_partial(uri, feed, spider): feed for uri, feed in self.feeds.items()}
         for uri, feed in self.feeds.items():
             uri = uri % self._get_uri_params(spider, feed['uri_params'])
             self.slots.append(self._start_new_batch(None, uri, feed, spider))
@@ -296,11 +298,11 @@ class FeedExporter:
             slot.start_exporting()
         return slot
 
-    def _get_uri_of_partial(self, slot, feed, spider):
+    def _get_uri_of_partial(self, template_uri, feed, spider):
         """Get uri for each partial using datetime.now().isoformat()"""
-        uri = (slot.uri % self._get_uri_params(spider, feed['uri_params'])).split('.')[0] + '.'
-        uri = uri + datetime.now().isoformat() + '.' + feed['format']
-        return uri
+        template_uri = (template_uri % self._get_uri_params(spider, feed['uri_params']))
+        uri_name = template_uri.split('.')[0]
+        return '{}.{}.{}'.format(uri_name, datetime.now().isoformat(), feed["format"])
 
     def item_scraped(self, item, spider):
         slots = []
@@ -309,11 +311,12 @@ class FeedExporter:
             slot.exporter.export_item(item)
             slot.itemcount += 1
             if self.storage_batch and slot.itemcount % self.storage_batch == 0:
-                uri = self._get_uri_of_partial(slot, self.feeds[slot.uri], spider)
+                uri = self._get_uri_of_partial(slot.uri, self.feeds[slot.uri], spider)
                 slots.append(self._start_new_batch(slot, uri, self.feeds[slot.uri], spider))
                 self.feeds[uri] = self.feeds[slot.uri]
                 self.feeds.pop(slot.uri)
                 self.slots[idx] = None
+
         self.slots = [slot for slot in self.slots if slot is not None]
         self.slots.extend(slots)
 
