@@ -104,6 +104,9 @@ If you get the expected response `sometimes`, but not always, the issue is
 probably not your request, but the target server. The target server might be
 buggy, overloaded, or :ref:`banning <bans>` some of your requests.
 
+Note that to translate a cURL command into a Scrapy request,
+you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
+
 .. _topics-handling-response-formats:
 
 Handling different response formats
