@@ -3,6 +3,22 @@
 Release notes
 =============
 
+.. _release-2.0.1:
+
+Scrapy 2.0.1 (2020-03-18)
+-------------------------
+
+*   :meth:`Response.follow_all <scrapy.http.Response.follow_all>` now supports
+    an empty URL iterable as input (:issue:`4408`, :issue:`4420`)
+
+*   Removed top-level :mod:`~twisted.internet.reactor` imports to prevent
+    errors about the wrong Twisted reactor being installed when setting a
+    different Twisted reactor using :setting:`TWISTED_REACTOR` (:issue:`4401`,
+    :issue:`4406`)
+
+*   Fixed tests (:issue:`4422`)
+
+
 .. _release-2.0.0:
 
 Scrapy 2.0.0 (2020-03-03)
