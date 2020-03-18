@@ -43,8 +43,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
         @defer.inlineCallbacks
         def process_response(response):
-            assert response is not None, 'Received None in process_response'
-            if isinstance(response, Request):
+            if response is None:
+                raise TypeError("Received None in process_response")
+            elif isinstance(response, Request):
                 defer.returnValue(response)
 
             for method in self.methods['process_response']:

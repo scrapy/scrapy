@@ -128,10 +128,9 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 def _body_or_str(obj, unicode=True):
     expected_types = (Response, str, bytes)
-    assert isinstance(obj, expected_types), \
-        "obj must be %s, not %s" % (
-            " or ".join(t.__name__ for t in expected_types),
-            type(obj).__name__)
+    if not isinstance(obj, expected_types):
+        expected_types_str = " or ".join(t.__name__ for t in expected_types)
+        raise TypeError("obj must be %s, not %s" % (expected_types_str, type(obj).__name__))
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
