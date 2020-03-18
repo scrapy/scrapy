@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.0.1:
 
-Scrapy 2.0.1 (2020-03-??)
+Scrapy 2.0.1 (2020-03-18)
 -------------------------
 
 *   :meth:`Response.follow_all <scrapy.http.Response.follow_all>` now supports
