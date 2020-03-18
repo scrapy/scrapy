@@ -260,13 +260,13 @@ necessary fields, like in this example for Images Pipeline::
         image_urls = scrapy.Field()
         images = scrapy.Field()
 
-Or as a :ref:`dataclass-based item <faq-dataclass-items>`::
-
 .. invisible-code-block: python
 
   import sys
 
 .. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
+
+Or as a :ref:`dataclass-based item <faq-dataclass-items>`::
 
     from dataclasses import dataclass
 
