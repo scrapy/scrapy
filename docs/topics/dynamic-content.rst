@@ -115,7 +115,7 @@ data from it depends on the type of response:
 -   If the response is HTML or XML, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use `json.loads`_ to load the desired data from
+-   If the response is JSON, use :func:`json.loads` to load the desired data from
     :attr:`response.text <scrapy.http.TextResponse.text>`::
 
         data = json.loads(response.text)
@@ -130,7 +130,7 @@ data from it depends on the type of response:
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.
 
--   If the response is CSS, use a `regular expression`_ to extract the desired
+-   If the response is CSS, use :mod:`re` to extract the desired
     data from :attr:`response.text <scrapy.http.TextResponse.text>`.
 
 .. _topics-parsing-images:
@@ -168,8 +168,8 @@ JavaScript code:
 Once you have a string with the JavaScript code, you can extract the desired
 data from it:
 
--   You might be able to use a `regular expression`_ to extract the desired
-    data in JSON format, which you can then parse with `json.loads`_.
+-   You might be able to use :mod:`re` to extract the desired
+    data in JSON format, which you can then parse with :func:`json.loads`.
 
     For example, if the JavaScript code contains a separate line like
     ``var data = {"field": "value"};`` you can extract that data as follows:
@@ -241,9 +241,7 @@ along with `scrapy-selenium`_ for seamless integration.
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
-.. _json.loads: https://docs.python.org/3/library/json.html#json.loads
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _regular expression: https://docs.python.org/3/library/re.html
 .. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 .. _Selenium: https://www.selenium.dev/

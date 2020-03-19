@@ -25,16 +25,16 @@ Scrapy.
 If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
-may be useful to you: 
+may be useful to you:
 
 * `Automate the Boring Stuff With Python`_
 
-* `How To Think Like a Computer Scientist`_ 
+* `How To Think Like a Computer Scientist`_
 
-* `Learn Python 3 The Hard Way`_ 
+* `Learn Python 3 The Hard Way`_
 
 You can also take a look at `this list of Python resources for non-programmers`_,
-as well as the `suggested resources in the learnpython-subreddit`_. 
+as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
@@ -62,7 +62,7 @@ This will create a ``tutorial`` directory with the following contents::
             __init__.py
 
             items.py          # project items definition file
-            
+
             middlewares.py    # project middlewares file
 
             pipelines.py      # project pipelines file

@@ -15,7 +15,7 @@ especially in a larger project with many spiders.
 
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
-They provide a `dictionary-like`_ API with a convenient syntax for declaring
+They provide a :class:`dict` like API with a convenient syntax for declaring
 their available fields.
 
 Various Scrapy components use extra information provided by Items:
@@ -23,8 +23,6 @@ exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
 tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
-
-.. _dictionary-like: https://docs.python.org/3/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -79,7 +77,7 @@ Working with Items
 
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
-notice the API is very similar to the `dict API`_.
+notice the API is very similar to the :class:`dict` API.
 
 Creating items
 --------------
@@ -145,7 +143,7 @@ KeyError: 'Product does not support field: lala'
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_:
+To access all populated values, just use the typical :class:`dict`:
 
 >>> product.keys()
 ['price', 'name']
@@ -175,9 +173,7 @@ other item as well.
 
 If that is not the desired behavior, use a deep copy instead.
 
-See the `documentation of the copy module`_ for more information.
-
-.. _documentation of the copy module: https://docs.python.org/3/library/copy.html
+See :mod:`copy` for more information.
 
 To create a shallow copy of an item, you can either call
 :meth:`~scrapy.item.Item.copy` on an existing item
@@ -235,7 +231,7 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its ``__init__`` method, and
+    Items replicate the standard :class:`dict`, including its ``__init__`` method, and
     also provide the following additional API members:
 
     .. automethod:: copy
@@ -249,21 +245,16 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: https://docs.python.org/3/library/stdtypes.html#dict
-
 Field objects
 =============
 
 .. class:: Field([arg])
 
-    The :class:`Field` class is just an alias to the built-in `dict`_ class and
+    The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
     :class:`Field` objects are plain-old Python dicts. A separate class is used
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
-
-.. _dict: https://docs.python.org/3/library/stdtypes.html#dict
-
 
 Other classes related to Item
 =============================

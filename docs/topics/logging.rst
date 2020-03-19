@@ -9,8 +9,7 @@ Logging
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
-Scrapy uses `Python's builtin logging system
-<https://docs.python.org/3/library/logging.html>`_ for event logging. We'll
+Scrapy uses :mod:`logging` for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
 
@@ -86,7 +85,7 @@ path::
     Module logging, `HowTo <https://docs.python.org/3/howto/logging.html>`_
         Basic Logging Tutorial
 
-    Module logging, `Loggers <https://docs.python.org/3/library/logging.html#logger-objects>`_
+    Module logging, :class:`~logging.Logger`
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -190,7 +189,7 @@ to override some of the Scrapy settings regarding logging.
 
 .. seealso::
 
-    Module `logging.handlers <https://docs.python.org/3/library/logging.handlers.html>`_
+    Module :mod:`logging.handlers`
         Further documentation on available handlers
 
 .. _custom-log-formats:
@@ -256,10 +255,10 @@ scrapy.utils.log module
     In that case, its usage is not required but it's recommended.
 
     Another option when running custom scripts is to manually configure the logging.
-    To do this you can use `logging.basicConfig()`_ to set a basic root handler.
+    To do this you can use :func:`logging.basicConfig` to set a basic root handler.
 
     Note that :class:`~scrapy.crawler.CrawlerProcess` automatically calls ``configure_logging``,
-    so it is recommended to only use `logging.basicConfig()`_ together with
+    so it is recommended to only use :func:`logging.basicConfig` together with
     :class:`~scrapy.crawler.CrawlerRunner`.
 
     This is an example on how to redirect ``INFO`` or higher messages to a file::
@@ -275,7 +274,3 @@ scrapy.utils.log module
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
-
-.. _logging.basicConfig(): https://docs.python.org/3/library/logging.html#logging.basicConfig
-
-

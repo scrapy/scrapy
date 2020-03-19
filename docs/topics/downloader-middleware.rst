@@ -739,7 +739,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library module `urllib.request`_, it obeys
+   Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -750,8 +750,6 @@ HttpProxyMiddleware
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
-
-.. _urllib.request: https://docs.python.org/3/library/urllib.request.html
 
 RedirectMiddleware
 ------------------
@@ -982,7 +980,7 @@ RobotsTxtMiddleware
     Scrapy ships with support for the following robots.txt_ parsers:
 
     * :ref:`Protego <protego-parser>` (default)
-    * :ref:`RobotFileParser <python-robotfileparser>`
+    * :class:`~urllib.robotparser.RobotFileParser`
     * :ref:`Reppy <reppy-parser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
 
@@ -1030,13 +1028,10 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 
 Scrapy uses this parser by default.
 
-.. _python-robotfileparser:
-
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-Based on `RobotFileParser
-<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+Based on :class:`~urllib.robotparser.RobotFileParser`:
 
 * is Python's built-in robots.txt_ parser
 

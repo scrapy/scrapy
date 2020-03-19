@@ -7,15 +7,13 @@ Sending e-mail
 .. module:: scrapy.mail
    :synopsis: Email sending facility
 
-Although Python makes sending e-mails relatively easy via the `smtplib`_
+Although Python makes sending e-mails relatively easy via the :mod:`smtplib`
 library, Scrapy provides its own facility for sending e-mails which is very
 easy to use and it's implemented using :doc:`Twisted non-blocking IO
 <twisted:core/howto/defer-intro>`, to avoid interfering with the non-blocking
 IO of the crawler. It also provides a simple API for sending attachments and
 it's very easy to configure, with a few :ref:`settings
 <topics-email-settings>`.
-
-.. _smtplib: https://docs.python.org/3/library/smtplib.html
 
 Quick example
 =============

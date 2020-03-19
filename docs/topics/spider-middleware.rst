@@ -140,7 +140,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
-        :type exception: `Exception`_ object
+        :type exception: :exc:`Exception` object
 
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -182,10 +182,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-
-.. _Exception: https://docs.python.org/3/library/exceptions.html#Exception
-
 
 .. _topics-spider-middleware-ref:
 

@@ -566,11 +566,9 @@ dealing with JSON requests.
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
-   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+   :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
-
-.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
 JsonRequest usage example
 -------------------------
@@ -724,7 +722,7 @@ Response objects
         Constructs an absolute url by combining the Response's :attr:`url` with
         a possible relative url.
 
-        This is a wrapper over `urllib.parse.urljoin`_, it's merely an alias for
+        This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
         making this call::
 
             urllib.parse.urljoin(response.url, url)
@@ -733,8 +731,6 @@ Response objects
 
     .. automethod:: Response.follow_all
 
-
-.. _urllib.parse.urljoin: https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 
