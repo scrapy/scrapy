@@ -16,8 +16,7 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
-Here is a simple example showing how you can catch signals and perform some action:
-::
+Here is a simple example showing how you can catch signals and perform some action::
 
     from scrapy import signals
     from scrapy import Spider
@@ -57,8 +56,7 @@ does not block Scrapy. If a signal handler returns a
 :class:`~twisted.internet.defer.Deferred`, Scrapy waits for that
 :class:`~twisted.internet.defer.Deferred` to fire.
 
-Let's take an example:
-::
+Let's take an example::
 
     class SignalSpider(scrapy.Spider):
         name = 'signals'
@@ -67,12 +65,12 @@ Let's take an example:
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             spider = super(SignalSpider, cls).from_crawler(crawler, *args, **kwargs)
-            crawler.signals.connect(spider.item_scrapped, signal=signals.item_scraped)
+            crawler.signals.connect(spider.item_scraped, signal=signals.item_scraped)
             return spider
 
-        def item_scrapped(self, item):
-            # Send the scrapped item to the server
-            dfd = treq.post(
+        def item_scraped(self, item):
+            # Send the scraped item to the server
+            d = treq.post(
                 'http://localhost:3000/add',
                 json.dumps({
                     'text': item['text'],
@@ -81,14 +79,11 @@ Let's take an example:
                 }).encode('ascii'),
                 headers={b'Content-Type': [b'application/json']}
             )
-            dfd.addCallback(print_response)
+            d.addCallback(print_response)
 
-            # Next item will be scrapped only after dfd is fired
-            # As items are processed in parallel many dfd will
-            # be fired at the same time (refer settings['CONCURRENT_ITEMS'])
-            # hence, next batch of items will be processed after all
-            # dfd's are fired
-            return dfd
+            # The next item will be scraped only after
+            # deferred (d) is fired
+            return d
 
         def parse(self, response):
             for quote in response.css('div.quote'):
@@ -103,7 +98,7 @@ Let's take an example:
                 yield scrapy.Request(next_page, callback=self.parse)
 
 See the :ref:`topics-signals-ref` below to know which signals support
-:class:`~twisted.internet.defer.Deferred`
+:class:`~twisted.internet.defer.Deferred`.
 
 .. _topics-signals-ref:
 
@@ -115,8 +110,11 @@ Built-in signals reference
 
 Here's the list of Scrapy built-in signals and their meaning.
 
-engine_started
+Engine signals
 --------------
+
+engine_started
+~~~~~~~~~~~~~~
 
 .. signal:: engine_started
 .. function:: engine_started()
@@ -130,7 +128,7 @@ engine_started
     getting fired before :signal:`spider_opened`.
 
 engine_stopped
---------------
+~~~~~~~~~~~~~~
 
 .. signal:: engine_stopped
 .. function:: engine_stopped()
@@ -140,8 +138,19 @@ engine_stopped
 
     This signal supports returning deferreds from their handlers.
 
-item_scraped
+Item signals
 ------------
+
+.. note::
+    As at max :setting:`CONCURRENT_ITEMS` items are processed in
+    parallel, many deferreds are fired together using
+    :class:`~twisted.internet.defer.DeferredList`. Hence the next
+    batch waits for the :class:`~twisted.internet.defer.DeferredList`
+    to fire and then runs the respective item signal handler for
+    the next batch of scraped items.
+
+item_scraped
+~~~~~~~~~~~~
 
 .. signal:: item_scraped
 .. function:: item_scraped(item, response, spider)
@@ -161,7 +170,7 @@ item_scraped
     :type response: :class:`~scrapy.http.Response` object
 
 item_dropped
-------------
+~~~~~~~~~~~~
 
 .. signal:: item_dropped
 .. function:: item_dropped(item, response, exception, spider)
@@ -186,7 +195,7 @@ item_dropped
     :type exception: :exc:`~scrapy.exceptions.DropItem` exception
 
 item_error
-------------
+~~~~~~~~~~
 
 .. signal:: item_error
 .. function:: item_error(item, response, spider, failure)
@@ -208,15 +217,11 @@ item_error
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
 
-.. note::
-    As at max :setting:`CONCURRENT_ITEMS` items are processed in parallel,
-    many deferreds in parallel are returned which are all fired using
-    :class:`~twisted.internet.defer.DeferredList`. Hence the next batch waits for
-    the :class:`~twisted.internet.defer.DeferredList` to fire and then runs
-    the respective item signal handler for the next batch of scrapped items.
+Spider signals
+--------------
 
 spider_closed
--------------
+~~~~~~~~~~~~~
 
 .. signal:: spider_closed
 .. function:: spider_closed(spider, reason)
@@ -239,7 +244,7 @@ spider_closed
     :type reason: str
 
 spider_opened
--------------
+~~~~~~~~~~~~~
 
 .. signal:: spider_opened
 .. function:: spider_opened(spider)
@@ -254,7 +259,7 @@ spider_opened
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 spider_idle
------------
+~~~~~~~~~~~
 
 .. signal:: spider_idle
 .. function:: spider_idle(spider)
@@ -284,7 +289,7 @@ spider_idle
     due to duplication).
 
 spider_error
-------------
+~~~~~~~~~~~~
 
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
@@ -302,8 +307,11 @@ spider_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+Request signals
+---------------
+
 request_scheduled
------------------
+~~~~~~~~~~~~~~~~~
 
 .. signal:: request_scheduled
 .. function:: request_scheduled(request, spider)
@@ -320,7 +328,7 @@ request_scheduled
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_dropped
----------------
+~~~~~~~~~~~~~~~
 
 .. signal:: request_dropped
 .. function:: request_dropped(request, spider)
@@ -337,7 +345,7 @@ request_dropped
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_reached_downloader
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
@@ -353,7 +361,7 @@ request_reached_downloader
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_left_downloader
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
@@ -371,8 +379,11 @@ request_left_downloader
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+Response signals
+----------------
+
 response_received
------------------
+~~~~~~~~~~~~~~~~~
 
 .. signal:: response_received
 .. function:: response_received(response, request, spider)
@@ -392,7 +403,7 @@ response_received
     :type spider: :class:`~scrapy.spiders.Spider` object
 
 response_downloaded
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 .. signal:: response_downloaded
 .. function:: response_downloaded(response, request, spider)
