@@ -83,10 +83,10 @@ path::
 
 .. seealso::
 
-    Module logging, `HowTo <https://docs.python.org/2/howto/logging.html>`_
+    Module logging, `HowTo <https://docs.python.org/3/howto/logging.html>`_
         Basic Logging Tutorial
 
-    Module logging, `Loggers <https://docs.python.org/2/library/logging.html#logger-objects>`_
+    Module logging, `Loggers <https://docs.python.org/3/library/logging.html#logger-objects>`_
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -166,13 +166,13 @@ possible levels listed in :ref:`topics-logging-levels`.
 :setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
 used as layouts for all messages. Those strings can contain any placeholders
 listed in `logging's logrecord attributes docs
-<https://docs.python.org/2/library/logging.html#logrecord-attributes>`_ and
+<https://docs.python.org/3/library/logging.html#logrecord-attributes>`_ and
 `datetime's strftime and strptime directives
-<https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
+<https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior>`_
 respectively.
 
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
-component that prints the log. It is unset by default, hence logs contain the 
+component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
 
 Command-line options
@@ -190,7 +190,7 @@ to override some of the Scrapy settings regarding logging.
 
 .. seealso::
 
-    Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
+    Module `logging.handlers <https://docs.python.org/3/library/logging.handlers.html>`_
         Further documentation on available handlers
 
 .. _custom-log-formats:
@@ -201,7 +201,7 @@ Custom Log Formats
 A custom log format can be set for different actions by extending
 :class:`~scrapy.logformatter.LogFormatter` class and making
 :setting:`LOG_FORMATTER` point to your new class.
- 
+
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:
 
@@ -276,6 +276,6 @@ scrapy.utils.log module
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
 
-.. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
+.. _logging.basicConfig(): https://docs.python.org/3/library/logging.html#logging.basicConfig
 
 

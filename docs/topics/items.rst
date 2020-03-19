@@ -24,7 +24,7 @@ serialization can be customized using Item fields metadata, :mod:`trackref`
 tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
 
-.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
+.. _dictionary-like: https://docs.python.org/3/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -249,7 +249,7 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
+.. _dict API: https://docs.python.org/3/library/stdtypes.html#dict
 
 Field objects
 =============
@@ -262,7 +262,7 @@ Field objects
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
 
-.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
+.. _dict: https://docs.python.org/3/library/stdtypes.html#dict
 
 
 Other classes related to Item

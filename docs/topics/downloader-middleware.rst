@@ -739,7 +739,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+   Like the Python standard library module `urllib.request`_, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -751,8 +751,7 @@ HttpProxyMiddleware
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
 
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
+.. _urllib.request: https://docs.python.org/3/library/urllib.request.html
 
 RedirectMiddleware
 ------------------

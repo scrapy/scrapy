@@ -189,7 +189,7 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.cb_kwargs`` attribute.
 
-    .. _shallow copied: https://docs.python.org/2/library/copy.html
+    .. _shallow copied: https://docs.python.org/3/library/copy.html
 
     .. method:: Request.copy()
 
@@ -706,7 +706,7 @@ Response objects
 
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
-        
+
         Only populated for ``https`` responses, ``None`` otherwise.
 
     .. method:: Response.copy()
@@ -724,17 +724,17 @@ Response objects
         Constructs an absolute url by combining the Response's :attr:`url` with
         a possible relative url.
 
-        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        This is a wrapper over `urllib.parse.urljoin`_, it's merely an alias for
         making this call::
 
-            urlparse.urljoin(response.url, url)
+            urllib.parse.urljoin(response.url, url)
 
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
 
 
-.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
+.. _urllib.parse.urljoin: https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 

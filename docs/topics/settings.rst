@@ -28,7 +28,7 @@ The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
 Python `import search path`_.
 
-.. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
+.. _import search path: https://docs.python.org/3/tutorial/modules.html#the-module-search-path
 
 .. _populating-settings:
 
@@ -902,7 +902,7 @@ Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
 placeholders.
 
-.. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
+.. _Python logging documentation: https://docs.python.org/3/library/logging.html#logrecord-attributes
 
 .. setting:: LOG_DATEFORMAT
 
@@ -915,7 +915,7 @@ String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
 in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
 directives.
 
-.. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+.. _Python datetime documentation: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
 
 .. setting:: LOG_FORMATTER
 

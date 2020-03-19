@@ -36,7 +36,7 @@ defines selectors to associate those styles with specific HTML elements.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
+.. _ElementTree: https://docs.python.org/3/library/xml.etree.elementtree.html
 .. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 .. _parsel: https://parsel.readthedocs.io/en/latest/

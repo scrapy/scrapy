@@ -15,7 +15,7 @@ IO of the crawler. It also provides a simple API for sending attachments and
 it's very easy to configure, with a few :ref:`settings
 <topics-email-settings>`.
 
-.. _smtplib: https://docs.python.org/2/library/smtplib.html
+.. _smtplib: https://docs.python.org/3/library/smtplib.html
 
 Quick example
 =============
