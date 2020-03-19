@@ -124,7 +124,7 @@ Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
 extensions, middlewares and item pipelines::
 
-    class MyExtension(object):
+    class MyExtension:
         def __init__(self, log_is_enabled=False):
             if log_is_enabled:
                 print("log is enabled!")
@@ -248,7 +248,7 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
@@ -258,7 +258,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 
 Default: ``8``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
 
 See also: :ref:`topics-autothrottle` and its
@@ -272,7 +272,7 @@ CONCURRENT_REQUESTS_PER_IP
 
 Default: ``0``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single IP. If non-zero, the
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
 used instead. In other words, concurrency limits will be applied per IP, not
@@ -380,6 +380,8 @@ DNS in-memory cache size.
 
 DNS_RESOLVER
 ------------
+
+.. versionadded:: 2.0
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -1275,6 +1277,9 @@ does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
+
+.. versionadded:: 2.0
+
 Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
@@ -1464,24 +1469,95 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
+.. versionadded:: 2.0
+
 Default: ``None``
 
-Import path of a given Twisted reactor, for instance:
-:class:`twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+Import path of a given :mod:`~twisted.internet.reactor`.
 
-Scrapy will install this reactor if no other is installed yet, such as when
-the ``scrapy`` CLI program is invoked or when using the
-:class:`~scrapy.crawler.CrawlerProcess` class. If you are using the
-:class:`~scrapy.crawler.CrawlerRunner` class, you need to install the correct
-reactor manually. An exception will be raised if the installation fails.
+Scrapy will install this reactor if no other reactor is installed yet, such as
+when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class.
 
-The default value for this option is currently ``None``, which means that Scrapy
-will not attempt to install any specific reactor, and the default one defined by
-Twisted for the current platform will be used. This is to maintain backward
-compatibility and avoid possible problems caused by using a non-default reactor.
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+need to install the correct reactor manually. You can do that using
+:func:`~scrapy.utils.reactor.install_reactor`:
 
-For additional information, please see
-:doc:`core/howto/choosing-reactor`.
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
+If a reactor is already installed,
+:func:`~scrapy.utils.reactor.install_reactor` has no effect.
+
+:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
+:exc:`Exception` if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:mod:`~twisted.internet.reactor` imports in project files and imported
+third-party libraries will make Scrapy raise :exc:`Exception` when
+it checks which reactor is installed.
+
+In order to use the reactor installed by Scrapy::
+
+    import scrapy
+    from twisted.internet import reactor
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+which raises :exc:`Exception`, becomes::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            from twisted.internet import reactor
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
+means that Scrapy will not attempt to install any specific reactor, and the
+default reactor defined by Twisted for the current platform will be used. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT

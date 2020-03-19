@@ -21,9 +21,9 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
-    def __init__(self, dont_fail=False, **kwargs):
+    def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
 
@@ -173,12 +173,12 @@ class XmlItemExporter(BaseItemExporter):
         if hasattr(serialized_value, 'items'):
             self._beautify_newline()
             for subname, value in serialized_value.items():
-                self._export_xml_field(subname, value, depth=depth+1)
+                self._export_xml_field(subname, value, depth=depth + 1)
             self._beautify_indent(depth=depth)
         elif is_listlike(serialized_value):
             self._beautify_newline()
             for value in serialized_value:
-                self._export_xml_field('value', value, depth=depth+1)
+                self._export_xml_field('value', value, depth=depth + 1)
             self._beautify_indent(depth=depth)
         elif isinstance(serialized_value, str):
             self.xg.characters(serialized_value)

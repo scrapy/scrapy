@@ -33,21 +33,6 @@ class CrawlerTestCase(BaseCrawlerTest):
     def setUp(self):
         self.crawler = Crawler(DefaultSpider, Settings())
 
-    def test_deprecated_attribute_spiders(self):
-        with warnings.catch_warnings(record=True) as w:
-            spiders = self.crawler.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("Crawler.spiders", str(w[0].message))
-            sl_cls = load_object(self.crawler.settings['SPIDER_LOADER_CLASS'])
-            self.assertIsInstance(spiders, sl_cls)
-
-            self.crawler.spiders
-            is_one_warning = len(w) == 1
-            if not is_one_warning:
-                for warning in w:
-                    print(warning)
-            self.assertTrue(is_one_warning, "Warn deprecated access only once")
-
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
@@ -107,6 +92,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
 
     def test_spider_custom_settings_log_level(self):
         log_file = self.mktemp()
+
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
@@ -140,7 +126,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
 
-class SpiderLoaderWithWrongInterface(object):
+class SpiderLoaderWithWrongInterface:
 
     def unneeded_method(self):
         pass

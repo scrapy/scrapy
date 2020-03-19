@@ -1,9 +1,11 @@
 import json
 import logging
+import sys
 
 from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.ssl import Certificate
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
@@ -35,7 +37,7 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_fixed_delay(self):
-        yield self._test_delay(total=3, delay=0.1)
+        yield self._test_delay(total=3, delay=0.2)
 
     @defer.inlineCallbacks
     def test_randomized_delay(self):
@@ -323,7 +325,7 @@ with multiples lines
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse(self):
-        runner = CrawlerRunner({"ASYNCIO_REACTOR": True})
+        runner = CrawlerRunner({"TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor"})
         runner.crawl(AsyncDefAsyncioSpider, self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
         with LogCapture() as log:
             yield runner.join()
@@ -345,6 +347,59 @@ with multiples lines
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
 
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse(self):
+        from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 1)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_loop(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 10)
+        for i in range(10):
+            self.assertIn({'foo': i}, items)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_complex(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
+        crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        yield crawler.crawl(mockserver=self.mockserver)
+        itemcount = crawler.stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 156)
+        # some random items
+        for i in [1, 4, 21, 22, 207, 311]:
+            self.assertIn({'index': i}, items)
+        for i in [10, 30, 122]:
+            self.assertIn({'index2': i}, items)
+
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_reqs_list(self):
@@ -353,3 +408,31 @@ with multiples lines
             yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
         for req_id in range(3):
             self.assertIn("Got response 200, req_id %d" % req_id, str(log))
+
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate_none(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=False)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta['responses'][0].certificate)
+
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/echo?body=test", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")
+
+    @mark.xfail(reason="Responses with no body return early and contain no certificate")
+    @defer.inlineCallbacks
+    def test_response_ssl_certificate_empty_response(self):
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        url = self.mockserver.url("/status?n=200", is_secure=True)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        cert = crawler.spider.meta['responses'][0].certificate
+        self.assertIsInstance(cert, Certificate)
+        self.assertEqual(cert.getSubject().commonName, b"localhost")
+        self.assertEqual(cert.getIssuer().commonName, b"localhost")

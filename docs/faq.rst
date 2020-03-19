@@ -22,8 +22,8 @@ In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _jinja2: http://jinja.pocoo.org/
+.. _lxml: https://lxml.de/
+.. _jinja2: https://palletsprojects.com/p/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -269,7 +269,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
