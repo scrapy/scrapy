@@ -180,14 +180,16 @@ class FTPFeedStorage(BlockingFeedStorage):
 
 
 class _FeedSlot:
-    def __init__(self, file, exporter, storage, uri, format, store_empty):
+    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, template_uri):
         self.file = file
         self.exporter = exporter
         self.storage = storage
         # feed params
-        self.uri = uri
+        self.batch_id = batch_id
         self.format = format
         self.store_empty = store_empty
+        self.template_uri = template_uri
+        self.uri = uri
         # flags
         self.itemcount = 0
         self._exporting = False
@@ -241,19 +243,28 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch = self.settings.getint('FEED_STORAGE_BATCH')
+        self.storage_batch_size = self.settings.getint('FEED_STORAGE_BATCH_SIZE')
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
+                raise NotConfigured
+            if not self._batch_deliveries_supported(uri):
                 raise NotConfigured
             if not self._exporter_supported(feed['format']):
                 raise NotConfigured
 
     def open_spider(self, spider):
-        if self.storage_batch:
-            self.feeds = {self._get_uri_of_partial(uri, feed, spider): feed for uri, feed in self.feeds.items()}
         for uri, feed in self.feeds.items():
-            uri = uri % self._get_uri_params(spider, feed['uri_params'])
-            self.slots.append(self._start_new_batch(None, uri, feed, spider))
+            batch_id = 1
+            uri_params = self._get_uri_params(spider, feed['uri_params'])
+            uri_params['batch_id'] = batch_id
+            self.slots.append(self._start_new_batch(
+                previous_batch_slot=None,
+                uri=uri % uri_params,
+                feed=feed,
+                spider=spider,
+                batch_id=batch_id,
+                template_uri=uri
+            ))
 
     def close_spider(self, spider):
         deferred_list = []
@@ -276,10 +287,17 @@ class FeedExporter:
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
-    def _start_new_batch(self, previous_batch_slot, uri, feed, spider):
+    def _start_new_batch(self, previous_batch_slot, uri, feed, spider, batch_id, template_uri):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if 'FEED_STORAGE_BATCH' setting is greater than zero.
+        :param previous_batch_slot: slot of previous batch. We need to call slot.storage.store
+        to get the file properly closed.
+        :param uri: uri of the new batch to start
+        :param feed: dict with parameters of feed
+        :param spider: user spider
+        :param batch_id: sequential batch id starting at 1
+        :param template_uri: template uri which contains %(time)s or %(batch_id)s to create new uri
         """
         if previous_batch_slot is not None:
             previous_batch_slot.exporter.finish_exporting()
@@ -293,16 +311,10 @@ class FeedExporter:
             encoding=feed['encoding'],
             indent=feed['indent']
         )
-        slot = _FeedSlot(file, exporter, storage, uri, feed['format'], feed['store_empty'])
+        slot = _FeedSlot(file, exporter, storage, uri, feed['format'], feed['store_empty'], batch_id, template_uri)
         if slot.store_empty:
             slot.start_exporting()
         return slot
-
-    def _get_uri_of_partial(self, template_uri, feed, spider):
-        """Get uri for each partial using datetime.now().isoformat()"""
-        template_uri = (template_uri % self._get_uri_params(spider, feed['uri_params']))
-        uri_name = template_uri.split('.')[0]
-        return '{}.{}.{}'.format(uri_name, datetime.now().isoformat(), feed["format"])
 
     def item_scraped(self, item, spider):
         slots = []
@@ -310,13 +322,19 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            if self.storage_batch and slot.itemcount % self.storage_batch == 0:
-                uri = self._get_uri_of_partial(slot.uri, self.feeds[slot.uri], spider)
-                slots.append(self._start_new_batch(slot, uri, self.feeds[slot.uri], spider))
-                self.feeds[uri] = self.feeds[slot.uri]
-                self.feeds.pop(slot.uri)
+            if self.storage_batch_size and slot.itemcount % self.storage_batch_size == 0:
+                batch_id = slot.batch_id + 1
+                uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'])
+                uri_params['batch_id'] = batch_id
+                self.slots.append(self._start_new_batch(
+                    previous_batch_slot=slot,
+                    uri=slot.template_uri % uri_params,
+                    feed=self.feeds[slot.template_uri],
+                    spider=spider,
+                    batch_id=batch_id,
+                    template_uri=slot.template_uri
+                ))
                 self.slots[idx] = None
-
         self.slots = [slot for slot in self.slots if slot is not None]
         self.slots.extend(slots)
 
@@ -334,6 +352,17 @@ class FeedExporter:
         if format in self.exporters:
             return True
         logger.error("Unknown feed format: %(format)s", {'format': format})
+
+    def _batch_deliveries_supported(self, uri):
+        """
+        If FEED_STORAGE_BATCH_SIZE setting is specified uri has to contain %(time)s or %(batch_id)s
+        to distinguish different files of partial output
+        """
+        if not self.storage_batch_size:
+            return True
+        if '%(time)s' in uri or '%(batch_id)s' in uri:
+            return True
+        logger.error('%(time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
 
     def _storage_supported(self, uri):
         scheme = urlparse(uri).scheme
@@ -364,7 +393,7 @@ class FeedExporter:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
+        ts = datetime.utcnow().isoformat().replace(':', '-')
         params['time'] = ts
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
