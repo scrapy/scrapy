@@ -73,7 +73,7 @@ class ToBytesTest(unittest.TestCase):
 
 class MemoizedMethodTest(unittest.TestCase):
     def test_memoizemethod_noargs(self):
-        class A(object):
+        class A:
 
             @memoizemethod_noargs
             def cached(self):
@@ -153,7 +153,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object):
+        class _Weakme:
             pass
 
         _values = count()
@@ -176,14 +176,14 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
-        class A(object):
+        class A:
             def __init__(self, a, b, c):
                 pass
 
             def method(self, a, b, c):
                 pass
 
-        class Callable(object):
+        class Callable:
 
             def __call__(self, a, b, c):
                 pass

@@ -26,11 +26,6 @@ from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.decorators import defers
 
-try:
-    import guppy
-    hpy = guppy.hpy()
-except ImportError:
-    hpy = None
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +105,6 @@ class TelnetConsole(protocol.ServerFactory):
             'est': lambda: print_engine_status(self.crawler.engine),
             'p': pprint.pprint,
             'prefs': print_live_refs,
-            'hpy': hpy,
             'help': "This is Scrapy telnet console. For more info see: "
                     "https://docs.scrapy.org/en/latest/topics/telnetconsole.html",
         }
