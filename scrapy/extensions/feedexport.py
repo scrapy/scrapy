@@ -25,7 +25,6 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -243,7 +242,7 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch_size = self.settings.getint('FEED_STORAGE_BATCH_SIZE')
+        self.storage_batch_size = self.settings.get('FEED_STORAGE_BATCH_SIZE', None)
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
@@ -263,7 +262,7 @@ class FeedExporter:
                 feed=feed,
                 spider=spider,
                 batch_id=batch_id,
-                template_uri=uri
+                template_uri=uri,
             ))
 
     def close_spider(self, spider):
@@ -290,7 +289,7 @@ class FeedExporter:
     def _start_new_batch(self, previous_batch_slot, uri, feed, spider, batch_id, template_uri):
         """
         Redirect the output data stream to a new file.
-        Execute multiple times if 'FEED_STORAGE_BATCH' setting is greater than zero.
+        Execute multiple times if 'FEED_STORAGE_BATCH' setting is specified.
         :param previous_batch_slot: slot of previous batch. We need to call slot.storage.store
         to get the file properly closed.
         :param uri: uri of the new batch to start
@@ -309,9 +308,18 @@ class FeedExporter:
             format=feed['format'],
             fields_to_export=feed['fields'],
             encoding=feed['encoding'],
-            indent=feed['indent']
+            indent=feed['indent'],
         )
-        slot = _FeedSlot(file, exporter, storage, uri, feed['format'], feed['store_empty'], batch_id, template_uri)
+        slot = _FeedSlot(
+            file=file,
+            exporter=exporter,
+            storage=storage,
+            uri=uri,
+            format=feed['format'],
+            store_empty=feed['store_empty'],
+            batch_id=batch_id,
+            template_uri=template_uri,
+        )
         if slot.store_empty:
             slot.start_exporting()
         return slot
@@ -326,13 +334,13 @@ class FeedExporter:
                 batch_id = slot.batch_id + 1
                 uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'])
                 uri_params['batch_id'] = batch_id
-                self.slots.append(self._start_new_batch(
+                slots.append(self._start_new_batch(
                     previous_batch_slot=slot,
                     uri=slot.template_uri % uri_params,
                     feed=self.feeds[slot.template_uri],
                     spider=spider,
                     batch_id=batch_id,
-                    template_uri=slot.template_uri
+                    template_uri=slot.template_uri,
                 ))
                 self.slots[idx] = None
         self.slots = [slot for slot in self.slots if slot is not None]
@@ -358,11 +366,10 @@ class FeedExporter:
         If FEED_STORAGE_BATCH_SIZE setting is specified uri has to contain %(time)s or %(batch_id)s
         to distinguish different files of partial output
         """
-        if not self.storage_batch_size:
+        if self.storage_batch_size is None or '%(time)s' in uri or '%(batch_id)s' in uri:
             return True
-        if '%(time)s' in uri or '%(batch_id)s' in uri:
-            return True
-        logger.error('%(time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
+        logger.warning('%(time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
+        return False
 
     def _storage_supported(self, uri):
         scheme = urlparse(uri).scheme
