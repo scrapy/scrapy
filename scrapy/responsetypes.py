@@ -10,6 +10,7 @@ from scrapy.http import Response
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
+import mimesniff
 
 class ResponseTypes:
 
@@ -93,14 +94,8 @@ class ResponseTypes:
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
         chunk = to_bytes(chunk)
-        if not binary_is_text(chunk):
-            return self.from_mimetype('application/octet-stream')
-        elif b"<html>" in chunk.lower():
-            return self.from_mimetype('text/html')
-        elif b"<?xml" in chunk.lower():
-            return self.from_mimetype('text/xml')
-        else:
-            return self.from_mimetype('text')
+        mtype = mimesniff.from_byte_content(chunk)
+        return self.from_mimetype(mtype)
 
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
