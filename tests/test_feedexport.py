@@ -373,7 +373,7 @@ class StdoutFeedStorageTest(unittest.TestCase):
         self.assertEqual(out.getvalue(), b"content")
 
 
-class FromCrawlerMixin(object):
+class FromCrawlerMixin:
     init_with_crawler = False
 
     @classmethod

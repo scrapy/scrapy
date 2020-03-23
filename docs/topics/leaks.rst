@@ -170,7 +170,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
 .. class:: object_ref
 
-    Inherit from this class (instead of object) if you want to track live
+    Inherit from this class if you want to track live
     instances with the ``trackref`` module.
 
 .. function:: print_live_refs(class_name, ignore=NoneType)

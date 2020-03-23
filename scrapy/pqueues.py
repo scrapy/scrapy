@@ -110,7 +110,7 @@ class ScrapyPriorityQueue:
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
-class DownloaderInterface(object):
+class DownloaderInterface:
 
     def __init__(self, crawler):
         self.downloader = crawler.engine.downloader
@@ -129,8 +129,8 @@ class DownloaderInterface(object):
         return len(self.downloader.slots[slot].active)
 
 
-class DownloaderAwarePriorityQueue(object):
-    """ PriorityQueue which takes Downloader activity in account:
+class DownloaderAwarePriorityQueue:
+    """ PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
     """

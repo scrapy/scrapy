@@ -14,7 +14,7 @@ DOWNLOADERRORMSG_SHORT = "Error downloading %(request)s"
 DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 
 
-class LogFormatter(object):
+class LogFormatter:
     """Class for generating log messages for different actions.
 
     All methods must return a dictionary listing the parameters ``level``, ``msg``

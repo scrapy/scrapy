@@ -4,7 +4,7 @@ import os
 from twisted.internet import defer, protocol
 
 
-class ProcessTest(object):
+class ProcessTest:
 
     command = None
     prefix = [sys.executable, '-m', 'scrapy.cmdline']

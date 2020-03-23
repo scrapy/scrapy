@@ -52,7 +52,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
