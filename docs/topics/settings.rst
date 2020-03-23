@@ -227,7 +227,7 @@ Default: ``None``
 
 Import path of a given asyncio event loop class.
 
-If the asyncio reactor is enabled this setting can be used to specify the 
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the 
 asyncio event loop to be used with it. Set the setting to the import path of the 
 desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
 event loop will be used.
