@@ -54,8 +54,12 @@ class Rule:
         self.process_request = _get_method(self.process_request, spider)
         self.process_request_argcount = len(get_func_args(self.process_request))
         if self.process_request_argcount == 1:
-            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
-            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Rule.process_request should accept two arguments"
+                " (request, response), accepting only one is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     def _process_request(self, request, response):
         """
