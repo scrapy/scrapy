@@ -2,10 +2,10 @@ import inspect
 import json
 import optparse
 import os
+import re
 import subprocess
 import sys
 import tempfile
-import re
 from contextlib import contextmanager
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
