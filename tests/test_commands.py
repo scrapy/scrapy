@@ -81,7 +81,7 @@ class ProjectTest(unittest.TestCase):
         return p, to_unicode(stdout), to_unicode(stderr)
 
     def find_in_file(self, filename, regex):
-        '''Find first pattern occurrence in file'''
+        """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
         with open(filename, "r") as f:
             for line in f:
