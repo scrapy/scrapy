@@ -158,8 +158,8 @@ First, we launch the shell::
 
 .. note::
 
-   Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (i.e. ``&`` character)
+   Remember to always enclose URLs in quotes when running the Scrapy shell from
+   the command line, otherwise URLs containing arguments (i.e. the ``&`` character)
    will not work.
 
    On Windows, use double quotes instead::
