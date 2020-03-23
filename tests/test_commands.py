@@ -315,7 +315,10 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
         ])
-        self.assertIn("Using asyncio event loop: asyncio.unix_events._UnixSelectorEventLoop", log)
+        if sys.platform == 'win32':
+            self.assertIn("Using asyncio event loop: asyncio.windows_events._WindowsSelectorEventLoop", log)
+        else:
+            self.assertIn("Using asyncio event loop: asyncio.unix_events._UnixSelectorEventLoop", log)
 
 
 class BenchCommandTest(CommandTest):

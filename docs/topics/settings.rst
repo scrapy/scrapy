@@ -232,9 +232,9 @@ asyncio event loop to be used with it. Set the setting to the import path of the
 desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
 event loop will be used.
 
-You can also specify the event loop path with the function :func:`~scrapy.utils.reactor.install_reactor`:
-
-.. autofunction:: scrapy.utils.reactor.install_reactor
+If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
+function, you can use the :obj:`event_loop_path` parameter to indicate the import path of the event loop 
+class to be used.  
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
 
