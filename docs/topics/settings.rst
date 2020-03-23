@@ -225,7 +225,7 @@ ASYNCIO_EVENT_LOOP
 
 Default: ``None``
 
-Import path of a given asyncio event loop.
+Import path of a given asyncio event loop class.
 
 If the asyncio reactor is enabled this setting can be used to specify the 
 asyncio event loop to be used with it. Set the setting to the import path of the 
