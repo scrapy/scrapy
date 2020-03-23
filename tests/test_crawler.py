@@ -303,8 +303,10 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.", log)
         self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+        self.assertIn(
+            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
+            log)
 
     def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')

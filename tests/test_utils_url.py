@@ -28,7 +28,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_any_domain(url, ['192.169.0.15:8080']))
         self.assertFalse(url_is_from_any_domain(url, ['192.169.0.15']))
 
-        url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
+        url = (
+            'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20'
+            'javascript:%20document.orderform_2581_1190810811.submit%28%29'
+        )
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
@@ -105,8 +108,10 @@ class AddHttpIfNoScheme(unittest.TestCase):
                                                'http://username:password@www.example.com')
 
     def test_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'
+        )
 
     def test_preserve_http(self):
         self.assertEqual(add_http_if_no_scheme('http://www.example.com'),
@@ -137,8 +142,10 @@ class AddHttpIfNoScheme(unittest.TestCase):
                                                'http://username:password@www.example.com')
 
     def test_preserve_http_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'
+        )
 
     def test_protocol_relative(self):
         self.assertEqual(add_http_if_no_scheme('//www.example.com'),
@@ -169,8 +176,10 @@ class AddHttpIfNoScheme(unittest.TestCase):
                                                'http://username:password@www.example.com')
 
     def test_protocol_relative_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'
+        )
 
     def test_preserve_https(self):
         self.assertEqual(add_http_if_no_scheme('https://www.example.com'),

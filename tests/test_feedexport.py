@@ -718,10 +718,13 @@ class FeedExportTest(unittest.TestCase):
         header = ['foo']
 
         formats = {
-            'json': u'[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
-            'jsonlines': u'{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('utf-8'),
-            'csv': u'foo\r\nTest\xd6\r\n'.encode('utf-8'),
+            'json': '[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
+            'jsonlines': '{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
+            'xml': (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<items><item><foo>Test\xd6</foo></item></items>'
+            ).encode('utf-8'),
+            'csv': 'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
         for fmt, expected in formats.items():
@@ -735,10 +738,13 @@ class FeedExportTest(unittest.TestCase):
             self.assertEqual(expected, data[fmt])
 
         formats = {
-            'json': u'[{"foo": "Test\xd6"}]'.encode('latin-1'),
-            'jsonlines': u'{"foo": "Test\xd6"}\n'.encode('latin-1'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('latin-1'),
-            'csv': u'foo\r\nTest\xd6\r\n'.encode('latin-1'),
+            'json': '[{"foo": "Test\xd6"}]'.encode('latin-1'),
+            'jsonlines': '{"foo": "Test\xd6"}\n'.encode('latin-1'),
+            'xml': (
+                '<?xml version="1.0" encoding="latin-1"?>\n'
+                '<items><item><foo>Test\xd6</foo></item></items>'
+            ).encode('latin-1'),
+            'csv': 'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
         for fmt, expected in formats.items():
@@ -757,9 +763,12 @@ class FeedExportTest(unittest.TestCase):
         items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
 
         formats = {
-            'json': u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
-            'csv': u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
+            'json': '[\n{"bar": "BAR"}\n]'.encode('utf-8'),
+            'xml': (
+                '<?xml version="1.0" encoding="latin-1"?>\n'
+                '<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'
+            ).encode('latin-1'),
+            'csv': 'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
         }
 
         settings = {

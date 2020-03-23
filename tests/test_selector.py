@@ -19,18 +19,26 @@ class SelectorTestCase(unittest.TestCase):
         for x in xl:
             assert isinstance(x, Selector)
 
-        self.assertEqual(sel.xpath('//input').getall(),
-                         [x.get() for x in sel.xpath('//input')])
-
-        self.assertEqual([x.get() for x in sel.xpath("//input[@name='a']/@name")],
-                         [u'a'])
-        self.assertEqual([x.get() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
-                         [u'12.0'])
-
-        self.assertEqual(sel.xpath("concat('xpath', 'rules')").getall(),
-                         [u'xpathrules'])
-        self.assertEqual([x.get() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
-                         [u'12'])
+        self.assertEqual(
+            sel.xpath('//input').getall(),
+            [x.get() for x in sel.xpath('//input')]
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("//input[@name='a']/@name")],
+            [u'a']
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
+            [u'12.0']
+        )
+        self.assertEqual(
+            sel.xpath("concat('xpath', 'rules')").getall(),
+            [u'xpathrules']
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
+            [u'12']
+        )
 
     def test_root_base_url(self):
         body = b'<html><form action="/path"><input name="a" /></form></html>'

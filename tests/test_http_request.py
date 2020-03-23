@@ -1262,7 +1262,10 @@ class XmlRpcRequestTest(RequestTest):
 class JsonRequestTest(RequestTest):
     request_class = JsonRequest
     default_method = 'GET'
-    default_headers = {b'Content-Type': [b'application/json'], b'Accept': [b'application/json, text/javascript, */*; q=0.01']}
+    default_headers = {
+        b'Content-Type': [b'application/json'],
+        b'Accept': [b'application/json, text/javascript, */*; q=0.01'],
+    }
 
     def setUp(self):
         warnings.simplefilter("always")

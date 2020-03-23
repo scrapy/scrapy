@@ -25,7 +25,11 @@ class BaseResponseTest(unittest.TestCase):
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b''), self.response_class))
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'body'), self.response_class))
         # test presence of all optional parameters
-        self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'', headers={}, status=200), self.response_class))
+        self.assertTrue(
+            isinstance(
+                self.response_class('http://example.com/', body=b'', headers={}, status=200), self.response_class
+            )
+        )
 
         r = self.response_class("http://www.example.com")
         assert isinstance(r.url, str)
@@ -323,13 +327,16 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
-        resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=utf-8"]})
+        resp = self.response_class(u"http://www.example.com/price/\xa3",
+                                   headers={"Content-type": ["text/html; charset=utf-8"]})
         self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
-        resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=iso-8859-1"]})
+        resp = self.response_class(u"http://www.example.com/price/\xa3",
+                                   headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
 
     def test_unicode_body(self):
-        unicode_string = u'\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442'
+        unicode_string = ('\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 '
+                          '\u0442\u0435\u043a\u0441\u0442')
         self.assertRaises(TypeError, self.response_class, 'http://www.example.com', body=u'unicode body')
 
         original_string = unicode_string.encode('cp1251')
@@ -344,13 +351,18 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):
-        r1 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body=b"\xc2\xa3")
+        r1 = self.response_class("http://www.example.com", body=b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=utf-8"]})
         r2 = self.response_class("http://www.example.com", encoding='utf-8', body=u"\xa3")
-        r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body=b"\xa3")
+        r3 = self.response_class("http://www.example.com", body=b"\xa3",
+                                 headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         r4 = self.response_class("http://www.example.com", body=b"\xa2\xa3")
-        r5 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=None"]}, body=b"\xc2\xa3")
-        r6 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gb2312"]}, body=b"\xa8D")
-        r7 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gbk"]}, body=b"\xa8D")
+        r5 = self.response_class("http://www.example.com", body=b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=None"]})
+        r6 = self.response_class("http://www.example.com", body=b"\xa8D",
+                                 headers={"Content-type": ["text/html; charset=gb2312"]})
+        r7 = self.response_class("http://www.example.com", body=b"\xa8D",
+                                 headers={"Content-type": ["text/html; charset=gbk"]})
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -685,7 +697,8 @@ class HtmlResponseTest(TextResponseTest):
         body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         </head><body>Price: \xa3100</body></html>'
         """
-        r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body=body)
+        r3 = self.response_class("http://www.example.com", body=body,
+                                 headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self._assert_response_values(r3, 'iso-8859-1', body)
 
         # make sure replace() preserves the encoding of the original response
