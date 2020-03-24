@@ -55,8 +55,8 @@ class Rule:
         self.process_request_argcount = len(get_func_args(self.process_request))
         if self.process_request_argcount == 1:
             warnings.warn(
-                "Rule.process_request should accept two arguments"
-                " (request, response), accepting only one is deprecated",
+                "Rule.process_request should accept two arguments "
+                "(request, response), accepting only one is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
