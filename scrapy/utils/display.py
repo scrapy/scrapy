@@ -37,8 +37,7 @@ def _colorize(text, colorize=True):
         try:
             formatter = get_formatter_by_name(format_alias, **format_options)
         except pygments.util.ClassNotFound as err:
-            if self.debug:
-                sys.stderr.write(str(err) + "\n")
+            sys.stderr.write(str(err) + "\n")
             formatter = get_formatter_by_name(format_alias)
         
         from pygments import highlight
