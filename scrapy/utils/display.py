@@ -12,9 +12,9 @@ def _colorize(text, colorize=True):
         return text
     try:
         import pygments.util
-        from pygments.formatters import get_formatter_by_name        
+        from pygments.formatters import get_formatter_by_name
         from pygments import highlight
-        from pygments.lexers import PythonLexer    
+        from pygments.lexers import PythonLexer
     except ImportError:
         return text
 
@@ -28,15 +28,15 @@ def _colorize(text, colorize=True):
     if colors == 256:
         format_options = {'style': 'default'}
     else:
-        format_options = {'bg': 'dark'}    
-    format_alias = 'terminal256' if colors == 256 else 'terminal' 
+        format_options = {'bg': 'dark'}
+    format_alias = 'terminal256' if colors == 256 else 'terminal'
     try:
         formatter = get_formatter_by_name(format_alias, **format_options)
     except pygments.util.ClassNotFound as err:
         sys.stderr.write(str(err) + "\n")
         formatter = get_formatter_by_name(format_alias)
 
-    return highlight(text, PythonLexer(), formatter)    
+    return highlight(text, PythonLexer(), formatter)
 
 
 def pformat(obj, *args, **kwargs):
