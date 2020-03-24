@@ -82,10 +82,10 @@ path::
 
 .. seealso::
 
-    Module logging, `HowTo <https://docs.python.org/3/howto/logging.html>`_
+    Module logging, :doc:`HowTo <howto/logging>`
         Basic Logging Tutorial
 
-    Module logging, :class:`~logging.Logger`
+    Module logging, :ref:`Loggers <logger>`
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -164,10 +164,8 @@ possible levels listed in :ref:`topics-logging-levels`.
 
 :setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
 used as layouts for all messages. Those strings can contain any placeholders
-listed in `logging's logrecord attributes docs
-<https://docs.python.org/3/library/logging.html#logrecord-attributes>`_ and
-`datetime's strftime and strptime directives
-<https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior>`_
+listed in :ref:`logging's logrecord attributes docs <logrecord-attributes>` and
+:ref:`datetime's strftime and strptime directives <strftime-strptime-behavior>`
 respectively.
 
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy

@@ -364,7 +364,7 @@ Debugger extension
 
 .. class:: Debugger
 
-Invokes a :mod:`Python debugger <pdb>`: inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 

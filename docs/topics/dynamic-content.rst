@@ -130,8 +130,9 @@ data from it depends on the type of response:
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.
 
--   If the response is CSS, use :mod:`re` to extract the desired
-    data from :attr:`response.text <scrapy.http.TextResponse.text>`.
+-   If the response is CSS, use a :doc:`regular expression <library/re>` to
+    extract the desired data from
+    :attr:`response.text <scrapy.http.TextResponse.text>`.
 
 .. _topics-parsing-images:
 
@@ -168,8 +169,9 @@ JavaScript code:
 Once you have a string with the JavaScript code, you can extract the desired
 data from it:
 
--   You might be able to use :mod:`re` to extract the desired
-    data in JSON format, which you can then parse with :func:`json.loads`.
+-   You might be able to use a :doc:`regular expression <library/re>` to
+    extract the desired data in JSON format, which you can then parse with
+    :func:`json.loads`.
 
     For example, if the JavaScript code contains a separate line like
     ``var data = {"field": "value"};`` you can extract that data as follows:

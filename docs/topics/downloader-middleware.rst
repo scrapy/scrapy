@@ -980,7 +980,7 @@ RobotsTxtMiddleware
     Scrapy ships with support for the following robots.txt_ parsers:
 
     * :ref:`Protego <protego-parser>` (default)
-    * :class:`~urllib.robotparser.RobotFileParser`
+    * :ref:`RobotFileParser <python-robotfileparser>`
     * :ref:`Reppy <reppy-parser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
 
@@ -1027,6 +1027,8 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * uses the length based rule
 
 Scrapy uses this parser by default.
+
+.. _python-robotfileparser:
 
 RobotFileParser
 ~~~~~~~~~~~~~~~

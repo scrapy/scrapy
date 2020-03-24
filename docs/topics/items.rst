@@ -15,8 +15,8 @@ especially in a larger project with many spiders.
 
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
-They provide a :class:`dict` like API with a convenient syntax for declaring
-their available fields.
+They provide an API similar to :class:`dict` API with a convenient syntax
+for declaring their available fields.
 
 Various Scrapy components use extra information provided by Items:
 exporters look at declared fields to figure out columns to export,
@@ -143,7 +143,7 @@ KeyError: 'Product does not support field: lala'
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical :class:`dict`:
+To access all populated values, just use the typical :class:`dict` API:
 
 >>> product.keys()
 ['price', 'name']
@@ -160,11 +160,9 @@ Copying items
 To copy an item, you must first decide whether you want a shallow copy or a
 deep copy.
 
-If your item contains mutable_ values like lists or dictionaries, a shallow
-copy will keep references to the same mutable values across all different
-copies.
-
-.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+If your item contains :term:`mutable` values like lists or dictionaries,
+a shallow copy will keep references to the same mutable values across all
+different copies.
 
 For example, if you have an item with a list of tags, and you create a shallow
 copy of that item, both the original item and the copy have the same list of
@@ -231,8 +229,8 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard :class:`dict`, including its ``__init__`` method, and
-    also provide the following additional API members:
+    Items replicate the standard :class:`dict` API, including its ``__init__``
+    method, and also provide the following additional API members:
 
     .. automethod:: copy
 

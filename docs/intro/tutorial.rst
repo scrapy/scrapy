@@ -287,8 +287,8 @@ to be scraped, you can at least get **some** data.
 
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
-the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_:
+the :meth:`~scrapy.selector.SelectorList.re` method to extract using
+:doc:`regular expressions <library/re>`:
 
 >>> response.css('title::text').re(r'Quotes.*')
 ['Quotes to Scrape']
@@ -305,7 +305,6 @@ with a selector (see :ref:`topics-developer-tools`).
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
 
-.. _regular expressions: https://docs.python.org/3/library/re.html
 .. _Selector Gadget: https://selectorgadget.com/
 
 

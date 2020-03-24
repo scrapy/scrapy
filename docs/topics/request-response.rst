@@ -174,9 +174,9 @@ Request objects
         See :ref:`topics-request-meta` for a list of special meta keys
         recognized by Scrapy.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.meta`` attribute.
+        This dict is :mod:`shallow copied <copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.meta`` attribute.
 
     .. attribute:: Request.cb_kwargs
 
@@ -185,11 +185,9 @@ Request objects
         for new Requests, which means by default callbacks only get a :class:`Response`
         object as argument.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.cb_kwargs`` attribute.
-
-    .. _shallow copied: https://docs.python.org/3/library/copy.html
+        This dict is :mod:`shallow copied <copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
     .. method:: Request.copy()
 

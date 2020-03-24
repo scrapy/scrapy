@@ -311,7 +311,7 @@ CsvItemExporter
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
-   :func:`csv.writer` ``__init__`` method, so you can use any ``csv.writer`` ``__init__`` method
+   :func:`csv.writer` function, so you can use any :func:`csv.writer` function
    argument to customize this exporter.
 
    A typical output of this exporter would be::
@@ -333,7 +333,7 @@ PickleItemExporter
    :param protocol: The pickle protocol to use.
    :type protocol: int
 
-   For more information, refer :mod:`pickle`.
+   For more information, see :mod:`pickle`.
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
