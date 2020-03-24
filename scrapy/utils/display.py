@@ -25,11 +25,8 @@ def _colorize(text, colorize=True):
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
     colors = color_support_info()
-    style = 'default'
     if colors == 256:
-        format_options = {'style': style}
-    elif style in ('light', 'dark'):
-        format_options = {'bg': style}
+        format_options = {'style': 'default'}
     else:
         format_options = {'bg': 'dark'}    
     format_alias = 'terminal256' if colors == 256 else 'terminal' 
@@ -58,4 +55,3 @@ def color_support_info():
         return 16
     curses.setupterm()
     return curses.tigetnum('colors')
-    
