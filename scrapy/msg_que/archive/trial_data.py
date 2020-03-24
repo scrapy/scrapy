@@ -27,6 +27,6 @@ urls={
     }    
 
 #r.hmset("Quotes", urls)
-r.hmset("Quotes",url_set_gen("temp",10))
+#r.hmset("class_dir",url_set_gen("temp",10))
 
 

@@ -63,8 +63,8 @@ setup(
     ],
     python_requires='>=3.5',
     install_requires=[
-        #'Twisted>=17.9.0',
-        'Twisted-19.10.0-cp38-cp38-win_amd64.whl',
+        'Twisted>=17.9.0',
+        #'Twisted-19.10.0-cp38-cp38-win_amd64.whl', # checking out a specific
         'cryptography>=2.0',
         'cssselect>=0.9.1',
         'lxml>=3.5.0',	

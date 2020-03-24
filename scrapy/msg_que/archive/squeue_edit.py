@@ -1,3 +1,5 @@
+#temporary working file to get test modification in scrapy/squeue
+
 """
 Scheduler queues
 """
@@ -75,6 +77,7 @@ def _scrapy_non_serialization_queue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+    #print(ScrapyRequestQueue.__mro__)
 
     return ScrapyRequestQueue
 
@@ -124,6 +127,7 @@ MarshalLifoDiskQueue = _scrapy_serialization_queue(
 )
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
+
 
 #changes/modifications from here onwards:
 from scrapy.msg_que import redis_queue

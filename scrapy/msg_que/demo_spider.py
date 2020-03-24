@@ -1,11 +1,7 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
-try :
-    from scrapy.msg_que import redis_spider
-except :
-    from demo_queue import redis_spider 
 
-class check_spider(redis_spider):
+class check_spider(scrapy.Spider):
     host='localhost' 
     port=6379
     db=0 
@@ -13,8 +9,12 @@ class check_spider(redis_spider):
     socket_timeout=None
     name = "Quotes"
     def start_requests(self):
-        for url in self.run():
-            yield scrapy.Request(url=url, callback=self.parse)
+        urls={
+            "url1":'http://quotes.toscrape.com/page/1/',
+            "url2":'http://quotes.toscrape.com/page/2/', 
+            } 
+        for url in urls:
+            yield scrapy.Request(url=urls[url], callback=self.parse)
     
     def parse(self,response):
         for quote in response.css('div.quote'):
@@ -27,7 +27,8 @@ class check_spider(redis_spider):
 
 process = CrawlerProcess(settings = { 
     'FEED_FORMAT' :"json",
-    "FEED_URI" : "items.json"
+    "FEED_URI" : "items.json",
+#    "JOBDIR":"crawl_dir"
 
 })
 
