@@ -80,6 +80,73 @@ guidelines when you're going to report a new bug.
 Writing patches
 ===============
 
+Before you can submit a change to the Scrapy code base, you need to:
+
+#. Learn the basics of Git_ and Github_
+
+#. Fork_ the Scrapy repository
+
+#. Clone_ your fork
+
+#. Configure_ upstream repository
+
+#. Install Scrapy using::
+  
+         pip install -e .
+
+   NOTE: Consider setting up a `Virtual Environment`_ before installing Scrapy. Virtual environment is used to create an isolated environment for 
+   python projects
+
+
+After you're done with the above steps, create branches in the following way::
+
+        git fetch upstream
+        git checkout upstream/master -b new-branch-name
+ 
+
+When done with your changes, add_ and commit your changes.
+
+Before submitting your work, you should first run `tests`_ locally.
+
+Please make sure tests are passing before committing, this makes the reviewer's and maintainers work easy.
+
+
+
+The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
+
+Before you can submit a change to the Scrapy code base, you need to:
+
+#. Learn the basics of Git_ and Github_
+
+#. Fork_ the Scrapy repository
+
+#. Clone_ your fork
+
+#. Configure_ upstream repository
+
+#. Install Scrapy using::
+  
+         pip install -e .
+
+   NOTE: Consider setting up a `Virtual Environment`_ before installing Scrapy. Virtual environment is used to create an isolated environment for 
+   python projects
+
+.. _Clone: https://help.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository
+.. _Fork: https://help.github.com/en/github/getting-started-with-github/fork-a-repo
+.. _Git: https://try.github.io/
+.. _GitHub: https://help.github.com/en/github/getting-started-with-github
+.. _add: https://help.github.com/en/github/managing-files-in-a-repository/adding-a-file-to-a-repository-using-the-command-line
+.. _Configure: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
+.. _Virtual Environment: https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages
+
+After you're done with the above steps, create branches in the following way::
+
+        git fetch upstream
+        git checkout upstream/master -b new-branch-name
+ 
+
+When done with your changes, add_ and commit your changes.
+
 The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
 Well-written patches should:
@@ -107,6 +174,14 @@ Well-written patches should:
   coverage report as follows::
 
       tox -e docs-coverage
+
+.. _Clone: https://help.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository
+.. _Fork: https://help.github.com/en/github/getting-started-with-github/fork-a-repo
+.. _Git: https://try.github.io/
+.. _GitHub: https://help.github.com/en/github/getting-started-with-github
+.. _add: https://help.github.com/en/github/managing-files-in-a-repository/adding-a-file-to-a-repository-using-the-command-line
+.. _Configure: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
+.. _Virtual Environment: https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages
 
 .. _submitting-patches:
 
