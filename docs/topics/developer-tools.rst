@@ -292,6 +292,9 @@ Alternatively, if you want to know the arguments needed to recreate that
 request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
 function to get a dictionary with the equivalent arguments.
 
+Note that to translate a cURL command into a Scrapy request,
+you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
+
 As you can see, with a few inspections in the `Network`-tool we
 were able to easily replicate the dynamic requests of the scrolling 
 functionality of the page. Crawling dynamic pages can be quite
