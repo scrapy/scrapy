@@ -6,6 +6,7 @@ import shutil
 import string
 import tempfile
 import warnings
+from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from string import ascii_letters, digits
@@ -21,8 +22,9 @@ from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import NotConfigured
 from scrapy.exporters import CsvItemExporter
-from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
+from scrapy.extensions.feedexport import (BlockingFeedStorage, FeedExporter, FileFeedStorage, FTPFeedStorage,
                                           IFeedStorage, S3FeedStorage, StdoutFeedStorage)
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -76,6 +78,7 @@ class FTPFeedStorageTest(unittest.TestCase):
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = 'test_spider'
+
         crawler = get_crawler(settings_dict=settings)
         spider = TestSpider.from_crawler(crawler)
         return spider
@@ -129,6 +132,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = 'test_spider'
+
         crawler = get_crawler(settings_dict=settings)
         spider = TestSpider.from_crawler(crawler)
         return spider
@@ -390,12 +394,18 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
     pass
 
 
-class FeedExportTest(unittest.TestCase):
+class FeedExportTestBase(ABC, unittest.TestCase):
+    __test__ = False
 
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
         baz = scrapy.Field()
+
+    def _random_temp_filename(self, inter_dir=''):
+        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
+        filename = ''.join(chars)
+        return os.path.join(self.temp_dir, inter_dir, filename)
 
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -403,10 +413,44 @@ class FeedExportTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def _random_temp_filename(self):
-        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
-        filename = ''.join(chars)
-        return os.path.join(self.temp_dir, filename)
+    @defer.inlineCallbacks
+    def exported_data(self, items, settings):
+        """
+        Return exported data which a spider yielding ``items`` would return.
+        """
+
+        class TestSpider(scrapy.Spider):
+            name = 'testspider'
+
+            def parse(self, response):
+                for item in items:
+                    yield item
+
+        data = yield self.run_and_export(TestSpider, settings)
+        defer.returnValue(data)
+
+    @defer.inlineCallbacks
+    def exported_no_data(self, settings):
+        """
+        Return exported data which a spider yielding no ``items`` would return.
+        """
+
+        class TestSpider(scrapy.Spider):
+            name = 'testspider'
+
+            def parse(self, response):
+                pass
+
+        data = yield self.run_and_export(TestSpider, settings)
+        defer.returnValue(data)
+
+    @abstractmethod
+    def run_and_export(self, spider_cls, settings):
+        pass
+
+
+class FeedExportTest(FeedExportTestBase):
+    __test__ = True
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -417,7 +461,6 @@ class FeedExportTest(unittest.TestCase):
             urljoin('file:', pathname2url(str(file_path))): feed
             for file_path, feed in FEEDS.items()
         }
-
         content = {}
         try:
             with MockServer() as s:
@@ -434,35 +477,6 @@ class FeedExportTest(unittest.TestCase):
                 os.remove(str(file_path))
 
         defer.returnValue(content)
-
-    @defer.inlineCallbacks
-    def exported_data(self, items, settings):
-        """
-        Return exported data which a spider yielding ``items`` would return.
-        """
-        class TestSpider(scrapy.Spider):
-            name = 'testspider'
-
-            def parse(self, response):
-                for item in items:
-                    yield item
-
-        data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
-
-    @defer.inlineCallbacks
-    def exported_no_data(self, settings):
-        """
-        Return exported data which a spider yielding no ``items`` would return.
-        """
-        class TestSpider(scrapy.Spider):
-            name = 'testspider'
-
-            def parse(self, response):
-                pass
-
-        data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
 
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
@@ -970,3 +984,112 @@ class FeedExportTest(unittest.TestCase):
         }
         data = yield self.exported_no_data(settings)
         self.assertEqual(data['csv'], b'')
+
+
+class PartialDeliveriesTest(FeedExportTestBase):
+    __test__ = True
+    _file_mark = '_%(time)s_#%(batch_id)s'
+
+    @defer.inlineCallbacks
+    def run_and_export(self, spider_cls, settings):
+        """ Run spider with specified settings; return exported data. """
+
+        FEEDS = settings.get('FEEDS') or {}
+        settings['FEEDS'] = {
+            urljoin('file:', file_path): feed
+            for file_path, feed in FEEDS.items()
+        }
+        from collections import defaultdict
+        content = defaultdict(list)
+        try:
+            with MockServer() as s:
+                runner = CrawlerRunner(Settings(settings))
+                spider_cls.start_urls = [s.url('/')]
+                yield runner.crawl(spider_cls)
+
+            for path, feed in FEEDS.items():
+                dir_name = os.path.dirname(path)
+                for file in sorted(os.listdir(dir_name)):
+                    with open(os.path.join(dir_name, file), 'rb') as f:
+                        data = f.read()
+                        content[feed['format']].append(data)
+        finally:
+            pass
+        defer.returnValue(content)
+
+    @defer.inlineCallbacks
+    def assertPartialExported(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
+            },
+        })
+        data = yield self.exported_data(items, settings)
+        data['jl'] = b''.join(data['jl'])
+        parsed = [json.loads(to_unicode(line)) for line in data['jl'].splitlines()]
+
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        self.assertEqual(rows, parsed)
+
+    @defer.inlineCallbacks
+    def test_partial_deliveries(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
+        ]
+        rows = [
+            {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
+            {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'},
+            {'foo': 'bar3', 'baz': 'quux3'}
+        ]
+        settings = {
+            'FEED_STORAGE_BATCH_SIZE': 1
+        }
+        yield self.assertPartialExported(items, rows, settings=settings)
+
+    def test_wrong_path(self):
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'xml'},
+            },
+            'FEED_STORAGE_BATCH_SIZE': 1
+        }
+        crawler = get_crawler(settings_dict=settings)
+        self.assertRaises(NotConfigured, FeedExporter, crawler)
+
+    @defer.inlineCallbacks
+    def test_export_no_items_not_store_empty(self):
+        for fmt in ('json', 'jsonlines', 'xml', 'csv'):
+            settings = {
+                'FEEDS': {
+                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                },
+                'FEED_STORAGE_BATCH_SIZE': 1
+            }
+            data = yield self.exported_no_data(settings)
+            data[fmt] = b''.join(data[fmt])
+            self.assertEqual(data[fmt], b'')
+
+    @defer.inlineCallbacks
+    def test_export_no_items_store_empty(self):
+        formats = (
+            ('json', b'[]'),
+            ('jsonlines', b''),
+            ('xml', b'<?xml version="1.0" encoding="utf-8"?>\n<items></items>'),
+            ('csv', b''),
+        )
+
+        for fmt, expctd in formats:
+            settings = {
+                'FEEDS': {
+                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                },
+                'FEED_STORE_EMPTY': True,
+                'FEED_EXPORT_INDENT': None,
+                'FEED_STORAGE_BATCH_SIZE': 1
+            }
+            data = yield self.exported_no_data(settings)
+            data[fmt] = b''.join(data[fmt])
+            self.assertEqual(data[fmt], expctd)
