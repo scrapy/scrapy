@@ -30,6 +30,8 @@ matrix:
       python: 3.8
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=py-optimize
+      python: 3.5
 install:
   - |
       if [ "$TOXENV" = "pypy3" ]; then
