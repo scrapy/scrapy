@@ -9,6 +9,7 @@ from contextlib import suppress
 from typing import Generator
 from urllib.parse import urljoin
 
+import json
 import parsel
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
@@ -62,6 +63,11 @@ class TextResponse(Response):
     def body_as_unicode(self):
         """Return body as unicode"""
         return self.text
+
+    @property
+    def json(self):
+        """Return body as JSON"""
+        return json.loads(self.text)
 
     @property
     def text(self):

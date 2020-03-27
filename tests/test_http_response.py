@@ -4,7 +4,7 @@ import unittest
 from w3lib.encoding import resolve_encoding
 
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
-                         XmlResponse, Headers)
+                         XmlResponse, JsonResponse, Headers)
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
 from scrapy.exceptions import NotSupported
@@ -342,6 +342,21 @@ class TextResponseTest(BaseResponseTest):
         # check response.text
         self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
+
+    def test_json(self):
+        body = u"[{\"id\": \"1234\", \"type\": \"event\"}]"
+        r1 = self.response_class(
+            "http://www.example.com",
+            headers={"Content-type": ["application/json; charset=utf-8"]},
+            encoding='utf-8',
+            body=body
+        )
+
+        self.assertEqual(r1.encoding, 'utf-8')
+        self.assertEqual(r1.json, [{
+            "id": "1234",
+            "type": "event"
+        }])
 
     def test_encoding(self):
         r1 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body=b"\xc2\xa3")
@@ -697,6 +712,30 @@ class HtmlResponseTest(TextResponseTest):
         body = b"""<html><head><meta charset="gb2312" /><title>Some page</title><body>bla bla</body>"""
         r1 = self.response_class("http://www.example.com", body=body)
         self._assert_response_values(r1, 'gb2312', body)
+
+
+class JsonResponseTest(TextResponseTest):
+
+    response_class = JsonResponse
+
+    def test_js_encoding(self):
+        body = b"[{\"id\": \"1234\", \"type\": \"event\"}]"
+
+        response = self.response_class(
+            "http://www.example.com",
+            headers={"Content-type": ["application/json; charset=utf-8"]},
+            encoding='utf-8',
+            body=body
+        )
+
+        self.assertEqual(response.selector.type, 'html')
+        self.assertEqual(
+            response.json,
+            [{
+                "id": "1234",
+                "type": "event"
+            }]
+        )
 
 
 class XmlResponseTest(TextResponseTest):

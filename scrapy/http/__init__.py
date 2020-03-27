@@ -16,3 +16,4 @@ from scrapy.http.response import Response
 from scrapy.http.response.html import HtmlResponse
 from scrapy.http.response.xml import XmlResponse
 from scrapy.http.response.text import TextResponse
+from scrapy.http.response.json import JsonResponse
