@@ -10,10 +10,13 @@ strategy:
   matrix:
     Python35:
       python.version: '3.5'
+      TOXENV: py35
     Python36:
       python.version: '3.6'
+      TOXENV: py36
     Python37:
       python.version: '3.7'
+      TOXENV: py37
 
 steps:
 - task: UsePythonVersion@0
@@ -27,6 +30,6 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+    pip install -U tox twine wheel codecov
+    tox
+  displayName: 'Run test suite'

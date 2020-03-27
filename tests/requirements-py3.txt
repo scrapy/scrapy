@@ -6,6 +6,7 @@ pytest < 5.4
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
+pytest-azurepipelines
 sybil
 testfixtures
 
