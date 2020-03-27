@@ -3,7 +3,8 @@ pprint and pformat wrappers with colorization support
 """
 
 import sys
-import platform
+from platform import version
+from packaging.version import parse
 from pprint import pformat as pformat_
 
 
@@ -18,12 +19,18 @@ def _colorize(text, colorize=True):
     except ImportError:
         return text
 
-    if sys.platform == "win32" and platform.release() == "10":
-        if platform.version() >= "10.0.14393":
-            import ctypes
-            kernel32 = ctypes.windll.kernel32
-            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    """
+    All Windows versions >= "10.0.14393" interpret ANSI escape sequences
+    using terminal processing.
 
+    Enable enivornment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
+    to activate terminal processing.
+    """
+    if sys.platform == "win32" and parse(version()) >= parse("10.0.14393"):
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+        # set `ENABLE_VIRTUAL_TERMINAL_PROCESSING` flag
     colors = color_support_info()
     if colors == 256:
         format_options = {'style': 'default'}
