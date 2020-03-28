@@ -31,12 +31,12 @@ def _colorize(text, colorize=True):
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
         # set `ENABLE_VIRTUAL_TERMINAL_PROCESSING` flag
-    colors = color_support_info()
-    if colors == 256:
+    if color_support_info() == 256:
+        format_alias = 'terminal256'
         format_options = {'style': 'default'}
     else:
+        format_alias = 'terminal'
         format_options = {'bg': 'dark'}
-    format_alias = 'terminal256' if colors == 256 else 'terminal'
     try:
         formatter = get_formatter_by_name(format_alias, **format_options)
     except pygments.util.ClassNotFound as err:
