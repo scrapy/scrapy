@@ -841,6 +841,16 @@ HtmlResponse objects
 
 .. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
+JsonResponse objects
+-------------------
+
+.. class:: JsonResponse(url[, ...])
+
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` which
+    adds a function json() that decodes the Json body and returns
+    appropriate Python objects.
+
+
 XmlResponse objects
 -------------------
 
