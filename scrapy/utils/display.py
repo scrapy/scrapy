@@ -19,13 +19,11 @@ def _colorize(text, colorize=True):
     except ImportError:
         return text
 
-    """
-    All Windows versions >= "10.0.14393" interpret ANSI escape sequences
-    using terminal processing.
-
-    Enable enivornment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
-    to activate terminal processing.
-    """
+    # All Windows versions >= "10.0.14393" interpret ANSI escape sequences
+    # using terminal processing.
+    #
+    # Enable enivornment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
+    # to activate terminal processing.
     if sys.platform == "win32" and parse(version()) >= parse("10.0.14393"):
         import ctypes
         kernel32 = ctypes.windll.kernel32
