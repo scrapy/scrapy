@@ -253,15 +253,12 @@ class FeedExporter:
 
     def open_spider(self, spider):
         for uri, feed in self.feeds.items():
-            batch_id = 1
-            uri_params = self._get_uri_params(spider, feed['uri_params'])
-            uri_params['batch_id'] = batch_id
+            uri_params = self._get_uri_params(spider, feed['uri_params'], None)
             self.slots.append(self._start_new_batch(
                 previous_batch_slot=None,
                 uri=uri % uri_params,
                 feed=feed,
                 spider=spider,
-                batch_id=batch_id,
                 template_uri=uri,
             ))
 
@@ -286,7 +283,7 @@ class FeedExporter:
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
-    def _start_new_batch(self, previous_batch_slot, uri, feed, spider, batch_id, template_uri):
+    def _start_new_batch(self, previous_batch_slot, uri, feed, spider, template_uri):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if 'FEED_STORAGE_BATCH' setting is specified.
@@ -295,12 +292,15 @@ class FeedExporter:
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
         :param spider: user spider
-        :param batch_id: sequential batch id starting at 1
         :param template_uri: template uri which contains %(time)s or %(batch_id)s to create new uri
         """
         if previous_batch_slot is not None:
+            previous_batch_id = previous_batch_slot.batch_id
             previous_batch_slot.exporter.finish_exporting()
             previous_batch_slot.storage.store(previous_batch_slot.file)
+        else:
+            previous_batch_id = 0
+
         storage = self._get_storage(uri)
         file = storage.open(spider)
         exporter = self._get_exporter(
@@ -317,7 +317,7 @@ class FeedExporter:
             uri=uri,
             format=feed['format'],
             store_empty=feed['store_empty'],
-            batch_id=batch_id,
+            batch_id=previous_batch_id + 1,
             template_uri=template_uri,
         )
         if slot.store_empty:
@@ -331,15 +331,12 @@ class FeedExporter:
             slot.exporter.export_item(item)
             slot.itemcount += 1
             if self.storage_batch_size and slot.itemcount % self.storage_batch_size == 0:
-                batch_id = slot.batch_id + 1
-                uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'])
-                uri_params['batch_id'] = batch_id
+                uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'], slot)
                 slots.append(self._start_new_batch(
                     previous_batch_slot=slot,
                     uri=slot.template_uri % uri_params,
                     feed=self.feeds[slot.template_uri],
                     spider=spider,
-                    batch_id=batch_id,
                     template_uri=slot.template_uri,
                 ))
                 self.slots[idx] = None
@@ -396,12 +393,12 @@ class FeedExporter:
     def _get_storage(self, uri):
         return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
-    def _get_uri_params(self, spider, uri_params):
+    def _get_uri_params(self, spider, uri_params, slot):
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        ts = datetime.utcnow().isoformat().replace(':', '-')
-        params['time'] = ts
+        params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
+        params['time'] = datetime.utcnow().isoformat().replace(':', '-')
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
         return params
