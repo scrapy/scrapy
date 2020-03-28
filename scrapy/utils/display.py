@@ -29,7 +29,7 @@ def _colorize(text, colorize=True):
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
         # set `ENABLE_VIRTUAL_TERMINAL_PROCESSING` flag
-    if color_support_info() == 256:
+    if _color_support_info() == 256:
         format_alias = 'terminal256'
         format_options = {'style': 'default'}
     else:
