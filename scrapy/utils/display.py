@@ -3,8 +3,8 @@ pprint and pformat wrappers with colorization support
 """
 
 import sys
-from platform import version
 from packaging.version import parse
+from platform import version
 from pprint import pformat as pformat_
 
 
