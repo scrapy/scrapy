@@ -54,7 +54,7 @@ def pprint(obj, *args, **kwargs):
     print(pformat(obj, *args, **kwargs))
 
 
-def color_support_info():
+def _color_support_info():
     try:
         import curses
     except ImportError:
