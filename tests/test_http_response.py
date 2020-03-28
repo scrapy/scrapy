@@ -343,21 +343,6 @@ class TextResponseTest(BaseResponseTest):
         self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
 
-    def test_json(self):
-        body = u"[{\"id\": \"1234\", \"type\": \"event\"}]"
-        r1 = self.response_class(
-            "http://www.example.com",
-            headers={"Content-type": ["application/json; charset=utf-8"]},
-            encoding='utf-8',
-            body=body
-        )
-
-        self.assertEqual(r1.encoding, 'utf-8')
-        self.assertEqual(r1.json, [{
-            "id": "1234",
-            "type": "event"
-        }])
-
     def test_encoding(self):
         r1 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body=b"\xc2\xa3")
         r2 = self.response_class("http://www.example.com", encoding='utf-8', body=u"\xa3")
@@ -718,8 +703,8 @@ class JsonResponseTest(TextResponseTest):
 
     response_class = JsonResponse
 
-    def test_js_encoding(self):
-        body = b"[{\"id\": \"1234\", \"type\": \"event\"}]"
+    def test_json(self):
+        body = u"""[{"id": "1234", "type": "event"}]"""
 
         response = self.response_class(
             "http://www.example.com",
@@ -730,7 +715,7 @@ class JsonResponseTest(TextResponseTest):
 
         self.assertEqual(response.selector.type, 'html')
         self.assertEqual(
-            response.json,
+            response.json(),
             [{
                 "id": "1234",
                 "type": "event"
