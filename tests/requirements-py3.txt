@@ -6,7 +6,7 @@ pytest < 5.4
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
-sybil
+sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-605433422
 testfixtures
 
 # optional for shell wrapper tests
