@@ -14,10 +14,10 @@ def request_to_dict(request, spider=None):
     """
     cb = request.callback
     if callable(cb):
-        cb = _find_method(spider, cb)
+        cb = find_method(spider, cb)
     eb = request.errback
     if callable(eb):
-        eb = _find_method(spider, eb)
+        eb = find_method(spider, eb)
     d = {
         'url': to_unicode(request.url),  # urls should be safe (safe_string_url)
         'callback': cb,
@@ -46,10 +46,10 @@ def request_from_dict(d, spider=None):
     """
     cb = d['callback']
     if cb and spider:
-        cb = _get_method(spider, cb)
+        cb = get_method(spider, cb)
     eb = d['errback']
     if eb and spider:
-        eb = _get_method(spider, eb)
+        eb = get_method(spider, eb)
     request_cls = load_object(d['_class']) if '_class' in d else Request
     return request_cls(
         url=to_unicode(d['url']),
@@ -97,7 +97,7 @@ def find_method(obj, func):
     raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 
-def _get_method(obj, name):
+def get_method(obj, name):
     name = str(name)
     try:
         return getattr(obj, name)
