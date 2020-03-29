@@ -20,6 +20,7 @@ class Slot:
         self.concurrency = concurrency
         self.delay = delay
         self.randomize_delay = randomize_delay
+        self.rate_limit_special_delay = 0
 
         self.active = set()
         self.queue = deque()
@@ -31,9 +32,11 @@ class Slot:
         return self.concurrency - len(self.transferring)
 
     def download_delay(self):
+        sp = self.rate_limit_special_delay
+        self.rate_limit_special_delay = 0
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
-        return self.delay
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay) + sp
+        return self.delay + sp
 
     def close(self):
         if self.latercall and self.latercall.active():
