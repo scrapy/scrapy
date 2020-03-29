@@ -4,6 +4,7 @@ import sys
 import subprocess
 import tempfile
 from os.path import exists, join, abspath
+from pytest import mark
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
 from contextlib import contextmanager
@@ -305,12 +306,14 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor', '-s', 'ASYNCIO_EVENT_LOOP=uvloop.Loop'
         ])
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     def test_custom_asyncio_loop_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
