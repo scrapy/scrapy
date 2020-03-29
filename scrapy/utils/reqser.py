@@ -82,7 +82,7 @@ def _mangle_private_name(obj, func, name):
         return '_%s%s' % (splits[-2], splits[-1])
 
 
-def _find_method(obj, func):
+def find_method(obj, func):
     if obj:
         try:
             func_self = func.__self__
