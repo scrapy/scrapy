@@ -4,7 +4,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy import signals
 from enum import Enum
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +120,10 @@ class TimeInterval(Enum):
     HOUR = "%Y/%m/%d %H", 3600, 60
     DAY = "%Y/%m/%d", 86400, 24
 
+    @staticmethod
+    def get_index(interval):
+        return list(TimeInterval).index(interval)
+
 
 class TimeIntervalManager:
 
@@ -185,8 +189,8 @@ class SlidingWindow:
         self._tim = TimeIntervalManager()
 
     def add_request(self, sent_at: datetime):
-        label = self._tim.get_timestamp_key(sent_at, self.interval)
-        if label != self._tim.get_timestamp_key(self.current, self.interval):
+        label = self.get_key(sent_at)
+        if label != self.get_key(self.current):
             # slide window
             # case 1. next window. case 2, previous window was blank. (no requests in the last interval).
             if self.is_next_window(label):
@@ -196,14 +200,17 @@ class SlidingWindow:
         else:
             self.current_count += 1
 
-    def reset_window(self, new_current, new_previous_count):
+    def reset_window(self, new_current, new_previous_count, set_blank=False):
         self.current = new_current
-        self.current_count = 1
+        self.current_count = 0 if set_blank else 1
         self.previous_count = new_previous_count
 
     def is_next_window(self, label: str):
-        return self._tim.get_timestamp_key(self.current + self._tim.get_delta(self.interval)
-                                           , self.interval) == label
+        return self.get_key(self.current + self._tim.get_delta(self.interval)) == label
+
+    def get_key(self, _datetime):
+        return self._tim.get_timestamp_key(_datetime, self.interval)
+
 
     def __repr__(self):
         return "SlidingWindow: {}\n Current Window: {}\n Current Count{}\n Previous Count{}" \
@@ -237,13 +244,13 @@ class AutoThrottle429Handler:
         # reduce failover lives
         self.failover_lives[domain] = self.failover_lives.get(domain, self.__initial_failover_lives__) - 1
         logger.log(logging.INFO, "Decreasing request rate due to rate limit.\n" +
-                   "New rate: {}, {}".format(self.delay.get(domain)), time_slot.name)
+                   "New rate: {}, {}".format(self.delay.get(domain), time_slot.name))
 
     def get_min_delay(self, response):
         return self.delay.get(self._get_domain(response), 0)
 
-    def _compute_delay(self, sent_at, time_slot, history) -> float:
-
+    def _compute_delay(self, sent_at, time_slot, history: List[SlidingWindow]) -> float:
+        window = history[TimeInterval.get_index(time_slot)]
         # 1. estimate the request rate -1.
         # the sliding window formula makes an estimation assuming constant rate of requests in previous time slot
         # for example 20 requests were made in the previous minute, 7 requests made in the current minute
@@ -252,10 +259,9 @@ class AutoThrottle429Handler:
         # to this we add the number of requests made in the current minute.
         # 13.2 + 7 => 20.2 requests per minute.
         # We subtract 1 because the last request threw a rate limit error and we want to be below that rate.
-
-        wanted_rate = (history[0].previous_count *
+        wanted_rate = (window.previous_count *
                        ((self._tim.get_parts(time_slot) - self._tim.get_time_part(sent_at, time_slot))
-                        / self._tim.get_parts(time_slot))) + history[0].current_count - 1
+                        / self._tim.get_parts(time_slot))) + window.current_count - 1
 
         # 2. calculate delay required to achieve that rate.
         return self._tim.get_seconds(time_slot) / wanted_rate
@@ -272,10 +278,7 @@ class AutoThrottle429Handler:
 
         if response.status == 200:  # only keep track of good requests because this works better.
             if domain not in self.request_history.keys():
-                self.request_history[domain] = (SlidingWindow(TimeInterval.SECOND, sent_at),
-                                                SlidingWindow(TimeInterval.MINUTE, sent_at),
-                                                SlidingWindow(TimeInterval.HOUR, sent_at),
-                                                SlidingWindow(TimeInterval.DAY, sent_at))
+                self.request_history[domain] = [SlidingWindow(interval, sent_at) for interval in list(TimeInterval)]
             else:
                 for struct in self.request_history[domain]:
                     struct.add_request(sent_at)
@@ -294,4 +297,4 @@ class AutoThrottle429Handler:
     @staticmethod
     def _get_domain(response):
         # is 1 api = 1 domain a fair assumption? Seems iffy. TODO:
-        return '/'.join(response.meta['url'].split('/')[:3])
+        return '/'.join(response.url.split('/')[:3])
