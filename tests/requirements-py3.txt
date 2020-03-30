@@ -3,11 +3,11 @@ jmespath
 mitmproxy; python_version >= '3.6'
 mitmproxy<4.0.0; python_version < '3.6'
 pytest < 5.4
+pytest-azurepipelines
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
-pytest-azurepipelines
-sybil
+sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-605433422
 testfixtures
 
 # optional for shell wrapper tests
