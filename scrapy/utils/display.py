@@ -44,14 +44,6 @@ def _colorize(text, colorize=True):
     return highlight(text, PythonLexer(), formatter)
 
 
-def pformat(obj, *args, **kwargs):
-    return _colorize(pformat_(obj), kwargs.pop('colorize', True))
-
-
-def pprint(obj, *args, **kwargs):
-    print(pformat(obj, *args, **kwargs))
-
-
 def _color_support_info():
     try:
         import curses
@@ -60,3 +52,11 @@ def _color_support_info():
         return 16
     curses.setupterm()
     return curses.tigetnum('colors')
+
+
+def pformat(obj, *args, **kwargs):
+    return _colorize(pformat_(obj), kwargs.pop('colorize', True))
+
+
+def pprint(obj, *args, **kwargs):
+    print(pformat(obj, *args, **kwargs))
