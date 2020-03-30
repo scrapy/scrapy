@@ -12,5 +12,5 @@ from scrapy.http.response.text import TextResponse
 class JsonResponse(TextResponse):
 
     def json(self):
-        """Return body as JSON"""
+        """Returns the JSON-encoded body deserialized into a Python object"""
         return json.loads(self.text)
