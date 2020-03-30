@@ -842,7 +842,7 @@ HtmlResponse objects
 .. _meta http-equiv: https://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
 JsonResponse objects
--------------------
+--------------------
 
 .. class:: JsonResponse(url[, ...])
 
