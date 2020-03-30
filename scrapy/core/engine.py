@@ -169,7 +169,8 @@ class ExecutionEngine:
     def _handle_downloader_output(self, response, request, spider):
         if not isinstance(response, (Request, Response, Failure)):
             raise TypeError(
-                "Incorrect type: expected Request, Response or Failure, got %s" % type(response)
+                "Incorrect type: expected Request, Response or Failure, got %s: %r"
+                % (type(response), response)
             )
         # downloader middleware can return requests (for example, redirects)
         if isinstance(response, Request):
@@ -239,7 +240,8 @@ class ExecutionEngine:
         def _on_success(response):
             if not isinstance(response, (Response, Request)):
                 raise TypeError(
-                    "Incorrect type: expected Response or Request, got %s" % type(response)
+                    "Incorrect type: expected Response or Request, got %s: %r"
+                    % (type(response), response)
                 )
             if isinstance(response, Response):
                 response.request = request  # tie request to response received

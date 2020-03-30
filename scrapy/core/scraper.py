@@ -125,7 +125,8 @@ class Scraper:
         callback/errback"""
         if not isinstance(response, (Response, Failure)):
             raise TypeError(
-                "Incorrect type: expected Response or Failure, got %s" % type(response)
+                "Incorrect type: expected Response or Failure, got %s: %r"
+                % (type(response), response)
             )
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output

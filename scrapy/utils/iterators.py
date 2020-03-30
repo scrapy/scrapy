@@ -130,7 +130,10 @@ def _body_or_str(obj, unicode=True):
     expected_types = (Response, str, bytes)
     if not isinstance(obj, expected_types):
         expected_types_str = " or ".join(t.__name__ for t in expected_types)
-        raise TypeError("obj must be %s, not %s" % (expected_types_str, type(obj).__name__))
+        raise TypeError(
+            "Object %r must be %s, not %s"
+            % (obj, expected_types_str, type(obj).__name__)
+        )
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
