@@ -368,53 +368,33 @@ Can I use dataclasses as items?
 Support for :class:`dataclasses.dataclass` objects as items was added in version 2.1.
 This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
 
-Most of the examples in this documentation assume you are using either :class:`dict`
-or :class:`~scrapy.item.Item` objects, and access their values in a dictionary-like
-manner. However, ``dataclass`` objects expose their values through attributes instead,
-which means you might need to update your existing components
-(such as :ref:`item pipelines <topics-item-pipeline>`,
-:ref:`signal handlers <topics-signals>` handlers or
-:ref:`spider middlewares <topics-spider-middleware>`) to make them work correctly.
+If you use Scrapy components (such as
+:ref:`item pipelines <topics-item-pipeline>`,
+:ref:`signal handlers <topics-signals>` or
+:ref:`spider middlewares <topics-spider-middleware>`) that do not work with
+dataclasses, such as custom components or third-party components implemented
+before Scrapy 2.1, update those components to make them work with dataclasses.
+See the latest documentation of the corresponding type of component for
+details.
 
-Alternatively, you can use the
-:func:`~scrapy.utils.decorators.subscriptable_dataclass` decorator:
-
-.. autofunction:: scrapy.utils.decorators.subscriptable_dataclass
-
-It adds the appropriate methods in order to make ``dataclass`` objects
-capable of being accessed like dictionaries. This decorator is also useful when working with
-third-party components which deal with items and haven't been yet adapted to
-support dataclass-based items.
-
-.. invisible-code-block: python
-
-  import sys
-
-.. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
-
->>> from dataclasses import dataclass
->>> from scrapy.utils.decorators import subscriptable_dataclass
->>> @subscriptable_dataclass
-... @dataclass
-... class InventoryItem:
-...     name: str
-...     price: int
-...
->>> d = InventoryItem(name="foobar", price=10)
->>> d["name"]
-'foobar'
->>> d["price"] = 5
->>> d
-InventoryItem(name='foobar', price=5)
-
-.. skip: end
-
-In addition, two helper functions are available to interact with items without
-having to check their base class:
+The following helper functions are available to interact with items that may be
+dataclasses:
 
 .. autofunction:: scrapy.utils.datatypes.get_item_field
 
 .. autofunction:: scrapy.utils.datatypes.set_item_field
+
+.. autofunction:: scrapy.utils.misc.is_item_like
+
+.. autofunction:: scrapy.utils.python.is_dataclass_instance
+
+If the offending Scrapy components come from a third party project, please
+report this issue to the maintainers of that project, so they can update them.
+In the meantime, you may use the
+:func:`~scrapy.utils.decorators.subscriptable_dataclass` decorator in your
+dataclasses:
+
+.. autofunction:: scrapy.utils.decorators.subscriptable_dataclass
 
 
 .. _faq-specific-reactor:

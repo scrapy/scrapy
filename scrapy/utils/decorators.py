@@ -53,6 +53,21 @@ else:
     def subscriptable_dataclass(cls):
         """
         Allow dictionary-like access on dataclass instances
+
+        >>> from dataclasses import dataclass
+        >>> from scrapy.utils.decorators import subscriptable_dataclass
+        >>> @subscriptable_dataclass
+        ... @dataclass
+        ... class InventoryItem:
+        ...     name: str
+        ...     price: int
+        ...
+        >>> d = InventoryItem(name="foobar", price=10)
+        >>> d["name"]
+        'foobar'
+        >>> d["price"] = 5
+        >>> d
+        InventoryItem(name='foobar', price=5)
         """
 
         def __getitem__(self, key):

@@ -8,23 +8,58 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. Scrapy spiders can return the extracted data
-as Python dicts. While convenient and familiar, Python dicts lack structure:
-it is easy to make a typo in a field name or return inconsistent data,
-especially in a larger project with many spiders.
+sources, typically, web pages. :ref:`Spiders <topics-spiders>` may return the
+extracted data as any type of :ref:`item-like object <item-like-objects>`.
 
-To define common output data format Scrapy provides the :class:`Item` class.
-:class:`Item` objects are simple containers used to collect the scraped data.
-They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields.
+.. _item-like-objects:
 
-Various Scrapy components use extra information provided by Items:
-exporters look at declared fields to figure out columns to export,
-serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help find memory leaks
-(see :ref:`topics-leaks-trackrefs`), etc.
+Item-like Objects
+=================
 
-.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
+Item-like objects are Python containers to collect scraped data.
+
+The following types of item-like objects are supported:
+
+-   :class:`dict`
+
+    Convenient and familiar.
+
+-   :func:`~dataclasses.dataclass`
+
+    .. versionadded:: 2.1
+
+    Allows defining field names, so that :ref:`item exporters
+    <topics-exporters>` can export all fields by default even if the first
+    scraped object does not have values for all of them.
+
+    Allows defining the type and default value of each defined field.
+
+    .. note:: Field names and types are not enforced at run time.
+
+    Works natively in Python 3.7+, or using the `dataclasses backport`_ in
+    Python 3.6.
+
+    .. _dataclasses backport: https://pypi.org/project/dataclasses/
+
+-   :class:`Item`
+
+    Provides a :class:`dict`-like API.
+
+    Allows defining field names, so that:
+
+    -   :class:`KeyError` is raised when using undefined field names (i.e.
+        prevents typos going unnoticed)
+
+    -   :ref:`Item exporters <topics-exporters>` can export all fields by
+        default even if the first scraped object does not have values for all
+        of them
+
+    Allows defining field metadata, which can be used to customize
+    serialization.
+
+    :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
+    (see :ref:`topics-leaks-trackrefs`).
+
 
 .. _topics-items-declaring:
 

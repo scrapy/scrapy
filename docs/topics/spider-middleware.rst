@@ -112,13 +112,13 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param result: the result returned by the spider
         :type result: an iterable of :class:`~scrapy.http.Request`,
           :class:`~scrapy.item.Item`,
-          :class:`dict` or :func:`dataclasses.dataclass` objects
+          :class:`dict` or :func:`~dataclasses.dataclass` objects
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
-              if you are using :func:`dataclasses.dataclass` objects as items
+              if you are using :func:`~dataclasses.dataclass` objects as items
 
 
     .. method:: process_spider_exception(response, exception, spider)

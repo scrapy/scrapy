@@ -27,21 +27,21 @@ Each item pipeline component is a Python class that must implement the following
 
 .. method:: process_item(self, item, spider)
 
-   This method is called for every item pipeline component. :meth:`process_item`
-   must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a
-   :class:`~twisted.internet.defer.Deferred` or raise
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-   processed by further pipeline components.
+   This method is called for every item pipeline component.
+
+   `item` is an :ref:`item-like object <item-like-objects>`.
+
+   :meth:`process_item` must either: return an item-like object, return a
+   :class:`~twisted.internet.defer.Deferred` or raise a
+   :exc:`~scrapy.exceptions.DropItem` exception.
+
+   Dropped items are no longer processed by further pipeline components.
 
    :param item: the scraped item
-   :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`dataclasses.dataclass`
+   :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`~dataclasses.dataclass`
 
    :param spider: the spider which scraped the item
    :type spider: :class:`~scrapy.spiders.Spider` object
-
-  .. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
-            if you are using :func:`dataclasses.dataclass` objects as items
 
 Additionally, they may also implement the following methods:
 
