@@ -850,6 +850,8 @@ JsonResponse objects
     adds a :func:`json` function that decodes the JSON body and returns
     appropriate Python objects.
 
+    .. automethod:: JsonResponse.json
+
 
 XmlResponse objects
 -------------------
