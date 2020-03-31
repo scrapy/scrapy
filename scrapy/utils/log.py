@@ -4,6 +4,7 @@ import logging
 import sys
 import warnings
 from logging.config import dictConfig
+from logging.handlers import TimedRotatingFileHandler
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -122,9 +123,23 @@ _scrapy_root_handler = None
 def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
+    rotation = settings.getbool('LOG_ROTATION')
+    rotation_dict = settings.getdict('LOG_ROTATION_VALUES', {})
     if filename:
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        if rotation :
+            handler = TimedRotatingFileHandler(
+                filename,
+                encoding=encoding,
+                when = rotation_dict.get("when","midnight"),
+                interval = rotation_dict.get("interval",1),
+                backupCount = rotation_dict.get("backupCount",0),
+                delay= rotation_dict.get("delay",False),
+                utc= rotation_dict.get("utc",False),
+                atTime=rotation_dict.get("atTime",None) ,
+                )
+        else:
+            handler = logging.FileHandler(filename, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
