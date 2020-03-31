@@ -6,6 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import json
+
 from scrapy.http.response.text import TextResponse
 
 
