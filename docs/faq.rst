@@ -370,7 +370,7 @@ This works natively in Python 3.7+, or using the `dataclasses backport`_ in Pyth
 
 Most of the examples in this documentation assume you are using either :class:`dict`
 or :class:`~scrapy.item.Item` objects, and access their values in a dictionary-like
-manner. However, ``dataclass`` objects expose their values trough attributes instead,
+manner. However, ``dataclass`` objects expose their values through attributes instead,
 which means you might need to update your existing components
 (such as :ref:`item pipelines <topics-item-pipeline>`,
 :ref:`signal handlers <topics-signals>` handlers or
