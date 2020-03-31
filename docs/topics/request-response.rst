@@ -847,7 +847,7 @@ JsonResponse objects
 .. class:: JsonResponse(url[, ...])
 
     The :class:`JsonResponse` class is a subclass of :class:`TextResponse` which
-    adds a :func:`json` function that decodes the JSON body and returns
+    adds a :func:`json` method that decodes the JSON body and returns
     appropriate Python objects.
 
     .. automethod:: JsonResponse.json
