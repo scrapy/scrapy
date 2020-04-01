@@ -36,7 +36,6 @@ class TestOffsiteMiddleware(TestCase):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out, onsite_reqs)
 
-
     def test_updating_allowed_domains(self):
         res = Response('http://scrapytest.org')
 
