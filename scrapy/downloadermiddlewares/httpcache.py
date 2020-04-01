@@ -109,13 +109,17 @@ class HttpCacheMiddleware:
         self._cache_response(spider, response, request, cachedresponse)
         return response
 
-    def process_exception(self, request: Request, exception: Exception, spider: Spider) -> Optional[Response]:
+    def process_exception(
+        self, request: Request, exception: Exception, spider: Spider
+    ) -> Optional[Response]:
         cachedresponse = request.meta.pop('cached_response', None)
         if cachedresponse is not None and isinstance(exception, self.DOWNLOAD_EXCEPTIONS):
             self.stats.inc_value('httpcache/errorrecovery', spider=spider)
             return cachedresponse
 
-    def _cache_response(self, spider: Spider, response: Response, request: Request, cachedresponse: Optional[Response]) -> None:
+    def _cache_response(
+        self, spider: Spider, response: Response, request: Request, cachedresponse: Optional[Response]
+    ) -> None:
         if self.policy.should_cache_response(response, request):
             self.stats.inc_value('httpcache/store', spider=spider)
             self.storage.store_response(spider, request, response)
