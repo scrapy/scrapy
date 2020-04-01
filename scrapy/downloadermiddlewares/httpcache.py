@@ -54,12 +54,12 @@ class HttpCacheMiddleware:
 
     def process_request(self, request: Request, spider: Spider) -> Optional[Response]:
         if request.meta.get('dont_cache', False):
-            return
+            return None
 
         # Skip uncacheable requests
         if not self.policy.should_cache_request(request):
             request.meta['_dont_cache'] = True  # flag as uncacheable
-            return
+            return None
 
         # Look for cached response and check if expired
         cachedresponse = self.storage.retrieve_response(spider, request)
@@ -68,7 +68,7 @@ class HttpCacheMiddleware:
             if self.ignore_missing:
                 self.stats.inc_value('httpcache/ignore', spider=spider)
                 raise IgnoreRequest("Ignored request not in cache: %s" % request)
-            return  # first time request
+            return None  # first time request
 
         # Return cached response only if not expired
         cachedresponse.flags.append('cached')
@@ -79,6 +79,8 @@ class HttpCacheMiddleware:
         # Keep a reference to cached response to avoid a second cache lookup on
         # process_response hook
         request.meta['cached_response'] = cachedresponse
+
+        return None
 
     def process_response(self, request: Request, response: Response, spider: Spider) -> Response:
         if request.meta.get('dont_cache', False):
@@ -92,7 +94,7 @@ class HttpCacheMiddleware:
         # RFC2616 requires origin server to set Date header,
         # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
         if 'Date' not in response.headers:
-            response.headers['Date'] = formatdate(usegmt=1)
+            response.headers['Date'] = formatdate(usegmt=True)
 
         # Do not validate first-hand responses
         cachedresponse = request.meta.pop('cached_response', None)
@@ -116,6 +118,7 @@ class HttpCacheMiddleware:
         if cachedresponse is not None and isinstance(exception, self.DOWNLOAD_EXCEPTIONS):
             self.stats.inc_value('httpcache/errorrecovery', spider=spider)
             return cachedresponse
+        return None
 
     def _cache_response(
         self, spider: Spider, response: Response, request: Request, cachedresponse: Optional[Response]
