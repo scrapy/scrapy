@@ -52,7 +52,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
@@ -101,8 +101,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     lines = StringIO(_body_or_str(obj, unicode=True))
 
     kwargs = {}
-    if delimiter: kwargs["delimiter"] = delimiter
-    if quotechar: kwargs["quotechar"] = quotechar
+    if delimiter:
+        kwargs["delimiter"] = delimiter
+    if quotechar:
+        kwargs["quotechar"] = quotechar
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:

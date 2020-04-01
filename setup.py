@@ -30,6 +30,11 @@ setup(
     name='Scrapy',
     version=version,
     url='https://scrapy.org',
+    project_urls = {
+        'Documentation': 'https://docs.scrapy.org/',
+        'Source': 'https://github.com/scrapy/scrapy',
+        'Tracker': 'https://github.com/scrapy/scrapy/issues',
+    },
     description='A high-level Web Crawling and Web Scraping framework',
     long_description=open('README.rst').read(),
     author='Scrapy developers',

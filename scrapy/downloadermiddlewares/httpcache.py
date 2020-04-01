@@ -24,7 +24,7 @@ from scrapy.statscollectors import StatsCollector
 from scrapy.utils.misc import load_object
 
 
-class HttpCacheMiddleware(object):
+class HttpCacheMiddleware:
 
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,

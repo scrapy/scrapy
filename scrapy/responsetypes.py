@@ -11,7 +11,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
-class ResponseTypes(object):
+class ResponseTypes:
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
@@ -115,5 +115,6 @@ class ResponseTypes(object):
         if cls is Response and body is not None:
             cls = self.from_body(body)
         return cls
+
 
 responsetypes = ResponseTypes()

@@ -7,7 +7,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 
-class HttpProxyMiddleware(object):
+class HttpProxyMiddleware:
 
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding

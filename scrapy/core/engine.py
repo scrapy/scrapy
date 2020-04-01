@@ -21,7 +21,7 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
 
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
@@ -53,7 +53,7 @@ class Slot(object):
             self.closing.callback(None)
 
 
-class ExecutionEngine(object):
+class ExecutionEngine:
 
     def __init__(self, crawler, spider_closed_callback):
         self.crawler = crawler
@@ -230,6 +230,7 @@ class ExecutionEngine(object):
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):

@@ -126,7 +126,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertRaises(ValueError, request_to_dict, r)
 
 
-class TestSpiderMixin(object):
+class TestSpiderMixin:
     def __mixin_callback(self, response):
         pass
 

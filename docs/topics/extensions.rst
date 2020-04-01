@@ -63,7 +63,7 @@ but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 Disabling an extension
 ======================
 
-In order to disable an extension that comes enabled by default (ie. those
+In order to disable an extension that comes enabled by default (i.e. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 ``None``. For example::
 
@@ -107,7 +107,7 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
+    class SpiderOpenCloseLogging:
 
         def __init__(self, item_count):
             self.item_count = item_count
@@ -345,7 +345,7 @@ signal is received. The information dumped is the following:
 After the stack trace and engine status is dumped, the Scrapy process continues
 running normally.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows),
+This extension only works on POSIX-compliant platforms (i.e. not Windows),
 because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
 
 There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
@@ -370,7 +370,7 @@ running normally.
 
 For more info see `Debugging in Python`_.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows).
+This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
 .. _Python debugger: https://docs.python.org/2/library/pdb.html
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
