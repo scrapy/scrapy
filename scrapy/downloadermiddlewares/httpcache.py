@@ -1,5 +1,5 @@
 from email.utils import formatdate
-from typing import Optional
+from typing import Optional, Type, TypeVar
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -24,6 +24,9 @@ from scrapy.statscollectors import StatsCollector
 from scrapy.utils.misc import load_object
 
 
+HttpCacheMiddlewareTV = TypeVar("HttpCacheMiddlewareTV", bound="HttpCacheMiddleware")
+
+
 class HttpCacheMiddleware:
 
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
@@ -40,7 +43,7 @@ class HttpCacheMiddleware:
         self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler) -> "HttpCacheMiddleware":
+    def from_crawler(cls: Type[HttpCacheMiddlewareTV], crawler: Crawler) -> HttpCacheMiddlewareTV:
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
