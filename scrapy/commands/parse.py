@@ -210,6 +210,8 @@ class Command(ScrapyCommand):
                     req.meta['_callback'] = req.callback
                     req.callback = callback
                 return items + requests
+            else:
+                return items  # dumps the remaining output to a FILE
 
         # update request meta if any extra meta was passed through the --meta/-m opts.
         if opts.meta:
