@@ -204,14 +204,15 @@ class Command(ScrapyCommand):
             self.add_items(depth, items)
             self.add_requests(depth, requests)
 
+            scraped_data = items if opts.output else []
             if depth < opts.depth:
                 for req in requests:
                     req.meta['_depth'] = depth + 1
                     req.meta['_callback'] = req.callback
                     req.callback = callback
-                return items + requests
-            else:
-                return items  # dumps the remaining output to a FILE
+                scraped_data += requests
+
+            return scraped_data
 
         # update request meta if any extra meta was passed through the --meta/-m opts.
         if opts.meta:
