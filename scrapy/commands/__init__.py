@@ -3,6 +3,7 @@ Base class for Scrapy commands
 """
 import os
 from optparse import OptionGroup
+
 from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict
@@ -15,7 +16,7 @@ class ScrapyCommand:
     crawler_process = None
 
     # default settings to be used for this command instead of global defaults
-    default_settings = {}
+    default_settings: dict = {}
 
     exitcode = 0
 

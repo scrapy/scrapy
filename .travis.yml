@@ -11,6 +11,8 @@ matrix:
       python: 3.8
     - env: TOXENV=flake8
       python: 3.8
+    - env: TOXENV=typing
+      python: 3.8
     - env: TOXENV=pypy3
     - env: TOXENV=py35
       python: 3.5
