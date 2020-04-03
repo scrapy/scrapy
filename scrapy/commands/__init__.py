@@ -16,7 +16,7 @@ class ScrapyCommand:
     crawler_process = None
 
     # default settings to be used for this command instead of global defaults
-    default_settings: dict = {}
+    default_settings = {}
 
     exitcode = 0
 
