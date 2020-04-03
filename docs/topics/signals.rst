@@ -79,7 +79,6 @@ Let's take an example::
                 }).encode('ascii'),
                 headers={b'Content-Type': [b'application/json']}
             )
-            d.addCallback(print_response)
 
             # The next item will be scraped only after
             # deferred (d) is fired
