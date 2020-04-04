@@ -55,6 +55,11 @@ class BaseItemExporter:
     def _serialize_nested_items(self, value, default_value, include_empty):
         if isinstance(value, BaseItem):
             return dict(self._get_serialized_fields(value, default_value, include_empty))
+        elif isinstance(value, dict):
+            tmp = []
+            for x in value.items():
+                tmp.append(self._serialize_nested_items(x, default_value, include_empty))
+            return dict(tmp)
         elif is_listlike(value):
             tmp = []
             for x in value:
