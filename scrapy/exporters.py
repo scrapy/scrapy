@@ -84,9 +84,9 @@ class BaseItemExporter:
             if field_name in item:
                 field = {} if isinstance(item, dict) else item.fields[field_name]
                 value = self._serialize_nested_items(
-                            item[field_name], 
-                            default_value, 
-                            include_empty)
+                    item[field_name],
+                    default_value,
+                    include_empty)
                 serialized_value = self.serialize_field(field, field_name, value)
             else:
                 serialized_value = default_value
