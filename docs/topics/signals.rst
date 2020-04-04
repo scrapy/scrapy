@@ -71,12 +71,8 @@ Let's take an example::
         def item_scraped(self, item):
             # Send the scraped item to the server
             d = treq.post(
-                'http://localhost:3000/add',
-                json.dumps({
-                    'text': item['text'],
-                    'author': item['author'],
-                    'tags': item['tags'],
-                }).encode('ascii'),
+                'http://example.com/post',
+                json.dumps(item).encode('ascii'),
                 headers={b'Content-Type': [b'application/json']}
             )
 
@@ -91,10 +87,6 @@ Let's take an example::
                     'author': quote.css('small.author::text').get(),
                     'tags': quote.css('div.tags a.tag::text').getall(),
                 }
-            next_page = response.css('li.next a::attr(href)').get()
-            if next_page is not None:
-                next_page = response.urljoin(next_page)
-                yield scrapy.Request(next_page, callback=self.parse)
 
 See the :ref:`topics-signals-ref` below to know which signals support
 :class:`~twisted.internet.defer.Deferred`.
