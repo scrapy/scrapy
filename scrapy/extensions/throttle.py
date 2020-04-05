@@ -139,7 +139,7 @@ class TimeIntervalManager:
     def get_time_part(self, time_stamp: datetime, degree: TimeInterval):
         return time_stamp.__getattribute__(self.time_interval_attr[degree])
 
-    def get_seconds_until_end_of_interval(self, time_stamp: datetime, interval: TimeInterval) -> int:
+    def get_seconds_until_end(self, time_stamp: datetime, interval: TimeInterval) -> int:
         # if interval is seconds, return 1.
         # if interval is minutes, return:  get_seconds(1 minute) - current second
         # if interval is hour, return:  get_seconds(1 hour) - (get_seconds(1 minute) * (60 minutes - current_minutes)
@@ -211,7 +211,6 @@ class SlidingWindow:
     def get_key(self, _datetime):
         return self._tim.get_timestamp_key(_datetime, self.interval)
 
-
     def __repr__(self):
         return "SlidingWindow: {}\n Current Window: {}\n Current Count{}\n Previous Count{}" \
             .format(self.interval, self._tim.get_timestamp_key(self.current, self.interval),
@@ -243,8 +242,8 @@ class AutoThrottle429Handler:
         self._set_special_delay(domain, sent_at, time_slot)
         # reduce failover lives
         self.failover_lives[domain] = self.failover_lives.get(domain, self.__initial_failover_lives__) - 1
-        logger.log(logging.INFO, "Decreasing request rate due to rate limit.\n" +
-                   "New rate: {}, {}".format(self.delay.get(domain), time_slot.name))
+        logger.log(logging.INFO, "Decreasing request rate due to rate limit.\n"
+                   + "New rate: {}, {}".format(self.delay.get(domain), time_slot.name))
 
     def get_min_delay(self, response):
         return self.delay.get(self._get_domain(response), 0)
@@ -259,15 +258,18 @@ class AutoThrottle429Handler:
         # to this we add the number of requests made in the current minute.
         # 13.2 + 7 => 20.2 requests per minute.
         # We subtract 1 because the last request threw a rate limit error and we want to be below that rate.
-        wanted_rate = (window.previous_count *
-                       ((self._tim.get_parts(time_slot) - self._tim.get_time_part(sent_at, time_slot))
-                        / self._tim.get_parts(time_slot))) + window.current_count - 1
+        wanted_rate = (window.previous_count
+                       * ((self._tim.get_parts(time_slot)
+                           - self._tim.get_time_part(sent_at, time_slot))
+                        / self._tim.get_parts(time_slot))) \
+                      + window.current_count - 1
 
         # 2. calculate delay required to achieve that rate.
         return self._tim.get_seconds(time_slot) / wanted_rate
 
     def _increase_time_slot(self, domain, current_time_slot) -> TimeInterval:
-        new_time_slot = self._tim.get_next_interval(current_time_slot)  # get the next logical time slot
+        # get the next logical time slot
+        new_time_slot = self._tim.get_next_interval(current_time_slot)
         self.delay_intervals[domain] = new_time_slot
         # reset failover lives.
         self.failover_lives[domain] = self.__initial_failover_lives__
@@ -278,7 +280,8 @@ class AutoThrottle429Handler:
 
         if response.status == 200:  # only keep track of good requests because this works better.
             if domain not in self.request_history.keys():
-                self.request_history[domain] = [SlidingWindow(interval, sent_at) for interval in list(TimeInterval)]
+                self.request_history[domain] = [SlidingWindow(interval, sent_at)
+                                                for interval in list(TimeInterval)]
             else:
                 for struct in self.request_history[domain]:
                     struct.add_request(sent_at)
@@ -286,7 +289,8 @@ class AutoThrottle429Handler:
         return self.request_history[domain]
 
     def _set_special_delay(self, domain, sent_at: datetime, time_slot: TimeInterval):
-        self.rate_limit_reset_delay[domain] = self._tim.get_seconds_until_end_of_interval(sent_at, time_slot)
+        self.rate_limit_reset_delay[domain] = self._tim\
+            . get_seconds_until_end(sent_at, time_slot)
 
     def pop_special_delay(self, response):
         return self.rate_limit_reset_delay.pop(self._get_domain(response), 0)
