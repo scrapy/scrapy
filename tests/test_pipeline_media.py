@@ -199,12 +199,19 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 
     pipeline_class = MockedMediaPipeline
 
+    def _callback(self, result):
+        self.pipe._mockcalled.append('request_callback')
+        return result
+
+    def _errback(self, result):
+        self.pipe._mockcalled.append('request_errback')
+        return result
+
     @inlineCallbacks
     def test_result_succeed(self):
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         rsp = Response('http://url1')
-        req = Request('http://url1', meta=dict(response=rsp), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=rsp),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
@@ -215,10 +222,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         fail = Failure(Exception())
-        req = Request('http://url1', meta=dict(response=fail), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=fail),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])

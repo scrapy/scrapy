@@ -147,8 +147,8 @@ class Command(ScrapyCommand):
                 logger.error('Unable to find spider for: %(url)s', {'url': url})
 
         # Request requires callback argument as callable or None, not string
-        request = Request(url, None)
-        _start_requests = lambda s: [self.prepare_request(s, request, opts)]
+        def _start_requests(spider):
+            yield self.prepare_request(spider, Request(url, None), opts)
         self.spidercls.start_requests = _start_requests
 
     def start_parsing(self, url, opts):
