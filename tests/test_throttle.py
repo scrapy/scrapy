@@ -22,7 +22,7 @@ class TestAutothrottle429(unittest.TestCase):
         self.handler.increase_min_delay(bad_res, req_sent_times[-1])
         assert self.handler.get_min_delay(bad_res) == 1,\
             "{} Estimated min delay is incorrect. Correct is: {}"\
-                .format(self.handler.get_min_delay(bad_res), 1)
+            .format(self.handler.get_min_delay(bad_res), 1)
         self.handler.add_to_history(bad_res, req_sent_times[-1]
                                     + timedelta(seconds=1))
         self.handler.increase_min_delay(bad_res, req_sent_times[-1]
@@ -39,8 +39,8 @@ class TestAutothrottle429(unittest.TestCase):
         min_allowed_delay = 60 / (len(req_sent_times) - 1)
         assert self.handler.get_min_delay(bad_res) >= min_allowed_delay, \
             "{} Estimated min delay is incorrect. Correct is: {}"\
-                .format(self.handler.get_min_delay(bad_res),
-                        min_allowed_delay)
+            .format(self.handler.get_min_delay(bad_res),
+                    min_allowed_delay)
         assert self.handler.get_min_delay(bad_res) <= min_allowed_delay\
             * 1.1,\
             "{} Forced delay is too long. Should be less than: {}"\
@@ -91,8 +91,8 @@ class TestSlidingWindow(unittest.TestCase):
         return window
 
     @staticmethod
-    def _create_reqs(length, day=1, hour=10, minute=13, second=5, increment=True)\
-            -> List[datetime]:
+    def _create_reqs(length, day=1, hour=10, minute=13,
+                     second=5, increment=True) -> List[datetime]:
         return [datetime(year=2020, month=3,
                          day=day, hour=hour, minute=minute,
                          second=second)
@@ -114,6 +114,3 @@ class TestTimeIntervalManager(unittest.TestCase):
             == self._tim.get_seconds_until_end(d, TimeInterval.HOUR)
         assert (13 * 3600) + (53 * 60) + 48 \
             == self._tim.get_seconds_until_end(d, TimeInterval.DAY)
-
-
-

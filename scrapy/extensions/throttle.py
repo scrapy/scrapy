@@ -261,8 +261,8 @@ class AutoThrottle429Handler:
         wanted_rate = (window.previous_count
                        * ((self._tim.get_parts(time_slot)
                            - self._tim.get_time_part(sent_at, time_slot))
-                        / self._tim.get_parts(time_slot))) \
-                      + window.current_count - 1
+                          / self._tim.get_parts(time_slot))) \
+            + window.current_count - 1
 
         # 2. calculate delay required to achieve that rate.
         return self._tim.get_seconds(time_slot) / wanted_rate
