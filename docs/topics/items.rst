@@ -4,21 +4,16 @@
 Items
 =====
 
-.. module:: scrapy.item
-   :synopsis: Item and Field classes
-
 The main goal in scraping is to extract structured data from unstructured
 sources, typically, web pages. :ref:`Spiders <topics-spiders>` may return the
-extracted data as any type of :ref:`item-like object <item-like-objects>`.
+extracted data as `items`, Python objects that define key-value pairs.
 
-.. _item-like-objects:
+.. _item-types:
 
-Item-like Objects
-=================
+Item Types
+==========
 
-Item-like objects are Python containers to collect scraped data.
-
-The following types of item-like objects are supported:
+Scrapy supports the following types of items:
 
 -   :class:`dict`
 
@@ -36,8 +31,8 @@ The following types of item-like objects are supported:
 
     .. note:: Field names and types are not enforced at run time.
 
-    Works natively in Python 3.7+, or using the `dataclasses backport`_ in
-    Python 3.6.
+    Works natively in Python 3.7 or later, or using the `dataclasses backport`_
+    in Python 3.6.
 
     .. _dataclasses backport: https://pypi.org/project/dataclasses/
 
@@ -59,6 +54,33 @@ The following types of item-like objects are supported:
 
     :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
     (see :ref:`topics-leaks-trackrefs`).
+
+When you create a item (e.g. in a spider callback), use whichever type of item
+you want.
+
+When you write code that receives an item, use the following functions to
+manipulate the item, so that your code supports all item types:
+
+.. autofunction:: scrapy.utils.datatypes.get_item_field
+
+.. autofunction:: scrapy.utils.datatypes.set_item_field
+
+.. autofunction:: scrapy.utils.misc.is_item_like
+
+.. autofunction:: scrapy.utils.python.is_dataclass_instance
+
+..
+    TODO: Do we really want to have is_dataclass_instance here?
+
+
+
+..
+    Subsection for Item objects?
+
+    .. module:: scrapy.item
+       :synopsis: Item and Field classes
+
+
 
 
 .. _topics-items-declaring:

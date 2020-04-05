@@ -29,7 +29,7 @@ Each item pipeline component is a Python class that must implement the following
 
    This method is called for every item pipeline component.
 
-   `item` is an :ref:`item-like object <item-like-objects>`.
+   `item` is an instance of an :ref:`item type <item-types>`.
 
    :meth:`process_item` must either: return an item-like object, return a
    :class:`~twisted.internet.defer.Deferred` or raise a

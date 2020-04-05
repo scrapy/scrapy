@@ -370,29 +370,17 @@ This works natively in Python 3.7+, or using the `dataclasses backport`_ in Pyth
 
 If you use Scrapy components (such as
 :ref:`item pipelines <topics-item-pipeline>`,
-:ref:`signal handlers <topics-signals>` or
-:ref:`spider middlewares <topics-spider-middleware>`) that do not work with
+:ref:`signal handlers <topics-signals>`, or
+:ref:`spider middlewares <topics-spider-middleware>`) that do not support
 dataclasses, such as custom components or third-party components implemented
-before Scrapy 2.1, update those components to make them work with dataclasses.
-See the latest documentation of the corresponding type of component for
-details.
-
-The following helper functions are available to interact with items that may be
-dataclasses:
-
-.. autofunction:: scrapy.utils.datatypes.get_item_field
-
-.. autofunction:: scrapy.utils.datatypes.set_item_field
-
-.. autofunction:: scrapy.utils.misc.is_item_like
-
-.. autofunction:: scrapy.utils.python.is_dataclass_instance
+for Scrapy versions older than 2.1, update those components to make them work
+with dataclasses. See :ref:`item-types`.
 
 If the offending Scrapy components come from a third party project, please
 report this issue to the maintainers of that project, so they can update them.
 In the meantime, you may use the
 :func:`~scrapy.utils.decorators.subscriptable_dataclass` decorator in your
-dataclasses:
+dataclasses to make them behave like :class:`Item` objects:
 
 .. autofunction:: scrapy.utils.decorators.subscriptable_dataclass
 
