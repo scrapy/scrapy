@@ -152,7 +152,7 @@ def log_scrapy_info(settings):
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:

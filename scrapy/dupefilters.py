@@ -5,7 +5,7 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
 
 
-class BaseDupeFilter(object):
+class BaseDupeFilter:
 
     @classmethod
     def from_settings(cls, settings):

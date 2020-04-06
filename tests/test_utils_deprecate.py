@@ -11,7 +11,7 @@ class MyWarning(UserWarning):
     pass
 
 
-class SomeBaseClass(object):
+class SomeBaseClass:
     pass
 
 
@@ -155,7 +155,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass1a(DeprecatedName):
                 pass
 
-            class UnrelatedClass(object):
+            class UnrelatedClass:
                 pass
 
             class OldStyleClass:
@@ -191,7 +191,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass2a(DeprecatedName):
                 pass
 
-            class UnrelatedClass(object):
+            class UnrelatedClass:
                 pass
 
             class OldStyleClass:

@@ -8,7 +8,7 @@ from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
 
 
-class InjectArgumentsDownloaderMiddleware(object):
+class InjectArgumentsDownloaderMiddleware:
     """
     Make sure downloader middlewares are able to update the keyword arguments
     """
@@ -23,7 +23,7 @@ class InjectArgumentsDownloaderMiddleware(object):
         return response
 
 
-class InjectArgumentsSpiderMiddleware(object):
+class InjectArgumentsSpiderMiddleware:
     """
     Make sure spider middlewares are able to update the keyword arguments
     """

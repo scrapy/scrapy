@@ -27,7 +27,7 @@ def _to_bytes_or_none(text):
     return to_bytes(text)
 
 
-class MailSender(object):
+class MailSender:
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
