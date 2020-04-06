@@ -340,8 +340,10 @@ Those are:
 * :reqmeta:`download_latency`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`proxy`
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* :reqmeta:`http_user`
+* :reqmeta:`http_pass`
+* :reqmeta:`ftp_user`
+* :reqmeta:`ftp_password`
 * :reqmeta:`referrer_policy`
 * :reqmeta:`max_retry_times`
 
