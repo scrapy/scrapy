@@ -9,19 +9,19 @@ Sending e-mail
 
 Although Python makes sending e-mails relatively easy via the `smtplib`_
 library, Scrapy provides its own facility for sending e-mails which is very
-easy to use and it's implemented using `Twisted non-blocking IO`_, to avoid
-interfering with the non-blocking IO of the crawler. It also provides a
-simple API for sending attachments and it's very easy to configure, with a few
-:ref:`settings <topics-email-settings>`.
+easy to use and it's implemented using :doc:`Twisted non-blocking IO
+<twisted:core/howto/defer-intro>`, to avoid interfering with the non-blocking
+IO of the crawler. It also provides a simple API for sending attachments and
+it's very easy to configure, with a few :ref:`settings
+<topics-email-settings>`.
 
 .. _smtplib: https://docs.python.org/2/library/smtplib.html
-.. _Twisted non-blocking IO: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 
 Quick example
 =============
 
 There are two ways to instantiate the mail sender. You can instantiate it using
-the standard constructor::
+the standard ``__init__`` method::
 
     from scrapy.mail import MailSender
     mailer = MailSender()
@@ -35,17 +35,12 @@ And here is how to use it to send an e-mail (without attachments)::
 
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
-.. note::
-    As shown in the example above, ``to`` and ``cc`` need to be lists
-    of email addresses, not single addresses, and even for one recipient,
-    i.e. ``to="someone@example.com"`` will not work.
-
-
 MailSender class reference
 ==========================
 
 MailSender is the preferred class to use for sending emails from Scrapy, as it
-uses `Twisted non-blocking IO`_, like the rest of the framework.
+uses :doc:`Twisted non-blocking IO <twisted:core/howto/defer-intro>`, like the
+rest of the framework.
 
 .. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
 
@@ -60,10 +55,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
       setting will be used. If not given, no SMTP authentication will be
       performed.
-    :type smtphost: str
+    :type smtphost: str or bytes
 
     :param smtppass: the SMTP pass for authentication.
-    :type smtppass: str
+    :type smtppass: str or bytes
 
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
@@ -87,13 +82,13 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         Send email to the given recipients.
 
         :param to: the e-mail recipients
-        :type to: list
+        :type to: str or list of str
 
         :param subject: the subject of the e-mail
         :type subject: str
 
         :param cc: the e-mails to CC
-        :type cc: list
+        :type cc: str or list of str
 
         :param body: the e-mail body
         :type body: str
@@ -117,7 +112,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 Mail settings
 =============
 
-These settings define the default constructor values of the :class:`MailSender`
+These settings define the default ``__init__`` method values of the :class:`MailSender`
 class, and can be used to configure e-mail notifications in your project without
 writing any code (for those extensions and code that uses :class:`MailSender`).
 

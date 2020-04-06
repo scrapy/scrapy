@@ -9,7 +9,7 @@ from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 
 
-class ScrapyCommand(object):
+class ScrapyCommand:
 
     requires_project = False
     crawler_process = None
@@ -47,7 +47,7 @@ class ScrapyCommand(object):
 
     def help(self):
         """An extensive help for the command. It will be shown when using the
-        "help" command. It can contain newlines, since not post-formatting will
+        "help" command. It can contain newlines, since no post-formatting will
         be applied to its contents.
         """
         return self.long_desc()

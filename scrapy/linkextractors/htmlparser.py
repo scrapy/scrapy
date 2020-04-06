@@ -1,13 +1,12 @@
 """
 HTMLParser-based link extractor
 """
-
 import warnings
-import six
-from six.moves.html_parser import HTMLParser
-from six.moves.urllib.parse import urljoin
+from html.parser import HTMLParser
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
+from w3lib.html import strip_html5_whitespace
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
@@ -16,7 +15,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 class HtmlParserLinkExtractor(HTMLParser):
 
-    def __init__(self, tag="a", attr="href", process=None, unique=False):
+    def __init__(self, tag="a", attr="href", process=None, unique=False,
+                 strip=True):
         HTMLParser.__init__(self)
 
         warnings.warn(
@@ -29,6 +29,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_attr = process if callable(process) else lambda v: v
         self.unique = unique
+        self.strip = strip
 
     def _extract_links(self, response_text, response_url, response_encoding):
         self.reset()
@@ -40,7 +41,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         ret = []
         base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in links:
-            if isinstance(link.url, six.text_type):
+            if isinstance(link.url, str):
                 link.url = link.url.encode(response_encoding)
             try:
                 link.url = urljoin(base_url, link.url)
@@ -69,6 +70,8 @@ class HtmlParserLinkExtractor(HTMLParser):
         if self.scan_tag(tag):
             for attr, value in attrs:
                 if self.scan_attr(attr):
+                    if self.strip:
+                        value = strip_html5_whitespace(value)
                     url = self.process_attr(value)
                     link = Link(url=url)
                     self.links.append(link)

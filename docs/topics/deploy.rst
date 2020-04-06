@@ -50,10 +50,10 @@ them as needed - the configuration is read from the ``scrapy.cfg`` file
 just like ``scrapyd-deploy``.
 
 .. _Scrapyd: https://github.com/scrapy/scrapyd
-.. _Deploying your project: https://scrapyd.readthedocs.org/en/latest/deploy.html
-.. _Scrapy Cloud: http://scrapinghub.com/scrapy-cloud/
+.. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
+.. _Scrapy Cloud: https://scrapinghub.com/scrapy-cloud
 .. _scrapyd-client: https://github.com/scrapy/scrapyd-client
-.. _shub: http://doc.scrapinghub.com/shub.html
-.. _scrapyd-deploy documentation: http://scrapyd.readthedocs.org/en/latest/deploy.html
-.. _Scrapy Cloud documentation: http://doc.scrapinghub.com/scrapy-cloud.html
-.. _Scrapinghub: http://scrapinghub.com/
+.. _shub: https://doc.scrapinghub.com/shub.html
+.. _scrapyd-deploy documentation: https://scrapyd.readthedocs.io/en/latest/deploy.html
+.. _Scrapy Cloud documentation: https://doc.scrapinghub.com/scrapy-cloud.html
+.. _Scrapinghub: https://scrapinghub.com/

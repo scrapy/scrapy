@@ -1,15 +1,34 @@
 import functools
+import gc
 import operator
+import platform
 import unittest
 from itertools import count
-import six
+from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, stringify_dict, get_func_args, to_bytes, to_unicode,
-    without_none_values)
+    WeakKeyCache, get_func_args, to_bytes, to_unicode,
+    without_none_values, MutableChain)
+
 
 __doctests__ = ['scrapy.utils.python']
+
+
+class MutableChainTest(unittest.TestCase):
+    def test_mutablechain(self):
+        m = MutableChain(range(2), [2, 3], (4, 5))
+        m.extend(range(6, 7))
+        m.extend([7, 8])
+        m.extend([9, 10], (11, 12))
+        self.assertEqual(next(m), 0)
+        self.assertEqual(m.__next__(), 1)
+        with catch_warnings(record=True) as warnings:
+            self.assertEqual(m.next(), 2)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn('scrapy.utils.python.MutableChain.__next__',
+                          str(warnings[0].message))
+        self.assertEqual(list(m), list(range(3, 13)))
 
 
 class ToUnicodeTest(unittest.TestCase):
@@ -54,7 +73,7 @@ class ToBytesTest(unittest.TestCase):
 
 class MemoizedMethodTest(unittest.TestCase):
     def test_memoizemethod_noargs(self):
-        class A(object):
+        class A:
 
             @memoizemethod_noargs
             def cached(self):
@@ -85,7 +104,6 @@ class BinaryIsTextTest(unittest.TestCase):
         assert not binary_is_text(b"\x02\xa3")
 
 
-
 class UtilsPythonTestCase(unittest.TestCase):
 
     def test_equal_attributes(self):
@@ -95,9 +113,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         a = Obj()
         b = Obj()
         # no attributes given return False
-        self.failIf(equal_attributes(a, b, []))
+        self.assertFalse(equal_attributes(a, b, []))
         # not existent attributes
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         a.x = 1
         b.x = 1
@@ -106,7 +124,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         b.y = 2
         # obj1 has no attribute y
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         a.y = 2
         # equal attributes
@@ -114,7 +132,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         a.y = 1
         # differente attributes
-        self.failIf(equal_attributes(a, b, ['x', 'y']))
+        self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         # test callable
         a.meta = {}
@@ -132,10 +150,12 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertTrue(equal_attributes(a, b, [compare_z, 'x']))
         # fail z equality
         a.meta['z'] = 2
-        self.failIf(equal_attributes(a, b, [compare_z, 'x']))
+        self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+        class _Weakme:
+            pass
+
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
@@ -144,34 +164,10 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertNotEqual(v, wk[_Weakme()])
         self.assertEqual(v, wk[k])
         del k
+        for _ in range(100):
+            if wk._weakdict:
+                gc.collect()
         self.assertFalse(len(wk._weakdict))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict(self):
-        d = {'a': 123, u'b': b'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d, keys_only=False)
-        self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()))
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_tuples(self):
-        tuples = [('a', 123), (u'b', 'c'), (u'd', u'e'), (object(), u'e')]
-        d = dict(tuples)
-        d2 = stringify_dict(tuples, keys_only=False)
-        self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()), d2.keys())
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.values()))
-
-    @unittest.skipUnless(six.PY2, "deprecated function")
-    def test_stringify_dict_keys_only(self):
-        d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
-        d2 = stringify_dict(d)
-        self.assertEqual(d, d2)
-        self.failIf(d is d2)  # shouldn't modify in place
-        self.failIf(any(isinstance(x, six.text_type) for x in d2.keys()))
 
     def test_get_func_args(self):
         def f1(a, b, c):
@@ -180,14 +176,14 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
-        class A(object):
+        class A:
             def __init__(self, a, b, c):
                 pass
 
             def method(self, a, b, c):
                 pass
 
-        class Callable(object):
+        class Callable:
 
             def __call__(self, a, b, c):
                 pass
@@ -208,10 +204,17 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(object), [])
 
-        # TODO: how do we fix this to return the actual argument names?
-        self.assertEqual(get_func_args(six.text_type.split), [])
-        self.assertEqual(get_func_args(" ".join), [])
-        self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+        if platform.python_implementation() == 'CPython':
+            # TODO: how do we fix this to return the actual argument names?
+            self.assertEqual(get_func_args(str.split), [])
+            self.assertEqual(get_func_args(" ".join), [])
+            self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+        else:
+            self.assertEqual(
+                get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
+            self.assertEqual(
+                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
@@ -219,6 +222,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
 
 if __name__ == "__main__":
     unittest.main()

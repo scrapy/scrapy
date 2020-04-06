@@ -12,6 +12,9 @@ dist
 .idea
 htmlcov/
 .coverage
+.pytest_cache/
+.coverage.*
+.cache/
 
 # Windows
 Thumbs.db

@@ -35,7 +35,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_response_selector_html(self):
-        xpath = 'response.xpath("//p[@class=\'one\']/text()").extract()[0]'
+        xpath = 'response.xpath("//p[@class=\'one\']/text()").get()'
         _, out, _ = yield self.execute([self.url('/html'), '-c', xpath])
         self.assertEqual(out.strip(), b'Works')
 
@@ -48,6 +48,35 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_redirect(self):
         _, out, _ = yield self.execute([self.url('/redirect'), '-c', 'response.url'])
         assert out.strip().endswith(b'/redirected')
+
+    @defer.inlineCallbacks
+    def test_redirect_follow_302(self):
+        _, out, _ = yield self.execute([self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
+        assert out.strip().endswith(b'200')
+
+    @defer.inlineCallbacks
+    def test_redirect_not_follow_302(self):
+        _, out, _ = yield self.execute(['--no-redirect', self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
+        assert out.strip().endswith(b'302')
+
+    @defer.inlineCallbacks
+    def test_fetch_redirect_follow_302(self):
+        """Test that calling ``fetch(url)`` follows HTTP redirects by default."""
+        url = self.url('/redirect-no-meta-refresh')
+        code = "fetch('{0}')"
+        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        self.assertEqual(errcode, 0, out)
+        assert b'Redirecting (302)' in errout
+        assert b'Crawled (200)' in errout
+
+    @defer.inlineCallbacks
+    def test_fetch_redirect_not_follow_302(self):
+        """Test that calling ``fetch(url, redirect=False)`` disables automatic redirects."""
+        url = self.url('/redirect-no-meta-refresh')
+        code = "fetch('{0}', redirect=False)"
+        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        self.assertEqual(errcode, 0, out)
+        assert b'Crawled (302)' in errout
 
     @defer.inlineCallbacks
     def test_request_replace(self):

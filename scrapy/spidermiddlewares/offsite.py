@@ -3,9 +3,9 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-
 import re
 import logging
+import warnings
 
 from scrapy import signals
 from scrapy.http import Request
@@ -14,7 +14,7 @@ from scrapy.utils.httpobj import urlparse_cached
 logger = logging.getLogger(__name__)
 
 
-class OffsiteMiddleware(object):
+class OffsiteMiddleware:
 
     def __init__(self, stats):
         self.stats = stats
@@ -34,8 +34,9 @@ class OffsiteMiddleware(object):
                     domain = urlparse_cached(x).hostname
                     if domain and domain not in self.domains_seen:
                         self.domains_seen.add(domain)
-                        logger.debug("Filtered offsite request to %(domain)r: %(request)s",
-                                     {'domain': domain, 'request': x}, extra={'spider': spider})
+                        logger.debug(
+                            "Filtered offsite request to %(domain)r: %(request)s",
+                            {'domain': domain, 'request': x}, extra={'spider': spider})
                         self.stats.inc_value('offsite/domains', spider=spider)
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:
@@ -51,10 +52,34 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
-        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
+            return re.compile('')  # allow all by default
+        url_pattern = re.compile(r"^https?://.*$")
+        port_pattern = re.compile(r":\d+$")
+        domains = []
+        for domain in allowed_domains:
+            if domain is None:
+                continue
+            elif url_pattern.match(domain):
+                message = ("allowed_domains accepts only domains, not URLs. "
+                           "Ignoring URL entry %s in allowed_domains." % domain)
+                warnings.warn(message, URLWarning)
+            elif port_pattern.search(domain):
+                message = ("allowed_domains accepts only domains without ports. "
+                           "Ignoring entry %s in allowed_domains." % domain)
+                warnings.warn(message, PortWarning)
+            else:
+                domains.append(re.escape(domain))
+        regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):
         self.host_regex = self.get_host_regex(spider)
         self.domains_seen = set()
+
+
+class URLWarning(Warning):
+    pass
+
+
+class PortWarning(Warning):
+    pass

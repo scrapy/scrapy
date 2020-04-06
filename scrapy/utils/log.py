@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import overridden_settings, Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
+from scrapy.utils.versions import scrapy_components_versions
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class TopLevelFormatter(logging.Filter):
 
     Since it can't be set for just one logger (it won't propagate for its
     children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
+    ``loggers`` list where it should act.
     """
 
     def __init__(self, loggers=None):
@@ -96,9 +98,25 @@ def configure_logging(settings=None, install_root_handler=True):
         sys.stdout = StreamLogger(logging.getLogger('stdout'))
 
     if install_root_handler:
-        logging.root.setLevel(logging.NOTSET)
-        handler = _get_handler(settings)
-        logging.root.addHandler(handler)
+        install_scrapy_root_handler(settings)
+
+
+def install_scrapy_root_handler(settings):
+    global _scrapy_root_handler
+
+    if (_scrapy_root_handler is not None
+            and _scrapy_root_handler in logging.root.handlers):
+        logging.root.removeHandler(_scrapy_root_handler)
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def get_scrapy_root_handler():
+    return _scrapy_root_handler
+
+
+_scrapy_root_handler = None
 
 
 def _get_handler(settings):
@@ -118,23 +136,27 @@ def _get_handler(settings):
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get('LOG_LEVEL'))
-    handler.addFilter(TopLevelFormatter(['scrapy']))
+    if settings.getbool('LOG_SHORT_NAMES'):
+        handler.addFilter(TopLevelFormatter(['scrapy']))
     return handler
 
 
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
+    logger.info("Versions: %(versions)s",
+                {'versions': ", ".join("%s %s" % (name, version)
+                    for name, version in scrapy_components_versions()
+                    if name != "Scrapy")})
+    from twisted.internet import reactor
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
-    d = dict(overridden_settings(settings))
-    logger.info("Overridden settings: %(settings)r", {'settings': d})
 
-
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:
-        http://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
+        https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
     """
     def __init__(self, logger, log_level=logging.INFO):
         self.logger = logger

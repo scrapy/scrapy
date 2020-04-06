@@ -7,7 +7,7 @@ See documentation in docs/topics/downloader-middleware.rst
 from scrapy.utils.python import without_none_values
 
 
-class DefaultHeadersMiddleware(object):
+class DefaultHeadersMiddleware:
 
     def __init__(self, headers):
         self._headers = headers
