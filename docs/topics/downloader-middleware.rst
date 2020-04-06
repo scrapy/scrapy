@@ -41,7 +41,7 @@ previous (or subsequent) middleware being applied.
 
 If you want to disable a built-in middleware (the ones defined in
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
-in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign `None`
+in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None``
 as its value.  For example, if you want to disable the user-agent middleware::
 
     DOWNLOADER_MIDDLEWARES = {
@@ -52,11 +52,17 @@ as its value.  For example, if you want to disable the user-agent middleware::
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _topics-downloader-middleware-custom:
+
 Writing your own downloader middleware
 ======================================
 
-Each middleware component is a Python class that defines one or
-more of the following methods:
+Each downloader middleware is a Python class that defines one or more of the
+methods defined below.
+
+The main entry point is the ``from_crawler`` class method, which receives a
+:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
+object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
 .. module:: scrapy.downloadermiddlewares
 
@@ -157,6 +163,17 @@ more of the following methods:
       :param spider: the spider for which this request is intended
       :type spider: :class:`~scrapy.spiders.Spider` object
 
+   .. method:: from_crawler(cls, crawler)
+
+      If present, this classmethod is called to create a middleware instance
+      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+      of the middleware. Crawler object provides access to all Scrapy core
+      components like settings and signals; it is a way for middleware to
+      access them and hook its functionality into Scrapy.
+
+      :param crawler: crawler that uses this middleware
+      :type crawler: :class:`~scrapy.crawler.Crawler` object
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -182,7 +199,7 @@ CookiesMiddleware
 
    This middleware enables working with sites that require cookies, such as
    those that use sessions. It keeps track of cookies sent by web servers, and
-   send them back on subsequent requests (from that spider), just like web
+   sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
 The following settings can be used to configure the cookie middleware:
@@ -226,6 +243,15 @@ Default: ``True``
 Whether to enable the cookies middleware. If disabled, no cookies will be sent
 to web servers.
 
+Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
+``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
+evaluates to ``True`` the request cookies will **not** be sent to the
+web server and received cookies in :class:`~scrapy.http.Response` will
+**not** be merged with the existing cookies.
+
+For more detailed information see the ``cookies`` parameter in
+:class:`~scrapy.http.Request`.
+
 .. setting:: COOKIES_DEBUG
 
 COOKIES_DEBUG
@@ -233,19 +259,19 @@ COOKIES_DEBUG
 
 Default: ``False``
 
-If enabled, Scrapy will log all cookies sent in requests (ie. ``Cookie``
-header) and all cookies received in responses (ie. ``Set-Cookie`` header).
+If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
+header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
 
 Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 
-    2011-04-06 14:35:10-0300 [scrapy] INFO: Spider opened
-    2011-04-06 14:35:10-0300 [scrapy] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
+    2011-04-06 14:35:10-0300 [scrapy.core.engine] INFO: Spider opened
+    2011-04-06 14:35:10-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
             Cookie: clientlanguage_nl=en_EN
-    2011-04-06 14:35:14-0300 [scrapy] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
+    2011-04-06 14:35:14-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
             Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
             Set-Cookie: ip_isocode=US
             Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
-    2011-04-06 14:49:50-0300 [scrapy] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
+    2011-04-06 14:49:50-0300 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
     [...]
 
 
@@ -278,43 +304,6 @@ DownloadTimeoutMiddleware
     :reqmeta:`download_timeout` Request.meta key; this is supported
     even when DownloadTimeoutMiddleware is disabled.
 
-AuthMiddleware
-------------------
-
-.. module:: scrapy.downloadermiddlewares.auth
-   :synopsis: HTTP/FTP Auth downloader middleware
-
-.. class:: AuthMiddleware
-
-    This middleware populates authentication credentials for HTTP and FTP requests.
-
-    To enable HTTP authentication (`Basic access authentication`_, aka. HTTP auth),
-    you have two options:
-
-    - either set the ``http_user`` and ``http_pass`` attributes of the spider(s)
-      for which you need HTTP auth,
-      and these will be applied to all http(s):// requests,
-    - or, on a per-Request basis, include credentials using the standard URL
-      syntax of ``http://username:password@www.example.com/index.html``
-
-    To populate credentials for FTP requests, use URLs in the form of
-    ``ftp://user:password@www.example.com/document.txt``, which will
-    set the ``meta`` dict ``ftp_user`` and ``ftp_password`` values.
-
-    Example of enabling HTTP Basic Auth for all HTTP requests::
-
-        from scrapy.spiders import CrawlSpider
-
-        class SomeIntranetSiteSpider(CrawlSpider):
-
-            http_user = 'someuser'
-            http_pass = 'somepass'
-            name = 'intranet.example.com'
-
-            # .. rest of the spider code omitted ...
-
-.. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
-
 HttpAuthMiddleware
 ------------------
 
@@ -323,7 +312,30 @@ HttpAuthMiddleware
 
 .. class:: HttpAuthMiddleware
 
-    This middleware is deprecated and redirects to :class:`~.AuthMiddleware`.
+    This middleware authenticates all requests generated from certain spiders
+    using `Basic access authentication`_ (aka. HTTP auth).
+
+    To enable HTTP authentication from certain spiders, set the ``http_user``
+    and ``http_pass`` attributes of those spiders.
+
+    Example::
+
+        from scrapy.spiders import CrawlSpider
+
+        class SomeIntranetSiteSpider(CrawlSpider):
+            name = 'intranet.example.com'
+            http_user = 'someuser'
+            http_pass = 'somepass'
+
+    .. reqmeta:: http_user
+    .. reqmeta:: http_pass
+
+    You can alternatively specify ``http_user`` and ``http_pass`` in
+    :attr:`Request.meta <scrapy.http.Request.meta>`, or use
+    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware`.
+
+.. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
+
 
 HttpCacheMiddleware
 -------------------
@@ -336,13 +348,13 @@ HttpCacheMiddleware
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
 
-    Scrapy ships with two HTTP cache storage backends:
+    Scrapy ships with three HTTP cache storage backends:
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
 
     You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
-    setting. Or you can also implement your own storage backend.
+    setting. Or you can also :ref:`implement your own storage backend. <httpcache-storage-custom>`
 
     Scrapy ships with two HTTP cache policies:
 
@@ -354,26 +366,27 @@ HttpCacheMiddleware
 
     .. reqmeta:: dont_cache
 
-    You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals `True`.
+    You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
+
+.. module:: scrapy.extensions.httpcache
+   :noindex:
 
 .. _httpcache-policy-dummy:
 
 Dummy policy (default)
 ~~~~~~~~~~~~~~~~~~~~~~
 
-This policy has no awareness of any HTTP Cache-Control directives.
-Every request and its corresponding response are cached.  When the same
-request is seen again, the response is returned without transferring
-anything from the Internet.
+.. class:: DummyPolicy
 
-The Dummy policy is useful for testing spiders faster (without having
-to wait for downloads every time) and for trying your spider offline,
-when an Internet connection is not available. The goal is to be able to
-"replay" a spider run *exactly as it ran before*.
+    This policy has no awareness of any HTTP Cache-Control directives.
+    Every request and its corresponding response are cached.  When the same
+    request is seen again, the response is returned without transferring
+    anything from the Internet.
 
-In order to use this policy, set:
-
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.DummyPolicy``
+    The Dummy policy is useful for testing spiders faster (without having
+    to wait for downloads every time) and for trying your spider offline,
+    when an Internet connection is not available. The goal is to be able to
+    "replay" a spider run *exactly as it ran before*.
 
 
 .. _httpcache-policy-rfc2616:
@@ -381,45 +394,44 @@ In order to use this policy, set:
 RFC2616 policy
 ~~~~~~~~~~~~~~
 
-This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
-Cache-Control awareness, aimed at production and used in continuous
-runs to avoid downloading unmodified data (to save bandwidth and speed up crawls).
+.. class:: RFC2616Policy
 
-what is implemented:
+    This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
+    Cache-Control awareness, aimed at production and used in continuous
+    runs to avoid downloading unmodified data (to save bandwidth and speed up
+    crawls).
 
-* Do not attempt to store responses/requests with `no-store` cache-control directive set
-* Do not serve responses from cache if `no-cache` cache-control directive is set even for fresh responses
-* Compute freshness lifetime from `max-age` cache-control directive
-* Compute freshness lifetime from `Expires` response header
-* Compute freshness lifetime from `Last-Modified` response header (heuristic used by Firefox)
-* Compute current age from `Age` response header
-* Compute current age from `Date` header
-* Revalidate stale responses based on `Last-Modified` response header
-* Revalidate stale responses based on `ETag` response header
-* Set `Date` header for any received response missing it
-* Support `max-stale` cache-control directive in requests
+    What is implemented:
 
-  This allows spiders to be configured with the full RFC2616 cache policy,
-  but avoid revalidation on a request-by-request basis, while remaining
-  conformant with the HTTP spec.
+    * Do not attempt to store responses/requests with ``no-store`` cache-control directive set
+    * Do not serve responses from cache if ``no-cache`` cache-control directive is set even for fresh responses
+    * Compute freshness lifetime from ``max-age`` cache-control directive
+    * Compute freshness lifetime from ``Expires`` response header
+    * Compute freshness lifetime from ``Last-Modified`` response header (heuristic used by Firefox)
+    * Compute current age from ``Age`` response header
+    * Compute current age from ``Date`` header
+    * Revalidate stale responses based on ``Last-Modified`` response header
+    * Revalidate stale responses based on ``ETag`` response header
+    * Set ``Date`` header for any received response missing it
+    * Support ``max-stale`` cache-control directive in requests
 
-  Example:
+    This allows spiders to be configured with the full RFC2616 cache policy,
+    but avoid revalidation on a request-by-request basis, while remaining
+    conformant with the HTTP spec.
 
-  Add `Cache-Control: max-stale=600` to Request headers to accept responses that
-  have exceeded their expiration time by no more than 600 seconds.
+    Example:
 
-  See also: RFC2616, 14.9.3
+    Add ``Cache-Control: max-stale=600`` to Request headers to accept responses that
+    have exceeded their expiration time by no more than 600 seconds.
 
-what is missing:
+    See also: RFC2616, 14.9.3
 
-* `Pragma: no-cache` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
-* `Vary` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
-* Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
-* ... probably others ..
+    What is missing:
 
-In order to use this policy, set:
-
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.RFC2616Policy``
+    * ``Pragma: no-cache`` support https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+    * ``Vary`` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+    * Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
+    * ... probably others ..
 
 
 .. _httpcache-storage-fs:
@@ -427,67 +439,102 @@ In order to use this policy, set:
 Filesystem storage backend (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-File system storage backend is available for the HTTP cache middleware.
+.. class:: FilesystemCacheStorage
 
-In order to use this storage backend, set:
+    File system storage backend is available for the HTTP cache middleware.
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.FilesystemCacheStorage``
+    Each request/response pair is stored in a different directory containing
+    the following files:
 
-Each request/response pair is stored in a different directory containing
-the following files:
+    *   ``request_body`` - the plain request body
 
- * ``request_body`` - the plain request body
- * ``request_headers`` - the request headers (in raw HTTP format)
- * ``response_body`` - the plain response body
- * ``response_headers`` - the request headers (in raw HTTP format)
- * ``meta`` - some metadata of this cache resource in Python ``repr()`` format
-   (grep-friendly format)
- * ``pickled_meta`` - the same metadata in ``meta`` but pickled for more
-   efficient deserialization
+    *   ``request_headers`` - the request headers (in raw HTTP format)
 
-The directory name is made from the request fingerprint (see
-``scrapy.utils.request.fingerprint``), and one level of subdirectories is
-used to avoid creating too many files into the same directory (which is
-inefficient in many file systems). An example directory could be::
+    *   ``response_body`` - the plain response body
 
-   /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
+    *   ``response_headers`` - the request headers (in raw HTTP format)
+
+    *   ``meta`` - some metadata of this cache resource in Python ``repr()``
+        format (grep-friendly format)
+
+    *   ``pickled_meta`` - the same metadata in ``meta`` but pickled for more
+        efficient deserialization
+
+    The directory name is made from the request fingerprint (see
+    ``scrapy.utils.request.fingerprint``), and one level of subdirectories is
+    used to avoid creating too many files into the same directory (which is
+    inefficient in many file systems). An example directory could be::
+
+        /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
 
 .. _httpcache-storage-dbm:
 
 DBM storage backend
 ~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.13
+.. class:: DbmCacheStorage
 
-A DBM_ storage backend is also available for the HTTP cache middleware.
+    .. versionadded:: 0.13
 
-By default, it uses the anydbm_ module, but you can change it with the
-:setting:`HTTPCACHE_DBM_MODULE` setting.
+    A DBM_ storage backend is also available for the HTTP cache middleware.
 
-In order to use this storage backend, set:
+    By default, it uses the :mod:`dbm`, but you can change it with the
+    :setting:`HTTPCACHE_DBM_MODULE` setting.
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.DbmCacheStorage``
+.. _httpcache-storage-custom:
 
-.. _httpcache-storage-leveldb:
+Writing your own storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LevelDB storage backend
-~~~~~~~~~~~~~~~~~~~~~~~
+You can implement a cache storage backend by creating a Python class that
+defines the methods described below.
 
-.. versionadded:: 0.23
+.. module:: scrapy.extensions.httpcache
 
-A LevelDB_ storage backend is also available for the HTTP cache middleware.
+.. class:: CacheStorage
 
-This backend is not recommended for development because only one process can
-access LevelDB databases at the same time, so you can't run a crawl and open
-the scrapy shell in parallel for the same spider.
+    .. method:: open_spider(spider)
 
-In order to use this storage backend:
+      This method gets called after a spider has been opened for crawling. It handles
+      the :signal:`open_spider <spider_opened>` signal.
 
-* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.LeveldbCacheStorage``
-* install `LevelDB python bindings`_ like ``pip install leveldb``
+      :param spider: the spider which has been opened
+      :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. _LevelDB: https://github.com/google/leveldb
-.. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
+    .. method:: close_spider(spider)
+
+      This method gets called after a spider has been closed. It handles
+      the :signal:`close_spider <spider_closed>` signal.
+
+      :param spider: the spider which has been closed
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+    .. method:: retrieve_response(spider, request)
+
+      Return response if present in cache, or ``None`` otherwise.
+
+      :param spider: the spider which generated the request
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the request to find cached response for
+      :type request: :class:`~scrapy.http.Request` object
+
+    .. method:: store_response(spider, request, response)
+
+      Store the given response in the cache.
+
+      :param spider: the spider for which the response is intended
+      :type spider: :class:`~scrapy.spiders.Spider` object
+
+      :param request: the corresponding request the spider generated
+      :type request: :class:`~scrapy.http.Request` object
+
+      :param response: the response to store in the cache
+      :type response: :class:`~scrapy.http.Response` object
+
+In order to use your storage backend, set:
+
+* :setting:`HTTPCACHE_STORAGE` to the Python import path of your custom storage class.
 
 
 HTTPCache middleware settings
@@ -583,7 +630,7 @@ HTTPCACHE_DBM_MODULE
 
 .. versionadded:: 0.13
 
-Default: ``'anydbm'``
+Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
 <httpcache-storage-dbm>`. This setting is specific to the DBM backend.
@@ -623,13 +670,13 @@ Default: ``False``
 If enabled, will cache pages unconditionally.
 
 A spider may wish to have all responses available in the cache, for
-future use with `Cache-Control: max-stale`, for instance. The
+future use with ``Cache-Control: max-stale``, for instance. The
 DummyPolicy caches all responses but never revalidates them, and
 sometimes a more nuanced policy is desirable.
 
-This setting still respects `Cache-Control: no-store` directives in responses.
-If you don't want that, filter `no-store` out of the Cache-Control headers in
-responses you feedto the cache middleware.
+This setting still respects ``Cache-Control: no-store`` directives in responses.
+If you don't want that, filter ``no-store`` out of the Cache-Control headers in
+responses you feed to the cache middleware.
 
 .. setting:: HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 
@@ -643,7 +690,7 @@ Default: ``[]``
 List of Cache-Control directives in responses to be ignored.
 
 Sites often set "no-store", "no-cache", "must-revalidate", etc., but get
-upset at the traffic a spider can generate if it respects those
+upset at the traffic a spider can generate if it actually respects those
 directives. This allows to selectively ignore Cache-Control directives
 that are known to be unimportant for the sites being crawled.
 
@@ -662,6 +709,12 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+   This middleware also supports decoding `brotli-compressed`_ responses,
+   provided `brotlipy`_ is installed.
+
+.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
+.. _brotlipy: https://pypi.org/project/brotlipy/
+
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -674,16 +727,6 @@ Default: ``True``
 
 Whether the Compression middleware will be enabled.
 
-
-ChunkedTransferMiddleware
--------------------------
-
-.. module:: scrapy.downloadermiddlewares.chunked
-   :synopsis: Chunked Transfer Middleware
-
-.. class:: ChunkedTransferMiddleware
-
-   This middleware adds support for `chunked transfer encoding`_
 
 HttpProxyMiddleware
 -------------------
@@ -708,7 +751,9 @@ HttpProxyMiddleware
    * ``no_proxy``
 
    You can also set the meta key ``proxy`` per-request, to a value like
-   ``http://some_proxy_server:port``.
+   ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
+   Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
+   environment variables, and it will also ignore ``no_proxy`` environment variable.
 
 .. _urllib: https://docs.python.org/2/library/urllib.html
 .. _urllib2: https://docs.python.org/2/library/urllib2.html
@@ -727,6 +772,17 @@ RedirectMiddleware
 
 The urls which the request goes through (while being redirected) can be found
 in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
+
+.. reqmeta:: redirect_reasons
+
+The reason behind each redirect in :reqmeta:`redirect_urls` can be found in the
+``redirect_reasons`` :attr:`Request.meta <scrapy.http.Request.meta>` key. For
+example: ``[301, 302, 307, 'meta refresh']``.
+
+The format of a reason depends on the middleware that handled the corresponding
+redirect. For example, :class:`RedirectMiddleware` indicates the triggering
+response status code as an integer, while :class:`MetaRefreshMiddleware`
+always uses the ``'meta refresh'`` string as reason.
 
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -776,7 +832,7 @@ REDIRECT_MAX_TIMES
 
 Default: ``20``
 
-The maximum number of redirections that will be follow for a single request.
+The maximum number of redirections that will be followed for a single request.
 
 MetaRefreshMiddleware
 ---------------------
@@ -789,10 +845,12 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
+* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
 
-This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
-and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`
+This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
+:reqmeta:`redirect_urls` and :reqmeta:`redirect_reasons` request meta keys as described
+for :class:`RedirectMiddleware`
 
 
 MetaRefreshMiddleware settings
@@ -808,6 +866,19 @@ METAREFRESH_ENABLED
 Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
+
+.. setting:: METAREFRESH_IGNORE_TAGS
+
+METAREFRESH_IGNORE_TAGS
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``[]``
+
+Meta tags within these tags are ignored.
+
+.. versionchanged:: 2.0
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``['script', 'noscript']`` to ``[]``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -833,8 +904,6 @@ RetryMiddleware
 
 Failed pages are collected on the scraping process and rescheduled at the
 end, once the spider has finished crawling all regular (non failed) pages.
-Once there are no more failed pages to retry, this middleware sends a signal
-(retry_complete), so other extensions could connect to that signal.
 
 The :class:`RetryMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -871,12 +940,17 @@ Default: ``2``
 
 Maximum number of times to retry, in addition to the first download.
 
+Maximum number of retries can also be specified per-request using
+:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+When initialized, the :reqmeta:`max_retry_times` meta key takes higher
+precedence over the :setting:`RETRY_TIMES` setting.
+
 .. setting:: RETRY_HTTP_CODES
 
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 408]``
+Default: ``[500, 502, 503, 504, 522, 524, 408, 429]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
@@ -902,6 +976,24 @@ RobotsTxtMiddleware
     To make sure Scrapy respects robots.txt make sure the middleware is enabled
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
+    The :setting:`ROBOTSTXT_USER_AGENT` setting can be used to specify the
+    user agent string to use for matching in the robots.txt_ file. If it
+    is ``None``, the User-Agent header you are sending with the request or the
+    :setting:`USER_AGENT` setting (in that order) will be used for determining
+    the user agent to use in the robots.txt_ file.
+
+    This middleware has to be combined with a robots.txt_ parser.
+
+    Scrapy ships with support for the following robots.txt_ parsers:
+
+    * :ref:`Protego <protego-parser>` (default)
+    * :ref:`RobotFileParser <python-robotfileparser>`
+    * :ref:`Reppy <reppy-parser>`
+    * :ref:`Robotexclusionrulesparser <rerp-parser>`
+
+    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
+    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+
 .. reqmeta:: dont_obey_robotstxt
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` has
@@ -909,6 +1001,129 @@ If :attr:`Request.meta <scrapy.http.Request.meta>` has
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
+Parsers vary in several aspects:
+
+* Language of implementation
+
+* Supported specification
+
+* Support for wildcard matching
+
+* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+  in particular for ``Allow`` and ``Disallow`` directives, where the most
+  specific rule based on the length of the path trumps the less specific
+  (shorter) rule
+
+Performance comparison of different parsers is available at `the following link
+<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+
+.. _protego-parser:
+
+Protego parser
+~~~~~~~~~~~~~~
+
+Based on `Protego <https://github.com/scrapy/protego>`_:
+
+* implemented in Python
+
+* is compliant with `Google's Robots.txt Specification
+  <https://developers.google.com/search/reference/robots_txt>`_
+
+* supports wildcard matching
+
+* uses the length based rule
+
+Scrapy uses this parser by default.
+
+.. _python-robotfileparser:
+
+RobotFileParser
+~~~~~~~~~~~~~~~
+
+Based on `RobotFileParser
+<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+
+* is Python's built-in robots.txt_ parser
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
+
+* lacks support for wildcard matching
+
+* doesn't use the length based rule
+
+It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
+
+In order to use this parser, set:
+
+* :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
+
+.. _reppy-parser:
+
+Reppy parser
+~~~~~~~~~~~~
+
+Based on `Reppy <https://github.com/seomoz/reppy/>`_:
+
+* is a Python wrapper around `Robots Exclusion Protocol Parser for C++
+  <https://github.com/seomoz/rep-cpp>`_
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
+
+* supports wildcard matching
+
+* uses the length based rule
+
+Native implementation, provides better speed than Protego.
+
+In order to use this parser:
+
+* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.ReppyRobotParser``
+
+.. _rerp-parser:
+
+Robotexclusionrulesparser
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+
+* implemented in Python
+
+* is compliant with `Martijn Koster's 1996 draft specification
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
+
+* supports wildcard matching
+
+* doesn't use the length based rule
+
+In order to use this parser:
+
+* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+  ``pip install robotexclusionrulesparser``
+
+* Set :setting:`ROBOTSTXT_PARSER` setting to
+  ``scrapy.robotstxt.RerpRobotParser``
+
+.. _support-for-new-robots-parser:
+
+Implementing support for a new parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement support for a new robots.txt_ parser by subclassing
+the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
+implementing the methods described below.
+
+.. module:: scrapy.robotstxt
+   :synopsis: robots.txt parser interface and implementations
+
+.. autoclass:: RobotParser
+   :members:
+
+.. _robots.txt: https://www.robotstxt.org/
 
 DownloaderStats
 ---------------
@@ -924,6 +1139,16 @@ DownloaderStats
    To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
    setting.
 
+
+UriUserinfoMiddleware
+---------------------
+
+.. module:: scrapy.downloadermiddlewares.uriuserinfo
+   :synopsis: URI Userinfo Middleware
+
+.. autoclass:: UriUserinfoMiddleware
+
+
 UserAgentMiddleware
 -------------------
 
@@ -934,7 +1159,7 @@ UserAgentMiddleware
 
    Middleware that allows spiders to override the default user agent.
 
-   In order for a spider to override the default user agent, its `user_agent`
+   In order for a spider to override the default user agent, its ``user_agent``
    attribute must be set.
 
 .. _ajaxcrawl-middleware:
@@ -948,7 +1173,7 @@ AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
    on meta-fragment html tag. See
-   https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
    for more info.
 
    .. note::
@@ -976,7 +1201,15 @@ enable it for :ref:`broad crawls <topics-broad-crawls>`.
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. setting:: HTTPPROXY_ENABLED
 .. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_ENABLED
+^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether or not to enable the :class:`HttpProxyMiddleware`.
 
 HTTPPROXY_AUTH_ENCODING
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -987,5 +1220,3 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
-.. _anydbm: https://docs.python.org/2/library/anydbm.html
-.. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding

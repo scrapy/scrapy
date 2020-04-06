@@ -149,7 +149,7 @@ See previous question.
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
-Yes, see :class:`~scrapy.downloadermiddlewares.auth.AuthMiddleware`.
+Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------

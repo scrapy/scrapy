@@ -91,6 +91,7 @@ DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
+    'scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware': 200,
     'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
     'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
     'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
