@@ -163,7 +163,7 @@ bytes_received
 --------------
 
 .. signal:: bytes_received
-.. function:: bytes_received(data, request, spider, source)
+.. function:: bytes_received(data, request, spider)
 
     Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
     received for a specific request. This signal might be fired multiple
@@ -179,10 +179,6 @@ bytes_received
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.spiders.Spider` object
-
-    :param source: a string to identify which handler sent the signal
-        (current values could be "http11" or "s3")
-    :type source: :class:`str` object
 
 spider_closed
 -------------

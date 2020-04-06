@@ -73,7 +73,6 @@ class S3DownloadHandler:
             objcls=httpdownloadhandler,
             settings=settings,
             crawler=crawler,
-            source="s3",
         )
         self._download_http = _http_handler.download_request
 
