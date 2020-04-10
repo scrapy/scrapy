@@ -90,8 +90,7 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
-            'classname': '%sSpider' % ''.join(s.capitalize() \
-                for s in module.split('_'))
+            'classname': '%sSpider' % ''.join(s.capitalize() for s in module.split('_'))
         }
         if self.settings.get('NEWSPIDER_MODULE'):
             spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
@@ -102,8 +101,8 @@ class Command(ScrapyCommand):
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print("Created spider %r using template %r " % (name, \
-            template_name), end=('' if spiders_module else '\n'))
+        print("Created spider %r using template %r "
+              % (name, template_name), end=('' if spiders_module else '\n'))
         if spiders_module:
             print("in module:\n  %s.%s" % (spiders_module.__name__, module))
 
