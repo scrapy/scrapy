@@ -325,8 +325,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'item_completed'])
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
