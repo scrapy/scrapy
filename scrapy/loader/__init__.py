@@ -6,13 +6,13 @@ See documentation in docs/topics/loaders.rst
 from collections import defaultdict
 from contextlib import suppress
 
-from scrapy.item import Item
+from scrapy.item import Item, ItemAdapter
 from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.datatypes import set_item_field
-from scrapy.utils.python import flatten, is_dataclass_instance, dataclass_asdict
+from scrapy.utils.python import flatten
 
 
 def unbound_method(method):
@@ -45,9 +45,7 @@ class ItemLoader:
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
         # values from initial item
-        if is_dataclass_instance(item):
-            item = dataclass_asdict(item)
-        for field_name, value in item.items():
+        for field_name, value in ItemAdapter(item).as_dict().items():
             self._values[field_name] += arg_to_iter(value)
 
     @property

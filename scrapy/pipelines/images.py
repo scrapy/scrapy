@@ -5,24 +5,19 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from contextlib import suppress
 from io import BytesIO
 
 from PIL import Image
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request
+from scrapy.item import ItemAdapter
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.datatypes import get_item_field, set_item_field
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import is_dataclass_instance, to_bytes
-
-
-try:
-    from dataclasses import fields as dataclass_fields
-except ImportError:
-    dataclass_fields = None
+from scrapy.utils.python import to_bytes
 
 
 class NoimagesDrop(DropItem):
@@ -164,17 +159,13 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        urls = get_item_field(item, self.images_urls_field, [])
+        urls = ItemAdapter(item).get_item_field(self.images_urls_field, [])
         return [Request(u) for u in urls]
 
     def item_completed(self, results, item, info):
-        if (
-            is_dataclass_instance(item)
-            and self.images_result_field in (f.name for f in dataclass_fields(item))
-            or isinstance(item, dict)
-            or self.images_result_field in item.fields
-        ):
-            set_item_field(item, self.images_result_field, [x for ok, x in results if ok])
+        value = [x for ok, x in results if ok]
+        with suppress(KeyError):
+            ItemAdapter(item).set_item_field(self.images_result_field, value)
         return item
 
     def file_path(self, request, response=None, info=None):

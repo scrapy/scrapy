@@ -11,9 +11,8 @@ import warnings
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import BaseItem
-from scrapy.utils.python import (dataclass_asdict, is_dataclass_instance,
-                                 is_listlike, to_bytes, to_unicode)
+from scrapy.item import BaseItem, ItemAdapter
+from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
@@ -57,8 +56,7 @@ class BaseItemExporter:
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
-        if is_dataclass_instance(item):
-            item = dataclass_asdict(item)
+        item = ItemAdapter(item).as_dict()
         if include_empty is None:
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:

@@ -13,19 +13,6 @@ from itertools import chain
 from scrapy.utils.decorators import deprecated
 
 
-try:
-    from dataclasses import is_dataclass, asdict as dataclass_asdict
-except ImportError:
-    def is_dataclass_instance(_):
-        return False
-
-    def dataclass_asdict(_):
-        raise ImportError("no module named 'dataclasses'")
-else:
-    def is_dataclass_instance(obj):
-        return is_dataclass(obj) and not isinstance(obj, type)
-
-
 def flatten(x):
     """flatten(sequence) -> list
 

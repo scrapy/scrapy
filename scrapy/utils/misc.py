@@ -1,9 +1,9 @@
 """Helper functions which don't fit anywhere else"""
 import ast
-import hashlib
 import inspect
 import os
 import re
+import hashlib
 import warnings
 from contextlib import contextmanager
 from importlib import import_module
@@ -12,9 +12,9 @@ from textwrap import dedent
 
 from w3lib.html import replace_entities
 
-from scrapy.item import BaseItem
 from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.python import flatten, is_dataclass_instance, to_unicode
+from scrapy.utils.python import flatten, to_unicode
+from scrapy.item import BaseItem
 
 
 _ITERABLE_SINGLE_VALUES = dict, BaseItem, str, bytes
@@ -32,17 +32,6 @@ def arg_to_iter(arg):
         return arg
     else:
         return [arg]
-
-
-def is_item_like(obj):
-    """
-    Returns True if *obj* is considered a Scrapy *item*, False otherwise.
-
-    An object is considered an *item* if it is:
-    - a scrapy.item.BaseItem or dict instance (or any subclass)
-    - a dataclass object
-    """
-    return isinstance(obj, (BaseItem, dict)) or is_dataclass_instance(obj)
 
 
 def load_object(path):
