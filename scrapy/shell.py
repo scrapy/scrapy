@@ -22,7 +22,7 @@ from scrapy.utils.misc import is_item_like, load_object
 from scrapy.utils.response import open_in_browser
 
 
-class Shell(object):
+class Shell:
 
     relevant_classes = (Crawler, Spider, Request, Response, Settings)
 

@@ -9,7 +9,7 @@ from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 
 
-class ScrapyCommand(object):
+class ScrapyCommand:
 
     requires_project = False
     crawler_process = None

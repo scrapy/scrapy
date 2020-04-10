@@ -115,7 +115,7 @@ def start_test_site(debug=False):
     return port
 
 
-class CrawlerRun(object):
+class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
     def __init__(self, spider_class):

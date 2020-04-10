@@ -35,7 +35,7 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class DirectDupeFilter(object):
+class DirectDupeFilter:
     method = 'n/a'
 
 

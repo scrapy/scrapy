@@ -84,7 +84,7 @@ contain a price::
 
     from scrapy.exceptions import DropItem
 
-    class PricePipeline(object):
+    class PricePipeline:
 
         vat_factor = 1.15
 
@@ -106,7 +106,7 @@ format::
 
    import json
 
-   class JsonWriterPipeline(object):
+   class JsonWriterPipeline:
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'w')
@@ -135,7 +135,7 @@ method and how to clean up the resources properly.::
 
     import pymongo
 
-    class MongoPipeline(object):
+    class MongoPipeline:
 
         collection_name = 'scrapy_items'
 
@@ -183,7 +183,7 @@ it saves the screenshot to a file and adds filename to the item.
     from urllib.parse import quote
 
 
-    class ScreenshotPipeline(object):
+    class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
@@ -222,7 +222,7 @@ returns multiples items with the same id::
 
     from scrapy.exceptions import DropItem
 
-    class DuplicatesPipeline(object):
+    class DuplicatesPipeline:
 
         def __init__(self):
             self.ids_seen = set()

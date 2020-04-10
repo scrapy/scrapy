@@ -36,7 +36,7 @@ def nonserializable_object_test(self):
         self.assertRaises(ValueError, q.push, lambda x: x)
     else:
         # Use a different unpickleable object
-        class A(object):
+        class A:
             pass
 
         a = A()

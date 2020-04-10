@@ -16,11 +16,11 @@ from scrapy.utils.request import request_fingerprint
 logger = logging.getLogger(__name__)
 
 
-class MediaPipeline(object):
+class MediaPipeline:
 
     LOG_FAILED_RESULTS = True
 
-    class SpiderInfo(object):
+    class SpiderInfo:
         def __init__(self, spider):
             self.spider = spider
             self.downloading = set()
