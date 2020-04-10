@@ -3,11 +3,7 @@ import json
 from scrapy.contracts import Contract
 from scrapy.exceptions import ContractFail
 from scrapy.http import Request
-from scrapy.utils.misc import is_item_like
-
-
-def _is_request_like(obj):
-    return isinstance(obj, Request)
+from scrapy.utils.item import is_item_like
 
 
 # contracts
@@ -52,8 +48,8 @@ class ReturnsContract(Contract):
 
     name = 'returns'
     object_type_verifiers = {
-        'request': _is_request_like,
-        'requests': _is_request_like,
+        'request': lambda x: isinstance(x, Request),
+        'requests': lambda x: isinstance(x, Request),
         'item': is_item_like,
         'items': is_item_like,
     }
