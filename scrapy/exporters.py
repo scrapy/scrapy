@@ -57,14 +57,16 @@ class BaseItemExporter:
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
-        item = ItemAdapter(item).as_dict()
+        item = ItemAdapter(item)
+
         if include_empty is None:
             include_empty = self.export_empty_fields
+
         if self.fields_to_export is None:
-            if include_empty and not isinstance(item, dict):
-                field_iter = item.fields.keys()
+            if include_empty:
+                field_iter = item.field_names()
             else:
-                field_iter = item.keys()
+                field_iter = (x for x in item.field_names() if x in item)
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -73,8 +75,8 @@ class BaseItemExporter:
 
         for field_name in field_iter:
             if field_name in item:
-                field = {} if isinstance(item, dict) else item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+                field = item.get_field(field_name)
+                value = self.serialize_field(field, field_name, item.get_value(field_name))
             else:
                 value = default_value
 

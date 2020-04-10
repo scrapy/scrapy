@@ -15,7 +15,7 @@ from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.item import ItemAdapter
+from scrapy.utils.item import ItemAdapter, set_item_value
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
@@ -159,13 +159,12 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        urls = ItemAdapter(item).get_item_field(self.images_urls_field, [])
+        urls = ItemAdapter(item).get_value(self.images_urls_field, [])
         return [Request(u) for u in urls]
 
     def item_completed(self, results, item, info):
-        value = [x for ok, x in results if ok]
         with suppress(KeyError):
-            ItemAdapter(item).set_item_field(self.images_result_field, value)
+            set_item_value(item, self.images_result_field, [x for ok, x in results if ok])
         return item
 
     def file_path(self, request, response=None, info=None):
