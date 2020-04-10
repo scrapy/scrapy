@@ -277,10 +277,9 @@ class ExecutionEngine:
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
             spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
-                for _, x in res):
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return
 
         if self.spider_is_idle(spider):
