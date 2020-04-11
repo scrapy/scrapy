@@ -376,15 +376,14 @@ which means you might need to update your existing components
 :ref:`signal handlers <topics-signals>` handlers or
 :ref:`spider middlewares <topics-spider-middleware>`) to make them work correctly.
 
-Alternatively, you can use the
-:func:`~scrapy.utils.decorators.subscriptable_dataclass` decorator:
+For this purpose, Scrapy provides the class:`~scrapy.utils.item.ItemAdapter` class,
+which is also used internally to handle items without taking their underlying
+implementation into account.
 
-.. autofunction:: scrapy.utils.decorators.subscriptable_dataclass
+.. autoclass:: scrapy.utils.item.ItemAdapter
 
-It adds the appropriate methods in order to make ``dataclass`` objects
-capable of being accessed like dictionaries. This decorator is also useful when working with
-third-party components which deal with items and haven't been yet adapted to
-support dataclass-based items.
+This class provides the appropriate methods in order to make items
+of any base type capable of being accessed with a ``dict``-like API.
 
 .. invisible-code-block: python
 
@@ -393,28 +392,26 @@ support dataclass-based items.
 .. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
 
 >>> from dataclasses import dataclass
->>> from scrapy.utils.decorators import subscriptable_dataclass
->>> @subscriptable_dataclass
-... @dataclass
+>>> from scrapy.utils.item import ItemAdapter
+>>> @dataclass
 ... class InventoryItem:
 ...     name: str
 ...     price: int
 ...
->>> d = InventoryItem(name="foobar", price=10)
->>> d["name"]
-'foobar'
->>> d["price"] = 5
->>> d
-InventoryItem(name='foobar', price=5)
+>>> item = InventoryItem(name="foo", price=10)
+>>> adapter = ItemAdapter(item)
+>>> adapter.item is item
+True
+>>> adapter["name"]
+'foo'
+>>> 'foo'
+'foo'
+>>> adapter["name"] = "bar"
+>>> adapter["price"] = 5
+>>> adapter.item
+InventoryItem(name='bar', price=5)
 
 .. skip: end
-
-In addition, two helper functions are available to interact with items without
-having to check their base class:
-
-.. autofunction:: scrapy.utils.datatypes.get_item_field
-
-.. autofunction:: scrapy.utils.datatypes.set_item_field
 
 
 .. _faq-specific-reactor:

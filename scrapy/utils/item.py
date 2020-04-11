@@ -44,6 +44,9 @@ class ItemAdapter:
         else:
             return field_name in self.item
 
+    def __repr__(self):
+        return "ItemAdapter for type %s: %r" % (self.item.__class__.__name__, self.item)
+
     def __getitem__(self, field_name):
         if _is_dataclass_instance(self.item):
             if field_name in self:
