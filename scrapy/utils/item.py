@@ -66,7 +66,7 @@ class ItemAdapter:
 
     def get_field(self, field_name):
         """
-        Returns the corresponding scrapy.item.Field object if the base item
+        Returns the appropriate class:`scrapy.item.Field` object if the wrapped item
         is a BaseItem object, None otherwise.
         """
         if isinstance(self.item, BaseItem):
@@ -75,11 +75,11 @@ class ItemAdapter:
 
     def as_dict(self):
         """
-        Return a class:`dict` instance with the same data as the stored item.
-        Returns the base item unaltered if is already a dict object.
+        Return a class:`dict` instance with the same data as the wrapped item.
+        Returns a shallow copy of the wrapped item if it is already a dict object.
         """
         if isinstance(self.item, dict):
-            return self.item
+            return self.item.copy()
         elif isinstance(self.item, BaseItem):
             return dict(self.item)
         elif _is_dataclass_instance(self.item):
