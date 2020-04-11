@@ -1,17 +1,15 @@
 import functools
 import logging
 from collections import defaultdict
-
 from twisted.internet.defer import Deferred, DeferredList, _DefGen_Return
 from twisted.python.failure import Failure
 
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import defer_result, mustbe_deferred
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
-
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
