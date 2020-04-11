@@ -2,7 +2,7 @@
 import unittest
 
 from scrapy.item import BaseItem, Field, Item
-from scrapy.utils.item import is_dataclass_instance, is_item_like, ItemAdapter
+from scrapy.utils.item import _is_dataclass_instance, is_item_like, ItemAdapter
 
 
 try:
@@ -28,26 +28,26 @@ class DataclassTestCase(unittest.TestCase):
 
     def test_false_always(self):
         """These objects should return False whether or not the dataclasses module is available"""
-        self.assertFalse(is_dataclass_instance(int))
-        self.assertFalse(is_dataclass_instance(sum))
-        self.assertFalse(is_dataclass_instance(1234))
-        self.assertFalse(is_dataclass_instance(object()))
-        self.assertFalse(is_dataclass_instance(Item()))
-        self.assertFalse(is_dataclass_instance(TestItem()))
-        self.assertFalse(is_dataclass_instance("a string"))
-        self.assertFalse(is_dataclass_instance(b"some bytes"))
-        self.assertFalse(is_dataclass_instance({"a": "dict"}))
-        self.assertFalse(is_dataclass_instance(["a", "list"]))
-        self.assertFalse(is_dataclass_instance(("a", "tuple")))
-        self.assertFalse(is_dataclass_instance({"a", "set"}))
+        self.assertFalse(_is_dataclass_instance(int))
+        self.assertFalse(_is_dataclass_instance(sum))
+        self.assertFalse(_is_dataclass_instance(1234))
+        self.assertFalse(_is_dataclass_instance(object()))
+        self.assertFalse(_is_dataclass_instance(Item()))
+        self.assertFalse(_is_dataclass_instance(TestItem()))
+        self.assertFalse(_is_dataclass_instance("a string"))
+        self.assertFalse(_is_dataclass_instance(b"some bytes"))
+        self.assertFalse(_is_dataclass_instance({"a": "dict"}))
+        self.assertFalse(_is_dataclass_instance(["a", "list"]))
+        self.assertFalse(_is_dataclass_instance(("a", "tuple")))
+        self.assertFalse(_is_dataclass_instance({"a", "set"}))
 
     @unittest.skipIf(not DataClassItem, "dataclasses module is not available")
     def test_false_only_if_installed(self):
-        self.assertFalse(is_dataclass_instance(DataClassItem))
+        self.assertFalse(_is_dataclass_instance(DataClassItem))
 
     @unittest.skipIf(not DataClassItem, "dataclasses module is not available")
     def test_true_only_if_installed(self):
-        self.assertTrue(is_dataclass_instance(DataClassItem(name="asdf", value=1234)))
+        self.assertTrue(_is_dataclass_instance(DataClassItem(name="asdf", value=1234)))
 
 
 class ItemLikeTestCase(unittest.TestCase):

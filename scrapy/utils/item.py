@@ -1,7 +1,7 @@
 from scrapy.item import BaseItem
 
 
-def is_dataclass_instance(obj):
+def _is_dataclass_instance(obj):
     """
     Returns True if *obj* is a dataclass object, False otherwise.
     Taken from https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass.
@@ -22,7 +22,7 @@ def is_item_like(obj):
     - a scrapy.item.BaseItem or dict instance (or any subclass)
     - a dataclass object
     """
-    return isinstance(obj, (BaseItem, dict)) or is_dataclass_instance(obj)
+    return isinstance(obj, (BaseItem, dict)) or _is_dataclass_instance(obj)
 
 
 class ItemAdapter:
@@ -41,20 +41,20 @@ class ItemAdapter:
         """
         Returns True if the field with the given name contains a value, False otherwise
         """
-        if is_dataclass_instance(self.item):
+        if _is_dataclass_instance(self.item):
             from dataclasses import fields
             return field_name in (f.name for f in fields(self.item))
         else:
             return field_name in self.item
 
     def get_value(self, field_name, default=None):
-        if is_dataclass_instance(self.item):
+        if _is_dataclass_instance(self.item):
             return getattr(self.item, field_name, default)
         else:
             return self.item.get(field_name, default)
 
     def set_value(self, field_name, value):
-        if is_dataclass_instance(self.item):
+        if _is_dataclass_instance(self.item):
             from dataclasses import fields
             if field_name in (f.name for f in fields(self.item)):
                 setattr(self.item, field_name, value)
@@ -82,7 +82,7 @@ class ItemAdapter:
             return self.item
         elif isinstance(self.item, BaseItem):
             return dict(self.item)
-        elif is_dataclass_instance(self.item):
+        elif _is_dataclass_instance(self.item):
             from dataclasses import asdict
             return asdict(self.item)
 
@@ -90,7 +90,7 @@ class ItemAdapter:
         """
         Returns a generator with the names of the item's fields
         """
-        if is_dataclass_instance(self.item):
+        if _is_dataclass_instance(self.item):
             from dataclasses import fields
             return (field.name for field in fields(self.item))
         elif isinstance(self.item, dict):

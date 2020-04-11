@@ -11,7 +11,8 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
-from scrapy.utils.python import is_dataclass_instance, to_bytes
+from scrapy.utils.item import ItemAdapter
+from scrapy.utils.python import to_bytes
 
 
 try:
@@ -136,7 +137,7 @@ class ImagesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        images = item.images if is_dataclass_instance(item) else item["images"]
+        images = ItemAdapter(item).get_value("images")
         self.assertEqual(images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
@@ -152,7 +153,7 @@ class ImagesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        custom_images = item.custom_images if is_dataclass_instance(item) else item["custom_images"]
+        custom_images = ItemAdapter(item).get_value("custom_images")
         self.assertEqual(custom_images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 

@@ -21,7 +21,7 @@ from scrapy.pipelines.files import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
-from scrapy.utils.python import is_dataclass_instance
+from scrapy.utils.item import ItemAdapter
 from scrapy.utils.test import (
     assert_aws_environ,
     assert_gcs_environ,
@@ -138,7 +138,7 @@ class FilesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        files = item.files if is_dataclass_instance(item) else item["files"]
+        files = ItemAdapter(item).get_value("files")
         self.assertEqual(files, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
@@ -154,7 +154,7 @@ class FilesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        custom_files = item.custom_files if is_dataclass_instance(item) else item["custom_files"]
+        custom_files = ItemAdapter(item).get_value("custom_files")
         self.assertEqual(custom_files, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
