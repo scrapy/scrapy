@@ -1116,17 +1116,6 @@ multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
 
-.. setting:: REDIRECT_MAX_TIMES
-
-REDIRECT_MAX_TIMES
-------------------
-
-Default: ``20``
-
-Defines the maximum times a request can be redirected. After this maximum the
-request's response is returned as is. We used Firefox default value for the
-same task.
-
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
@@ -1421,17 +1410,6 @@ Default: ``True``
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
-
-.. setting:: TELNETCONSOLE_PORT
-
-TELNETCONSOLE_PORT
-------------------
-
-Default: ``[6023, 6073]``
-
-The port range to use for the telnet console. If set to ``None`` or ``0``, a
-dynamically assigned port is used. For more info see
-:ref:`topics-telnetconsole`.
 
 .. setting:: TEMPLATES_DIR
 

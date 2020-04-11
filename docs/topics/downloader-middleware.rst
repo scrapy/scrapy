@@ -829,6 +829,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
+After this maximum the request's response is returned as is.
 
 MetaRefreshMiddleware
 ---------------------
