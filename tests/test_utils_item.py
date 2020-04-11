@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import types
 import unittest
 
 from scrapy.item import BaseItem, Field, Item
@@ -20,8 +21,8 @@ else:
 
 
 class TestItem(Item):
-    name = Field()
-    value = Field()
+    name = Field(serializer=str)
+    value = Field(serializer=int)
 
 
 class DataclassTestCase(unittest.TestCase):
@@ -47,6 +48,7 @@ class DataclassTestCase(unittest.TestCase):
 
     @unittest.skipIf(not DataClassItem, "dataclasses module is not available")
     def test_true_only_if_installed(self):
+        self.assertTrue(_is_dataclass_instance(DataClassItem()))
         self.assertTrue(_is_dataclass_instance(DataClassItem(name="asdf", value=1234)))
 
 
@@ -101,8 +103,61 @@ class ItemAdapterTestCase(unittest.TestCase):
             self.assertEqual(adapter["name"], "asdf")
             self.assertEqual(adapter["value"], 1234)
 
+        for cls in filter(None, [TestItem, dict, DataClassItem]):
+            item = cls(name="asdf", value=1234)
+            adapter = ItemAdapter(item)
+            self.assertEqual(adapter.get("name"), "asdf")
+            self.assertEqual(adapter.get("value"), 1234)
+            self.assertEqual(adapter["name"], "asdf")
+            self.assertEqual(adapter["value"], 1234)
+
+    def test_get_value_keyerror_all(self):
+        for cls in filter(None, [TestItem, dict, DataClassItem]):
+            item = cls()
+            adapter = ItemAdapter(item)
+            with self.assertRaises(KeyError):
+                adapter["undefined_field"]
+
+    def test_get_value_keyerror_item_dict(self):
+        for cls in [TestItem, dict]:
+            item = cls()
+            adapter = ItemAdapter(item)
+            with self.assertRaises(KeyError):
+                adapter["name"]
+
+    def test_set_value_keyerror(self):
+        for cls in filter(None, [TestItem, DataClassItem]):
+            item = cls()
+            adapter = ItemAdapter(item)
+            with self.assertRaises(KeyError):
+                adapter["undefined_field"] = "some value"
+
+    def test_get_field(self):
+        for cls in filter(None, [dict, DataClassItem]):
+            item = cls(name="asdf", value=1234)
+            adapter = ItemAdapter(item)
+            self.assertIsNone(adapter.get_field("undefined_field"))
+            self.assertIsNone(adapter.get_field("name"))
+            self.assertIsNone(adapter.get_field("value"))
+
+        # scrapy.item.Field objects are only present in BaseItem instances
+        item = TestItem()
+        adapter = ItemAdapter(item)
+        self.assertIsNone(adapter.get_field("undefined_field"))
+        self.assertIsInstance(adapter.get_field("name"), Field)
+        self.assertIsInstance(adapter.get_field("value"), Field)
+        self.assertIs(adapter.get_field("name")["serializer"], str)
+        self.assertIs(adapter.get_field("value")["serializer"], int)
+
     def test_asdict(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
             adapter = ItemAdapter(item)
             self.assertEqual(dict(name="asdf", value=1234), adapter.asdict())
+
+    def test_field_names(self):
+        for cls in filter(None, [TestItem, dict, DataClassItem]):
+            item = cls(name="asdf", value=1234)
+            adapter = ItemAdapter(item)
+            self.assertIsInstance(adapter.field_names(), types.GeneratorType)
+            self.assertEqual(sorted(list(adapter.field_names())), ["name", "value"])

@@ -96,7 +96,8 @@ class ItemAdapter:
         """
         if _is_dataclass_instance(self.item):
             from dataclasses import fields
-            return (field.name for field in fields(self.item))
+            for field in fields(self.item):
+                yield field.name
         elif isinstance(self.item, dict):
             yield from self.item.keys()
         elif isinstance(self.item, BaseItem):
