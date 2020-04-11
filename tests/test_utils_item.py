@@ -101,8 +101,8 @@ class ItemAdapterTestCase(unittest.TestCase):
             self.assertEqual(adapter["name"], "asdf")
             self.assertEqual(adapter["value"], 1234)
 
-    def test_as_dict(self):
+    def test_asdict(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
             adapter = ItemAdapter(item)
-            self.assertEqual(dict(name="asdf", value=1234), adapter.as_dict())
+            self.assertEqual(dict(name="asdf", value=1234), adapter.asdict())

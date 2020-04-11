@@ -45,7 +45,7 @@ class ItemLoader:
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
         # values from initial item
-        for field_name, value in ItemAdapter(item).as_dict().items():
+        for field_name, value in ItemAdapter(item).asdict().items():
             self._values[field_name] += arg_to_iter(value)
 
     @property

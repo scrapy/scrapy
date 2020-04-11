@@ -44,16 +44,14 @@ class ItemAdapter:
         if _is_dataclass_instance(self.item):
             from dataclasses import fields
             return field_name in (f.name for f in fields(self.item))
-        else:
-            return field_name in self.item
+        return field_name in self.item
 
     def __getitem__(self, field_name):
         if _is_dataclass_instance(self.item):
             if field_name in self:
                 return getattr(self.item, field_name)
             raise KeyError(field_name)
-        else:
-            return self.item[field_name]
+        return self.item[field_name]
 
     def __setitem__(self, field_name, value):
         if _is_dataclass_instance(self.item):
@@ -68,8 +66,7 @@ class ItemAdapter:
     def get(self, field_name, default=None):
         if _is_dataclass_instance(self.item):
             return getattr(self.item, field_name, default)
-        else:
-            return self.item.get(field_name, default)
+        return self.item.get(field_name, default)
 
     def get_field(self, field_name):
         """
@@ -80,18 +77,18 @@ class ItemAdapter:
             return self.item.fields.get(field_name)
         return None
 
-    def as_dict(self):
+    def asdict(self):
         """
         Return a class:`dict` instance with the same data as the wrapped item.
         Returns a shallow copy of the wrapped item if it is already a dict object.
         """
-        if isinstance(self.item, dict):
+        if _is_dataclass_instance(self.item):
+            from dataclasses import asdict
+            return asdict(self.item)
+        elif isinstance(self.item, dict):
             return self.item.copy()
         elif isinstance(self.item, BaseItem):
             return dict(self.item)
-        elif _is_dataclass_instance(self.item):
-            from dataclasses import asdict
-            return asdict(self.item)
 
     def field_names(self):
         """
