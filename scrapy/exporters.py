@@ -75,7 +75,7 @@ class BaseItemExporter:
 
         for field_name in field_iter:
             if field_name in item:
-                field = item.get_field(field_name)
+                field = item.get_field(field_name) or {}
                 value = self.serialize_field(field, field_name, item.get_value(field_name))
             else:
                 value = default_value

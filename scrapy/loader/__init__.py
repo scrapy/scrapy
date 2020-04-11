@@ -10,7 +10,7 @@ from scrapy.item import Item
 from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
-from scrapy.utils.item import ItemAdapter, set_item_value
+from scrapy.utils.item import ItemAdapter
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 
@@ -128,12 +128,12 @@ class ItemLoader:
         return value
 
     def load_item(self):
-        item = self.item
+        adapter = ItemAdapter(self.item)
         for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
-                set_item_value(item, field_name, value)
-        return item
+                adapter.set_value(field_name, value)
+        return adapter.item
 
     def get_output_value(self, field_name):
         proc = self.get_output_processor(field_name)

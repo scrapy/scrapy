@@ -25,7 +25,7 @@ from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
-from scrapy.utils.item import ItemAdapter, set_item_value
+from scrapy.utils.item import ItemAdapter
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
@@ -517,7 +517,7 @@ class FilesPipeline(MediaPipeline):
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
-            set_item_value(item, self.files_result_field, [x for ok, x in results if ok])
+            ItemAdapter(item).set_value(self.files_result_field, [x for ok, x in results if ok])
         return item
 
     def file_path(self, request, response=None, info=None):

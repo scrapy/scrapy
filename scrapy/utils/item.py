@@ -25,18 +25,6 @@ def is_item_like(obj):
     return isinstance(obj, (BaseItem, dict)) or is_dataclass_instance(obj)
 
 
-def set_item_value(item, field_name, value):
-    if is_dataclass_instance(item):
-        from dataclasses import fields as dataclass_fields
-        if field_name in (f.name for f in dataclass_fields(item)):
-            setattr(item, field_name, value)
-        else:
-            raise KeyError(
-                "%s does not support field: %s" % (item.__class__.__name__, field_name))
-    else:
-        item[field_name] = value
-
-
 class ItemAdapter:
     """
     Wrapper class to interact with items. It provides a common interface for components
@@ -54,8 +42,8 @@ class ItemAdapter:
         Returns True if the field with the given name contains a value, False otherwise
         """
         if is_dataclass_instance(self.item):
-            from dataclasses import fields as dataclass_fields
-            return field_name in (f.name for f in dataclass_fields(self.item))
+            from dataclasses import fields
+            return field_name in (f.name for f in fields(self.item))
         else:
             return field_name in self.item
 
@@ -65,14 +53,25 @@ class ItemAdapter:
         else:
             return self.item.get(field_name, default)
 
+    def set_value(self, field_name, value):
+        if is_dataclass_instance(self.item):
+            from dataclasses import fields
+            if field_name in (f.name for f in fields(self.item)):
+                setattr(self.item, field_name, value)
+            else:
+                raise KeyError(
+                    "%s does not support field: %s" % (self.item.__class__.__name__, field_name))
+        else:
+            self.item[field_name] = value
+
     def get_field(self, field_name):
         """
         Returns the corresponding scrapy.item.Field object if the base item
-        is a BaseItem object, an empty dictionary otherwise.
+        is a BaseItem object, None otherwise.
         """
         if isinstance(self.item, BaseItem):
-            return self.item.fields.get(field_name, {})
-        return {}
+            return self.item.fields.get(field_name)
+        return None
 
     def as_dict(self):
         """
