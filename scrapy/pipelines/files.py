@@ -504,7 +504,7 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
-        urls = ItemAdapter(item).get_value(self.files_urls_field, [])
+        urls = ItemAdapter(item).get(self.files_urls_field, [])
         return [Request(u) for u in urls]
 
     def file_downloaded(self, response, request, info):
@@ -517,7 +517,7 @@ class FilesPipeline(MediaPipeline):
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
-            ItemAdapter(item).set_value(self.files_result_field, [x for ok, x in results if ok])
+            ItemAdapter(item)[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):

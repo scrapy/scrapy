@@ -138,7 +138,7 @@ class FilesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        files = ItemAdapter(item).get_value("files")
+        files = ItemAdapter(item).get("files")
         self.assertEqual(files, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
@@ -154,7 +154,7 @@ class FilesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        custom_files = ItemAdapter(item).get_value("custom_files")
+        custom_files = ItemAdapter(item).get("custom_files")
         self.assertEqual(custom_files, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 

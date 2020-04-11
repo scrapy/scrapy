@@ -34,35 +34,39 @@ class ItemAdapter:
 
     def __init__(self, item):
         if not is_item_like(item):
-            raise TypeError("Expected a valid item, got %s (%r) instead" % (item, type(item)))
+            raise TypeError("Expected a valid item, got %r instead: %s" % (type(item), item))
         self.item = item
 
     def __contains__(self, field_name):
-        """
-        Returns True if the field with the given name contains a value, False otherwise
-        """
         if _is_dataclass_instance(self.item):
             from dataclasses import fields
             return field_name in (f.name for f in fields(self.item))
         else:
             return field_name in self.item
 
-    def get_value(self, field_name, default=None):
+    def __getitem__(self, field_name):
         if _is_dataclass_instance(self.item):
-            return getattr(self.item, field_name, default)
+            if field_name in self:
+                return getattr(self.item, field_name)
+            raise KeyError(field_name)
         else:
-            return self.item.get(field_name, default)
+            return self.item[field_name]
 
-    def set_value(self, field_name, value):
+    def __setitem__(self, field_name, value):
         if _is_dataclass_instance(self.item):
-            from dataclasses import fields
-            if field_name in (f.name for f in fields(self.item)):
+            if field_name in self:
                 setattr(self.item, field_name, value)
             else:
                 raise KeyError(
                     "%s does not support field: %s" % (self.item.__class__.__name__, field_name))
         else:
             self.item[field_name] = value
+
+    def get(self, field_name, default=None):
+        if _is_dataclass_instance(self.item):
+            return getattr(self.item, field_name, default)
+        else:
+            return self.item.get(field_name, default)
 
     def get_field(self, field_name):
         """

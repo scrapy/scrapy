@@ -137,7 +137,7 @@ class ImagesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        images = ItemAdapter(item).get_value("images")
+        images = ItemAdapter(item).get("images")
         self.assertEqual(images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
@@ -153,7 +153,7 @@ class ImagesPipelineTestCaseFieldsMixin:
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
         item = pipeline.item_completed(results, item, None)
-        custom_images = ItemAdapter(item).get_value("custom_images")
+        custom_images = ItemAdapter(item).get("custom_images")
         self.assertEqual(custom_images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 

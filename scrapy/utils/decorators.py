@@ -43,31 +43,3 @@ def inthread(func):
     def wrapped(*a, **kw):
         return threads.deferToThread(func, *a, **kw)
     return wrapped
-
-
-try:
-    from dataclasses import fields as dataclass_fields
-except ImportError:
-    pass
-else:
-    def subscriptable_dataclass(cls):
-        """
-        Allow dictionary-like access on dataclass instances
-        """
-
-        def __getitem__(self, key):
-            field_names = [f.name for f in dataclass_fields(self)]
-            if key in field_names:
-                return getattr(self, key)
-            raise KeyError(key)
-
-        def __setitem__(self, key, value):
-            field_names = [f.name for f in dataclass_fields(self)]
-            if key in field_names:
-                setattr(self, key, value)
-            else:
-                raise KeyError("%s does not support field: %s" % (self.__class__.__name__, key))
-
-        setattr(cls, "__getitem__", __getitem__)
-        setattr(cls, "__setitem__", __setitem__)
-        return cls

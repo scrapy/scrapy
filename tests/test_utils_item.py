@@ -92,12 +92,14 @@ class ItemAdapterTestCase(unittest.TestCase):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls()
             adapter = ItemAdapter(item)
-            self.assertEqual(adapter.get_value("name"), None)
-            self.assertEqual(adapter.get_value("value"), None)
-            adapter.set_value("name", "asdf")
-            adapter.set_value("value", 1234)
-            self.assertEqual(adapter.get_value("name"), "asdf")
-            self.assertEqual(adapter.get_value("value"), 1234)
+            self.assertEqual(adapter.get("name"), None)
+            self.assertEqual(adapter.get("value"), None)
+            adapter["name"] = "asdf"
+            adapter["value"] = 1234
+            self.assertEqual(adapter.get("name"), "asdf")
+            self.assertEqual(adapter.get("value"), 1234)
+            self.assertEqual(adapter["name"], "asdf")
+            self.assertEqual(adapter["value"], 1234)
 
     def test_as_dict(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
