@@ -27,7 +27,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
         elif isinstance(o, defer.Deferred):
             return str(o)
         elif is_item_like(o):
-            return ItemAdapter(o).asdict()
+            return dict(ItemAdapter(o).items())
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)
         elif isinstance(o, Response):

@@ -277,7 +277,7 @@ class EngineTest(unittest.TestCase):
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))
         for item, response in self.run.itemresp:
-            item = ItemAdapter(item).asdict()
+            item = ItemAdapter(item)
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
                 self.assertEqual('Item 1 name', item['name'])

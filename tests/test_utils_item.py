@@ -131,6 +131,26 @@ class ItemAdapterTestCase(unittest.TestCase):
             with self.assertRaises(KeyError):
                 adapter["undefined_field"] = "some value"
 
+    def test_delitem_len_iter(self):
+        for cls in filter(None, [TestItem, dict, DataClassItem]):
+            item = cls(name="asdf", value=1234)
+            adapter = ItemAdapter(item)
+            self.assertEqual(len(adapter), 2)
+            self.assertEqual(sorted(list(iter(adapter))), ["name", "value"])
+
+            del adapter["name"]
+            self.assertEqual(len(adapter), 1)
+            self.assertEqual(sorted(list(iter(adapter))), ["value"])
+
+            del adapter["value"]
+            self.assertEqual(len(adapter), 0)
+            self.assertEqual(sorted(list(iter(adapter))), [])
+
+            with self.assertRaises(KeyError):
+                del adapter["name"]
+                del adapter["value"]
+                del adapter["undefined_field"]
+
     def test_get_field(self):
         for cls in filter(None, [dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
@@ -152,7 +172,7 @@ class ItemAdapterTestCase(unittest.TestCase):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
             adapter = ItemAdapter(item)
-            self.assertEqual(dict(name="asdf", value=1234), adapter.asdict())
+            self.assertEqual(dict(name="asdf", value=1234), dict(adapter.items()))
 
     def test_field_names(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
