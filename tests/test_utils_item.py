@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import types
 import unittest
 
 from scrapy.item import BaseItem, Field, Item
@@ -159,5 +158,5 @@ class ItemAdapterTestCase(unittest.TestCase):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
             adapter = ItemAdapter(item)
-            self.assertIsInstance(adapter.field_names(), types.GeneratorType)
-            self.assertEqual(sorted(list(adapter.field_names())), ["name", "value"])
+            self.assertIsInstance(adapter.field_names(), list)
+            self.assertEqual(sorted(adapter.field_names()), ["name", "value"])

@@ -92,13 +92,12 @@ class ItemAdapter:
 
     def field_names(self):
         """
-        Returns a generator with the names of the item's fields
+        Returns a list with the names of all the defined fields for the item
         """
         if _is_dataclass_instance(self.item):
             from dataclasses import fields
-            for field in fields(self.item):
-                yield field.name
+            return [field.name for field in fields(self.item)]
         elif isinstance(self.item, dict):
-            yield from self.item.keys()
+            return list(self.item.keys())
         elif isinstance(self.item, BaseItem):
-            yield from self.item.fields.keys()
+            return list(self.item.fields.keys())
