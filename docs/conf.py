@@ -13,13 +13,13 @@
 
 import sys
 from datetime import datetime
-from pathlib import Path
+from os import path
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-sys.path.append(str(Path(__file__).absolute().parent / "_ext"))
-sys.path.insert(0, str(Path(__file__).absolute().parent.parent))
+sys.path.append(path.join(path.dirname(__file__), "_ext"))
+sys.path.insert(0, path.dirname(path.dirname(__file__)))
 
 
 # General configuration
@@ -59,10 +59,10 @@ copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
 #
 # The short X.Y version.
 try:
-    version_path = Path(__file__).parent.absolute().parent.joinpath("scrapy/VERSION")
-    version = version_path.read_text().strip()
-    release = version.rsplit(".", 1)[0]
-except Exception:
+    import scrapy
+    version = '.'.join(map(str, scrapy.version_info[:2]))
+    release = scrapy.__version__
+except ImportError:
     version = ''
     release = ''
 
