@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.http import Request
-from scrapy.downloadermiddlewares.uriuserinfo import UriUserinfoMiddleware
+from scrapy.downloadermiddlewares.uriuserinfo import UriUserInfoMiddleware
 from scrapy.spiders import Spider
 
 
@@ -10,7 +10,7 @@ class BaseTestCase:
     class Implementation(unittest.TestCase):
 
         def setUp(self):
-            self.mw = UriUserinfoMiddleware()
+            self.mw = UriUserInfoMiddleware()
             self.spider = Spider('bar')
 
         def tearDown(self):
@@ -65,19 +65,19 @@ class BaseTestCase:
             self.assertEqual(req.meta[self.password_field], 'b@r')
 
 
-class UriUserinfoMiddlewareFTPTest(BaseTestCase.Implementation):
+class UriUserInfoMiddlewareFTPTest(BaseTestCase.Implementation):
     protocol = 'ftp'
     username_field = 'ftp_user'
     password_field = 'ftp_password'
 
 
-class UriUserinfoMiddlewareHTTPTest(BaseTestCase.Implementation):
+class UriUserInfoMiddlewareHTTPTest(BaseTestCase.Implementation):
     protocol = 'http'
     username_field = 'http_user'
     password_field = 'http_pass'
 
 
-class UriUserinfoMiddlewareHTTPSTest(BaseTestCase.Implementation):
+class UriUserInfoMiddlewareHTTPSTest(BaseTestCase.Implementation):
     protocol = 'https'
     username_field = 'http_user'
     password_field = 'http_pass'

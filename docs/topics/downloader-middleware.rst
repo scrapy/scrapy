@@ -332,7 +332,7 @@ HttpAuthMiddleware
 
     You can alternatively specify ``http_user`` and ``http_pass`` in
     :attr:`Request.meta <scrapy.http.Request.meta>`, or use
-    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware`.
+    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`.
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
@@ -1140,13 +1140,13 @@ DownloaderStats
    setting.
 
 
-UriUserinfoMiddleware
+UriUserInfoMiddleware
 ---------------------
 
 .. module:: scrapy.downloadermiddlewares.uriuserinfo
    :synopsis: URI Userinfo Middleware
 
-.. autoclass:: UriUserinfoMiddleware
+.. autoclass:: UriUserInfoMiddleware
 
 
 UserAgentMiddleware

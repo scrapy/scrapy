@@ -534,7 +534,7 @@ Default::
 
     {
         'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware': 200,
+        'scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware': 200,
         'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
         'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
         'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
@@ -824,7 +824,7 @@ It can be overriden in a request in any of the following ways:
 -   Specifying ``ftp_password`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
 -   Specifying the password in :attr:`Request.url <scrapy.http.Request.url>`
-    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware`)
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
 
 .. note::
     Paraphrasing `RFC 1635`_, although it is common to use either the password
@@ -849,7 +849,7 @@ It can be overriden in a request in any of the following ways:
 -   Specifying ``ftp_user`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
 -   Specifying the username in :attr:`Request.url <scrapy.http.Request.url>`
-    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserinfoMiddleware`)
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
 
 .. setting:: ITEM_PIPELINES
 
