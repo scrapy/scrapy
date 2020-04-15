@@ -72,8 +72,6 @@ scrapy.Spider
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
 
-       .. note:: In Python 2 this must be ASCII only.
-
    .. attribute:: allowed_domains
 
        An optional list of strings containing domains that this spider is
@@ -129,7 +127,7 @@ scrapy.Spider
 
        You probably won't need to override this directly because the default
        implementation acts as a proxy to the :meth:`__init__` method, calling
-       it with the given arguments `args` and named arguments `kwargs`.
+       it with the given arguments ``args`` and named arguments ``kwargs``.
 
        Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
        attributes in the new instance so they can be accessed later inside the
@@ -190,7 +188,7 @@ scrapy.Spider
    .. method:: log(message, [level, component])
 
        Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backwards compatibility. For more information see
+       kept for backward compatibility. For more information see
        :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)
@@ -298,13 +296,13 @@ The above example can also be written as follows::
 
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
-If you were to set the `start_urls` attribute from the command line,
+If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
 using something like
-`ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
-or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
+`ast.literal_eval <https://docs.python.org/3/library/ast.html#ast.literal_eval>`_
+or `json.loads <https://docs.python.org/3/library/json.html#json.loads>`_
 and then set it as an attribute.
-Otherwise, you would cause iteration over a `start_urls` string
+Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
 resulting in each character being seen as a separate url.
 
@@ -374,16 +372,23 @@ CrawlSpider
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
+.. autoclass:: Rule
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
+   defines how links will be extracted from each crawled page. Each produced link will
+   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   link's text in its ``meta`` dictionary (under the ``link_text`` key).
+   If omitted, a default link extractor created with no arguments will be used,
+   resulting in all links being extracted.
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
+   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
+   as its first argument and must return either a single instance or an iterable of
+   :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
+   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
+   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   in its ``meta`` dictionary (under the ``link_text`` key)
 
    .. warning:: When writing crawl spider rules, avoid using ``parse`` as
        callback, since the :class:`CrawlSpider` uses the ``parse`` method
@@ -402,10 +407,21 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes.
 
-   ``process_request`` is a callable, or a string (in which case a method from
-   the spider object with that name will be used) which will be called with
-   every request extracted by this rule, and must return a request or None (to
-   filter out the request).
+   ``process_request`` is a callable (or a string, in which case a method from
+   the spider object with that name will be used) which will be called for every
+   :class:`~scrapy.http.Request` extracted by this rule. This callable should
+   take said request as first argument and the :class:`~scrapy.http.Response`
+   from which the request originated as second argument. It must return a
+   ``Request`` object or ``None`` (to filter out the request).
+
+   ``errback`` is a callable or a string (in which case a method from the spider
+   object with that name will be used) to be called if any exception is
+   raised while processing a request generated by the rule.
+   It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
+   instance as first parameter.
+
+   .. versionadded:: 2.0
+      The *errback* parameter.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
@@ -436,6 +452,7 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
             item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+            item['link_text'] = response.meta['link_text']
             return item
 
 
@@ -655,7 +672,7 @@ SitemapSpider
 
     .. attribute:: sitemap_follow
 
-        A list of regexes of sitemap that should be followed. This is is only
+        A list of regexes of sitemap that should be followed. This is only
         for sites that use `Sitemap index files`_ that point to other sitemap
         files.
 
@@ -679,6 +696,50 @@ SitemapSpider
         retrieved.
 
         Default is ``sitemap_alternate_links`` disabled.
+
+    .. method:: sitemap_filter(entries)
+
+        This is a filter function that could be overridden to select sitemap entries
+        based on their attributes.
+
+        For example::
+
+            <url>
+                <loc>http://example.com/</loc>
+                <lastmod>2005-01-01</lastmod>
+            </url>
+
+        We can define a ``sitemap_filter`` function to filter ``entries`` by date::
+
+            from datetime import datetime
+            from scrapy.spiders import SitemapSpider
+
+            class FilteredSitemapSpider(SitemapSpider):
+                name = 'filtered_sitemap_spider'
+                allowed_domains = ['example.com']
+                sitemap_urls = ['http://example.com/sitemap.xml']
+
+                def sitemap_filter(self, entries):
+                    for entry in entries:
+                        date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
+                        if date_time.year >= 2005:
+                            yield entry
+
+        This would retrieve only ``entries`` modified on 2005 and the following
+        years.
+
+        Entries are dict objects extracted from the sitemap document.
+        Usually, the key is the tag name and the value is the text inside it.
+
+        It's important to notice that:
+
+        - as the loc attribute is required, entries without this tag are discarded
+        - alternate links are stored in a list with the key ``alternate``
+          (see ``sitemap_alternate_links``)
+        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
+
+        If you omit this method, all entries found in sitemaps will be
+        processed, observing other attributes and their settings.
 
 
 SitemapSpider examples
@@ -753,6 +814,6 @@ Combine SitemapSpider with other sources of urls::
 
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

@@ -97,7 +97,6 @@ For Files Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
-
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
@@ -117,12 +116,6 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 Supported Storage
 =================
 
-File system is currently the only officially supported storage, but there are
-also support for storing files in `Amazon S3`_ and `Google Cloud Storage`_.
-
-.. _Amazon S3: https://aws.amazon.com/s3/
-.. _Google Cloud Storage: https://cloud.google.com/storage/
-
 File system storage
 -------------------
 
@@ -132,7 +125,7 @@ For example, the following image URL::
 
     http://www.example.com/image.jpg
 
-Whose `SHA1 hash` is::
+Whose ``SHA1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 
@@ -147,6 +140,29 @@ Where:
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
+
+.. _media-pipeline-ftp:
+
+FTP server storage
+------------------
+
+.. versionadded:: 2.0
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
+Scrapy will automatically upload the files to the server.
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` should be written in one of the
+following forms::
+
+    ftp://username:password@address:port/path
+    ftp://address:port/path
+    
+If ``username`` and ``password`` are not provided, they are taken from the :setting:`FTP_USER` and
+:setting:`FTP_PASSWORD` settings respectively.
+
+FTP supports two different connection modes: active or passive. Scrapy uses
+the passive connection mode by default. To use the active connection mode instead,
+set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
 Amazon S3 storage
 -----------------
@@ -171,7 +187,7 @@ policy::
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
-Because Scrapy uses ``boto`` / ``botocore`` internally you can also use other S3-like storages. Storages like
+Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like
 self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::
 
     AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
@@ -310,7 +326,7 @@ images.
 
 .. setting:: IMAGES_THUMBS
 
-In order use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
+In order to use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
 where the keys are the thumbnail names and the values are their dimensions.
 
 For example::
@@ -392,6 +408,36 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
+   .. method:: file_path(self, request, response=None, info=None)
+
+      This method is called once per downloaded item. It returns the
+      download path of the file originating from the specified
+      :class:`response <scrapy.http.Response>`.
+
+      In addition to ``response``, this method receives the original
+      :class:`request <scrapy.Request>` and
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+
+      You can override this method to customize the download path of each file.
+
+      For example, if file URLs end like regular paths (e.g.
+      ``https://example.com/a/b/c/foo.png``), you can use the following
+      approach to download all files into the ``files`` folder with their
+      original filenames (e.g. ``files/foo.png``)::
+
+        import os
+        from urllib.parse import urlparse
+
+        from scrapy.pipelines.files import FilesPipeline
+
+        class MyFilesPipeline(FilesPipeline):
+
+            def file_path(self, request, response=None, info=None):
+                return 'files/' + os.path.basename(urlparse(request.url).path)
+
+      By default the :meth:`file_path` method returns
+      ``full/<request URL hash>.<extension>``.
+
    .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
@@ -411,8 +457,9 @@ See here the methods that you can override in your custom Files Pipeline:
       * ``success`` is a boolean which is ``True`` if the image was downloaded
         successfully or ``False`` if it failed for some reason
 
-      * ``file_info_or_error`` is a dict containing the following keys (if success
-        is ``True``) or a `Twisted Failure`_ if there was a problem.
+      * ``file_info_or_error`` is a dict containing the following keys (if
+        success is ``True``) or a :exc:`~twisted.python.failure.Failure` if
+        there was a problem.
 
         * ``url`` - the url where the file was downloaded from. This is the url of
           the request returned from the :meth:`~get_media_requests`
@@ -475,6 +522,36 @@ See here the methods that you can override in your custom Images Pipeline:
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
 
+   .. method:: file_path(self, request, response=None, info=None)
+
+      This method is called once per downloaded item. It returns the
+      download path of the file originating from the specified
+      :class:`response <scrapy.http.Response>`.
+
+      In addition to ``response``, this method receives the original
+      :class:`request <scrapy.Request>` and
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+
+      You can override this method to customize the download path of each file.
+
+      For example, if file URLs end like regular paths (e.g.
+      ``https://example.com/a/b/c/foo.png``), you can use the following
+      approach to download all files into the ``files`` folder with their
+      original filenames (e.g. ``files/foo.png``)::
+
+        import os
+        from urllib.parse import urlparse
+
+        from scrapy.pipelines.images import ImagesPipeline
+
+        class MyImagesPipeline(ImagesPipeline):
+
+            def file_path(self, request, response=None, info=None):
+                return 'files/' + os.path.basename(urlparse(request.url).path)
+
+      By default the :meth:`file_path` method returns
+      ``full/<request URL hash>.<extension>``.
+
    .. method:: ImagesPipeline.get_media_requests(item, info)
 
       Works the same way as :meth:`FilesPipeline.get_media_requests` method,
@@ -494,10 +571,12 @@ See here the methods that you can override in your custom Images Pipeline:
       By default, the :meth:`item_completed` method returns the item.
 
 
+.. _media-pipeline-example:
+
 Custom Images pipeline example
 ==============================
 
-Here is a full example of the Images Pipeline whose methods are examplified
+Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
@@ -517,5 +596,12 @@ above::
             item['image_paths'] = image_paths
             return item
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+
+To enable your custom media pipeline component you must add its class import path to the
+:setting:`ITEM_PIPELINES` setting, like in the following example::
+
+   ITEM_PIPELINES = {
+       'myproject.pipelines.MyImagesPipeline': 300
+   }
+
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5

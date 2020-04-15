@@ -4,17 +4,30 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-from pprint import pformat
-from collections import MutableMapping
-
 from abc import ABCMeta
-import six
+from collections.abc import MutableMapping
+from copy import deepcopy
+from pprint import pformat
+from warnings import warn
 
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
 
 class BaseItem(object_ref):
-    """Base class for all scraped items."""
+    """Base class for all scraped items.
+
+    In Scrapy, an object is considered an *item* if it is an instance of either
+    :class:`BaseItem` or :class:`dict`. For example, when the output of a
+    spider callback is evaluated, only instances of :class:`BaseItem` or
+    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
+
+    If you need instances of a custom class to be considered items by Scrapy,
+    you must inherit from either :class:`BaseItem` or :class:`dict`.
+
+    Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
+    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    """
     pass
 
 
@@ -23,6 +36,10 @@ class Field(dict):
 
 
 class ItemMeta(ABCMeta):
+    """Metaclass_ of :class:`Item` that handles field definitions.
+
+    .. _metaclass: https://realpython.com/python-metaclasses
+    """
 
     def __new__(mcs, class_name, bases, attrs):
         classcell = attrs.pop('__classcell__', None)
@@ -49,10 +66,17 @@ class DictItem(MutableMapping, BaseItem):
 
     fields = {}
 
+    def __new__(cls, *args, **kwargs):
+        if issubclass(cls, DictItem) and not issubclass(cls, Item):
+            warn('scrapy.item.DictItem is deprecated, please use '
+                 'scrapy.item.Item instead',
+                 ScrapyDeprecationWarning, stacklevel=2)
+        return super(DictItem, cls).__new__(cls, *args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         self._values = {}
         if args or kwargs:  # avoid creating dict for most common case
-            for k, v in six.iteritems(dict(*args, **kwargs)):
+            for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
     def __getitem__(self, key):
@@ -96,7 +120,13 @@ class DictItem(MutableMapping, BaseItem):
     def copy(self):
         return self.__class__(self)
 
+    def deepcopy(self):
+        """Return a `deep copy`_ of this item.
 
-@six.add_metaclass(ItemMeta)
-class Item(DictItem):
+        .. _deep copy: https://docs.python.org/library/copy.html#copy.deepcopy
+        """
+        return deepcopy(self)
+
+
+class Item(DictItem, metaclass=ItemMeta):
     pass

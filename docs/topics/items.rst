@@ -16,12 +16,12 @@ especially in a larger project with many spiders.
 To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields. 
+their available fields.
 
-Various Scrapy components use extra information provided by Items: 
+Various Scrapy components use extra information provided by Items:
 exporters look at declared fields to figure out columns to export,
 serialization can be customized using Item fields metadata, :mod:`trackref`
-tracks Item instances to help find memory leaks 
+tracks Item instances to help find memory leaks
 (see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
@@ -40,6 +40,7 @@ objects. Here is an example::
         name = scrapy.Field()
         price = scrapy.Field()
         stock = scrapy.Field()
+        tags = scrapy.Field()
         last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
@@ -83,105 +84,128 @@ notice the API is very similar to the `dict API`_.
 Creating items
 --------------
 
-::
+>>> product = Product(name='Desktop PC', price=1000)
+>>> print(product)
+Product(name='Desktop PC', price=1000)
 
-    >>> product = Product(name='Desktop PC', price=1000)
-    >>> print(product)
-    Product(name='Desktop PC', price=1000)
 
 Getting field values
 --------------------
 
-::
+>>> product['name']
+Desktop PC
+>>> product.get('name')
+Desktop PC
 
-    >>> product['name']
-    Desktop PC
-    >>> product.get('name')
-    Desktop PC
+>>> product['price']
+1000
 
-    >>> product['price']
-    1000
+>>> product['last_updated']
+Traceback (most recent call last):
+    ...
+KeyError: 'last_updated'
 
-    >>> product['last_updated']
-    Traceback (most recent call last):
-        ...
-    KeyError: 'last_updated'
+>>> product.get('last_updated', 'not set')
+not set
 
-    >>> product.get('last_updated', 'not set')
-    not set
+>>> product['lala'] # getting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'lala'
 
-    >>> product['lala'] # getting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'lala'
+>>> product.get('lala', 'unknown field')
+'unknown field'
 
-    >>> product.get('lala', 'unknown field')
-    'unknown field'
+>>> 'name' in product  # is name field populated?
+True
 
-    >>> 'name' in product  # is name field populated?
-    True
+>>> 'last_updated' in product  # is last_updated populated?
+False
 
-    >>> 'last_updated' in product  # is last_updated populated?
-    False
+>>> 'last_updated' in product.fields  # is last_updated a declared field?
+True
 
-    >>> 'last_updated' in product.fields  # is last_updated a declared field?
-    True
+>>> 'lala' in product.fields  # is lala a declared field?
+False
 
-    >>> 'lala' in product.fields  # is lala a declared field?
-    False
 
 Setting field values
 --------------------
 
-::
+>>> product['last_updated'] = 'today'
+>>> product['last_updated']
+today
 
-    >>> product['last_updated'] = 'today'
-    >>> product['last_updated']
-    today
+>>> product['lala'] = 'test' # setting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
 
-    >>> product['lala'] = 'test' # setting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
 
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_::
+To access all populated values, just use the typical `dict API`_:
 
-    >>> product.keys()
-    ['price', 'name']
+>>> product.keys()
+['price', 'name']
 
-    >>> product.items()
-    [('price', 1000), ('name', 'Desktop PC')]
+>>> product.items()
+[('price', 1000), ('name', 'Desktop PC')]
+
+
+.. _copying-items:
+
+Copying items
+-------------
+
+To copy an item, you must first decide whether you want a shallow copy or a
+deep copy.
+
+If your item contains mutable_ values like lists or dictionaries, a shallow
+copy will keep references to the same mutable values across all different
+copies.
+
+.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+
+For example, if you have an item with a list of tags, and you create a shallow
+copy of that item, both the original item and the copy have the same list of
+tags. Adding a tag to the list of one of the items will add the tag to the
+other item as well.
+
+If that is not the desired behavior, use a deep copy instead.
+
+See the `documentation of the copy module`_ for more information.
+
+.. _documentation of the copy module: https://docs.python.org/3/library/copy.html
+
+To create a shallow copy of an item, you can either call
+:meth:`~scrapy.item.Item.copy` on an existing item
+(``product2 = product.copy()``) or instantiate your item class from an existing
+item (``product2 = Product(product)``).
+
+To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+(``product2 = product.deepcopy()``).
+
 
 Other common tasks
 ------------------
 
-Copying items::
+Creating dicts from items:
 
-    >>> product2 = Product(product)
-    >>> print(product2)
-    Product(name='Desktop PC', price=1000)
+>>> dict(product) # create a dict from all populated values
+{'price': 1000, 'name': 'Desktop PC'}
 
-    >>> product3 = product2.copy()
-    >>> print(product3)
-    Product(name='Desktop PC', price=1000)
+Creating items from dicts:
 
-Creating dicts from items::
+>>> Product({'name': 'Laptop PC', 'price': 1500})
+Product(price=1500, name='Laptop PC')
 
-    >>> dict(product) # create a dict from all populated values
-    {'price': 1000, 'name': 'Desktop PC'}
+>>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
 
-Creating items from dicts::
-
-    >>> Product({'name': 'Laptop PC', 'price': 1500})
-    Product(price=1500, name='Laptop PC')
-
-    >>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
 
 Extending Items
 ===============
@@ -211,8 +235,12 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    Items replicate the standard `dict API`_, including its ``__init__`` method, and
+    also provide the following additional API members:
+
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
 
     .. attribute:: fields
 
@@ -237,3 +265,9 @@ Field objects
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 
+Other classes related to Item
+=============================
+
+.. autoclass:: BaseItem
+
+.. autoclass:: ItemMeta

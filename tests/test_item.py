@@ -1,10 +1,10 @@
 import sys
 import unittest
+from unittest import mock
+from warnings import catch_warnings
 
-import six
-
-from scrapy.item import ABCMeta, Item, ItemMeta, Field
-from tests import mock
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -60,12 +60,8 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
 
-        if six.PY2:
-            self.assertEqual(itemrepr,
-                             "{'name': u'John Doe', 'number': 123}")
-        else:
-            self.assertEqual(itemrepr,
-                             "{'name': 'John Doe', 'number': 123}")
+        self.assertEqual(itemrepr,
+                         "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')
@@ -153,13 +149,15 @@ class ItemTest(unittest.TestCase):
             fields = {'load': Field(default='A')}
             save = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
         class C(Item):
             fields = {'load': Field(default='C')}
             save = Field(default='C')
 
-        class D(B, C): pass
+        class D(B, C):
+            pass
 
         item = D(save='X', load='Y')
         self.assertEqual(item['save'], 'X')
@@ -168,7 +166,8 @@ class ItemTest(unittest.TestCase):
             'save': {'default': 'A'}})
 
         # D class inverted
-        class E(C, B): pass
+        class E(C, B):
+            pass
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
@@ -181,7 +180,8 @@ class ItemTest(unittest.TestCase):
             save = Field(default='A')
             load = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
         class C(A):
             fields = {'update': Field(default='C')}
@@ -210,14 +210,16 @@ class ItemTest(unittest.TestCase):
             fields = {'load': Field(default='A')}
             save = Field(default='A')
 
-        class B(A): pass
+        class B(A):
+            pass
 
-        class C(object):
+        class C:
             fields = {'load': Field(default='C')}
             not_allowed = Field(default='not_allowed')
             save = Field(default='C')
 
-        class D(B, C): pass
+        class D(B, C):
+            pass
 
         self.assertRaises(KeyError, D, not_allowed='value')
         self.assertEqual(D(save='X')['save'], 'X')
@@ -225,7 +227,8 @@ class ItemTest(unittest.TestCase):
             'load': {'default': 'A'}})
 
         # D class inverted
-        class E(C, B): pass
+        class E(C, B):
+            pass
 
         self.assertRaises(KeyError, E, not_allowed='value')
         self.assertEqual(E(save='X')['save'], 'X')
@@ -243,11 +246,31 @@ class ItemTest(unittest.TestCase):
     def test_copy(self):
         class TestItem(Item):
             name = Field()
-        item = TestItem({'name':'lower'})
+        item = TestItem({'name': 'lower'})
         copied_item = item.copy()
         self.assertNotEqual(id(item), id(copied_item))
         copied_item['name'] = copied_item['name'].upper()
         self.assertNotEqual(item['name'], copied_item['name'])
+
+    def test_deepcopy(self):
+        class TestItem(Item):
+            tags = Field()
+        item = TestItem({'tags': ['tag1']})
+        copied_item = item.deepcopy()
+        item['tags'].append('tag2')
+        assert item['tags'] != copied_item['tags']
+
+    def test_dictitem_deprecation_warning(self):
+        """Make sure the DictItem deprecation warning is not issued for
+        Item"""
+        with catch_warnings(record=True) as warnings:
+            item = Item()
+            self.assertEqual(len(warnings), 0)
+
+            class SubclassedItem(Item):
+                pass
+            subclassed_item = SubclassedItem()
+            self.assertEqual(len(warnings), 0)
 
 
 class ItemMetaTest(unittest.TestCase):
@@ -285,13 +308,28 @@ class ItemMetaTest(unittest.TestCase):
 class ItemMetaClassCellRegression(unittest.TestCase):
 
     def test_item_meta_classcell_regression(self):
-        class MyItem(six.with_metaclass(ItemMeta, Item)):
+        class MyItem(Item, metaclass=ItemMeta):
             def __init__(self, *args, **kwargs):
                 # This call to super() trigger the __classcell__ propagation
                 # requirement. When not done properly raises an error:
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super(MyItem, self).__init__(*args, **kwargs)
+
+
+class DictItemTest(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            dict_item = DictItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedDictItem(DictItem):
+                pass
+            subclassed_dict_item = SubclassedDictItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 if __name__ == "__main__":

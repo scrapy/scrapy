@@ -7,12 +7,12 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
+from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
 from w3lib.url import *
-from w3lib.url import _safe_chars, _unquotepath
+from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
 from scrapy.utils.python import to_unicode
 
 
@@ -109,12 +109,12 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
 
     """Strip URL string from some of its components:
 
-    - `strip_credentials` removes "user:password@"
-    - `strip_default_port` removes ":80" (resp. ":443", ":21")
+    - ``strip_credentials`` removes "user:password@"
+    - ``strip_default_port`` removes ":80" (resp. ":443", ":21")
       from http:// (resp. https://, ftp://) URLs
-    - `origin_only` replaces path component with "/", also dropping
+    - ``origin_only`` replaces path component with "/", also dropping
       query and fragment components ; it also strips credentials
-    - `strip_fragment` drops any #fragment component
+    - ``strip_fragment`` drops any #fragment component
     """
 
     parsed_url = urlparse(url)

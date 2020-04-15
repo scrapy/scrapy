@@ -1,9 +1,8 @@
 """
 SGMLParser-based Link extractors
 """
-import six
-from six.moves.urllib.parse import urljoin
 import warnings
+from urllib.parse import urljoin
 from sgmllib import SGMLParser
 
 from w3lib.url import safe_url_string, canonicalize_url
@@ -49,7 +48,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
         if base_url is None:
             base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in self.links:
-            if isinstance(link.url, six.text_type):
+            if isinstance(link.url, str):
                 link.url = link.url.encode(response_encoding)
             try:
                 link.url = urljoin(base_url, link.url)
@@ -113,7 +112,7 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href',), canonicalize=False, unique=True,
                  process_value=None, deny_extensions=None, restrict_css=(),
-                 strip=True):
+                 strip=True, restrict_text=()):
         warnings.warn(
             "SgmlLinkExtractor is deprecated and will be removed in future releases. "
             "Please use scrapy.linkextractors.LinkExtractor",
@@ -127,13 +126,14 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             lx = BaseSgmlLinkExtractor(tag=tag_func, attr=attr_func,
-                unique=unique, process_value=process_value, strip=strip,
-                canonicalized=canonicalize)
+                                       unique=unique, process_value=process_value, strip=strip,
+                                       canonicalized=canonicalize)
 
         super(SgmlLinkExtractor, self).__init__(lx, allow=allow, deny=deny,
-            allow_domains=allow_domains, deny_domains=deny_domains,
-            restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
-            canonicalize=canonicalize, deny_extensions=deny_extensions)
+                                                allow_domains=allow_domains, deny_domains=deny_domains,
+                                                restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
+                                                canonicalize=canonicalize, deny_extensions=deny_extensions,
+                                                restrict_text=restrict_text)
 
     def extract_links(self, response):
         base_url = None

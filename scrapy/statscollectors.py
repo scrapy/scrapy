@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class StatsCollector(object):
+class StatsCollector:
 
     def __init__(self, crawler):
         self._dump = crawler.settings.getbool('STATS_DUMP')
@@ -80,5 +80,3 @@ class DummyStatsCollector(StatsCollector):
 
     def min_value(self, key, value, spider=None):
         pass
-
-

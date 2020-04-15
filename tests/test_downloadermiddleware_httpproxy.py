@@ -1,11 +1,10 @@
 import os
-import sys
 from functools import partial
-from twisted.trial.unittest import TestCase, SkipTest
+from twisted.trial.unittest import TestCase
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, Request
+from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.crawler import Crawler
 from scrapy.settings import Settings
@@ -25,7 +24,7 @@ class TestHttpProxyMiddleware(TestCase):
 
     def test_not_enabled(self):
         settings = Settings({'HTTPPROXY_ENABLED': False})
-        crawler = Crawler(spider, settings)
+        crawler = Crawler(Spider, settings)
         self.assertRaises(NotConfigured, partial(HttpProxyMiddleware.from_crawler, crawler))
 
     def test_no_environment_proxies(self):

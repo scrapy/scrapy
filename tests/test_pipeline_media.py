@@ -1,15 +1,15 @@
-from __future__ import print_function
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
@@ -90,6 +90,75 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.pipe._modify_media_request(request)
         assert request.meta == {'handle_httpstatus_all': True}
 
+    def test_should_remove_req_res_references_before_caching_the_results(self):
+        """Regression test case to prevent a memory leak in the Media Pipeline.
+
+        The memory leak is triggered when an exception is raised when a Response
+        scheduled by the Media Pipeline is being returned. For example, when a
+        FileException('download-error') is raised because the Response status
+        code is not 200 OK.
+
+        It happens because we are keeping a reference to the Response object
+        inside the FileException context. This is caused by the way Twisted
+        return values from inline callbacks. It raises a custom exception
+        encapsulating the original return value.
+
+        The solution is to remove the exception context when this context is a
+        _DefGen_Return instance, the BaseException used by Twisted to pass the
+        returned value from those inline callbacks.
+
+        Maybe there's a better and more reliable way to test the case described
+        here, but it would be more complicated and involve running - or at least
+        mocking - some async steps from the Media Pipeline. The current test
+        case is simple and detects the problem very fast. On the other hand, it
+        would not detect another kind of leak happening due to old object
+        references being kept inside the Media Pipeline cache.
+
+        This problem does not occur in Python 2.7 since we don't have Exception
+        Chaining (https://www.python.org/dev/peps/pep-3134/).
+        """
+        # Create sample pair of Request and Response objects
+        request = Request('http://url')
+        response = Response('http://url', body=b'', request=request)
+
+        # Simulate the Media Pipeline behavior to produce a Twisted Failure
+        try:
+            # Simulate a Twisted inline callback returning a Response
+            # The returnValue method raises an exception encapsulating the value
+            returnValue(response)
+        except BaseException as exc:
+            def_gen_return_exc = exc
+            try:
+                # Simulate the media_downloaded callback raising a FileException
+                # This usually happens when the status code is not 200 OK
+                raise FileException('download-error')
+            except Exception as exc:
+                file_exc = exc
+                # Simulate Twisted capturing the FileException
+                # It encapsulates the exception inside a Twisted Failure
+                failure = Failure(file_exc)
+
+        # The Failure should encapsulate a FileException ...
+        self.assertEqual(failure.value, file_exc)
+        # ... and it should have the returnValue exception set as its context
+        self.assertEqual(failure.value.__context__, def_gen_return_exc)
+
+        # Let's calculate the request fingerprint and fake some runtime data...
+        fp = request_fingerprint(request)
+        info = self.pipe.spiderinfo
+        info.downloading.add(fp)
+        info.waiting[fp] = []
+
+        # When calling the method that caches the Request's result ...
+        self.pipe._cache_result_and_execute_waiters(failure, fp, info)
+        # ... it should store the Twisted Failure ...
+        self.assertEqual(info.downloaded[fp], failure)
+        # ... encapsulating the original FileException ...
+        self.assertEqual(info.downloaded[fp].value, file_exc)
+        # ... but it should not store the returnValue exception on its context
+        context = getattr(info.downloaded[fp].value, '__context__', None)
+        self.assertIsNone(context)
+
 
 class MockedMediaPipeline(MediaPipeline):
 
@@ -169,10 +238,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, rsp1), (False, fail)])
         m = self.pipe._mockcalled
         # only once
-        self.assertEqual(m[0], 'get_media_requests') # first hook called
+        self.assertEqual(m[0], 'get_media_requests')  # first hook called
         self.assertEqual(m.count('get_media_requests'), 1)
         self.assertEqual(m.count('item_completed'), 1)
-        self.assertEqual(m[-1], 'item_completed') # last hook called
+        self.assertEqual(m[-1], 'item_completed')  # last hook called
         # twice, one per request
         self.assertEqual(m.count('media_to_download'), 2)
         # one to handle success and other for failure
@@ -183,7 +252,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request('http://url')
-        item = dict(requests=req) # pass a single item
+        item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         assert request_fingerprint(req) in self.info.downloaded
@@ -235,6 +304,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)
@@ -255,8 +325,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'item_completed'])
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):

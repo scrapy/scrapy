@@ -1,6 +1,7 @@
 """A test extension used to check the settings loading order"""
 
-class TestExtension(object):
+
+class TestExtension:
 
     def __init__(self, settings):
         settings.set('TEST1', "%s + %s" % (settings['TEST1'], 'started'))
@@ -10,6 +11,5 @@ class TestExtension(object):
         return cls(crawler.settings)
 
 
-class DummyExtension(object):
+class DummyExtension:
     pass
-

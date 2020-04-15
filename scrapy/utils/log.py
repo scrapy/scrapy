@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -32,7 +32,7 @@ class TopLevelFormatter(logging.Filter):
 
     Since it can't be set for just one logger (it won't propagate for its
     children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
+    ``loggers`` list where it should act.
     """
 
     def __init__(self, loggers=None):
@@ -148,9 +148,11 @@ def log_scrapy_info(settings):
                 {'versions': ", ".join("%s %s" % (name, version)
                     for name, version in scrapy_components_versions()
                     if name != "Scrapy")})
+    from twisted.internet import reactor
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:

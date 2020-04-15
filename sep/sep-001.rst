@@ -61,7 +61,7 @@ ItemForm
 --------
 
 Pros:
-- same API used for Items (see https://doc.scrapy.org/en/latest/topics/items.html)
+- same API used for Items (see https://docs.scrapy.org/en/latest/topics/items.html)
 - some people consider setitem API more elegant than methods API
 
 Cons:
@@ -254,8 +254,8 @@ ItemForm
 
    #!python
    class MySiteForm(ItemForm):
-       witdth = adaptor(ItemForm.witdh, default_unit='cm')
-       volume = adaptor(ItemForm.witdh, default_unit='lt')
+       width = adaptor(ItemForm.width, default_unit='cm')
+       volume = adaptor(ItemForm.width, default_unit='lt')
 
    ia['width'] = x.x('//p[@class="width"]')
    ia['volume'] = x.x('//p[@class="volume"]')

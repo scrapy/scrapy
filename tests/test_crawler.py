@@ -1,7 +1,11 @@
 import logging
-import tempfile
+import os
+import subprocess
+import sys
 import warnings
 
+from pytest import raises, mark
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial import unittest
 
@@ -14,6 +18,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
+from scrapy.utils.test import get_testenv
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -27,17 +32,6 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     def setUp(self):
         self.crawler = Crawler(DefaultSpider, Settings())
-
-    def test_deprecated_attribute_spiders(self):
-        with warnings.catch_warnings(record=True) as w:
-            spiders = self.crawler.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("Crawler.spiders", str(w[0].message))
-            sl_cls = load_object(self.crawler.settings['SPIDER_LOADER_CLASS'])
-            self.assertIsInstance(spiders, sl_cls)
-
-            self.crawler.spiders
-            self.assertEqual(len(w), 1, "Warn deprecated access only once")
 
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
@@ -65,6 +59,10 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_crawler_accepts_None(self):
         crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
+
+    def test_crawler_rejects_spider_objects(self):
+        with raises(ValueError):
+            Crawler(DefaultSpider())
 
 
 class SpiderSettingsTestCase(unittest.TestCase):
@@ -94,6 +92,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
 
     def test_spider_custom_settings_log_level(self):
         log_file = self.mktemp()
+
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
@@ -127,7 +126,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
 
-class SpiderLoaderWithWrongInterface(object):
+class SpiderLoaderWithWrongInterface:
 
     def unneeded_method(self):
         pass
@@ -168,15 +167,6 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
             sl_cls = load_object(runner.settings['SPIDER_LOADER_CLASS'])
             self.assertIsInstance(spiders, sl_cls)
 
-    def test_spidermanager_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            runner = CrawlerRunner({
-                'SPIDER_MANAGER_CLASS': 'tests.test_crawler.CustomSpiderLoader'
-            })
-            self.assertIsInstance(runner.spider_loader, CustomSpiderLoader)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
-
 
 class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_dict(self):
@@ -204,6 +194,7 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
+@mark.usefixtures('reactor_pytest')
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -246,3 +237,98 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         yield runner.crawl(NoRequestsSpider)
 
         self.assertEqual(runner.bootstrap_failed, True)
+
+    def test_crawler_runner_asyncio_enabled_true(self):
+        if self.reactor_pytest == 'asyncio':
+            runner = CrawlerRunner(settings={
+                "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            })
+        else:
+            msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
+            with self.assertRaisesRegex(Exception, msg):
+                runner = CrawlerRunner(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
+
+    @defer.inlineCallbacks
+    def test_crawler_process_asyncio_enabled_true(self):
+        with LogCapture(level=logging.DEBUG) as log:
+            if self.reactor_pytest == 'asyncio':
+                runner = CrawlerProcess(settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                })
+                yield runner.crawl(NoRequestsSpider)
+                self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
+            else:
+                msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
+                with self.assertRaisesRegex(Exception, msg):
+                    runner = CrawlerProcess(settings={
+                        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                    })
+
+    @defer.inlineCallbacks
+    def test_crawler_process_asyncio_enabled_false(self):
+        runner = CrawlerProcess(settings={"TWISTED_REACTOR": None})
+        with LogCapture(level=logging.DEBUG) as log:
+            yield runner.crawl(NoRequestsSpider)
+            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
+
+
+class CrawlerProcessSubprocess(unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
+
+    def run_script(self, script_name):
+        script_path = os.path.join(self.script_dir, script_name)
+        args = (sys.executable, script_path)
+        p = subprocess.Popen(args, env=get_testenv(),
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        return stderr.decode('utf-8')
+
+    def test_simple(self):
+        log = self.run_script('simple.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_asyncio_enabled_no_reactor(self):
+        log = self.run_script('asyncio_enabled_no_reactor.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_asyncio_enabled_reactor(self):
+        log = self.run_script('asyncio_enabled_reactor.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_ipv6_default_name_resolver(self):
+        log = self.run_script('default_name_resolver.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertIn("twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.", log)
+        self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+
+    def test_ipv6_alternative_name_resolver(self):
+        log = self.run_script('alternative_name_resolver.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertTrue(any([
+            "twisted.internet.error.ConnectionRefusedError" in log,
+            "twisted.internet.error.ConnectError" in log,
+        ]))
+        self.assertTrue(any([
+            "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
+            "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
+        ]))
+
+    def test_reactor_select(self):
+        log = self.run_script("twisted_reactor_select.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
+
+    def test_reactor_poll(self):
+        log = self.run_script("twisted_reactor_poll.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.pollreactor.PollReactor", log)
+
+    def test_reactor_asyncio(self):
+        log = self.run_script("twisted_reactor_asyncio.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)

@@ -4,45 +4,32 @@
 Link Extractors
 ===============
 
-Link extractors are objects whose only purpose is to extract links from web
-pages (:class:`scrapy.http.Response` objects) which will be eventually
-followed.
+A link extractor is an object that extracts links from responses.
 
-There is ``scrapy.linkextractors.LinkExtractor`` available
-in Scrapy, but you can create your own custom Link Extractors to suit your
-needs by implementing a simple interface.
+The ``__init__`` method of
+:class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` takes settings that
+determine which links may be extracted. :class:`LxmlLinkExtractor.extract_links
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` returns a
+list of matching :class:`scrapy.link.Link` objects from a
+:class:`~scrapy.http.Response` object.
 
-The only public method that every link extractor has is ``extract_links``,
-which receives a :class:`~scrapy.http.Response` object and returns a list
-of :class:`scrapy.link.Link` objects. Link extractors are meant to be
-instantiated once and their ``extract_links`` method called several times
-with different responses to extract links to follow.
-
-Link extractors are used in the :class:`~scrapy.spiders.CrawlSpider`
-class (available in Scrapy), through a set of rules, but you can also use it in
-your spiders, even if you don't subclass from
-:class:`~scrapy.spiders.CrawlSpider`, as its purpose is very simple: to
-extract links.
-
+Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
+through a set of :class:`~scrapy.spiders.Rule` objects. You can also use link
+extractors in regular spiders.
 
 .. _topics-link-extractors-ref:
 
-Built-in link extractors reference
-==================================
+Link extractor reference
+========================
 
 .. module:: scrapy.linkextractors
    :synopsis: Link extractors classes
 
-Link extractors classes bundled with Scrapy are provided in the
-:mod:`scrapy.linkextractors` module.
-
-The default link extractor is ``LinkExtractor``, which is the same as
-:class:`~.LxmlLinkExtractor`::
+The link extractor class is
+:class:`scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`. For convenience it
+can also be imported as ``scrapy.linkextractors.LinkExtractor``::
 
     from scrapy.linkextractors import LinkExtractor
-
-There used to be other link extractor classes in previous Scrapy versions,
-but they are deprecated now.
 
 LxmlLinkExtractor
 -----------------
@@ -62,7 +49,7 @@ LxmlLinkExtractor
     :type allow: a regular expression (or list of)
 
     :param deny: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be excluded (ie. not
+        that the (absolute) urls must match in order to be excluded (i.e. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
     :type deny: a regular expression (or list of)
@@ -77,9 +64,13 @@ LxmlLinkExtractor
 
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links.
-        If not given, it will default to the
-        ``IGNORED_EXTENSIONS`` list defined in the
-        `scrapy.linkextractors`_ package.
+        If not given, it will default to
+        :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
+
+        .. versionchanged:: 2.0
+           :data:`~scrapy.linkextractors.IGNORED_EXTENSIONS` now includes
+           ``7z``, ``7zip``, ``apk``, ``bz2``, ``cdr``, ``dmg``, ``ico``,
+           ``iso``, ``tar``, ``tar.gz``, ``webm``, and ``xz``.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
@@ -92,6 +83,12 @@ LxmlLinkExtractor
         regions inside the response where links should be extracted from.
         Has the same behaviour as ``restrict_xpaths``.
     :type restrict_css: str or list
+
+    :param restrict_text: a single regular expression (or list of regular expressions)
+        that the link's text must match in order to be extracted. If not
+        given (or empty), it will match all links. If a list of regular expressions is
+        given, the link will be extracted if it matches at least one.
+    :type restrict_text: a regular expression (or list of)
 
     :param tags: a tag or a list of tags to consider when extracting links.
         Defaults to ``('a', 'area')``.
@@ -145,5 +142,7 @@ LxmlLinkExtractor
         Set ``strip=False`` to turn it off (e.g. if you're extracting urls
         from elements or attributes which allow leading/trailing whitespaces).
     :type strip: boolean
+
+    .. automethod:: extract_links
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

@@ -1,17 +1,23 @@
 """Helper functions which don't fit anywhere else"""
+import ast
+import inspect
+import os
 import re
 import hashlib
+import warnings
+from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
+from textwrap import dedent
 
-import six
 from w3lib.html import replace_entities
 
+from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import BaseItem
 
 
-_ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
+_ITERABLE_SINGLE_VALUES = dict, BaseItem, str, bytes
 
 
 def arg_to_iter(arg):
@@ -31,8 +37,8 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be a class, function, variable or an instance.
-    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
     try:
@@ -40,7 +46,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot+1:]
+    module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
 
     try:
@@ -81,16 +87,16 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex doesn't contain any group the entire regex matching is returned
     """
 
-    if isinstance(regex, six.string_types):
+    if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
 
     try:
         strings = [regex.search(text).group('extract')]   # named group
-    except:
+    except Exception:
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
@@ -116,7 +122,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return True if rel is not None and 'nofollow' in rel.split() else False
+    return rel is not None and 'nofollow' in rel.split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):
@@ -134,7 +140,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     if settings is None:
         if crawler is None:
-            raise ValueError("Specifiy at least one of settings and crawler.")
+            raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
     if crawler and hasattr(objcls, 'from_crawler'):
         return objcls.from_crawler(crawler, *args, **kwargs)
@@ -142,3 +148,62 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls.from_settings(settings, *args, **kwargs)
     else:
         return objcls(*args, **kwargs)
+
+
+@contextmanager
+def set_environ(**kwargs):
+    """Temporarily set environment variables inside the context manager and
+    fully restore previous environment afterwards
+    """
+
+    original_env = {k: os.environ.get(k) for k in kwargs}
+    os.environ.update(kwargs)
+    try:
+        yield
+    finally:
+        for k, v in original_env.items():
+            if v is None:
+                del os.environ[k]
+            else:
+                os.environ[k] = v
+
+
+_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+
+
+def is_generator_with_return_value(callable):
+    """
+    Returns True if a callable is a generator function which includes a
+    'return' statement with a value different than None, False otherwise
+    """
+    if callable in _generator_callbacks_cache:
+        return _generator_callbacks_cache[callable]
+
+    def returns_none(return_node):
+        value = return_node.value
+        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+
+    if inspect.isgeneratorfunction(callable):
+        tree = ast.parse(dedent(inspect.getsource(callable)))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Return) and not returns_none(node):
+                _generator_callbacks_cache[callable] = True
+                return _generator_callbacks_cache[callable]
+
+    _generator_callbacks_cache[callable] = False
+    return _generator_callbacks_cache[callable]
+
+
+def warn_on_generator_with_return_value(spider, callable):
+    """
+    Logs a warning if a callable is a generator function and includes
+    a 'return' statement with a value different than None
+    """
+    if is_generator_with_return_value(callable):
+        warnings.warn(
+            'The "{}.{}" method is a generator and includes a "return" statement with a '
+            'value different than None. This could lead to unexpected behaviour. Please see '
+            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+            'for details about the semantics of the "return" statement within generators'
+            .format(spider.__class__.__name__, callable.__name__), stacklevel=2,
+        )

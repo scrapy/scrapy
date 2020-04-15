@@ -21,11 +21,11 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
 
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
-        self.inprogress = set() # requests in progress
+        self.inprogress = set()  # requests in progress
         self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
@@ -53,7 +53,7 @@ class Slot(object):
             self.closing.callback(None)
 
 
-class ExecutionEngine(object):
+class ExecutionEngine:
 
     def __init__(self, crawler, spider_closed_callback):
         self.crawler = crawler
@@ -230,13 +230,15 @@ class ExecutionEngine(object):
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
-                response.request = request # tie request to response received
+                response.request = request  # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
-                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signal=signals.response_received, \
+                if logkws is not None:
+                    logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+                self.signals.send_catch_log(signal=signals.response_received,
                     response=response, request=request, spider=spider)
             return response
 
@@ -275,10 +277,9 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
             spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
-                for _, x in res):
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return
 
         if self.spider_is_idle(spider):

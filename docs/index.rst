@@ -4,7 +4,13 @@
 Scrapy |version| documentation
 ==============================
 
-This documentation contains everything you need to know about Scrapy.
+Scrapy is a fast high-level `web crawling`_ and `web scraping`_ framework, used
+to crawl websites and extract structured data from their pages. It can be used
+for a wide range of purposes, from data mining to monitoring and automated
+testing.
+
+.. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
+.. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
 Getting help
 ============
@@ -152,18 +158,21 @@ Solving specific problems
    topics/practices
    topics/broad-crawls
    topics/developer-tools
+   topics/dynamic-content
    topics/leaks
    topics/media-pipeline
    topics/deploy
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/coroutines
+   topics/asyncio
 
 :doc:`faq`
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.
@@ -176,6 +185,9 @@ Solving specific problems
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
+
+:doc:`topics/dynamic-content`
+    Read webpage data that is loaded dynamically.
 
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
@@ -194,6 +206,12 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
+
+:doc:`topics/coroutines`
+    Use the :ref:`coroutine syntax <async>`.
+
+:doc:`topics/asyncio`
+    Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
 
 .. _extending-scrapy:
 
