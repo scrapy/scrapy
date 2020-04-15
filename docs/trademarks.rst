@@ -59,16 +59,24 @@ official Scrapy project software, provided that:
     #.  If the group or event requires fees for membership or attendance, it
         must be made clear at time the fee is paid what income organizers will
         be deriving from the event, and that Scrapinghub will not be deriving
-        any income from the event; and
+        any income from the event;
 
     #.  The website for the group or event does not imply that it is official
         or otherwise endorsed by Scrapinghub, or by the Scrapy core team as
         representatives of the Scrapy project;
 
+    #.  The group or event agrees to adhere to the `Scrapy contributor code of
+        conduct`_; and
+
+    #.  The group or event also adopts a specific code of conduct governing the
+        behavior of participants.
+
 #.  A group or event may use a logo that incorporates the Scrapy logo by adding
     a word or picture that identifies the locality (for example, the name of a
     city, or a stylized image of an identifiable city landmark), audience, or
     activities of the group or event.
+
+.. _Scrapy contributor code of conduct: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
 
 .. _trademark-merchandise:
