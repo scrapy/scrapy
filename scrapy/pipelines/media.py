@@ -166,7 +166,7 @@ class MediaPipeline:
         for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
 
-    ### Overridable Interface
+    # Overridable Interface
     def media_to_download(self, request, info):
         """Check request before starting download"""
         pass
