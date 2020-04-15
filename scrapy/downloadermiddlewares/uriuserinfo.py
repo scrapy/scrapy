@@ -20,19 +20,19 @@ class UriUserinfoMiddleware(object):
     """
 
     def process_request(self, request, spider):
-        url = urlparse_cached(request)
-        if url.username is None and url.password is None:
+        parsed_url = urlparse_cached(request)
+        if parsed_url.username is None and parsed_url.password is None:
             return
 
-        if url.scheme.startswith('http'):
+        if parsed_url.scheme.startswith('http'):
             username_field, password_field = 'http_user', 'http_pass'
-        elif url.scheme.startswith('ftp'):
+        elif parsed_url.scheme.startswith('ftp'):
             username_field, password_field = 'ftp_user', 'ftp_password'
         else:
             return
 
-        for key, value in ((username_field, url.username),
-                           (password_field, url.password)):
+        for key, value in ((username_field, parsed_url.username),
+                           (password_field, parsed_url.password)):
             if value is not None:
                 request.meta.setdefault(key, unquote(value))
 
