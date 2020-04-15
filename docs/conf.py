@@ -295,3 +295,12 @@ intersphinx_mapping = {
 # ------------------------------------
 
 hoverxref_auto_ref = True
+hoverxref_project = "scrapy"
+hoverxref_version = release
+hoverxref_role_types = {
+    "class": "tooltip",
+    "confval": "tooltip",
+    "hoverxref": "tooltip",
+    "mod": "tooltip",
+    "ref": "tooltip",
+}
