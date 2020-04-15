@@ -3,7 +3,7 @@ from urllib.parse import unquote, urlunparse
 from scrapy.utils.httpobj import urlparse_cached
 
 
-class UriUserinfoMiddleware(object):
+class UriUserinfoMiddleware:
     """Downloader middleware that replaces `URI userinfo`_ data (user credentials
     for HTTP or FTP specified in the request URL) with the corresponding meta
     keys for later middlewares or download handlers to use them for
