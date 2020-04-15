@@ -1,6 +1,8 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
+import inspect
+
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
@@ -90,10 +92,12 @@ def _find_method(obj, func):
             pass
         else:
             if func_self is obj:
-                name = func.__func__.__name__
-                if _is_private_method(name):
-                    return _mangle_private_name(obj, func, name)
-                return name
+                members = inspect.getmembers(obj, predicate=inspect.ismethod)
+                for name, obj_func in members:
+                    if obj_func.__func__ is func.__func__:
+                        if _is_private_method(name):
+                            return _mangle_private_name(obj, func, name)
+                        return name
     raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 

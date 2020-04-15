@@ -69,6 +69,26 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
+    def test_reference_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider.parse_item_reference,
+                    errback=self.spider.handle_error_reference)
+        self._assert_serializes_ok(r, spider=self.spider)
+        request_dict = request_to_dict(r, self.spider)
+        self.assertEqual(request_dict['callback'], 'parse_item_reference')
+        self.assertEqual(request_dict['errback'], 'handle_error_reference')
+
+    def test_private_reference_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider._TestSpider__parse_item_reference,
+                    errback=self.spider._TestSpider__handle_error_reference)
+        self._assert_serializes_ok(r, spider=self.spider)
+        request_dict = request_to_dict(r, self.spider)
+        self.assertEqual(request_dict['callback'],
+                         '_TestSpider__parse_item_reference')
+        self.assertEqual(request_dict['errback'],
+                         '_TestSpider__handle_error_reference')
+
     def test_private_callback_serialization(self):
         r = Request("http://www.example.com",
                     callback=self.spider._TestSpider__parse_item_private,
@@ -131,8 +151,28 @@ class TestSpiderMixin:
         pass
 
 
+def parse_item(response):
+    pass
+
+
+def handle_error(failure):
+    pass
+
+
+def private_parse_item(response):
+    pass
+
+
+def private_handle_error(failure):
+    pass
+
+
 class TestSpider(Spider, TestSpiderMixin):
     name = 'test'
+    parse_item_reference = parse_item
+    handle_error_reference = handle_error
+    __parse_item_reference = private_parse_item
+    __handle_error_reference = private_handle_error
 
     def parse_item(self, response):
         pass
