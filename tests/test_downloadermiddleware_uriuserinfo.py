@@ -48,7 +48,9 @@ class BaseTestCase:
             self.assertNotIn(self.password_field, req.meta)
 
         def test_unquoting(self):
-            req = Request('{}://foo%3A:b%40r@scrapytest.org/'.format(self.protocol))
+            req = Request(
+                '{}://foo%3A:b%40r@scrapytest.org/'.format(self.protocol)
+            )
             assert self.mw.process_request(req, self.spider) is None
             self.assertEqual(req.meta[self.username_field], 'foo:')
             self.assertEqual(req.meta[self.password_field], 'b@r')
