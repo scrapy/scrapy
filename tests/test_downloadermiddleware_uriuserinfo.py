@@ -11,8 +11,6 @@ class BaseTestCase:
 
         def setUp(self):
             self.mw = UriUserinfoMiddleware()
-            self.spider = Spider('bar')
-            self.mw.spider_opened(self.spider)
 
         def tearDown(self):
             del self.mw
