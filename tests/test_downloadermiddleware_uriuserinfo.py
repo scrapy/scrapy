@@ -2,7 +2,6 @@ import unittest
 
 from scrapy.http import Request
 from scrapy.downloadermiddlewares.uriuserinfo import UriUserinfoMiddleware
-from scrapy.spiders import Spider
 
 
 class BaseTestCase:
