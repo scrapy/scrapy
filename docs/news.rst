@@ -3,6 +3,129 @@
 Release notes
 =============
 
+.. _release-2.1.0:
+
+Scrapy 2.1.0 (2020-04-??)
+-------------------------
+
+Highlights:
+
+* :setting:`FEEDS` setting to export to multiple feeds
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   …
+
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   The ``LOG_UNSERIALIZABLE_REQUESTS`` setting is no longer supported, use
+    :setting:`SCHEDULER_DEBUG` instead (:issue:`4385`)
+
+*   The ``REDIRECT_MAX_METAREFRESH_DELAY`` setting is no longer supported, use
+    :setting:`METAREFRESH_MAXDELAY` instead (:issue:`4385`)
+
+*   The :class:`~scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware`
+    middleware has been removed, including the entire
+    :class:`scrapy.downloadermiddlewares.chunked` module; chunked transfers
+    work out of the box (:issue:`4431`)
+
+*   The ``spiders`` property has ben removed from
+    :class:`~scrapy.crawler.Crawler`, use :class:`CrawlerRunner.spider_loader
+    <scrapy.crawler.CrawlerRunner.spider_loader>` or instantiate
+    :setting:`SPIDER_LOADER_CLASS` with your settings instead (:issue:`4398`)
+
+*   The ``MultiValueDict``, ``MultiValueDictKeyError``, and ``SiteNode``
+    classes have been removed from :mod:`scrapy.utils.datatypes`
+    (:issue:`4400`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   :meth:`Spider.make_requests_from_url
+    <scrapy.spiders.Spider.make_requests_from_url>` is deprecated, override
+    :meth:`~scrapy.spiders.Spider.start_requests` instead (:issue:`4412`)
+
+*   The ``FEED_FORMAT`` and ``FEED_URI`` settings have been deprecated in
+    favor of the new :setting:`FEEDS` setting (:issue:`1336`, :issue:`3858`)
+
+
+New features
+~~~~~~~~~~~~
+
+*   A new setting, :setting:`FEEDS`, allows configuring multiple output feeds
+    with different settings each (:issue:`1336`, :issue:`3858`)
+
+*   The :command:`crawl` and :command:`runspider` commands now support multiple
+    ``-o`` parameters (:issue:`1336`, :issue:`3858`)
+
+*   The :command:`crawl` and :command:`runspider` commands now support
+    specifying an output format by appending ``:<format>`` to the output file
+    (:issue:`1336`, :issue:`3858`)
+
+*   A warning is now issued when a value in
+    :attr:`~scrapy.spiders.Spider.allowed_domains` includes a port
+    (:issue:`50`, :issue:`3198`, :issue:`4413`)
+
+*   Zsh completion now excludes used option aliases from the completion list
+    (:issue:`4438`)
+
+
+Bug fixes
+~~~~~~~~~
+
+*   ``None`` values in :attr:`~scrapy.spiders.Spider.allowed_domains` no longer
+    cause a :exc:`TypeError` exception (:issue:`4410`)
+
+*   Zsh completion no longer allows options after arguments (:issue:`4438`)
+
+*   zope.interface 5.0.0 and later versions are now supported
+    (:issue:`4447`, :issue:`4448`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   Our PyPI entry now includes links for our documentation, our source code
+    repository and our issue tracker (:issue:`4456`)
+
+*   Covered the `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_
+    service in the documentation (:issue:`4206`, :issue:`4455`)
+
+*   Removed references to the Guppy library, which only works in Python 2
+    (:issue:`4285`, :issue:`4343`)
+
+*   Extended use of InterSphinx to link to Python 3 documentation
+    (:issue:`4444`, :issue:`4445`)
+
+*   Added support for Sphinx 3.0 and later (:issue:`4475`, :issue:`4480`)
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   Removed warnings about using old, removed settings (:issue:`4404`)
+
+*   Removed a warning about importing
+    :class:`~twisted.internet.testing.StringTransport` from
+    ``twisted.test.proto_helpers`` in Twisted 19.7.0 or newer (:issue:`4409`)
+
+*   Removed outdated Debian package build files (:issue:`4384`)
+
+*   Removed :class:`object` usage as a base class (:issue:`4430`)
+
+*   Removed code that added support for old versions of Twisted that we no
+    longer support (:issue:`4472`)
+
+*   Fixed code style issues (:issue:`4468`, :issue:`4469`, :issue:`4481`)
+
+*   Removed :func:`twisted.internet.defer.returnValue` calls (:issue:`4443`,
+    :issue:`4446`, :issue:`4489`)
+
+
 .. _release-2.0.1:
 
 Scrapy 2.0.1 (2020-03-18)
