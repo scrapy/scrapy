@@ -171,6 +171,7 @@ class BaseSettings(MutableMapping):
         :type required: boolean
         """
         return int(self.get(name, self._get_default(default, 0, required), required))
+
     def getfloat(self, name, default=_NOT_SET, required=False):
         """
         Get a setting value as a float.

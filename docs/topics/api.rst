@@ -205,6 +205,7 @@ SpiderLoader API
             :class:`~scrapy.exceptions.NotConfigured` exception
        :type required: boolean
 
+
 .. _topics-api-signals:
 
 Signals API
