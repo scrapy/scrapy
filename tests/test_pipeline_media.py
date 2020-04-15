@@ -2,7 +2,7 @@ from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -124,9 +124,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         # Simulate the Media Pipeline behavior to produce a Twisted Failure
         try:
             # Simulate a Twisted inline callback returning a Response
-            # The returnValue method raises an exception encapsulating the value
-            returnValue(response)
-        except BaseException as exc:
+            raise StopIteration(response)
+        except StopIteration as exc:
             def_gen_return_exc = exc
             try:
                 # Simulate the media_downloaded callback raising a FileException
@@ -140,7 +139,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and it should have the returnValue exception set as its context
+        # ... and it should have the StopIteration exception set as its context
         self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
@@ -155,7 +154,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.assertEqual(info.downloaded[fp], failure)
         # ... encapsulating the original FileException ...
         self.assertEqual(info.downloaded[fp].value, file_exc)
-        # ... but it should not store the returnValue exception on its context
+        # ... but it should not store the StopIteration exception on its context
         context = getattr(info.downloaded[fp].value, '__context__', None)
         self.assertIsNone(context)
 
