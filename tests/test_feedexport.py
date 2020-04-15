@@ -7,6 +7,7 @@ import string
 import tempfile
 import warnings
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from string import ascii_letters, digits
@@ -444,9 +445,30 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         data = yield self.run_and_export(TestSpider, settings)
         defer.returnValue(data)
 
+    @defer.inlineCallbacks
+    def assertExported(self, items, header, rows, settings=None, ordered=True):
+        yield self.assertExportedCsv(items, header, rows, settings, ordered)
+        yield self.assertExportedJsonLines(items, rows, settings)
+        yield self.assertExportedXml(items, rows, settings)
+        yield self.assertExportedPickle(items, rows, settings)
+        yield self.assertExportedMarshal(items, rows, settings)
+        yield self.assertExportedMultiple(items, rows, settings)
+
     @abstractmethod
     def run_and_export(self, spider_cls, settings):
         pass
+
+    def _load_until_eof(self, data, load_func):
+        result = []
+        with tempfile.TemporaryFile() as temp:
+            temp.write(data)
+            temp.seek(0)
+            while True:
+                try:
+                    result.append(load_func(temp))
+                except EOFError:
+                    break
+        return result
 
 
 class FeedExportTest(FeedExportTestBase):
@@ -477,6 +499,22 @@ class FeedExportTest(FeedExportTestBase):
                 os.remove(str(file_path))
 
         defer.returnValue(content)
+
+    @defer.inlineCallbacks
+    def exported_data(self, items, settings):
+        """
+        Return exported data which a spider yielding ``items`` would return.
+        """
+
+        class TestSpider(scrapy.Spider):
+            name = 'testspider'
+
+            def parse(self, response):
+                for item in items:
+                    yield item
+
+        data = yield self.run_and_export(TestSpider, settings)
+        defer.returnValue(data)
 
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
@@ -543,18 +581,6 @@ class FeedExportTest(FeedExportTestBase):
         json_rows = json.loads(to_unicode(data['json']))
         self.assertEqual(rows, json_rows)
 
-    def _load_until_eof(self, data, load_func):
-        result = []
-        with tempfile.TemporaryFile() as temp:
-            temp.write(data)
-            temp.seek(0)
-            while True:
-                try:
-                    result.append(load_func(temp))
-                except EOFError:
-                    break
-        return result
-
     @defer.inlineCallbacks
     def assertExportedPickle(self, items, rows, settings=None):
         settings = settings or {}
@@ -584,15 +610,6 @@ class FeedExportTest(FeedExportTestBase):
         self.assertEqual(expected, result)
 
     @defer.inlineCallbacks
-    def assertExported(self, items, header, rows, settings=None, ordered=True):
-        yield self.assertExportedCsv(items, header, rows, settings, ordered)
-        yield self.assertExportedJsonLines(items, rows, settings)
-        yield self.assertExportedXml(items, rows, settings)
-        yield self.assertExportedPickle(items, rows, settings)
-        yield self.assertExportedMarshal(items, rows, settings)
-        yield self.assertExportedMultiple(items, rows, settings)
-
-    @defer.inlineCallbacks
     def test_export_items(self):
         # feed exporters use field names from Item
         items = [
@@ -615,7 +632,7 @@ class FeedExportTest(FeedExportTestBase):
                 },
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(data[fmt], b'')
+            self.assertEqual(b'', data[fmt])
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -635,7 +652,7 @@ class FeedExportTest(FeedExportTestBase):
                 'FEED_EXPORT_INDENT': None,
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(data[fmt], expctd)
+            self.assertEqual(expctd, data[fmt])
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
@@ -734,7 +751,8 @@ class FeedExportTest(FeedExportTestBase):
         formats = {
             'json': u'[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
             'jsonlines': u'{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('utf-8'),
+            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode(
+                'utf-8'),
             'csv': u'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
@@ -751,7 +769,8 @@ class FeedExportTest(FeedExportTestBase):
         formats = {
             'json': u'[{"foo": "Test\xd6"}]'.encode('latin-1'),
             'jsonlines': u'{"foo": "Test\xd6"}\n'.encode('latin-1'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('latin-1'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode(
+                'latin-1'),
             'csv': u'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
@@ -772,7 +791,8 @@ class FeedExportTest(FeedExportTestBase):
 
         formats = {
             'json': u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode(
+                'latin-1'),
             'csv': u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
         }
 
@@ -988,7 +1008,7 @@ class FeedExportTest(FeedExportTestBase):
 
 class PartialDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = '_%(time)s_#%(batch_id)s'
+    _file_mark = '_%(time)s_#%(batch_id)s_'
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -999,7 +1019,6 @@ class PartialDeliveriesTest(FeedExportTestBase):
             urljoin('file:', file_path): feed
             for file_path, feed in FEEDS.items()
         }
-        from collections import defaultdict
         content = defaultdict(list)
         try:
             with MockServer() as s:
@@ -1014,26 +1033,120 @@ class PartialDeliveriesTest(FeedExportTestBase):
                         data = f.read()
                         content[feed['format']].append(data)
         finally:
-            pass
+            self.tearDown()
         defer.returnValue(content)
 
     @defer.inlineCallbacks
-    def assertPartialExported(self, items, rows, settings=None):
+    def assertExportedJsonLines(self, items, rows, settings=None):
         settings = settings or {}
         settings.update({
             'FEEDS': {
                 os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
             },
         })
-        data = yield self.exported_data(items, settings)
-        data['jl'] = b''.join(data['jl'])
-        parsed = [json.loads(to_unicode(line)) for line in data['jl'].splitlines()]
-
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        self.assertEqual(rows, parsed)
+        data = yield self.exported_data(items, settings)
+        for batch in data['jl']:
+            got_batch = [json.loads(to_unicode(batch_item)) for batch_item in batch.splitlines()]
+            expected_batch, rows = rows[:batch_size], rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
 
     @defer.inlineCallbacks
-    def test_partial_deliveries(self):
+    def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {'format': 'csv'},
+            },
+        })
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+        data = yield self.exported_data(items, settings)
+        for batch in data['csv']:
+            got_batch = csv.DictReader(to_unicode(batch).splitlines())
+            self.assertEqual(list(header), got_batch.fieldnames)
+            expected_batch, rows = rows[:batch_size], rows[batch_size:]
+            self.assertEqual(expected_batch, list(got_batch))
+
+    @defer.inlineCallbacks
+    def assertExportedXml(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
+            },
+        })
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        data = yield self.exported_data(items, settings)
+        for batch in data['xml']:
+            root = lxml.etree.fromstring(batch)
+            got_batch = [{e.tag: e.text for e in it} for it in root.findall('item')]
+            expected_batch, rows = rows[:batch_size], rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def assertExportedMultiple(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
+                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {'format': 'json'},
+            },
+        })
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        data = yield self.exported_data(items, settings)
+        # XML
+        xml_rows = rows.copy()
+        for batch in data['xml']:
+            root = lxml.etree.fromstring(batch)
+            got_batch = [{e.tag: e.text for e in it} for it in root.findall('item')]
+            expected_batch, xml_rows = xml_rows[:batch_size], xml_rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
+        # JSON
+        json_rows = rows.copy()
+        for batch in data['json']:
+            got_batch = json.loads(batch)
+            expected_batch, json_rows = json_rows[:batch_size], json_rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def assertExportedPickle(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'pickle', self._file_mark): {'format': 'pickle'},
+            },
+        })
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        data = yield self.exported_data(items, settings)
+        import pickle
+        for batch in data['pickle']:
+            got_batch = self._load_until_eof(batch, load_func=pickle.load)
+            expected_batch, rows = rows[:batch_size], rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def assertExportedMarshal(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'marshal', self._file_mark): {'format': 'marshal'},
+            },
+        })
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        data = yield self.exported_data(items, settings)
+        import marshal
+        for batch in data['marshal']:
+            got_batch = self._load_until_eof(batch, load_func=marshal.load)
+            expected_batch, rows = rows[:batch_size], rows[batch_size:]
+            self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def test_export_items(self):
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
@@ -1042,14 +1155,16 @@ class PartialDeliveriesTest(FeedExportTestBase):
         rows = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
             {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'},
-            {'foo': 'bar3', 'baz': 'quux3'}
+            {'foo': 'bar3', 'baz': 'quux3', 'egg': ''}
         ]
         settings = {
-            'FEED_STORAGE_BATCH_SIZE': 1
+            'FEED_STORAGE_BATCH_SIZE': 2
         }
-        yield self.assertPartialExported(items, rows, settings=settings)
+        header = self.MyItem.fields.keys()
+        yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
+        """If path without %(time)s or %(batch_id)s an exception must be raised"""
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
@@ -1069,8 +1184,8 @@ class PartialDeliveriesTest(FeedExportTestBase):
                 'FEED_STORAGE_BATCH_SIZE': 1
             }
             data = yield self.exported_no_data(settings)
-            data[fmt] = b''.join(data[fmt])
-            self.assertEqual(data[fmt], b'')
+            data = dict(data)
+            self.assertEqual(b'', data[fmt][0])
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -1088,8 +1203,8 @@ class PartialDeliveriesTest(FeedExportTestBase):
                 },
                 'FEED_STORE_EMPTY': True,
                 'FEED_EXPORT_INDENT': None,
-                'FEED_STORAGE_BATCH_SIZE': 1
+                'FEED_STORAGE_BATCH_SIZE': 1,
             }
             data = yield self.exported_no_data(settings)
-            data[fmt] = b''.join(data[fmt])
-            self.assertEqual(data[fmt], expctd)
+            data = dict(data)
+            self.assertEqual(expctd, data[fmt][0])
