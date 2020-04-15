@@ -147,9 +147,9 @@ class CrawlTestCase(TestCase):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = CrawlerRunner(settings).create_crawler(BrokenStartRequestsSpider)
         yield crawler.crawl(mockserver=self.mockserver)
-        #self.assertTrue(False, crawler.spider.seedsseen)
-        #self.assertTrue(crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
-        #                crawler.spider.seedsseen)
+        self.assertTrue(
+            crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
+            crawler.spider.seedsseen)
 
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):

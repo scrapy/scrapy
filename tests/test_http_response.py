@@ -450,8 +450,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        #r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        #assert u'\ufffd' in r.text, repr(r.text)
+        # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
+        # assert u'\ufffd' in r.text, repr(r.text)
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
