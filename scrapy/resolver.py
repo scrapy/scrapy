@@ -11,6 +11,9 @@ dnscache = ExpiringCache(10000)
 
 @implementer(IResolverSimple)
 class CachingThreadedResolver(ThreadedResolver):
+    """Default caching resolver, which supports IPv4 only, configurable
+    timeout for DNS requests (:setting:`DNS_TIMEOUT`), and configurable
+    expiration  time for DNS records (:setting:`DNSCACHE_EXPIRATION_SECS`)."""
 
     @classmethod
     def from_crawler(cls, crawler, reactor):
@@ -26,10 +29,6 @@ class CachingThreadedResolver(ThreadedResolver):
         )
 
     def __init__(self, reactor, cache_size, timeout, expiration):
-        """Default caching resolver, which supports IPv4 only, configurable
-        timeout for DNS requests (:setting:`DNS_TIMEOUT`), and configurable
-        expiration  time for DNS records
-        (:setting:`DNSCACHE_EXPIRATION_SECS`)."""
         super(CachingThreadedResolver, self).__init__(reactor)
         dnscache.limit = cache_size
         self.timeout = timeout
