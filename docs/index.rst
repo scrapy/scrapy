@@ -263,7 +263,8 @@ All the rest
    news
    contributing
    versioning
-   license
+   licenses
+   trademarks
 
 :doc:`news`
     See what has changed in recent Scrapy versions.
@@ -274,5 +275,8 @@ All the rest
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
 
-:doc:`license`
-    Read licenses of Scrapy software and artwork.
+:doc:`licenses`
+    Read the licenses of the Scrapy software and artwork.
+
+:doc:`trademarks`
+    Learn the terms of use of the Scrapy trademarks.
