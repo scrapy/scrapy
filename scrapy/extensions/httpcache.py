@@ -1,21 +1,26 @@
-from __future__ import print_function
-import os
 import gzip
-from six.moves import cPickle as pickle
+import logging
+import os
+import pickle
+from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
-from email.utils import mktime_tz, parsedate_tz
+
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
+
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.project import data_path
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.request import request_fingerprint
 
 
-class DummyPolicy(object):
+logger = logging.getLogger(__name__)
+
+
+class DummyPolicy:
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
@@ -27,14 +32,14 @@ class DummyPolicy(object):
     def should_cache_response(self, response, request):
         return response.status not in self.ignore_http_codes
 
-    def is_cached_response_fresh(self, response, request):
+    def is_cached_response_fresh(self, cachedresponse, request):
         return True
 
     def is_cached_response_valid(self, cachedresponse, response, request):
         return True
 
 
-class RFC2616Policy(object):
+class RFC2616Policy:
 
     MAXAGE = 3600 * 24 * 365  # one year
 
@@ -66,8 +71,8 @@ class RFC2616Policy(object):
         return True
 
     def should_cache_response(self, response, request):
-        # What is cacheable - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
-        # Response cacheability - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
+        # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
+        # Response cacheability - https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
         # Status code 206 is not included because cache can not deal with partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
@@ -159,7 +164,7 @@ class RFC2616Policy(object):
 
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#706
         cc = self._parse_cachecontrol(response)
         maxage = self._get_max_age(cc)
         if maxage is not None:
@@ -190,7 +195,7 @@ class RFC2616Policy(object):
 
     def _compute_current_age(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeCurrentAge
-        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#366
+        # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#658
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
@@ -208,7 +213,7 @@ class RFC2616Policy(object):
         return currentage
 
 
-class DbmCacheStorage(object):
+class DbmCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
@@ -219,6 +224,8 @@ class DbmCacheStorage(object):
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
         self.db = self.dbmodule.open(dbpath, 'c')
+
+        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         self.db.close()
@@ -263,7 +270,7 @@ class DbmCacheStorage(object):
         return request_fingerprint(request)
 
 
-class FilesystemCacheStorage(object):
+class FilesystemCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
@@ -272,7 +279,8 @@ class FilesystemCacheStorage(object):
         self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
-        pass
+        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+                     extra={'spider': spider})
 
     def close_spider(self, spider):
         pass
@@ -335,76 +343,10 @@ class FilesystemCacheStorage(object):
             return pickle.load(f)
 
 
-class LeveldbCacheStorage(object):
-
-    def __init__(self, settings):
-        import leveldb
-        self._leveldb = leveldb
-        self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
-        self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
-        self.db = None
-
-    def open_spider(self, spider):
-        dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)
-        self.db = self._leveldb.LevelDB(dbpath)
-
-    def close_spider(self, spider):
-        # Do compactation each time to save space and also recreate files to
-        # avoid them being removed in storages with timestamp-based autoremoval.
-        self.db.CompactRange()
-        del self.db
-
-    def retrieve_response(self, spider, request):
-        data = self._read_data(spider, request)
-        if data is None:
-            return  # not cached
-        url = data['url']
-        status = data['status']
-        headers = Headers(data['headers'])
-        body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
-
-    def store_response(self, spider, request, response):
-        key = self._request_key(request)
-        data = {
-            'status': response.status,
-            'url': response.url,
-            'headers': dict(response.headers),
-            'body': response.body,
-        }
-        batch = self._leveldb.WriteBatch()
-        batch.Put(key + b'_data', pickle.dumps(data, protocol=2))
-        batch.Put(key + b'_time', to_bytes(str(time())))
-        self.db.Write(batch)
-
-    def _read_data(self, spider, request):
-        key = self._request_key(request)
-        try:
-            ts = self.db.Get(key + b'_time')
-        except KeyError:
-            return  # not found or invalid entry
-
-        if 0 < self.expiration_secs < time() - float(ts):
-            return  # expired
-
-        try:
-            data = self.db.Get(key + b'_data')
-        except KeyError:
-            return  # invalid entry
-        else:
-            return pickle.loads(data)
-
-    def _request_key(self, request):
-        return to_bytes(request_fingerprint(request))
-
-
-
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 
-    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
     >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
     ...                                                 b'max-age': b'3600'}

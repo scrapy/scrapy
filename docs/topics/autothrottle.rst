@@ -11,7 +11,7 @@ Design goals
 ============
 
 1. be nicer to sites instead of using default download delay of zero
-2. automatically adjust scrapy to the optimum crawling speed, so the user
+2. automatically adjust Scrapy to the optimum crawling speed, so the user
    doesn't have to tune the download delays to find the optimum one.
    The user only needs to specify the maximum concurrent requests
    it allows, and the extension does the rest.
@@ -88,6 +88,7 @@ The settings used to control the AutoThrottle extension are:
 * :setting:`AUTOTHROTTLE_ENABLED`
 * :setting:`AUTOTHROTTLE_START_DELAY`
 * :setting:`AUTOTHROTTLE_MAX_DELAY`
+* :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
 * :setting:`AUTOTHROTTLE_DEBUG`
 * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
 * :setting:`CONCURRENT_REQUESTS_PER_IP`

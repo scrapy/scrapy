@@ -25,5 +25,7 @@ class VersionTest(ProcessTest, unittest.TestCase):
         _, out, _ = yield self.execute(['-v'])
         headers = [l.partition(":")[0].strip()
                    for l in out.strip().decode(encoding).splitlines()]
-        self.assertEqual(headers, ['Scrapy', 'lxml', 'libxml2', 'Twisted',
-                                   'Python', 'pyOpenSSL', 'Platform'])
+        self.assertEqual(headers, ['Scrapy', 'lxml', 'libxml2',
+                                   'cssselect', 'parsel', 'w3lib',
+                                   'Twisted', 'Python', 'pyOpenSSL',
+                                   'cryptography', 'Platform'])

@@ -19,7 +19,7 @@ from scrapy.utils.engine import get_engine_status
 logger = logging.getLogger(__name__)
 
 
-class MemoryUsage(object):
+class MemoryUsage:
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
@@ -35,7 +35,6 @@ class MemoryUsage(object):
         self.notify_mails = crawler.settings.getlist('MEMUSAGE_NOTIFY_MAIL')
         self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
-        self.report = crawler.settings.getbool('MEMUSAGE_REPORT')
         self.check_interval = crawler.settings.getfloat('MEMUSAGE_CHECK_INTERVAL_SECONDS')
         self.mail = MailSender.from_settings(crawler.settings)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
@@ -48,7 +47,7 @@ class MemoryUsage(object):
     def get_virtual_size(self):
         size = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
         if sys.platform != 'darwin':
-            # on Mac OS X ru_maxrss is in bytes, on Linux it is in KB
+            # on macOS ru_maxrss is in bytes, on Linux it is in KB
             size *= 1024
         return size
 

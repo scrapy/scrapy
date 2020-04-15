@@ -12,7 +12,7 @@ Overview
 
 The following diagram shows an overview of the Scrapy architecture with its
 components and an outline of the data flow that takes place inside the system
-(shown by the green arrows). A brief description of the components is included
+(shown by the red arrows). A brief description of the components is included
 below with links for more detailed information about them. The data flow is
 also described below.
 
@@ -41,25 +41,26 @@ this:
 
 4. The :ref:`Engine <component-engine>` sends the Requests to the
    :ref:`Downloader <component-downloader>`, passing through the
-   :ref:`Downloader Middleware <component-downloader-middleware>`
-   (requests direction).
+   :ref:`Downloader Middlewares <component-downloader-middleware>` (see
+   :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`).
 
 5. Once the page finishes downloading the
    :ref:`Downloader <component-downloader>` generates a Response (with
    that page) and sends it to the Engine, passing through the
-   :ref:`Downloader Middleware <component-downloader-middleware>`
-   (response direction).
+   :ref:`Downloader Middlewares <component-downloader-middleware>` (see
+   :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`).
 
 6. The :ref:`Engine <component-engine>` receives the Response from the
    :ref:`Downloader <component-downloader>` and sends it to the
    :ref:`Spider <component-spiders>` for processing, passing
-   through the :ref:`Spider Middleware <component-spider-middleware>`
-   (input direction).
+   through the :ref:`Spider Middleware <component-spider-middleware>` (see
+   :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_input`).
 
 7. The :ref:`Spider <component-spiders>` processes the Response and returns
    scraped items and new Requests (to follow) to the
    :ref:`Engine <component-engine>`, passing through the
-   :ref:`Spider Middleware <component-spider-middleware>` (output direction).
+   :ref:`Spider Middleware <component-spider-middleware>` (see
+   :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
    :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to
@@ -165,11 +166,10 @@ for concurrency.
 For more information about asynchronous programming and Twisted see these
 links:
 
-* `Introduction to Deferreds in Twisted`_
+* :doc:`twisted:core/howto/defer-intro`
 * `Twisted - hello, asynchronous programming`_
 * `Twisted Introduction - Krondo`_
 
 .. _Twisted: https://twistedmatrix.com/trac/
-.. _Introduction to Deferreds in Twisted: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
+.. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/

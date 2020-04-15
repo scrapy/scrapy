@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):
@@ -85,9 +86,6 @@ class HeadersTest(unittest.TestCase):
         self.assertSortedEqual(h.items(),
                                [(b'X-Forwarded-For', [b'ip1', b'ip2']),
                                 (b'Content-Type', [b'text/html'])])
-        self.assertSortedEqual(h.iteritems(),
-                               [(b'X-Forwarded-For', [b'ip1', b'ip2']),
-                                (b'Content-Type', [b'text/html'])])
         self.assertSortedEqual(h.values(), [b'ip2', b'text/html'])
 
     def test_update(self):
@@ -147,11 +145,11 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h1.getlist('hey'), [b'5'])
 
     def test_invalid_value(self):
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers, {'foo': object()})
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().__setitem__, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setdefault, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setlist, 'foo', [object()])
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers, {'foo': object()})
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().__setitem__, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setdefault, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setlist, 'foo', [object()])

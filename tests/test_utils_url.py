@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import six
-from six.moves.urllib.parse import urlparse
-
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, parse_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url)
+
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -32,7 +30,7 @@ class UrlUtilsTest(unittest.TestCase):
 
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
-        self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+        self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
     def test_url_is_from_spider(self):
         spider = Spider(name='example.com')
@@ -186,6 +184,7 @@ class AddHttpIfNoScheme(unittest.TestCase):
 class GuessSchemeTest(unittest.TestCase):
     pass
 
+
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
@@ -194,6 +193,7 @@ def create_guess_scheme_t(args):
                 args[0], url, args[1])
     return do_expected
 
+
 def create_skipped_scheme_t(args):
     def do_expected(self):
         raise unittest.SkipTest(args[2])
@@ -201,44 +201,211 @@ def create_skipped_scheme_t(args):
         assert url.startswith(args[1])
     return do_expected
 
-for k, args in enumerate ([
-            ('/index',                              'file://'),
-            ('/index.html',                         'file://'),
-            ('./index.html',                        'file://'),
-            ('../index.html',                       'file://'),
-            ('../../index.html',                    'file://'),
-            ('./data/index.html',                   'file://'),
-            ('.hidden/data/index.html',             'file://'),
-            ('/home/user/www/index.html',           'file://'),
-            ('//home/user/www/index.html',          'file://'),
-            ('file:///home/user/www/index.html',    'file://'),
 
-            ('index.html',                          'http://'),
-            ('example.com',                         'http://'),
-            ('www.example.com',                     'http://'),
-            ('www.example.com/index.html',          'http://'),
-            ('http://example.com',                  'http://'),
-            ('http://example.com/index.html',       'http://'),
-            ('localhost',                           'http://'),
-            ('localhost/index.html',                'http://'),
+for k, args in enumerate([
+            ('/index', 'file://'),
+            ('/index.html', 'file://'),
+            ('./index.html', 'file://'),
+            ('../index.html', 'file://'),
+            ('../../index.html', 'file://'),
+            ('./data/index.html', 'file://'),
+            ('.hidden/data/index.html', 'file://'),
+            ('/home/user/www/index.html', 'file://'),
+            ('//home/user/www/index.html', 'file://'),
+            ('file:///home/user/www/index.html', 'file://'),
+
+            ('index.html', 'http://'),
+            ('example.com', 'http://'),
+            ('www.example.com', 'http://'),
+            ('www.example.com/index.html', 'http://'),
+            ('http://example.com', 'http://'),
+            ('http://example.com/index.html', 'http://'),
+            ('localhost', 'http://'),
+            ('localhost/index.html', 'http://'),
 
             # some corner cases (default to http://)
-            ('/',                                   'http://'),
-            ('.../test',                            'http://'),
+            ('/', 'http://'),
+            ('.../test', 'http://'),
 
         ], start=1):
     t_method = create_guess_scheme_t(args)
     t_method.__name__ = 'test_uri_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
-for k, args in enumerate ([
-            ('C:\absolute\path\to\a\file.html',     'file://',
+for k, args in enumerate([
+            (r'C:\absolute\path\to\a\file.html', 'file://',
              'Windows filepath are not supported for scrapy shell'),
         ], start=1):
     t_method = create_skipped_scheme_t(args)
     t_method.__name__ = 'test_uri_skipped_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
+
+
+class StripUrl(unittest.TestCase):
+
+    def test_noop(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html'),
+            'http://www.example.com/index.html')
+
+    def test_noop_query_string(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html?somekey=somevalue'),
+            'http://www.example.com/index.html?somekey=somevalue')
+
+    def test_fragments(self):
+        self.assertEqual(strip_url(
+            'http://www.example.com/index.html?somekey=somevalue#section', strip_fragment=False),
+            'http://www.example.com/index.html?somekey=somevalue#section')
+
+    def test_path(self):
+        for input_url, origin, output_url in [
+            ('http://www.example.com/',
+             False,
+             'http://www.example.com/'),
+
+            ('http://www.example.com',
+             False,
+             'http://www.example.com'),
+
+            ('http://www.example.com',
+             True,
+             'http://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(input_url, origin_only=origin), output_url)
+
+    def test_credentials(self):
+        for i, o in [
+            ('http://username@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            ('https://username:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
+
+            ('ftp://username:password@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+
+    def test_credentials_encoded_delims(self):
+        for i, o in [
+            # user: "username@"
+            # password: none
+            ('http://username%40@www.example.com/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "username:pass"
+            # password: ""
+            ('https://username%3Apass:@www.example.com/index.html?somekey=somevalue#section',
+             'https://www.example.com/index.html?somekey=somevalue'),
+
+            # user: "me"
+            # password: "user@domain.com"
+            ('ftp://me:user%40domain.com@www.example.com/index.html?somekey=somevalue#section',
+             'ftp://www.example.com/index.html?somekey=somevalue'),
+            ]:
+            self.assertEqual(strip_url(i, strip_credentials=True), o)
+
+    def test_default_ports_creds_off(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue#section',
+             'http://www.example.com/index.html?somekey=somevalue'),
+
+            ('http://username:password@www.example.com:8080/index.html#section',
+             'http://www.example.com:8080/index.html'),
+
+            ('http://username:password@www.example.com:443/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://www.example.com:443/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i), o)
+
+    def test_default_ports(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html',
+             'http://username:password@www.example.com/index.html'),
+
+            ('http://username:password@www.example.com:8080/index.html',
+             'http://username:password@www.example.com:8080/index.html'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=True, strip_credentials=False), o)
+
+    def test_default_ports_keep(self):
+        for i, o in [
+            ('http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:80/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov#section',
+             'http://username:password@www.example.com:8080/index.html?somekey=somevalue&someotherkey=sov'),
+
+            ('http://username:password@www.example.com:443/index.html',
+             'http://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://username:password@www.example.com:443/index.html'),
+
+            ('https://username:password@www.example.com:442/index.html',
+             'https://username:password@www.example.com:442/index.html'),
+
+            ('https://username:password@www.example.com:80/index.html',
+             'https://username:password@www.example.com:80/index.html'),
+
+            ('ftp://username:password@www.example.com:21/file.txt',
+             'ftp://username:password@www.example.com:21/file.txt'),
+
+            ('ftp://username:password@www.example.com:221/file.txt',
+             'ftp://username:password@www.example.com:221/file.txt'),
+            ]:
+            self.assertEqual(strip_url(i, strip_default_port=False, strip_credentials=False), o)
+
+    def test_origin_only(self):
+        for i, o in [
+            ('http://username:password@www.example.com/index.html',
+             'http://www.example.com/'),
+
+            ('http://username:password@www.example.com:80/foo/bar?query=value#somefrag',
+             'http://www.example.com/'),
+
+            ('http://username:password@www.example.com:8008/foo/bar?query=value#somefrag',
+             'http://www.example.com:8008/'),
+
+            ('https://username:password@www.example.com:443/index.html',
+             'https://www.example.com/'),
+            ]:
+            self.assertEqual(strip_url(i, origin_only=True), o)
 
 
 if __name__ == "__main__":

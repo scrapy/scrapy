@@ -1,15 +1,23 @@
 from email.utils import formatdate
+
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
+from twisted.web.client import ResponseFailed
+
 from scrapy import signals
-from scrapy.exceptions import NotConfigured, IgnoreRequest
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.xlib.tx import ResponseFailed
 
 
-class HttpCacheMiddleware(object):
+class HttpCacheMiddleware:
 
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
@@ -75,7 +83,7 @@ class HttpCacheMiddleware(object):
             return response
 
         # RFC2616 requires origin server to set Date header,
-        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
+        # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
         if 'Date' not in response.headers:
             response.headers['Date'] = formatdate(usegmt=1)
 

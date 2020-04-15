@@ -3,30 +3,28 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
-
 import os
 import signal
-import warnings
 
-from twisted.internet import reactor, threads, defer
+from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.console import start_python_console
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
-class Shell(object):
+class Shell:
 
     relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
                         Settings)
@@ -40,11 +38,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None):
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider)
+            self.fetch(url, spider, redirect=redirect)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -98,14 +96,17 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
         if isinstance(request_or_url, Request):
             request = request_or_url
-            url = request.url
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
-            request.meta['handle_httpstatus_all'] = True
+            request = Request(url, dont_filter=True, **kwargs)
+            if redirect:
+                request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+            else:
+                request.meta['handle_httpstatus_all'] = True
         response = None
         try:
             response, spider = threads.blockingCallFromThread(
@@ -124,7 +125,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['sel'] = _SelectorProxy(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
@@ -144,10 +144,13 @@ class Shell(object):
             if self._is_relevant(v):
                 b.append("  %-10s %s" % (k, v))
         b.append("Useful shortcuts:")
-        b.append("  shelp()           Shell help (print this help)")
         if self.inthread:
-            b.append("  fetch(req_or_url) Fetch request (or URL) and "
-                     "update local objects")
+            b.append("  fetch(url[, redirect=True]) "
+                     "Fetch URL and update local objects "
+                     "(by default, redirects are followed)")
+            b.append("  fetch(req)                  "
+                     "Fetch a scrapy.Request and update local objects ")
+        b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
         return "\n".join("[s] %s" % l for l in b)
@@ -158,7 +161,7 @@ class Shell(object):
 
 def inspect_response(response, spider):
     """Open a shell to inspect the given response"""
-    Shell(spider.crawler).start(response=response)
+    Shell(spider.crawler).start(response=response, spider=spider)
 
 
 def _request_deferred(request):
@@ -168,7 +171,7 @@ def _request_deferred(request):
 
     This returns a Deferred whose first pair of callbacks are the request
     callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
+    callback/errback is executed (i.e. when the request is downloaded)
 
     WARNING: Do not call request.replace() until after the deferred is called.
     """
@@ -187,15 +190,3 @@ def _request_deferred(request):
 
     request.callback, request.errback = d.callback, d.errback
     return d
-
-
-class _SelectorProxy(object):
-
-    def __init__(self, response):
-        self._proxiedresponse = response
-
-    def __getattr__(self, name):
-        warnings.warn('"sel" shortcut is deprecated. Use "response.xpath()", '
-                      '"response.css()" or "response.selector" instead',
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        return getattr(self._proxiedresponse.selector, name)

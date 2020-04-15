@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
+
 class SitemapTest(unittest.TestCase):
 
     def test_sitemap(self):
@@ -119,13 +120,18 @@ Disallow: /s*/*tags
 # Sitemap files
 Sitemap: http://example.com/sitemap.xml
 Sitemap: http://example.com/sitemap-product-index.xml
+Sitemap: HTTP://example.com/sitemap-uppercase.xml
+Sitemap: /sitemap-relative-url.xml
 
 # Forums
 Disallow: /forum/search/
 Disallow: /forum/active/
 """
-        self.assertEqual(list(sitemap_urls_from_robots(robots)),
-             ['http://example.com/sitemap.xml', 'http://example.com/sitemap-product-index.xml'])
+        self.assertEqual(list(sitemap_urls_from_robots(robots, base_url='http://example.com')),
+                         ['http://example.com/sitemap.xml',
+                          'http://example.com/sitemap-product-index.xml',
+                          'http://example.com/sitemap-uppercase.xml',
+                          'http://example.com/sitemap-relative-url.xml'])
 
     def test_sitemap_blanklines(self):
         """Assert we can deal with starting blank lines before <xml> tag"""

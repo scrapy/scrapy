@@ -7,9 +7,7 @@ RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
 Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non failed) pages. Once
-there is no more failed pages to retry this middleware sends a signal
-(retry_complete), so other extensions could connect to that signal.
+once the spider has finished crawling all regular (non failed) pages.
 """
 import logging
 
@@ -17,16 +15,17 @@ from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionRefusedError, ConnectionDone, ConnectError, \
         ConnectionLost, TCPTimedOutError
+from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
-from scrapy.xlib.tx import ResponseFailed
 from scrapy.core.downloader.handlers.http11 import TunnelError
+from scrapy.utils.python import global_object_name
 
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
@@ -62,7 +61,13 @@ class RetryMiddleware(object):
     def _retry(self, request, reason, spider):
         retries = request.meta.get('retry_times', 0) + 1
 
-        if retries <= self.max_retry_times:
+        retry_times = self.max_retry_times
+
+        if 'max_retry_times' in request.meta:
+            retry_times = request.meta['max_retry_times']
+
+        stats = spider.crawler.stats
+        if retries <= retry_times:
             logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
                          extra={'spider': spider})
@@ -70,8 +75,15 @@ class RetryMiddleware(object):
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
             retryreq.priority = request.priority + self.priority_adjust
+
+            if isinstance(reason, Exception):
+                reason = global_object_name(reason.__class__)
+
+            stats.inc_value('retry/count')
+            stats.inc_value('retry/reason_count/%s' % reason)
             return retryreq
         else:
-            logger.debug("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
+            stats.inc_value('retry/max_reached')
+            logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
                          extra={'spider': spider})

@@ -5,16 +5,19 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from six.moves.urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode
+
 import lxml.html
 from parsel.selector import create_root_node
-import six
+from w3lib.html import strip_html5_whitespace
+
 from scrapy.http.request import Request
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
+    valid_form_methods = ['GET', 'POST']
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
@@ -45,13 +48,22 @@ class FormRequest(Request):
         form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
+
         method = kwargs.pop('method', form.method)
+        if method is not None:
+            method = method.upper()
+            if method not in cls.valid_form_methods:
+                method = 'GET'
+
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
 def _get_form_url(form, url):
     if url is None:
-        return urljoin(form.base_url, form.action)
+        action = form.get('action')
+        if action is None:
+            return form.base_url
+        return urljoin(form.base_url, strip_html5_whitespace(action))
     return urljoin(form.base_url, url)
 
 
@@ -91,8 +103,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        encoded = formxpath if six.PY3 else formxpath.encode('unicode_escape')
-        raise ValueError('No <form> element found with %s' % encoded)
+        raise ValueError('No <form> element found with %s' % formxpath)
 
     # If we get here, it means that either formname was None
     # or invalid
@@ -108,10 +119,12 @@ def _get_form(response, formname, formid, formnumber, formxpath):
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
-        formdata = dict(formdata or ())
+        formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
+    if not formdata:
+        formdata = ()
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
@@ -122,14 +135,17 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                             "re": "http://exslt.org/regular-expressions"})
     values = [(k, u'' if v is None else v)
               for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata]
+              if k and k not in formdata_keys]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend(formdata.items())
+    if isinstance(formdata, dict):
+        formdata = formdata.items()
+
+    values.extend((k, v) for k, v in formdata if v is not None)
     return values
 
 
@@ -164,9 +180,8 @@ def _get_clickable(clickdata, form):
     """
     clickables = [
         el for el in form.xpath(
-            'descendant::*[(self::input or self::button)'
-            ' and re:test(@type, "^submit$", "i")]'
-            '|descendant::button[not(@type)]',
+            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
             namespaces={"re": "http://exslt.org/regular-expressions"})
         ]
     if not clickables:
@@ -192,7 +207,7 @@ def _get_clickable(clickdata, form):
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
     xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
+            u''.join(u'[@%s="%s"]' % c for c in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].get('name'), el[0].get('value') or '')

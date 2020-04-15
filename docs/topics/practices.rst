@@ -34,15 +34,16 @@ Here's an example showing how to run a single spider with it.
         # Your spider definition
         ...
 
-    process = CrawlerProcess({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
+    process = CrawlerProcess(settings={
+        'FEED_FORMAT': 'json',
+        'FEED_URI': 'items.json'
     })
 
     process.crawl(MySpider)
     process.start() # the script will block here until the crawling is finished
 
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
-acquainted with its usage details.
+Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
@@ -80,7 +81,7 @@ returned by the :meth:`CrawlerRunner.crawl
 <scrapy.crawler.CrawlerRunner.crawl>` method.
 
 Here's an example of its usage, along with a callback to manually stop the
-reactor after `MySpider` has finished running.
+reactor after ``MySpider`` has finished running.
 
 ::
 
@@ -100,7 +101,7 @@ reactor after `MySpider` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
-.. seealso:: `Twisted Reactor Overview`_.
+.. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
 
@@ -238,7 +239,8 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_
+  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
+  super proxy that you can attach your own proxies to.
 * use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such downloaders is
   `Crawlera`_
@@ -247,9 +249,9 @@ If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
 
 .. _Tor project: https://www.torproject.org/
-.. _commercial support: http://scrapy.org/support/
-.. _ProxyMesh: http://proxymesh.com/
+.. _commercial support: https://scrapy.org/support/
+.. _ProxyMesh: https://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
-.. _Crawlera: http://scrapinghub.com/crawlera
+.. _Crawlera: https://scrapinghub.com/crawlera
+.. _scrapoxy: https://scrapoxy.io/

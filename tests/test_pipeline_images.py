@@ -1,8 +1,7 @@
-import os
+import io
 import hashlib
 import random
-import warnings
-from tempfile import mkdtemp, TemporaryFile
+from tempfile import mkdtemp
 from shutil import rmtree
 
 from twisted.trial import unittest
@@ -81,20 +80,28 @@ class ImagesPipelineTestCase(unittest.TestCase):
         COLOUR = (0, 127, 255)
         im = _create_image('JPEG', 'RGB', SIZE, COLOUR)
         converted, _ = self.pipeline.convert_image(im)
-        self.assertEquals(converted.mode, 'RGB')
-        self.assertEquals(converted.getcolors(), [(10000, COLOUR)])
+        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
 
         # check that thumbnail keep image ratio
         thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
-        self.assertEquals(thumbnail.mode, 'RGB')
-        self.assertEquals(thumbnail.size, (10, 10))
+        self.assertEqual(thumbnail.mode, 'RGB')
+        self.assertEqual(thumbnail.size, (10, 10))
 
         # transparency case: RGBA and PNG
         COLOUR = (0, 127, 255, 50)
         im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
         converted, _ = self.pipeline.convert_image(im)
-        self.assertEquals(converted.mode, 'RGB')
-        self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
+        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+
+        # transparency case with palette: P and PNG
+        COLOUR = (0, 127, 255, 50)
+        im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        im = im.convert('P')
+        converted, _ = self.pipeline.convert_image(im)
+        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
 
 class DeprecatedImagesPipeline(ImagesPipeline):
@@ -108,63 +115,6 @@ class DeprecatedImagesPipeline(ImagesPipeline):
     def thumb_key(self, url, thumb_id):
         thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
-
-
-class DeprecatedImagesPipelineTestCase(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = mkdtemp()
-
-    def init_pipeline(self, pipeline_class):
-        self.pipeline = pipeline_class(self.tempdir, download_func=_mocked_download_func)
-        self.pipeline.open_spider(None)
-
-    def test_default_file_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.gif"),
-                             'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_default_image_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.image_key("https://dev.mydeco.com/mydeco.gif"),
-                             'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_overridden_file_key_method(self):
-        self.init_pipeline(DeprecatedImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-                             'empty/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
-
-    def test_default_thumb_key_method(self):
-        self.init_pipeline(ImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.thumb_key("file:///tmp/foo.jpg", 50),
-                             'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
-
-    def test_overridden_thumb_key_method(self):
-        self.init_pipeline(DeprecatedImagesPipeline)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.assertEqual(self.pipeline.thumb_path(Request("file:///tmp/foo.jpg"), 50),
-                             'thumbsup/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-            self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
-
-    def tearDown(self):
-        rmtree(self.tempdir)
 
 
 class ImagesPipelineTestCaseFields(unittest.TestCase):
@@ -227,7 +177,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         IMAGES_RESULT_FIELD='images'
     )
 
-
     def setUp(self):
         self.tempdir = mkdtemp()
 
@@ -244,7 +193,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
-            "IMAGES_EXPIRES": random.randint(1, 1000),
+            "IMAGES_EXPIRES": random.randint(100, 1000),
             "IMAGES_STORE": self.tempdir,
             "IMAGES_RESULT_FIELD": random_string(),
             "IMAGES_URLS_FIELD": random_string(),
@@ -393,8 +342,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
 
+
 def _create_image(format, *a, **kw):
-    buf = TemporaryFile()
+    buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
     return Image.open(buf)
