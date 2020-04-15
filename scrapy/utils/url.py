@@ -85,11 +85,9 @@ def add_http_if_no_scheme(url):
 
 
 def guess_scheme(url):
-    """Add an URL scheme if missing: file:// for filepath-like input or http:// otherwise."""
-    parts = urlparse(url)
-    if parts.scheme:
-        return url
-    # Note: this does not match Windows filepath
+    """Add an URL scheme if missing: file:// for filepath-like input or
+    http:// otherwise."""
+    # POSIX path
     if re.match(r'''^                   # start with...
                     (
                         \.              # ...a single dot,
@@ -99,7 +97,10 @@ def guess_scheme(url):
                     )?      # optional match of ".", ".." or ".blabla"
                     /       # at least one "/" for a file path,
                     .       # and something after the "/"
-                    ''', parts.path, flags=re.VERBOSE):
+                    ''', url, flags=re.VERBOSE):
+        return any_to_uri(url)
+    # Windows drive-letter path
+    elif re.match(r'''^[a-z]:\\''', url, flags=re.IGNORECASE):
         return any_to_uri(url)
     else:
         return add_http_if_no_scheme(url)

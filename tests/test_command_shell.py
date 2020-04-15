@@ -94,7 +94,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_local_file(self):
-        filepath = join(tests_datadir, 'test_site/index.html')
+        filepath = join(tests_datadir, 'test_site', 'index.html')
         _, out, _ = yield self.execute([filepath, '-c', 'item'])
         assert b'{}' in out
 
