@@ -1,5 +1,4 @@
 """
 Selectors
 """
-from scrapy.selector.unified import *
-from scrapy.selector.lxmlsel import *
+from scrapy.selector.unified import *  # noqa: F401

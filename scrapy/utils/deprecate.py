@@ -7,9 +7,12 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
-    warnings.warn("%s.%s attribute is deprecated and will be no longer supported "
-        "in Scrapy %s, use %s.%s attribute instead" % \
-        (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
+    warnings.warn(
+        "%s.%s attribute is deprecated and will be no longer supported "
+        "in Scrapy %s, use %s.%s attribute instead"
+        % (cname, oldattr, version, cname, newattr),
+        ScrapyDeprecationWarning,
+        stacklevel=3)
 
 
 def create_deprecated_class(name, new_class, clsdict=None,
@@ -17,10 +20,10 @@ def create_deprecated_class(name, new_class, clsdict=None,
                             warn_once=True,
                             old_class_path=None,
                             new_class_path=None,
-                            subclass_warn_message="{cls} inherits from "\
-                                    "deprecated class {old}, please inherit "\
+                            subclass_warn_message="{cls} inherits from "
+                                    "deprecated class {old}, please inherit "
                                     "from {new}.",
-                            instance_warn_message="{cls} is deprecated, "\
+                            instance_warn_message="{cls} is deprecated, "
                                     "instantiate {new} instead."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
@@ -71,8 +74,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
-        # see http://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
-        # and http://docs.python.org/2/reference/datamodel.html#customizing-instance-and-subclass-checks
+        # see https://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
+        # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
         # for implementation details
         def __instancecheck__(cls, inst):
             return any(cls.__subclasscheck__(c)
@@ -121,3 +124,51 @@ def _clspath(cls, forced=None):
     if forced is not None:
         return forced
     return '{}.{}'.format(cls.__module__, cls.__name__)
+
+
+DEPRECATION_RULES = [
+    ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
+]
+
+
+def update_classpath(path):
+    """Update a deprecated path from an object with its new location"""
+    for prefix, replacement in DEPRECATION_RULES:
+        if path.startswith(prefix):
+            new_path = path.replace(prefix, replacement, 1)
+            warnings.warn("`{}` class is deprecated, use `{}` instead".format(path, new_path),
+                          ScrapyDeprecationWarning)
+            return new_path
+    return path
+
+
+def method_is_overridden(subclass, base_class, method_name):
+    """
+    Return True if a method named ``method_name`` of a ``base_class``
+    is overridden in a ``subclass``.
+
+    >>> class Base:
+    ...     def foo(self):
+    ...         pass
+    >>> class Sub1(Base):
+    ...     pass
+    >>> class Sub2(Base):
+    ...     def foo(self):
+    ...         pass
+    >>> class Sub3(Sub1):
+    ...     def foo(self):
+    ...         pass
+    >>> class Sub4(Sub2):
+    ...     pass
+    >>> method_is_overridden(Sub1, Base, 'foo')
+    False
+    >>> method_is_overridden(Sub2, Base, 'foo')
+    True
+    >>> method_is_overridden(Sub3, Base, 'foo')
+    True
+    >>> method_is_overridden(Sub4, Base, 'foo')
+    True
+    """
+    base_method = getattr(base_class, method_name)
+    sub_method = getattr(subclass, method_name)
+    return base_method.__code__ is not sub_method.__code__

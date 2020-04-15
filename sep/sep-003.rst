@@ -18,7 +18,7 @@ Prerequisites
 
 This API proposal relies on the following API:
 
-1. instantiating a item with an item instance as its first argument (ie.
+1. instantiating a item with an item instance as its first argument (i.e.
    ``item2 = MyItem(item1)``) must return a **copy** of the first item
    instance)
 2. items can be instantiated using this syntax: ``item = Item(attr1=value1,
@@ -78,7 +78,7 @@ Defining an item containing ItemField's
        variants2 = ListField(ItemField(Variant), default=[])
 
 It's important to note here that the (perhaps most intuitive) way of defining a
-Product-Variant relationship (ie. defining a recursive !ItemField) doesn't
+Product-Variant relationship (i.e. defining a recursive !ItemField) doesn't
 work. For example, this fails to compile:
 
 ::
@@ -146,7 +146,7 @@ Default values
 
    p['numbers'] # returns []
 
-Accesing and changing nested item values
+Accessing and changing nested item values
 ----------------------------------------
 
 ::

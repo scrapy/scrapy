@@ -16,13 +16,45 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
+Here is a simple example showing how you can catch signals and perform some action:
+::
+
+    from scrapy import signals
+    from scrapy import Spider
+
+
+    class DmozSpider(Spider):
+        name = "dmoz"
+        allowed_domains = ["dmoz.org"]
+        start_urls = [
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/",
+        ]
+
+
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            spider = super(DmozSpider, cls).from_crawler(crawler, *args, **kwargs)
+            crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
+            return spider
+
+
+        def spider_closed(self, spider):
+            spider.logger.info('Spider closed: %s', spider.name)
+
+
+        def parse(self, response):
+            pass
+
+.. _signal-deferred:
+
 Deferred signal handlers
 ========================
 
-Some signals support returning `Twisted deferreds`_ from their handlers, see
-the :ref:`topics-signals-ref` below to know which ones.
+Some signals support returning :class:`~twisted.internet.defer.Deferred`
+objects from their handlers, see the :ref:`topics-signals-ref` below to know
+which ones.
 
-.. _Twisted deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
 
 .. _topics-signals-ref:
 
@@ -71,10 +103,10 @@ item_scraped
     This signal supports returning deferreds from their handlers.
 
     :param item: the item scraped
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: dict or :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
     :param response: the response from where the item was scraped
     :type response: :class:`~scrapy.http.Response` object
@@ -91,10 +123,10 @@ item_dropped
     This signal supports returning deferreds from their handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: dict or :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
     :param response: the response from where the item was dropped
     :type response: :class:`~scrapy.http.Response` object
@@ -103,6 +135,29 @@ item_dropped
         :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
         to be dropped
     :type exception: :exc:`~scrapy.exceptions.DropItem` exception
+
+item_error
+------------
+
+.. signal:: item_error
+.. function:: item_error(item, response, spider, failure)
+
+    Sent when a :ref:`topics-item-pipeline` generates an error (i.e. raises
+    an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
+
+    This signal supports returning deferreds from their handlers.
+
+    :param item: the item dropped from the :ref:`topics-item-pipeline`
+    :type item: dict or :class:`~scrapy.item.Item` object
+
+    :param response: the response being processed when the exception was raised
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider which raised the exception
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
 
 spider_closed
 -------------
@@ -116,7 +171,7 @@ spider_closed
     This signal supports returning deferreds from their handlers.
 
     :param spider: the spider which has been closed
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
     :param reason: a string which describes the reason why the spider was closed. If
         it was closed because the spider has completed scraping, the reason
@@ -140,7 +195,7 @@ spider_opened
     This signal supports returning deferreds from their handlers.
 
     :param spider: the spider which has been opened
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 spider_idle
 -----------
@@ -158,13 +213,19 @@ spider_idle
     the engine starts closing the spider. After the spider has finished
     closing, the :signal:`spider_closed` signal is sent.
 
-    You can, for example, schedule some requests in your :signal:`spider_idle`
-    handler to prevent the spider from being closed.
+    You may raise a :exc:`~scrapy.exceptions.DontCloseSpider` exception to
+    prevent the spider from being closed.
 
     This signal does not support returning deferreds from their handlers.
 
     :param spider: the spider which has gone idle
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+.. note:: Scheduling some requests in your :signal:`spider_idle` handler does
+    **not** guarantee that it can prevent the spider from being closed,
+    although it sometimes can. That's because the spider may still remain idle
+    if all the scheduled requests are rejected by the scheduler (e.g. filtered
+    due to duplication).
 
 spider_error
 ------------
@@ -172,16 +233,18 @@ spider_error
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
 
-    Sent when a spider callback generates an error (ie. raises an exception).
+    Sent when a spider callback generates an error (i.e. raises an exception).
 
-    :param failure: the exception raised as a Twisted `Failure`_ object
-    :type failure: `Failure`_ object
+    This signal does not support returning deferreds from their handlers.
+
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
 
     :param response: the response being processed when the exception was raised
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider which raised the exception
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 request_scheduled
 -----------------
@@ -198,7 +261,59 @@ request_scheduled
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+request_dropped
+---------------
+
+.. signal:: request_dropped
+.. function:: request_dropped(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request`, scheduled by the engine to be
+    downloaded later, is rejected by the scheduler.
+
+    The signal does not support returning deferreds from their handlers.
+
+    :param request: the request that reached the scheduler
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+request_reached_downloader
+---------------------------
+
+.. signal:: request_reached_downloader
+.. function:: request_reached_downloader(request, spider)
+
+    Sent when a :class:`~scrapy.http.Request` reached downloader.
+
+    The signal does not support returning deferreds from their handlers.
+
+    :param request: the request that reached downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+request_left_downloader
+-----------------------
+
+.. signal:: request_left_downloader
+.. function:: request_left_downloader(request, spider)
+
+    .. versionadded:: 2.0
+
+    Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
+    failure.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param request: the request that reached the downloader
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 response_received
 -----------------
@@ -218,7 +333,7 @@ response_received
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spider.Spider` object
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 response_downloaded
 -------------------
@@ -237,6 +352,4 @@ response_downloaded
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spider.Spider` object
-
-.. _Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+    :type spider: :class:`~scrapy.spiders.Spider` object

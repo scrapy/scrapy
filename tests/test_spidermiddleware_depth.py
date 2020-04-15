@@ -1,18 +1,19 @@
 from unittest import TestCase
 
-from scrapy.contrib.spidermiddleware.depth import DepthMiddleware
+from scrapy.spidermiddlewares.depth import DepthMiddleware
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
-from scrapy.statscol import StatsCollector
+from scrapy.spiders import Spider
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.test import get_crawler
 
 
 class TestDepthMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = Spider('scrapytest.org')
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider('scrapytest.org')
 
-        self.stats = StatsCollector(get_crawler())
+        self.stats = StatsCollector(crawler)
         self.stats.open_spider(self.spider)
 
         self.mw = DepthMiddleware(1, self.stats, True)
@@ -24,19 +25,18 @@ class TestDepthMiddleware(TestCase):
         result = [Request('http://scrapytest.org')]
 
         out = list(self.mw.process_spider_output(resp, result, self.spider))
-        self.assertEquals(out, result)
+        self.assertEqual(out, result)
 
         rdc = self.stats.get_value('request_depth_count/1', spider=self.spider)
-        self.assertEquals(rdc, 1)
+        self.assertEqual(rdc, 1)
 
         req.meta['depth'] = 1
 
         out2 = list(self.mw.process_spider_output(resp, result, self.spider))
-        self.assertEquals(out2, [])
+        self.assertEqual(out2, [])
 
         rdm = self.stats.get_value('request_depth_max', spider=self.spider)
-        self.assertEquals(rdm, 1)
- 
+        self.assertEqual(rdm, 1)
+
     def tearDown(self):
         self.stats.close_spider(self.spider, '')
-

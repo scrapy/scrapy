@@ -9,17 +9,19 @@ from scrapy.utils.defer import mustbe_deferred, process_chain, \
 class MustbeDeferredTest(unittest.TestCase):
     def test_success_function(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             return steps
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
+        steps.append(2)  # add another value, that should be catched by assertEqual
         return dfd
 
     def test_unfired_deferred(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             dfd = defer.Deferred()
@@ -27,18 +29,27 @@ class MustbeDeferredTest(unittest.TestCase):
             return dfd
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
+        steps.append(2)  # add another value, that should be catched by assertEqual
         return dfd
+
 
 def cb1(value, arg1, arg2):
     return "(cb1 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb2(value, arg1, arg2):
     return defer.succeed("(cb2 %s %s %s)" % (value, arg1, arg2))
+
+
 def cb3(value, arg1, arg2):
     return "(cb3 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb_fail(value, arg1, arg2):
     return Failure(TypeError())
+
+
 def eb1(failure, arg1, arg2):
     return "(eb1 %s %s %s)" % (failure.value.__class__.__name__, arg1, arg2)
 
@@ -55,7 +66,7 @@ class DeferUtilsTest(unittest.TestCase):
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
         except TypeError as e:
             gotexc = True
-        self.failUnless(gotexc)
+        self.assertTrue(gotexc)
 
     @defer.inlineCallbacks
     def test_process_chain_both(self):
@@ -74,7 +85,6 @@ class DeferUtilsTest(unittest.TestCase):
     def test_process_parallel_failure(self):
         d = process_parallel([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
         self.failUnlessFailure(d, TypeError)
-        self.flushLoggedErrors()
         return d
 
 
@@ -82,23 +92,23 @@ class IterErrbackTest(unittest.TestCase):
 
     def test_iter_errback_good(self):
         def itergood():
-            for x in xrange(10):
+            for x in range(10):
                 yield x
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))
-        self.failUnlessEqual(out, range(10))
-        self.failIf(errors)
+        self.assertEqual(out, list(range(10)))
+        self.assertFalse(errors)
 
     def test_iter_errback_bad(self):
         def iterbad():
-            for x in xrange(10):
+            for x in range(10):
                 if x == 5:
-                    a = 1/0
+                    a = 1 / 0
                 yield x
 
         errors = []
         out = list(iter_errback(iterbad(), errors.append))
-        self.failUnlessEqual(out, [0, 1, 2, 3, 4])
-        self.failUnlessEqual(len(errors), 1)
-        self.failUnless(isinstance(errors[0].value, ZeroDivisionError))
+        self.assertEqual(out, [0, 1, 2, 3, 4])
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0].value, ZeroDivisionError)

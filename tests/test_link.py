@@ -1,7 +1,7 @@
 import unittest
-import warnings
 
 from scrapy.link import Link
+
 
 class LinkTest(unittest.TestCase):
 
@@ -43,9 +43,6 @@ class LinkTest(unittest.TestCase):
         l2 = eval(repr(l1))
         self._assert_same_links(l1, l2)
 
-    def test_unicode_url(self):
-        with warnings.catch_warnings(record=True) as w:
-            l = Link(u"http://www.example.com/\xa3")
-            assert isinstance(l.url, str)
-            assert l.url == 'http://www.example.com/\xc2\xa3'
-            assert len(w) == 1, "warning not issued"
+    def test_bytes_url(self):
+        with self.assertRaises(TypeError):
+            Link(b"http://www.example.com/\xc2\xa3")

@@ -1,2 +1,0 @@
-
-TEST_DEFAULT = 'defvalue'

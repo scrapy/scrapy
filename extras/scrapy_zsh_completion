@@ -1,0 +1,213 @@
+#compdef scrapy
+_scrapy() {
+    local context state state_descr line
+    local ret=1
+    typeset -A opt_args
+    _arguments \
+	"(- 1 *)"{-h,--help}"[Help]" \
+	"1: :->command" \
+	"*:: :->args" && ret=0
+
+    case $state in
+	command)
+	    _scrapy_cmds
+	    ;;
+	args)
+	    case $words[1] in
+		(bench)
+		    _scrapy_glb_opts
+		    ;;
+		(fetch)
+		    local options=(
+			'--headers[print response HTTP headers instead of body]'
+			'--no-redirect[do not handle HTTP 3xx status codes and print response as-is]'
+			'--spider=[use this spider]:spider:_scrapy_spiders'
+			'1::URL:_httpie_urls'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(genspider)
+		    local options=(
+			{'(--list)-l','(-l)--list'}'[List available templates]'
+			{'(--edit)-e','(-e)--edit'}'[Edit spider after creating it]'
+			'--force[If the spider already exists, overwrite it with the template]'
+			{'(--dump)-d','(-d)--dump='}'[Dump template to standard output]:template:(basic crawl csvfeed xmlfeed)'
+			{'(--template)-t','(-t)--template='}'[Uses a custom template]:template:(basic crawl csvfeed xmlfeed)'
+			'1:name:(NAME)'
+			'2:domain:_httpie_urls'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(runspider)
+		    local options=(
+			{'(--output)-o','(-o)--output='}'[dump scraped items into FILE (use - for stdout)]:file:_files'
+			{'(--output-format)-t','(-t)--output-format='}'[format to use for dumping items with -o]:format:(FORMAT)'
+			'*-a[set spider argument (may be repeated)]:value pair:(NAME=VALUE)'
+			'1:spider file:_files -g \*.py'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(settings)
+		    local options=(
+			'--get=[print raw setting value]:option:(SETTING)'
+			'--getbool=[print setting value, interpreted as a boolean]:option:(SETTING)'
+			'--getint=[print setting value, interpreted as an integer]:option:(SETTING)'
+			'--getfloat=[print setting value, interpreted as a float]:option:(SETTING)'
+			'--getlist=[print setting value, interpreted as a list]:option:(SETTING)'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(shell)
+		    local options=(
+			'-c[evaluate the code in the shell, print the result and exit]:code:(CODE)'
+			'--no-redirect[do not handle HTTP 3xx status codes and print response as-is]'
+			'--spider=[use this spider]:spider:_scrapy_spiders'
+			'::file:_files -g \*.html'
+			'::URL:_httpie_urls'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(startproject)
+		    local options=(
+			'1:name:(NAME)'
+			'2:dir:_dir_list'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(version)
+		    local options=(
+			{'(--verbose)-v','(-v)--verbose'}'[also display twisted/python/platform info (useful for bug reports)]'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(view)
+		    local options=(
+			'--no-redirect[do not handle HTTP 3xx status codes and print response as-is]'
+			'--spider=[use this spider]:spider:_scrapy_spiders'
+			'1:URL:_httpie_urls'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(check)
+		    local options=(
+			{'(--list)-l','(-l)--list'}'[only list contracts, without checking them]'
+			{'(--verbose)-v','(-v)--verbose'}'[print contract tests for all spiders]'
+			'1:spider:_scrapy_spiders'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(crawl)
+		    local options=(
+			{'(--output)-o','(-o)--output='}'[dump scraped items into FILE (use - for stdout)]:file:_files'
+			{'(--output-format)-t','(-t)--output-format='}'[format to use for dumping items with -o]:format:(FORMAT)'
+			'*-a[set spider argument (may be repeated)]:value pair:(NAME=VALUE)'
+			'1:spider:_scrapy_spiders'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(edit)
+		    local options=(
+		      '1:spider:_scrapy_spiders'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+		(list)
+		    _scrapy_glb_opts
+		    ;;
+		(parse)
+		    local options=(
+			'*-a[set spider argument (may be repeated)]:value pair:(NAME=VALUE)'
+			'--spider=[use this spider without looking for one]:spider:_scrapy_spiders'
+			'--pipelines[process items through pipelines]'
+			"--nolinks[don't show links to follow (extracted requests)]"
+			"--noitems[don't show scraped items]"
+			'--nocolour[avoid using pygments to colorize the output]'
+			{'(--rules)-r','(-r)--rules'}'[use CrawlSpider rules to discover the callback]'
+			{'(--callback)-c','(-c)--callback'}'[use this callback for parsing, instead looking for a callback]:callback:(CALLBACK)'
+			{'(--meta)-m','(-m)--meta='}'[inject extra meta into the Request, it must be a valid raw json string]:meta:(META)'
+			'--cbkwargs=[inject extra callback kwargs into the Request, it must be a valid raw json string]:arguments:(CBKWARGS)'
+			{'(--depth)-d','(-d)--depth='}'[maximum depth for parsing requests (default: 1)]:depth:(DEPTH)'
+			{'(--verbose)-v','(-v)--verbose'}'[print each depth level one by one]'
+			'1:URL:_httpie_urls'
+		    )
+		    _scrapy_glb_opts $options
+		    ;;
+	    esac
+	    ;;
+    esac
+
+    return ret
+}
+
+_scrapy_cmds() {
+    local -a commands project_commands
+    commands=(
+        'bench:Run quick benchmark test'
+        'fetch:Fetch a URL using the Scrapy downloader'
+        'genspider:Generate new spider using pre-defined templates'
+        'runspider:Run a self-contained spider (without creating a project)'
+        'settings:Get settings values'
+        'shell:Interactive scraping console'
+        'startproject:Create new project'
+        'version:Print Scrapy version'
+        'view:Open URL in browser, as seen by Scrapy'
+    )
+    project_commands=(
+	'check:Check spider contracts'
+	'crawl:Run a spider'
+        'edit:Edit spider'
+        'list:List available spiders'
+        'parse:Parse URL (using its spider) and print the results'
+    )
+    if [[ $(scrapy -h | grep -s "no active project") == "" ]]; then
+	commands=(${commands[@]} ${project_commands[@]})
+    fi
+    _describe -t common-commands 'common commands' commands && ret=0
+}
+
+_scrapy_glb_opts() {
+    local -a options
+    options=(
+	'(- *)'{-h,--help}'[show this help message and exit]'
+	'(--nolog)--logfile=[log file. if omitted stderr will be used]:file:_files'
+	'--pidfile=[write process ID to FILE]:file:_files'
+	'--profile=[write python cProfile stats to FILE]:file:_files'
+	{'(--loglevel --nolog)-L','(-L --nolog)--loglevel='}'[log level (default: INFO)]:log level:(DEBUG INFO WARN ERROR)'
+	'(-L --loglevel --logfile)--nolog[disable logging completely]'
+	'--pdb[enable pdb on failure]'
+	'*'{-s,--set=}'[set/override setting (may be repeated)]:value pair:(NAME=VALUE)'
+    )
+    options=(${options[@]} "$@")
+    _arguments -A "-*" $options && ret=0
+}
+
+_httpie_urls() {
+
+  local ret=1
+
+  if ! [[ -prefix [-+.a-z0-9]#:// ]]; then
+    local expl
+    compset -S '[^:/]*' && compstate[to_end]=''
+    _wanted url-schemas expl 'URL schema' compadd -S '' http:// https:// && ret=0
+  else
+    _urls && ret=0
+  fi
+
+  return $ret
+
+}
+
+_scrapy_spiders() {
+
+  local ret=1
+
+  if [[ $(scrapy -h | grep -s "no active project") == "" ]]; then
+      compadd -S '' $(scrapy list) && ret=0
+  else
+      compadd -S '' SPIDER && ret=0
+  fi
+
+  return $ret
+}
+
+_scrapy $@

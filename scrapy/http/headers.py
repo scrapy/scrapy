@@ -1,5 +1,6 @@
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.python import to_unicode
 
 
 class Headers(CaselessDict):
@@ -10,19 +11,29 @@ class Headers(CaselessDict):
         super(Headers, self).__init__(seq)
 
     def normkey(self, key):
-        """Headers must not be unicode"""
-        if isinstance(key, unicode):
-            return key.title().encode(self.encoding)
-        return key.title()
+        """Normalize key to bytes"""
+        return self._tobytes(key.title())
 
     def normvalue(self, value):
-        """Headers must not be unicode"""
+        """Normalize values to bytes"""
         if value is None:
             value = []
+        elif isinstance(value, (str, bytes)):
+            value = [value]
         elif not hasattr(value, '__iter__'):
             value = [value]
-        return [x.encode(self.encoding) if isinstance(x, unicode) else x \
-            for x in value]
+
+        return [self._tobytes(x) for x in value]
+
+    def _tobytes(self, x):
+        if isinstance(x, bytes):
+            return x
+        elif isinstance(x, str):
+            return x.encode(self.encoding)
+        elif isinstance(x, int):
+            return str(x).encode(self.encoding)
+        else:
+            raise TypeError('Unsupported value type: {}'.format(type(x)))
 
     def __getitem__(self, key):
         try:
@@ -56,9 +67,6 @@ class Headers(CaselessDict):
         self[key] = lst
 
     def items(self):
-        return list(self.iteritems())
-
-    def iteritems(self):
         return ((k, self.getlist(k)) for k in self.keys())
 
     def values(self):
@@ -67,8 +75,15 @@ class Headers(CaselessDict):
     def to_string(self):
         return headers_dict_to_raw(self)
 
+    def to_unicode_dict(self):
+        """ Return headers as a CaselessDict with unicode keys
+        and unicode values. Multiple values are joined with ','.
+        """
+        return CaselessDict(
+            (to_unicode(key, encoding=self.encoding),
+             to_unicode(b','.join(value), encoding=self.encoding))
+            for key, value in self.items())
+
     def __copy__(self):
         return self.__class__(self)
     copy = __copy__
-
-

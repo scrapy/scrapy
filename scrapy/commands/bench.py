@@ -1,12 +1,11 @@
 import sys
 import time
 import subprocess
-
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 import scrapy
-from scrapy.command import ScrapyCommand
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.commands import ScrapyCommand
+from scrapy.linkextractors import LinkExtractor
 
 
 class Command(ScrapyCommand):
@@ -22,13 +21,11 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         with _BenchServer():
-            spider = _BenchSpider(total=100000)
-            crawler = self.crawler_process.create_crawler()
-            crawler.crawl(spider)
+            self.crawler_process.crawl(_BenchSpider, total=100000)
             self.crawler_process.start()
 
 
-class _BenchServer(object):
+class _BenchServer:
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv

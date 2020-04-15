@@ -1,20 +1,22 @@
 import unittest
 
-from scrapy.contrib.downloadermiddleware.ajaxcrawl import AjaxCrawlMiddleware
-from scrapy.spider import Spider
+from scrapy.downloadermiddlewares.ajaxcrawl import AjaxCrawlMiddleware
+from scrapy.spiders import Spider
 from scrapy.http import Request, HtmlResponse, Response
 from scrapy.utils.test import get_crawler
 
-__doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawl']
+
+__doctests__ = ['scrapy.downloadermiddlewares.ajaxcrawl']
+
 
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
-        self.spider = Spider('foo')
-        crawler = get_crawler({'AJAXCRAWL_ENABLED': True})
+        crawler = get_crawler(Spider, {'AJAXCRAWL_ENABLED': True})
+        self.spider = crawler._create_spider('foo')
         self.mw = AjaxCrawlMiddleware.from_crawler(crawler)
 
     def _ajaxcrawlable_body(self):
-        return '<html><head><meta name="fragment" content="!"/></head><body></body></html>'
+        return b'<html><head><meta name="fragment" content="!"/></head><body></body></html>'
 
     def _req_resp(self, url, req_kwargs=None, resp_kwargs=None):
         req = Request(url, **(req_kwargs or {}))
@@ -53,6 +55,6 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
         assert resp3 is resp2
 
     def test_noncrawlable_body(self):
-        req, resp = self._req_resp('http://example.com/', {}, {'body': '<html></html>'})
+        req, resp = self._req_resp('http://example.com/', {}, {'body': b'<html></html>'})
         resp2 = self.mw.process_response(req, resp, self.spider)
         self.assertIs(resp, resp2)

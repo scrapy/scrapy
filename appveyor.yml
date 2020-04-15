@@ -1,0 +1,25 @@
+platform: x86
+version: '{branch}-{build}'
+environment:
+  matrix:
+    - PYTHON: "C:\\Python36"
+      TOX_ENV: py36
+
+branches:
+  only:
+    - master
+    - /d+\.\d+\.\d+[\w\-]*$/
+
+install:
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PYTHONPATH=%APPVEYOR_BUILD_FOLDER%"
+  - "SET TOX_TESTENV_PASSENV=HOME HOMEDRIVE HOMEPATH PYTHONPATH USERPROFILE"
+  - "pip install -U tox"
+
+build: false
+skip_tags: true
+test_script:
+  - "tox -e %TOX_ENV%"
+
+cache:
+  - '%LOCALAPPDATA%\pip\cache'
