@@ -13,19 +13,6 @@ from itertools import chain
 from scrapy.utils.decorators import deprecated
 
 
-try:
-    from dataclasses import is_dataclass, asdict as dataclass_asdict
-except ImportError:
-    def is_dataclass_instance(_):
-        return False
-
-    def dataclass_asdict(_):
-        raise ImportError("no module named 'dataclasses'")
-else:
-    def is_dataclass_instance(obj):
-        return is_dataclass(obj) and not isinstance(obj, type)
-
-
 def flatten(x):
     """flatten(sequence) -> list
 
@@ -236,7 +223,7 @@ def get_spec(func):
     >>> get_spec(re.match)
     (['pattern', 'string'], {'flags': 0})
 
-    >>> class Test(object):
+    >>> class Test:
     ...     def __call__(self, val):
     ...         pass
     ...     def method(self, val, flags=0):
@@ -285,7 +272,7 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache(object):
+class WeakKeyCache:
 
     def __init__(self, default_factory):
         self.default_factory = default_factory

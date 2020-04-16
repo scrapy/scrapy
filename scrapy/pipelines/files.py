@@ -10,6 +10,7 @@ import mimetypes
 import os
 import time
 from collections import defaultdict
+from contextlib import suppress
 from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
 from io import BytesIO
@@ -22,18 +23,13 @@ from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
-from scrapy.utils.datatypes import CaselessDict, get_item_field, set_item_field
+from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.item import ItemAdapter
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import is_dataclass_instance, to_bytes
+from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
-
-
-try:
-    from dataclasses import fields as dataclass_fields
-except ImportError:
-    dataclass_fields = None
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +39,7 @@ class FileException(Exception):
     """General media error exception"""
 
 
-class FSFilesStore(object):
+class FSFilesStore:
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -81,7 +77,7 @@ class FSFilesStore(object):
             seen.add(dirname)
 
 
-class S3FilesStore(object):
+class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_ENDPOINT_URL = None
@@ -219,7 +215,7 @@ class S3FilesStore(object):
         return extra
 
 
-class GCSFilesStore(object):
+class GCSFilesStore:
 
     GCS_PROJECT_ID = None
 
@@ -265,7 +261,7 @@ class GCSFilesStore(object):
         )
 
 
-class FTPFilesStore(object):
+class FTPFilesStore:
 
     FTP_USERNAME = None
     FTP_PASSWORD = None
@@ -506,9 +502,9 @@ class FilesPipeline(MediaPipeline):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    ### Overridable Interface
+    # Overridable Interface
     def get_media_requests(self, item, info):
-        urls = get_item_field(item, self.files_urls_field, [])
+        urls = ItemAdapter(item).get(self.files_urls_field, [])
         return [Request(u) for u in urls]
 
     def file_downloaded(self, response, request, info):
@@ -520,13 +516,8 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if (
-            is_dataclass_instance(item)
-            and self.files_result_field in (f.name for f in dataclass_fields(item))
-            or isinstance(item, dict)
-            or self.files_result_field in item.fields
-        ):
-            set_item_field(item, self.files_result_field, [x for ok, x in results if ok])
+        with suppress(KeyError):
+            ItemAdapter(item)[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):

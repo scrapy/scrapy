@@ -12,8 +12,8 @@ from xml.sax.saxutils import XMLGenerator
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import BaseItem
-from scrapy.utils.python import (dataclass_asdict, is_dataclass_instance,
-                                 is_listlike, to_bytes, to_unicode)
+from scrapy.utils.item import ItemAdapter
+from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
@@ -22,7 +22,7 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
     def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs
@@ -57,13 +57,14 @@ class BaseItemExporter(object):
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
-        if is_dataclass_instance(item):
-            item = dataclass_asdict(item)
+        item = ItemAdapter(item)
+
         if include_empty is None:
             include_empty = self.export_empty_fields
+
         if self.fields_to_export is None:
-            if include_empty and not isinstance(item, dict):
-                field_iter = item.fields.keys()
+            if include_empty:
+                field_iter = item.field_names()
             else:
                 field_iter = item.keys()
         else:
@@ -74,7 +75,7 @@ class BaseItemExporter(object):
 
         for field_name in field_iter:
             if field_name in item:
-                field = {} if isinstance(item, dict) else item.fields[field_name]
+                field = item.get_field(field_name) or {}
                 value = self.serialize_field(field, field_name, item[field_name])
             else:
                 value = default_value

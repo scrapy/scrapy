@@ -9,8 +9,6 @@ import collections
 import weakref
 from collections.abc import Mapping
 
-from scrapy.utils.python import is_dataclass_instance
-
 
 class CaselessDict(dict):
 
@@ -111,7 +109,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
             return None  # key is not weak-referenceable, it's not cached
 
 
-class SequenceExclude(object):
+class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
     def __init__(self, seq):
@@ -119,28 +117,3 @@ class SequenceExclude(object):
 
     def __contains__(self, item):
         return item not in self.seq
-
-
-def get_item_field(item, name, default=None):
-    """
-    Access item fields on both "regular" and dataclass-based items
-    """
-    if is_dataclass_instance(item):
-        return getattr(item, name, default)
-    else:
-        return item.get(name, default)
-
-
-def set_item_field(item, name, value):
-    """
-    Set item fields on both "regular" and dataclass-based items
-    """
-    if is_dataclass_instance(item):
-        from dataclasses import fields as dataclass_fields
-        field_names = [f.name for f in dataclass_fields(item)]
-        if name in field_names:
-            setattr(item, name, value)
-        else:
-            raise KeyError("%s does not support field: %s" % (item.__class__.__name__, name))
-    else:
-        item[name] = value

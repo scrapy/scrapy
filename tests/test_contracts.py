@@ -25,7 +25,7 @@ class TestItem(Item):
     url = Field()
 
 
-class ResponseMock(object):
+class ResponseMock:
     url = 'http://scrapy.org'
 
 

@@ -4,43 +4,71 @@
 Items
 =====
 
+.. module:: scrapy.item
+   :synopsis: Item and Field classes
+
 The main goal in scraping is to extract structured data from unstructured
 sources, typically, web pages. :ref:`Spiders <topics-spiders>` may return the
 extracted data as `items`, Python objects that define key-value pairs.
+
+Scrapy supports :ref:`multiple types of items <item-types>`. When you create an
+item, you may use whichever type of item you want. When you write code that
+receives an item, your code should :ref:`work for any item type
+<supporting-item-types>`.
 
 .. _item-types:
 
 Item Types
 ==========
 
-Scrapy supports the following types of items:
+Scrapy supports the following types of items: :ref:`dictionaries <dict-items>`,
+:ref:`dataclass objects <dataclass-items>`, :ref:`Item objects <item-objects>`,
+and :ref:`custom items <custom-items>`.
 
--   :class:`dict`
+.. _dict-items:
 
-    Convenient and familiar.
+Dictionaries
+------------
 
--   :func:`~dataclasses.dataclass`
+As an item type, :class:`dict` is convenient and familiar.
 
-    .. versionadded:: 2.1
 
-    Allows defining field names, so that :ref:`item exporters
-    <topics-exporters>` can export all fields by default even if the first
-    scraped object does not have values for all of them.
+.. _dataclass-items:
 
-    Allows defining the type and default value of each defined field.
+Dataclass objects
+-----------------
 
-    .. note:: Field names and types are not enforced at run time.
+.. versionadded:: 2.1
 
-    Works natively in Python 3.7 or later, or using the `dataclasses backport`_
-    in Python 3.6.
+:func:`~dataclasses.dataclass` allows defining item classes with field names,
+so that :ref:`item exporters <topics-exporters>` can export all fields by
+default even if the first scraped object does not have values for all of them.
 
-    .. _dataclasses backport: https://pypi.org/project/dataclasses/
+Dataclasses also allow defining the type and default value of each defined
+field.
 
--   :class:`Item`
+.. note:: Field names and types are not enforced at run time.
 
-    Provides a :class:`dict`-like API.
+They work natively in Python 3.7 or later, or using the `dataclasses
+backport`_ in Python 3.6.
 
-    Allows defining field names, so that:
+.. _dataclasses backport: https://pypi.org/project/dataclasses/
+
+
+.. _item-objects:
+
+Item objects
+------------
+
+:class:`Item` provides a :class:`dict`-like API plus additional features that
+make it the most feature-complete item type:
+
+.. class:: Item([arg])
+
+    :class:`Item` objects replicate the standard :class:`dict` API, including
+    its ``__init__`` method.
+
+    :class:`Item` allows defining field names, so that:
 
     -   :class:`KeyError` is raised when using undefined field names (i.e.
         prevents typos going unnoticed)
@@ -49,47 +77,47 @@ Scrapy supports the following types of items:
         default even if the first scraped object does not have values for all
         of them
 
-    Allows defining field metadata, which can be used to customize
-    serialization.
+    :class:`Item` also allows defining field metadata, which can be used to
+    :ref:`customize serialization <topics-exporters-field-serialization>`.
 
     :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
     (see :ref:`topics-leaks-trackrefs`).
 
-When you create a item (e.g. in a spider callback), use whichever type of item
-you want.
+    :class:`Item` objects also provide the following additional API members:
 
-When you write code that receives an item, use the following functions to
-manipulate the item, so that your code supports all item types:
+    .. automethod:: copy
 
-.. autofunction:: scrapy.utils.datatypes.get_item_field
+    .. automethod:: deepcopy
 
-.. autofunction:: scrapy.utils.datatypes.set_item_field
+    .. attribute:: fields
 
-.. autofunction:: scrapy.utils.misc.is_item_like
-
-.. autofunction:: scrapy.utils.python.is_dataclass_instance
-
-..
-    TODO: Do we really want to have is_dataclass_instance here?
+        A dictionary containing *all declared fields* for this Item, not only
+        those populated. The keys are the field names and the values are the
+        :class:`Field` objects used in the :ref:`Item declaration
+        <topics-items-declaring>`.
 
 
+.. _custom-items:
 
-..
-    Subsection for Item objects?
+Custom items
+------------
 
-    .. module:: scrapy.item
-       :synopsis: Item and Field classes
+Subclass :class:`BaseItem` to define additional item types not based on any of
+the above:
+
+.. autoclass:: scrapy.item.BaseItem
 
 
-
+Working with Item objects
+=========================
 
 .. _topics-items-declaring:
 
-Declaring Items
-===============
+Declaring Item subclasses
+-------------------------
 
-Items are declared using a simple class definition syntax and :class:`Field`
-objects. Here is an example::
+Item subclasses are declared using a simple class definition syntax and
+:class:`Field` objects. Here is an example::
 
     import scrapy
 
@@ -107,10 +135,11 @@ objects. Here is an example::
 .. _Django: https://www.djangoproject.com/
 .. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
 
+
 .. _topics-items-fields:
 
-Item Fields
-===========
+Declaring fields
+----------------
 
 :class:`Field` objects are used to specify metadata for each field. For
 example, the serializer function for the ``last_updated`` field illustrated in
@@ -131,15 +160,24 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
-Working with Items
-==================
+.. class:: Field([arg])
+
+    The :class:`Field` class is just an alias to the built-in :class:`dict` class and
+    doesn't provide any extra functionality or attributes. In other words,
+    :class:`Field` objects are plain-old Python dicts. A separate class is used
+    to support the :ref:`item declaration syntax <topics-items-declaring>`
+    based on class attributes.
+
+
+Working with Item objects
+-------------------------
 
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
-notice the API is very similar to the `dict API`_.
+notice the API is very similar to the :class:`dict` API.
 
 Creating items
---------------
+''''''''''''''
 
 >>> product = Product(name='Desktop PC', price=1000)
 >>> print(product)
@@ -147,7 +185,7 @@ Product(name='Desktop PC', price=1000)
 
 
 Getting field values
---------------------
+''''''''''''''''''''
 
 >>> product['name']
 Desktop PC
@@ -187,7 +225,7 @@ False
 
 
 Setting field values
---------------------
+''''''''''''''''''''
 
 >>> product['last_updated'] = 'today'
 >>> product['last_updated']
@@ -200,9 +238,9 @@ KeyError: 'Product does not support field: lala'
 
 
 Accessing all populated values
-------------------------------
+''''''''''''''''''''''''''''''
 
-To access all populated values, just use the typical `dict API`_:
+To access all populated values, just use the typical :class:`dict` API:
 
 >>> product.keys()
 ['price', 'name']
@@ -214,16 +252,14 @@ To access all populated values, just use the typical `dict API`_:
 .. _copying-items:
 
 Copying items
--------------
+'''''''''''''
 
 To copy an item, you must first decide whether you want a shallow copy or a
 deep copy.
 
-If your item contains mutable_ values like lists or dictionaries, a shallow
-copy will keep references to the same mutable values across all different
-copies.
-
-.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+If your item contains :term:`mutable` values like lists or dictionaries,
+a shallow copy will keep references to the same mutable values across all
+different copies.
 
 For example, if you have an item with a list of tags, and you create a shallow
 copy of that item, both the original item and the copy have the same list of
@@ -232,9 +268,7 @@ other item as well.
 
 If that is not the desired behavior, use a deep copy instead.
 
-See the `documentation of the copy module`_ for more information.
-
-.. _documentation of the copy module: https://docs.python.org/3/library/copy.html
+See :mod:`copy` for more information.
 
 To create a shallow copy of an item, you can either call
 :meth:`~scrapy.item.Item.copy` on an existing item
@@ -246,7 +280,7 @@ To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
 
 
 Other common tasks
-------------------
+''''''''''''''''''
 
 Creating dicts from items:
 
@@ -264,8 +298,8 @@ Traceback (most recent call last):
 KeyError: 'Product does not support field: lala'
 
 
-Extending Items
-===============
+Extending Item subclasses
+-------------------------
 
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
@@ -285,46 +319,25 @@ appending more values, or changing existing values, like this::
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
 
-Item objects
-============
 
-.. class:: Item([arg])
+.. _supporting-item-types:
 
-    Return a new Item optionally initialized from the given argument.
+Supporting All Item Types
+=========================
 
-    Items replicate the standard `dict API`_, including its ``__init__`` method, and
-    also provide the following additional API members:
+In code that receives an item, such as methods of :ref:`item pipelines
+<topics-item-pipeline>` or :ref:`spider middlewares
+<topics-spider-middleware>`, it is a good practice to use the
+:class:`~scrapy.utils.item.ItemAdapter` class and the
+:func:`~scrapy.utils.item.is_item_like` function to write code that works for
+any :ref:`supported item type <item-types>`:
 
-    .. automethod:: copy
+.. autoclass:: scrapy.utils.item.ItemAdapter
 
-    .. automethod:: deepcopy
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
-
-.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
-
-Field objects
-=============
-
-.. class:: Field([arg])
-
-    The :class:`Field` class is just an alias to the built-in `dict`_ class and
-    doesn't provide any extra functionality or attributes. In other words,
-    :class:`Field` objects are plain-old Python dicts. A separate class is used
-    to support the :ref:`item declaration syntax <topics-items-declaring>`
-    based on class attributes.
-
-.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
+.. autofunction:: scrapy.utils.item.is_item_like
 
 
-Other classes related to Item
-=============================
-
-.. autoclass:: BaseItem
+Other classes related to items
+==============================
 
 .. autoclass:: ItemMeta

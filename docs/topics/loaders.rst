@@ -7,10 +7,8 @@ Item Loaders
 .. module:: scrapy.loader
    :synopsis: Item Loader class
 
-Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
-<topics-items>`. Even though Items can be populated using their own
-dictionary-like API (or by setting their attributes in the case of
-:ref:`dataclass-based items <faq-dataclass-items>`), Item Loaders provide a
+Item Loaders provide a convenient mechanism for populating scraped :ref:`items
+<topics-items>`. Even though items can be populated directly, Item Loaders provide a
 much more convenient API for populating them from a scraping process, by automating
 some common tasks like parsing the raw extracted data before assigning it.
 
@@ -26,10 +24,10 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with a Item-like object or without one, in which case an Item
-is automatically instantiated in the Item Loader ``__init__`` method
-using the Item class specified in the :attr:`ItemLoader.default_item_class`
-attribute.
+instantiate it with an :ref:`item object <item-types>` or without one, in which
+case an instance of :class:`~scrapy.item.Item` is automatically created in the
+Item Loader ``__init__`` method using the :class:`~scrapy.item.Item` subclass
+specified in the :attr:`ItemLoader.default_item_class` attribute.
 
 Then, you start collecting values into the Item Loader, typically using
 :ref:`Selectors <topics-selectors>`. You can add more than one value to

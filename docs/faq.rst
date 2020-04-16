@@ -367,22 +367,7 @@ Can I use dataclasses as items?
 
 Support for :class:`dataclasses.dataclass` objects as items was added in version 2.1.
 This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
-
-If you use Scrapy components (such as
-:ref:`item pipelines <topics-item-pipeline>`,
-:ref:`signal handlers <topics-signals>`, or
-:ref:`spider middlewares <topics-spider-middleware>`) that do not support
-dataclasses, such as custom components or third-party components implemented
-for Scrapy versions older than 2.1, update those components to make them work
-with dataclasses. See :ref:`item-types`.
-
-If the offending Scrapy components come from a third party project, please
-report this issue to the maintainers of that project, so they can update them.
-In the meantime, you may use the
-:func:`~scrapy.utils.decorators.subscriptable_dataclass` decorator in your
-dataclasses to make them behave like :class:`Item` objects:
-
-.. autofunction:: scrapy.utils.decorators.subscriptable_dataclass
+See :ref:`topics-items` for more information.
 
 
 .. _faq-specific-reactor:

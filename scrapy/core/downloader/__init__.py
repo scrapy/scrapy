@@ -13,7 +13,7 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
 
 
-class Slot(object):
+class Slot:
     """Downloader slot"""
 
     def __init__(self, concurrency, delay, randomize_delay):
@@ -66,7 +66,7 @@ def _get_concurrency_delay(concurrency, spider, settings):
     return concurrency, delay
 
 
-class Downloader(object):
+class Downloader:
 
     DOWNLOAD_SLOT = 'download_slot'
 

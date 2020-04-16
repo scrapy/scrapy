@@ -11,7 +11,7 @@ from scrapy.utils.spider import iter_spider_classes
 
 
 @implementer(ISpiderLoader)
-class SpiderLoader(object):
+class SpiderLoader:
     """
     SpiderLoader is a class which locates and loads spiders
     in a Scrapy project.

@@ -266,7 +266,7 @@ necessary fields, like in this example for Images Pipeline::
 
 .. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
 
-Or as a :ref:`dataclass-based item <faq-dataclass-items>`::
+Or as a :func:`~dataclasses.dataclass`::
 
     from dataclasses import dataclass
 

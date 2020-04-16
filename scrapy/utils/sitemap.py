@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 import lxml.etree
 
 
-class Sitemap(object):
+class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 

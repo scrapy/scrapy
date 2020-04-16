@@ -15,21 +15,17 @@ from scrapy.utils.trackref import object_ref
 
 
 class BaseItem(object_ref):
-    """Base class for scraped items.
+    """Base class for item types that do not subclass any other :ref:`supported
+    item type <item-types>`.
 
-    In Scrapy, an object is considered an *item* if:
-    - it is an instance of :class:`BaseItem`, or
-    - it is an instance of :class:`dict`, or
-    - it is a dataclass object (see the *dataclasses* module in Python 3.6+)
-    For example, when the output of a spider callback is evaluated, only item
-    instances are passed to :ref:`item pipelines <topics-item-pipeline>`.
+    :class:`BaseItem` instances may be :ref:`tracked <topics-leaks-trackrefs>`
+    to debug memory leaks.
 
-    If you need instances of a custom class to be considered items by Scrapy,
-    you must either make said class inherit from :class:`BaseItem` or
-    :class:`dict`, or decorate it as a dataclass object.
-
-    Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
-    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    Note that, while :func:`~scrapy.utils.item.is_item_like` returns ``True``
+    for any instance of a :class:`BaseItem` subclass,
+    :class:`~scrapy.utils.item.ItemAdapter` may not work as expected with your
+    custom item objects, specially if they do not implement the same API as one
+    of the ref:`supported item type <item-types>`.
     """
     pass
 
@@ -124,9 +120,7 @@ class DictItem(MutableMapping, BaseItem):
         return self.__class__(self)
 
     def deepcopy(self):
-        """Return a `deep copy`_ of this item.
-
-        .. _deep copy: https://docs.python.org/library/copy.html#copy.deepcopy
+        """Return a :func:`~copy.deepcopy` of this item.
         """
         return deepcopy(self)
 

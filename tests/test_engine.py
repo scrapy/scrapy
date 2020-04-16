@@ -26,7 +26,7 @@ from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
-from scrapy.utils.python import dataclass_asdict, is_dataclass_instance
+from scrapy.utils.item import ItemAdapter
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 
@@ -115,7 +115,7 @@ def start_test_site(debug=False):
     return port
 
 
-class CrawlerRun(object):
+class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
     def __init__(self, spider_class):
@@ -277,8 +277,7 @@ class EngineTest(unittest.TestCase):
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))
         for item, response in self.run.itemresp:
-            if is_dataclass_instance(item):
-                item = dataclass_asdict(item)
+            item = ItemAdapter(item)
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
                 self.assertEqual('Item 1 name', item['name'])

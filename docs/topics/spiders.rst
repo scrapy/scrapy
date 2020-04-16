@@ -298,9 +298,7 @@ Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
-using something like
-`ast.literal_eval <https://docs.python.org/3/library/ast.html#ast.literal_eval>`_
-or `json.loads <https://docs.python.org/3/library/json.html#json.loads>`_
+using something like :func:`ast.literal_eval` or :func:`json.loads`
 and then set it as an attribute.
 Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)

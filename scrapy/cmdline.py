@@ -12,7 +12,6 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
-from scrapy.settings.deprecated import check_deprecated_settings
 
 
 def _iter_command_classes(module_name):
@@ -118,7 +117,6 @@ def execute(argv=None, settings=None):
             pass
         else:
             settings['EDITOR'] = editor
-    check_deprecated_settings(settings)
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)

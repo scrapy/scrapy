@@ -31,8 +31,8 @@ Each item pipeline component is a Python class that must implement the following
 
    `item` is an instance of an :ref:`item type <item-types>`.
 
-   :meth:`process_item` must either: return an item-like object, return a
-   :class:`~twisted.internet.defer.Deferred` or raise a
+   :meth:`process_item` must either: return an :ref:`item object <item-types>`,
+   return a :class:`~twisted.internet.defer.Deferred` or raise a
    :exc:`~scrapy.exceptions.DropItem` exception.
 
    Dropped items are no longer processed by further pipeline components.
@@ -84,7 +84,7 @@ contain a price::
 
     from scrapy.exceptions import DropItem
 
-    class PricePipeline(object):
+    class PricePipeline:
 
         vat_factor = 1.15
 
@@ -106,7 +106,7 @@ format::
 
    import json
 
-   class JsonWriterPipeline(object):
+   class JsonWriterPipeline:
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'w')
@@ -135,7 +135,7 @@ method and how to clean up the resources properly.::
 
     import pymongo
 
-    class MongoPipeline(object):
+    class MongoPipeline:
 
         collection_name = 'scrapy_items'
 
@@ -183,7 +183,7 @@ it saves the screenshot to a file and adds filename to the item.
     from urllib.parse import quote
 
 
-    class ScreenshotPipeline(object):
+    class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
@@ -222,7 +222,7 @@ returns multiples items with the same id::
 
     from scrapy.exceptions import DropItem
 
-    class DuplicatesPipeline(object):
+    class DuplicatesPipeline:
 
         def __init__(self):
             self.ids_seen = set()
