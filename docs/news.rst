@@ -101,7 +101,8 @@ Documentation
 *   Extended use of InterSphinx to link to Python 3 documentation
     (:issue:`4444`, :issue:`4445`)
 
-*   Added support for Sphinx 3.0 and later (:issue:`4475`, :issue:`4480`)
+*   Added support for Sphinx 3.0 and later (:issue:`4475`, :issue:`4480`,
+    :issue:`4496`, :issue:`4503`)
 
 
 Quality assurance
