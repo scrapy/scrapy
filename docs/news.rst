@@ -10,7 +10,8 @@ Scrapy 2.1.0 (2020-04-??)
 
 Highlights:
 
-* :setting:`FEEDS` setting to export to multiple feeds
+* New :setting:`FEEDS` setting to export to multiple feeds
+* New :attr:`Response.ip_address <scrapy.http.Response.ip_address>` attribute
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,6 +66,10 @@ New features
 *   The :command:`crawl` and :command:`runspider` commands now support
     specifying an output format by appending ``:<format>`` to the output file
     (:issue:`1336`, :issue:`3858`)
+
+*   The new :attr:`Response.ip_address <scrapy.http.Response.ip_address>`
+    attribute gives access to the IP address that originated a response
+    (:issue:`3903`, :issue:`3940`)
 
 *   A warning is now issued when a value in
     :attr:`~scrapy.spiders.Spider.allowed_domains` includes a port
