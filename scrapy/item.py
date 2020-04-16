@@ -28,8 +28,9 @@ class BaseItem(object_ref):
     you must either make said class inherit from :class:`BaseItem` or
     :class:`dict`, or decorate it as a dataclass object.
 
-    Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
-    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    Unlike :class:`dict` and :class:`~dataclasses.dataclass` instances,
+    :class:`BaseItem` instances may be :ref:`tracked <topics-leaks-trackrefs>`
+    to debug memory leaks.
     """
     pass
 

@@ -168,11 +168,11 @@ class ItemAdapterTestCase(unittest.TestCase):
         self.assertIs(adapter.get_field("name")["serializer"], str)
         self.assertIs(adapter.get_field("value")["serializer"], int)
 
-    def test_asdict(self):
+    def test_as_dict(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):
             item = cls(name="asdf", value=1234)
             adapter = ItemAdapter(item)
-            self.assertEqual(dict(name="asdf", value=1234), dict(adapter.items()))
+            self.assertEqual(dict(name="asdf", value=1234), dict(adapter))
 
     def test_field_names(self):
         for cls in filter(None, [TestItem, dict, DataClassItem]):

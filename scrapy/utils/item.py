@@ -5,7 +5,7 @@ from scrapy.item import BaseItem
 
 def _is_dataclass_instance(obj):
     """
-    Returns True if *obj* is a dataclass object, False otherwise.
+    Return True if *obj* is a dataclass object, False otherwise.
     Taken from https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass.
     """
     try:
@@ -18,7 +18,7 @@ def _is_dataclass_instance(obj):
 
 def is_item_like(obj):
     """
-    Returns True if *obj* is considered a Scrapy *item*, False otherwise.
+    Return True if *obj* is considered a Scrapy *item*, False otherwise.
 
     An object is considered an *item* if it is:
     - a scrapy.item.BaseItem or dict instance (or any subclass)
@@ -84,7 +84,7 @@ class ItemAdapter(MutableMapping):
 
     def get_field(self, field_name):
         """
-        Returns the appropriate class:`scrapy.item.Field` object
+        Return the appropriate class:`scrapy.item.Field` object
         if the wrapped item is a BaseItem object, None otherwise.
         """
         if isinstance(self.item, BaseItem):
@@ -93,7 +93,7 @@ class ItemAdapter(MutableMapping):
 
     def field_names(self):
         """
-        Returns a list with the names of all the defined fields for the item
+        Return a list with the names of all the defined fields for the item
         """
         if _is_dataclass_instance(self.item):
             from dataclasses import fields
