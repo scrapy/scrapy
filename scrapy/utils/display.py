@@ -3,7 +3,7 @@ pprint and pformat wrappers with colorization support
 """
 
 import sys
-from packaging.version import parse
+from distutils.version import LooseVersion as check
 from platform import version
 from pprint import pformat as pformat_
 
@@ -24,7 +24,7 @@ def _colorize(text, colorize=True):
     #
     # Enable enivornment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
     # to activate terminal processing.
-    if sys.platform == "win32" and parse(version()) >= parse("10.0.14393"):
+    if sys.platform == "win32" and check(version()) >= check("10.0.14393"):
         try:
             import ctypes
             from ctypes import FormatError
