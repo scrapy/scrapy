@@ -218,9 +218,8 @@ class MockServer():
         self.proc.communicate()
 
     def url(self, path, is_secure=False):
-        host = self.http_address.replace('0.0.0.0', '127.0.0.1')
-        if is_secure:
-            host = self.https_address
+        host = self.https_address if is_secure else self.http_address
+        host = host.replace('0.0.0.0', '127.0.0.1')
         return host + path
 
 
