@@ -369,7 +369,7 @@ class FormRequestTest(RequestTest):
     def test_empty_formdata(self):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, b'')
-        
+
     def test_formdata_overrides_querystring(self):
         data = (('a', 'one'), ('a', 'two'), ('b', '2'))
         url = self.request_class('http://www.example.com/?a=0&b=1&c=3#fragment', method='GET', formdata=data).url.split('#')[0]
@@ -378,7 +378,7 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs[b'b'], [b'2'])
         self.assertIsNone(fs.get(b'c'))
 
-        data = {'a' : '1', 'b' : '2'}
+        data = {'a': '1', 'b': '2'}
         fs = _qs(self.request_class('http://www.example.com/', method='GET', formdata=data))
         self.assertEqual(fs[b'a'], [b'1'])
         self.assertEqual(fs[b'b'], [b'2'])
