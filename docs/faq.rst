@@ -408,7 +408,7 @@ True
 'foo'
 >>> adapter["name"] = "bar"
 >>> adapter["price"] = 5
->>> adapter.item
+>>> item
 InventoryItem(name='bar', price=5)
 
 .. skip: end
