@@ -343,14 +343,16 @@ method for this purpose. For example::
     from copy import deepcopy
 
     from scrapy.item import BaseItem
+    from scrapy.utils.item import is_item_like, ItemAdapter
 
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (BaseItem, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item_like(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?

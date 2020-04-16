@@ -103,7 +103,7 @@ item_scraped
     This signal supports returning deferreds from their handlers.
 
     :param item: the scraped item
-    :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`~dataclasses.dataclass`
+    :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -123,7 +123,7 @@ item_dropped
     This signal supports returning deferreds from their handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`~dataclasses.dataclass`
+    :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -148,7 +148,7 @@ item_error
     This signal supports returning deferreds from their handlers.
 
     :param item: the item that caused the error in the :ref:`topics-item-pipeline`
-    :type item: :class:`~scrapy.item.Item`, :class:`dict`, :func:`~dataclasses.dataclass`
+    :type item: :ref:`item object <item-types>`
 
     :param response: the response being processed when the exception was raised
     :type response: :class:`~scrapy.http.Response` object

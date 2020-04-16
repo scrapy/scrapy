@@ -243,52 +243,30 @@ Usage example
 .. setting:: IMAGES_URLS_FIELD
 .. setting:: IMAGES_RESULT_FIELD
 
-In order to use a media pipeline first, :ref:`enable it
+In order to use a media pipeline, first :ref:`enable it
 <topics-media-pipeline-enabling>`.
 
-Then, if a spider returns a :class:`dict` with the URLs key (``file_urls`` or
-``image_urls``, for the Files or Images Pipeline respectively), the pipeline will
-put the results under respective key (``files`` or ``images``).
+Then, if a spider returns an :ref:`item object <topics-items>` with the URLs
+field (``file_urls`` or ``image_urls``, for the Files or Images Pipeline
+respectively), the pipeline will put the results under respective field
+(``files`` or ``images``).
 
-If you prefer to use a custom :class:`~.Item` class, then define it with the
-necessary fields, like in this example for Images Pipeline::
-
-    import scrapy
-
-    class MyItem(scrapy.Item):
-        # ... other item fields ...
-        image_urls = scrapy.Field()
-        images = scrapy.Field()
-
-.. invisible-code-block: python
-
-  import sys
-
-.. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
-
-Or as a :func:`~dataclasses.dataclass`::
-
-    from dataclasses import dataclass
-
-    @dataclass
-    class MyDataclassItem:
-        # ... other item fields ...
-        image_urls: list
-        images: list
-
-.. skip: end
+When using :ref:`item types <item-types>` where fields are defined beforehand,
+you must define both the URLs field and the results field. For example, when
+using the images pipeline, items must define both the ``image_urls`` and the
+``images`` field.
 
 If you want to use another field name for the URLs key or for the results key,
-it is also possible to override it.
+it is also possible to override it:
 
-For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
-:setting:`FILES_RESULT_FIELD` settings::
+-   For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
+    :setting:`FILES_RESULT_FIELD` settings::
 
     FILES_URLS_FIELD = 'field_name_for_your_files_urls'
     FILES_RESULT_FIELD = 'field_name_for_your_processed_files'
 
-For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
-:setting:`IMAGES_RESULT_FIELD` settings::
+-   For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
+    :setting:`IMAGES_RESULT_FIELD` settings::
 
     IMAGES_URLS_FIELD = 'field_name_for_your_images_urls'
     IMAGES_RESULT_FIELD = 'field_name_for_your_processed_images'
@@ -462,8 +440,11 @@ See here the methods that you can override in your custom Files Pipeline:
       :meth:`~get_media_requests` method and return a Request for each
       file URL::
 
+         from scrapy.utils.item import ItemAdapter
+
          def get_media_requests(self, item, info):
-             for file_url in item['file_urls']:
+             adapter = ItemAdapter(item)
+             for file_url in adapter['file_urls']:
                  yield scrapy.Request(file_url)
 
       Those requests will be processed by the pipeline and, when they have finished
@@ -518,12 +499,14 @@ See here the methods that you can override in your custom Files Pipeline:
       item field, and we drop the item if it doesn't contain any files::
 
           from scrapy.exceptions import DropItem
+          from scrapy.utils.item import ItemAdapter
 
           def item_completed(self, results, item, info):
               file_paths = [x['path'] for ok, x in results if ok]
               if not file_paths:
                   raise DropItem("Item contains no files")
-              item['file_paths'] = file_paths
+              adapter = ItemAdapter(item)
+              adapter['file_paths'] = file_paths
               return item
 
       By default, the :meth:`item_completed` method returns the item.
@@ -597,8 +580,9 @@ Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
-    from scrapy.pipelines.images import ImagesPipeline
     from scrapy.exceptions import DropItem
+    from scrapy.pipelines.images import ImagesPipeline
+    from scrapy.utils.item import ItemAdapter
 
     class MyImagesPipeline(ImagesPipeline):
 
@@ -610,7 +594,8 @@ above::
             image_paths = [x['path'] for ok, x in results if ok]
             if not image_paths:
                 raise DropItem("Item contains no images")
-            item['image_paths'] = image_paths
+            adapter = ItemAdapter(item)
+            adapter['image_paths'] = image_paths
             return item
 
 
