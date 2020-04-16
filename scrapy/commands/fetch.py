@@ -49,8 +49,8 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
-        cb = lambda x: self._print_response(x, opts)
-        request = Request(args[0], callback=cb, dont_filter=True)
+        request = Request(args[0], callback=self._print_response,
+                          cb_kwargs={"opts": opts}, dont_filter=True)
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:

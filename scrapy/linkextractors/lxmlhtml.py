@@ -98,11 +98,9 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
                  unique=True, process_value=None, deny_extensions=None, restrict_css=(),
                  strip=True, restrict_text=None):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
-        tag_func = lambda x: x in tags
-        attr_func = lambda x: x in attrs
         lx = LxmlParserLinkExtractor(
-            tag=tag_func,
-            attr=attr_func,
+            tag=lambda x: x in tags,
+            attr=lambda x: x in attrs,
             unique=unique,
             process=process_value,
             strip=strip,
