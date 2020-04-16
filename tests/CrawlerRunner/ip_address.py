@@ -23,15 +23,16 @@ class LocalhostSpider(Spider):
         self.logger.info("IP address: %s" % response.ip_address)
 
 
-with MockServer() as mock_http_server, MockDNSServer() as mock_dns_server:
-    port = urlparse(mock_http_server.http_address).port
-    url = "http://not.a.real.domain:{port}/echo".format(port=port)
+if __name__ == "__main__":
+    with MockServer() as mock_http_server, MockDNSServer() as mock_dns_server:
+        port = urlparse(mock_http_server.http_address).port
+        url = "http://not.a.real.domain:{port}/echo".format(port=port)
 
-    servers = [(mock_dns_server.host, mock_dns_server.port)]
-    reactor.installResolver(createResolver(servers=servers))
+        servers = [(mock_dns_server.host, mock_dns_server.port)]
+        reactor.installResolver(createResolver(servers=servers))
 
-    configure_logging()
-    runner = CrawlerRunner()
-    d = runner.crawl(LocalhostSpider, url=url)
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run()
+        configure_logging()
+        runner = CrawlerRunner()
+        d = runner.crawl(LocalhostSpider, url=url)
+        d.addBoth(lambda _: reactor.stop())
+        reactor.run()
