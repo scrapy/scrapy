@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
-from scrapy.utils.reqser import request_to_dict, request_from_dict, _is_private_method, _mangle_private_name
+from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
 class RequestSerializationTest(unittest.TestCase):
@@ -100,41 +100,6 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider._TestSpiderMixin__mixin_callback,
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
-
-    def test_private_callback_name_matching(self):
-        self.assertTrue(_is_private_method('__a'))
-        self.assertTrue(_is_private_method('__a_'))
-        self.assertTrue(_is_private_method('__a_a'))
-        self.assertTrue(_is_private_method('__a_a_'))
-        self.assertTrue(_is_private_method('__a__a'))
-        self.assertTrue(_is_private_method('__a__a_'))
-        self.assertTrue(_is_private_method('__a___a'))
-        self.assertTrue(_is_private_method('__a___a_'))
-        self.assertTrue(_is_private_method('___a'))
-        self.assertTrue(_is_private_method('___a_'))
-        self.assertTrue(_is_private_method('___a_a'))
-        self.assertTrue(_is_private_method('___a_a_'))
-        self.assertTrue(_is_private_method('____a_a_'))
-
-        self.assertFalse(_is_private_method('_a'))
-        self.assertFalse(_is_private_method('_a_'))
-        self.assertFalse(_is_private_method('__a__'))
-        self.assertFalse(_is_private_method('__'))
-        self.assertFalse(_is_private_method('___'))
-        self.assertFalse(_is_private_method('____'))
-
-    def _assert_mangles_to(self, obj, name):
-        func = getattr(obj, name)
-        self.assertEqual(
-            _mangle_private_name(obj, func, func.__name__),
-            name
-        )
-
-    def test_private_name_mangling(self):
-        self._assert_mangles_to(
-            self.spider, '_TestSpider__parse_item_private')
-        self._assert_mangles_to(
-            self.spider, '_TestSpiderMixin__mixin_callback')
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
