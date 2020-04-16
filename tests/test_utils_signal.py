@@ -90,8 +90,10 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
 class SendCatchLogTest2(unittest.TestCase):
 
     def test_error_logged_if_deferred_not_supported(self):
+        def test_handler():
+            return defer.Deferred()
+
         test_signal = object()
-        test_handler = lambda: defer.Deferred()
         dispatcher.connect(test_handler, test_signal)
         with LogCapture() as l:
             send_catch_log(test_signal)

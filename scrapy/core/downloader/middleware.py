@@ -40,14 +40,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         % (method.__self__.__class__.__name__, response.__class__.__name__)
                     )
                 if response:
-                    defer.returnValue(response)
-            defer.returnValue((yield download_func(request=request, spider=spider)))
+                    return response
+            return (yield download_func(request=request, spider=spider))
 
         @defer.inlineCallbacks
         def process_response(response):
             assert response is not None, 'Received None in process_response'
             if isinstance(response, Request):
-                defer.returnValue(response)
+                return response
 
             for method in self.methods['process_response']:
                 response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
@@ -57,12 +57,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         % (method.__self__.__class__.__name__, type(response))
                     )
                 if isinstance(response, Request):
-                    defer.returnValue(response)
-            defer.returnValue(response)
+                    return response
+            return response
 
         @defer.inlineCallbacks
-        def process_exception(_failure):
-            exception = _failure.value
+        def process_exception(failure):
+            exception = failure.value
             for method in self.methods['process_exception']:
                 response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
@@ -71,8 +71,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         % (method.__self__.__class__.__name__, type(response))
                     )
                 if response:
-                    defer.returnValue(response)
-            defer.returnValue(_failure)
+                    return response
+            return failure
 
         deferred = mustbe_deferred(process_request, request)
         deferred.addErrback(process_exception)
