@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import subprocess
 import sys
 import warnings
@@ -317,6 +318,7 @@ class CrawlerProcessSubprocess(unittest.TestCase):
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
 
+    @mark.skipif(platform.system() == 'Windows', reason="PollReactor is not supported on Windows")
     def test_reactor_poll(self):
         log = self.run_script("twisted_reactor_poll.py")
         self.assertIn("Spider closed (finished)", log)
