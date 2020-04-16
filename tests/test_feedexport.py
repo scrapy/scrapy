@@ -428,7 +428,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
                     yield item
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def exported_no_data(self, settings):
@@ -443,7 +443,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
                 pass
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def assertExported(self, items, header, rows, settings=None, ordered=True):
@@ -735,8 +735,7 @@ class FeedExportTest(FeedExportTestBase):
         formats = {
             'json': u'[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
             'jsonlines': u'{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode(
-                'utf-8'),
+            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('utf-8'),
             'csv': u'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
@@ -753,8 +752,7 @@ class FeedExportTest(FeedExportTestBase):
         formats = {
             'json': u'[{"foo": "Test\xd6"}]'.encode('latin-1'),
             'jsonlines': u'{"foo": "Test\xd6"}\n'.encode('latin-1'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode(
-                'latin-1'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('latin-1'),
             'csv': u'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
@@ -775,8 +773,7 @@ class FeedExportTest(FeedExportTestBase):
 
         formats = {
             'json': u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode(
-                'latin-1'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
             'csv': u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
         }
 
@@ -1148,7 +1145,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """If path without %(time)s or %(batch_id)s an exception must be raised"""
+        """If path is without %(time)s or %(batch_id)s an exception must be raised"""
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
