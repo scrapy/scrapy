@@ -82,3 +82,8 @@ running :class:`~scrapy.spiders.Spider` class.
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
+
+For serializing ``errback`` and ``callback`` functions, find_method is used as 
+helper function. find_method when given spider object and callable ``func`` 
+retuns function name. similarly get_method is used for unserializing.
+these helper functions are present in ``scrapy.utils.reqser.py``.
