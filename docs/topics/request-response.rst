@@ -36,7 +36,7 @@ Request objects
     :type url: string
 
     :param callback: the function that will be called with the response of this
-       request (once its downloaded) as its first parameter. For more information
+       request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
        :meth:`~scrapy.spiders.Spider.parse` method will be used.
@@ -616,6 +616,9 @@ Response objects
     :param certificate: an object representing the server's SSL certificate.
     :type certificate: twisted.internet.ssl.Certificate
 
+    :param ip_address: The IP address of the server from which the Response originated.
+    :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
+
     .. attribute:: Response.url
 
         A string containing the URL of the response.
@@ -704,6 +707,14 @@ Response objects
         the server's SSL certificate.
 
         Only populated for ``https`` responses, ``None`` otherwise.
+
+    .. attribute:: Response.ip_address
+
+        The IP address of the server from which the Response originated.
+        
+        This attribute is currently only populated by the HTTP 1.1 download
+        handler, i.e. for ``http(s)`` responses. For other handlers, 
+        :attr:`ip_address` is always ``None``.
 
     .. method:: Response.copy()
 
