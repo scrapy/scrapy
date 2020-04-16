@@ -220,6 +220,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGE_FTP_ACTIVE`
  * :setting:`FEED_STORAGE_S3_ACL`
  * :setting:`FEED_EXPORTERS`
+ * :setting:`FEED_EXPORT_BATCH_SIZE`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -429,3 +430,37 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+
+.. setting:: FEED_EXPORT_BATCH_SIZE
+
+FEED_EXPORT_BATCH_SIZE
+----------------------
+Default: ``None``
+
+An integer number which represent number of scraped items stored in each output
+file. Whenever the number of items exceeds this setting, a new file
+creates and output redirects to it.  The name of the new file will be selected
+based on timestamp when the feed is being created and/or batch sequence number.
+Therefore you must specify %(time)s or %(batch_id)s or both in the file path.
+
+* ``%(time)s`` - gets replaced by a timestamp when the feed is being created
+* ``%(batch_id)s`` - gets replaced by sequence number of batch
+
+For instance::
+
+    FEED_EXPORT_BATCH_SIZE=100
+
+Your request can be like::
+
+  scrapy crawl spidername -o dirname/%(batch_id)s-filename%(time)s.json
+
+The result directory tree of above can be like::
+
+->projectname
+-->dirname
+--->1-filename2020-03-28T14-45-08.237134.json
+--->2-filename2020-03-28T14-45-09.148903.json
+--->3-filename2020-03-28T14-45-10.046092.json
+
+Where first and second files contain exactly 100 items. The last one contains
+<= 100 items.
