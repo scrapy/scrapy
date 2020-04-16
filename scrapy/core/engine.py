@@ -21,7 +21,7 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
 
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
@@ -53,7 +53,7 @@ class Slot(object):
             self.closing.callback(None)
 
 
-class ExecutionEngine(object):
+class ExecutionEngine:
 
     def __init__(self, crawler, spider_closed_callback):
         self.crawler = crawler
@@ -277,10 +277,9 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
             spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
-                for _, x in res):
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return
 
         if self.spider_is_idle(spider):

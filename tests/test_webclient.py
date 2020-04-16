@@ -9,7 +9,12 @@ import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
 from twisted.internet import reactor, defer
-from twisted.test.proto_helpers import StringTransport
+try:
+    from twisted.internet.testing import StringTransport
+except ImportError:
+    # deprecated in Twisted 19.7.0
+    # (remove once we bump our requirement past that version)
+    from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
@@ -48,28 +53,28 @@ class ParseUrlTestCase(unittest.TestCase):
     def testParse(self):
         lip = '127.0.0.1'
         tests = (
-    ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
+    ("http://127.0.0.1?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+    ("http://127.0.0.1/?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+    ("http://127.0.0.1/foo?c=v&c2=v2#frag", ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
     ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+    ("http://127.0.0.1:100/?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
     ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
 
-    ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
-    ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
+    ("http://127.0.0.1", ('http', lip, lip, 80, '/')),
+    ("http://127.0.0.1/", ('http', lip, lip, 80, '/')),
+    ("http://127.0.0.1/foo", ('http', lip, lip, 80, '/foo')),
+    ("http://127.0.0.1?param=value", ('http', lip, lip, 80, '/?param=value')),
     ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1:12345/foo",    ('http', lip + ':12345', lip, 12345, '/foo')),
-    ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
-    ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
+    ("http://127.0.0.1:12345/foo", ('http', lip + ':12345', lip, 12345, '/foo')),
+    ("http://spam:12345/foo", ('http', 'spam:12345', 'spam', 12345, '/foo')),
+    ("http://spam.test.org/foo", ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
-    ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
+    ("https://127.0.0.1/foo", ('https', lip, lip, 443, '/foo')),
     ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
-    ("https://127.0.0.1:12345/",      ('https', lip + ':12345', lip, 12345, '/')),
+    ("https://127.0.0.1:12345/", ('https', lip + ':12345', lip, 12345, '/')),
 
-    ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
-    ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
+    ("http://scrapytest.org/foo ", ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
+    ("http://egg:7890 ", ('http', 'egg:7890', 'egg', 7890, '/')),
     )
 
         for url, test in tests:

@@ -215,6 +215,10 @@ class BaseResponseTest(unittest.TestCase):
         links = map(Link, absolute)
         self._assert_followed_all_urls(links, absolute)
 
+    def test_follow_all_empty(self):
+        r = self.response_class("http://example.com")
+        self.assertEqual([], list(r.follow_all([])))
+
     def test_follow_all_invalid(self):
         r = self.response_class("http://example.com")
         if self.response_class == Response:
@@ -434,8 +438,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        #r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        #assert u'\ufffd' in r.text, repr(r.text)
+        # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
+        # assert u'\ufffd' in r.text, repr(r.text)
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"

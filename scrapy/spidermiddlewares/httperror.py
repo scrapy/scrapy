@@ -18,7 +18,7 @@ class HttpError(IgnoreRequest):
         super(HttpError, self).__init__(*args, **kwargs)
 
 
-class HttpErrorMiddleware(object):
+class HttpErrorMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler):

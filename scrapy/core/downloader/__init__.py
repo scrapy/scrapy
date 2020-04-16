@@ -3,7 +3,7 @@ from time import time
 from datetime import datetime
 from collections import deque
 
-from twisted.internet import reactor, defer, task
+from twisted.internet import defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
@@ -13,7 +13,7 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
 
 
-class Slot(object):
+class Slot:
     """Downloader slot"""
 
     def __init__(self, concurrency, delay, randomize_delay):
@@ -66,7 +66,7 @@ def _get_concurrency_delay(concurrency, spider, settings):
     return concurrency, delay
 
 
-class Downloader(object):
+class Downloader:
 
     DOWNLOAD_SLOT = 'download_slot'
 
@@ -133,6 +133,7 @@ class Downloader(object):
         return deferred
 
     def _process_queue(self, spider, slot):
+        from twisted.internet import reactor
         if slot.latercall and slot.latercall.active():
             return
 

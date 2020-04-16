@@ -109,7 +109,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
             return None  # key is not weak-referenceable, it's not cached
 
 
-class SequenceExclude(object):
+class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
     def __init__(self, seq):

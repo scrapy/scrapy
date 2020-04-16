@@ -9,7 +9,7 @@ from io import BytesIO
 from time import time
 from urllib.parse import urldefrag
 
-from twisted.internet import defer, protocol, reactor, ssl
+from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
@@ -34,6 +34,7 @@ class HTTP11DownloadHandler:
     lazy = False
 
     def __init__(self, settings, crawler=None):
+        from twisted.internet import reactor
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -82,6 +83,7 @@ class HTTP11DownloadHandler:
         return agent.download_request(request)
 
     def close(self):
+        from twisted.internet import reactor
         d = self._pool.closeCachedConnections()
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
@@ -267,7 +269,7 @@ class ScrapyProxyAgent(Agent):
         )
 
 
-class ScrapyAgent(object):
+class ScrapyAgent:
 
     _Agent = Agent
     _ProxyAgent = ScrapyProxyAgent
@@ -285,6 +287,7 @@ class ScrapyAgent(object):
         self._txresponse = None
 
     def _get_agent(self, request, timeout):
+        from twisted.internet import reactor
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
@@ -327,6 +330,7 @@ class ScrapyAgent(object):
         )
 
     def download_request(self, request):
+        from twisted.internet import reactor
         timeout = request.meta.get('download_timeout') or self._connectTimeout
         agent = self._get_agent(request, timeout)
 
@@ -338,20 +342,6 @@ class ScrapyAgent(object):
             headers.removeHeader(b'Proxy-Authorization')
         if request.body:
             bodyproducer = _RequestBodyProducer(request.body)
-        elif method == b'POST':
-            # Setting Content-Length: 0 even for POST requests is not a
-            # MUST per HTTP RFCs, but it's common behavior, and some
-            # servers require this, otherwise returning HTTP 411 Length required
-            #
-            # RFC 7230#section-3.3.2:
-            # "a Content-Length header field is normally sent in a POST
-            # request even when the value is 0 (indicating an empty payload body)."
-            #
-            # Twisted < 17 will not add "Content-Length: 0" by itself;
-            # Twisted >= 17 fixes this;
-            # Using a producer with an empty-string sends `0` as Content-Length
-            # for all versions of Twisted.
-            bodyproducer = _RequestBodyProducer(b'')
         else:
             bodyproducer = None
         start_time = time()
@@ -440,7 +430,7 @@ class ScrapyAgent(object):
 
 
 @implementer(IBodyProducer)
-class _RequestBodyProducer(object):
+class _RequestBodyProducer:
 
     def __init__(self, body):
         self.body = body

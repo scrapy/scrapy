@@ -203,29 +203,29 @@ def create_skipped_scheme_t(args):
 
 
 for k, args in enumerate([
-            ('/index',                              'file://'),
-            ('/index.html',                         'file://'),
-            ('./index.html',                        'file://'),
-            ('../index.html',                       'file://'),
-            ('../../index.html',                    'file://'),
-            ('./data/index.html',                   'file://'),
-            ('.hidden/data/index.html',             'file://'),
-            ('/home/user/www/index.html',           'file://'),
-            ('//home/user/www/index.html',          'file://'),
-            ('file:///home/user/www/index.html',    'file://'),
+            ('/index', 'file://'),
+            ('/index.html', 'file://'),
+            ('./index.html', 'file://'),
+            ('../index.html', 'file://'),
+            ('../../index.html', 'file://'),
+            ('./data/index.html', 'file://'),
+            ('.hidden/data/index.html', 'file://'),
+            ('/home/user/www/index.html', 'file://'),
+            ('//home/user/www/index.html', 'file://'),
+            ('file:///home/user/www/index.html', 'file://'),
 
-            ('index.html',                          'http://'),
-            ('example.com',                         'http://'),
-            ('www.example.com',                     'http://'),
-            ('www.example.com/index.html',          'http://'),
-            ('http://example.com',                  'http://'),
-            ('http://example.com/index.html',       'http://'),
-            ('localhost',                           'http://'),
-            ('localhost/index.html',                'http://'),
+            ('index.html', 'http://'),
+            ('example.com', 'http://'),
+            ('www.example.com', 'http://'),
+            ('www.example.com/index.html', 'http://'),
+            ('http://example.com', 'http://'),
+            ('http://example.com/index.html', 'http://'),
+            ('localhost', 'http://'),
+            ('localhost/index.html', 'http://'),
 
             # some corner cases (default to http://)
-            ('/',                                   'http://'),
-            ('.../test',                            'http://'),
+            ('/', 'http://'),
+            ('.../test', 'http://'),
 
         ], start=1):
     t_method = create_guess_scheme_t(args)

@@ -24,7 +24,7 @@ from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
-class Shell(object):
+class Shell:
 
     relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
                         Settings)

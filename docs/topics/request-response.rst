@@ -174,9 +174,9 @@ Request objects
         See :ref:`topics-request-meta` for a list of special meta keys
         recognized by Scrapy.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.meta`` attribute.
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.meta`` attribute.
 
     .. attribute:: Request.cb_kwargs
 
@@ -185,11 +185,9 @@ Request objects
         for new Requests, which means by default callbacks only get a :class:`Response`
         object as argument.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.cb_kwargs`` attribute.
-
-    .. _shallow copied: https://docs.python.org/2/library/copy.html
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
     .. method:: Request.copy()
 
@@ -566,11 +564,9 @@ dealing with JSON requests.
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
-   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+   :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
-
-.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
 JsonRequest usage example
 -------------------------
@@ -709,7 +705,7 @@ Response objects
 
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
-        
+
         Only populated for ``https`` responses, ``None`` otherwise.
 
     .. attribute:: Response.ip_address
@@ -735,17 +731,15 @@ Response objects
         Constructs an absolute url by combining the Response's :attr:`url` with
         a possible relative url.
 
-        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
         making this call::
 
-            urlparse.urljoin(response.url, url)
+            urllib.parse.urljoin(response.url, url)
 
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
 
-
-.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 
