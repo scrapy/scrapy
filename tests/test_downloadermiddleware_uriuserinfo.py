@@ -5,9 +5,11 @@ from scrapy.downloadermiddlewares.uriuserinfo import UriUserInfoMiddleware
 from scrapy.spiders import Spider
 
 
-class BaseTestCase:
+class AbstractWrapper:
+    """Class to define base test case classes that can be inherited but are not
+    executed themselves."""
 
-    class Implementation(unittest.TestCase):
+    class BaseTestCase(unittest.TestCase):
 
         def setUp(self):
             self.mw = UriUserInfoMiddleware()
@@ -15,6 +17,8 @@ class BaseTestCase:
 
         def tearDown(self):
             del self.mw
+
+    class ProtocolTestCase(BaseTestCase):
 
         def test_username_and_password(self):
             req = Request('{}://foo:bar@scrapytest.org/'.format(self.protocol))
@@ -65,19 +69,29 @@ class BaseTestCase:
             self.assertEqual(req.meta[self.password_field], 'b@r')
 
 
-class UriUserInfoMiddlewareFTPTest(BaseTestCase.Implementation):
+class FTPTest(AbstractWrapper.ProtocolTestCase):
     protocol = 'ftp'
     username_field = 'ftp_user'
     password_field = 'ftp_password'
 
 
-class UriUserInfoMiddlewareHTTPTest(BaseTestCase.Implementation):
+class HTTPTest(AbstractWrapper.ProtocolTestCase):
     protocol = 'http'
     username_field = 'http_user'
     password_field = 'http_pass'
 
 
-class UriUserInfoMiddlewareHTTPSTest(BaseTestCase.Implementation):
+class HTTPSTest(AbstractWrapper.ProtocolTestCase):
     protocol = 'https'
     username_field = 'http_user'
     password_field = 'http_pass'
+
+
+class UnhandledProtocolTest(AbstractWrapper.BaseTestCase):
+    protocol = 's3'
+
+    def test_unhandled_protocol(self):
+        req = Request('{}://foo:bar@scrapytest.org/'.format(self.protocol))
+        processed_request = self.mw.process_request(req, self.spider)
+        assert processed_request == None
+        assert not req.meta
