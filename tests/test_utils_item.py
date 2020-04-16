@@ -2,7 +2,7 @@
 import unittest
 
 from scrapy.item import BaseItem, Field, Item
-from scrapy.utils.item import _is_dataclass_instance, is_item_like, ItemAdapter
+from scrapy.utils.item import _is_dataclass_instance, is_item, ItemAdapter
 
 
 try:
@@ -54,29 +54,29 @@ class DataclassTestCase(unittest.TestCase):
 class ItemLikeTestCase(unittest.TestCase):
 
     def test_false(self):
-        self.assertFalse(is_item_like(int))
-        self.assertFalse(is_item_like(sum))
-        self.assertFalse(is_item_like(1234))
-        self.assertFalse(is_item_like(object()))
-        self.assertFalse(is_item_like("a string"))
-        self.assertFalse(is_item_like(b"some bytes"))
-        self.assertFalse(is_item_like(["a", "list"]))
-        self.assertFalse(is_item_like(("a", "tuple")))
-        self.assertFalse(is_item_like({"a", "set"}))
-        self.assertFalse(is_item_like(dict))
-        self.assertFalse(is_item_like(Item))
-        self.assertFalse(is_item_like(BaseItem))
+        self.assertFalse(is_item(int))
+        self.assertFalse(is_item(sum))
+        self.assertFalse(is_item(1234))
+        self.assertFalse(is_item(object()))
+        self.assertFalse(is_item("a string"))
+        self.assertFalse(is_item(b"some bytes"))
+        self.assertFalse(is_item(["a", "list"]))
+        self.assertFalse(is_item(("a", "tuple")))
+        self.assertFalse(is_item({"a", "set"}))
+        self.assertFalse(is_item(dict))
+        self.assertFalse(is_item(Item))
+        self.assertFalse(is_item(BaseItem))
 
     def test_true(self):
-        self.assertTrue(is_item_like({"a": "dict"}))
-        self.assertTrue(is_item_like(Item()))
-        self.assertTrue(is_item_like(BaseItem()))
-        self.assertTrue(is_item_like(TestItem(name="asdf", value=1234)))
+        self.assertTrue(is_item({"a": "dict"}))
+        self.assertTrue(is_item(Item()))
+        self.assertTrue(is_item(BaseItem()))
+        self.assertTrue(is_item(TestItem(name="asdf", value=1234)))
 
     @unittest.skipIf(not DataClassItem, "dataclasses module is not available")
     def test_dataclass(self):
-        self.assertFalse(is_item_like(DataClassItem))
-        self.assertTrue(is_item_like(DataClassItem(name="asdf", value=1234)))
+        self.assertFalse(is_item(DataClassItem))
+        self.assertTrue(is_item(DataClassItem(name="asdf", value=1234)))
 
 
 class ItemAdapterTestCase(unittest.TestCase):

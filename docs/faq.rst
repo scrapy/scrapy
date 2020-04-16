@@ -343,14 +343,14 @@ method for this purpose. For example::
     from copy import deepcopy
 
     from scrapy.item import BaseItem
-    from scrapy.utils.item import is_item_like, ItemAdapter
+    from scrapy.utils.item import is_item, ItemAdapter
 
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if is_item_like(item):
+                if is_item(item):
                     adapter = ItemAdapter(item)
                     for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)

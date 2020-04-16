@@ -7,7 +7,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
-from scrapy.utils.item import is_item_like
+from scrapy.utils.item import is_item
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
@@ -117,7 +117,7 @@ class Command(ScrapyCommand):
         items, requests = [], []
 
         for x in iterate_spider_output(callback(response, **cb_kwargs)):
-            if is_item_like(x):
+            if is_item(x):
                 items.append(x)
             elif isinstance(x, Request):
                 requests.append(x)

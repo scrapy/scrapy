@@ -3,7 +3,7 @@ import json
 from scrapy.contracts import Contract
 from scrapy.exceptions import ContractFail
 from scrapy.http import Request
-from scrapy.utils.item import is_item_like
+from scrapy.utils.item import is_item
 
 
 # contracts
@@ -50,8 +50,8 @@ class ReturnsContract(Contract):
     object_type_verifiers = {
         'request': lambda x: isinstance(x, Request),
         'requests': lambda x: isinstance(x, Request),
-        'item': is_item_like,
-        'items': is_item_like,
+        'item': is_item,
+        'items': is_item,
     }
 
     def __init__(self, *args, **kwargs):
@@ -98,7 +98,7 @@ class ScrapesContract(Contract):
 
     def post_process(self, output):
         for x in output:
-            if is_item_like(x):
+            if is_item(x):
                 missing = [arg for arg in self.args if arg not in x]
                 if missing:
                     missing_str = ", ".join(missing)

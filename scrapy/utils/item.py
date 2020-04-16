@@ -16,7 +16,7 @@ def _is_dataclass_instance(obj):
         return is_dataclass(obj) and not isinstance(obj, type)
 
 
-def is_item_like(obj):
+def is_item(obj):
     """Return ``True`` if *obj* is an instance of a :ref:`supported item type
     <item-types>`; return ``False`` otherwise."""
     return isinstance(obj, (BaseItem, dict)) or _is_dataclass_instance(obj)
@@ -54,7 +54,7 @@ class ItemAdapter(MutableMapping):
     """
 
     def __init__(self, item):
-        if not is_item_like(item):
+        if not is_item(item):
             raise TypeError("Expected a valid item, got %r instead: %s" % (type(item), item))
         self.item = item
 

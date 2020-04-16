@@ -5,7 +5,7 @@ import decimal
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
-from scrapy.utils.item import is_item_like, ItemAdapter
+from scrapy.utils.item import is_item, ItemAdapter
 
 
 class ScrapyJSONEncoder(json.JSONEncoder):
@@ -26,7 +26,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, defer.Deferred):
             return str(o)
-        elif is_item_like(o):
+        elif is_item(o):
             return dict(ItemAdapter(o).items())
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)

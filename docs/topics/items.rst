@@ -329,12 +329,12 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-item-pipeline>` or :ref:`spider middlewares
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~scrapy.utils.item.ItemAdapter` class and the
-:func:`~scrapy.utils.item.is_item_like` function to write code that works for
+:func:`~scrapy.utils.item.is_item` function to write code that works for
 any :ref:`supported item type <item-types>`:
 
 .. autoclass:: scrapy.utils.item.ItemAdapter
 
-.. autofunction:: scrapy.utils.item.is_item_like
+.. autofunction:: scrapy.utils.item.is_item
 
 
 Other classes related to items
