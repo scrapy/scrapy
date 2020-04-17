@@ -76,8 +76,8 @@ becomes::
 
 Coroutines may be used to call asynchronous code. This includes other
 coroutines, functions that return Deferreds and functions that return
-`awaitable objects`_ such as :class:`~asyncio.Future`. This means you can use
-many useful Python libraries providing such code::
+:term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
+This means you can use many useful Python libraries providing such code::
 
     class MySpider(Spider):
         # ...
@@ -107,4 +107,3 @@ Common use cases for asynchronous code include:
   :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
-.. _awaitable objects: https://docs.python.org/3/glossary.html#term-awaitable

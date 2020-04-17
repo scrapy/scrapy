@@ -14,7 +14,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
-#TODO: from scrapy.pipelines.media import MediaPipeline
+# TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException, FilesPipeline
 
 
