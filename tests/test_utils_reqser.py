@@ -110,6 +110,21 @@ class RequestSerializationTest(unittest.TestCase):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
         self.assertRaises(ValueError, request_to_dict, r)
 
+    def test_unserializable_callback3(self):
+        """Parser method is removed or replaced dynamically."""
+
+        class MySpider(Spider):
+
+            name = 'my_spider'
+
+            def parse(self, response):
+                pass
+
+        spider = MySpider()
+        r = Request("http://www.example.com", callback=spider.parse)
+        setattr(spider, 'parse', None)
+        self.assertRaises(ValueError, request_to_dict, r, spider=spider)
+
 
 class TestSpiderMixin:
     def __mixin_callback(self, response):
