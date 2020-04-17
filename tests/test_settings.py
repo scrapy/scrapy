@@ -290,10 +290,10 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT1', required=True), {'key1': 'val1', 'ke2': 3})
         self.assertEqual(settings.getdict('TEST_DICT2'), {'key1': 'val1', 'ke2': 3})
         self.assertEqual(settings.getdict('TEST_DICT2', required=True), {'key1': 'val1', 'ke2': 3})
-        self.assertEqual(settings.getdict('TEST_DICT3'), {})
+        self.assertEqual(settings.getdict('TEST_DICTx'), {})
         self.assertRaises(NotConfigured, settings.getdict, 'TEST_DICTx', required=True)
-        self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
-        self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}, required=True), {'key1': 5})
+        self.assertEqual(settings.getdict('TEST_DICTx', {'key1': 5}), {'key1': 5})
+        self.assertEqual(settings.getdict('TEST_DICTx', {'key1': 5}, required=True), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1', required=True)
         self.assertRaises(ValueError, settings.getbool, 'TEST_ENABLED_WRONG')
@@ -304,6 +304,8 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertRaises(NotConfigured, settings.get, 'NOT_CONFIGURED', required=True)
         self.assertEqual(settings.get('TEST_CONFIGURED2'), None)
         self.assertEqual(settings.get('TEST_CONFIGURED2', required=True), None)
+        self.assertEqual(settings.getlist('TEST_CONFIGURED2'), [])
+        self.assertEqual(settings.getdict('TEST_CONFIGURED2'), {})
 
     def test_getpriority(self):
         settings = BaseSettings({'key': 'value'}, priority=99)
