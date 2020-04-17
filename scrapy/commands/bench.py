@@ -1,8 +1,7 @@
 import sys
 import time
 import subprocess
-
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -26,7 +25,7 @@ class Command(ScrapyCommand):
             self.crawler_process.start()
 
 
-class _BenchServer(object):
+class _BenchServer:
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv

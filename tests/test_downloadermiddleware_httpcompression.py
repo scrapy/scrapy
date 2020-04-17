@@ -48,7 +48,7 @@ class HttpCompressionTest(TestCase):
                 }
 
         response = Response('http://scrapytest.org/', body=body, headers=headers)
-        response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip,deflate'})
+        response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip, deflate'})
         return response
 
     def test_process_request(self):
@@ -56,7 +56,7 @@ class HttpCompressionTest(TestCase):
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
         self.assertEqual(request.headers.get('Accept-Encoding'),
-                         b','.join(ACCEPTED_ENCODINGS))
+                         b', '.join(ACCEPTED_ENCODINGS))
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
@@ -70,7 +70,7 @@ class HttpCompressionTest(TestCase):
 
     def test_process_response_br(self):
         try:
-            import brotli
+            import brotli  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         response = self._getresponse('br')
@@ -245,7 +245,7 @@ class HttpCompressionTest(TestCase):
         response.headers['Content-Type'] = 'application/gzip'
         request = response.request
         request.method = 'HEAD'
-        response = response.replace(body = None)
+        response = response.replace(body=None)
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
         self.assertEqual(response.body, b'')

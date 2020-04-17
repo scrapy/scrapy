@@ -1,7 +1,6 @@
 import io
 import hashlib
 import random
-import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -177,7 +176,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         IMAGES_URLS_FIELD='image_urls',
         IMAGES_RESULT_FIELD='images'
     )
-
 
     def setUp(self):
         self.tempdir = mkdtemp()

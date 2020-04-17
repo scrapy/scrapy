@@ -1,11 +1,7 @@
 import hashlib
 import logging
-from collections import namedtuple
 
-from queuelib import PriorityQueue
-
-from scrapy.utils.reqser import request_to_dict, request_from_dict
-
+from scrapy.utils.misc import create_instance
 
 logger = logging.getLogger(__name__)
 
@@ -29,94 +25,92 @@ def _path_safe(text):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class _Priority(namedtuple("_Priority", ["priority", "slot"])):
-    """ Slot-specific priority. It is a hack - ``(priority, slot)`` tuple
-    which can be used instead of int priorities in queues:
+class ScrapyPriorityQueue:
+    """A priority queue implemented using multiple internal queues (typically,
+    FIFO queues). It uses one internal queue for each priority value. The internal
+    queue must implement the following methods:
 
-    * they are ordered in the same way - order is still by priority value,
-      min(prios) works;
-    * str(p) representation is guaranteed to be different when slots
-      are different - this is important because str(p) is used to create
-      queue files on disk;
-    * they have readable str(p) representation which is safe
-      to use as a file name.
+        * push(obj)
+        * pop()
+        * close()
+        * __len__()
+
+    ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
+    argument, which is a class used to instantiate a new (internal) queue when
+    a new priority is allocated.
+
+    Only integer priorities should be used. Lower numbers are higher
+    priorities.
+
+    startprios is a sequence of priorities to start with. If the queue was
+    previously closed leaving some priority buckets non-empty, those priorities
+    should be passed in startprios.
+
     """
-    __slots__ = ()
 
-    def __str__(self):
-        return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
+    @classmethod
+    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+        return cls(crawler, downstream_queue_cls, key, startprios)
 
+    def __init__(self, crawler, downstream_queue_cls, key, startprios=()):
+        self.crawler = crawler
+        self.downstream_queue_cls = downstream_queue_cls
+        self.key = key
+        self.queues = {}
+        self.curprio = None
+        self.init_prios(startprios)
 
-class _SlotPriorityQueues(object):
-    """ Container for multiple priority queues. """
-    def __init__(self, pqfactory, slot_startprios=None):
-        """
-        ``pqfactory`` is a factory for creating new PriorityQueues.
-        It must be a function which accepts a single optional ``startprios``
-        argument, with a list of priorities to create queues for.
+    def init_prios(self, startprios):
+        if not startprios:
+            return
 
-        ``slot_startprios`` is a ``{slot: startprios}`` dict.
-        """
-        self.pqfactory = pqfactory
-        self.pqueues = {}  # slot -> priority queue
-        for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(startprios)
+        for priority in startprios:
+            self.queues[priority] = self.qfactory(priority)
 
-    def pop_slot(self, slot):
-        """ Pop an object from a priority queue for this slot """
-        queue = self.pqueues[slot]
-        request = queue.pop()
-        if len(queue) == 0:
-            del self.pqueues[slot]
-        return request
+        self.curprio = min(startprios)
 
-    def push_slot(self, slot, obj, priority):
-        """ Push an object to a priority queue for this slot """
-        if slot not in self.pqueues:
-            self.pqueues[slot] = self.pqfactory()
-        queue = self.pqueues[slot]
-        queue.push(obj, priority)
+    def qfactory(self, key):
+        return create_instance(self.downstream_queue_cls,
+                               None,
+                               self.crawler,
+                               self.key + '/' + str(key))
+
+    def priority(self, request):
+        return -request.priority
+
+    def push(self, request):
+        priority = self.priority(request)
+        if priority not in self.queues:
+            self.queues[priority] = self.qfactory(priority)
+        q = self.queues[priority]
+        q.push(request)  # this may fail (eg. serialization error)
+        if self.curprio is None or priority < self.curprio:
+            self.curprio = priority
+
+    def pop(self):
+        if self.curprio is None:
+            return
+        q = self.queues[self.curprio]
+        m = q.pop()
+        if not q:
+            del self.queues[self.curprio]
+            q.close()
+            prios = [p for p, q in self.queues.items() if q]
+            self.curprio = min(prios) if prios else None
+        return m
 
     def close(self):
-        active = {slot: queue.close()
-                  for slot, queue in self.pqueues.items()}
-        self.pqueues.clear()
+        active = []
+        for p, q in self.queues.items():
+            active.append(p)
+            q.close()
         return active
 
     def __len__(self):
-        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
-
-    def __contains__(self, slot):
-        return slot in self.pqueues
+        return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
-class ScrapyPriorityQueue(PriorityQueue):
-    """
-    PriorityQueue which works with scrapy.Request instances and
-    can optionally convert them to/from dicts before/after putting to a queue.
-    """
-    def __init__(self, crawler, qfactory, startprios=(), serialize=False):
-        super(ScrapyPriorityQueue, self).__init__(qfactory, startprios)
-        self.serialize = serialize
-        self.spider = crawler.spider
-
-    @classmethod
-    def from_crawler(cls, crawler, qfactory, startprios=(), serialize=False):
-        return cls(crawler, qfactory, startprios, serialize)
-
-    def push(self, request, priority=0):
-        if self.serialize:
-            request = request_to_dict(request, self.spider)
-        super(ScrapyPriorityQueue, self).push(request, priority)
-
-    def pop(self):
-        request = super(ScrapyPriorityQueue, self).pop()
-        if request and self.serialize:
-            request = request_from_dict(request, self.spider)
-        return request
-
-
-class DownloaderInterface(object):
+class DownloaderInterface:
 
     def __init__(self, crawler):
         self.downloader = crawler.engine.downloader
@@ -135,17 +129,17 @@ class DownloaderInterface(object):
         return len(self.downloader.slots[slot].active)
 
 
-class DownloaderAwarePriorityQueue(object):
-    """ PriorityQueue which takes Downlaoder activity in account:
+class DownloaderAwarePriorityQueue:
+    """ PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
     """
 
     @classmethod
-    def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):
-        return cls(crawler, qfactory, slot_startprios, serialize)
+    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+        return cls(crawler, downstream_queue_cls, key, startprios)
 
-    def __init__(self, crawler, qfactory, slot_startprios=None, serialize=False):
+    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
             raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
                              % (self.__class__,))
@@ -159,35 +153,49 @@ class DownloaderAwarePriorityQueue(object):
                              "queue class can be resumed." %
                              slot_startprios.__class__)
 
-        slot_startprios = {
-            slot: [_Priority(p, slot) for p in startprios]
-            for slot, startprios in (slot_startprios or {}).items()}
-
-        def pqfactory(startprios=()):
-            return ScrapyPriorityQueue(crawler, qfactory, startprios, serialize)
-        self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
-        self.serialize = serialize
         self._downloader_interface = DownloaderInterface(crawler)
+        self.downstream_queue_cls = downstream_queue_cls
+        self.key = key
+        self.crawler = crawler
+
+        self.pqueues = {}  # slot -> priority queue
+        for slot, startprios in (slot_startprios or {}).items():
+            self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+    def pqfactory(self, slot, startprios=()):
+        return ScrapyPriorityQueue(self.crawler,
+                                   self.downstream_queue_cls,
+                                   self.key + '/' + _path_safe(slot),
+                                   startprios)
 
     def pop(self):
-        stats = self._downloader_interface.stats(self._slot_pqueues.pqueues)
+        stats = self._downloader_interface.stats(self.pqueues)
 
         if not stats:
             return
 
         slot = min(stats)[1]
-        request = self._slot_pqueues.pop_slot(slot)
+        queue = self.pqueues[slot]
+        request = queue.pop()
+        if len(queue) == 0:
+            del self.pqueues[slot]
         return request
 
-    def push(self, request, priority):
+    def push(self, request):
         slot = self._downloader_interface.get_slot_key(request)
-        priority_slot = _Priority(priority=priority, slot=slot)
-        self._slot_pqueues.push_slot(slot, request, priority_slot)
+        if slot not in self.pqueues:
+            self.pqueues[slot] = self.pqfactory(slot)
+        queue = self.pqueues[slot]
+        queue.push(request)
 
     def close(self):
-        active = self._slot_pqueues.close()
-        return {slot: [p.priority for p in startprios]
-                for slot, startprios in active.items()}
+        active = {slot: queue.close()
+                  for slot, queue in self.pqueues.items()}
+        self.pqueues.clear()
+        return active
 
     def __len__(self):
-        return len(self._slot_pqueues)
+        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+
+    def __contains__(self, slot):
+        return slot in self.pqueues

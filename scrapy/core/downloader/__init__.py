@@ -1,22 +1,19 @@
-from __future__ import absolute_import
 import random
-import warnings
 from time import time
 from datetime import datetime
 from collections import deque
 
-import six
-from twisted.internet import reactor, defer, task
+from twisted.internet import defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy import signals
-from .middleware import DownloaderMiddlewareManager
-from .handlers import DownloadHandlers
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader.handlers import DownloadHandlers
 
 
-class Slot(object):
+class Slot:
     """Downloader slot"""
 
     def __init__(self, concurrency, delay, randomize_delay):
@@ -69,7 +66,7 @@ def _get_concurrency_delay(concurrency, spider, settings):
     return concurrency, delay
 
 
-class Downloader(object):
+class Downloader:
 
     DOWNLOAD_SLOT = 'download_slot'
 
@@ -136,6 +133,7 @@ class Downloader(object):
         return deferred
 
     def _process_queue(self, spider, slot):
+        from twisted.internet import reactor
         if slot.latercall and slot.latercall.active():
             return
 
@@ -175,7 +173,7 @@ class Downloader(object):
             return response
         dfd.addCallback(_downloaded)
 
-        # 3. After response arrives,  remove the request from transferring
+        # 3. After response arrives, remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)
@@ -184,13 +182,16 @@ class Downloader(object):
         def finish_transferring(_):
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
+            self.signals.send_catch_log(signal=signals.request_left_downloader,
+                                        request=request,
+                                        spider=spider)
             return _
 
         return dfd.addBoth(finish_transferring)
 
     def close(self):
         self._slot_gc_loop.stop()
-        for slot in six.itervalues(self.slots):
+        for slot in self.slots.values():
             slot.close()
 
     def _slot_gc(self, age=60):

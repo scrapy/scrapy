@@ -1,21 +1,25 @@
-from __future__ import print_function
-import sys, time, random, os, json
-from six.moves.urllib.parse import urlencode
+import argparse
+import json
+import os
+import random
+import sys
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 
 from OpenSSL import SSL
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
+from twisted.internet import defer, reactor, ssl
+from twisted.internet.task import deferLater
+from twisted.names import dns, error
+from twisted.names.server import DNSServerFactory
+from twisted.web.resource import EncodingResourceWrapper, Resource
+from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
 from twisted.web.static import File
 from twisted.web.test.test_webclient import PayloadResource
-from twisted.web.server import GzipEncoderFactory
-from twisted.web.resource import EncodingResourceWrapper
 from twisted.web.util import redirectTo
-from twisted.internet import reactor, ssl
-from twisted.internet.task import deferLater
 
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
+from scrapy.utils.test import get_testenv
 
 
 def getarg(request, name, default=None, type=None):
@@ -162,6 +166,12 @@ class Drop(Partial):
             request.finish()
 
 
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
 class Root(Resource):
 
     def __init__(self):
@@ -175,6 +185,7 @@ class Root(Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
@@ -189,12 +200,10 @@ class Root(Resource):
         return b'Scrapy mock HTTP server\n'
 
 
-class MockServer():
+class MockServer:
 
     def __enter__(self):
-        from scrapy.utils.test import get_testenv
-
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'],
                           stdout=PIPE, env=get_testenv())
         http_address = self.proc.stdout.readline().strip().decode('ascii')
         https_address = self.proc.stdout.readline().strip().decode('ascii')
@@ -206,8 +215,7 @@ class MockServer():
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
-        self.proc.wait()
-        time.sleep(0.2)
+        self.proc.communicate()
 
     def url(self, path, is_secure=False):
         host = self.http_address.replace('0.0.0.0', '127.0.0.1')
@@ -216,11 +224,45 @@ class MockServer():
         return host + path
 
 
+class MockDNSResolver:
+    """
+    Implements twisted.internet.interfaces.IResolver partially
+    """
+
+    def _resolve(self, name):
+        record = dns.Record_A(address=b"127.0.0.1")
+        answer = dns.RRHeader(name=name, payload=record)
+        return [answer], [], []
+
+    def query(self, query, timeout=None):
+        if query.type == dns.A:
+            return defer.succeed(self._resolve(query.name.name))
+        return defer.fail(error.DomainError())
+
+    def lookupAllRecords(self, name, timeout=None):
+        return defer.succeed(self._resolve(name))
+
+
+class MockDNSServer:
+
+    def __enter__(self):
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
+                          stdout=PIPE, env=get_testenv())
+        host, port = self.proc.stdout.readline().strip().decode('ascii').split(":")
+        self.host = host
+        self.port = int(port)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.communicate()
+
+
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), keyfile),
-         os.path.join(os.path.dirname(__file__), certfile),
-         )
+        os.path.join(os.path.dirname(__file__), keyfile),
+        os.path.join(os.path.dirname(__file__), certfile),
+    )
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.2+ because it unconditionally enables some strong ciphers
@@ -230,19 +272,34 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
 
 
 if __name__ == "__main__":
-    root = Root()
-    factory = Site(root)
-    httpPort = reactor.listenTCP(0, factory)
-    contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(0, factory, contextFactory)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--type", type=str, choices=("http", "dns"), default="http")
+    args = parser.parse_args()
 
-    def print_listening():
-        httpHost = httpPort.getHost()
-        httpsHost = httpsPort.getHost()
-        httpAddress = 'http://%s:%d' % (httpHost.host, httpHost.port)
-        httpsAddress = 'https://%s:%d' % (httpsHost.host, httpsHost.port)
-        print(httpAddress)
-        print(httpsAddress)
+    if args.type == "http":
+        root = Root()
+        factory = Site(root)
+        httpPort = reactor.listenTCP(0, factory)
+        contextFactory = ssl_context_factory()
+        httpsPort = reactor.listenSSL(0, factory, contextFactory)
+
+        def print_listening():
+            httpHost = httpPort.getHost()
+            httpsHost = httpsPort.getHost()
+            httpAddress = "http://%s:%d" % (httpHost.host, httpHost.port)
+            httpsAddress = "https://%s:%d" % (httpsHost.host, httpsHost.port)
+            print(httpAddress)
+            print(httpsAddress)
+
+    elif args.type == "dns":
+        clients = [MockDNSResolver()]
+        factory = DNSServerFactory(clients=clients)
+        protocol = dns.DNSDatagramProtocol(controller=factory)
+        listener = reactor.listenUDP(0, protocol)
+
+        def print_listening():
+            host = listener.getHost()
+            print("%s:%s" % (host.host, host.port))
 
     reactor.callWhenRunning(print_listening)
     reactor.run()

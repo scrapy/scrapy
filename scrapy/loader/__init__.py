@@ -1,21 +1,31 @@
-"""Item Loader
+"""
+Item Loader
 
 See documentation in docs/topics/loaders.rst
-
 """
 from collections import defaultdict
-import six
+from contextlib import suppress
 
 from scrapy.item import Item
+from scrapy.loader.common import wrap_loader_context
+from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 
-from .common import wrap_loader_context
-from .processors import Identity
+
+def unbound_method(method):
+    """
+    Allow to use single-argument functions as input or output processors
+    (no need to define an unused first 'self' argument)
+    """
+    with suppress(AttributeError):
+        if '.' not in method.__qualname__:
+            return method.__func__
+    return method
 
 
-class ItemLoader(object):
+class ItemLoader:
 
     default_item_class = Item
     default_input_processor = Identity()
@@ -33,10 +43,9 @@ class ItemLoader(object):
         self.parent = parent
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
-        # Preprocess values if item built from dict
-        # Values need to be added to item._values if added them from dict (not with add_values)
+        # values from initial item
         for field_name, value in item.items():
-            self._values[field_name] = self._process_input_value(field_name, value)
+            self._values[field_name] += arg_to_iter(value)
 
     @property
     def _values(self):
@@ -73,7 +82,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._add_value(k, v)
         else:
             self._add_value(field_name, value)
@@ -83,7 +92,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k, v in six.iteritems(value):
+            for k, v in value.items():
                 self._replace_value(k, v)
         else:
             self._replace_value(field_name, value)
@@ -132,8 +141,8 @@ class ItemLoader(object):
         try:
             return proc(self._values[field_name])
         except Exception as e:
-            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
-                (field_name, self._values[field_name], type(e).__name__, str(e)))
+            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" %
+                             (field_name, self._values[field_name], type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
@@ -141,16 +150,16 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor', \
-                self.default_input_processor)
-        return proc
+            proc = self._get_item_field_attr(field_name, 'input_processor',
+                                             self.default_input_processor)
+        return unbound_method(proc)
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor', \
-                self.default_output_processor)
-        return proc
+            proc = self._get_item_field_attr(field_name, 'output_processor',
+                                             self.default_output_processor)
+        return unbound_method(proc)
 
     def _process_input_value(self, field_name, value):
         proc = self.get_input_processor(field_name)
@@ -174,8 +183,8 @@ class ItemLoader(object):
     def _check_selector_method(self):
         if self.selector is None:
             raise RuntimeError("To use XPath or CSS selectors, "
-                "%s must be instantiated with a selector "
-                "or a response" % self.__class__.__name__)
+                               "%s must be instantiated with a selector "
+                               "or a response" % self.__class__.__name__)
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
         values = self._get_xpathvalues(xpath, **kw)

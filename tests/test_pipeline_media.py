@@ -1,12 +1,8 @@
-from __future__ import print_function
-
-import sys
-
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -128,9 +124,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         # Simulate the Media Pipeline behavior to produce a Twisted Failure
         try:
             # Simulate a Twisted inline callback returning a Response
-            # The returnValue method raises an exception encapsulating the value
-            returnValue(response)
-        except BaseException as exc:
+            raise StopIteration(response)
+        except StopIteration as exc:
             def_gen_return_exc = exc
             try:
                 # Simulate the media_downloaded callback raising a FileException
@@ -144,10 +139,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and if we're running on Python 3 ...
-        if sys.version_info.major >= 3:
-            # ... it should have the returnValue exception set as its context
-            self.assertEqual(failure.value.__context__, def_gen_return_exc)
+        # ... and it should have the StopIteration exception set as its context
+        self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
         fp = request_fingerprint(request)
@@ -161,7 +154,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.assertEqual(info.downloaded[fp], failure)
         # ... encapsulating the original FileException ...
         self.assertEqual(info.downloaded[fp].value, file_exc)
-        # ... but it should not store the returnValue exception on its context
+        # ... but it should not store the StopIteration exception on its context
         context = getattr(info.downloaded[fp].value, '__context__', None)
         self.assertIsNone(context)
 
@@ -205,12 +198,19 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 
     pipeline_class = MockedMediaPipeline
 
+    def _callback(self, result):
+        self.pipe._mockcalled.append('request_callback')
+        return result
+
+    def _errback(self, result):
+        self.pipe._mockcalled.append('request_errback')
+        return result
+
     @inlineCallbacks
     def test_result_succeed(self):
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         rsp = Response('http://url1')
-        req = Request('http://url1', meta=dict(response=rsp), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=rsp),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
@@ -221,10 +221,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         fail = Failure(Exception())
-        req = Request('http://url1', meta=dict(response=fail), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=fail),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
@@ -244,10 +243,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(new_item['results'], [(True, rsp1), (False, fail)])
         m = self.pipe._mockcalled
         # only once
-        self.assertEqual(m[0], 'get_media_requests') # first hook called
+        self.assertEqual(m[0], 'get_media_requests')  # first hook called
         self.assertEqual(m.count('get_media_requests'), 1)
         self.assertEqual(m.count('item_completed'), 1)
-        self.assertEqual(m[-1], 'item_completed') # last hook called
+        self.assertEqual(m[-1], 'item_completed')  # last hook called
         # twice, one per request
         self.assertEqual(m.count('media_to_download'), 2)
         # one to handle success and other for failure
@@ -258,7 +257,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request('http://url')
-        item = dict(requests=req) # pass a single item
+        item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         assert request_fingerprint(req) in self.info.downloaded
@@ -310,6 +309,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)
@@ -330,8 +330,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'item_completed'])
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):

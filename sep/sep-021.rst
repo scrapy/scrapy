@@ -38,7 +38,7 @@ Goals:
 
 * simple to manage: adding or removing extensions should be just a matter of
   adding or removing lines in a ``scrapy.cfg`` file
-* backward compatibility with enabling extension the "old way" (ie. modifying
+* backward compatibility with enabling extension the "old way" (i.e. modifying
   settings directly)
 
 Non-goals:

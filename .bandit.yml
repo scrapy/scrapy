@@ -1,0 +1,18 @@
+skips:
+- B101
+- B105
+- B301
+- B303
+- B306
+- B307
+- B311
+- B320
+- B321
+- B402  # https://github.com/scrapy/scrapy/issues/4180
+- B403
+- B404
+- B406
+- B410
+- B503
+- B603
+- B605

@@ -1,12 +1,11 @@
 import time
-from six.moves.http_cookiejar import (
-    CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
-)
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 
 
-class CookieJar(object):
+class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -101,7 +100,7 @@ def potential_domain_matches(domain):
     return matches + ['.' + d for d in matches]
 
 
-class _DummyLock(object):
+class _DummyLock:
     def acquire(self):
         pass
 
@@ -109,7 +108,7 @@ class _DummyLock(object):
         pass
 
 
-class WrappedRequest(object):
+class WrappedRequest:
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -165,13 +164,13 @@ class WrappedRequest(object):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_native_str(self.request.headers.get(name, default),
-                             errors='replace')
+        return to_unicode(self.request.headers.get(name, default),
+                          errors='replace')
 
     def header_items(self):
         return [
-            (to_native_str(k, errors='replace'),
-             [to_native_str(x, errors='replace') for x in v])
+            (to_unicode(k, errors='replace'),
+             [to_unicode(x, errors='replace') for x in v])
             for k, v in self.request.headers.items()
         ]
 
@@ -179,7 +178,7 @@ class WrappedRequest(object):
         self.request.headers.appendlist(name, value)
 
 
-class WrappedResponse(object):
+class WrappedResponse:
 
     def __init__(self, response):
         self.response = response
@@ -189,7 +188,7 @@ class WrappedResponse(object):
 
     # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
-        return [to_native_str(v, errors='replace')
+        return [to_unicode(v, errors='replace')
                 for v in self.response.headers.getlist(name)]
     # python2 cookiejars calls getheaders
     getheaders = get_all

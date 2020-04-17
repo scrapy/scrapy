@@ -5,11 +5,12 @@ Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
 
+from urllib.parse import urljoin
+
 import lxml.etree
-from six.moves.urllib.parse import urljoin
 
 
-class Sitemap(object):
+class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 

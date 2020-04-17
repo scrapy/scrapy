@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 import sys
 import logging
 import unittest
@@ -17,7 +16,7 @@ class FailureToExcInfoTest(unittest.TestCase):
 
     def test_failure(self):
         try:
-            0/0
+            0 / 0
         except ZeroDivisionError:
             exc_info = sys.exc_info()
             failure = Failure()
