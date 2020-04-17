@@ -113,8 +113,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         value = default if name not in self.attributes else self[name]
@@ -139,8 +139,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         got = self.get(name, self._get_default(default, False, required), required)
@@ -166,8 +166,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         return int(self.get(name, self._get_default(default, 0, required), required))
@@ -183,8 +183,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         return float(self.get(name, self._get_default(default, 0.0, required), required))
@@ -204,8 +204,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         value = self.get(name, self._get_default(default, [], required), required)
@@ -232,8 +232,8 @@ class BaseSettings(MutableMapping):
         :type default: any
 
         :param required: if ``True`` and `default` is not specified, it will
-        raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
-        specified setting has not been defined
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
         :type required: boolean
         """
         value = self.get(name, self._get_default(default, {}, required), required)
