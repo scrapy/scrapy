@@ -267,6 +267,7 @@ FILES_STORAGES_BASE::
         'file': 'scrapy.pipelines.files.FSFilesStore',
         's3': 'scrapy.pipelines.files.S3FilesStore',
         'gs': 'scrapy.pipelines.files.GCSFilesStore',
+        'ftp': 'scrapy.pipelines.files.FTPFilesStore',
     }
 
 
