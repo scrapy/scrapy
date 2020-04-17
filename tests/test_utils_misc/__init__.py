@@ -9,7 +9,6 @@ from scrapy.utils.misc import (arg_to_iter, create_instance,
                                set_environ, walk_modules)
 
 
-
 __doctests__ = ['scrapy.utils.misc']
 
 

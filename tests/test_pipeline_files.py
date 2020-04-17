@@ -19,8 +19,6 @@ from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
 from scrapy.utils.test import get_ftp_content_and_delete
 from scrapy.utils.boto import is_botocore
 
-from tests.spiders import SimpleSpider
-
 
 def _mocked_download_func(request, info):
     response = request.meta.get('response')
