@@ -53,18 +53,20 @@ class BaseItemExporter:
         pass
 
     def _serialize_nested_items(self, value, default_value, include_empty):
+        def serialize_iterable(it):
+            ret = []
+            for x in it:
+                ret.append(self._serialize_nested_items(x, default_value, include_empty))
+            return ret
+
         if isinstance(value, BaseItem):
             return dict(self._get_serialized_fields(value, default_value, include_empty))
-        elif isinstance(value, dict):
-            tmp = []
-            for x in value.items():
-                tmp.append(self._serialize_nested_items(x, default_value, include_empty))
-            return dict(tmp)
         elif is_listlike(value):
-            tmp = []
-            for x in value:
-                tmp.append(self._serialize_nested_items(x, default_value, include_empty))
-            return type(value)(tmp)
+            if isinstance(value, dict):
+                serialized_list = serialize_iterable(value.items())
+            else:
+                serialized_list = serialize_iterable(value)
+            return type(value)(serialized_list)
         else:
             return value
 
