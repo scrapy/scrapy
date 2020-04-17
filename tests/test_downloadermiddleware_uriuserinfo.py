@@ -93,5 +93,5 @@ class UnhandledProtocolTest(AbstractWrapper.BaseTestCase):
     def test_unhandled_protocol(self):
         req = Request('{}://foo:bar@scrapytest.org/'.format(self.protocol))
         processed_request = self.mw.process_request(req, self.spider)
-        assert processed_request == None
+        assert processed_request is None
         assert not req.meta
