@@ -102,7 +102,7 @@ class BaseSettings(MutableMapping):
             return default
         return value
 
-    def get(self, name, default=_NOT_SET, required=False):
+    def get(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value without affecting its original type.
 
@@ -122,7 +122,7 @@ class BaseSettings(MutableMapping):
             raise NotConfigured
         return None if value is _NOT_SET else value
 
-    def getbool(self, name, default=_NOT_SET, required=False):
+    def getbool(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a boolean.
 
@@ -143,7 +143,8 @@ class BaseSettings(MutableMapping):
             specified setting has not been defined
         :type required: boolean
         """
-        got = self.get(name, self._get_default(default, False, required), required)
+        default = self._get_default(default, False, required=required)
+        got = self.get(name, default, required=required)
         try:
             return bool(int(got))
         except ValueError:
@@ -155,7 +156,7 @@ class BaseSettings(MutableMapping):
                              "are 0/1, True/False, '0'/'1', "
                              "'True'/'False' and 'true'/'false'")
 
-    def getint(self, name, default=_NOT_SET, required=False):
+    def getint(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as an int.
 
@@ -170,9 +171,10 @@ class BaseSettings(MutableMapping):
             specified setting has not been defined
         :type required: boolean
         """
-        return int(self.get(name, self._get_default(default, 0, required), required))
+        default = self._get_default(default, 0, required=required)
+        return int(self.get(name, default, required=required))
 
-    def getfloat(self, name, default=_NOT_SET, required=False):
+    def getfloat(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a float.
 
@@ -187,9 +189,10 @@ class BaseSettings(MutableMapping):
             specified setting has not been defined
         :type required: boolean
         """
-        return float(self.get(name, self._get_default(default, 0.0, required), required))
+        default = self._get_default(default, 0.0, required=required)
+        return float(self.get(name, default, required=required))
 
-    def getlist(self, name, default=_NOT_SET, required=False):
+    def getlist(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a list. If the setting original type is a list, a
         copy of it will be returned. If it's a string it will be split by ",".
@@ -208,14 +211,15 @@ class BaseSettings(MutableMapping):
             specified setting has not been defined
         :type required: boolean
         """
-        value = self.get(name, self._get_default(default, [], required), required)
+        default = self._get_default(default, [], required=required)
+        value = self.get(name, default, required=required)
         if value is None:
             return []
         if isinstance(value, str):
             value = value.split(',')
         return list(value)
 
-    def getdict(self, name, default=_NOT_SET, required=False):
+    def getdict(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a dictionary. If the setting original type is a
         dictionary, a copy of it will be returned. If it is a string it will be
@@ -236,7 +240,8 @@ class BaseSettings(MutableMapping):
             specified setting has not been defined
         :type required: boolean
         """
-        value = self.get(name, self._get_default(default, {}, required), required)
+        default = self._get_default(default, {}, required=required)
+        value = self.get(name, default, required=required)
         if value is None:
             return {}
         if isinstance(value, str):
