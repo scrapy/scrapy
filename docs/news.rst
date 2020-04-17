@@ -126,7 +126,8 @@ Quality assurance
 *   Removed code that added support for old versions of Twisted that we no
     longer support (:issue:`4472`)
 
-*   Fixed code style issues (:issue:`4468`, :issue:`4469`, :issue:`4481`)
+*   Fixed code style issues (:issue:`4468`, :issue:`4469`, :issue:`4471`,
+    :issue:`4481`)
 
 *   Removed :func:`twisted.internet.defer.returnValue` calls (:issue:`4443`,
     :issue:`4446`, :issue:`4489`)
