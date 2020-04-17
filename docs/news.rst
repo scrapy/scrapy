@@ -46,10 +46,6 @@ Deprecation removals
 Deprecations
 ~~~~~~~~~~~~
 
-*   :meth:`Spider.make_requests_from_url
-    <scrapy.spiders.Spider.make_requests_from_url>` is deprecated, override
-    :meth:`~scrapy.spiders.Spider.start_requests` instead (:issue:`4412`)
-
 *   The ``FEED_FORMAT`` and ``FEED_URI`` settings have been deprecated in
     favor of the new :setting:`FEEDS` setting (:issue:`1336`, :issue:`3858`)
 
@@ -89,6 +85,10 @@ Bug fixes
 
 *   zope.interface 5.0.0 and later versions are now supported
     (:issue:`4447`, :issue:`4448`)
+
+*   :meth:`Spider.make_requests_from_url
+    <scrapy.spiders.Spider.make_requests_from_url>`, deprecated in Scrapy
+    1.4.0, now issues a warning when used (:issue:`4412`)
 
 
 Documentation
