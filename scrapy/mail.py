@@ -115,8 +115,8 @@ class MailSender:
         from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+            to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
             requireTransportSecurity=self.smtptls)
         factory.noisy = False
 

@@ -433,7 +433,7 @@ class FeedExportTest(unittest.TestCase):
             for file_path in FEEDS.keys():
                 os.remove(str(file_path))
 
-        defer.returnValue(content)
+        return content
 
     @defer.inlineCallbacks
     def exported_data(self, items, settings):
@@ -448,7 +448,7 @@ class FeedExportTest(unittest.TestCase):
                     yield item
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def exported_no_data(self, settings):
@@ -462,7 +462,7 @@ class FeedExportTest(unittest.TestCase):
                 pass
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):

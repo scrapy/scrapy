@@ -292,7 +292,7 @@ class TestSpiderMiddleware(TestCase):
         crawler = get_crawler(spider)
         with LogCapture() as log:
             yield crawler.crawl(mockserver=self.mockserver)
-        raise defer.returnValue(log)
+        return log
 
     @defer.inlineCallbacks
     def test_recovery(self):

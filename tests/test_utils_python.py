@@ -145,7 +145,9 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         get_z = operator.itemgetter('z')
         get_meta = operator.attrgetter('meta')
-        compare_z = lambda obj: get_z(get_meta(obj))
+
+        def compare_z(obj):
+            return get_z(get_meta(obj))
 
         self.assertTrue(equal_attributes(a, b, [compare_z, 'x']))
         # fail z equality
