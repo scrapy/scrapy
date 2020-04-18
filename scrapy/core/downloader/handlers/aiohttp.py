@@ -2,18 +2,22 @@
 import asyncio
 
 import aiohttp
-from twisted.internet import defer
+from twisted.internet.defer import Deferred
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.reactor import verify_installed_reactor
 
 
 class HTTPDownloadHandler:
 
-    def download_request(self, request, spider):
-        return _force_deferred(self._download_request(request, spider))
+    def __init__(self):
+        verify_installed_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
-    async def _download_request(self, request, spider):
+    def download_request(self, request, spider):
+        return _force_deferred(self._download_request(request))
+
+    async def _download_request(self, request):
         """Return a deferred for the HTTP download"""
         headers = list(
             (k.decode("latin1"), v.decode("latin1"))
@@ -38,7 +42,5 @@ class HTTPDownloadHandler:
 
 
 def _force_deferred(coro):
-    dfd = defer.Deferred().addCallback(lambda f: f.result())
     future = asyncio.ensure_future(coro)
-    future.add_done_callback(dfd.callback)
-    return dfd
+    return Deferred.fromFuture(future)
