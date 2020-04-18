@@ -1128,6 +1128,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_items(self):
+        """ Test partial deliveries in all supported formats """
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
@@ -1145,7 +1146,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """If path is without %(time)s or %(batch_id)s an exception must be raised"""
+        """ If path is without %(time)s or %(batch_id)s an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
@@ -1189,3 +1190,66 @@ class PartialDeliveriesTest(FeedExportTestBase):
             data = yield self.exported_no_data(settings)
             data = dict(data)
             self.assertEqual(expctd, data[fmt][0])
+
+    @defer.inlineCallbacks
+    def test_export_multiple_configs(self):
+        items = [dict({'foo': u'FOO', 'bar': u'BAR'}), dict({'foo': u'FOO1', 'bar': u'BAR1'})]
+
+        formats = {
+            'json': [u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
+                     u'[\n{"bar": "BAR1"}\n]'.encode('utf-8')],
+            'xml': [u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
+                    u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>'.encode('latin-1')],
+            'csv': [u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
+                    u'bar,foo\r\nBAR1,FOO1\r\n'.encode('utf-8')],
+        }
+
+        settings = {
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                    'format': 'json',
+                    'indent': 0,
+                    'fields': ['bar'],
+                    'encoding': 'utf-8',
+                },
+                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {
+                    'format': 'xml',
+                    'indent': 2,
+                    'fields': ['foo'],
+                    'encoding': 'latin-1',
+                },
+                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
+                    'format': 'csv',
+                    'indent': None,
+                    'fields': ['bar', 'foo'],
+                    'encoding': 'utf-8',
+                },
+            },
+            'FEED_STORAGE_BATCH_SIZE': 1,
+        }
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            for expected_batch, got_batch in zip(expected, data[fmt]):
+                self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def test_batch_path_differ(self):
+        """
+        Test that the name of all batch files differ from each other.
+        So %(time)s replaced with the current date.
+        """
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
+        ]
+        settings = {
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), '%(time)s'): {
+                    'format': 'json',
+                },
+            },
+            'FEED_STORAGE_BATCH_SIZE': 1,
+        }
+        data = yield self.exported_data(items, settings)
+        self.assertEqual(len(items) + 1, len(data['json']))
