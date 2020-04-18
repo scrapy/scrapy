@@ -11,7 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class BaseRedirectMiddleware(object):
+class BaseRedirectMiddleware:
 
     enabled_setting = 'REDIRECT_ENABLED'
 

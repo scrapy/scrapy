@@ -21,7 +21,7 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
     def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs

@@ -107,7 +107,7 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
+    class SpiderOpenCloseLogging:
 
         def __init__(self, item_count):
             self.item_count = item_count
@@ -364,7 +364,7 @@ Debugger extension
 
 .. class:: Debugger
 
-Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
@@ -372,5 +372,4 @@ For more info see `Debugging in Python`_.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
-.. _Python debugger: https://docs.python.org/2/library/pdb.html
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

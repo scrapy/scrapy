@@ -27,7 +27,7 @@ def _to_bytes_or_none(text):
     return to_bytes(text)
 
 
-class MailSender(object):
+class MailSender:
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
@@ -115,8 +115,8 @@ class MailSender(object):
         from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+            to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
             requireTransportSecurity=self.smtptls)
         factory.noisy = False
 
