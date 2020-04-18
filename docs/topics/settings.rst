@@ -963,6 +963,72 @@ Default: ``60.0``
 The interval (in seconds) between each logging printout of the stats
 by :class:`~scrapy.extensions.logstats.LogStats`.
 
+.. setting:: LOG_FILE_ROTATE
+
+LOG_FILE_ROTATE
+---------------
+Default : ``False``
+
+Enables time based roatation of log file mentioned in :setting:`LOG_FILE`. The default setting are set as per the python inbuilt `TimedRotatingFileHandler <http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_WHEN
+
+LOG_FILE_ROTATE_WHEN
+--------------------
+
+Default: ``'Midnight'``
+
+To specify time for rollover. Refer possible values for this parameter from `TimedRotatingFileHandler <http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_INTERVAL
+
+LOG_FILE_ROTATE_INTERVAL
+------------------------
+
+Default: ``1``
+
+Input parameter for rotation interval to :setting:`LOG_FILE_ROTATE`. 
+For possible details of the parameter refer to `TimedRotatingFileHandler <http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_BACKUP_COUNT
+
+LOG_FILE_ROTATE_BACKUP_COUNT
+----------------------------
+
+Default: ``0``
+
+The setting to keep backup of the last number of log file :setting:`LOG_FILE` when handler will rollover to newest one.  
+For details refer to `TimedRotatingFileHandler <http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_DELAY 
+
+LOG_FILE_ROTATE_DELAY
+---------------------
+
+Default: ``False``
+
+To defer the opening of log-file :setting:`LOG_FILE` until the first call ``emit()`` as described in `TimedRotatingFileHandler <http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_UTC
+
+LOG_FILE_ROTATE_UTC
+-------------------
+
+Default: ``False``
+
+If set ``True``, switches to UTC instead of default Local Time Zone. 
+Refer to `TimedRotatingFileHandler <https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
+.. setting:: LOG_FILE_ROTATE_AT_TIME
+
+LOG_FILE_ROTATE_AT_TIME
+-----------------------
+
+Default : ``None``
+
+A ``datetime.time`` instance has to be provided to specify the initial roll-over time. 
+For possible details of the parameter refer to `TimedRotatingFileHandler <https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_.
+
 .. setting:: MEMDEBUG_ENABLED
 
 MEMDEBUG_ENABLED

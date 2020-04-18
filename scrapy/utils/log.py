@@ -122,21 +122,19 @@ _scrapy_root_handler = None
 
 def _get_handler(settings):
     """ Return a log handler object according to settings """
-    filename = settings.get('LOG_FILE')
-    rotation = settings.getbool('LOG_ROTATION')
-    rotation_dict = settings.getdict('LOG_ROTATION_VALUES', {})
+    filename = settings.get('LOG_FILE') 
     if filename:
         encoding = settings.get('LOG_ENCODING')
-        if rotation :
+        if settings.getbool('LOG_FILE_ROTATE',False):
             handler = TimedRotatingFileHandler(
                 filename,
                 encoding=encoding,
-                when = rotation_dict.get("when","midnight"),
-                interval = rotation_dict.get("interval",1),
-                backupCount = rotation_dict.get("backupCount",0),
-                delay= rotation_dict.get("delay",False),
-                utc= rotation_dict.get("utc",False),
-                atTime=rotation_dict.get("atTime",None) ,
+                when = settings.get("LOG_FILE_ROTATE_WHEN","midnight"),
+                interval = settings.get("LOG_FILE_ROTATE_INTERVAL",1),
+                backupCount = settings.get("LOG_FILE_ROTATE_BACKUP_COUNT",0),
+                delay= settings.get("LOG_FILE_ROTATE_DELAY",False),
+                utc= settings.get("LOG_FILE_ROTATE_UTC",False),
+                atTime=settings.get("LOG_FILE_ROTATE_AT_TIME",None),
                 )
         else:
             handler = logging.FileHandler(filename, encoding=encoding)

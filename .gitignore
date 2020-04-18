@@ -18,3 +18,7 @@ htmlcov/
 
 # Windows
 Thumbs.db
+
+#vscode temporary files
+.vscode
+
