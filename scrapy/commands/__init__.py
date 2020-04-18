@@ -3,7 +3,6 @@ Base class for Scrapy commands
 """
 import os
 from optparse import OptionGroup
-
 from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict
