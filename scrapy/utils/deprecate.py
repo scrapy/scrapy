@@ -7,9 +7,12 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
-    warnings.warn("%s.%s attribute is deprecated and will be no longer supported "
-        "in Scrapy %s, use %s.%s attribute instead" % \
-        (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
+    warnings.warn(
+        "%s.%s attribute is deprecated and will be no longer supported "
+        "in Scrapy %s, use %s.%s attribute instead"
+        % (cname, oldattr, version, cname, newattr),
+        ScrapyDeprecationWarning,
+        stacklevel=3)
 
 
 def create_deprecated_class(name, new_class, clsdict=None,
@@ -17,10 +20,10 @@ def create_deprecated_class(name, new_class, clsdict=None,
                             warn_once=True,
                             old_class_path=None,
                             new_class_path=None,
-                            subclass_warn_message="{cls} inherits from "\
-                                    "deprecated class {old}, please inherit "\
+                            subclass_warn_message="{cls} inherits from "
+                                    "deprecated class {old}, please inherit "
                                     "from {new}.",
-                            instance_warn_message="{cls} is deprecated, "\
+                            instance_warn_message="{cls} is deprecated, "
                                     "instantiate {new} instead."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.

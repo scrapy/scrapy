@@ -26,9 +26,7 @@ do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
-Python `import search path`_.
-
-.. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
+Python :ref:`import search path <tut-searchpath>`.
 
 .. _populating-settings:
 
@@ -899,10 +897,9 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
-placeholders.
-
-.. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
+String for formatting log messages. Refer to the
+:ref:`Python logging documentation <logrecord-attributes>` for the qwhole
+list of available placeholders.
 
 .. setting:: LOG_DATEFORMAT
 
@@ -912,10 +909,9 @@ LOG_DATEFORMAT
 Default: ``'%Y-%m-%d %H:%M:%S'``
 
 String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
-directives.
-
-.. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+in :setting:`LOG_FORMAT`. Refer to the
+:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
+whole list of available directives.
 
 .. setting:: LOG_FORMATTER
 
@@ -1115,17 +1111,6 @@ The maximum limit for Twisted Reactor thread pool size. This is common
 multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
-
-.. setting:: REDIRECT_MAX_TIMES
-
-REDIRECT_MAX_TIMES
-------------------
-
-Default: ``20``
-
-Defines the maximum times a request can be redirected. After this maximum the
-request's response is returned as is. We used Firefox default value for the
-same task.
 
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
@@ -1421,17 +1406,6 @@ Default: ``True``
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
-
-.. setting:: TELNETCONSOLE_PORT
-
-TELNETCONSOLE_PORT
-------------------
-
-Default: ``[6023, 6073]``
-
-The port range to use for the telnet console. If set to ``None`` or ``0``, a
-dynamically assigned port is used. For more info see
-:ref:`topics-telnetconsole`.
 
 .. setting:: TEMPLATES_DIR
 
