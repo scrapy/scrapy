@@ -84,6 +84,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         result = yield self.pipeline.process_item(item, None)
         self.assertEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'uptodate')
 
         for p in patchers:
             p.stop()
@@ -105,6 +106,29 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         result = yield self.pipeline.process_item(item, None)
         self.assertNotEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'downloaded')
+
+        for p in patchers:
+            p.stop()
+
+    @defer.inlineCallbacks
+    def test_file_cached(self):
+        item_url = "http://example.com/file3.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
+            mock.patch.object(FSFilesStore, 'stat_file', return_value={
+                'checksum': 'abc',
+                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
+            mock.patch.object(FilesPipeline, 'get_media_requests',
+                              return_value=[_prepare_request_object(item_url, flags=['cached'])])
+        ]
+        for p in patchers:
+            p.start()
+
+        result = yield self.pipeline.process_item(item, None)
+        self.assertNotEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'cached')
 
         for p in patchers:
             p.stop()
@@ -403,10 +427,10 @@ def _create_item_with_files(*files):
     return item
 
 
-def _prepare_request_object(item_url):
+def _prepare_request_object(item_url, flags=None):
     return Request(
         item_url,
-        meta={'response': Response(item_url, status=200, body=b'data')})
+        meta={'response': Response(item_url, status=200, body=b'data', flags=flags)})
 
 
 if __name__ == "__main__":
