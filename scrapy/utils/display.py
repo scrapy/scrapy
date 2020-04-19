@@ -27,14 +27,12 @@ def _colorize(text, colorize=True):
     if sys.platform == "win32" and check(version()) >= check("10.0.14393"):
         try:
             import ctypes
-            from ctypes import FormatError
             kernel32 = ctypes.windll.kernel32
             handle = kernel32.GetStdHandle(-11)
             # set `ENABLE_VIRTUAL_TERMINAL_PROCESSING` flag
             if not kernel32.SetConsoleMode(handle, 7):
                 raise ValueError
         except ValueError:
-            sys.stderr.write(FormatError(kernel32.GetLastError()))
             return text
     if _color_support_info() == 256:
         format_alias = 'terminal256'
