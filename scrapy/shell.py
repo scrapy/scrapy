@@ -18,7 +18,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.item import is_item_like
+from scrapy.utils.item import is_item
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 
@@ -154,7 +154,7 @@ class Shell:
         return "\n".join("[s] %s" % l for l in b)
 
     def _is_relevant(self, value):
-        return isinstance(value, self.relevant_classes) or is_item_like(value)
+        return isinstance(value, self.relevant_classes) or is_item(value)
 
 
 def inspect_response(response, spider):

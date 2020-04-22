@@ -12,7 +12,7 @@ from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.defer import defer_result, defer_succeed, iter_errback, parallel
-from scrapy.utils.item import is_item_like
+from scrapy.utils.item import is_item
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
@@ -187,7 +187,7 @@ class Scraper:
         """
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
-        elif is_item_like(output):
+        elif is_item(output):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)

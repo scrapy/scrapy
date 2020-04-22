@@ -343,14 +343,16 @@ method for this purpose. For example::
     from copy import deepcopy
 
     from scrapy.item import BaseItem
+    from scrapy.utils.item import is_item, ItemAdapter
 
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (BaseItem, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
@@ -367,51 +369,7 @@ Can I use dataclasses as items?
 
 Support for :class:`dataclasses.dataclass` objects as items was added in version 2.1.
 This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
-
-Most of the examples in this documentation assume you are using either :class:`dict`
-or :class:`~scrapy.item.Item` objects, and access their values in a dictionary-like
-manner. However, ``dataclass`` objects expose their values through attributes instead,
-which means you might need to update your existing components
-(such as :ref:`item pipelines <topics-item-pipeline>`,
-:ref:`signal handlers <topics-signals>` handlers or
-:ref:`spider middlewares <topics-spider-middleware>`) to make them work correctly.
-
-For this purpose, Scrapy provides the class:`~scrapy.utils.item.ItemAdapter` class,
-which is also used internally to handle items without taking their underlying
-implementation into account.
-
-.. autoclass:: scrapy.utils.item.ItemAdapter
-
-This class provides the appropriate methods in order to make items
-of any base type capable of being accessed with a ``dict``-like API.
-
-.. invisible-code-block: python
-
-  import sys
-
-.. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
-
->>> from dataclasses import dataclass
->>> from scrapy.utils.item import ItemAdapter
->>> @dataclass
-... class InventoryItem:
-...     name: str
-...     price: int
-...
->>> item = InventoryItem(name="foo", price=10)
->>> adapter = ItemAdapter(item)
->>> adapter.item is item
-True
->>> adapter["name"]
-'foo'
->>> 'foo'
-'foo'
->>> adapter["name"] = "bar"
->>> adapter["price"] = 5
->>> item
-InventoryItem(name='bar', price=5)
-
-.. skip: end
+See :ref:`topics-items` for more information.
 
 
 .. _faq-specific-reactor:

@@ -102,24 +102,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
-        objects.
+        :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request`,
-          :class:`~scrapy.item.Item`,
-          :class:`dict` or :func:`dataclasses.dataclass` objects
+        :type result: an iterable of :class:`~scrapy.http.Request` objects and
+          :ref:`item object <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
-
-    .. note:: Please see :ref:`this FAQ entry <faq-dataclass-items>`
-              if you are using :func:`dataclasses.dataclass` objects as items
-
 
     .. method:: process_spider_exception(response, exception, spider)
 
@@ -127,8 +122,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request`, dict or
-        :class:`~scrapy.item.Item` objects.
+        iterable of :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_spider_exception` in the following

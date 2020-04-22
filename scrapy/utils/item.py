@@ -16,26 +16,45 @@ def _is_dataclass_instance(obj):
         return is_dataclass(obj) and not isinstance(obj, type)
 
 
-def is_item_like(obj):
-    """
-    Return True if *obj* is considered a Scrapy *item*, False otherwise.
-
-    An object is considered an *item* if it is:
-    - a scrapy.item.BaseItem or dict instance (or any subclass)
-    - a dataclass object
-    """
+def is_item(obj):
+    """Return ``True`` if *obj* is an instance of a :ref:`supported item type
+    <item-types>`; return ``False`` otherwise."""
     return isinstance(obj, (BaseItem, dict)) or _is_dataclass_instance(obj)
 
 
 class ItemAdapter(MutableMapping):
-    """
-    Wrapper class to interact with items. It provides a common interface for components
-    such as middlewares and pipelines to extract and set data without having to take
-    the item's implementation (scrapy.Item, dict, dataclass) into account.
+    """Wrapper class to interact with any :ref:`supported item type
+    <item-types>` using the same, :class:`dict`-like API.
+
+    .. invisible-code-block: python
+
+        import sys
+
+    .. skip: start if(sys.version_info < (3, 6), reason="python 3.6+ only")
+
+    >>> from dataclasses import dataclass
+    >>> from scrapy.utils.item import ItemAdapter
+    >>> @dataclass
+    ... class InventoryItem:
+    ...     name: str
+    ...     price: int
+    ...
+    >>> item = InventoryItem(name="foo", price=10)
+    >>> adapter = ItemAdapter(item)
+    >>> adapter.item is item
+    True
+    >>> adapter["name"]
+    'foo'
+    >>> adapter["name"] = "bar"
+    >>> adapter["price"] = 5
+    >>> item
+    InventoryItem(name='bar', price=5)
+
+    .. skip: end
     """
 
     def __init__(self, item):
-        if not is_item_like(item):
+        if not is_item(item):
             raise TypeError("Expected a valid item, got %r instead: %s" % (type(item), item))
         self.item = item
 
