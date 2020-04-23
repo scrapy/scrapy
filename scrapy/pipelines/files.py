@@ -106,7 +106,8 @@ class S3FilesStore:
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        assert uri.startswith('s3://')
+        if not uri.startswith("s3://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -266,7 +267,8 @@ class FTPFilesStore:
     USE_ACTIVE_MODE = None
 
     def __init__(self, uri):
-        assert uri.startswith('ftp://')
+        if not uri.startswith("ftp://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
