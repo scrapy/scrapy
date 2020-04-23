@@ -13,10 +13,9 @@ from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 class CookiesMiddlewareTest(TestCase):
 
     def assertCookieValEqual(self, first, second, msg=None):
-        cookievaleq = lambda cv: re.split(r';\s*', cv.decode('latin1'))
-        return self.assertEqual(
-            sorted(cookievaleq(first)),
-            sorted(cookievaleq(second)), msg)
+        def split_cookies(cookies):
+            return sorted(re.split(r";\s*", cookies.decode("latin1")))
+        return self.assertEqual(split_cookies(first), split_cookies(second), msg=msg)
 
     def setUp(self):
         self.spider = Spider('foo')

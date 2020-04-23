@@ -45,8 +45,14 @@ IGNORED_EXTENSIONS = [
 
 
 _re_type = type(re.compile("", 0))
-_matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
+
+
+def _matches(url, regexs):
+    return any(r.search(url) for r in regexs)
+
+
+def _is_valid_url(url):
+    return url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
 class FilteringLinkExtractor:
