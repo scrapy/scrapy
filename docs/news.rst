@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.1.0:
 
-Scrapy 2.1.0 (2020-04-??)
+Scrapy 2.1.0 (2020-04-24)
 -------------------------
 
 Highlights:
@@ -16,7 +16,15 @@ Highlights:
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*   …
+*   :exc:`AssertionError` exceptions triggered by :ref:`assert <assert>`
+    statements have been replaced by new exception types, to support running
+    Python in optimized mode (see :option:`-O`) without changing Scrapy’s
+    behavior in any unexpected ways.
+
+    If you catch an :exc:`AssertionError` exception from Scrapy, update your
+    code to catch the corresponding new exception.
+
+    (:issue:`4440`)
 
 
 Deprecation removals
