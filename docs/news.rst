@@ -47,21 +47,22 @@ Deprecations
 ~~~~~~~~~~~~
 
 *   The ``FEED_FORMAT`` and ``FEED_URI`` settings have been deprecated in
-    favor of the new :setting:`FEEDS` setting (:issue:`1336`, :issue:`3858`)
+    favor of the new :setting:`FEEDS` setting (:issue:`1336`, :issue:`3858`,
+    :issue:`4507`)
 
 
 New features
 ~~~~~~~~~~~~
 
 *   A new setting, :setting:`FEEDS`, allows configuring multiple output feeds
-    with different settings each (:issue:`1336`, :issue:`3858`)
+    with different settings each (:issue:`1336`, :issue:`3858`, :issue:`4507`)
 
 *   The :command:`crawl` and :command:`runspider` commands now support multiple
-    ``-o`` parameters (:issue:`1336`, :issue:`3858`)
+    ``-o`` parameters (:issue:`1336`, :issue:`3858`, :issue:`4507`)
 
 *   The :command:`crawl` and :command:`runspider` commands now support
     specifying an output format by appending ``:<format>`` to the output file
-    (:issue:`1336`, :issue:`3858`)
+    (:issue:`1336`, :issue:`3858`, :issue:`4507`)
 
 *   The new :attr:`Response.ip_address <scrapy.http.Response.ip_address>`
     attribute gives access to the IP address that originated a response
@@ -78,6 +79,10 @@ New features
 Bug fixes
 ~~~~~~~~~
 
+*   :ref:`Request serialization <request-serialization>` no longer breaks for
+    callbacks that are spider attributes which are assigned a function with a
+    different name (:issue:`4500`)
+
 *   ``None`` values in :attr:`~scrapy.spiders.Spider.allowed_domains` no longer
     cause a :exc:`TypeError` exception (:issue:`4410`)
 
@@ -93,6 +98,10 @@ Bug fixes
 
 Documentation
 ~~~~~~~~~~~~~
+
+*   Improved the documentation about signals that allow their handlers to
+    return a :class:`~twisted.internet.defer.Deferred` (:issue:`4295`,
+    :issue:`4390`)
 
 *   Our PyPI entry now includes links for our documentation, our source code
     repository and our issue tracker (:issue:`4456`)
