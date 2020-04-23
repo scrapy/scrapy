@@ -33,7 +33,7 @@ Deprecation removals
     :class:`scrapy.downloadermiddlewares.chunked` module; chunked transfers
     work out of the box (:issue:`4431`)
 
-*   The ``spiders`` property has ben removed from
+*   The ``spiders`` property has been removed from
     :class:`~scrapy.crawler.Crawler`, use :class:`CrawlerRunner.spider_loader
     <scrapy.crawler.CrawlerRunner.spider_loader>` or instantiate
     :setting:`SPIDER_LOADER_CLASS` with your settings instead (:issue:`4398`)
