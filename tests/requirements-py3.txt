@@ -1,0 +1,16 @@
+# Tests requirements
+jmespath
+mitmproxy; python_version >= '3.6'
+mitmproxy<4.0.0; python_version < '3.6'
+pytest < 5.4
+pytest-cov
+pytest-twisted >= 1.11
+pytest-xdist
+sybil
+testfixtures
+
+# optional for shell wrapper tests
+bpython
+brotlipy
+ipython
+pywin32; sys_platform == "win32"

@@ -1,3 +1,5 @@
+/.vagrant
+/scrapy.iml
 *.pyc
 _trial_temp*
 dropin.cache
@@ -8,3 +10,11 @@ venv
 build
 dist
 .idea
+htmlcov/
+.coverage
+.pytest_cache/
+.coverage.*
+.cache/
+
+# Windows
+Thumbs.db

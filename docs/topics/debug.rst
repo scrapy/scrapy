@@ -5,7 +5,7 @@ Debugging Spiders
 =================
 
 This document explains the most common techniques for debugging spiders.
-Consider the following scrapy spider below::
+Consider the following Scrapy spider below::
 
     import scrapy
     from myproject.items import MyItem
@@ -18,24 +18,25 @@ Consider the following scrapy spider below::
             )
 
         def parse(self, response):
-            # collect `item_urls`
+            # <processing code not shown>
+            # collect `item_urls` 
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
         def parse_item(self, response):
+            # <processing code not shown>
             item = MyItem()
             # populate `item` fields
             # and extract item_details_url
-            yield scrapy.Request(item_details_url, self.parse_details, meta={'item': item})
+            yield scrapy.Request(item_details_url, self.parse_details, cb_kwargs={'item': item})
 
-        def parse_details(self, response):
-            item = response.meta['item']
+        def parse_details(self, response, item):
             # populate more `item` fields
             return item
 
 Basically this is a simple spider which parses two pages of items (the
 start_urls). Items also have a details page with additional information, so we
-use the ``meta`` functionality of :class:`~scrapy.http.Request` to pass a
+use the ``cb_kwargs`` functionality of :class:`~scrapy.http.Request` to pass a
 partially populated item.
 
 
@@ -46,6 +47,10 @@ The most basic way of checking the output of your spider is to use the
 :command:`parse` command. It allows to check the behaviour of different parts
 of the spider at the method level. It has the advantage of being flexible and
 simple to use, but does not allow debugging code inside a method.
+
+.. highlight:: none
+
+.. skip: start
 
 In order to see the item scraped from a specific url::
 
@@ -84,6 +89,8 @@ using::
 
     $ scrapy parse --spider=myspider -d 3 'http://example.com/page1'
 
+.. skip: end
+
 
 Scrapy Shell
 ============
@@ -93,13 +100,14 @@ spider, it is of little help to check what happens inside a callback, besides
 showing the response received and the output. How to debug the situation when
 ``parse_details`` sometimes receives no item?
 
+.. highlight:: python
+
 Fortunately, the :command:`shell` is your bread and butter in this case (see
 :ref:`topics-shell-inspect-response`)::
 
     from scrapy.shell import inspect_response
 
-    def parse_details(self, response):
-        item = response.meta.get('item', None)
+    def parse_details(self, response, item=None):
         if item:
             # populate more `item` fields
             return item
@@ -132,17 +140,13 @@ Logging is another useful option for getting information about your spider run.
 Although not as convenient, it comes with the advantage that the logs will be
 available in all future runs should they be necessary again::
 
-    from scrapy import log
-
-    def parse_details(self, response):
-        item = response.meta.get('item', None)
+    def parse_details(self, response, item=None):
         if item:
             # populate more `item` fields
             return item
         else:
-            self.log('No item received for %s' % response.url,
-                level=log.WARNING)
+            self.logger.warning('No item received for %s', response.url)
 
 For more information, check the :ref:`topics-logging` section.
 
-.. _base tag: http://www.w3schools.com/tags/tag_base.asp
+.. _base tag: https://www.w3schools.com/tags/tag_base.asp

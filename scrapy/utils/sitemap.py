@@ -4,10 +4,13 @@ Module for processing Sitemaps.
 Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
+
+from urllib.parse import urljoin
+
 import lxml.etree
 
 
-class Sitemap(object):
+class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
@@ -34,10 +37,11 @@ class Sitemap(object):
                 yield d
 
 
-def sitemap_urls_from_robots(robots_text):
+def sitemap_urls_from_robots(robots_text, base_url=None):
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
     for line in robots_text.splitlines():
-        if line.lstrip().startswith('Sitemap:'):
-            yield line.split(':', 1)[1].strip()
+        if line.lstrip().lower().startswith('sitemap:'):
+            url = line.split(':', 1)[1].strip()
+            yield urljoin(base_url, url)

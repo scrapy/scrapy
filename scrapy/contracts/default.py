@@ -1,8 +1,10 @@
+import json
+
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
 
-from . import Contract
+from scrapy.contracts import Contract
 
 
 # contracts
@@ -15,6 +17,20 @@ class UrlContract(Contract):
 
     def adjust_request_args(self, args):
         args['url'] = self.args[0]
+        return args
+
+
+class CallbackKeywordArgumentsContract(Contract):
+    """ Contract to set the keyword arguments for the request.
+        The value should be a JSON-encoded dictionary, e.g.:
+
+        @cb_kwargs {"arg1": "some value"}
+    """
+
+    name = 'cb_kwargs'
+
+    def adjust_request_args(self, args):
+        args['cb_kwargs'] = json.loads(' '.join(self.args))
         return args
 
 
@@ -35,14 +51,18 @@ class ReturnsContract(Contract):
     objects = {
         'request': Request,
         'requests': Request,
-        'item': BaseItem,
-        'items': BaseItem,
+        'item': (BaseItem, dict),
+        'items': (BaseItem, dict),
     }
 
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
+        if len(self.args) not in [1, 2, 3]:
+            raise ValueError(
+                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
+                % len(self.args)
+            )
         self.obj_name = self.args[0] or None
         self.obj_type = self.objects[self.obj_name]
 
@@ -70,8 +90,8 @@ class ReturnsContract(Contract):
             else:
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
-            raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+            raise ContractFail("Returned %s %s, expected %s" %
+                               (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):
@@ -83,7 +103,8 @@ class ScrapesContract(Contract):
 
     def post_process(self, output):
         for x in output:
-            if isinstance(x, BaseItem):
-                for arg in self.args:
-                    if not arg in x:
-                        raise ContractFail("'%s' field is missing" % arg)
+            if isinstance(x, (BaseItem, dict)):
+                missing = [arg for arg in self.args if arg not in x]
+                if missing:
+                    raise ContractFail(
+                        "Missing fields: %s" % ", ".join(missing))

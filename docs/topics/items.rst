@@ -8,14 +8,21 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. Scrapy provides the :class:`Item` class for this
-purpose.
+sources, typically, web pages. Scrapy spiders can return the extracted data
+as Python dicts. While convenient and familiar, Python dicts lack structure:
+it is easy to make a typo in a field name or return inconsistent data,
+especially in a larger project with many spiders.
 
+To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
-They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields.
+They provide an API similar to :class:`dict` API with a convenient syntax
+for declaring their available fields.
 
-.. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
+Various Scrapy components use extra information provided by Items:
+exporters look at declared fields to figure out columns to export,
+serialization can be customized using Item fields metadata, :mod:`trackref`
+tracks Item instances to help find memory leaks
+(see :ref:`topics-leaks-trackrefs`), etc.
 
 .. _topics-items-declaring:
 
@@ -31,14 +38,15 @@ objects. Here is an example::
         name = scrapy.Field()
         price = scrapy.Field()
         stock = scrapy.Field()
+        tags = scrapy.Field()
         last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
    declared similar to `Django Models`_, except that Scrapy Items are much
    simpler as there is no concept of different field types.
 
-.. _Django: http://www.djangoproject.com/
-.. _Django Models: http://docs.djangoproject.com/en/dev/topics/db/models/
+.. _Django: https://www.djangoproject.com/
+.. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
 
 .. _topics-items-fields:
 
@@ -52,7 +60,7 @@ the example above.
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
 reason, there is no reference list of all available metadata keys. Each key
-defined in :class:`Field` objects could be used by a different components, and
+defined in :class:`Field` objects could be used by a different component, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
 :class:`Field` objects is to provide a way to define all field metadata in one
@@ -64,117 +72,134 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
-And that's all you need to know about declaring items.
-
 Working with Items
 ==================
 
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
-notice the API is very similar to the `dict API`_.
+notice the API is very similar to the :class:`dict` API.
 
 Creating items
 --------------
 
-::
+>>> product = Product(name='Desktop PC', price=1000)
+>>> print(product)
+Product(name='Desktop PC', price=1000)
 
-    >>> product = Product(name='Desktop PC', price=1000)
-    >>> print product
-    Product(name='Desktop PC', price=1000)
 
 Getting field values
 --------------------
 
-::
+>>> product['name']
+Desktop PC
+>>> product.get('name')
+Desktop PC
 
-    >>> product['name']
-    Desktop PC
-    >>> product.get('name')
-    Desktop PC
+>>> product['price']
+1000
 
-    >>> product['price']
-    1000
+>>> product['last_updated']
+Traceback (most recent call last):
+    ...
+KeyError: 'last_updated'
 
-    >>> product['last_updated']
-    Traceback (most recent call last):
-        ...
-    KeyError: 'last_updated'
+>>> product.get('last_updated', 'not set')
+not set
 
-    >>> product.get('last_updated', 'not set')
-    not set
+>>> product['lala'] # getting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'lala'
 
-    >>> product['lala'] # getting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'lala'
+>>> product.get('lala', 'unknown field')
+'unknown field'
 
-    >>> product.get('lala', 'unknown field')
-    'unknown field'
+>>> 'name' in product  # is name field populated?
+True
 
-    >>> 'name' in product  # is name field populated?
-    True
+>>> 'last_updated' in product  # is last_updated populated?
+False
 
-    >>> 'last_updated' in product  # is last_updated populated?
-    False
+>>> 'last_updated' in product.fields  # is last_updated a declared field?
+True
 
-    >>> 'last_updated' in product.fields  # is last_updated a declared field?
-    True
+>>> 'lala' in product.fields  # is lala a declared field?
+False
 
-    >>> 'lala' in product.fields  # is lala a declared field?
-    False
 
 Setting field values
 --------------------
 
-::
+>>> product['last_updated'] = 'today'
+>>> product['last_updated']
+today
 
-    >>> product['last_updated'] = 'today'
-    >>> product['last_updated']
-    today
+>>> product['lala'] = 'test' # setting unknown field
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
 
-    >>> product['lala'] = 'test' # setting unknown field
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
 
 Accessing all populated values
 ------------------------------
 
-To access all populated values, just use the typical `dict API`_::
+To access all populated values, just use the typical :class:`dict` API:
 
-    >>> product.keys()
-    ['price', 'name']
+>>> product.keys()
+['price', 'name']
 
-    >>> product.items()
-    [('price', 1000), ('name', 'Desktop PC')]
+>>> product.items()
+[('price', 1000), ('name', 'Desktop PC')]
+
+
+.. _copying-items:
+
+Copying items
+-------------
+
+To copy an item, you must first decide whether you want a shallow copy or a
+deep copy.
+
+If your item contains :term:`mutable` values like lists or dictionaries,
+a shallow copy will keep references to the same mutable values across all
+different copies.
+
+For example, if you have an item with a list of tags, and you create a shallow
+copy of that item, both the original item and the copy have the same list of
+tags. Adding a tag to the list of one of the items will add the tag to the
+other item as well.
+
+If that is not the desired behavior, use a deep copy instead.
+
+See :mod:`copy` for more information.
+
+To create a shallow copy of an item, you can either call
+:meth:`~scrapy.item.Item.copy` on an existing item
+(``product2 = product.copy()``) or instantiate your item class from an existing
+item (``product2 = Product(product)``).
+
+To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+(``product2 = product.deepcopy()``).
+
 
 Other common tasks
 ------------------
 
-Copying items::
+Creating dicts from items:
 
-    >>> product2 = Product(product)
-    >>> print product2
-    Product(name='Desktop PC', price=1000)
+>>> dict(product) # create a dict from all populated values
+{'price': 1000, 'name': 'Desktop PC'}
 
-    >>> product3 = product2.copy()
-    >>> print product3
-    Product(name='Desktop PC', price=1000)
+Creating items from dicts:
 
-Creating dicts from items::
+>>> Product({'name': 'Laptop PC', 'price': 1500})
+Product(price=1500, name='Laptop PC')
 
-    >>> dict(product) # create a dict from all populated values
-    {'price': 1000, 'name': 'Desktop PC'}
+>>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
+Traceback (most recent call last):
+    ...
+KeyError: 'Product does not support field: lala'
 
-Creating items from dicts::
-
-    >>> Product({'name': 'Laptop PC', 'price': 1500})
-    Product(price=1500, name='Laptop PC')
-
-    >>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-    Traceback (most recent call last):
-        ...
-    KeyError: 'Product does not support field: lala'
 
 Extending Items
 ===============
@@ -204,8 +229,12 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    Items replicate the standard :class:`dict` API, including its ``__init__``
+    method, and also provide the following additional API members:
+
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
 
     .. attribute:: fields
 
@@ -214,19 +243,20 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: http://docs.python.org/library/stdtypes.html#dict
-
 Field objects
 =============
 
 .. class:: Field([arg])
 
-    The :class:`Field` class is just an alias to the built-in `dict`_ class and
+    The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
     :class:`Field` objects are plain-old Python dicts. A separate class is used
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
 
-.. _dict: http://docs.python.org/library/stdtypes.html#dict
+Other classes related to Item
+=============================
 
+.. autoclass:: BaseItem
 
+.. autoclass:: ItemMeta

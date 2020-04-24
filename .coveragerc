@@ -1,3 +1,5 @@
 [run]
+branch = true
 include = scrapy/*
-omit = scrapy/xlib*,scrapy/tests*
+omit =
+  tests/*

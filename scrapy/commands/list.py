@@ -1,5 +1,5 @@
-from __future__ import print_function
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
+
 
 class Command(ScrapyCommand):
 
@@ -10,6 +10,5 @@ class Command(ScrapyCommand):
         return "List available spiders"
 
     def run(self, args, opts):
-        crawler = self.crawler_process.create_crawler()
-        for s in sorted(crawler.spiders.list()):
+        for s in sorted(self.crawler_process.spider_loader.list()):
             print(s)

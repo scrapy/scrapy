@@ -1,7 +1,9 @@
-import sys, os
+import sys
+import os
 
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+
 
 class Command(ScrapyCommand):
 
@@ -15,7 +17,8 @@ class Command(ScrapyCommand):
         return "Edit spider"
 
     def long_desc(self):
-        return "Edit a spider using the editor defined in EDITOR setting"
+        return ("Edit a spider using the editor defined in the EDITOR environment"
+                " variable or else the EDITOR setting")
 
     def _err(self, msg):
         sys.stderr.write(msg + os.linesep)
@@ -25,13 +28,12 @@ class Command(ScrapyCommand):
         if len(args) != 1:
             raise UsageError()
 
-        crawler = self.crawler_process.create_crawler()
-        editor = crawler.settings['EDITOR']
+        editor = self.settings['EDITOR']
         try:
-            spider = crawler.spiders.create(args[0])
+            spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
             return self._err("Spider not found: %s" % args[0])
 
-        sfile = sys.modules[spider.__module__].__file__
+        sfile = sys.modules[spidercls.__module__].__file__
         sfile = sfile.replace('.pyc', '.py')
         self.exitcode = os.system('%s "%s"' % (editor, sfile))

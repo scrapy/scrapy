@@ -4,14 +4,30 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
+from abc import ABCMeta
+from collections.abc import MutableMapping
+from copy import deepcopy
 from pprint import pformat
-from UserDict import DictMixin
+from warnings import warn
 
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
 
 class BaseItem(object_ref):
-    """Base class for all scraped items."""
+    """Base class for all scraped items.
+
+    In Scrapy, an object is considered an *item* if it is an instance of either
+    :class:`BaseItem` or :class:`dict`. For example, when the output of a
+    spider callback is evaluated, only instances of :class:`BaseItem` or
+    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
+
+    If you need instances of a custom class to be considered items by Scrapy,
+    you must inherit from either :class:`BaseItem` or :class:`dict`.
+
+    Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
+    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    """
     pass
 
 
@@ -19,31 +35,48 @@ class Field(dict):
     """Container of field metadata"""
 
 
-class ItemMeta(type):
+class ItemMeta(ABCMeta):
+    """Metaclass_ of :class:`Item` that handles field definitions.
+
+    .. _metaclass: https://realpython.com/python-metaclasses
+    """
 
     def __new__(mcs, class_name, bases, attrs):
-        fields = {}
+        classcell = attrs.pop('__classcell__', None)
+        new_bases = tuple(base._class for base in bases if hasattr(base, '_class'))
+        _class = super(ItemMeta, mcs).__new__(mcs, 'x_' + class_name, new_bases, attrs)
+
+        fields = getattr(_class, 'fields', {})
         new_attrs = {}
-        for n, v in attrs.iteritems():
+        for n in dir(_class):
+            v = getattr(_class, n)
             if isinstance(v, Field):
                 fields[n] = v
-            else:
-                new_attrs[n] = v
+            elif n in attrs:
+                new_attrs[n] = attrs[n]
 
-        cls = super(ItemMeta, mcs).__new__(mcs, class_name, bases, new_attrs)
-        cls.fields = cls.fields.copy()
-        cls.fields.update(fields)
-        return cls
+        new_attrs['fields'] = fields
+        new_attrs['_class'] = _class
+        if classcell is not None:
+            new_attrs['__classcell__'] = classcell
+        return super(ItemMeta, mcs).__new__(mcs, class_name, bases, new_attrs)
 
 
-class DictItem(DictMixin, BaseItem):
+class DictItem(MutableMapping, BaseItem):
 
     fields = {}
+
+    def __new__(cls, *args, **kwargs):
+        if issubclass(cls, DictItem) and not issubclass(cls, Item):
+            warn('scrapy.item.DictItem is deprecated, please use '
+                 'scrapy.item.Item instead',
+                 ScrapyDeprecationWarning, stacklevel=2)
+        return super(DictItem, cls).__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         self._values = {}
         if args or kwargs:  # avoid creating dict for most common case
-            for k, v in dict(*args, **kwargs).iteritems():
+            for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
     def __getitem__(self, key):
@@ -70,6 +103,14 @@ class DictItem(DictMixin, BaseItem):
                 (name, value))
         super(DictItem, self).__setattr__(name, value)
 
+    def __len__(self):
+        return len(self._values)
+
+    def __iter__(self):
+        return iter(self._values)
+
+    __hash__ = BaseItem.__hash__
+
     def keys(self):
         return self._values.keys()
 
@@ -79,7 +120,11 @@ class DictItem(DictMixin, BaseItem):
     def copy(self):
         return self.__class__(self)
 
+    def deepcopy(self):
+        """Return a :func:`~copy.deepcopy` of this item.
+        """
+        return deepcopy(self)
 
-class Item(DictItem):
 
-    __metaclass__ = ItemMeta
+class Item(DictItem, metaclass=ItemMeta):
+    pass
