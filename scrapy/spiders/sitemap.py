@@ -48,6 +48,13 @@ class SitemapSpider(Spider):
                 logger.warning("Ignoring invalid sitemap: %(response)s",
                                {'response': response}, extra={'spider': self})
                 return
+            if response.url.endswith('.txt'):
+                for loc in iterloc_text_sitemap(response.text):
+                    for r, c in self._cbs:
+                        if r.search(loc):
+                            yield Request(loc, callback=c)
+                            break
+                return
 
             s = Sitemap(body)
             it = self.sitemap_filter(s)
@@ -73,14 +80,16 @@ class SitemapSpider(Spider):
             return gunzip(response.body)
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
-        # and have a response for .xml.gz,
+        # and have a response for .xml.gz or .txt.gz,
         # it usually means that it was already gunzipped
         # by HttpCompression middleware,
         # the HTTP response being sent with "Content-Encoding: gzip"
-        # without actually being a .xml.gz file in the first place,
-        # merely XML gzip-compressed on the fly,
-        # in other word, here, we have plain XML
+        # without actually being a .gz file in the first place,
+        # merely gzip-compressed on the fly,
+        # in other word, here, we have plain XML or text
         elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+            return response.body
+        elif response.url.endswith('.txt') or response.url.endswith('.txt.gz'):
             return response.body
 
 
@@ -98,3 +107,8 @@ def iterloc(it, alt=False):
         if alt and 'alternate' in d:
             for l in d['alternate']:
                 yield l
+
+
+def iterloc_text_sitemap(text):
+    for l in text.splitlines():
+        yield l
