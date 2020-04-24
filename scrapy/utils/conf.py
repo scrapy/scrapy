@@ -124,7 +124,8 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output, output_format=None):
+def feed_process_params_from_cli(settings, output, output_format=None,
+                                 overwrite_output=None):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
@@ -140,6 +141,13 @@ def feed_process_params_from_cli(settings, output, output_format=None):
                              " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
                              " or as a file extension, from the supported list %s" %
                              (output_format, tuple(valid_output_formats)))
+
+    overwrite = False
+    if overwrite_output:
+        if output:
+            raise UsageError("Please use only one of --output and --overwrite-output")
+        output = overwrite_output
+        overwrite = True
 
     if output_format:
         if len(output) == 1:
@@ -165,6 +173,8 @@ def feed_process_params_from_cli(settings, output, output_format=None):
                 feed_uri = 'stdout:'
         check_valid_format(feed_format)
         result[feed_uri] = {'format': feed_format}
+        if overwrite:
+            result[feed_uri]['overwrite'] = True
 
     # FEEDS setting should take precedence over the -o and -t CLI options
     result.update(settings.getdict('FEEDS'))

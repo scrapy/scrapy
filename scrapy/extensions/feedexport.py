@@ -32,8 +32,9 @@ logger = logging.getLogger(__name__)
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri, settings):
-        """Initialize the storage with the parameters given in the URI"""
+    def __init__(uri, feed):
+        """Initialize the storage with the parameters given in the URI and the
+        feed-specific settings (see :setting:`FEEDS`)"""
 
     def open(spider):
         """Open the storage for the given spider. It must return a file-like
@@ -63,10 +64,14 @@ class BlockingFeedStorage:
 @implementer(IFeedStorage)
 class StdoutFeedStorage:
 
-    def __init__(self, uri, settings, _stdout=None):
+    def __init__(self, uri, feed, _stdout=None):
         if not _stdout:
             _stdout = sys.stdout.buffer
         self._stdout = _stdout
+        if feed.get('overwrite', False) is True:
+            logger.warning('Standard output (stdout) storage does not support '
+                           'overwritting. Set overwrite=False in your FEEDS '
+                           'setting to supress this warning.')
 
     def open(self, spider):
         return self._stdout
@@ -78,15 +83,15 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
 
-    def __init__(self, uri, settings):
+    def __init__(self, uri, feed):
         self.path = file_uri_to_path(uri)
-        self.overwrite = settings.getbool('FEED_OVERWRITE')
+        self.write_mode = 'wb' if feed.get('overwrite', False) else 'ab'
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
-        return open(self.path, 'wb' if self.overwrite else 'ab')
+        return open(self.path, self.write_mode)
 
     def store(self, file):
         file.close()
@@ -94,11 +99,13 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, settings, access_key=None, secret_key=None, acl=None):
+    def __init__(self, uri, feed, access_key=None, secret_key=None, acl=None):
         # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
         if no_defaults:
+            from scrapy.utils.project import get_project_settings
+            settings = get_project_settings()
             if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
                 warnings.warn(
                     "Initialising `scrapy.extensions.feedexport.S3FeedStorage` "
@@ -126,15 +133,19 @@ class S3FeedStorage(BlockingFeedStorage):
         else:
             import boto
             self.connect_s3 = boto.connect_s3
+        if feed.get('overwrite', False) is False:
+            logger.warning('Amazon S3 does not support appending to files. '
+                           'Set overwrite=True in your FEEDS setting to '
+                           'supress this warning.')
 
     @classmethod
-    def from_crawler(cls, crawler, uri):
+    def from_crawler(cls, crawler, uri, feed):
         return cls(
-            uri=uri,
-            settings=crawler.settings,
+            uri,
+            feed,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
-            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None
+            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
         )
 
     def _store_in_thread(self, file):
@@ -155,28 +166,30 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class FTPFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, use_active_mode=False):
+    def __init__(self, uri, feed, use_active_mode=False):
         u = urlparse(uri)
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
-        self.password = unquote(u.password)
+        self.password = unquote(u.password or '')
         self.path = u.path
         self.use_active_mode = use_active_mode
+        self.overwrite = feed.get('overwrite', False)
 
     @classmethod
-    def from_crawler(cls, crawler, uri):
+    def from_crawler(cls, crawler, uri, feed):
         return cls(
-            uri=uri,
-            settings=crawler.settings,
-            use_active_mode=crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE')
+            uri,
+            feed,
+            crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE'),
         )
 
     def _store_in_thread(self, file):
         ftp_store_file(
             path=self.path, file=file, host=self.host,
             port=self.port, username=self.username,
-            password=self.password, use_active_mode=self.use_active_mode
+            password=self.password, use_active_mode=self.use_active_mode,
+            overwrite=self.overwrite,
         )
 
 
@@ -243,7 +256,7 @@ class FeedExporter:
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
         for uri, feed in self.feeds.items():
-            if not self._storage_supported(uri):
+            if not self._storage_supported(uri, feed):
                 raise NotConfigured
             if not self._exporter_supported(feed['format']):
                 raise NotConfigured
@@ -251,7 +264,7 @@ class FeedExporter:
     def open_spider(self, spider):
         for uri, feed in self.feeds.items():
             uri = uri % self._get_uri_params(spider, feed['uri_params'])
-            storage = self._get_storage(uri)
+            storage = self._get_storage(uri, feed)
             file = storage.open(spider)
             exporter = self._get_exporter(
                 file=file,
@@ -307,11 +320,11 @@ class FeedExporter:
             return True
         logger.error("Unknown feed format: %(format)s", {'format': format})
 
-    def _storage_supported(self, uri):
+    def _storage_supported(self, uri, feed):
         scheme = urlparse(uri).scheme
         if scheme in self.storages:
             try:
-                self._get_storage(uri)
+                self._get_storage(uri, feed)
                 return True
             except NotConfigured as e:
                 logger.error("Disabled feed storage scheme: %(scheme)s. "
@@ -329,8 +342,8 @@ class FeedExporter:
     def _get_exporter(self, file, format, *args, **kwargs):
         return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
-    def _get_storage(self, uri):
-        return self._get_instance(self.storages[urlparse(uri).scheme], uri, self.settings)
+    def _get_storage(self, uri, feed):
+        return self._get_instance(self.storages[urlparse(uri).scheme], uri, feed)
 
     def _get_uri_params(self, spider, uri_params):
         params = {}

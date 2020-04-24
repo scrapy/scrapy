@@ -55,13 +55,13 @@ class Command(ScrapyCommand):
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
-        if opts.overwrite_output:
-            if opts.output:
-                raise UsageError("Please use only one of --output and --overwrite-output")
-            opts.output = opts.overwrite_output
-            self.settings.overrides['FEED_OVERWRITE'] = True
-        if opts.output:
-            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
+        if opts.output or opts.overwrite_output:
+            feeds = feed_process_params_from_cli(
+                self.settings,
+                opts.output,
+                opts.output_format,
+                opts.overwrite_output,
+            )
             self.settings.set('FEEDS', feeds, priority='cmdline')
 
     def run(self, args, opts):

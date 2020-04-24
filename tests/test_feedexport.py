@@ -28,59 +28,54 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
 
-from tests.mockserver import MockServer
+from tests.mockserver import MockServer, MockFTPServer
 
 
 class FileFeedStorageTest(unittest.TestCase):
 
-    def setUp(self):
-        self.settings = Settings()
-
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri, self.settings), path)
+        return self._assert_stores(FileFeedStorage(uri, {}), path)
 
     def test_store_file_uri_makedirs(self):
         path = os.path.abspath(self.mktemp())
         path = os.path.join(path, 'more', 'paths', 'file.txt')
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri, self.settings), path)
+        return self._assert_stores(FileFeedStorage(uri, {}), path)
 
     def test_store_direct_path(self):
         path = os.path.abspath(self.mktemp())
-        return self._assert_stores(FileFeedStorage(path, self.settings), path)
+        return self._assert_stores(FileFeedStorage(path, {}), path)
 
     def test_store_direct_path_relative(self):
         path = self.mktemp()
-        return self._assert_stores(FileFeedStorage(path, self.settings), path)
+        return self._assert_stores(FileFeedStorage(path, {}), path)
 
     def test_interface(self):
         path = self.mktemp()
-        st = FileFeedStorage(path, self.settings)
+        st = FileFeedStorage(path, {})
         verifyObject(IFeedStorage, st)
 
-    def _store(self, path, settings):
-        storage = FileFeedStorage(path, settings)
+    def _store(self, feed=None):
+        path = os.path.abspath(self.mktemp())
+        storage = FileFeedStorage(path, feed or {})
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
         storage.store(file)
+        return path
 
     def test_append(self):
-        path = os.path.abspath(self.mktemp())
-        self._store(path, self.settings)
-        return self._assert_stores(FileFeedStorage(path, self.settings), path,
-                                   expected_read=b"contentcontent")
+        path = self._store()
+        return self._assert_stores(FileFeedStorage(path, {}), path, b"contentcontent")
 
     def test_overwrite(self):
-        path = os.path.abspath(self.mktemp())
-        settings = Settings({"FEED_OVERWRITE": True})
-        self._store(path, settings)
-        return self._assert_stores(FileFeedStorage(path, settings), path)
+        path = self._store({"overwrite": True})
+        return self._assert_stores(FileFeedStorage(path, {"overwrite": True}), path)
 
     @defer.inlineCallbacks
-    def _assert_stores(self, storage, path, expected_read=b"content"):
+    def _assert_stores(self, storage, path, expected_content=b"content"):
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
@@ -88,15 +83,12 @@ class FileFeedStorageTest(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
         try:
             with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), expected_read)
+                self.assertEqual(fp.read(), expected_content)
         finally:
             os.unlink(path)
 
 
 class FTPFeedStorageTest(unittest.TestCase):
-
-    def setUp(self):
-        self.settings = Settings()
 
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
@@ -105,49 +97,69 @@ class FTPFeedStorageTest(unittest.TestCase):
         spider = TestSpider.from_crawler(crawler)
         return spider
 
-    def test_store(self):
-        uri = os.environ.get('FEEDTEST_FTP_URI')
-        path = os.environ.get('FEEDTEST_FTP_PATH')
-        if not (uri and path):
-            raise unittest.SkipTest("No FTP server available for testing")
-        st = FTPFeedStorage(uri, self.settings)
-        verifyObject(IFeedStorage, st)
-        return self._assert_stores(st, path)
+    def _store(self, uri, content, feed=None, settings=None):
+        crawler = get_crawler(settings_dict=settings or {})
+        storage = FTPFeedStorage.from_crawler(crawler, uri, feed or {})
+        verifyObject(IFeedStorage, storage)
+        spider = self.get_test_spider()
+        file = storage.open(spider)
+        file.write(content)
+        return storage.store(file)
 
-    def test_store_active_mode(self):
-        uri = os.environ.get('FEEDTEST_FTP_URI')
-        path = os.environ.get('FEEDTEST_FTP_PATH')
-        if not (uri and path):
-            raise unittest.SkipTest("No FTP server available for testing")
-        use_active_mode = {'FEED_STORAGE_FTP_ACTIVE': True}
-        crawler = get_crawler(settings_dict=use_active_mode)
-        st = FTPFeedStorage.from_crawler(crawler, uri)
-        verifyObject(IFeedStorage, st)
-        return self._assert_stores(st, path)
+    def _assert_stored(self, path, content):
+        self.assertTrue(path.exists())
+        try:
+            with open(path, 'rb') as fp:
+                self.assertEqual(fp.read(), content)
+        finally:
+            os.unlink(path)
+
+    @defer.inlineCallbacks
+    def test_append(self):
+        with MockFTPServer() as ftp_server:
+            filename = 'file'
+            url = ftp_server.url(filename)
+            yield self._store(url, b"foo")
+            yield self._store(url, b"bar")
+            self._assert_stored(ftp_server.path / filename, b"foobar")
+
+    @defer.inlineCallbacks
+    def test_overwrite(self):
+        with MockFTPServer() as ftp_server:
+            filename = 'file'
+            url = ftp_server.url(filename)
+            feed = {'overwrite': True}
+            yield self._store(url, b"foo", feed=feed)
+            yield self._store(url, b"bar", feed=feed)
+            self._assert_stored(ftp_server.path / filename, b"bar")
+
+    @defer.inlineCallbacks
+    def test_append_active_mode(self):
+        with MockFTPServer() as ftp_server:
+            settings = {'FEED_STORAGE_FTP_ACTIVE': True}
+            filename = 'file'
+            url = ftp_server.url(filename)
+            yield self._store(url, b"foo", settings=settings)
+            yield self._store(url, b"bar", settings=settings)
+            self._assert_stored(ftp_server.path / filename, b"foobar")
+
+    @defer.inlineCallbacks
+    def test_overwrite_active_mode(self):
+        with MockFTPServer() as ftp_server:
+            settings = {'FEED_STORAGE_FTP_ACTIVE': True}
+            filename = 'file'
+            url = ftp_server.url(filename)
+            feed = {'overwrite': True}
+            yield self._store(url, b"foo", feed=feed, settings=settings)
+            yield self._store(url, b"bar", feed=feed, settings=settings)
+            self._assert_stored(ftp_server.path / filename, b"bar")
 
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe='')
         st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted,
-                            self.settings)
+                            {})
         self.assertEqual(st.password, string.punctuation)
-
-    @defer.inlineCallbacks
-    def _assert_stores(self, storage, path):
-        spider = self.get_test_spider()
-        file = storage.open(spider)
-        file.write(b"content")
-        yield storage.store(file)
-        self.assertTrue(os.path.exists(path))
-        try:
-            with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), b"content")
-            # again, to check s3 objects are overwritten
-            yield storage.store(BytesIO(b"new content"))
-            with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), b"new content")
-        finally:
-            os.unlink(path)
 
 
 class BlockingFeedStorageTest(unittest.TestCase):
@@ -187,9 +199,6 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
-    def setUp(self):
-        self.settings = Settings()
-
     @mock.patch('scrapy.utils.project.get_project_settings',
                 new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
                                                  'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
@@ -203,27 +212,30 @@ class S3FeedStorageTest(unittest.TestCase):
                            'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
-        storage = S3FeedStorage.from_crawler(crawler,
-                                             's3://mybucket/export.csv')
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv',
+            {},
+        )
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # Instantiate directly
         storage = S3FeedStorage('s3://mybucket/export.csv',
-                                self.settings,
+                                {},
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # URI priority > settings priority
         storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
-                                self.settings,
+                                {},
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'uri_key')
         self.assertEqual(storage.secret_key, 'uri_secret')
         # Backward compatibility for initialising without settings
         with warnings.catch_warnings(record=True) as w:
-            storage = S3FeedStorage('s3://mybucket/export.csv', self.settings)
+            storage = S3FeedStorage('s3://mybucket/export.csv', {})
             self.assertEqual(storage.access_key, 'conf_key')
             self.assertEqual(storage.secret_key, 'conf_secret')
             self.assertTrue('without AWS keys' in str(w[-1].message))
@@ -236,20 +248,20 @@ class S3FeedStorageTest(unittest.TestCase):
             raise unittest.SkipTest("No S3 URI available for testing")
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        storage = S3FeedStorage(uri, self.settings, access_key, secret_key)
+        storage = S3FeedStorage(uri, {}, access_key, secret_key)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         expected_content = b"content: \xe2\x98\x83"
         file.write(expected_content)
         yield storage.store(file)
-        u = urlparse(uri, self.settings)
+        u = urlparse(uri, {})
         content = get_s3_content_and_delete(u.hostname, u.path[1:])
         self.assertEqual(content, expected_content)
 
     def test_init_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key'
         )
@@ -260,7 +272,7 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_init_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -277,7 +289,8 @@ class S3FeedStorageTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings)
         storage = S3FeedStorage.from_crawler(
             crawler,
-            's3://mybucket/export.csv'
+            's3://mybucket/export.csv',
+            {},
         )
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
@@ -292,7 +305,8 @@ class S3FeedStorageTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings)
         storage = S3FeedStorage.from_crawler(
             crawler,
-            's3://mybucket/export.csv'
+            's3://mybucket/export.csv',
+            {},
         )
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
@@ -307,7 +321,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key',
         )
@@ -328,7 +342,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -348,7 +362,7 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_store_not_botocore_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key',
         )
@@ -374,7 +388,7 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_store_not_botocore_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            self.settings,
+            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -400,13 +414,10 @@ class S3FeedStorageTest(unittest.TestCase):
 
 class StdoutFeedStorageTest(unittest.TestCase):
 
-    def setUp(self):
-        self.settings = Settings()
-
     @defer.inlineCallbacks
     def test_store(self):
         out = BytesIO()
-        storage = StdoutFeedStorage('stdout:', self.settings, _stdout=out)
+        storage = StdoutFeedStorage('stdout:', {}, _stdout=out)
         file = storage.open(scrapy.Spider("default"))
         file.write(b"content")
         yield storage.store(file)

@@ -134,7 +134,6 @@ EXTENSIONS_BASE = {
 
 FEED_TEMPDIR = None
 FEEDS = {}
-FEED_OVERWRITE = False
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_STORE_EMPTY = False
 FEED_EXPORT_ENCODING = None

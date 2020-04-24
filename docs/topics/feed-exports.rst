@@ -271,6 +271,8 @@ as a fallback value if that key is not provided for a specific feed definition.
 * ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
+* ``overwrite``: whether to append to the file if it already exists (``False``,
+  default) or overwrite its content (``True``)
 
 .. setting:: FEED_EXPORT_ENCODING
 
