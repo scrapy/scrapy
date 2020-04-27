@@ -438,10 +438,10 @@ FEED_EXPORT_BATCH_SIZE
 Default: ``None``
 
 An integer number which represent number of scraped items stored in each output
-file. Whenever the number of items exceeds this setting, a new file
-creates and output redirects to it.  The name of the new file will be selected
+file. Whenever the number of items exceeds this setting, a new file is
+created and output redirects to it.  The name of the new file will be selected
 based on timestamp when the feed is being created and/or batch sequence number.
-Therefore you must specify %(time_id)s or %(batch_id)s or both in the file path.
+Therefore you must specify %(time_id)s or %(batch_id)s or both in FEED_URI.
 
 * ``%(time_id)s`` - gets replaced by a timestamp when the feed is being created
 * ``%(batch_id)s`` - gets replaced by sequence number of batch
