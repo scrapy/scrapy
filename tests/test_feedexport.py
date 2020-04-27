@@ -9,6 +9,7 @@ import warnings
 from io import BytesIO
 from pathlib import Path
 from string import ascii_letters, digits
+from testfixtures import LogCapture
 from unittest import mock
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
@@ -21,9 +22,17 @@ from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import NotConfigured
 from scrapy.exporters import CsvItemExporter
-from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
-                                          IFeedStorage, S3FeedStorage, StdoutFeedStorage)
+from scrapy.extensions.feedexport import (
+    BlockingFeedStorage,
+    FeedExporter,
+    FileFeedStorage,
+    FTPFeedStorage,
+    IFeedStorage,
+    S3FeedStorage,
+    StdoutFeedStorage,
+)
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
@@ -411,6 +420,28 @@ class S3FeedStorageTest(unittest.TestCase):
             key.set_contents_from_file.call_args
         )
 
+    def test_overwrite_default(self):
+        with LogCapture() as log:
+            S3FeedStorage(
+                's3://mybucket/export.csv',
+                {},
+                'access_key',
+                'secret_key',
+                'custom-acl'
+            )
+        self.assertNotIn('S3 does not support appending to files', str(log))
+
+    def test_overwrite_false(self):
+        with LogCapture() as log:
+            S3FeedStorage(
+                's3://mybucket/export.csv',
+                {'overwrite': False},
+                'access_key',
+                'secret_key',
+                'custom-acl'
+            )
+        self.assertIn('S3 does not support appending to files', str(log))
+
 
 class StdoutFeedStorageTest(unittest.TestCase):
 
@@ -422,6 +453,16 @@ class StdoutFeedStorageTest(unittest.TestCase):
         file.write(b"content")
         yield storage.store(file)
         self.assertEqual(out.getvalue(), b"content")
+
+    def test_overwrite_default(self):
+        with LogCapture() as log:
+            StdoutFeedStorage('stdout:', {}, _stdout=BytesIO())
+        self.assertNotIn('Standard output (stdout) storage does not support overwritting', str(log))
+
+    def test_overwrite_true(self):
+        with LogCapture() as log:
+            StdoutFeedStorage('stdout:', {'overwrite': True}, _stdout=BytesIO())
+        self.assertIn('Standard output (stdout) storage does not support overwritting', str(log))
 
 
 class FromCrawlerMixin:
@@ -1021,3 +1062,28 @@ class FeedExportTest(unittest.TestCase):
         }
         data = yield self.exported_no_data(settings)
         self.assertEqual(data['csv'], b'')
+
+
+class FeedExportInitTest(unittest.TestCase):
+
+    def test_unsupported_storage(self):
+        settings = {
+            'FEEDS': {
+                'unsupported://uri': {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with self.assertRaises(NotConfigured):
+            FeedExporter.from_crawler(crawler)
+
+    def test_unsupported_format(self):
+        settings = {
+            'FEEDS': {
+                'file://path': {
+                    'format': 'unsupported_format',
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with self.assertRaises(NotConfigured):
+            FeedExporter.from_crawler(crawler)

@@ -147,6 +147,15 @@ class FeedExportConfigTestCase(unittest.TestCase):
             feed_process_params_from_cli(settings, [], None, ['output.json'])
         )
 
+    def test_output_and_overwrite_output(self):
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(
+                Settings(),
+                ['output1.json'],
+                None,
+                ['output2.json'],
+            )
+
     def test_feed_complete_default_values_from_settings_empty(self):
         feed = {}
         settings = Settings({
