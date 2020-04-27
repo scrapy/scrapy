@@ -276,7 +276,7 @@ class MockFTPServer:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        rmtree(self.path)
+        rmtree(str(self.path))
         self.proc.kill()
         self.proc.communicate()
 
