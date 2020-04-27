@@ -109,10 +109,10 @@ class FTPFeedStorageTest(unittest.TestCase):
     def _assert_stored(self, path, content):
         self.assertTrue(path.exists())
         try:
-            with open(path, 'rb') as fp:
+            with path.open('rb') as fp:
                 self.assertEqual(fp.read(), content)
         finally:
-            os.unlink(path)
+            os.unlink(str(path))
 
     @defer.inlineCallbacks
     def test_overwrite(self):
@@ -121,7 +121,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             url = ftp_server.url(filename)
             yield self._store(url, b"foo")
             yield self._store(url, b"bar")
-            self._assert_stored(str(ftp_server.path / filename), b"foobar")
+            self._assert_stored(ftp_server.path / filename, b"foobar")
 
     @defer.inlineCallbacks
     def test_append(self):
@@ -131,7 +131,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             feed = {'overwrite': False}
             yield self._store(url, b"foo", feed=feed)
             yield self._store(url, b"bar", feed=feed)
-            self._assert_stored(str(ftp_server.path / filename), b"bar")
+            self._assert_stored(ftp_server.path / filename, b"bar")
 
     @defer.inlineCallbacks
     def test_overwrite_active_mode(self):
@@ -141,7 +141,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             url = ftp_server.url(filename)
             yield self._store(url, b"foo", settings=settings)
             yield self._store(url, b"bar", settings=settings)
-            self._assert_stored(str(ftp_server.path / filename), b"foobar")
+            self._assert_stored(ftp_server.path / filename, b"foobar")
 
     @defer.inlineCallbacks
     def test_append_active_mode(self):
@@ -152,7 +152,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             feed = {'overwrite': False}
             yield self._store(url, b"foo", feed=feed, settings=settings)
             yield self._store(url, b"bar", feed=feed, settings=settings)
-            self._assert_stored(str(ftp_server.path / filename), b"bar")
+            self._assert_stored(ftp_server.path / filename, b"bar")
 
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
