@@ -268,7 +268,7 @@ class MockFTPServer:
 
     def __enter__(self):
         self.path = Path(mkdtemp())
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', self.path],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
                           stderr=PIPE, env=get_testenv())
         for line in self.proc.stderr:
             if b'starting FTP server' in line:

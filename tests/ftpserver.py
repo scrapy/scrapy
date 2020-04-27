@@ -1,4 +1,3 @@
-import os
 from argparse import ArgumentParser
 
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -12,7 +11,8 @@ def main():
     args = parser.parse_args()
 
     authorizer = DummyAuthorizer()
-    authorizer.add_anonymous(args.directory, perm='elradfmwMT')
+    full_permissions = 'elradfmwMT'
+    authorizer.add_anonymous(args.directory, perm=full_permissions)
     handler = FTPHandler
     handler.authorizer = authorizer
     address = ('127.0.0.1', 2121)
