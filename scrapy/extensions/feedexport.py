@@ -175,7 +175,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.password = unquote(u.password or '')
         self.path = u.path
         self.use_active_mode = use_active_mode
-        self.overwrite = feed.get('overwrite', False)
+        self.overwrite = feed.get('overwrite', True)
 
     @classmethod
     def from_crawler(cls, crawler, uri, feed):
