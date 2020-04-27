@@ -255,7 +255,7 @@ class FeedExporter:
         for uri, feed in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed['uri_params'], None)
             self.slots.append(self._start_new_batch(
-                previous_batch_slot=None,
+                batch_id=1,
                 uri=uri % uri_params,
                 feed=feed,
                 spider=spider,
@@ -265,42 +265,38 @@ class FeedExporter:
     def close_spider(self, spider):
         deferred_list = []
         for slot in self.slots:
-            if not slot.itemcount and not slot.store_empty:
-                # We need to call slot.storage.store nonetheless to get the file
-                # properly closed.
-                return defer.maybeDeferred(slot.storage.store, slot.file)
-            slot.finish_exporting()
-            logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
-            log_args = {'format': slot.format,
-                        'itemcount': slot.itemcount,
-                        'uri': slot.uri}
-            d = defer.maybeDeferred(slot.storage.store, slot.file)
-            d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
-                                                extra={'spider': spider}))
-            d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                                exc_info=failure_to_exc_info(f),
-                                                extra={'spider': spider}))
+            d = self._close_slot(slot, spider)
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
-    def _start_new_batch(self, previous_batch_slot, uri, feed, spider, template_uri):
+    def _close_slot(self, slot, spider):
+        if not slot.itemcount and not slot.store_empty:
+            # We need to call slot.storage.store nonetheless to get the file
+            # properly closed.
+            return defer.maybeDeferred(slot.storage.store, slot.file)
+        slot.finish_exporting()
+        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
+        log_args = {'format': slot.format,
+                    'itemcount': slot.itemcount,
+                    'uri': slot.uri}
+        d = defer.maybeDeferred(slot.storage.store, slot.file)
+        d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
+                                            extra={'spider': spider}))
+        d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
+                                            exc_info=failure_to_exc_info(f),
+                                            extra={'spider': spider}))
+        return d
+
+    def _start_new_batch(self, batch_id, uri, feed, spider, template_uri):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if 'FEED_STORAGE_BATCH' setting is specified.
-        :param previous_batch_slot: slot of previous batch. We need to call slot.storage.store
-        to get the file properly closed.
+        :param batch_id: sequence number of current batch
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
         :param spider: user spider
         :param template_uri: template uri which contains %(time_id)s or %(batch_id)s to create new uri
         """
-        if previous_batch_slot is not None:
-            previous_batch_id = previous_batch_slot.batch_id
-            previous_batch_slot.exporter.finish_exporting()
-            previous_batch_slot.storage.store(previous_batch_slot.file)
-        else:
-            previous_batch_id = 0
-
         storage = self._get_storage(uri)
         file = storage.open(spider)
         exporter = self._get_exporter(
@@ -317,7 +313,7 @@ class FeedExporter:
             uri=uri,
             format=feed['format'],
             store_empty=feed['store_empty'],
-            batch_id=previous_batch_id + 1,
+            batch_id=batch_id,
             template_uri=template_uri,
         )
         if slot.store_empty:
@@ -330,10 +326,12 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            if self.storage_batch_size and slot.itemcount % self.storage_batch_size == 0:
+            # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_SIZE and close the old one
+            if self.storage_batch_size and slot.itemcount == self.storage_batch_size:
                 uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'], slot)
+                self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
-                    previous_batch_slot=slot,
+                    batch_id=slot.batch_id + 1,
                     uri=slot.template_uri % uri_params,
                     feed=self.feeds[slot.template_uri],
                     spider=spider,
