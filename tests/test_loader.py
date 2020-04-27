@@ -54,6 +54,10 @@ def processor_with_args(value, other=None, loader_context=None):
 
 class BasicItemLoaderTest(unittest.TestCase):
 
+    def test_add_value_on_unknown_field(self):
+        il = TestItemLoader()
+        self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
+
     def test_load_item_using_default_loader(self):
         i = TestItem()
         i['summary'] = u'lala'
@@ -381,10 +385,6 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value('url'), ['marta'])
         il.replace_value('url', u'text2')
         self.assertEqual(il.get_output_value('url'), ['marta'])
-
-    def test_add_value_on_unknown_field(self):
-        il = TestItemLoader()
-        self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
 
     def test_compose_processor(self):
         class TestItemLoader(NameItemLoader):
@@ -890,6 +890,7 @@ class SubselectorLoaderTest(unittest.TestCase):
 
     def test_nested_xpath(self):
         l = NestedItemLoader(response=self.response)
+
         nl = l.nested_xpath("//header")
         nl.add_xpath('name', 'div/text()')
         nl.add_css('name_div', '#id')
