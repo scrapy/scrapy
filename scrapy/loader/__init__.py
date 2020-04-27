@@ -19,23 +19,19 @@ class ItemLoader(itemloaders.ItemLoader):
         context.update(response=response)
         super().__init__(item=item, selector=selector, parent=parent, **context)
 
-    # def get_input_processor(self, field_name):
-    #     proc = getattr(self, '%s_in' % field_name, None)
-    #     if not proc:
-    #         proc = self._get_item_field_attr(field_name, 'input_processor',
-    #                                          self.default_input_processor)
-    #     return unbound_method(proc)
+    def get_default_input_processor_for_field(self, field_name):
+        proc = self._get_item_field_attr(field_name, 'input_processor')
+        if not proc:
+            proc = super().get_default_input_processor_for_field(field_name)
+        return proc
 
-    # def get_output_processor(self, field_name):
-    #     proc = getattr(self, '%s_out' % field_name, None)
-    #     if not proc:
-    #         proc = self._get_item_field_attr(field_name, 'output_processor',
-    #                                          self.default_output_processor)
-    #     return unbound_method(proc)
+    def get_default_output_processor_for_field(self, field_name):
+        proc = self._get_item_field_attr(field_name, 'output_processor')
+        if not proc:
+            proc = super().get_default_output_processor_for_field(field_name)
+        return proc
 
-    def _get_item_field_attr(self, field_name, key, default=None):
+    def _get_item_field_attr(self, field_name, key):
         if isinstance(self.item, Item):
-            value = self.item.fields[field_name].get(key, default)
-        else:
-            value = default
-        return value
+            return self.item.fields[field_name].get(key)
+        return None
