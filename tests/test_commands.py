@@ -331,7 +331,6 @@ class BadSpider(scrapy.Spider):
 
     def test_output(self):
         spider_code = """
-import json
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -354,16 +353,19 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
 
     def start_requests(self):
-        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
         return []
 """
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
-        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json', 'overwrite': True}}", log)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
 
     def test_output_and_overwrite_output(self):
         spider_code = """
-import json
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -400,7 +402,6 @@ class CrawlCommandTest(CommandTest):
 
     def test_output(self):
         spider_code = """
-import json
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -423,16 +424,19 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
 
     def start_requests(self):
-        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
         return []
 """
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
-        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json', 'overwrite': True}}", log)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
 
     def test_output_and_overwrite_output(self):
         spider_code = """
-import json
 import scrapy
 
 class MySpider(scrapy.Spider):
