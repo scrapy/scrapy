@@ -20,7 +20,7 @@ def ftp_makedirs_cwd(ftp, path, first_call=True):
 
 def ftp_store_file(
         *, path, file, host, port,
-        username, password, use_active_mode=False, overwrite=False):
+        username, password, use_active_mode=False, overwrite=True):
     """Opens a FTP connection with passed credentials,sets current directory
     to the directory extracted from given path, then uploads the file to server
     """

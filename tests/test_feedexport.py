@@ -28,7 +28,7 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
 
-from tests.mockserver import MockServer, MockFTPServer
+from tests.mockserver import MockFTPServer, MockServer
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -115,7 +115,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             os.unlink(path)
 
     @defer.inlineCallbacks
-    def test_append(self):
+    def test_overwrite(self):
         with MockFTPServer() as ftp_server:
             filename = 'file'
             url = ftp_server.url(filename)
@@ -124,17 +124,17 @@ class FTPFeedStorageTest(unittest.TestCase):
             self._assert_stored(str(ftp_server.path / filename), b"foobar")
 
     @defer.inlineCallbacks
-    def test_overwrite(self):
+    def test_append(self):
         with MockFTPServer() as ftp_server:
             filename = 'file'
             url = ftp_server.url(filename)
-            feed = {'overwrite': True}
+            feed = {'overwrite': False}
             yield self._store(url, b"foo", feed=feed)
             yield self._store(url, b"bar", feed=feed)
             self._assert_stored(str(ftp_server.path / filename), b"bar")
 
     @defer.inlineCallbacks
-    def test_append_active_mode(self):
+    def test_overwrite_active_mode(self):
         with MockFTPServer() as ftp_server:
             settings = {'FEED_STORAGE_FTP_ACTIVE': True}
             filename = 'file'
@@ -144,12 +144,12 @@ class FTPFeedStorageTest(unittest.TestCase):
             self._assert_stored(str(ftp_server.path / filename), b"foobar")
 
     @defer.inlineCallbacks
-    def test_overwrite_active_mode(self):
+    def test_append_active_mode(self):
         with MockFTPServer() as ftp_server:
             settings = {'FEED_STORAGE_FTP_ACTIVE': True}
             filename = 'file'
             url = ftp_server.url(filename)
-            feed = {'overwrite': True}
+            feed = {'overwrite': False}
             yield self._store(url, b"foo", feed=feed, settings=settings)
             yield self._store(url, b"bar", feed=feed, settings=settings)
             self._assert_stored(str(ftp_server.path / filename), b"bar")
