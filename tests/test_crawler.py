@@ -274,9 +274,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
             self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
 
 
-class CrawlerProcessSubprocess(unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
-
+class ScriptRunnerMixin:
     def run_script(self, script_name):
         script_path = os.path.join(self.script_dir, script_name)
         args = (sys.executable, script_path)
@@ -284,6 +282,10 @@ class CrawlerProcessSubprocess(unittest.TestCase):
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         return stderr.decode('utf-8')
+
+
+class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
 
     def test_simple(self):
         log = self.run_script('simple.py')
@@ -332,3 +334,14 @@ class CrawlerProcessSubprocess(unittest.TestCase):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+
+class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerRunner')
+
+    def test_response_ip_address(self):
+        log = self.run_script("ip_address.py")
+        self.assertIn("INFO: Spider closed (finished)", log)
+        self.assertIn("INFO: Host: not.a.real.domain", log)
+        self.assertIn("INFO: Type: <class 'ipaddress.IPv4Address'>", log)
+        self.assertIn("INFO: IP address: 127.0.0.1", log)

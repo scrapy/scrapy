@@ -9,7 +9,8 @@ from scrapy.utils.misc import load_object
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
-    assert len(portrange) <= 2, "invalid portrange: %s" % portrange
+    if len(portrange) > 2:
+        raise ValueError("invalid portrange: %s" % portrange)
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
     if not hasattr(portrange, '__iter__'):

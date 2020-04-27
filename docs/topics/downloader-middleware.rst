@@ -739,7 +739,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+   Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -750,9 +750,6 @@ HttpProxyMiddleware
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
-
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -1037,8 +1034,7 @@ Scrapy uses this parser by default.
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-Based on `RobotFileParser
-<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+Based on :class:`~urllib.robotparser.RobotFileParser`:
 
 * is Python's built-in robots.txt_ parser
 
