@@ -989,7 +989,7 @@ class FeedExportTest(FeedExportTestBase):
 
 class PartialDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = '_%(time)s_#%(batch_id)s_'
+    _file_mark = '_%(time_id)s_#%(batch_id)s_'
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -1146,7 +1146,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """ If path is without %(time)s or %(batch_id)s an exception must be raised """
+        """ If path is without %(time_id)s or %(batch_id)s an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
@@ -1236,7 +1236,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
     def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
-        So %(time)s replaced with the current date.
+        So %(time_id)s replaced with the current date.
         """
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
@@ -1245,7 +1245,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         ]
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), '%(time)s'): {
+                os.path.join(self._random_temp_filename(), '%(time_id)s'): {
                     'format': 'json',
                 },
             },
