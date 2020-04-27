@@ -7,10 +7,6 @@ Coroutines
 Scrapy has :ref:`partial support <coroutine-support>` for the
 :ref:`coroutine syntax <async>`.
 
-.. warning:: :mod:`asyncio` support in Scrapy is experimental. Future Scrapy
-             versions may introduce related API and behavior changes without a
-             deprecation period or warning.
-
 .. _coroutine-support:
 
 Supported callables
