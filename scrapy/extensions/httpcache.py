@@ -219,13 +219,18 @@ class DbmCacheStorage:
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
         self.db = None
-        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
         self.db = self.dbmodule.open(dbpath, 'c')
 
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
+
+        self._fingerprinter = spider.settings.getinstance(
+            'REQUEST_FINGERPRINTER',
+            crawler=spider.crawler,
+            singleton=True,
+        )
 
     def close_spider(self, spider):
         self.db.close()
@@ -243,7 +248,7 @@ class DbmCacheStorage:
         return response
 
     def store_response(self, spider, request, response):
-        key = self._fingerprinter(request)
+        key = self._fingerprinter.fingerprint(request)
         data = {
             'status': response.status,
             'url': response.url,
@@ -254,7 +259,7 @@ class DbmCacheStorage:
         self.db['%s_time' % key] = str(time())
 
     def _read_data(self, spider, request):
-        key = self._fingerprinter(request)
+        key = self._fingerprinter.fingerprint(request)
         db = self.db
         tkey = '%s_time' % key
         if tkey not in db:
@@ -274,11 +279,16 @@ class FilesystemCacheStorage:
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
         self._open = gzip.open if self.use_gzip else open
-        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def open_spider(self, spider):
         logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
                      extra={'spider': spider})
+
+        self._fingerprinter = spider.settings.getinstance(
+            'REQUEST_FINGERPRINTER',
+            crawler=spider.crawler,
+            singleton=True,
+        )
 
     def close_spider(self, spider):
         pass
@@ -326,7 +336,7 @@ class FilesystemCacheStorage:
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
-        key = self._fingerprinter(request)
+        key = self._fingerprinter.fingerprint(request)
         return os.path.join(self.cachedir, spider.name, key[0:2], key)
 
     def _read_meta(self, spider, request):

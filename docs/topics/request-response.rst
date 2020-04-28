@@ -339,13 +339,10 @@ To change how request fingerprints are built for your requests, use the
 REQUEST_FINGERPRINTER
 ~~~~~~~~~~~~~~~~~~~~~
 
-Default: ``'scrapy.utils.request.request_fingerprint'``
+Default: ``'scrapy.utils.request.RequestFingerprinter'``
 
-The import path of a callable that receives a :attr:`~scrapy.http.Request`
-object and returns a :class:`str` that uniquely identifies that request.
-
-The returned :class:`str` must be a valid filename. The hexadecimal
-representation of a hash is recommended.
+The import path of a :ref:`request fingerprinter
+<custom-request-fingerprinter>`.
 
 The default request fingerprinter takes into account a canonical version
 (:func:`w3lib.url.canonicalize_url`) of
@@ -354,48 +351,100 @@ The default request fingerprinter takes into account a canonical version
 :attr:`request.body <scrapy.http.Request.body>`. It then generates an
 `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash from their concatenation.
 
-If you want to customize your request fingerprinter, for some common use cases
-you can combine :func:`~functools.partial` with
-:class:`~scrapy.utils.request.request_fingerprint`. For example, to take the
-value of a request header named ``X-ID`` into account::
+
+.. _custom-request-fingerprinter:
+
+Writing your own request fingerprinter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A request fingerprinter is a class that must implement the following method:
+
+.. method:: fingerprint(self, request)
+
+   Return a :class:`str` that uniquely identifies *request*.
+
+   The returned :class:`str` must be a valid filename. The hexadecimal
+   representation of a hash is recommended.
+
+   :param request: request to fingerprint
+   :type request: scrapy.http.Request
+
+Additionally, they may also implement the following methods:
+
+.. classmethod:: from_crawler(cls, crawler)
+
+   If present, this class method is called to create a request fingerprinter
+   instance from a :class:`~scrapy.crawler.Crawler` object. It must return a
+   new instance of the request fingerprinter.
+
+   *crawler* provides access to all Scrapy core components like settings and
+   signals; it is a way for the request fingerprinter to access them and hook
+   its functionality into Scrapy.
+
+   :param crawler: crawler that uses this pipeline
+   :type crawler: :class:`~scrapy.crawler.Crawler` object
+
+.. classmethod:: from_settings(cls, settings)
+
+   If present, and ``from_crawler`` is not defined, this class method is called
+   to create a request fingerprinter instance from a
+   :class:`~scrapy.settings.Settings` object. It must return a new instance of
+   the request fingerprinter.
+
+For some common use cases you can use
+:func:`~scrapy.utils.request.request_fingerprint` in your ``fingerprint``
+method implementation:
+
+.. autofunction:: scrapy.utils.request.request_fingerprint
+
+For example, to take the value of a request header named ``X-ID`` into
+account::
 
     # my_project/settings.py
-    REQUEST_FINGERPRINTER = 'my_project.utils.request_fingerprinter'
+    REQUEST_FINGERPRINTER = 'my_project.utils.RequestFingerprinter'
 
     # my_project/utils.py
-    from functools import partial
     from scrapy.utils.request import request_fingerprint
-    request_fingerprinter = partial(request_fingerprint, include_headers=['X-ID'])
 
-You can also use a regular function. For example, to take into account
-only the URL of a request, without any prior URL canonicalization::
+    class RequestFingerprinter:
 
-    def request_fingerprinter(request):
-        fp = hashlib.sha1()
-        fp.update(to_bytes(request.url))
-        return fp.hexdigest()
+        def fingerprint(self, request):
+            return request_fingerprint(request, include_headers=['X-ID'])
 
-However, using a :func:`callable` object that uses a
-:class:`~weakref.WeakKeyDictionary` to cache request fingerprints, as
-:class:`~scrapy.utils.request.request_fingerprint` does, is more efficient.
+You can also write your own fingerprinting logic from scratch. However, if you
+do not use :func:`~scrapy.utils.request.request_fingerprint`, make sure you use
+:class:`~weakref.WeakKeyDictionary` to cache request fingerprints. For example,
+to take into account only the URL of a request, without any prior URL
+canonicalization::
+
+    from hashlib import sha1
+    from weakref import WeakKeyDictionary
+
+    class RequestFingerprinter:
+
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                fp = sha1()
+                fp.update(to_bytes(request.url))
+                self.cache[request] = fp.hexdigest()
+            return self.cache[request]
 
 If you need to be able to override the request fingerprinting for arbitrary
 requests from your spider callbacks, you may implement a request fingerprinter
-that reads keys from :attr:`request.meta <scrapy.http.Request.meta>` when
-available, and then falls back to the default request fingerprinter. For
-example::
+that reads fingerprints from :attr:`request.meta <scrapy.http.Request.meta>`
+when available, and then falls back to
+:func:`~scrapy.utils.request.request_fingerprint`. For example::
 
     from scrapy.utils.request import request_fingerprint
 
-    def request_fingerprinter(request):
-        if 'key' in request.meta:
-            return request.meta['key']
-        return request_fingerprint(request)
+    class RequestFingerprinter:
 
-:class:`~scrapy.utils.request.request_fingerprint` is a function that can be
-used to cover common use cases of fingerprint customization:
-
-.. autofunction:: scrapy.utils.request.request_fingerprint
+        def fingerprint(self, request):
+            if 'fingerprint' in request.meta:
+                return request.meta['fingerprint']
+            return request_fingerprint(request)
 
 
 .. _topics-request-meta:

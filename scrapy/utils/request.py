@@ -5,6 +5,7 @@ scrapy.http.Request objects
 
 import hashlib
 import weakref
+from functools import partial
 from urllib.parse import urlunparse
 
 from w3lib.http import basic_auth_header
@@ -67,6 +68,14 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
                         fp.update(v)
         cache[cache_key] = fp.hexdigest()
     return cache[cache_key]
+
+
+class RequestFingerprinter:
+    """Default fingerprinter, which fingerprints using
+    :func:`request_fingerprint`"""
+
+    def fingerprint(self, request):
+        return request_fingerprint(request)
 
 
 def request_authenticate(request, username, password):

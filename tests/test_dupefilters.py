@@ -120,12 +120,14 @@ class RFPDupeFilterTest(unittest.TestCase):
 
         dupefilter.close('finished')
 
-        def fingerprinter(request):
-            fp = hashlib.sha1()
-            fp.update(to_bytes(request.url.lower()))
-            return fp.hexdigest()
+        class RequestFingerprinter:
 
-        case_insensitive_dupefilter = RFPDupeFilter(fingerprinter=fingerprinter)
+            def fingerprint(self, request):
+                fp = hashlib.sha1()
+                fp.update(to_bytes(request.url.lower()))
+                return fp.hexdigest()
+
+        case_insensitive_dupefilter = RFPDupeFilter(fingerprinter=RequestFingerprinter())
         case_insensitive_dupefilter.open()
 
         assert not case_insensitive_dupefilter.request_seen(r1)

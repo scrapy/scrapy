@@ -36,7 +36,6 @@ class MediaPipeline:
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
         self._handle_statuses(self.allow_redirects)
-        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def _handle_statuses(self, allow_redirects):
         self.handle_httpstatus_list = None
@@ -67,6 +66,11 @@ class MediaPipeline:
         except AttributeError:
             pipe = cls()
         pipe.crawler = crawler
+        pipe._fingerprinter = crawler.settings.getinstance(
+            'REQUEST_FINGERPRINTER',
+            crawler=crawler,
+            singleton=True,
+        )
         return pipe
 
     def open_spider(self, spider):
@@ -80,7 +84,7 @@ class MediaPipeline:
         return dfd.addCallback(self.item_completed, item, info)
 
     def _process_request(self, request, info):
-        fp = self._fingerprinter(request)
+        fp = self._fingerprinter.fingerprint(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
         request.callback = None

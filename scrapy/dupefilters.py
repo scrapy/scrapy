@@ -2,7 +2,7 @@ import os
 import logging
 
 from scrapy.utils.job import job_dir
-from scrapy.utils.request import referer_str, request_fingerprint
+from scrapy.utils.request import referer_str, RequestFingerprinter
 
 
 class BaseDupeFilter:
@@ -27,10 +27,9 @@ class BaseDupeFilter:
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
-    def __init__(self, path=None, debug=False, *,
-                 fingerprinter=request_fingerprint):
+    def __init__(self, path=None, debug=False, *, fingerprinter=None):
         self.file = None
-        self.fingerprinter = fingerprinter
+        self.fingerprinter = fingerprinter or RequestFingerprinter()
         self.fingerprints = set()
         self.logdupes = True
         self.debug = debug
@@ -41,9 +40,30 @@ class RFPDupeFilter(BaseDupeFilter):
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
+    def from_crawler(cls, crawler):
+        try:
+            dupefilter = cls.from_settings(crawler.settings)
+        except AttributeError:
+            debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+            fingerprinter = crawler.settings.getinstance(
+                'REQUEST_FINGERPRINTER',
+                crawler=crawler,
+                singleton=True,
+            )
+            dupefilter = cls(
+                job_dir(crawler.settings),
+                debug,
+                fingerprinter=fingerprinter,
+            )
+        return dupefilter
+
+    @classmethod
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
-        fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
+        fingerprinter = settings.getinstance(
+            'REQUEST_FINGERPRINTER',
+            singleton=True,
+        )
         return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     def request_seen(self, request):
@@ -55,7 +75,7 @@ class RFPDupeFilter(BaseDupeFilter):
             self.file.write(fp + '\n')
 
     def request_fingerprint(self, request):
-        return self.fingerprinter(request)
+        return self.fingerprinter.fingerprint(request)
 
     def close(self, reason):
         if self.file:
