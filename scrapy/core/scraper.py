@@ -123,7 +123,11 @@ class Scraper:
     def _scrape(self, response, request, spider):
         """Handle the downloaded response or failure through the spider
         callback/errback"""
-        assert isinstance(response, (Response, Failure))
+        if not isinstance(response, (Response, Failure)):
+            raise TypeError(
+                "Incorrect type: expected Response or Failure, got %s: %r"
+                % (type(response), response)
+            )
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
