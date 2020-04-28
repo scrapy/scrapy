@@ -1,23 +1,23 @@
 import functools
 import logging
 from collections import defaultdict
-from twisted.internet.defer import Deferred, DeferredList, _DefGen_Return
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
-from scrapy.utils.misc import arg_to_iter, load_object
+from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
 
-class MediaPipeline(object):
+class MediaPipeline:
 
     LOG_FAILED_RESULTS = True
 
-    class SpiderInfo(object):
+    class SpiderInfo:
         def __init__(self, spider):
             self.spider = spider
             self.downloading = set()
@@ -35,8 +35,8 @@ class MediaPipeline(object):
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
-        self.build_key = load_object(settings['REQUEST_KEY_BUILDER'])
         self._handle_statuses(self.allow_redirects)
+        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def _handle_statuses(self, allow_redirects):
         self.handle_httpstatus_list = None
@@ -80,29 +80,29 @@ class MediaPipeline(object):
         return dfd.addCallback(self.item_completed, item, info)
 
     def _process_request(self, request, info):
-        key = self.build_key(request)
+        fp = self._fingerprinter(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
         request.callback = None
         request.errback = None
 
         # Return cached result if request was already seen
-        if key in info.downloaded:
-            return defer_result(info.downloaded[key]).addCallbacks(cb, eb)
+        if fp in info.downloaded:
+            return defer_result(info.downloaded[fp]).addCallbacks(cb, eb)
 
         # Otherwise, wait for result
         wad = Deferred().addCallbacks(cb, eb)
-        info.waiting[key].append(wad)
+        info.waiting[fp].append(wad)
 
         # Check if request is downloading right now to avoid doing it twice
-        if key in info.downloading:
+        if fp in info.downloading:
             return wad
 
         # Download request checking media_to_download hook output first
-        info.downloading.add(key)
+        info.downloading.add(fp)
         dfd = mustbe_deferred(self.media_to_download, request, info)
         dfd.addCallback(self._check_media_to_download, request, info)
-        dfd.addBoth(self._cache_result_and_execute_waiters, key, info)
+        dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(lambda f: logger.error(
             f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
         )
@@ -131,7 +131,7 @@ class MediaPipeline(object):
                 errback=self.media_failed, errbackArgs=(request, info))
         return dfd
 
-    def _cache_result_and_execute_waiters(self, result, key, info):
+    def _cache_result_and_execute_waiters(self, result, fp, info):
         if isinstance(result, Failure):
             # minimize cached information for failure
             result.cleanFailure()
@@ -141,32 +141,34 @@ class MediaPipeline(object):
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #
-            # Twisted inline callbacks pass return values using the function
-            # twisted.internet.defer.returnValue, which encapsulates the return
-            # value inside a _DefGen_Return base exception.
-            #
-            # What happens when the media_downloaded callback raises another
+            # What happens when the media_downloaded callback raises an
             # exception, for example a FileException('download-error') when
-            # the Response status code is not 200 OK, is that it stores the
-            # _DefGen_Return exception on the FileException context.
+            # the Response status code is not 200 OK, is that the original
+            # StopIteration exception (which in turn contains the failed
+            # Response and by extension, the original Request) gets encapsulated
+            # within the FileException context.
+            #
+            # Originally, Scrapy was using twisted.internet.defer.returnValue
+            # inside functions decorated with twisted.internet.defer.inlineCallbacks,
+            # encapsulating the returned Response in a _DefGen_Return exception
+            # instead of a StopIteration.
             #
             # To avoid keeping references to the Response and therefore Request
             # objects on the Media Pipeline cache, we should wipe the context of
-            # the exception encapsulated by the Twisted Failure when its a
-            # _DefGen_Return instance.
+            # the encapsulated exception when it is a StopIteration instance
             #
             # This problem does not occur in Python 2.7 since we don't have
             # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
             context = getattr(result.value, '__context__', None)
-            if isinstance(context, _DefGen_Return):
+            if isinstance(context, StopIteration):
                 setattr(result.value, '__context__', None)
 
-        info.downloading.remove(key)
-        info.downloaded[key] = result  # cache result
-        for wad in info.waiting.pop(key):
+        info.downloading.remove(fp)
+        info.downloaded[fp] = result  # cache result
+        for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
 
-    ### Overridable Interface
+    # Overridable Interface
     def media_to_download(self, request, info):
         """Check request before starting download"""
         pass

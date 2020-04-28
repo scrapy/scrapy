@@ -3,10 +3,9 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-import pickle  # nosec
-from hashlib import sha1
+import hashlib
+import weakref
 from urllib.parse import urlunparse
-from weakref import WeakKeyDictionary
 
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
@@ -15,143 +14,59 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-def _noop_processor(*args):
-    return args[0]
+_fingerprint_cache = weakref.WeakKeyDictionary()
 
 
-def default_request_key_hasher(data, request):
-    """Given a request key object (`data`) and a `request`, it
-    returns a :mod:`pickle`-serialized `SHA1
-    <https://en.wikipedia.org/wiki/SHA-1>`_ hash of `data` as
-    :class:`bytes`."""
-    return sha1(pickle.dumps(data, protocol=2)).digest()
-
-
-class RequestKeyBuilder:
-    """Callable that, given a :class:`request <scrapy.http.Request>`, returns
-    :class:`bytes` that uniquely identify *request*.
-
-    *url_processor* (default: :func:`w3lib.url.canonicalize_url`) processes the
-    *request* URL, and allows things like sorting URL query string parameters,
-    so that two requests with the same URL query string parameters in different
-    order still share the same request key.
-
-    Some use cases of the `url_processor` parameter include:
-
-    -   Comparing URLs case-insensitively::
-
-            from w3lib.url import canonicalize_url
-
-            def url_processor(url):
-                return canonicalize_url(url).lower()
-
-            request_key_buider = RequestKeyBuilder(url_processor=url_processor)
-
-    -   Ignoring some URL query string parameters::
-
-            from w3lib.url import canonicalize_url, url_query_cleaner
-
-            def url_processor(url):
-                url = canonicalize_url(url)
-                parameters = ['parameters', 'to', 'ignore']
-                return url_query_cleaner(url, parameterlist=parameters,
-                                         remove=True)
-
-            request_key_buider = RequestKeyBuilder(url_processor=url_processor)
-
-    *headers* allows taking into account all or some headers. Use a list of
-    strings to indicate which headers to include (header names are case
-    insensitive), or use ``True`` to include all headers.
-
-    *cb_kwargs* allows taking into account all or some :attr:`Request.cb_kwargs
-    <scrapy.http.Request.cb_kwargs>` keys. Use a list of strings to indicate
-    which callback keyword parameter keys to include, or use ``True`` for all
-    callback keyword parameter keys.
-
-    *meta* allows taking into account all or some :attr:`Request.meta
-    <scrapy.http.Request.meta>` keys. Use a list of strings to indicate which
-    meta keys to include, or use ``True`` for all meta keys.
-
-    *post_processor* is a function that receives a list of key-value tuples
-    containing key request data (based in the ``__init__`` parameters) and the
-    source request object, and returns a request key as :class:`bytes`. It uses
-    :func:`~scrapy.utils.request.default_request_key_hasher` by default.
+def request_fingerprint(request, include_headers=None, keep_fragments=False):
     """
+    Return the request fingerprint.
 
-    def __init__(self, url_processor=canonicalize_url, headers=None,
-                 meta=None, cb_kwargs=None,
-                 post_processor=default_request_key_hasher):
-        self._cache = WeakKeyDictionary()
-        self._headers = headers
-        if self._headers and self._headers is not True:
-            self._headers = sorted(self._headers)
-        self._cb_kwargs = cb_kwargs
-        if self._cb_kwargs and self._cb_kwargs is not True:
-            self._cb_kwargs = sorted(self._cb_kwargs)
-        self._meta = meta
-        if self._meta and self._meta is not True:
-            self._meta = sorted(self._meta)
-        self._post_processor = post_processor or _noop_processor
-        self._url_processor = url_processor or _noop_processor
+    The request fingerprint is a hash that uniquely identifies the resource the
+    request points to. For example, take the following two urls:
 
-    def __call__(self, request):
-        """Given a :class:`request <scrapy.http.Request>` it returns an
-        immutable object that uniquely identifies `request`."""
-        if request in self._cache:
-            return self._cache[request]
+    http://www.example.com/query?id=111&cat=222
+    http://www.example.com/query?cat=222&id=111
 
-        data = [
-            ('method', request.method),
-            ('url', self._url_processor(request.url)),
-            ('body', request.body or b''),
-        ]
+    Even though those are two different URLs both point to the same resource
+    and are equivalent (i.e. they should return the same response).
 
-        if self._headers:
-            header_keys = self._headers
-            if header_keys is True:
-                header_keys = sorted(header.lower()
-                                     for header in request.headers)
-            headers = []
-            for header_key in header_keys:
-                if header_key in request.headers:
-                    headers.append(
-                        (
-                            header_key,
-                            tuple(value for value in
-                                  request.headers.getlist(header_key))
-                        )
-                    )
-            if headers:
-                data.append(headers)
+    Another example are cookies used to store session ids. Suppose the
+    following page is only accessible to authenticated users:
 
-        if self._cb_kwargs:
-            cb_kwargs_keys = self._cb_kwargs
-            if cb_kwargs_keys is True:
-                cb_kwargs_keys = sorted(request.cb_kwargs)
-            cb_kwargs = []
-            for cb_kwargs_key in cb_kwargs_keys:
-                if cb_kwargs_key in request.cb_kwargs:
-                    cb_kwargs.append((cb_kwargs_key,
-                                      request.cb_kwargs[cb_kwargs_key]))
-            if cb_kwargs:
-                data.append(cb_kwargs)
+    http://www.example.com/members/offers.html
 
-        if self._meta:
-            meta_keys = self._meta
-            if meta_keys is True:
-                meta_keys = sorted(request.meta)
-            meta = []
-            for meta_key in meta_keys:
-                if meta_key in request.meta:
-                    meta.append((meta_key, request.meta[meta_key]))
-            if meta:
-                data.append(meta)
+    Lot of sites use a cookie to store the session id, which adds a random
+    component to the HTTP Request and thus should be ignored when calculating
+    the fingerprint.
 
-        self._cache[request] = self._post_processor(data, request)
-        return self._cache[request]
+    For this reason, request headers are ignored by default when calculating
+    the fingeprint. If you want to include specific headers use the
+    include_headers argument, which is a list of Request headers to include.
 
+    Also, servers usually ignore fragments in urls when handling requests,
+    so they are also ignored by default when calculating the fingerprint.
+    If you want to include them, set the keep_fragments argument to True
+    (for instance when handling requests with a headless browser).
 
-default_request_key_builder = RequestKeyBuilder()
+    """
+    if include_headers:
+        include_headers = tuple(to_bytes(h.lower())
+                                 for h in sorted(include_headers))
+    cache = _fingerprint_cache.setdefault(request, {})
+    cache_key = (include_headers, keep_fragments)
+    if cache_key not in cache:
+        fp = hashlib.sha1()
+        fp.update(to_bytes(request.method))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
+        fp.update(request.body or b'')
+        if include_headers:
+            for hdr in include_headers:
+                if hdr in request.headers:
+                    fp.update(hdr)
+                    for v in request.headers.getlist(hdr):
+                        fp.update(v)
+        cache[cache_key] = fp.hexdigest()
+    return cache[cache_key]
 
 
 def request_authenticate(request, username, password):

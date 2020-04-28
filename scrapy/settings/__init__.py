@@ -4,6 +4,7 @@ from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
+from scrapy.utils.misc import load_object
 from scrapy.settings import default_settings
 
 
@@ -83,6 +84,7 @@ class BaseSettings(MutableMapping):
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
+        self._singletons = {}
         self.update(values, priority)
 
     def __getitem__(self, opt_name):
@@ -232,6 +234,20 @@ class BaseSettings(MutableMapping):
             return max(self.getpriority(name) for name in self)
         else:
             return get_settings_priority('default')
+
+    def getsingleton(self, name):
+        """Load the object with the import path specified in the value of the
+        setting called *name*, cache it in the settings to avoid loading it
+        again on further calls, and return it.
+
+        :param name: the setting name
+        :type name: str
+        """
+        if name not in self._singletons:
+            self._singletons[name] = load_object(
+                self.get('REQUEST_FINGERPRINTER')
+            )
+        return self._singletons[name]
 
     def __setitem__(self, name, value):
         self.set(name, value)

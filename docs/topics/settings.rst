@@ -717,8 +717,8 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 The class used to detect and filter duplicate requests.
 
 The default (``RFPDupeFilter``) filters based on the
-:setting:`REQUEST_KEY_BUILDER` setting. In order to change the way duplicates
-are checked change :setting:`REQUEST_KEY_BUILDER` or subclass
+:setting:`REQUEST_FINGERPRINTER` setting. In order to change the way duplicates
+are checked change :setting:`REQUEST_FINGERPRINTER` or subclass
 ``RFPDupeFilter`` and override its ``build_key`` method. This method
 should accept a :class:`~scrapy.http.Request` object and return its key as
 :class:`bytes`.

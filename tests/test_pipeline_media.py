@@ -2,12 +2,12 @@ from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.request import default_request_key_builder
+from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
@@ -124,9 +124,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         # Simulate the Media Pipeline behavior to produce a Twisted Failure
         try:
             # Simulate a Twisted inline callback returning a Response
-            # The returnValue method raises an exception encapsulating the value
-            returnValue(response)
-        except BaseException as exc:
+            raise StopIteration(response)
+        except StopIteration as exc:
             def_gen_return_exc = exc
             try:
                 # Simulate the media_downloaded callback raising a FileException
@@ -140,11 +139,11 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
         # The Failure should encapsulate a FileException ...
         self.assertEqual(failure.value, file_exc)
-        # ... and it should have the returnValue exception set as its context
+        # ... and it should have the StopIteration exception set as its context
         self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
-        fp = default_request_key_builder(request)
+        fp = request_fingerprint(request)
         info = self.pipe.spiderinfo
         info.downloading.add(fp)
         info.waiting[fp] = []
@@ -155,7 +154,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.assertEqual(info.downloaded[fp], failure)
         # ... encapsulating the original FileException ...
         self.assertEqual(info.downloaded[fp].value, file_exc)
-        # ... but it should not store the returnValue exception on its context
+        # ... but it should not store the StopIteration exception on its context
         context = getattr(info.downloaded[fp].value, '__context__', None)
         self.assertIsNone(context)
 
@@ -199,12 +198,19 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 
     pipeline_class = MockedMediaPipeline
 
+    def _callback(self, result):
+        self.pipe._mockcalled.append('request_callback')
+        return result
+
+    def _errback(self, result):
+        self.pipe._mockcalled.append('request_errback')
+        return result
+
     @inlineCallbacks
     def test_result_succeed(self):
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         rsp = Response('http://url1')
-        req = Request('http://url1', meta=dict(response=rsp), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=rsp),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
@@ -215,10 +221,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
-        cb = lambda _: self.pipe._mockcalled.append('request_callback') or _
-        eb = lambda _: self.pipe._mockcalled.append('request_errback') or _
         fail = Failure(Exception())
-        req = Request('http://url1', meta=dict(response=fail), callback=cb, errback=eb)
+        req = Request('http://url1', meta=dict(response=fail),
+                      callback=self._callback, errback=self._errback)
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
@@ -255,7 +260,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert default_request_key_builder(req) in self.info.downloaded
+        assert request_fingerprint(req) in self.info.downloaded
 
         # returns iterable of Requests
         req1 = Request('http://url1')
@@ -263,8 +268,8 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=iter([req1, req2]))
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert default_request_key_builder(req1) in self.info.downloaded
-        assert default_request_key_builder(req2) in self.info.downloaded
+        assert request_fingerprint(req1) in self.info.downloaded
+        assert request_fingerprint(req2) in self.info.downloaded
 
     @inlineCallbacks
     def test_results_are_cached_across_multiple_items(self):
@@ -280,7 +285,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req2)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
-        self.assertEqual(default_request_key_builder(req1), default_request_key_builder(req2))
+        self.assertEqual(request_fingerprint(req1), request_fingerprint(req2))
         self.assertEqual(new_item['results'], [(True, rsp1)])
 
     @inlineCallbacks
@@ -296,7 +301,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_wait_if_request_is_downloading(self):
         def _check_downloading(response):
-            fp = default_request_key_builder(req1)
+            fp = request_fingerprint(req1)
             self.assertTrue(fp in self.info.downloading)
             self.assertTrue(fp in self.info.waiting)
             self.assertTrue(fp not in self.info.downloaded)
@@ -304,6 +309,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)
@@ -324,8 +330,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'item_completed'])
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):

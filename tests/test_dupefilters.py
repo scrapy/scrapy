@@ -1,3 +1,4 @@
+import hashlib
 import tempfile
 import unittest
 import shutil
@@ -8,8 +9,8 @@ from testfixtures import LogCapture
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 from scrapy.core.scheduler import Scheduler
+from scrapy.utils.python import to_bytes
 from scrapy.utils.job import job_dir
-from scrapy.utils.request import RequestKeyBuilder
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -34,7 +35,7 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class DirectDupeFilter(object):
+class DirectDupeFilter:
     method = 'n/a'
 
 
@@ -42,7 +43,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_crawler_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
@@ -50,14 +51,14 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_settings_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromSettingsRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_df_direct_scheduler(self):
-        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
+        settings = {'DUPEFILTER_CLASS': __name__ + '.DirectDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertEqual(scheduler.df.method, 'n/a')
@@ -103,35 +104,11 @@ class RFPDupeFilterTest(unittest.TestCase):
         finally:
             shutil.rmtree(path)
 
-    def test_dupefilter_path_line_breaks(self):
-        """Ensure that request keys containing line breaks are not a problem"""
-        r1 = Request('http://scrapytest.org/1')
-        r2 = Request('http://scrapytest.org/2')
+    def test_request_fingerprint(self):
+        """Test if customization of request_fingerprint method will change
+        output of request_seen.
 
-        def key_builder(request):
-            url = request.url.encode('utf8')
-            return b'\n\\n\\\\\\' + url + b'\n\\n\\\\\\' + url + b'\\\\\\\\n\n'
-
-        path = tempfile.mkdtemp()
-        try:
-            df = RFPDupeFilter(path, key_builder=key_builder)
-            df.open()
-            assert not df.request_seen(r1)
-            assert df.request_seen(r1)
-            df.close('finished')
-
-            df2 = RFPDupeFilter(path, key_builder=key_builder)
-            df2.open()
-            assert df2.request_seen(r1)
-            assert not df2.request_seen(r2)
-            assert df2.request_seen(r2)
-            df2.close('finished')
-        finally:
-            shutil.rmtree(path)
-
-    def test_custom_request_key_builder(self):
-        """Test if a custom value of the :setting:`REQUEST_KEY_BUILDER` setting
-        changes the output of request_seen."""
+        """
         r1 = Request('http://scrapytest.org/index.html')
         r2 = Request('http://scrapytest.org/INDEX.html')
 
@@ -143,8 +120,12 @@ class RFPDupeFilterTest(unittest.TestCase):
 
         dupefilter.close('finished')
 
-        key_builder = RequestKeyBuilder(url_processor=str.lower)
-        case_insensitive_dupefilter = RFPDupeFilter(key_builder=key_builder)
+        def fingerprinter(request):
+            fp = hashlib.sha1()
+            fp.update(to_bytes(request.url.lower()))
+            return fp.hexdigest()
+
+        case_insensitive_dupefilter = RFPDupeFilter(fingerprinter=fingerprinter)
         case_insensitive_dupefilter.open()
 
         assert not case_insensitive_dupefilter.request_seen(r1)
@@ -179,7 +160,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': False,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -204,7 +185,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log_debug(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': True,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)

@@ -1,13 +1,11 @@
-import logging
 import os
-import re
+import logging
 
 from scrapy.utils.job import job_dir
-from scrapy.utils.misc import load_object
-from scrapy.utils.request import default_request_key_builder, referer_str
+from scrapy.utils.request import referer_str, request_fingerprint
 
 
-class BaseDupeFilter(object):
+class BaseDupeFilter:
 
     @classmethod
     def from_settings(cls, settings):
@@ -26,49 +24,38 @@ class BaseDupeFilter(object):
         pass
 
 
-def _escape_line_breaks(data):
-    """Returns `data` with escaped line breaks"""
-    return data.replace(b'\\', b'\\\\').replace(b'\n', b'\\n')
-
-
-def _unescape_line_breaks(data):
-    """Performs the reverse process of
-    :func:`scrapy.dupefilters._escape_line_breaks`."""
-    value = re.sub(b'(^|[^\\\\])((?:\\\\\\\\)*?)\\\\n', b'\\1\\2\n', data)
-    return value.replace(b'\\\\', b'\\')
-
-
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
     def __init__(self, path=None, debug=False, *,
-                 key_builder=default_request_key_builder):
+                 fingerprinter=request_fingerprint):
         self.file = None
-        self.build_key = key_builder
-        self.keys = set()
+        self.fingerprinter = fingerprinter
+        self.fingerprints = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            request_seen_path = os.path.join(path, 'requests.seen')
-            self.file = open(request_seen_path, 'ab+', newline='\n')
+            self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.file.seek(0)
-            for escaped_key in self.file:
-                self.keys.add(_unescape_line_breaks(escaped_key[:-1]))
+            self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
-        key_builder = load_object(settings['REQUEST_KEY_BUILDER'])
-        return cls(job_dir(settings), debug, key_builder=key_builder)
+        fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
+        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     def request_seen(self, request):
-        key = self.build_key(request)
-        if key in self.keys:
+        fp = self.request_fingerprint(request)
+        if fp in self.fingerprints:
             return True
-        self.keys.add(key)
+        self.fingerprints.add(fp)
         if self.file:
-            self.file.write(_escape_line_breaks(key) + b'\n')
+            self.file.write(fp + '\n')
+
+    def request_fingerprint(self, request):
+        return self.fingerprinter(request)
 
     def close(self, reason):
         if self.file:
@@ -77,7 +64,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def log(self, request, spider):
         if self.debug:
             msg = "Filtered duplicate request: %(request)s (referer: %(referer)s)"
-            args = {'request': request, 'referer': referer_str(request) }
+            args = {'request': request, 'referer': referer_str(request)}
             self.logger.debug(msg, args, extra={'spider': spider})
         elif self.logdupes:
             msg = ("Filtered duplicate request: %(request)s"

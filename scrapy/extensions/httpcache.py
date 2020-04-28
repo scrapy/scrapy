@@ -3,9 +3,7 @@ import logging
 import os
 import pickle
 from email.utils import mktime_tz, parsedate_tz
-from hashlib import md5
 from importlib import import_module
-from itertools import count
 from time import time
 from weakref import WeakKeyDictionary
 
@@ -14,7 +12,6 @@ from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -22,7 +19,7 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
-class DummyPolicy(object):
+class DummyPolicy:
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
@@ -41,7 +38,7 @@ class DummyPolicy(object):
         return True
 
 
-class RFC2616Policy(object):
+class RFC2616Policy:
 
     MAXAGE = 3600 * 24 * 365  # one year
 
@@ -215,14 +212,14 @@ class RFC2616Policy(object):
         return currentage
 
 
-class DbmCacheStorage(object):
+class DbmCacheStorage:
 
     def __init__(self, settings):
-        self.build_key = load_object(settings['REQUEST_KEY_BUILDER'])
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
         self.db = None
+        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
@@ -246,20 +243,20 @@ class DbmCacheStorage(object):
         return response
 
     def store_response(self, spider, request, response):
-        key = self.build_key(request)
+        key = self._fingerprinter(request)
         data = {
             'status': response.status,
             'url': response.url,
             'headers': dict(response.headers),
             'body': response.body,
         }
-        self.db[b'%s_data' % key] = pickle.dumps(data, protocol=2)
-        self.db[b'%s_time' % key] = str(time())
+        self.db['%s_data' % key] = pickle.dumps(data, protocol=2)
+        self.db['%s_time' % key] = str(time())
 
     def _read_data(self, spider, request):
-        key = self.build_key(request)
+        key = self._fingerprinter(request)
         db = self.db
-        tkey = b'%s_time' % key
+        tkey = '%s_time' % key
         if tkey not in db:
             return  # not found
 
@@ -267,17 +264,17 @@ class DbmCacheStorage(object):
         if 0 < self.expiration_secs < time() - float(ts):
             return  # expired
 
-        return pickle.loads(db[b'%s_data' % key])
+        return pickle.loads(db['%s_data' % key])
 
 
-class FilesystemCacheStorage(object):
+class FilesystemCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
         self._open = gzip.open if self.use_gzip else open
-        self.build_key = load_object(settings['REQUEST_KEY_BUILDER'])
+        self._fingerprinter = settings.getsingleton('REQUEST_FINGERPRINTER')
 
     def open_spider(self, spider):
         logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
@@ -286,68 +283,28 @@ class FilesystemCacheStorage(object):
     def close_spider(self, spider):
         pass
 
-    def _get_request_path(self, spider, request, create=False):
-        key = self.build_key(request)
-        key_hash = md5(key).hexdigest()
-        hash_path = os.path.join(self.cachedir, spider.name,
-                                 key_hash[0:2], key_hash)
-        seen_subdirectories = set()
-        for _, subdirectories, _ in os.walk(hash_path):
-            for subdirectory in subdirectories:
-                seen_subdirectories.add(subdirectory)
-                request_path = os.path.join(hash_path, subdirectory)
-                key_path = os.path.join(request_path, 'key')
-                with open(key_path, 'rb') as key_file:
-                    found_key = key_file.read()
-                if key == found_key:
-                    return request_path
-            break
-        if not create:
-            return None
-        for number in count():
-            subdirectory = str(number)
-            if subdirectory in seen_subdirectories:
-                continue
-            request_path = os.path.join(hash_path, subdirectory)
-            os.makedirs(request_path)
-            key_path = os.path.join(request_path, 'key')
-            with open(key_path, 'wb') as key_file:
-                key_file.write(key)
-            return request_path
-
     def retrieve_response(self, spider, request):
         """Return response if present in cache, or None otherwise."""
-        request_path = self._get_request_path(spider, request)
-        if request_path is None:
-            return None
-
-        metadata_path = os.path.join(request_path, 'pickled_meta')
-
-        mtime = os.stat(metadata_path).st_mtime
-        if 0 < self.expiration_secs < time() - mtime:
-            return None
-
-        with self._open(metadata_path, 'rb') as metadata_file:
-            metadata = pickle.load(metadata_file)
-
-        body_path = os.path.join(request_path, 'response_body')
-        with self._open(body_path, 'rb') as body_file:
-            body = body_file.read()
-
-        header_path = os.path.join(request_path, 'response_headers')
-        with self._open(header_path, 'rb') as header_file:
-            raw_headers = header_file.read()
-
-        url = metadata['response_url']
+        metadata = self._read_meta(spider, request)
+        if metadata is None:
+            return  # not cached
+        rpath = self._get_request_path(spider, request)
+        with self._open(os.path.join(rpath, 'response_body'), 'rb') as f:
+            body = f.read()
+        with self._open(os.path.join(rpath, 'response_headers'), 'rb') as f:
+            rawheaders = f.read()
+        url = metadata.get('response_url')
         status = metadata['status']
-        headers = Headers(headers_raw_to_dict(raw_headers))
+        headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
     def store_response(self, spider, request, response):
         """Store the given response in the cache."""
-        rpath = self._get_request_path(spider, request, create=True)
+        rpath = self._get_request_path(spider, request)
+        if not os.path.exists(rpath):
+            os.makedirs(rpath)
         metadata = {
             'url': request.url,
             'method': request.method,
@@ -367,6 +324,21 @@ class FilesystemCacheStorage(object):
             f.write(headers_dict_to_raw(request.headers))
         with self._open(os.path.join(rpath, 'request_body'), 'wb') as f:
             f.write(request.body)
+
+    def _get_request_path(self, spider, request):
+        key = self._fingerprinter(request)
+        return os.path.join(self.cachedir, spider.name, key[0:2], key)
+
+    def _read_meta(self, spider, request):
+        rpath = self._get_request_path(spider, request)
+        metapath = os.path.join(rpath, 'pickled_meta')
+        if not os.path.exists(metapath):
+            return  # not found
+        mtime = os.stat(metapath).st_mtime
+        if 0 < self.expiration_secs < time() - mtime:
+            return  # expired
+        with self._open(metapath, 'rb') as f:
+            return pickle.load(f)
 
 
 def parse_cachecontrol(header):

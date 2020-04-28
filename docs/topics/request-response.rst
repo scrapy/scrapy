@@ -309,85 +309,89 @@ errors if needed::
                 self.logger.error('TimeoutError on %s', request.url)
 
 
-.. _request-keys:
-
-Request keys
-------------
+Request fingerprints
+--------------------
 
 There are some aspects of scraping, such as filtering out duplicate requests
 (see :setting:`DUPEFILTER_CLASS`) or caching responses (see
 :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`), where you
-need the ability to generate a unique key from a :class:`~scrapy.http.Request`
-object, so that you can check if two different ``Request`` objects match.
+need the ability to generate a short, unique identifier from a
+:class:`~scrapy.http.Request` object: a request fingerprint.
 
-You often do not need to worry about request keys, the default request
-key builder works for most projects.
+You often do not need to worry about request fingerprints, the default request
+fingerprinter works for most projects.
 
-However, there is no universal way to generate a unique key from a request,
-because different situations require comparing requests differently. For
-example, sometimes you may need to compare URLs case-insensitively, include URL
-fragments, exclude certain URL query parameters, include some or all headers,
-etc.
+However, there is no universal way to generate a unique identifier from a
+request, because different situations require comparing requests differently.
+For example, sometimes you may need to compare URLs case-insensitively, include
+URL fragments, exclude certain URL query parameters, include some or all
+headers, etc.
 
-To change how the key of your requests is built, use the
-:setting:`REQUEST_KEY_BUILDER` setting.
+To change how request fingerprints are built for your requests, use the
+:setting:`REQUEST_FINGERPRINTER` setting.
 
-.. setting:: REQUEST_KEY_BUILDER
+.. setting:: REQUEST_FINGERPRINTER
 
-REQUEST_KEY_BUILDER
-~~~~~~~~~~~~~~~~~~~
+REQUEST_FINGERPRINTER
+~~~~~~~~~~~~~~~~~~~~~
 
-Default: ``'scrapy.utils.request.default_request_key_builder'``
+Default: ``'scrapy.utils.request.request_fingerprint'``
 
 The import path of a callable that receives a :attr:`~scrapy.http.Request`
-object and returns :class:`bytes` that uniquely identify that request.
+object and returns a :class:`str` that uniquely identifies that request.
 
-The default request key builder takes into account a canonical version
+The returned :class:`str` must be a valid filename. The hexadecimal
+representation of a hash is recommended.
+
+The default request fingerprinter takes into account a canonical version
 (:func:`w3lib.url.canonicalize_url`) of
 :attr:`request.url <scrapy.http.Request.url>` and the values of
 :attr:`request.method <scrapy.http.Request.method>` and
 :attr:`request.body <scrapy.http.Request.body>`. It then generates an
-`SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash of the
-:mod:`pickle`-serialized result.
+`SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash from their concatenation.
 
-If you want to customize your request key builder, for most use cases you can
-use :class:`~scrapy.utils.request.RequestKeyBuilder`. For example::
+If you want to customize your request fingerprinter, for some common use cases
+you can combine :func:`~functools.partial` with
+:class:`~scrapy.utils.request.request_fingerprint`. For example, to take the
+value of a request header named ``X-ID`` into account::
 
     # my_project/settings.py
-    REQUEST_KEY_BUILDER = 'my_project.utils.request_key_builder'
+    REQUEST_FINGERPRINTER = 'my_project.utils.request_fingerprinter'
 
     # my_project/utils.py
-    request_key_builder = RequestKeyBuilder(headers=['X-ID'])
+    from functools import partial
+    from scrapy.utils.request import request_fingerprint
+    request_fingerprinter = partial(request_fingerprint, include_headers=['X-ID'])
 
 You can also use a regular function. For example, to take into account
 only the URL of a request, without any prior URL canonicalization::
 
-    def request_key_builder(request):
-        return request.url.encode()
+    def request_fingerprinter(request):
+        fp = hashlib.sha1()
+        fp.update(to_bytes(request.url))
+        return fp.hexdigest()
 
 However, using a :func:`callable` object that uses a
-:class:`~weakref.WeakKeyDictionary` to cache request keys would be more
-efficient.
+:class:`~weakref.WeakKeyDictionary` to cache request fingerprints, as
+:class:`~scrapy.utils.request.request_fingerprint` does, is more efficient.
 
-If you need to be able to override the request key generation for arbitrary
-requests from your spider callbacks, you may implement a request key builder
+If you need to be able to override the request fingerprinting for arbitrary
+requests from your spider callbacks, you may implement a request fingerprinter
 that reads keys from :attr:`request.meta <scrapy.http.Request.meta>` when
-available, and then falls back to the default request key builder. For
+available, and then falls back to the default request fingerprinter. For
 example::
 
-    fallback_request_key_builder = RequestKeyBuilder()
+    from scrapy.utils.request import request_fingerprint
 
-    def request_key_builder(request):
+    def request_fingerprinter(request):
         if 'key' in request.meta:
             return request.meta['key']
-        return fallback_request_key_builder(request)
+        return request_fingerprint(request)
 
-:class:`~scrapy.utils.request.RequestKeyBuilder` is a helper that helps
-customizing :setting:`REQUEST_KEY_BUILDER` in most use cases:
+:class:`~scrapy.utils.request.request_fingerprint` is a function that can be
+used to cover common use cases of fingerprint customization:
 
-.. autoclass:: scrapy.utils.request.RequestKeyBuilder
-
-.. autofunction:: scrapy.utils.request.default_request_key_hasher
+.. autofunction:: scrapy.utils.request.request_fingerprint
 
 
 .. _topics-request-meta:
