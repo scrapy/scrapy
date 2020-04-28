@@ -19,7 +19,7 @@ matrix:
       python: 3.5
     - env: TOXENV=pinned
       python: 3.5
-    - env: TOXENV=py35-asyncio
+    - env: TOXENV=asyncio
       python: 3.5.2
     - env: TOXENV=py36
       python: 3.6
@@ -29,7 +29,7 @@ matrix:
       python: 3.8
     - env: TOXENV=extra-deps
       python: 3.8
-    - env: TOXENV=py38-asyncio
+    - env: TOXENV=asyncio
       python: 3.8
 install:
   - |
