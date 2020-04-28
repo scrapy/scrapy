@@ -400,6 +400,20 @@ class CrawlCommandTest(CommandTest):
         _, _, stderr = self.crawl(code, args=args)
         return stderr
 
+    def test_no_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('It works!')
+        return []
+"""
+        log = self.get_log(spider_code)
+        self.assertIn("[myspider] DEBUG: It works!", log)
+
     def test_output(self):
         spider_code = """
 import scrapy

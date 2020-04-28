@@ -456,12 +456,12 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
     def test_overwrite_default(self):
         with LogCapture() as log:
-            StdoutFeedStorage('stdout:', {}, _stdout=BytesIO())
+            StdoutFeedStorage('stdout:', {})
         self.assertNotIn('Standard output (stdout) storage does not support overwritting', str(log))
 
     def test_overwrite_true(self):
         with LogCapture() as log:
-            StdoutFeedStorage('stdout:', {'overwrite': True}, _stdout=BytesIO())
+            StdoutFeedStorage('stdout:', {'overwrite': True})
         self.assertIn('Standard output (stdout) storage does not support overwritting', str(log))
 
 
