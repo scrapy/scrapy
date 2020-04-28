@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import re
 import logging
 
-import six
 from w3lib import html
 
 from scrapy.exceptions import NotConfigured
@@ -13,7 +11,7 @@ from scrapy.http import HtmlResponse
 logger = logging.getLogger(__name__)
 
 
-class AjaxCrawlMiddleware(object):
+class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
@@ -49,7 +47,7 @@ class AjaxCrawlMiddleware(object):
             return response
 
         # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url+'#!')
+        ajax_crawl_request = request.replace(url=request.url + '#!')
         logger.debug("Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
                      {'ajax_crawl_request': ajax_crawl_request, 'request': request},
                      extra={'spider': spider})
@@ -67,7 +65,7 @@ class AjaxCrawlMiddleware(object):
 
 
 # XXX: move it to w3lib?
-_ajax_crawlable_re = re.compile(six.u(r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'))
+_ajax_crawlable_re = re.compile(r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>')
 
 
 def _has_ajaxcrawlable_meta(text):

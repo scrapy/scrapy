@@ -1,4 +1,3 @@
-from __future__ import print_function
 import unittest
 from scrapy.http import Request
 from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
@@ -83,6 +82,7 @@ class UtilsRequestTest(unittest.TestCase):
         # the representation is not important but it must not fail.
         request_httprepr(Request("file:///tmp/foo.txt"))
         request_httprepr(Request("ftp://localhost/tmp/foo.txt"))
+
 
 if __name__ == "__main__":
     unittest.main()

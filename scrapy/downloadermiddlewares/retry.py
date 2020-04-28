@@ -25,7 +25,7 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
@@ -84,6 +84,6 @@ class RetryMiddleware(object):
             return retryreq
         else:
             stats.inc_value('retry/max_reached')
-            logger.debug("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
+            logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
                          extra={'spider': spider})

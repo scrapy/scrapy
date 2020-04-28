@@ -2,18 +2,16 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from __future__ import absolute_import
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO
-import six
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
-class ResponseTypes(object):
+class ResponseTypes:
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
@@ -37,7 +35,7 @@ class ResponseTypes(object):
         self.mimetypes = MimeTypes()
         mimedata = get_data('scrapy', 'mime.types').decode('utf8')
         self.mimetypes.readfp(StringIO(mimedata))
-        for mimetype, cls in six.iteritems(self.CLASSES):
+        for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype):
@@ -73,7 +71,7 @@ class ResponseTypes(object):
         cls = Response
         if b'Content-Type' in headers:
             cls = self.from_content_type(
-                content_type=headers[b'Content-type'],
+                content_type=headers[b'Content-Type'],
                 content_encoding=headers.get(b'Content-Encoding')
             )
         if cls is Response and b'Content-Disposition' in headers:
@@ -117,5 +115,6 @@ class ResponseTypes(object):
         if cls is Response and body is not None:
             cls = self.from_body(body)
         return cls
+
 
 responsetypes = ResponseTypes()

@@ -64,7 +64,7 @@ Use the :command:`check` command to run the contract checks.
 Custom Contracts
 ================
 
-If you find you need more power than the built-in scrapy contracts you can
+If you find you need more power than the built-in Scrapy contracts you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting::
 
@@ -136,7 +136,7 @@ Detecting check runs
 ====================
 
 When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
-set to the ``true`` string. You can use `os.environ`_ to perform any change to
+set to the ``true`` string. You can use :data:`os.environ` to perform any change to
 your spiders or your settings when ``scrapy check`` is used::
 
     import os
@@ -148,5 +148,3 @@ your spiders or your settings when ``scrapy check`` is used::
         def __init__(self):
             if os.environ.get('SCRAPY_CHECK'):
                 pass  # Do some scraper adjustments when a check is running
-
-.. _os.environ: https://docs.python.org/3/library/os.html#os.environ

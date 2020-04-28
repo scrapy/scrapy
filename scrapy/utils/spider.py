@@ -1,27 +1,35 @@
 import logging
 import inspect
 
-import six
-
 from scrapy.spiders import Spider
-from scrapy.utils.misc import  arg_to_iter
+from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.misc import arg_to_iter
+try:
+    from scrapy.utils.py36 import collect_asyncgen
+except SyntaxError:
+    collect_asyncgen = None
+
 
 logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):
-    return arg_to_iter(result)
+    if collect_asyncgen and hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(result):
+        d = deferred_from_coro(collect_asyncgen(result))
+        d.addCallback(iterate_spider_output)
+        return d
+    return arg_to_iter(deferred_from_coro(result))
 
 
 def iter_spider_classes(module):
     """Return an iterator over all spider classes defined in the given module
-    that can be instantiated (ie. which have name)
+    that can be instantiated (i.e. which have name)
     """
     # this needs to be imported here until get rid of the spider manager
     # singleton in scrapy.spider.spiders
     from scrapy.spiders import Spider
 
-    for obj in six.itervalues(vars(module)):
+    for obj in vars(module).values():
         if inspect.isclass(obj) and \
            issubclass(obj, Spider) and \
            obj.__module__ == module.__name__ and \

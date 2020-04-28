@@ -1,12 +1,12 @@
-import re
 import csv
-from io import StringIO
 import logging
-import six
+import re
+from io import StringIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
@@ -60,7 +60,7 @@ class _StreamReader(object):
             self._text, self.encoding = obj.body, obj.encoding
         else:
             self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, six.text_type)
+        self._is_unicode = isinstance(self._text, str)
 
     def read(self, n=65535):
         self.read = self._read_unicode if self._is_unicode else self._read_string
@@ -101,8 +101,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     lines = StringIO(_body_or_str(obj, unicode=True))
 
     kwargs = {}
-    if delimiter: kwargs["delimiter"] = delimiter
-    if quotechar: kwargs["quotechar"] = quotechar
+    if delimiter:
+        kwargs["delimiter"] = delimiter
+    if quotechar:
+        kwargs["quotechar"] = quotechar
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
@@ -125,11 +127,13 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    expected_types = (Response, six.text_type, six.binary_type)
-    assert isinstance(obj, expected_types), \
-        "obj must be %s, not %s" % (
-            " or ".join(t.__name__ for t in expected_types),
-            type(obj).__name__)
+    expected_types = (Response, str, bytes)
+    if not isinstance(obj, expected_types):
+        expected_types_str = " or ".join(t.__name__ for t in expected_types)
+        raise TypeError(
+            "Object %r must be %s, not %s"
+            % (obj, expected_types_str, type(obj).__name__)
+        )
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
@@ -137,7 +141,7 @@ def _body_or_str(obj, unicode=True):
             return obj.text
         else:
             return obj.body.decode('utf-8')
-    elif isinstance(obj, six.text_type):
+    elif isinstance(obj, str):
         return obj if unicode else obj.encode('utf-8')
     else:
         return obj.decode('utf-8') if unicode else obj

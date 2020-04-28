@@ -2,8 +2,8 @@ import unittest
 
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TwistedTestCase
-import six
 
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import DropItem
@@ -60,18 +60,49 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.dropped(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, six.text_type) for x in lines)
+        assert all(isinstance(x, str) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
 
-    def test_error(self):
+    def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
         # 'exc_info' argument to the logging function
         item = {'key': 'value'}
         exception = Exception()
         response = Response("http://www.example.com")
-        logkws = self.formatter.error(item, exception, response, self.spider)
+        logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline, u"'Error processing {'key': 'value'}'")
+        self.assertEqual(logline, u"Error processing {'key': 'value'}")
+
+    def test_spider_error(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com", headers={'Referer': 'http://example.org'})
+        response = Response("http://www.example.com", request=request)
+        logkws = self.formatter.spider_error(failure, request, response, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(
+            logline,
+            "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
+        )
+
+    def test_download_error_short(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com")
+        logkws = self.formatter.download_error(failure, request, self.spider)
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline, "Error downloading <GET http://www.example.com>")
+
+    def test_download_error_long(self):
+        # In practice, the complete traceback is shown by passing the
+        # 'exc_info' argument to the logging function
+        failure = Failure(Exception())
+        request = Request("http://www.example.com")
+        logkws = self.formatter.download_error(failure, request, self.spider, "Some message")
+        logline = logkws['msg'] % logkws['args']
+        self.assertEqual(logline, "Error downloading <GET http://www.example.com>: Some message")
 
     def test_scraped(self):
         item = CustomItem()
@@ -80,7 +111,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.scraped(item, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, six.text_type) for x in lines)
+        assert all(isinstance(x, str) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
 
 
@@ -139,7 +170,7 @@ class SkipMessagesLogFormatter(LogFormatter):
         return None
 
 
-class DropSomeItemsPipeline(object):
+class DropSomeItemsPipeline:
     drop = True
 
     def process_item(self, item, spider):

@@ -2,8 +2,8 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
-from six.moves.urllib.parse import urlparse
 import warnings
+from urllib.parse import urlparse
 
 from w3lib.url import safe_url_string
 
@@ -28,7 +28,7 @@ POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
-class ReferrerPolicy(object):
+class ReferrerPolicy:
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES
 
@@ -284,7 +284,7 @@ def _load_policy_class(policy, warning_only=False):
                 return None
 
 
-class RefererMiddleware(object):
+class RefererMiddleware:
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy

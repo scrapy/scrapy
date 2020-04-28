@@ -1,4 +1,4 @@
-from six.moves import copyreg
+import copyreg
 
 
 # Undo what Twisted's perspective broker adds to pickle register

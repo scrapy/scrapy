@@ -1,16 +1,14 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import gc
-import os
-import re
-import inspect
-import weakref
 import errno
-import six
+import gc
+import inspect
+import re
+import sys
+import weakref
 from functools import partial, wraps
 from itertools import chain
-import sys
 
 from scrapy.utils.decorators import deprecated
 
@@ -65,10 +63,10 @@ def is_listlike(x):
     True
     >>> is_listlike((x for x in range(3)))
     True
-    >>> is_listlike(six.moves.xrange(5))
+    >>> is_listlike(range(5))
     True
     """
-    return hasattr(x, "__iter__") and not isinstance(x, (six.text_type, bytes))
+    return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
 def unique(list_, key=lambda x: x):
@@ -87,9 +85,9 @@ def unique(list_, key=lambda x: x):
 def to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return text
-    if not isinstance(text, (bytes, six.text_type)):
+    if not isinstance(text, (bytes, str)):
         raise TypeError('to_unicode must receive a bytes or str '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -102,7 +100,7 @@ def to_bytes(text, encoding=None, errors='strict'):
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
-    if not isinstance(text, six.string_types):
+    if not isinstance(text, str):
         raise TypeError('to_bytes must receive a str or bytes '
                         'object, got %s' % type(text).__name__)
     if encoding is None:
@@ -138,7 +136,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    if isinstance(pattern, six.string_types):
+    if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
@@ -162,16 +160,8 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {six.b(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
-
-
-@deprecated("scrapy.utils.python.binary_is_text")
-def isbinarytext(text):
-    """ This function is deprecated.
-    Please use scrapy.utils.python.binary_is_text, which was created to be more
-    clear about the functions behavior: it is behaving inverted to this one. """
-    return not binary_is_text(text)
 
 
 def binary_is_text(data):
@@ -233,7 +223,7 @@ def get_spec(func):
     >>> get_spec(re.match)
     (['pattern', 'string'], {'flags': 0})
 
-    >>> class Test(object):
+    >>> class Test:
     ...     def __call__(self, val):
     ...         pass
     ...     def method(self, val, flags=0):
@@ -282,7 +272,7 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache(object):
+class WeakKeyCache:
 
     def __init__(self, default_factory):
         self.default_factory = default_factory
@@ -292,41 +282,6 @@ class WeakKeyCache(object):
         if key not in self._weakdict:
             self._weakdict[key] = self.default_factory(key)
         return self._weakdict[key]
-
-
-@deprecated
-def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
-    """Return a (new) dict with unicode keys (and values when "keys_only" is
-    False) of the given dict converted to strings. ``dct_or_tuples`` can be a
-    dict or a list of tuples, like any dict ``__init__`` method supports.
-    """
-    d = {}
-    for k, v in six.iteritems(dict(dct_or_tuples)):
-        k = k.encode(encoding) if isinstance(k, six.text_type) else k
-        if not keys_only:
-            v = v.encode(encoding) if isinstance(v, six.text_type) else v
-        d[k] = v
-    return d
-
-
-@deprecated
-def is_writable(path):
-    """Return True if the given path can be written (if it exists) or created
-    (if it doesn't exist)
-    """
-    if os.path.exists(path):
-        return os.access(path, os.W_OK)
-    else:
-        return os.access(os.path.dirname(path), os.W_OK)
-
-
-@deprecated
-def setattr_default(obj, name, value):
-    """Set attribute value, but only if it's not already set. Similar to
-    setdefault() for dicts.
-    """
-    if not hasattr(obj, name):
-        setattr(obj, name, value)
 
 
 def retry_on_eintr(function, *args, **kw):
@@ -346,7 +301,7 @@ def without_none_values(iterable):
     value ``None`` have been removed.
     """
     try:
-        return {k: v for k, v in six.iteritems(iterable) if v is not None}
+        return {k: v for k, v in iterable.items() if v is not None}
     except AttributeError:
         return type(iterable)((v for v in iterable if v is not None))
 
@@ -372,10 +327,11 @@ else:
         gc.collect()
 
 
-class MutableChain(object):
+class MutableChain:
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
+
     def __init__(self, *args):
         self.data = chain(*args)
 

@@ -384,6 +384,14 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
 
+    def test_start_url(self):
+        spider = self.spider_class("example.com")
+        spider.start_url = 'https://www.example.com'
+
+        with self.assertRaisesRegex(AttributeError,
+                                    r'^Crawling could not start.*$'):
+            list(spider.start_requests())
+
 
 class SitemapSpiderTest(SpiderTest):
 
@@ -594,13 +602,19 @@ class DeprecationTest(unittest.TestCase):
             self.assertEqual(len(list(spider1.start_requests())), 1)
             self.assertEqual(len(w), 0)
 
+            # spider without overridden make_requests_from_url method
+            # should issue a warning when called directly
+            request = spider1.make_requests_from_url("http://www.example.com")
+            self.assertTrue(isinstance(request, Request))
+            self.assertEqual(len(w), 1)
+
             # spider with overridden make_requests_from_url issues a warning,
             # but the method still works
             spider2 = MySpider5()
             requests = list(spider2.start_requests())
             self.assertEqual(len(requests), 1)
             self.assertEqual(requests[0].url, 'http://example.com/foo')
-            self.assertEqual(len(w), 1)
+            self.assertEqual(len(w), 2)
 
 
 class NoParseMethodSpiderTest(unittest.TestCase):

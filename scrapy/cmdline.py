@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 import os
 import optparse
@@ -13,7 +12,6 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
-from scrapy.settings.deprecated import check_deprecated_settings
 
 
 def _iter_command_classes(module_name):
@@ -68,7 +66,7 @@ def _pop_command_name(argv):
 
 def _print_header(settings, inproject):
     if inproject:
-        print("Scrapy %s - project: %s\n" % (scrapy.__version__, \
+        print("Scrapy %s - project: %s\n" % (scrapy.__version__,
                                              settings['BOT_NAME']))
     else:
         print("Scrapy %s - no active project\n" % scrapy.__version__)
@@ -119,12 +117,11 @@ def execute(argv=None, settings=None):
             pass
         else:
             settings['EDITOR'] = editor
-    check_deprecated_settings(settings)
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(),
                                    conflict_handler='resolve')
     if not cmdname:
         _print_commands(settings, inproject)

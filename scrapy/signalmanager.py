@@ -1,9 +1,8 @@
-from __future__ import absolute_import
 from pydispatch import dispatcher
 from scrapy.utils import signal as _signal
 
 
-class SignalManager(object):
+class SignalManager:
 
     def __init__(self, sender=dispatcher.Anonymous):
         self.sender = sender
