@@ -14,7 +14,7 @@ from scrapy.utils.httpobj import urlparse_cached
 logger = logging.getLogger(__name__)
 
 
-class OffsiteMiddleware(object):
+class OffsiteMiddleware:
 
     def __init__(self, stats):
         self.stats = stats
@@ -53,13 +53,22 @@ class OffsiteMiddleware(object):
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
             return re.compile('')  # allow all by default
-        url_pattern = re.compile("^https?://.*$")
+        url_pattern = re.compile(r"^https?://.*$")
+        port_pattern = re.compile(r":\d+$")
+        domains = []
         for domain in allowed_domains:
-            if url_pattern.match(domain):
+            if domain is None:
+                continue
+            elif url_pattern.match(domain):
                 message = ("allowed_domains accepts only domains, not URLs. "
                            "Ignoring URL entry %s in allowed_domains." % domain)
                 warnings.warn(message, URLWarning)
-        domains = [re.escape(d) for d in allowed_domains if d is not None]
+            elif port_pattern.search(domain):
+                message = ("allowed_domains accepts only domains without ports. "
+                           "Ignoring entry %s in allowed_domains." % domain)
+                warnings.warn(message, PortWarning)
+            else:
+                domains.append(re.escape(domain))
         regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
@@ -69,4 +78,8 @@ class OffsiteMiddleware(object):
 
 
 class URLWarning(Warning):
+    pass
+
+
+class PortWarning(Warning):
     pass

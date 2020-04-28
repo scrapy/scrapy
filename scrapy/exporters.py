@@ -21,10 +21,11 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
-    def __init__(self, **kwargs):
-        self._configure(kwargs)
+    def __init__(self, *, dont_fail=False, **kwargs):
+        self._kwargs = kwargs
+        self._configure(kwargs, dont_fail=dont_fail)
 
     def _configure(self, options, dont_fail=False):
         """Configure the exporter by poping options from the ``options`` dict.
@@ -81,10 +82,10 @@ class BaseItemExporter(object):
 class JsonLinesItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         self.file = file
-        kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(**kwargs)
+        self._kwargs.setdefault('ensure_ascii', not self.encoding)
+        self.encoder = ScrapyJSONEncoder(**self._kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
@@ -95,15 +96,15 @@ class JsonLinesItemExporter(BaseItemExporter):
 class JsonItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         self.file = file
         # there is a small difference between the behaviour or JsonItemExporter.indent
         # and ScrapyJSONEncoder.indent. ScrapyJSONEncoder.indent=None is needed to prevent
         # the addition of newlines everywhere
         json_indent = self.indent if self.indent is not None and self.indent > 0 else None
-        kwargs.setdefault('indent', json_indent)
-        kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(**kwargs)
+        self._kwargs.setdefault('indent', json_indent)
+        self._kwargs.setdefault('ensure_ascii', not self.encoding)
+        self.encoder = ScrapyJSONEncoder(**self._kwargs)
         self.first_item = True
 
     def _beautify_newline(self):
@@ -135,7 +136,7 @@ class XmlItemExporter(BaseItemExporter):
         self.item_element = kwargs.pop('item_element', 'item')
         self.list_element = kwargs.pop('list_element', 'value')
         self.root_element = kwargs.pop('root_element', 'items')
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
@@ -198,7 +199,7 @@ class XmlItemExporter(BaseItemExporter):
 class CsvItemExporter(BaseItemExporter):
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
         self.include_headers_line = include_headers_line
@@ -209,7 +210,7 @@ class CsvItemExporter(BaseItemExporter):
             encoding=self.encoding,
             newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
         )
-        self.csv_writer = csv.writer(self.stream, **kwargs)
+        self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
@@ -258,7 +259,7 @@ class CsvItemExporter(BaseItemExporter):
 class PickleItemExporter(BaseItemExporter):
 
     def __init__(self, file, protocol=2, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
         self.protocol = protocol
 
@@ -277,7 +278,7 @@ class MarshalItemExporter(BaseItemExporter):
     """
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
 
     def export_item(self, item):
@@ -287,7 +288,7 @@ class MarshalItemExporter(BaseItemExporter):
 class PprintItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
 
     def export_item(self, item):

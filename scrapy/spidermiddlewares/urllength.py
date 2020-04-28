@@ -12,7 +12,7 @@ from scrapy.exceptions import NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class UrlLengthMiddleware(object):
+class UrlLengthMiddleware:
 
     def __init__(self, maxlength):
         self.maxlength = maxlength

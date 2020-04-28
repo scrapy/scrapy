@@ -269,6 +269,10 @@ coverage_ignore_pyobjects = [
 
     # Never documented before, and deprecated now.
     r'^scrapy\.item\.DictItem$',
+    r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
+
+    # Implementation detail of LxmlLinkExtractor
+    r'^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor',
 ]
 
 
@@ -277,11 +281,13 @@ coverage_ignore_pyobjects = [
 
 intersphinx_mapping = {
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
     'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
+    'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
 }
 
 
@@ -289,3 +295,10 @@ intersphinx_mapping = {
 # ------------------------------------
 
 hoverxref_auto_ref = True
+hoverxref_role_types = {
+    "class": "tooltip",
+    "confval": "tooltip",
+    "hoverxref": "tooltip",
+    "mod": "tooltip",
+    "ref": "tooltip",
+}

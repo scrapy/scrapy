@@ -13,5 +13,6 @@ class ScrapyUtilsTest(unittest.TestCase):
             installed_version = [int(x) for x in module.__version__.split('.')[:2]]
             assert installed_version >= [0, 6], "OpenSSL >= 0.6 required"
 
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,14 +1,18 @@
 """
 Some spiders used for testing and benchmarking
 """
-
+import asyncio
 import time
 from urllib.parse import urlencode
 
-from scrapy.spiders import Spider
+from twisted.internet import defer
+
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Spider
+from scrapy.spiders.crawl import CrawlSpider, Rule
+from scrapy.utils.test import get_from_asyncio_queue
 
 
 class MockServerSpider(Spider):
@@ -81,6 +85,54 @@ class SimpleSpider(MetaSpider):
 
     def parse(self, response):
         self.logger.info("Got response %d" % response.status)
+
+
+class AsyncDefSpider(SimpleSpider):
+
+    name = 'asyncdef'
+
+    async def parse(self, response):
+        await defer.succeed(42)
+        self.logger.info("Got response %d" % response.status)
+
+
+class AsyncDefAsyncioSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+
+
+class AsyncDefAsyncioReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+        return [{'id': 1}, {'id': 2}]
+
+
+class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_reqs_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        req_id = response.meta.get('req_id', 0)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d, req_id %d" % (status, req_id))
+        if req_id > 0:
+            return
+        reqs = []
+        for i in range(1, 3):
+            req = Request(self.start_urls[0], dont_filter=True, meta={'req_id': i})
+            reqs.append(req)
+        return reqs
 
 
 class ItemSpider(FollowAllSpider):
@@ -184,3 +236,35 @@ class DuplicateStartRequestsSpider(MockServerSpider):
 
     def parse(self, response):
         self.visited += 1
+
+
+class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
+    name = 'crawl_spider_with_errback'
+    custom_settings = {
+        'RETRY_HTTP_CODES': [],  # no need to retry
+    }
+    rules = (
+        Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),
+    )
+
+    def start_requests(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title<title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- errback -->
+                <p><a href="/status?n=500">Item 500</a></p>  <!-- errback -->
+                <p><a href="/status?n=501">Item 501</a></p>  <!-- errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+    def callback(self, response):
+        self.logger.info('[callback] status %i', response.status)
+
+    def errback(self, failure):
+        self.logger.info('[errback] status %i', failure.value.response.status)

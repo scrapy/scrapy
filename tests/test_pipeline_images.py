@@ -177,7 +177,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         IMAGES_RESULT_FIELD='images'
     )
 
-
     def setUp(self):
         self.tempdir = mkdtemp()
 

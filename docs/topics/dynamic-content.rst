@@ -104,6 +104,9 @@ If you get the expected response `sometimes`, but not always, the issue is
 probably not your request, but the target server. The target server might be
 buggy, overloaded, or :ref:`banning <bans>` some of your requests.
 
+Note that to translate a cURL command into a Scrapy request,
+you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
+
 .. _topics-handling-response-formats:
 
 Handling different response formats
@@ -115,7 +118,7 @@ data from it depends on the type of response:
 -   If the response is HTML or XML, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use `json.loads`_ to load the desired data from
+-   If the response is JSON, use :func:`json.loads` to load the desired data from
     :attr:`response.text <scrapy.http.TextResponse.text>`::
 
         data = json.loads(response.text)
@@ -130,8 +133,9 @@ data from it depends on the type of response:
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.
 
--   If the response is CSS, use a `regular expression`_ to extract the desired
-    data from :attr:`response.text <scrapy.http.TextResponse.text>`.
+-   If the response is CSS, use a :doc:`regular expression <library/re>` to
+    extract the desired data from
+    :attr:`response.text <scrapy.http.TextResponse.text>`.
 
 .. _topics-parsing-images:
 
@@ -168,31 +172,32 @@ JavaScript code:
 Once you have a string with the JavaScript code, you can extract the desired
 data from it:
 
--   You might be able to use a `regular expression`_ to extract the desired
-    data in JSON format, which you can then parse with `json.loads`_.
+-   You might be able to use a :doc:`regular expression <library/re>` to
+    extract the desired data in JSON format, which you can then parse with
+    :func:`json.loads`.
 
     For example, if the JavaScript code contains a separate line like
-    ``var data = {"field": "value"};`` you can extract that data as follows::
+    ``var data = {"field": "value"};`` you can extract that data as follows:
 
-        >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
-        >>> json_data = response.css('script::text').re_first(pattern)
-        >>> json.loads(json_data)
-        {'field': 'value'}
+    >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
+    >>> json_data = response.css('script::text').re_first(pattern)
+    >>> json.loads(json_data)
+    {'field': 'value'}
 
 -   Otherwise, use js2xml_ to convert the JavaScript code into an XML document
     that you can parse using :ref:`selectors <topics-selectors>`.
 
     For example, if the JavaScript code contains
-    ``var data = {field: "value"};`` you can extract that data as follows::
+    ``var data = {field: "value"};`` you can extract that data as follows:
 
-        >>> import js2xml
-        >>> import lxml.etree
-        >>> from parsel import Selector
-        >>> javascript = response.css('script::text').get()
-        >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
-        >>> selector = Selector(text=xml)
-        >>> selector.css('var[name="data"]').get()
-        '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
+    >>> import js2xml
+    >>> import lxml.etree
+    >>> from parsel import Selector
+    >>> javascript = response.css('script::text').get()
+    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
+    >>> selector = Selector(text=xml)
+    >>> selector.css('var[name="data"]').get()
+    '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
 .. _topics-javascript-rendering:
 
@@ -241,12 +246,10 @@ along with `scrapy-selenium`_ for seamless integration.
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
-.. _json.loads: https://docs.python.org/library/json.html#json.loads
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _regular expression: https://docs.python.org/library/re.html
 .. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-.. _Selenium: https://www.seleniumhq.org/
+.. _Selenium: https://www.selenium.dev/
 .. _Splash: https://github.com/scrapinghub/splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/

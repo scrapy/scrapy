@@ -25,7 +25,7 @@ class Command(ScrapyCommand):
             self.crawler_process.start()
 
 
-class _BenchServer(object):
+class _BenchServer:
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
