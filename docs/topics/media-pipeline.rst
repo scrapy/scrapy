@@ -440,7 +440,7 @@ See here the methods that you can override in your custom Files Pipeline:
       :meth:`~get_media_requests` method and return a Request for each
       file URL::
 
-         from scrapy.utils.item import ItemAdapter
+         from itemadapter import ItemAdapter
 
          def get_media_requests(self, item, info):
              adapter = ItemAdapter(item)
@@ -498,8 +498,8 @@ See here the methods that you can override in your custom Files Pipeline:
       store the downloaded file paths (passed in results) in the ``file_paths``
       item field, and we drop the item if it doesn't contain any files::
 
+          from itemadapter import ItemAdapter
           from scrapy.exceptions import DropItem
-          from scrapy.utils.item import ItemAdapter
 
           def item_completed(self, results, item, info):
               file_paths = [x['path'] for ok, x in results if ok]
@@ -580,9 +580,9 @@ Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
+    from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
     from scrapy.pipelines.images import ImagesPipeline
-    from scrapy.utils.item import ItemAdapter
 
     class MyImagesPipeline(ImagesPipeline):
 

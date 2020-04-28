@@ -16,6 +16,7 @@ from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
 
+from itemadapter import ItemAdapter
 from twisted.internet import defer, threads
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -25,7 +26,6 @@ from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes

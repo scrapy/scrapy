@@ -83,9 +83,9 @@ Let's take a look at the following hypothetical pipeline that adjusts the
 (``price_excludes_vat`` attribute), and drops those items which don't
 contain a price::
 
+    from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
-    from scrapy.utils.item import ItemAdapter
-
+    
     class PricePipeline:
 
         vat_factor = 1.15
@@ -109,7 +109,7 @@ format::
 
    import json
 
-   from scrapy.utils.item import ItemAdapter
+   from itemadapter import ItemAdapter
 
    class JsonWriterPipeline:
 
@@ -139,7 +139,7 @@ The main point of this example is to show how to use :meth:`from_crawler`
 method and how to clean up the resources properly.::
 
     import pymongo
-    from scrapy.utils.item import ItemAdapter
+    from itemadapter import ItemAdapter
 
     class MongoPipeline:
 
@@ -188,7 +188,7 @@ it saves the screenshot to a file and adds filename to the item.
     from urllib.parse import quote
 
     import scrapy
-    from scrapy.utils.item import ItemAdapter
+    from itemadapter import ItemAdapter
 
     class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
@@ -228,8 +228,8 @@ already processed. Let's say that our items have a unique id, but our spider
 returns multiples items with the same id::
 
 
+    from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
-    from scrapy.utils.item import ItemAdapter
 
     class DuplicatesPipeline:
 

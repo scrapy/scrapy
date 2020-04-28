@@ -8,6 +8,7 @@ import hashlib
 from contextlib import suppress
 from io import BytesIO
 
+from itemadapter import ItemAdapter
 from PIL import Image
 
 from scrapy.exceptions import DropItem
@@ -15,7 +16,6 @@ from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 

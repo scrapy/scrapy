@@ -7,6 +7,7 @@ from tempfile import mkdtemp
 from unittest import mock, skipIf
 from urllib.parse import urlparse
 
+from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
 
@@ -21,7 +22,6 @@ from scrapy.pipelines.files import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.test import (
     assert_aws_environ,
     assert_gcs_environ,

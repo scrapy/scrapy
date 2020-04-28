@@ -53,7 +53,7 @@ There are several use cases for coroutines in Scrapy. Code that would
 return Deferreds when written for previous Scrapy versions, such as downloader
 middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
-    from scrapy.utils.item import ItemAdapter
+    from itemadapter import ItemAdapter
 
     class DbPipeline:
         def _update_item(self, data, item):
@@ -69,7 +69,7 @@ middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
 becomes::
 
-    from scrapy.utils.item import ItemAdapter
+    from itemadapter import ItemAdapter
 
     class DbPipeline:
         async def process_item(self, item, spider):

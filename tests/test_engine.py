@@ -15,6 +15,7 @@ import re
 import sys
 from urllib.parse import urlparse
 
+from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from twisted.internet import defer, reactor
 from twisted.trial import unittest
@@ -26,7 +27,6 @@ from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 

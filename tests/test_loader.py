@@ -1,13 +1,14 @@
 from functools import partial
 import unittest
 
+from itemadapter import ItemAdapter
+
 from scrapy.http import HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 from scrapy.selector import Selector
-from scrapy.utils.item import ItemAdapter
 
 
 try:

@@ -342,9 +342,7 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import BaseItem
-    from scrapy.utils.item import is_item, ItemAdapter
-
+    from itemadapter import is_item, ItemAdapter
 
     class MultiplyItemsMiddleware:
 

@@ -6,6 +6,7 @@ See documentation in docs/topics/shell.rst
 import os
 import signal
 
+from itemadapter import is_item
 from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
@@ -18,7 +19,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.item import is_item
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 

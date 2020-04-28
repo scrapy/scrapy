@@ -40,8 +40,8 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
 value of one of their fields::
 
+    from itemadapter import ItemAdapter
     from scrapy.exporters import XmlItemExporter
-    from scrapy.utils.item import ItemAdapter
 
     class PerYearXmlExportPipeline:
         """Distribute items across multiple XML files according to their 'year' field"""

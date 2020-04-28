@@ -6,11 +6,12 @@ See documentation in docs/topics/loaders.rst
 from collections import defaultdict
 from contextlib import suppress
 
+from itemadapter import ItemAdapter
+
 from scrapy.item import Item
 from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
 from scrapy.selector import Selector
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 

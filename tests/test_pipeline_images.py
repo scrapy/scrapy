@@ -5,13 +5,13 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
 
+from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.python import to_bytes
 
 

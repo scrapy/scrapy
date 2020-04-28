@@ -10,9 +10,10 @@ import pprint
 import warnings
 from xml.sax.saxutils import XMLGenerator
 
+from itemadapter import ItemAdapter
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import BaseItem
-from scrapy.utils.item import ItemAdapter
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -75,7 +76,10 @@ class BaseItemExporter:
 
         for field_name in field_iter:
             if field_name in item:
-                field = item.get_field(field_name) or {}
+                try:
+                    field = item.get_field_meta(field_name)
+                except TypeError:
+                    field = {}
                 value = self.serialize_field(field, field_name, item[field_name])
             else:
                 value = default_value
