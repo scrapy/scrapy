@@ -196,5 +196,3 @@ class PipelineTestCase(unittest.TestCase):
         crawler = self._create_crawler(Pipeline1, Pipeline2, **settings)
         with self.assertRaises(ValueError):
             yield crawler.crawl(mockserver=self.mockserver)
-        # TODO: Fix “twisted.trial.util.DirtyReactorAggregateError: Reactor was
-        # unclean.”

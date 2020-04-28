@@ -65,9 +65,9 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
+        self.scraper = Scraper(crawler)
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
-        self.scraper = Scraper(crawler)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
