@@ -48,7 +48,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
--   The :meth:`start_requests` spider method.
+-   The :meth:`~scrapy.spiders.Spider.start_requests` spider method.
 
 .. _asynchronous generators were introduced in Python 3.6: https://www.python.org/dev/peps/pep-0525/
 
@@ -59,17 +59,20 @@ Asynchronous start_requests and spider middlewares
 
 .. versionadded:: 2.1
 
-The :meth:`start_requests` spider method can be an asynchronous generator. In
-this case all spider middlewares used with this spider that have the
+The :meth:`~scrapy.spiders.Spider.start_requests` spider method can be an
+asynchronous generator. In this case all spider middlewares used with this
+spider that have the
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests`
 method must support this: if they receive an asynchronous iterable, they must
 return one as well. On the other hand, if they receive a normal iterable, they
 shouldn't break. Such universal :meth:`process_start_requests` must be an
 asynchronous generator itself, and so it will always convert a normal iterable
-to an asynchronous one. As a result of a middleware method is passed to the
-same method of the next middleware, it's only possible to mix middlewares with
-synchronous and asynchronous :meth:`process_start_requests` if all synchronous
-ones are called first.
+to an asynchronous one. Because a result of a middleware method is passed to
+the same method of the next middleware, it's only possible to mix middlewares
+with synchronous and asynchronous :meth:`process_start_requests` if all
+synchronous ones are called first.
+
+.. autofunction:: scrapy.utils.asyncgen.as_async_generator
 
 Here is an example of a universal middleware::
 
@@ -82,7 +85,7 @@ Here is an example of a universal middleware::
                 yield r
 
 If this method includes asynchronous code, that code will work even with
-synchronous :meth:`start_requests`.
+synchronous :meth:`~scrapy.spiders.Spider.start_requests`.
 
 Usage
 =====
@@ -123,7 +126,7 @@ This means you can use many useful Python libraries providing such code::
         async def parse_with_asyncio(self, response):
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://additional.url') as additional_response:
-                    additional_data = await r.text()
+                    additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
@@ -133,7 +136,7 @@ This means you can use many useful Python libraries providing such code::
 Common use cases for asynchronous code include:
 
 * requesting data from websites, databases and other services (in
-  :meth:`start_requests`, callbacks, pipelines and middlewares);
+  :meth:`~scrapy.spiders.Spider.start_requests`, callbacks, pipelines and middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);
