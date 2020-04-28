@@ -34,14 +34,14 @@ Scrapy is a fast high-level web crawling and web scraping framework, used to
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
-For more information including a list of features check the Scrapy homepage at:
-https://scrapy.org
+Check the Scrapy homepage at https://scrapy.org for more information,
+including a list of features.
 
 Requirements
 ============
 
 * Python 3.5+
-* Works on Linux, Windows, Mac OSX, BSD
+* Works on Linux, Windows, macOS, BSD
 
 Install
 =======
@@ -50,8 +50,8 @@ The quick way::
 
     pip install scrapy
 
-For more details see the install section in the documentation:
-https://docs.scrapy.org/en/latest/intro/install.html
+See the install section in the documentation at
+https://docs.scrapy.org/en/latest/intro/install.html for more details.
 
 Documentation
 =============
@@ -62,17 +62,17 @@ directory.
 Releases
 ========
 
-You can find release notes at https://docs.scrapy.org/en/latest/news.html
+You can check https://docs.scrapy.org/en/latest/news.html for the release notes.
 
 Community (blog, twitter, mail list, IRC)
 =========================================
 
-See https://scrapy.org/community/
+See https://scrapy.org/community/ for details.
 
 Contributing
 ============
 
-See https://docs.scrapy.org/en/master/contributing.html
+See https://docs.scrapy.org/en/master/contributing.html for details.
 
 Code of Conduct
 ---------------
@@ -86,9 +86,9 @@ Please report unacceptable behavior to opensource@scrapinghub.com.
 Companies using Scrapy
 ======================
 
-See https://scrapy.org/companies/
+See https://scrapy.org/companies/ for a list.
 
 Commercial Support
 ==================
 
-See https://scrapy.org/support/
+See https://scrapy.org/support/ for details.

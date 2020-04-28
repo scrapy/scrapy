@@ -1,9 +1,10 @@
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.boto import is_botocore
-from .http import HTTPDownloadHandler
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import create_instance
 
 
 def _get_boto_connection():
@@ -21,7 +22,7 @@ def _get_boto_connection():
             return http_request.headers
 
     try:
-        import boto.auth
+        import boto.auth  # noqa: F401
     except ImportError:
         _S3Connection = _v19_S3Connection
     else:
@@ -30,11 +31,12 @@ def _get_boto_connection():
     return _S3Connection
 
 
-class S3DownloadHandler(object):
+class S3DownloadHandler:
 
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler, **kw):
-
+    def __init__(self, settings, *,
+                 crawler=None,
+                 aws_access_key_id=None, aws_secret_access_key=None,
+                 httpdownloadhandler=HTTPDownloadHandler, **kw):
         if not aws_access_key_id:
             aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
         if not aws_secret_access_key:
@@ -67,7 +69,16 @@ class S3DownloadHandler(object):
             except Exception as ex:
                 raise NotConfigured(str(ex))
 
-        self._download_http = httpdownloadhandler(settings).download_request
+        _http_handler = create_instance(
+            objcls=httpdownloadhandler,
+            settings=settings,
+            crawler=crawler,
+        )
+        self._download_http = _http_handler.download_request
+
+    @classmethod
+    def from_crawler(cls, crawler, **kwargs):
+        return cls(crawler.settings, crawler=crawler, **kwargs)
 
     def download_request(self, request, spider):
         p = urlparse_cached(request)

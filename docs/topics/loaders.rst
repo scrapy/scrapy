@@ -136,25 +136,14 @@ with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
 
+.. versionchanged:: 2.0
+   Processors no longer need to be methods.
+
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
    input processors will be appended to an internal list (in the Loader)
    containing the collected values (for that field). The result of the output
    processors is the value that will be finally assigned to the item.
-
-If you want to use a plain function as a processor, make sure it receives
-``self`` as the first argument::
-
-    def lowercase_processor(self, values):
-        for v in values:
-            yield v.lower()
-
-    class MyItemLoader(ItemLoader):
-        name_in = lowercase_processor
-
-This is because whenever a function is assigned as a class variable, it becomes
-a method and would be passed the instance as the the first argument when being
-called. See `this answer on stackoverflow`_ for more details.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
@@ -163,7 +152,7 @@ processors to populate the fields.
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
 
-.. _this answer on stackoverflow: https://stackoverflow.com/a/35322635
+
 
 Declaring Item Loaders
 ======================
@@ -220,14 +209,12 @@ metadata. Here is an example::
             output_processor=TakeFirst(),
         )
 
-::
-
-    >>> from scrapy.loader import ItemLoader
-    >>> il = ItemLoader(item=Product())
-    >>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
-    >>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
-    >>> il.load_item()
-    {'name': u'Welcome to my website', 'price': u'1000'}
+>>> from scrapy.loader import ItemLoader
+>>> il = ItemLoader(item=Product())
+>>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
+>>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+>>> il.load_item()
+{'name': u'Welcome to my website', 'price': u'1000'}
 
 The precedence order, for both input and output processors, is as follows:
 
@@ -328,11 +315,11 @@ ItemLoader objects
             applied before processors
         :type re: str or compiled regex
 
-        Examples::
+        Examples:
 
-            >>> from scrapy.loader.processors import TakeFirst
-            >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
-            'FOO`
+        >>> from scrapy.loader.processors import TakeFirst
+        >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
+        'FOO`
 
     .. method:: add_value(field_name, value, \*processors, \**kwargs)
 
@@ -491,6 +478,8 @@ ItemLoader objects
     .. attribute:: item
 
         The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
+        This is mostly used as a property so when attempting to override this
+        value, you may want to check out :attr:`default_item_class` first.
 
     .. attribute:: context
 
@@ -651,12 +640,12 @@ Here is a list of all built-in processors:
     values unchanged. It doesn't receive any ``__init__`` method arguments, nor does it
     accept Loader contexts.
 
-    Example::
+    Example:
 
-        >>> from scrapy.loader.processors import Identity
-        >>> proc = Identity()
-        >>> proc(['one', 'two', 'three'])
-        ['one', 'two', 'three']
+    >>> from scrapy.loader.processors import Identity
+    >>> proc = Identity()
+    >>> proc(['one', 'two', 'three'])
+    ['one', 'two', 'three']
 
 .. class:: TakeFirst
 
@@ -664,12 +653,12 @@ Here is a list of all built-in processors:
     so it's typically used as an output processor to single-valued fields.
     It doesn't receive any ``__init__`` method arguments, nor does it accept Loader contexts.
 
-    Example::
+    Example:
 
-        >>> from scrapy.loader.processors import TakeFirst
-        >>> proc = TakeFirst()
-        >>> proc(['', 'one', 'two', 'three'])
-        'one'
+    >>> from scrapy.loader.processors import TakeFirst
+    >>> proc = TakeFirst()
+    >>> proc(['', 'one', 'two', 'three'])
+    'one'
 
 .. class:: Join(separator=u' ')
 
@@ -679,15 +668,15 @@ Here is a list of all built-in processors:
     When using the default separator, this processor is equivalent to the
     function: ``u' '.join``
 
-    Examples::
+    Examples:
 
-        >>> from scrapy.loader.processors import Join
-        >>> proc = Join()
-        >>> proc(['one', 'two', 'three'])
-        'one two three'
-        >>> proc = Join('<br>')
-        >>> proc(['one', 'two', 'three'])
-        'one<br>two<br>three'
+    >>> from scrapy.loader.processors import Join
+    >>> proc = Join()
+    >>> proc(['one', 'two', 'three'])
+    'one two three'
+    >>> proc = Join('<br>')
+    >>> proc(['one', 'two', 'three'])
+    'one<br>two<br>three'
 
 .. class:: Compose(\*functions, \**default_loader_context)
 
@@ -700,12 +689,12 @@ Here is a list of all built-in processors:
     By default, stop process on ``None`` value. This behaviour can be changed by
     passing keyword argument ``stop_on_none=False``.
 
-    Example::
+    Example:
 
-        >>> from scrapy.loader.processors import Compose
-        >>> proc = Compose(lambda v: v[0], str.upper)
-        >>> proc(['hello', 'world'])
-        'HELLO'
+    >>> from scrapy.loader.processors import Compose
+    >>> proc = Compose(lambda v: v[0], str.upper)
+    >>> proc(['hello', 'world'])
+    'HELLO'
 
     Each function can optionally receive a ``loader_context`` parameter. For
     those which do, this processor will pass the currently active :ref:`Loader
@@ -744,15 +733,15 @@ Here is a list of all built-in processors:
     :meth:`~scrapy.selector.Selector.extract` method of :ref:`selectors
     <topics-selectors>`, which returns a list of unicode strings.
 
-    The example below should clarify how it works::
+    The example below should clarify how it works:
 
-        >>> def filter_world(x):
-        ...     return None if x == 'world' else x
-        ...
-        >>> from scrapy.loader.processors import MapCompose
-        >>> proc = MapCompose(filter_world, str.upper)
-        >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
-        ['HELLO, 'THIS', 'IS', 'SCRAPY']
+    >>> def filter_world(x):
+    ...     return None if x == 'world' else x
+    ...
+    >>> from scrapy.loader.processors import MapCompose
+    >>> proc = MapCompose(filter_world, str.upper)
+    >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
+    ['HELLO, 'THIS', 'IS', 'SCRAPY']
 
     As with the Compose processor, functions can receive Loader contexts, and
     ``__init__`` method keyword arguments are used as default context values. See
@@ -764,21 +753,21 @@ Here is a list of all built-in processors:
     Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
     This processor takes only one input at a time.
 
-    Example::
+    Example:
 
-        >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
-        >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
-        >>> proc({'foo': 'bar'})
-        'bar'
-        >>> proc({'foo': {'bar': 'baz'}})
-        {'bar': 'baz'}
+    >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
+    >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
+    >>> proc({'foo': 'bar'})
+    'bar'
+    >>> proc({'foo': {'bar': 'baz'}})
+    {'bar': 'baz'}
 
-    Working with Json::
+    Working with Json:
 
-        >>> import json
-        >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
-        >>> proc_single_json_str('{"foo": "bar"}')
-        'bar'
-        >>> proc_json_list = Compose(json.loads, MapCompose(SelectJmes('foo')))
-        >>> proc_json_list('[{"foo":"bar"}, {"baz":"tar"}]')
-        ['bar']
+    >>> import json
+    >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
+    >>> proc_single_json_str('{"foo": "bar"}')
+    'bar'
+    >>> proc_json_list = Compose(json.loads, MapCompose(SelectJmes('foo')))
+    >>> proc_json_list('[{"foo":"bar"}, {"baz":"tar"}]')
+    ['bar']

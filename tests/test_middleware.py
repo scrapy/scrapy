@@ -3,9 +3,9 @@ from twisted.trial import unittest
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
-import six
 
-class M1(object):
+
+class M1:
 
     def open_spider(self, spider):
         pass
@@ -16,7 +16,8 @@ class M1(object):
     def process(self, response, request, spider):
         pass
 
-class M2(object):
+
+class M2:
 
     def open_spider(self, spider):
         pass
@@ -26,13 +27,14 @@ class M2(object):
 
     pass
 
-class M3(object):
+
+class M3:
 
     def process(self, response, request, spider):
         pass
 
 
-class MOff(object):
+class MOff:
 
     def open_spider(self, spider):
         pass
@@ -55,6 +57,7 @@ class TestMiddlewareManager(MiddlewareManager):
         if hasattr(mw, 'process'):
             self.methods['process'].append(mw.process)
 
+
 class MiddlewareManagerTest(unittest.TestCase):
 
     def test_init(self):
@@ -66,20 +69,12 @@ class MiddlewareManagerTest(unittest.TestCase):
 
     def test_methods(self):
         mwman = TestMiddlewareManager(M1(), M2(), M3())
-        if six.PY2:
-            self.assertEqual([x.im_class for x in mwman.methods['open_spider']],
-                [M1, M2])
-            self.assertEqual([x.im_class for x in mwman.methods['close_spider']],
-                [M2, M1])
-            self.assertEqual([x.im_class for x in mwman.methods['process']],
-                [M1, M3])
-        else:
-            self.assertEqual([x.__self__.__class__ for x in mwman.methods['open_spider']],
-                [M1, M2])
-            self.assertEqual([x.__self__.__class__ for x in mwman.methods['close_spider']],
-                [M2, M1])
-            self.assertEqual([x.__self__.__class__ for x in mwman.methods['process']],
-                [M1, M3])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['open_spider']],
+            [M1, M2])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['close_spider']],
+            [M2, M1])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['process']],
+            [M1, M3])
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()

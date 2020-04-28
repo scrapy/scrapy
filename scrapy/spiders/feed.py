@@ -100,8 +100,8 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter = None # When this is None, python's csv module's default delimiter is used
-    quotechar = None # When this is None, python's csv module's default quotechar is used
+    delimiter = None  # When this is None, python's csv module's default delimiter is used
+    quotechar = None  # When this is None, python's csv module's default quotechar is used
     headers = None
 
     def process_results(self, response, results):

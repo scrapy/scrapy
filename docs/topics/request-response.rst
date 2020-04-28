@@ -31,10 +31,12 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
+
+        If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: string
 
     :param callback: the function that will be called with the response of this
-       request (once its downloaded) as its first parameter. For more information
+       request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
        :meth:`~scrapy.spiders.Spider.parse` method will be used.
@@ -121,10 +123,14 @@ Request objects
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
-       with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
-       as first parameter.
+       with 404 HTTP errors and such. It receives a
+       :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
+
+       .. versionchanged:: 2.0
+          The *callback* parameter is no longer required when the *errback*
+          parameter is specified.
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -168,9 +174,9 @@ Request objects
         See :ref:`topics-request-meta` for a list of special meta keys
         recognized by Scrapy.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.meta`` attribute.
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.meta`` attribute.
 
     .. attribute:: Request.cb_kwargs
 
@@ -179,11 +185,9 @@ Request objects
         for new Requests, which means by default callbacks only get a :class:`Response`
         object as argument.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.cb_kwargs`` attribute.
-
-    .. _shallow copied: https://docs.python.org/2/library/copy.html
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
     .. method:: Request.copy()
 
@@ -254,8 +258,8 @@ Using errbacks to catch exceptions in request processing
 The errback of a request is a function that will be called when an exception
 is raise while processing it.
 
-It receives a `Twisted Failure`_ instance as first parameter and can be
-used to track connection establishment timeouts, DNS errors etc.
+It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
+be used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
 errors if needed::
@@ -396,7 +400,7 @@ The FormRequest class extends the base :class:`Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
-.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
+.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 
@@ -560,11 +564,9 @@ dealing with JSON requests.
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
-   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+   :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
-
-.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
 JsonRequest usage example
 -------------------------
@@ -609,7 +611,16 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: :class:`Request` object
+    :type request: scrapy.http.Request
+
+    :param certificate: an object representing the server's SSL certificate.
+    :type certificate: twisted.internet.ssl.Certificate
+
+    :param ip_address: The IP address of the server from which the Response originated.
+    :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
+
+    .. versionadded:: 2.1.0
+       The ``ip_address`` parameter.
 
     .. attribute:: Response.url
 
@@ -664,7 +675,7 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
@@ -672,12 +683,43 @@ Response objects
 
         .. seealso:: :attr:`Request.meta` attribute
 
+    .. attribute:: Response.cb_kwargs
+
+        .. versionadded:: 2.0
+
+        A shortcut to the :attr:`Request.cb_kwargs` attribute of the
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
+
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.cb_kwargs` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.cb_kwargs` sent
+        from your spider.
+
+        .. seealso:: :attr:`Request.cb_kwargs` attribute
+
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.certificate
+
+        A :class:`twisted.internet.ssl.Certificate` object representing
+        the server's SSL certificate.
+
+        Only populated for ``https`` responses, ``None`` otherwise.
+
+    .. attribute:: Response.ip_address
+
+        .. versionadded:: 2.1.0
+
+        The IP address of the server from which the Response originated.
+        
+        This attribute is currently only populated by the HTTP 1.1 download
+        handler, i.e. for ``http(s)`` responses. For other handlers, 
+        :attr:`ip_address` is always ``None``.
 
     .. method:: Response.copy()
 
@@ -694,15 +736,15 @@ Response objects
         Constructs an absolute url by combining the Response's :attr:`url` with
         a possible relative url.
 
-        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
         making this call::
 
-            urlparse.urljoin(response.url, url)
+            urllib.parse.urljoin(response.url, url)
 
     .. automethod:: Response.follow
 
+    .. automethod:: Response.follow_all
 
-.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -758,7 +800,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class
@@ -790,6 +832,8 @@ TextResponse objects
 
     .. automethod:: TextResponse.follow
 
+    .. automethod:: TextResponse.follow_all
+
     .. method:: TextResponse.body_as_unicode()
 
         The same as :attr:`text`, but available as a method. This method is
@@ -816,5 +860,4 @@ XmlResponse objects
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
 
-.. _Twisted Failure: https://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241

@@ -4,18 +4,16 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import sys
 import pprint
 import marshal
-import six
-from six.moves import cPickle as pickle
+import warnings
+import pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, to_native_str, is_listlike
+from scrapy.utils.python import to_bytes, to_unicode, is_listlike
 from scrapy.item import BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
-import warnings
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
@@ -23,10 +21,11 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
-    def __init__(self, **kwargs):
-        self._configure(kwargs)
+    def __init__(self, *, dont_fail=False, **kwargs):
+        self._kwargs = kwargs
+        self._configure(kwargs, dont_fail=dont_fail)
 
     def _configure(self, options, dont_fail=False):
         """Configure the exporter by poping options from the ``options`` dict.
@@ -61,9 +60,9 @@ class BaseItemExporter(object):
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
             if include_empty and not isinstance(item, dict):
-                field_iter = six.iterkeys(item.fields)
+                field_iter = item.fields.keys()
             else:
-                field_iter = six.iterkeys(item)
+                field_iter = item.keys()
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -83,10 +82,10 @@ class BaseItemExporter(object):
 class JsonLinesItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         self.file = file
-        kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(**kwargs)
+        self._kwargs.setdefault('ensure_ascii', not self.encoding)
+        self.encoder = ScrapyJSONEncoder(**self._kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
@@ -97,15 +96,15 @@ class JsonLinesItemExporter(BaseItemExporter):
 class JsonItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         self.file = file
         # there is a small difference between the behaviour or JsonItemExporter.indent
         # and ScrapyJSONEncoder.indent. ScrapyJSONEncoder.indent=None is needed to prevent
         # the addition of newlines everywhere
         json_indent = self.indent if self.indent is not None and self.indent > 0 else None
-        kwargs.setdefault('indent', json_indent)
-        kwargs.setdefault('ensure_ascii', not self.encoding)
-        self.encoder = ScrapyJSONEncoder(**kwargs)
+        self._kwargs.setdefault('indent', json_indent)
+        self._kwargs.setdefault('ensure_ascii', not self.encoding)
+        self.encoder = ScrapyJSONEncoder(**self._kwargs)
         self.first_item = True
 
     def _beautify_newline(self):
@@ -136,18 +135,18 @@ class XmlItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
         self.root_element = kwargs.pop('root_element', 'items')
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
 
     def _beautify_newline(self, new_item=False):
         if self.indent is not None and (self.indent > 0 or new_item):
-            self._xg_characters('\n')
+            self.xg.characters('\n')
 
     def _beautify_indent(self, depth=1):
         if self.indent:
-            self._xg_characters(' ' * self.indent * depth)
+            self.xg.characters(' ' * self.indent * depth)
 
     def start_exporting(self):
         self.xg.startDocument()
@@ -174,39 +173,25 @@ class XmlItemExporter(BaseItemExporter):
         if hasattr(serialized_value, 'items'):
             self._beautify_newline()
             for subname, value in serialized_value.items():
-                self._export_xml_field(subname, value, depth=depth+1)
+                self._export_xml_field(subname, value, depth=depth + 1)
             self._beautify_indent(depth=depth)
         elif is_listlike(serialized_value):
             self._beautify_newline()
             for value in serialized_value:
-                self._export_xml_field('value', value, depth=depth+1)
+                self._export_xml_field('value', value, depth=depth + 1)
             self._beautify_indent(depth=depth)
-        elif isinstance(serialized_value, six.text_type):
-            self._xg_characters(serialized_value)
+        elif isinstance(serialized_value, str):
+            self.xg.characters(serialized_value)
         else:
-            self._xg_characters(str(serialized_value))
+            self.xg.characters(str(serialized_value))
         self.xg.endElement(name)
         self._beautify_newline()
-
-    # Workaround for https://bugs.python.org/issue17606
-    # Before Python 2.7.4 xml.sax.saxutils required bytes;
-    # since 2.7.4 it requires unicode. The bug is likely to be
-    # fixed in 2.7.6, but 2.7.6 will still support unicode,
-    # and Python 3.x will require unicode, so ">= 2.7.4" should be fine.
-    if sys.version_info[:3] >= (2, 7, 4):
-        def _xg_characters(self, serialized_value):
-            if not isinstance(serialized_value, six.text_type):
-                serialized_value = serialized_value.decode(self.encoding)
-            return self.xg.characters(serialized_value)
-    else:  # pragma: no cover
-        def _xg_characters(self, serialized_value):
-            return self.xg.characters(serialized_value)
 
 
 class CsvItemExporter(BaseItemExporter):
 
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
-        self._configure(kwargs, dont_fail=True)
+        super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
         self.include_headers_line = include_headers_line
@@ -215,9 +200,9 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline='' # Windows needs this https://github.com/scrapy/scrapy/issues/3034
-        ) if six.PY3 else file
-        self.csv_writer = csv.writer(self.stream, **kwargs)
+            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+        )
+        self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
@@ -246,7 +231,7 @@ class CsvItemExporter(BaseItemExporter):
     def _build_row(self, values):
         for s in values:
             try:
-                yield to_native_str(s, self.encoding)
+                yield to_unicode(s, self.encoding)
             except TypeError:
                 yield s
 
@@ -266,7 +251,7 @@ class CsvItemExporter(BaseItemExporter):
 class PickleItemExporter(BaseItemExporter):
 
     def __init__(self, file, protocol=2, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
         self.protocol = protocol
 
@@ -285,7 +270,7 @@ class MarshalItemExporter(BaseItemExporter):
     """
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
 
     def export_item(self, item):
@@ -295,7 +280,7 @@ class MarshalItemExporter(BaseItemExporter):
 class PprintItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        super().__init__(**kwargs)
         self.file = file
 
     def export_item(self, item):
@@ -334,12 +319,12 @@ class PythonItemExporter(BaseItemExporter):
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
-        if isinstance(value, (six.text_type, bytes)):
+        if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 
     def _serialize_dict(self, value):
-        for key, val in six.iteritems(value):
+        for key, val in value.items():
             key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
 

@@ -1,5 +1,5 @@
 import logging
-from six.moves.urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
 
@@ -7,10 +7,11 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
+
 logger = logging.getLogger(__name__)
 
 
-class BaseRedirectMiddleware(object):
+class BaseRedirectMiddleware:
 
     enabled_setting = 'REDIRECT_ENABLED'
 
@@ -92,8 +93,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
     def __init__(self, settings):
         super(MetaRefreshMiddleware, self).__init__(settings)
         self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
-        self._maxdelay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY',
-                                         settings.getint('METAREFRESH_MAXDELAY'))
+        self._maxdelay = settings.getint('METAREFRESH_MAXDELAY')
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_redirect', False) or request.method == 'HEAD' or \

@@ -29,7 +29,8 @@ Each item pipeline component is a Python class that must implement the following
 
    This method is called for every item pipeline component. :meth:`process_item`
    must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a `Twisted Deferred`_ or raise
+   (or any descendant class) object, return a
+   :class:`~twisted.internet.defer.Deferred` or raise
    :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
@@ -67,8 +68,6 @@ Additionally, they may also implement the following methods:
    :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
-.. _Twisted Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
-
 Item pipeline example
 =====================
 
@@ -82,7 +81,7 @@ contain a price::
 
     from scrapy.exceptions import DropItem
 
-    class PricePipeline(object):
+    class PricePipeline:
 
         vat_factor = 1.15
 
@@ -104,7 +103,7 @@ format::
 
    import json
 
-   class JsonWriterPipeline(object):
+   class JsonWriterPipeline:
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'w')
@@ -133,7 +132,7 @@ method and how to clean up the resources properly.::
 
     import pymongo
 
-    class MongoPipeline(object):
+    class MongoPipeline:
 
         collection_name = 'scrapy_items'
 
@@ -159,17 +158,20 @@ method and how to clean up the resources properly.::
             self.db[self.collection_name].insert_one(dict(item))
             return item
 
-.. _MongoDB: https://www.mongodb.org/
-.. _pymongo: https://api.mongodb.org/python/current/
+.. _MongoDB: https://www.mongodb.com/
+.. _pymongo: https://api.mongodb.com/python/current/
 
+
+.. _ScreenshotPipeline:
 
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return Deferred_ from :meth:`process_item` method.
+This example demonstrates how to return a
+:class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
 It uses Splash_ to render screenshot of item url. Pipeline
-makes request to locally running instance of Splash_. After request is downloaded
-and Deferred callback fires, it saves item to a file and adds filename to an item.
+makes request to locally running instance of Splash_. After request is downloaded,
+it saves the screenshot to a file and adds filename to the item.
 
 ::
 
@@ -178,21 +180,18 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
     from urllib.parse import quote
 
 
-    class ScreenshotPipeline(object):
+    class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        def process_item(self, item, spider):
+        async def process_item(self, item, spider):
             encoded_item_url = quote(item["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url)
-            dfd = spider.crawler.engine.download(request, spider)
-            dfd.addBoth(self.return_item, item)
-            return dfd
+            response = await spider.crawler.engine.download(request, spider)
 
-        def return_item(self, response, item):
             if response.status != 200:
                 # Error happened, return item.
                 return item
@@ -209,7 +208,6 @@ and Deferred callback fires, it saves item to a file and adds filename to an ite
             return item
 
 .. _Splash: https://splash.readthedocs.io/en/stable/
-.. _Deferred: https://twistedmatrix.com/documents/current/core/howto/defer.html
 
 Duplicates filter
 -----------------
@@ -221,7 +219,7 @@ returns multiples items with the same id::
 
     from scrapy.exceptions import DropItem
 
-    class DuplicatesPipeline(object):
+    class DuplicatesPipeline:
 
         def __init__(self):
             self.ids_seen = set()

@@ -1,5 +1,5 @@
 from time import time
-from six.moves.urllib.parse import urlparse, urlunparse, urldefrag
+from urllib.parse import urlparse, urlunparse, urldefrag
 
 from twisted.web.http import HTTPClient
 from twisted.internet import defer, reactor
@@ -14,13 +14,12 @@ from scrapy.responsetypes import responsetypes
 def _parsed_url_args(parsed):
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
-    b = lambda s: to_bytes(s, encoding='ascii')
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = b(path)
-    host = b(parsed.hostname)
+    path = to_bytes(path, encoding="ascii")
+    host = to_bytes(parsed.hostname, encoding="ascii")
     port = parsed.port
-    scheme = b(parsed.scheme)
-    netloc = b(parsed.netloc)
+    scheme = to_bytes(parsed.scheme, encoding="ascii")
+    netloc = to_bytes(parsed.netloc, encoding="ascii")
     if port is None:
         port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
@@ -42,7 +41,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = b'\n'
 
     def connectionMade(self):
-        self.headers = Headers() # bucket for response headers
+        self.headers = Headers()  # bucket for response headers
 
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
@@ -88,9 +87,9 @@ class ScrapyHTTPPageGetter(HTTPClient):
         if self.factory.url.startswith(b'https'):
             self.transport.stopProducing()
 
-        self.factory.noPage(\
-                defer.TimeoutError("Getting %s took longer than %s seconds." % \
-                (self.factory.url, self.factory.timeout)))
+        self.factory.noPage(
+                defer.TimeoutError("Getting %s took longer than %s seconds." %
+                                   (self.factory.url, self.factory.timeout)))
 
 
 # This class used to inherit from Twisted’s
@@ -107,7 +106,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
     afterFoundGet = False
 
     def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time-self.start_time
+        request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)

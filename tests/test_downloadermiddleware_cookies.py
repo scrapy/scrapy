@@ -13,10 +13,9 @@ from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 class CookiesMiddlewareTest(TestCase):
 
     def assertCookieValEqual(self, first, second, msg=None):
-        cookievaleq = lambda cv: re.split(r';\s*', cv.decode('latin1'))
-        return self.assertEqual(
-            sorted(cookievaleq(first)),
-            sorted(cookievaleq(second)), msg)
+        def split_cookies(cookies):
+            return sorted(re.split(r";\s*", cookies.decode("latin1")))
+        return self.assertEqual(split_cookies(first), split_cookies(second), msg=msg)
 
     def setUp(self):
         self.spider = Spider('foo')
@@ -145,7 +144,6 @@ class CookiesMiddlewareTest(TestCase):
                 {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
                 {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'}]
 
-
         req = Request('http://scrapytest.org/', cookies=cookies)
         self.mw.process_request(req, self.spider)
 
@@ -203,7 +201,7 @@ class CookiesMiddlewareTest(TestCase):
         assert self.mw.process_request(req4, self.spider) is None
         self.assertCookieValEqual(req4.headers.get('Cookie'), b'C2=value2; galleta=dulce')
 
-        #cookies from hosts with port
+        # cookies from hosts with port
         req5_1 = Request('http://scrapytest.org:1104/')
         assert self.mw.process_request(req5_1, self.spider) is None
 
@@ -219,7 +217,7 @@ class CookiesMiddlewareTest(TestCase):
         assert self.mw.process_request(req5_3, self.spider) is None
         self.assertEqual(req5_3.headers.get('Cookie'), b'C1=value1')
 
-        #skip cookie retrieval for not http request
+        # skip cookie retrieval for not http request
         req6 = Request('file:///scrapy/sometempfile')
         assert self.mw.process_request(req6, self.spider) is None
         self.assertEqual(req6.headers.get('Cookie'), None)
