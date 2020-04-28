@@ -10,7 +10,7 @@ from scrapy.utils.python import to_unicode
 logger = logging.getLogger(__name__)
 
 
-class CookiesMiddleware(object):
+class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug=False):

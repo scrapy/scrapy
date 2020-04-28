@@ -52,7 +52,7 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + os.linesep)
+            self.file.write(fp + '\n')
 
     def request_fingerprint(self, request):
         """Returns a string that uniquely identifies the specified request."""
@@ -65,7 +65,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def log(self, request, spider):
         if self.debug:
             msg = "Filtered duplicate request: %(request)s (referer: %(referer)s)"
-            args = {'request': request, 'referer': referer_str(request) }
+            args = {'request': request, 'referer': referer_str(request)}
             self.logger.debug(msg, args, extra={'spider': spider})
         elif self.logdupes:
             msg = ("Filtered duplicate request: %(request)s"

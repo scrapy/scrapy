@@ -30,7 +30,7 @@ class UrlUtilsTest(unittest.TestCase):
 
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
-        self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+        self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
     def test_url_is_from_spider(self):
         spider = Spider(name='example.com')
@@ -201,35 +201,36 @@ def create_skipped_scheme_t(args):
         assert url.startswith(args[1])
     return do_expected
 
-for k, args in enumerate ([
-            ('/index',                              'file://'),
-            ('/index.html',                         'file://'),
-            ('./index.html',                        'file://'),
-            ('../index.html',                       'file://'),
-            ('../../index.html',                    'file://'),
-            ('./data/index.html',                   'file://'),
-            ('.hidden/data/index.html',             'file://'),
-            ('/home/user/www/index.html',           'file://'),
-            ('//home/user/www/index.html',          'file://'),
-            ('file:///home/user/www/index.html',    'file://'),
 
-            ('index.html',                          'http://'),
-            ('example.com',                         'http://'),
-            ('www.example.com',                     'http://'),
-            ('www.example.com/index.html',          'http://'),
-            ('http://example.com',                  'http://'),
-            ('http://example.com/index.html',       'http://'),
-            ('localhost',                           'http://'),
-            ('localhost/index.html',                'http://'),
+for k, args in enumerate([
+            ('/index', 'file://'),
+            ('/index.html', 'file://'),
+            ('./index.html', 'file://'),
+            ('../index.html', 'file://'),
+            ('../../index.html', 'file://'),
+            ('./data/index.html', 'file://'),
+            ('.hidden/data/index.html', 'file://'),
+            ('/home/user/www/index.html', 'file://'),
+            ('//home/user/www/index.html', 'file://'),
+            ('file:///home/user/www/index.html', 'file://'),
+
+            ('index.html', 'http://'),
+            ('example.com', 'http://'),
+            ('www.example.com', 'http://'),
+            ('www.example.com/index.html', 'http://'),
+            ('http://example.com', 'http://'),
+            ('http://example.com/index.html', 'http://'),
+            ('localhost', 'http://'),
+            ('localhost/index.html', 'http://'),
 
             # some corner cases (default to http://)
-            ('/',                                   'http://'),
-            ('.../test',                            'http://'),
+            ('/', 'http://'),
+            ('.../test', 'http://'),
 
         ], start=1):
     t_method = create_guess_scheme_t(args)
     t_method.__name__ = 'test_uri_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
 for k, args in enumerate([
@@ -238,7 +239,7 @@ for k, args in enumerate([
         ], start=1):
     t_method = create_skipped_scheme_t(args)
     t_method.__name__ = 'test_uri_skipped_%03d' % k
-    setattr (GuessSchemeTest, t_method.__name__, t_method)
+    setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 
 class StripUrl(unittest.TestCase):

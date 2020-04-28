@@ -11,7 +11,7 @@ from scrapy.http import Request
 logger = logging.getLogger(__name__)
 
 
-class DepthMiddleware(object):
+class DepthMiddleware:
 
     def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth

@@ -52,7 +52,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
@@ -101,8 +101,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     lines = StringIO(_body_or_str(obj, unicode=True))
 
     kwargs = {}
-    if delimiter: kwargs["delimiter"] = delimiter
-    if quotechar: kwargs["quotechar"] = quotechar
+    if delimiter:
+        kwargs["delimiter"] = delimiter
+    if quotechar:
+        kwargs["quotechar"] = quotechar
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
@@ -126,10 +128,12 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 def _body_or_str(obj, unicode=True):
     expected_types = (Response, str, bytes)
-    assert isinstance(obj, expected_types), \
-        "obj must be %s, not %s" % (
-            " or ".join(t.__name__ for t in expected_types),
-            type(obj).__name__)
+    if not isinstance(obj, expected_types):
+        expected_types_str = " or ".join(t.__name__ for t in expected_types)
+        raise TypeError(
+            "Object %r must be %s, not %s"
+            % (obj, expected_types_str, type(obj).__name__)
+        )
     if isinstance(obj, Response):
         if not unicode:
             return obj.body

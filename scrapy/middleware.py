@@ -9,7 +9,7 @@ from scrapy.utils.defer import process_parallel, process_chain, process_chain_bo
 logger = logging.getLogger(__name__)
 
 
-class MiddlewareManager(object):
+class MiddlewareManager:
     """Base class for implementing middleware managers"""
 
     component_name = 'foo middleware'
@@ -65,8 +65,8 @@ class MiddlewareManager(object):
         return process_chain(self.methods[methodname], obj, *args)
 
     def _process_chain_both(self, cb_methodname, eb_methodname, obj, *args):
-        return process_chain_both(self.methods[cb_methodname], \
-            self.methods[eb_methodname], obj, *args)
+        return process_chain_both(self.methods[cb_methodname],
+                                  self.methods[eb_methodname], obj, *args)
 
     def open_spider(self, spider):
         return self._process_parallel('open_spider', spider)

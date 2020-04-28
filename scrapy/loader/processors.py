@@ -9,7 +9,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.loader.common import wrap_loader_context
 
 
-class MapCompose(object):
+class MapCompose:
 
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
@@ -36,7 +36,7 @@ class MapCompose(object):
         return values
 
 
-class Compose(object):
+class Compose:
 
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
@@ -61,7 +61,7 @@ class Compose(object):
         return value
 
 
-class TakeFirst(object):
+class TakeFirst:
 
     def __call__(self, values):
         for value in values:
@@ -69,13 +69,13 @@ class TakeFirst(object):
                 return value
 
 
-class Identity(object):
+class Identity:
 
     def __call__(self, values):
         return values
 
 
-class SelectJmes(object):
+class SelectJmes:
     """
         Query the input string for the jmespath (given at instantiation),
         and return the answer
@@ -95,7 +95,7 @@ class SelectJmes(object):
         return self.compiled_path.search(value)
 
 
-class Join(object):
+class Join:
 
     def __init__(self, separator=u' '):
         self.separator = separator

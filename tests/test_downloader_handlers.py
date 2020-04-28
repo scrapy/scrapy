@@ -1,21 +1,20 @@
+import contextlib
 import os
 import shutil
 import tempfile
 from unittest import mock
-import contextlib
 
 from testfixtures import LogCapture
-from twisted.trial import unittest
+from twisted.cred import checkers, credentials, portal
+from twisted.internet import defer, error, reactor
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
-from twisted.internet import reactor, defer, error
-from twisted.web import server, static, util, resource
+from twisted.trial import unittest
+from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        NoLengthResource, HostHeaderResource, \
-        PayloadResource
-from twisted.cred import portal, checkers, credentials
+from twisted.web.test.test_webclient import (ForeverTakingResource, HostHeaderResource,
+                                             NoLengthResource, PayloadResource)
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -26,38 +25,37 @@ from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 
-from scrapy.spiders import Spider
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import Settings
-from scrapy.utils.test import get_crawler, skip_if_no_boto
+from scrapy.spiders import Spider
+from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
-from scrapy.exceptions import NotConfigured
+from scrapy.utils.test import get_crawler, skip_if_no_boto
 
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
 
-class DummyDH(object):
+class DummyDH:
     lazy = False
 
-    def __init__(self, crawler):
-        pass
 
-
-class DummyLazyDH(object):
+class DummyLazyDH:
     # Default is lazy for backward compatibility
-
-    def __init__(self, crawler):
-        pass
+    pass
 
 
-class OffDH(object):
+class OffDH:
     lazy = False
 
     def __init__(self, crawler):
         raise NotConfigured
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
 
 class LoadTestCase(unittest.TestCase):
@@ -106,7 +104,8 @@ class FileTestCase(unittest.TestCase):
         self.tmpname = self.mktemp()
         with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
-        self.download_request = FileDownloadHandler(Settings()).download_request
+        handler = create_instance(FileDownloadHandler, None, get_crawler())
+        self.download_request = handler.download_request
 
     def tearDown(self):
         os.unlink(self.tmpname + '^')
@@ -239,7 +238,7 @@ class HttpTestCase(unittest.TestCase):
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls(Settings())
+        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -349,7 +348,7 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_payload(self):
-        body = b'1'*100 # PayloadResource requires body length to be 100
+        body = b'1' * 100  # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
@@ -479,9 +478,8 @@ class Http11TestCase(HttpTestCase):
         return self.test_download_broken_content_allow_data_loss('broken-chunked')
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
-        download_handler = self.download_handler_cls(Settings({
-            'DOWNLOAD_FAIL_ON_DATALOSS': False,
-        }))
+        crawler = get_crawler(settings_dict={'DOWNLOAD_FAIL_ON_DATALOSS': False})
+        download_handler = create_instance(self.download_handler_cls, None, crawler)
         request = Request(self.getURL(url))
         d = download_handler.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.flags)
@@ -499,9 +497,8 @@ class Https11TestCase(Http11TestCase):
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
-        download_handler = self.download_handler_cls(Settings({
-            'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True,
-        }))
+        crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING': True})
+        download_handler = create_instance(self.download_handler_cls, None, crawler)
         try:
             with LogCapture() as log_capture:
                 request = Request(self.getURL('file'))
@@ -568,8 +565,8 @@ class Https11CustomCiphers(unittest.TestCase):
             0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
             interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls(
-            Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'}))
+        crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
+        self.download_handler = create_instance(self.download_handler_cls, None, crawler)
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -665,7 +662,7 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_handler = self.download_handler_cls(Settings())
+        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -695,7 +692,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
-        return self.download_request(request, Spider('foo')).addCallback(_test)
+        with self.assertWarnsRegex(ScrapyDeprecationWarning,
+                                   r'Using HTTPS proxies in the noconnect mode is deprecated'):
+            return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_download_without_proxy(self):
         def _test(response):
@@ -709,6 +708,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
 class Http10ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = HTTP10DownloadHandler
+
+    def test_download_with_proxy_https_noconnect(self):
+        raise unittest.SkipTest('noconnect is not supported in HTTP10DownloadHandler')
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
@@ -726,9 +728,7 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         self.assertIn(domain, timeout.osError)
 
 
-class HttpDownloadHandlerMock(object):
-    def __init__(self, settings):
-        pass
+class HttpDownloadHandlerMock:
 
     def download_request(self, request, spider):
         return request
@@ -738,9 +738,13 @@ class S3AnonTestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        self.s3reqh = S3DownloadHandler(Settings(),
-                httpdownloadhandler=HttpDownloadHandlerMock,
-                #anon=True, # is implicit
+        crawler = get_crawler()
+        self.s3reqh = create_instance(
+            objcls=S3DownloadHandler,
+            settings=None,
+            crawler=crawler,
+            httpdownloadhandler=HttpDownloadHandlerMock,
+            # anon=True, # implicit
         )
         self.download_request = self.s3reqh.download_request
         self.spider = Spider('foo')
@@ -766,9 +770,15 @@ class S3TestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID,
-                self.AWS_SECRET_ACCESS_KEY,
-                httpdownloadhandler=HttpDownloadHandlerMock)
+        crawler = get_crawler()
+        s3reqh = create_instance(
+            objcls=S3DownloadHandler,
+            settings=None,
+            crawler=crawler,
+            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+            httpdownloadhandler=HttpDownloadHandlerMock,
+        )
         self.download_request = s3reqh.download_request
         self.spider = Spider('foo')
 
@@ -788,7 +798,13 @@ class S3TestCase(unittest.TestCase):
 
     def test_extra_kw(self):
         try:
-            S3DownloadHandler(Settings(), extra_kw=True)
+            crawler = get_crawler()
+            create_instance(
+                objcls=S3DownloadHandler,
+                settings=None,
+                crawler=crawler,
+                extra_kw=True,
+            )
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
@@ -796,12 +812,12 @@ class S3TestCase(unittest.TestCase):
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
-        date ='Tue, 27 Mar 2007 19:36:42 +0000'
+        date = 'Tue, 27 Mar 2007 19:36:42 +0000'
         req = Request('s3://johnsmith/photos/puppy.jpg', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
@@ -813,21 +829,22 @@ class S3TestCase(unittest.TestCase):
             })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
-        req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy', \
-                method='GET', headers={
-                    'User-Agent': 'Mozilla/5.0',
-                    'Date': date,
-                    })
+        req = Request(
+            's3://johnsmith/?prefix=photos&max-keys=50&marker=puppy',
+            method='GET', headers={
+                'User-Agent': 'Mozilla/5.0',
+                'Date': date,
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
@@ -836,8 +853,8 @@ class S3TestCase(unittest.TestCase):
             method='GET', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
         try:
@@ -850,11 +867,11 @@ class S3TestCase(unittest.TestCase):
         # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', \
-                method='DELETE', headers={
-                    'Date': date,
-                    'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-                    })
+        req = Request(
+            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
+                'Date': date,
+                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         # botocore does not override Date with x-amz-date
@@ -864,25 +881,26 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
-        req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz', \
-                method='PUT', headers={
-                    'User-Agent': 'curl/7.15.5',
-                    'Host': 'static.johnsmith.net:8080',
-                    'Date': date,
-                    'x-amz-acl': 'public-read',
-                    'content-type': 'application/x-download',
-                    'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
-                    'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
-                    'X-Amz-Meta-FileChecksum': '0x02661779',
-                    'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
-                    'Content-Disposition': 'attachment; filename=database.dat',
-                    'Content-Encoding': 'gzip',
-                    'Content-Length': '5913339',
-                    })
+        req = Request(
+            's3://static.johnsmith.net:8080/db-backup.dat.gz',
+            method='PUT', headers={
+                'User-Agent': 'curl/7.15.5',
+                'Host': 'static.johnsmith.net:8080',
+                'Date': date,
+                'x-amz-acl': 'public-read',
+                'content-type': 'application/x-download',
+                'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
+                'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
+                'X-Amz-Meta-FileChecksum': '0x02661779',
+                'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
+                'Content-Disposition': 'attachment; filename=database.dat',
+                'Content-Encoding': 'gzip',
+                'Content-Length': '5913339',
+            })
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(httpreq.headers['Authorization'], \
-                b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+        self.assertEqual(httpreq.headers['Authorization'],
+                         b'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
     def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
@@ -928,7 +946,8 @@ class BaseFTPTestCase(unittest.TestCase):
         self.factory = FTPFactory(portal=p)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(Settings())
+        crawler = get_crawler()
+        self.download_handler = create_instance(FTPDownloadHandler, crawler.settings, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1042,7 +1061,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
                                   userAnonymous=self.username)
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
-        self.download_handler = FTPDownloadHandler(Settings())
+        crawler = get_crawler()
+        self.download_handler = create_instance(FTPDownloadHandler, crawler.settings, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1052,7 +1072,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
 
     def setUp(self):
-        self.download_handler = DataURIDownloadHandler(Settings())
+        crawler = get_crawler()
+        self.download_handler = create_instance(DataURIDownloadHandler, crawler.settings, crawler)
         self.download_request = self.download_handler.download_request
         self.spider = Spider('foo')
 

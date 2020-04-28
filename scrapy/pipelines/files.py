@@ -11,6 +11,7 @@ import os
 import time
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
+from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
 
@@ -26,6 +27,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.ftp import ftp_store_file
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ class FileException(Exception):
     """General media error exception"""
 
 
-class FSFilesStore(object):
+class FSFilesStore:
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -73,7 +75,7 @@ class FSFilesStore(object):
             seen.add(dirname)
 
 
-class S3FilesStore(object):
+class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_ENDPOINT_URL = None
@@ -104,7 +106,8 @@ class S3FilesStore(object):
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        assert uri.startswith('s3://')
+        if not uri.startswith("s3://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -211,7 +214,7 @@ class S3FilesStore(object):
         return extra
 
 
-class GCSFilesStore(object):
+class GCSFilesStore:
 
     GCS_PROJECT_ID = None
 
@@ -257,6 +260,50 @@ class GCSFilesStore(object):
         )
 
 
+class FTPFilesStore:
+
+    FTP_USERNAME = None
+    FTP_PASSWORD = None
+    USE_ACTIVE_MODE = None
+
+    def __init__(self, uri):
+        if not uri.startswith("ftp://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
+        u = urlparse(uri)
+        self.port = u.port
+        self.host = u.hostname
+        self.port = int(u.port or 21)
+        self.username = u.username or self.FTP_USERNAME
+        self.password = u.password or self.FTP_PASSWORD
+        self.basedir = u.path.rstrip('/')
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        path = '%s/%s' % (self.basedir, path)
+        return threads.deferToThread(
+            ftp_store_file, path=path, file=buf,
+            host=self.host, port=self.port, username=self.username,
+            password=self.password, use_active_mode=self.USE_ACTIVE_MODE
+        )
+
+    def stat_file(self, path, info):
+        def _stat_file(path):
+            try:
+                ftp = FTP()
+                ftp.connect(self.host, self.port)
+                ftp.login(self.username, self.password)
+                if self.USE_ACTIVE_MODE:
+                    ftp.set_pasv(False)
+                file_path = "%s/%s" % (self.basedir, path)
+                last_modified = float(ftp.voidcmd("MDTM %s" % file_path)[4:].strip())
+                m = hashlib.md5()
+                ftp.retrbinary('RETR %s' % file_path, m.update)
+                return {'last_modified': last_modified, 'checksum': m.hexdigest()}
+            # The file doesn't exist
+            except Exception:
+                return {}
+        return threads.deferToThread(_stat_file, path)
+
+
 class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
@@ -283,6 +330,7 @@ class FilesPipeline(MediaPipeline):
         'file': FSFilesStore,
         's3': S3FilesStore,
         'gs': GCSFilesStore,
+        'ftp': FTPFilesStore
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
@@ -329,6 +377,11 @@ class FilesPipeline(MediaPipeline):
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
+
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
 
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
@@ -449,7 +502,7 @@ class FilesPipeline(MediaPipeline):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    ### Overridable Interface
+    # Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.files_urls_field, [])]
 
