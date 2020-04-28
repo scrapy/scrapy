@@ -24,10 +24,13 @@ matrix:
       python: 3.7
     - env: TOXENV=py38
       python: 3.8
+      dist: bionic
     - env: TOXENV=extra-deps
       python: 3.8
+      dist: bionic
     - env: TOXENV=py38-asyncio
       python: 3.8
+      dist: bionic
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
 install:
