@@ -17,13 +17,26 @@ from scrapy.utils.trackref import object_ref
 
 class Response(object_ref):
 
-    def __init__(self, url, status=200, headers=None, body=b'', flags=None, request=None):
+    def __init__(self, url, status=200, headers=None, body=b'', flags=None,
+                 request=None, certificate=None, ip_address=None):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
         self._set_url(url)
         self.request = request
         self.flags = [] if flags is None else list(flags)
+        self.certificate = certificate
+        self.ip_address = ip_address
+
+    @property
+    def cb_kwargs(self):
+        try:
+            return self.request.cb_kwargs
+        except AttributeError:
+            raise AttributeError(
+                "Response.cb_kwargs not available, this response "
+                "is not tied to any request"
+            )
 
     @property
     def meta(self):
@@ -76,7 +89,8 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body', 'request', 'flags']:
+        for x in ['url', 'status', 'headers', 'body',
+                  'request', 'flags', 'certificate', 'ip_address']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -118,6 +132,9 @@ class Response(object_ref):
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
+
+        .. versionadded:: 2.0
+           The *flags* parameter.
         """
         if isinstance(url, Link):
             url = url.url
@@ -146,6 +163,8 @@ class Response(object_ref):
                    dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Generator[Request, None, None]
         """
+        .. versionadded:: 2.0
+
         Return an iterable of :class:`~.Request` instances to follow all links
         in ``urls``. It accepts the same arguments as ``Request.__init__`` method,
         but elements of ``urls`` can be relative URLs or :class:`~scrapy.link.Link` objects,
