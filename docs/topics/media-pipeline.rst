@@ -259,14 +259,14 @@ using the images pipeline, items must define both the ``image_urls`` and the
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it:
 
--   For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
-    :setting:`FILES_RESULT_FIELD` settings::
+For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
+:setting:`FILES_RESULT_FIELD` settings::
 
     FILES_URLS_FIELD = 'field_name_for_your_files_urls'
     FILES_RESULT_FIELD = 'field_name_for_your_processed_files'
 
--   For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
-    :setting:`IMAGES_RESULT_FIELD` settings::
+For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
+:setting:`IMAGES_RESULT_FIELD` settings::
 
     IMAGES_URLS_FIELD = 'field_name_for_your_images_urls'
     IMAGES_RESULT_FIELD = 'field_name_for_your_processed_images'
