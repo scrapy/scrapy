@@ -12,12 +12,14 @@ matrix:
     - env: TOXENV=flake8
       python: 3.8
     - env: TOXENV=pypy3
+    - env: TOXENV=pinned
+      python: 3.5.0
+    - env: TOXENV=py35-asyncio
+      python: 3.5.0  # We use additional code to support 3.5.3 and earlier
     - env: TOXENV=py35
       python: 3.5
-    - env: TOXENV=pinned
-      python: 3.5
     - env: TOXENV=py35-asyncio
-      python: 3.5.2
+      python: 3.5
     - env: TOXENV=py36
       python: 3.6
     - env: TOXENV=py37
