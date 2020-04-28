@@ -2,12 +2,14 @@
 
 import logging
 
-from twisted.internet.defer import maybeDeferred, DeferredList, Deferred
+from twisted.internet.defer import DeferredList, Deferred
 from twisted.python.failure import Failure
 
 from pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
     getAllReceivers, disconnect
 from pydispatch.robustapply import robustApply
+
+from scrapy.utils.defer import maybeDeferred_coro
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
@@ -61,7 +63,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     spider = named.get('spider', None)
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
+        d = maybeDeferred_coro(robustApply, receiver, signal=signal, sender=sender,
                 *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))

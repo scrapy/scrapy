@@ -17,8 +17,6 @@ import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
 
-import six
-
 AJAXCRAWL_ENABLED = False
 
 AUTOTHROTTLE_ENABLED = False
@@ -60,6 +58,7 @@ DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
+DNS_RESOLVER = 'scrapy.resolver.CachingThreadedResolver'
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
@@ -76,8 +75,8 @@ DOWNLOAD_HANDLERS_BASE = {
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
-DOWNLOAD_MAXSIZE = 1024*1024*1024   # 1024m
-DOWNLOAD_WARNSIZE = 32*1024*1024    # 32m
+DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024   # 1024m
+DOWNLOAD_WARNSIZE = 32 * 1024 * 1024    # 32m
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
@@ -86,8 +85,8 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 DOWNLOADER_CLIENT_TLS_CIPHERS = 'DEFAULT'
-DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
-                                     # also allowing negotiation
+# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
+DOWNLOADER_CLIENT_TLS_METHOD = 'TLS'
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}
@@ -134,9 +133,8 @@ EXTENSIONS_BASE = {
 }
 
 FEED_TEMPDIR = None
-FEED_URI = None
+FEEDS = {}
 FEED_URI_PARAMS = None  # a function to extend uri arguments
-FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
 FEED_EXPORT_ENCODING = None
 FEED_EXPORT_FIELDS = None
@@ -179,7 +177,7 @@ HTTPCACHE_ALWAYS_STORE = False
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
-HTTPCACHE_DBM_MODULE = 'anydbm' if six.PY2 else 'dbm'
+HTTPCACHE_DBM_MODULE = 'dbm'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
@@ -224,7 +222,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
-METAREFRESH_IGNORE_TAGS = ['script', 'noscript']
+METAREFRESH_IGNORE_TAGS = []
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
@@ -253,6 +251,8 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 SPIDER_LOADER_WARN_ONLY = False
@@ -287,6 +287,8 @@ TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
 TELNETCONSOLE_USERNAME = 'scrapy'
 TELNETCONSOLE_PASSWORD = None
+
+TWISTED_REACTOR = None
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {

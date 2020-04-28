@@ -6,6 +6,7 @@ from email.charset import Charset
 
 from scrapy.mail import MailSender
 
+
 class MailSenderTest(unittest.TestCase):
 
     def test_send(self):
@@ -119,6 +120,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(text.get_charset(), Charset('utf-8'))
         self.assertEqual(attach.get_payload(decode=True).decode('utf-8'), body)
+
 
 if __name__ == "__main__":
     unittest.main()

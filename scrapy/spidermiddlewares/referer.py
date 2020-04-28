@@ -2,16 +2,15 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
-from six.moves.urllib.parse import urlparse
 import warnings
+from urllib.parse import urlparse
 
 from w3lib.url import safe_url_string
 
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
-from scrapy.utils.python import to_native_str
-from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 from scrapy.utils.url import strip_url
 
@@ -29,7 +28,7 @@ POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
-class ReferrerPolicy(object):
+class ReferrerPolicy:
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES
 
@@ -285,7 +284,7 @@ def _load_policy_class(policy, warning_only=False):
                 return None
 
 
-class RefererMiddleware(object):
+class RefererMiddleware:
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
@@ -322,7 +321,7 @@ class RefererMiddleware(object):
             if isinstance(resp_or_url, Response):
                 policy_header = resp_or_url.headers.get('Referrer-Policy')
                 if policy_header is not None:
-                    policy_name = to_native_str(policy_header.decode('latin1'))
+                    policy_name = to_unicode(policy_header.decode('latin1'))
         if policy_name is None:
             return self.default_policy()
 

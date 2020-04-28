@@ -5,21 +5,18 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 """
 
 import logging
-import sys
-import re
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_native_str
 from scrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
 
-class RobotsTxtMiddleware(object):
+class RobotsTxtMiddleware:
     DOWNLOAD_PRIORITY = 1000
 
     def __init__(self, crawler):

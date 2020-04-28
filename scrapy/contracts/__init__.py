@@ -9,7 +9,7 @@ from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
 
 
-class ContractsManager(object):
+class ContractsManager:
     contracts = {}
 
     def __init__(self, contracts):
@@ -107,7 +107,7 @@ class ContractsManager(object):
         request.errback = eb_wrapper
 
 
-class Contract(object):
+class Contract:
     """ Abstract class for contracts """
     request_cls = None
 
