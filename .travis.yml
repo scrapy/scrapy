@@ -16,6 +16,10 @@ matrix:
       python: 3.5
     - env: TOXENV=pinned
       python: 3.5
+    - env: TOXENV=pinned
+      python: 3.5
+      os: osx
+      osx_image: xcode6.4
     - env: TOXENV=py35-asyncio
       python: 3.5.2
     - env: TOXENV=py36
@@ -28,6 +32,10 @@ matrix:
       python: 3.8
     - env: TOXENV=py38-asyncio
       python: 3.8
+    - env: TOXENV=py38
+      python: 3.8
+      os: osx
+      osx_image: xcode11.3
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
 install:
