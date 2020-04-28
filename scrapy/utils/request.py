@@ -28,7 +28,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
     http://www.example.com/query?cat=222&id=111
 
     Even though those are two different URLs both point to the same resource
-    and are equivalent (ie. they should return the same response).
+    and are equivalent (i.e. they should return the same response).
 
     Another example are cookies used to store session ids. Suppose the
     following page is only accessible to authenticated users:

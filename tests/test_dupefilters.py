@@ -35,7 +35,7 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class DirectDupeFilter(object):
+class DirectDupeFilter:
     method = 'n/a'
 
 
@@ -43,7 +43,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_crawler_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
@@ -51,14 +51,14 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_settings_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromSettingsRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_df_direct_scheduler(self):
-        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
+        settings = {'DUPEFILTER_CLASS': __name__ + '.DirectDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertEqual(scheduler.df.method, 'n/a')
@@ -162,7 +162,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': False,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -187,7 +187,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log_debug(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': True,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)

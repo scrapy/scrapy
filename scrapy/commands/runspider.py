@@ -5,8 +5,7 @@ from importlib import import_module
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.conf import arglist_to_dict
-from scrapy.utils.python import without_none_values
+from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 
 def _import_file(filepath):
@@ -43,7 +42,7 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
-        parser.add_option("-o", "--output", metavar="FILE",
+        parser.add_option("-o", "--output", metavar="FILE", action="append",
                           help="dump scraped items into FILE (use - for stdout)")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items with -o")
@@ -55,19 +54,8 @@ class Command(ScrapyCommand):
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
-            if opts.output == '-':
-                self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
-            else:
-                self.settings.set('FEED_URI', opts.output, priority='cmdline')
-            feed_exporters = without_none_values(self.settings.getwithbase('FEED_EXPORTERS'))
-            if not opts.output_format:
-                opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
-            if opts.output_format not in feed_exporters:
-                raise UsageError("Unrecognized output format '%s', set one"
-                                 " using the '-t' switch or as a file extension"
-                                 " from the supported list %s" % (opts.output_format,
-                                                                  tuple(feed_exporters)))
-            self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
+            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
+            self.settings.set('FEEDS', feeds, priority='cmdline')
 
     def run(self, args, opts):
         if len(args) != 1:

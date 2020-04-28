@@ -54,6 +54,7 @@ def _embed_standard_shell(namespace={}, banner=''):
     else:
         import rlcompleter  # noqa: F401
         readline.parse_and_bind("tab:complete")
+
     @wraps(_embed_standard_shell)
     def wrapper(namespace=namespace, banner=''):
         code.interact(banner=banner, local=namespace)

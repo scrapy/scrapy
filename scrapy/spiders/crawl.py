@@ -34,7 +34,7 @@ def _get_method(method, spider):
 _default_link_extractor = LinkExtractor()
 
 
-class Rule(object):
+class Rule:
 
     def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None,
                  process_links=None, process_request=None, errback=None):

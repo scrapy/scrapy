@@ -125,7 +125,7 @@ class NotGeneratorCallbackSpider(Spider):
         yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
-        return [{'test': 1}, {'test': 1/0}]
+        return [{'test': 1}, {'test': 1 / 0}]
 
 
 # ================================================================================
@@ -292,7 +292,7 @@ class TestSpiderMiddleware(TestCase):
         crawler = get_crawler(spider)
         with LogCapture() as log:
             yield crawler.crawl(mockserver=self.mockserver)
-        raise defer.returnValue(log)
+        return log
 
     @defer.inlineCallbacks
     def test_recovery(self):

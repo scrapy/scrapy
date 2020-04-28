@@ -281,6 +281,7 @@ coverage_ignore_pyobjects = [
 
 intersphinx_mapping = {
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
@@ -294,3 +295,10 @@ intersphinx_mapping = {
 # ------------------------------------
 
 hoverxref_auto_ref = True
+hoverxref_role_types = {
+    "class": "tooltip",
+    "confval": "tooltip",
+    "hoverxref": "tooltip",
+    "mod": "tooltip",
+    "ref": "tooltip",
+}
