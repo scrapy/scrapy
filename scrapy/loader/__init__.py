@@ -13,7 +13,7 @@ class ItemLoader(itemloaders.ItemLoader):
     default_item_class = Item
     default_selector_class = Selector
 
-    def __init__(self, response=None, item=None, selector=None, parent=None, **context):
+    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
         if selector is None and response is not None:
             selector = self.default_selector_class(response)
         context.update(response=response)
