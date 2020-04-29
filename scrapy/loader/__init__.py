@@ -175,11 +175,12 @@ class ItemLoader:
                                     value, type(e).__name__, str(e)))
 
     def _get_item_field_attr(self, field_name, key, default=None):
-        if isinstance(self.item, Item):
-            value = self.item.fields[field_name].get(key, default)
+        try:
+            field_meta = ItemAdapter(self.item).get_field_meta(field_name)
+        except TypeError:
+            return default
         else:
-            value = default
-        return value
+            return field_meta.get(key, default)
 
     def _check_selector_method(self):
         if self.selector is None:
