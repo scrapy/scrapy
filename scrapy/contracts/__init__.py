@@ -17,10 +17,10 @@ class ContractsManager:
             self.contracts[contract.name] = contract
 
     def tested_methods_from_spidercls(self, spidercls):
+        method_re = re.compile(r"^\s*@", re.MULTILINE)
         methods = []
         for key, value in getmembers(spidercls):
-            if (callable(value) and value.__doc__ and
-                    re.search(r'^\s*@', value.__doc__, re.MULTILINE)):
+            if callable(value) and value.__doc__ and method_re.search(value.__doc__):
                 methods.append(key)
 
         return methods
