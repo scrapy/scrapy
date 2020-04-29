@@ -97,6 +97,26 @@ make it the most feature-complete item type:
         <topics-items-declaring>`.
 
 
+.. _attrs-items:
+
+Attr.s objects
+--------------
+
+.. versionadded:: 2.1
+
+:func:`attr.s` allows defining item classes with field names,
+so that :ref:`item exporters <topics-exporters>` can export all fields by
+default even if the first scraped object does not have values for all of them.
+
+`attr.s` also allow defining the type and default value of each defined field.
+
+.. note:: Field names and types are not enforced at run time.
+
+In order to use this type, the `attrs package`_ needs to be installed.
+
+.. _attrs package: https://www.attrs.org
+
+
 .. _custom-items:
 
 Custom items
@@ -167,6 +187,13 @@ the :attr:`Item.fields` attribute.
     :class:`Field` objects are plain-old Python dicts. A separate class is used
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
+    
+Field metadata can also be declared for `dataclass` and `attrs` items. Please
+refer to the documentation for `dataclasses.field`_ and `attr.ib`_ for
+additional information.
+
+-- _dataclasses.field: https://docs.python.org/3/library/dataclasses.html#dataclasses.field
+.. _attr.ib https://www.attrs.org/en/stable/api.html#attr.ib
 
 
 Working with Item objects
