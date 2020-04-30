@@ -124,9 +124,9 @@ and defines some attributes and methods:
   is an instance of :class:`~scrapy.http.TextResponse` that holds
   the page content and has further helpful methods to handle it.
 
-  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
-  the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response: it extracts
+  the scraped data as dicts, finds new URLs to
+  follow and creates new requests (:class:`~scrapy.http.Request`) from them.
 
 How to run our spider
 ---------------------
