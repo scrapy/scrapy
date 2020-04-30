@@ -28,7 +28,12 @@ class BaseItem(object_ref):
     Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
     :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
     """
-    pass
+
+    def __new__(cls, *args, **kwargs):
+        if issubclass(cls, BaseItem) and not (issubclass(cls, Item) or issubclass(cls, DictItem)):
+            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
+                 ScrapyDeprecationWarning, stacklevel=2)
+        return super(BaseItem, cls).__new__(cls, *args, **kwargs)
 
 
 class Field(dict):

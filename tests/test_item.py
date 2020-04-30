@@ -4,7 +4,7 @@ from unittest import mock
 from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
+from scrapy.item import ABCMeta, BaseItem, DictItem, Field, Item, ItemMeta
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -131,12 +131,12 @@ class ItemTest(unittest.TestCase):
         self.assertSortedEqual(list(item.values()), [u'New'])
 
     def test_metaclass_inheritance(self):
-        class BaseItem(Item):
+        class ParentItem(Item):
             name = Field()
             keys = Field()
             values = Field()
 
-        class TestItem(BaseItem):
+        class TestItem(ParentItem):
             keys = Field()
 
         i = TestItem()
@@ -321,13 +321,28 @@ class DictItemTest(unittest.TestCase):
 
     def test_deprecation_warning(self):
         with catch_warnings(record=True) as warnings:
-            dict_item = DictItem()
+            DictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
             class SubclassedDictItem(DictItem):
                 pass
-            subclassed_dict_item = SubclassedDictItem()
+            SubclassedDictItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+
+class BaseItemTest(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            BaseItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedBaseItem(BaseItem):
+                pass
+            SubclassedBaseItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
