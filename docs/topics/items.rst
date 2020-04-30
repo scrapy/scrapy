@@ -78,7 +78,7 @@ make it the most feature-complete item type:
 Dataclass objects
 -----------------
 
-.. versionadded:: 2.1
+.. versionadded:: 2.2
 
 :func:`~dataclasses.dataclass` allows defining item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
@@ -99,7 +99,7 @@ backport`_ in Python 3.6.
 Attr.s objects
 --------------
 
-.. versionadded:: 2.1
+.. versionadded:: 2.2
 
 :func:`attr.s` allows defining item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
