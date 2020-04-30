@@ -23,7 +23,7 @@ Item Types
 
 Scrapy supports the following types of items: :ref:`dictionaries <dict-items>`,
 :ref:`Item objects <item-objects>`, :ref:`dataclass objects <dataclass-items>`,
-:ref:`attrs objects <attrs-items>`, and :ref:`custom items <custom-items>`.
+and :ref:`attrs objects <attrs-items>`.
 
 .. _dict-items:
 
@@ -112,16 +112,6 @@ default even if the first scraped object does not have values for all of them.
 In order to use this type, the `attrs package`_ needs to be installed.
 
 .. _attrs package: https://www.attrs.org
-
-.. _custom-items:
-
-Custom items
-------------
-
-Subclass :class:`BaseItem` to define additional item types not based on any of
-the above:
-
-.. autoclass:: scrapy.item.BaseItem
 
 
 Working with Item objects
