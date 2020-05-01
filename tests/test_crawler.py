@@ -341,7 +341,8 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
-        
+
+
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
     script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerRunner')
 
@@ -351,4 +352,3 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("INFO: Host: not.a.real.domain", log)
         self.assertIn("INFO: Type: <class 'ipaddress.IPv4Address'>", log)
         self.assertIn("INFO: IP address: 127.0.0.1", log)
-
