@@ -989,7 +989,7 @@ class FeedExportTest(FeedExportTestBase):
 
 class PartialDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = '_%(time_id)s_#%(batch_id)s_'
+    _file_mark = '_%(batch_time)s_#%(batch_id)s_'
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -1146,7 +1146,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """ If path is without %(time_id)s or %(batch_id)s an exception must be raised """
+        """ If path is without %(batch_time)s or %(batch_id)s an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
@@ -1236,7 +1236,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
     def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
-        So %(time_id)s replaced with the current date.
+        So %(batch_time)s replaced with the current date.
         """
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
@@ -1245,7 +1245,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         ]
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), '%(time_id)s'): {
+                os.path.join(self._random_temp_filename(), '%(batch_time)s'): {
                     'format': 'json',
                 },
             },
@@ -1281,7 +1281,7 @@ class PartialDeliveriesTest(FeedExportTestBase):
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
         filename = ''.join(chars)
         prefix = 'tmp/{filename}'.format(filename=filename)
-        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(time_id)s.json'.format(
+        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(batch_time)s.json'.format(
             bucket_name=s3_test_bucket_name, prefix=prefix
         )
         storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)

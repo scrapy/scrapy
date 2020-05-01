@@ -441,9 +441,9 @@ An integer number which represent number of scraped items stored in each output
 file. Whenever the number of items exceeds this setting, a new file is
 created and output redirects to it.  The name of the new file will be selected
 based on timestamp when the feed is being created and/or batch sequence number.
-Therefore you must specify %(time_id)s or %(batch_id)s or both in FEED_URI.
+Therefore you must specify %(batch_time)s or %(batch_id)s or both in FEED_URI.
 
-* ``%(time_id)s`` - gets replaced by a timestamp when the feed is being created
+* ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
 * ``%(batch_id)s`` - gets replaced by sequence number of batch
 
 For instance::
@@ -452,7 +452,7 @@ For instance::
 
 Your request can be like::
 
-  scrapy crawl spidername -o dirname/%(batch_id)s-filename%(time_id)s.json
+  scrapy crawl spidername -o dirname/%(batch_id)s-filename%(batch_time)s.json
 
 The result directory tree of above can be like::
 

@@ -295,7 +295,7 @@ class FeedExporter:
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
         :param spider: user spider
-        :param template_uri: template uri which contains %(time_id)s or %(batch_id)s to create new uri
+        :param template_uri: template uri which contains %(batch_time)s or %(batch_id)s to create new uri
         """
         storage = self._get_storage(uri)
         file = storage.open(spider)
@@ -358,12 +358,12 @@ class FeedExporter:
 
     def _batch_deliveries_supported(self, uri):
         """
-        If FEED_STORAGE_BATCH_SIZE setting is specified uri has to contain %(time_id)s or %(batch_id)s
+        If FEED_STORAGE_BATCH_SIZE setting is specified uri has to contain %(batch_time)s or %(batch_id)s
         to distinguish different files of partial output
         """
-        if self.storage_batch_size is None or '%(time_id)s' in uri or '%(batch_id)s' in uri:
+        if self.storage_batch_size is None or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
             return True
-        logger.warning('%(time_id)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
+        logger.warning('%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
         return False
 
     def _storage_supported(self, uri):
@@ -396,7 +396,7 @@ class FeedExporter:
         for k in dir(spider):
             params[k] = getattr(spider, k)
         params['time'] = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
-        params['time_id'] = datetime.utcnow().isoformat().replace(':', '-')
+        params['batch_time'] = datetime.utcnow().isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
