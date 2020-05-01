@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 from io import BytesIO
 
-from twisted.internet import defer, reactor, ssl
+from twisted.internet import defer, ssl
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
@@ -27,8 +27,7 @@ def _to_bytes_or_none(text):
     return to_bytes(text)
 
 
-class MailSender(object):
-
+class MailSender:
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
             smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
@@ -47,6 +46,7 @@ class MailSender(object):
             settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
+        from twisted.internet import reactor
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -111,11 +111,12 @@ class MailSender(object):
 
     def _sendmail(self, to_addrs, msg):
         # Import twisted.mail here because it is not available in python3
+        from twisted.internet import reactor
         from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+            to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
             requireTransportSecurity=self.smtptls)
         factory.noisy = False
 

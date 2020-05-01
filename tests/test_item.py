@@ -213,7 +213,7 @@ class ItemTest(unittest.TestCase):
         class B(A):
             pass
 
-        class C(object):
+        class C:
             fields = {'load': Field(default='C')}
             not_allowed = Field(default='not_allowed')
             save = Field(default='C')

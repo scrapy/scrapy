@@ -11,7 +11,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
-class ResponseTypes(object):
+class ResponseTypes:
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
@@ -71,7 +71,7 @@ class ResponseTypes(object):
         cls = Response
         if b'Content-Type' in headers:
             cls = self.from_content_type(
-                content_type=headers[b'Content-type'],
+                content_type=headers[b'Content-Type'],
                 content_encoding=headers.get(b'Content-Encoding')
             )
         if cls is Response and b'Content-Disposition' in headers:

@@ -140,7 +140,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
-        :type exception: `Exception`_ object
+        :type exception: :exc:`Exception` object
 
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -173,19 +173,15 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: from_crawler(cls, crawler)
-    
+
        If present, this classmethod is called to create a middleware instance
        from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
        of the middleware. Crawler object provides access to all Scrapy core
        components like settings and signals; it is a way for middleware to
        access them and hook its functionality into Scrapy.
-    
+
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-
-.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
-
 
 .. _topics-spider-middleware-ref:
 
