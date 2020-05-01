@@ -1253,3 +1253,73 @@ class PartialDeliveriesTest(FeedExportTestBase):
         }
         data = yield self.exported_data(items, settings)
         self.assertEqual(len(items) + 1, len(data['json']))
+
+    @defer.inlineCallbacks
+    def test_s3_export(self):
+        """
+        Test export of items into s3 bucket.
+        S3_TEST_BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY must be specified in tox.ini
+        to perform this test:
+        [testenv]
+        setenv =
+            AWS_SECRET_ACCESS_KEY = ABCD
+            AWS_ACCESS_KEY_ID = ABCD
+            S3_TEST_BUCKET_NAME = ABCD
+        """
+        try:
+            import boto3
+        except ImportError:
+            raise unittest.SkipTest("S3FeedStorage requires boto3")
+
+        assert_aws_environ()
+        s3_test_bucket_name = os.environ.get('S3_TEST_BUCKET_NAME')
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        if not s3_test_bucket_name:
+            raise unittest.SkipTest("No S3 BUCKET available for testing")
+
+        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
+        filename = ''.join(chars)
+        prefix = 'tmp/{filename}'.format(filename=filename)
+        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(time_id)s.json'.format(
+            bucket_name=s3_test_bucket_name, prefix=prefix
+        )
+        storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)
+        settings = {
+            'FEEDS': {
+                s3_test_file_uri: {
+                    'format': 'json',
+                },
+            },
+            'FEED_STORAGE_BATCH_SIZE': 1,
+        }
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
+        ]
+        verifyObject(IFeedStorage, storage)
+
+        class TestSpider(scrapy.Spider):
+            name = 'testspider'
+
+            def parse(self, response):
+                for item in items:
+                    yield item
+
+        s3 = boto3.resource('s3')
+        my_bucket = s3.Bucket(s3_test_bucket_name)
+        batch_size = settings['FEED_STORAGE_BATCH_SIZE']
+
+        with MockServer() as s:
+            runner = CrawlerRunner(Settings(settings))
+            TestSpider.start_urls = [s.url('/')]
+            yield runner.crawl(TestSpider)
+
+        for file_uri in my_bucket.objects.filter(Prefix=prefix):
+            content = get_s3_content_and_delete(s3_test_bucket_name, file_uri.key)
+            if not content and not items:
+                break
+            content = json.loads(content.decode('utf-8'))
+            expected_batch, items = items[:batch_size], items[batch_size:]
+            self.assertEqual(expected_batch, content)
