@@ -32,7 +32,6 @@ import re
 from io import BytesIO
 from urllib.parse import unquote
 
-from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
 
@@ -81,6 +80,7 @@ class FTPDownloadHandler:
         return cls(crawler.settings)
 
     def download_request(self, request, spider):
+        from twisted.internet import reactor
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
         password = request.meta.get("ftp_password", self.default_password)

@@ -21,7 +21,7 @@ from scrapy.core.spidermw import SpiderMiddlewareManager
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -62,7 +62,7 @@ class Slot(object):
         return self.active_size > self.max_active_size
 
 
-class Scraper(object):
+class Scraper:
 
     def __init__(self, crawler):
         self.slot = None
@@ -123,7 +123,11 @@ class Scraper(object):
     def _scrape(self, response, request, spider):
         """Handle the downloaded response or failure through the spider
         callback/errback"""
-        assert isinstance(response, (Response, Failure))
+        if not isinstance(response, (Response, Failure)):
+            raise TypeError(
+                "Incorrect type: expected Response or Failure, got %s: %r"
+                % (type(response), response)
+            )
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)

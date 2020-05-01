@@ -14,7 +14,7 @@ achieve this, such as:
    drawback: it's slow.
 
  * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
-   API based on `ElementTree`_. (lxml is not part of the Python standard
+   API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python standard
    library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
@@ -36,7 +36,6 @@ defines selectors to associate those styles with specific HTML elements.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 .. _parsel: https://parsel.readthedocs.io/en/latest/

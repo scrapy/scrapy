@@ -5,7 +5,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
 
 
-class M1(object):
+class M1:
 
     def open_spider(self, spider):
         pass
@@ -17,7 +17,7 @@ class M1(object):
         pass
 
 
-class M2(object):
+class M2:
 
     def open_spider(self, spider):
         pass
@@ -28,13 +28,13 @@ class M2(object):
     pass
 
 
-class M3(object):
+class M3:
 
     def process(self, response, request, spider):
         pass
 
 
-class MOff(object):
+class MOff:
 
     def open_spider(self, spider):
         pass

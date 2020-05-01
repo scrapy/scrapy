@@ -155,7 +155,7 @@ def log_scrapy_info(settings):
         logger.debug("Using asyncio event loop: %s.%s", reactor._asyncioEventloop.__module__, reactor._asyncioEventloop.__class__.__name__)
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:

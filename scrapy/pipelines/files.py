@@ -37,7 +37,7 @@ class FileException(Exception):
     """General media error exception"""
 
 
-class FSFilesStore(object):
+class FSFilesStore:
     def __init__(self, basedir):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -75,7 +75,7 @@ class FSFilesStore(object):
             seen.add(dirname)
 
 
-class S3FilesStore(object):
+class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_ENDPOINT_URL = None
@@ -106,7 +106,8 @@ class S3FilesStore(object):
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        assert uri.startswith('s3://')
+        if not uri.startswith("s3://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -213,7 +214,7 @@ class S3FilesStore(object):
         return extra
 
 
-class GCSFilesStore(object):
+class GCSFilesStore:
 
     GCS_PROJECT_ID = None
 
@@ -259,14 +260,15 @@ class GCSFilesStore(object):
         )
 
 
-class FTPFilesStore(object):
+class FTPFilesStore:
 
     FTP_USERNAME = None
     FTP_PASSWORD = None
     USE_ACTIVE_MODE = None
 
     def __init__(self, uri):
-        assert uri.startswith('ftp://')
+        if not uri.startswith("ftp://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
@@ -500,7 +502,7 @@ class FilesPipeline(MediaPipeline):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    ### Overridable Interface
+    # Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.files_urls_field, [])]
 
