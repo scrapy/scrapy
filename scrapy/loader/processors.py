@@ -14,6 +14,7 @@ from scrapy.utils.misc import arg_to_iter
 
 
 def deprecation_warning(cls):
+    """ ATTENTION: When removing these references, also remove tests/test_loader_deprecated.py"""
     warnings.warn(
         f"{cls.__module__}.{cls.__name__} has moved to a new library."
         f"Please update your reference to itemloaders.processors.{cls.__name__}",
