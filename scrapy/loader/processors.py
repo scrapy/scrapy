@@ -4,101 +4,60 @@ This module provides some commonly used processors for Item Loaders.
 See documentation in docs/topics/loaders.rst
 """
 from collections import ChainMap
+import warnings
 
-from scrapy.utils.misc import arg_to_iter
+from itemloaders import processors
+
 from scrapy.loader.common import wrap_loader_context
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.misc import arg_to_iter
 
 
-class MapCompose:
-
-    def __init__(self, *functions, **default_loader_context):
-        self.functions = functions
-        self.default_loader_context = default_loader_context
-
-    def __call__(self, value, loader_context=None):
-        values = arg_to_iter(value)
-        if loader_context:
-            context = ChainMap(loader_context, self.default_loader_context)
-        else:
-            context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
-        for func in wrapped_funcs:
-            next_values = []
-            for v in values:
-                try:
-                    next_values += arg_to_iter(func(v))
-                except Exception as e:
-                    raise ValueError("Error in MapCompose with "
-                                     "%s value=%r error='%s: %s'" %
-                                     (str(func), value, type(e).__name__,
-                                      str(e)))
-            values = next_values
-        return values
+def deprecation_warning(cls):
+    warnings.warn(
+        f"{cls.__module__}.{cls.__name__} has moved to a new library."
+        f"Please update your reference to itemloaders.processors.{cls.__name__}",
+        ScrapyDeprecationWarning
+    )
 
 
-class Compose:
+class MapCompose(processors.MapCompose):
 
     def __init__(self, *functions, **default_loader_context):
-        self.functions = functions
-        self.stop_on_none = default_loader_context.get('stop_on_none', True)
-        self.default_loader_context = default_loader_context
-
-    def __call__(self, value, loader_context=None):
-        if loader_context:
-            context = ChainMap(loader_context, self.default_loader_context)
-        else:
-            context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
-        for func in wrapped_funcs:
-            if value is None and self.stop_on_none:
-                break
-            try:
-                value = func(value)
-            except Exception as e:
-                raise ValueError("Error in Compose with "
-                                 "%s value=%r error='%s: %s'" %
-                                 (str(func), value, type(e).__name__, str(e)))
-        return value
+        deprecation_warning(type(self))
+        super().__init__(*functions, **default_loader_context)
 
 
-class TakeFirst:
+class Compose(processors.Compose):
 
-    def __call__(self, values):
-        for value in values:
-            if value is not None and value != '':
-                return value
-
-
-class Identity:
-
-    def __call__(self, values):
-        return values
+    def __init__(self, *functions, **default_loader_context):
+        deprecation_warning(type(self))
+        super().__init__(*functions, **default_loader_context)
 
 
-class SelectJmes:
-    """
-        Query the input string for the jmespath (given at instantiation),
-        and return the answer
-        Requires : jmespath(https://github.com/jmespath/jmespath)
-        Note: SelectJmes accepts only one input element at a time.
-    """
+class TakeFirst(processors.TakeFirst):
+
+    def __init__(self):
+        deprecation_warning(type(self))
+        super().__init__()
+
+
+class Identity(processors.Identity):
+
+    def __init__(self):
+        deprecation_warning(type(self))
+        super().__init__()
+
+
+class SelectJmes(processors.SelectJmes):
+
     def __init__(self, json_path):
-        self.json_path = json_path
-        import jmespath
-        self.compiled_path = jmespath.compile(self.json_path)
-
-    def __call__(self, value):
-        """Query value for the jmespath query and return answer
-        :param value: a data structure (dict, list) to extract from
-        :return: Element extracted according to jmespath query
-        """
-        return self.compiled_path.search(value)
+        deprecation_warning(type(self))
+        super().__init__(json_path)
 
 
-class Join:
+class Join(processors.Join):
 
     def __init__(self, separator=u' '):
-        self.separator = separator
-
-    def __call__(self, values):
-        return self.separator.join(values)
+        deprecation_warning(type(self))
+        super().__init__(separator)

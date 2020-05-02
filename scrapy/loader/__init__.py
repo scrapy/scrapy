@@ -8,6 +8,7 @@ import itemloaders
 from scrapy.item import Item
 from scrapy.selector import Selector
 
+
 class ItemLoader(itemloaders.ItemLoader):
 
     default_item_class = Item
