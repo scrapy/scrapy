@@ -378,7 +378,9 @@ bytes_received
 
     Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
     received for a specific request. This signal might be fired multiple
-    times for the same request, with partial data each time.
+    times for the same request, with partial data each time. For instance,
+    a possible scenario for a 25 kb response would be two signals fired
+    with 10 kb of data, and a final one with 5 kb of data.
 
     This signal does not support returning deferreds from its handlers.
 
