@@ -421,7 +421,7 @@ connections (for ``HTTP10DownloadHandler``).
 
     HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
-    :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme accordingly,
+    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
     i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
