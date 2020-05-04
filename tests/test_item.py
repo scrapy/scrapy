@@ -347,5 +347,18 @@ class BaseItemTest(unittest.TestCase):
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
+class ItemNoDeprecationWarningTest(unittest.TestCase):
+
+    def test_no_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            Item()
+            self.assertEqual(len(warnings), 0)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedItem(Item):
+                pass
+            SubclassedItem()
+            self.assertEqual(len(warnings), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
