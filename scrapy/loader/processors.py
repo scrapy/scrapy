@@ -4,61 +4,22 @@ This module provides some commonly used processors for Item Loaders.
 See documentation in docs/topics/loaders.rst
 """
 from collections import ChainMap
-import warnings
 
 from itemloaders import processors
 
 from scrapy.loader.common import wrap_loader_context
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter
 
 
-def deprecation_warning(cls):
-    """ ATTENTION: When removing these references, also remove tests/test_loader_deprecated.py"""
-    warnings.warn(
-        f"{cls.__module__}.{cls.__name__} has moved to a new library."
-        f"Please update your reference to itemloaders.processors.{cls.__name__}",
-        ScrapyDeprecationWarning
-    )
+MapCompose = create_deprecated_class('MapCompose', processors.MapCompose)
 
+Compose = create_deprecated_class('Compose', processors.Compose)
 
-class MapCompose(processors.MapCompose):
+TakeFirst = create_deprecated_class('TakeFirst', processors.TakeFirst)
 
-    def __init__(self, *functions, **default_loader_context):
-        deprecation_warning(type(self))
-        super().__init__(*functions, **default_loader_context)
+Identity = create_deprecated_class('Identity', processors.Identity)
 
+SelectJmes = create_deprecated_class('SelectJmes', processors.SelectJmes)
 
-class Compose(processors.Compose):
-
-    def __init__(self, *functions, **default_loader_context):
-        deprecation_warning(type(self))
-        super().__init__(*functions, **default_loader_context)
-
-
-class TakeFirst(processors.TakeFirst):
-
-    def __init__(self):
-        deprecation_warning(type(self))
-        super().__init__()
-
-
-class Identity(processors.Identity):
-
-    def __init__(self):
-        deprecation_warning(type(self))
-        super().__init__()
-
-
-class SelectJmes(processors.SelectJmes):
-
-    def __init__(self, json_path):
-        deprecation_warning(type(self))
-        super().__init__(json_path)
-
-
-class Join(processors.Join):
-
-    def __init__(self, separator=u' '):
-        deprecation_warning(type(self))
-        super().__init__(separator)
+Join = create_deprecated_class('Join', processors.Join)
