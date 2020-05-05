@@ -342,14 +342,14 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import BaseItem
+    from scrapy.item import Item
 
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (BaseItem, dict)):
+                if isinstance(item, (Item, dict)):
                     for _ in range(item['multiply_by']):
                         yield deepcopy(item)
 

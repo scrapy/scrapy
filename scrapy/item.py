@@ -15,18 +15,8 @@ from scrapy.utils.trackref import object_ref
 
 
 class BaseItem(object_ref):
-    """Base class for all scraped items.
-
-    In Scrapy, an object is considered an *item* if it is an instance of either
-    :class:`BaseItem` or :class:`dict`. For example, when the output of a
-    spider callback is evaluated, only instances of :class:`BaseItem` or
-    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
-
-    If you need instances of a custom class to be considered items by Scrapy,
-    you must inherit from either :class:`BaseItem` or :class:`dict`.
-
-    Unlike instances of :class:`dict`, instances of :class:`BaseItem` may be
-    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    """
+    Deprecated, please use :class:`scrapy.item.Item` instead
     """
 
     def __new__(cls, *args, **kwargs):
@@ -91,8 +81,7 @@ class DictItem(MutableMapping, BaseItem):
         if key in self.fields:
             self._values[key] = value
         else:
-            raise KeyError("%s does not support field: %s" %
-                (self.__class__.__name__, key))
+            raise KeyError("%s does not support field: %s" % (self.__class__.__name__, key))
 
     def __delitem__(self, key):
         del self._values[key]
@@ -104,8 +93,7 @@ class DictItem(MutableMapping, BaseItem):
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):
-            raise AttributeError("Use item[%r] = %r to set field value" %
-                (name, value))
+            raise AttributeError("Use item[%r] = %r to set field value" % (name, value))
         super(DictItem, self).__setattr__(name, value)
 
     def __len__(self):
@@ -132,4 +120,17 @@ class DictItem(MutableMapping, BaseItem):
 
 
 class Item(DictItem, metaclass=ItemMeta):
-    pass
+    """
+    Base class for scraped items.
+
+    In Scrapy, an object is considered an *item* if it is an instance of either
+    :class:`Item` or :class:`dict`. For example, when the output of a
+    spider callback is evaluated, only instances of :class:`Item` or
+    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
+
+    If you need instances of a custom class to be considered items by Scrapy,
+    you must inherit from either :class:`Item` or :class:`dict`.
+
+    Unlike instances of :class:`dict`, instances of :class:`Item` may be
+    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    """
