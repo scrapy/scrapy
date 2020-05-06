@@ -47,12 +47,7 @@ def nonserializable_object_test(self):
     self.assertRaises(ValueError, q.push, sel)
 
 
-class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
-
-    chunksize = 100000
-
-    def queue(self):
-        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+class FifoDiskQueueTestMixin:
 
     def test_serialize(self):
         q = self.queue()
@@ -64,6 +59,13 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
         self.assertEqual(q.pop(), {'a': 'dict'})
 
     test_nonserializable_object = nonserializable_object_test
+
+
+class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
+    chunksize = 100000
+
+    def queue(self):
+        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
@@ -82,7 +84,7 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 4
 
 
-class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
+class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
 
     chunksize = 100000
 
@@ -133,10 +135,7 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 4
 
 
-class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
-
-    def queue(self):
-        return MarshalLifoDiskQueue(self.qpath)
+class LifoDiskQueueTestMixin:
 
     def test_serialize(self):
         q = self.queue()
@@ -150,7 +149,13 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
     test_nonserializable_object = nonserializable_object_test
 
 
-class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
+class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
+
+    def queue(self):
+        return MarshalLifoDiskQueue(self.qpath)
+
+
+class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
         return PickleLifoDiskQueue(self.qpath)
