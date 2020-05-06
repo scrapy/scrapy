@@ -21,7 +21,7 @@ def iterate_spider_output(result):
     return arg_to_iter(deferred_from_coro(result))
 
 
-def _is_concrete_spider(spider_class, require_name):
+def _is_non_base_spider(spider_class, require_name):
     return (
         inspect.isclass(spider_class)
         and issubclass(spider_class, Spider)
@@ -34,20 +34,20 @@ def _is_concrete_spider(spider_class, require_name):
 
 
 def iter_spider_classes(module, *, require_name=True):
-    """Return an iterator over all :ref:`concrete spider
-    <abstract-and-concrete-spiders>` classes defined in the given module.
+    """Return an iterator over all :ref:`spider <topics-spiders>` classes
+    defined in the given module, excluding :ref:`base spiders <base-spiders>`.
 
     If `require_name` is ``True`` (default), any
     :class:`~scrapy.spiders.Spider` subclass with a non-empty
     :class:`~scrapy.spiders.Spider.name` and not decorated with
-    :func:`~scrapy.spiders.abstractspider` is considered a concrete spider.
+    :func:`~scrapy.spiders.basespider` is yielded.
 
     If `require_name` is ``False``, any :class:`~scrapy.spiders.Spider`
-    subclass not decorated with :func:`~scrapy.spiders.abstractspider` is
-    considered a concrete spider.
+    subclass not decorated with :func:`~scrapy.spiders.basespider` is
+    yielded.
     """
     for obj in vars(module).values():
-        if (_is_concrete_spider(obj, require_name)
+        if (_is_non_base_spider(obj, require_name)
                 and obj.__module__ == module.__name__):
             yield obj
 

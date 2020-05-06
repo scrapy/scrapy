@@ -13,9 +13,9 @@ from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import method_is_overridden
 
 
-def abstractspider(decorated_cls):
-    """Marks a :class:`~scrapy.spiders.Spider` subclass as an :ref:`abstract
-    spider <abstract-and-concrete-spiders>`."""
+def basespider(decorated_cls):
+    """Marks a :class:`~scrapy.spiders.Spider` subclass as a :ref:`base spider
+    <base-spiders>`."""
 
     @classmethod
     def is_abstract(cls):

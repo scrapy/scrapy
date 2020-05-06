@@ -61,11 +61,14 @@ scrapy.Spider
 
    .. attribute:: name
 
-       A string which defines the name for this spider. The spider name is how
-       the spider is located (and instantiated) by Scrapy, so it must be
-       unique. However, nothing prevents you from instantiating more than one
-       instance of the same spider. This is the most important spider attribute
-       and it's required.
+       A string which defines the name for this spider.
+
+       If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default) and you
+       use the default Scrapy spider loader (see
+       :setting:`SPIDER_LOADER_CLASS`), a non-empty name is required for the
+       spider to be discoverable by Scrapy, and the spider name must be
+       unique to one spider class; however, nothing prevents you from
+       instantiating more than one instance of the same spider.
 
        If the spider scrapes a single domain, a common practice is to name the
        spider after the domain, with or without the `TLD`_. So, for example, a
@@ -817,40 +820,31 @@ Combine SitemapSpider with other sources of urls::
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
 
 
-.. _abstract-and-concrete-spiders:
+.. _base-spiders:
 
-Abstract and Concrete Spiders
-=============================
+Base spiders
+============
 
-Abstract spiders are :class:`~scrapy.spiders.Spider` subclasses that are
-not loaded by the default spider loader (see :setting:`SPIDER_LOADER_CLASS`).
-Abstract spiders cannot be executed, they can only be subclassed to create
-other spiders.
+Base spiders are :class:`~scrapy.spiders.Spider` subclasses that are not meant
+to be run by Scrapy. They are only meant to be subclassed to create regular
+spiders. They are one way to share code between two or more spiders.
 
-To be able to use a spider, you must mark it as a concrete spider.
+Use the :func:`~scrapy.spiders.basespider` decorator to mark a spider class as
+a base spider, so that the default Scrapy spider loader (see
+:setting:`SPIDER_LOADER_CLASS`) ignores that spider class, hence preventing
+Scrapy from running or listing (see the :command:`list` command) that spider
+class.
 
-How you mark a spider as a concrete spider depends on the value of the
-:setting:`SPIDER_LOADER_REQUIRE_NAME` setting:
-
--   If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), add a
-    non-empty :class:`~scrapy.spiders.Spider.name` to a spider to make it a
-    concrete spider.
-
--   If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``, all spiders are
-    considered concrete spiders by default.
-
-Use :func:`~scrapy.spiders.abstractspider` to mark a spider as an abstract
-spider:
-
-.. autodecorator:: scrapy.spiders.abstractspider
+.. autodecorator:: scrapy.spiders.basespider
 
 For example::
 
-    from scrapy.spiders import abstractspider, Spider
+    from scrapy.spiders import basespider, Spider
 
-    @abstractspider
+    @basespider
     class MyBaseSpider(Spider):
         pass
 
-    class MySpider(MyBaseSpider):
-        pass
+If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), any
+:class:`~scrapy.spiders.Spider` subclass without a ``name`` class attribute is
+also treated as a base spider.
