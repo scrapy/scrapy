@@ -24,7 +24,8 @@ class Request(object_ref):
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
-        assert isinstance(priority, int), "Request priority not an integer: %r" % priority
+        if not isinstance(priority, int):
+            raise TypeError("Request priority not an integer: %r" % priority)
         self.priority = priority
 
         if callback is not None and not callable(callback):

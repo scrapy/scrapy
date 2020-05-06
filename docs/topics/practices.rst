@@ -35,8 +35,9 @@ Here's an example showing how to run a single spider with it.
         ...
 
     process = CrawlerProcess(settings={
-        'FEED_FORMAT': 'json',
-        'FEED_URI': 'items.json'
+        "FEEDS": {
+            "items.json": {"format": "json"},
+        },
     })
 
     process.crawl(MySpider)

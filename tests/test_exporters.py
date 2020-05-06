@@ -215,11 +215,12 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
-        first = to_unicode(first)
-        second = to_unicode(second)
-        csvsplit = lambda csv: [sorted(re.split(r'(,|\s+)', line))
-                                for line in csv.splitlines(True)]
-        return self.assertEqual(csvsplit(first), csvsplit(second), msg)
+        def split_csv(csv):
+            return [
+                sorted(re.split(r"(,|\s+)", line))
+                for line in to_unicode(csv).splitlines(True)
+            ]
+        return self.assertEqual(split_csv(first), split_csv(second), msg=msg)
 
     def _check_output(self):
         self.assertCsvEqual(to_unicode(self.output.getvalue()), u'age,name\r\n22,John\xa3\r\n')
