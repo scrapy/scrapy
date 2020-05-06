@@ -1,3 +1,6 @@
+import pickle
+import sys
+
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
     MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
@@ -108,8 +111,10 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         try:
             q.push(lambda x: x)
         except ValueError as exc:
-            self.assertIsInstance(exc.__context__, AttributeError)
-
+            if hasattr(sys, "pypy_version_info"):
+                self.assertIsInstance(exc.__context__, pickle.PicklingError)
+            else:
+                self.assertIsInstance(exc.__context__, AttributeError)
         sel = Selector(text='<html><body><p>some text</p></body></html>')
         try:
             q.push(sel)
