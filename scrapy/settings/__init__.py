@@ -4,7 +4,6 @@ from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
-from scrapy.utils.misc import create_instance, load_object
 from scrapy.settings import default_settings
 
 
