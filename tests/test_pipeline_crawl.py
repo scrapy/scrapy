@@ -132,7 +132,8 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media(self):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/files/images/"),
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key)
         self._assert_files_downloaded(self.items, str(log))
@@ -141,7 +142,8 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media_wrong_urls(self):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/files/images/"),
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key)
         self._assert_files_download_failure(crawler, self.items, 404, str(log))
@@ -150,7 +152,8 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media_redirected_default_failure(self):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/files/images/"),
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver)
@@ -164,7 +167,8 @@ class FileDownloadCrawlTestCase(TestCase):
 
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/files/images/"),
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver)
