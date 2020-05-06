@@ -24,15 +24,17 @@ class SpiderLoader:
         self._load_all_spiders()
 
     def _check_name_duplicates(self):
-        dupes = ["\n".join("  {cls} named {name!r} (in {module})".format(
-                                module=mod, cls=cls, name=name)
-                           for (mod, cls) in locations)
-                 for name, locations in self._found.items()
-                 if len(locations) > 1]
+        dupes = []
+        for name, locations in self._found.items():
+            dupes.extend([
+                "  {cls} named {name!r} (in {module})".format(module=mod, cls=cls, name=name)
+                for mod, cls in locations
+            ])
+
         if dupes:
+            dupes_string = "\n\n".join(dupes)
             msg = ("There are several spiders with the same name:\n\n"
-                   "{}\n\n  This can cause unexpected behavior.".format(
-                        "\n\n".join(dupes)))
+                   "{}\n\n  This can cause unexpected behavior.".format(dupes_string))
             warnings.warn(msg, UserWarning)
 
     def _load_spiders(self, module):
@@ -45,11 +47,12 @@ class SpiderLoader:
             try:
                 for module in walk_modules(name):
                     self._load_spiders(module)
-            except ImportError as e:
+            except ImportError:
                 if self.warn_only:
-                    msg = ("\n{tb}Could not load spiders from module '{modname}'. "
-                           "See above traceback for details.".format(
-                                modname=name, tb=traceback.format_exc()))
+                    msg = (
+                        "\n{tb}Could not load spiders from module '{modname}'. "
+                        "See above traceback for details.".format(modname=name, tb=traceback.format_exc())
+                    )
                     warnings.warn(msg, RuntimeWarning)
                 else:
                     raise
