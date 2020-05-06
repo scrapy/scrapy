@@ -501,5 +501,6 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 self.assertEqualResponse(res1, res2)
                 assert 'cached' in res2.flags
 
+
 if __name__ == '__main__':
     unittest.main()

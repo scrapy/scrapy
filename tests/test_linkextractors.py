@@ -2,8 +2,6 @@ import re
 import unittest
 from warnings import catch_warnings
 
-import pytest
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
@@ -16,7 +14,6 @@ from tests import get_testdata
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
         extractor_cls = None
-        escapes_whitespace = False
 
         def setUp(self):
             body = get_testdata('link_extractor', 'linkextractor.html')
@@ -30,10 +27,7 @@ class Base:
 
         def test_extract_all_links(self):
             lx = self.extractor_cls()
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -214,7 +208,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
             links = self.extractor_cls(restrict_xpaths='//p').extract_links(response)
             self.assertEqual(links,
-                             [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
+                             [Link(url='http://example.org/%E2%99%A5/you?c=%A4', text=u'text')])
 
         def test_restrict_xpaths_concat_in_handle_data(self):
             """html entities cause SGMLParser to call handle_data hook twice"""
@@ -310,10 +304,7 @@ class Base:
 
         def test_attrs(self):
             lx = self.extractor_cls(attrs="href")
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -506,7 +497,6 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
         ])
 
-    @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 

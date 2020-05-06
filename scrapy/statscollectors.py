@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class StatsCollector(object):
+class StatsCollector:
     """Base class for :ref:`stats collectors <topics-stats>`, extensions that
     collect statistics.
 

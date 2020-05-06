@@ -17,7 +17,7 @@ from scrapy.utils.trackref import format_live_refs
 logger = logging.getLogger(__name__)
 
 
-class StackTraceDump(object):
+class StackTraceDump:
 
     def __init__(self, crawler=None):
         self.crawler = crawler
@@ -52,7 +52,7 @@ class StackTraceDump(object):
         return dumps
 
 
-class Debugger(object):
+class Debugger:
     def __init__(self):
         try:
             signal.signal(signal.SIGUSR2, self._enter_debugger)

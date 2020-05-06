@@ -4,7 +4,15 @@ import signal
 import warnings
 
 from twisted.internet import defer
-from zope.interface.verify import DoesNotImplement, verifyClass
+from zope.interface.exceptions import DoesNotImplement
+
+try:
+    # zope >= 5.0 only supports MultipleInvalid
+    from zope.interface.exceptions import MultipleInvalid
+except ImportError:
+    MultipleInvalid = None
+
+from zope.interface.verify import verifyClass
 
 from scrapy import signals, Spider
 from scrapy.core.engine import ExecutionEngine
@@ -122,17 +130,6 @@ class Crawler:
         #: advanced use and this API is not yet stable.
         self.engine = None
 
-    @property
-    def spiders(self):
-        if not hasattr(self, '_spiders'):
-            warnings.warn("Crawler.spiders is deprecated, use "
-                          "CrawlerRunner.spider_loader or instantiate "
-                          "scrapy.spiderloader.SpiderLoader with your "
-                          "settings.",
-                          category=ScrapyDeprecationWarning, stacklevel=2)
-            self._spiders = _get_spider_loader(self.settings.frozencopy())
-        return self._spiders
-
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
         """Starts the crawler by instantiating its spider class with the given
@@ -144,7 +141,8 @@ class Crawler:
         When using Scrapy, usually an instance of :class:`Crawler` is
         object, passed to extensions through the ``from_crawler`` class method.
         """
-        assert not self.crawling, "Crawling already taking place"
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
         self.crawling = True
 
         try:
@@ -193,6 +191,23 @@ class CrawlerRunner:
             ":meth:`crawl` and managed by this class."
     )
 
+    @staticmethod
+    def _get_spider_loader(settings):
+        """ Get SpiderLoader instance from settings """
+        cls_path = settings.get('SPIDER_LOADER_CLASS')
+        loader_cls = load_object(cls_path)
+        excs = (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
+        try:
+            verifyClass(ISpiderLoader, loader_cls)
+        except excs:
+            warnings.warn(
+                'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
+                'not fully implement scrapy.interfaces.ISpiderLoader interface. '
+                'Please add all missing methods to avoid unexpected runtime errors.',
+                category=ScrapyDeprecationWarning, stacklevel=2
+            )
+        return loader_cls.from_settings(settings.frozencopy())
+
     def __init__(self, settings=None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -207,7 +222,7 @@ class CrawlerRunner:
         #: spider loader class. The default implementation,
         #: :class:`SpiderLoader <scrapy.spiderloader.SpiderLoader>`, is used
         #: otherwise.
-        self.spider_loader = _get_spider_loader(settings)
+        self.spider_loader = self._get_spider_loader(settings)
         self._crawlers = set()
         self._active = set()
         self.bootstrap_failed = False
@@ -400,19 +415,3 @@ class CrawlerProcess(CrawlerRunner):
         if self.settings.get("TWISTED_REACTOR"):
             install_reactor(self.settings["TWISTED_REACTOR"])
         super()._handle_twisted_reactor()
-
-
-def _get_spider_loader(settings):
-    """ Get SpiderLoader instance from settings """
-    cls_path = settings.get('SPIDER_LOADER_CLASS')
-    loader_cls = load_object(cls_path)
-    try:
-        verifyClass(ISpiderLoader, loader_cls)
-    except DoesNotImplement:
-        warnings.warn(
-            'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
-            'not fully implement scrapy.interfaces.ISpiderLoader interface. '
-            'Please add all missing methods to avoid unexpected runtime errors.',
-            category=ScrapyDeprecationWarning, stacklevel=2
-        )
-    return loader_cls.from_settings(settings.frozencopy())

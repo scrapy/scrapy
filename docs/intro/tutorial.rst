@@ -25,16 +25,16 @@ Scrapy.
 If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
-may be useful to you: 
+may be useful to you:
 
 * `Automate the Boring Stuff With Python`_
 
-* `How To Think Like a Computer Scientist`_ 
+* `How To Think Like a Computer Scientist`_
 
-* `Learn Python 3 The Hard Way`_ 
+* `Learn Python 3 The Hard Way`_
 
 You can also take a look at `this list of Python resources for non-programmers`_,
-as well as the `suggested resources in the learnpython-subreddit`_. 
+as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
@@ -62,7 +62,7 @@ This will create a ``tutorial`` directory with the following contents::
             __init__.py
 
             items.py          # project items definition file
-            
+
             middlewares.py    # project middlewares file
 
             pipelines.py      # project pipelines file
@@ -212,7 +212,7 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
 .. note::
 
    Remember to always enclose urls in quotes when running Scrapy shell from
-   command-line, otherwise urls containing arguments (ie. ``&`` character)
+   command-line, otherwise urls containing arguments (i.e. ``&`` character)
    will not work.
 
    On Windows, use double quotes instead::
@@ -287,8 +287,8 @@ to be scraped, you can at least get **some** data.
 
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
-the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_:
+the :meth:`~scrapy.selector.SelectorList.re` method to extract using
+:doc:`regular expressions <library/re>`:
 
 >>> response.css('title::text').re(r'Quotes.*')
 ['Quotes to Scrape']
@@ -305,8 +305,7 @@ with a selector (see :ref:`topics-developer-tools`).
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
 
-.. _regular expressions: https://docs.python.org/3/library/re.html
-.. _Selector Gadget: http://selectorgadget.com/
+.. _Selector Gadget: https://selectorgadget.com/
 
 
 XPath: a brief intro
@@ -337,7 +336,7 @@ recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-.. _XPath: https://www.w3.org/TR/xpath
+.. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 
 Extracting quotes and authors
