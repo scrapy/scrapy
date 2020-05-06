@@ -15,16 +15,17 @@ def attribute(obj, oldattr, newattr, version='0.12'):
         stacklevel=3)
 
 
-def create_deprecated_class(name, new_class, clsdict=None,
-                            warn_category=ScrapyDeprecationWarning,
-                            warn_once=True,
-                            old_class_path=None,
-                            new_class_path=None,
-                            subclass_warn_message="{cls} inherits from "
-                                    "deprecated class {old}, please inherit "
-                                    "from {new}.",
-                            instance_warn_message="{cls} is deprecated, "
-                                    "instantiate {new} instead."):
+def create_deprecated_class(
+    name,
+    new_class,
+    clsdict=None,
+    warn_category=ScrapyDeprecationWarning,
+    warn_once=True,
+    old_class_path=None,
+    new_class_path=None,
+    subclass_warn_message="{cls} inherits from deprecated class {old}, please inherit from {new}.",
+    instance_warn_message="{cls} is deprecated, instantiate {new} instead."
+):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.

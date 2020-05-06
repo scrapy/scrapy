@@ -178,12 +178,11 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [
-        el for el in form.xpath(
-            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
-            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
-            namespaces={"re": "http://exslt.org/regular-expressions"})
-        ]
+    clickables = list(form.xpath(
+        'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+        '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+        namespaces={"re": "http://exslt.org/regular-expressions"}
+    ))
     if not clickables:
         return
 
