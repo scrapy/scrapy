@@ -399,8 +399,7 @@ class FormRequestTest(RequestTest):
 
     def test_custom_encoding_bytes(self):
         data = {b'\xb5 one': b'two', b'price': b'\xa3 100'}
-        r2 = self.request_class("http://www.example.com", formdata=data,
-                                    encoding='latin1')
+        r2 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'latin1')
         self.assertQueryEqual(r2.body, b'price=%A3+100&%B5+one=two')
@@ -408,8 +407,7 @@ class FormRequestTest(RequestTest):
 
     def test_custom_encoding_textual_data(self):
         data = {'price': u'£ 100'}
-        r3 = self.request_class("http://www.example.com", formdata=data,
-                                    encoding='latin1')
+        r3 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, b'price=%A3+100')
 
