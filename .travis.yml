@@ -27,10 +27,13 @@ matrix:
       python: 3.7
     - env: TOXENV=py PYPI_RELEASE_JOB=true
       python: 3.8
+      dist: bionic
     - env: TOXENV=extra-deps
       python: 3.8
+      dist: bionic
     - env: TOXENV=asyncio
       python: 3.8
+      dist: bionic
 install:
   - |
       if [ "$TOXENV" = "pypy3" ]; then
