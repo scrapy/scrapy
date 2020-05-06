@@ -1090,8 +1090,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEqual(response.text, 'A brief note')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "US-ASCII")
 
         request = Request("data:,A%20brief%20note")
@@ -1100,8 +1099,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype(self):
         def _test(response):
             self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "iso-8859-7")
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
@@ -1119,8 +1117,7 @@ class DataURITestCase(unittest.TestCase):
     def test_mediatype_parameters(self):
         def _test(response):
             self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "utf-8")
 
         request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
