@@ -1,5 +1,3 @@
-import pickle
-
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
     MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
