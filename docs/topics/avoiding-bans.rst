@@ -8,10 +8,10 @@ This topic covers some of the strategies that you can follow to avoid getting
 different or bad responses from a website that you are crawling due to filters
 such as regional filters, web browser filters, etc.
 
-.. _avoiding-crawling:
+.. _avoiding-crawls:
 
-Avopiding crawling
-==================
+Avoiding crawls
+===============
 
 The best way not to be banned from a website is not to send requests to it in
 the first place.
