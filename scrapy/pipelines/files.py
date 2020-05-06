@@ -234,8 +234,8 @@ class GCSFilesStore:
         )
         if 'storage.objects.get' not in permissions:
             logger.warning(
-                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. \
-                Checking if files are up to date will be impossible. Files will be downloaded every time.",
+                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "Checking if files are up to date will be impossible. Files will be downloaded every time.",
                 {'bucket': bucket}
             )
         if 'storage.objects.create' not in permissions:
