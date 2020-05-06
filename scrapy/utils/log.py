@@ -144,10 +144,12 @@ def _get_handler(settings):
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-    logger.info("Versions: %(versions)s",
-                {'versions': ", ".join("%s %s" % (name, version)
-                    for name, version in scrapy_components_versions()
-                    if name != "Scrapy")})
+    versions = [
+        "%s %s" % (name, version)
+        for name, version in scrapy_components_versions()
+        if name != "Scrapy"
+    ]
+    logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 
