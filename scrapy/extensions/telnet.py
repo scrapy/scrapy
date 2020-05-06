@@ -76,8 +76,10 @@ class TelnetConsole(protocol.ServerFactory):
             """An implementation of IPortal"""
             @defers
             def login(self_, credentials, mind, *interfaces):
-                if not (credentials.username == self.username.encode('utf8') and
-                        credentials.checkPassword(self.password.encode('utf8'))):
+                if not (
+                    credentials.username == self.username.encode('utf8')
+                    and credentials.checkPassword(self.password.encode('utf8'))
+                ):
                     raise ValueError("Invalid credentials")
 
                 protocol = telnet.TelnetBootstrapProtocol(
