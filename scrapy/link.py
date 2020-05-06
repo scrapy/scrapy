@@ -6,7 +6,7 @@ its documentation in: docs/topics/link-extractors.rst
 """
 
 
-class Link(object):
+class Link:
     """Link objects represent an extracted link by the LinkExtractor."""
 
     __slots__ = ['url', 'text', 'fragment', 'nofollow']

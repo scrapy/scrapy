@@ -9,7 +9,7 @@ from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
 
 
-class ContractsManager(object):
+class ContractsManager:
     contracts = {}
 
     def __init__(self, contracts):
@@ -17,10 +17,10 @@ class ContractsManager(object):
             self.contracts[contract.name] = contract
 
     def tested_methods_from_spidercls(self, spidercls):
+        is_method = re.compile(r"^\s*@", re.MULTILINE).search
         methods = []
         for key, value in getmembers(spidercls):
-            if (callable(value) and value.__doc__ and
-                    re.search(r'^\s*@', value.__doc__, re.MULTILINE)):
+            if callable(value) and value.__doc__ and is_method(value.__doc__):
                 methods.append(key)
 
         return methods
@@ -107,7 +107,7 @@ class ContractsManager(object):
         request.errback = eb_wrapper
 
 
-class Contract(object):
+class Contract:
     """ Abstract class for contracts """
     request_cls = None
 

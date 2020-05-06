@@ -20,7 +20,7 @@ from scrapy.utils.request import request_fingerprint
 logger = logging.getLogger(__name__)
 
 
-class DummyPolicy(object):
+class DummyPolicy:
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
@@ -39,7 +39,7 @@ class DummyPolicy(object):
         return True
 
 
-class RFC2616Policy(object):
+class RFC2616Policy:
 
     MAXAGE = 3600 * 24 * 365  # one year
 
@@ -213,7 +213,7 @@ class RFC2616Policy(object):
         return currentage
 
 
-class DbmCacheStorage(object):
+class DbmCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
@@ -270,7 +270,7 @@ class DbmCacheStorage(object):
         return request_fingerprint(request)
 
 
-class FilesystemCacheStorage(object):
+class FilesystemCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])

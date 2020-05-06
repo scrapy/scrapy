@@ -32,7 +32,6 @@ import re
 from io import BytesIO
 from urllib.parse import unquote
 
-from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
 
@@ -81,6 +80,7 @@ class FTPDownloadHandler:
         return cls(crawler.settings)
 
     def download_request(self, request, spider):
+        from twisted.internet import reactor
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
         password = request.meta.get("ftp_password", self.default_password)
@@ -94,11 +94,12 @@ class FTPDownloadHandler:
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
+        return client.retrieveFile(filepath, protocol).addCallbacks(
+            callback=self._build_response,
+            callbackArgs=(request, protocol),
+            errback=self._failed,
+            errbackArgs=(request,),
+        )
 
     def _build_response(self, result, request, protocol):
         self.result = result

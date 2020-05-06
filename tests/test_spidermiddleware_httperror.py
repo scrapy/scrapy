@@ -111,8 +111,7 @@ class TestHttpErrorMiddlewareSettings(TestCase):
                 self.mw.process_spider_input(self.res402, self.spider))
 
     def test_meta_overrides_settings(self):
-        request = Request('http://scrapytest.org',
-                              meta={'handle_httpstatus_list': [404]})
+        request = Request('http://scrapytest.org', meta={'handle_httpstatus_list': [404]})
         res404 = self.res404.copy()
         res404.request = request
         res402 = self.res402.copy()
@@ -146,8 +145,7 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
                 self.mw.process_spider_input(self.res404, self.spider))
 
     def test_meta_overrides_settings(self):
-        request = Request('http://scrapytest.org',
-                              meta={'handle_httpstatus_list': [404]})
+        request = Request('http://scrapytest.org', meta={'handle_httpstatus_list': [404]})
         res404 = self.res404.copy()
         res404.request = request
         res402 = self.res402.copy()

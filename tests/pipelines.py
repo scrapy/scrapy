@@ -3,7 +3,7 @@ Some pipelines used for testing
 """
 
 
-class ZeroDivisionErrorPipeline(object):
+class ZeroDivisionErrorPipeline:
 
     def open_spider(self, spider):
         a = 1 / 0
@@ -12,7 +12,7 @@ class ZeroDivisionErrorPipeline(object):
         return item
 
 
-class ProcessWithZeroDivisionErrorPipiline(object):
+class ProcessWithZeroDivisionErrorPipiline:
 
     def process_item(self, item, spider):
         1 / 0
