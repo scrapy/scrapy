@@ -13,7 +13,7 @@ class ChunkedTest(unittest.TestCase):
         chunked_body += "8\r\n" + "sequence\r\n"
         chunked_body += "0\r\n\r\n"
         body = decode_chunked_transfer(chunked_body)
-        self.assertEqual(body,
-                         "This is the data in the first chunk\r\n" +
-                         "and this is the second one\r\n" +
-                         "consequence")
+        self.assertEqual(
+            body,
+            "This is the data in the first chunk\r\nand this is the second one\r\nconsequence"
+        )
