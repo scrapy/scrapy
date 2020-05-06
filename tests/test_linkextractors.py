@@ -413,24 +413,30 @@ class Base:
             response = HtmlResponse("http://example.com/index.xhtml", body=xhtml)
 
             lx = self.extractor_cls()
-            self.assertEqual(lx.extract_links(response),
-                             [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
-                              Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
-                              Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
-                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
-                            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                    Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                    Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
+                    Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
+                    Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True),
+                ]
+            )
 
             response = XmlResponse("http://example.com/index.xhtml", body=xhtml)
 
             lx = self.extractor_cls()
-            self.assertEqual(lx.extract_links(response),
-                             [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
-                              Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
-                              Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
-                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
-                            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                    Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                    Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
+                    Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
+                    Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True),
+                ]
+            )
 
         def test_link_wrong_href(self):
             html = b"""
