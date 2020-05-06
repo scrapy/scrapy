@@ -82,11 +82,10 @@ def _scrapy_non_serialization_queue(queue_class):
 def _pickle_serialize(obj):
     try:
         return pickle.dumps(obj, protocol=4)
-    # Python <= 3.4 raises pickle.PicklingError here while
-    # 3.5 <= Python < 3.6 raises AttributeError and
-    # Python >= 3.6 raises TypeError
+    # Both pickle.PicklingError and AttributeError can be raised by pickle.dump(s)
+    # TypeError is raised from parsel.Selector
     except (pickle.PicklingError, AttributeError, TypeError) as e:
-        raise ValueError(str(e))
+        raise ValueError(str(e)) from e
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(

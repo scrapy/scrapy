@@ -28,20 +28,7 @@ class TestLoader(ItemLoader):
 
 def nonserializable_object_test(self):
     q = self.queue()
-    try:
-        pickle.dumps(lambda x: x)
-    except Exception:
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        self.assertRaises(ValueError, q.push, lambda x: x)
-    else:
-        # Use a different unpickleable object
-        class A:
-            pass
-
-        a = A()
-        a.__reduce__ = a.__reduce_ex__ = None
-        self.assertRaises(ValueError, q.push, a)
+    self.assertRaises(ValueError, q.push, lambda x: x)
     # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
     sel = Selector(text='<html><body><p>some text</p></body></html>')
     self.assertRaises(ValueError, q.push, sel)
@@ -117,6 +104,19 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         assert isinstance(r2, Request)
         self.assertEqual(r.url, r2.url)
         assert r2.meta['request'] is r2
+
+    def test_non_pickable_object(self):
+        q = self.queue()
+        try:
+            q.push(lambda x: x)
+        except ValueError as exc:
+            self.assertIsInstance(exc.__context__, AttributeError)
+
+        sel = Selector(text='<html><body><p>some text</p></body></html>')
+        try:
+            q.push(sel)
+        except ValueError as exc:
+            self.assertIsInstance(exc.__context__, TypeError)
 
 
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
