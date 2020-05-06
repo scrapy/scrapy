@@ -7,10 +7,12 @@ For more info see docs/topics/link-extractors.rst
 """
 import re
 from urllib.parse import urlparse
+from warnings import warn
 
 from parsel.csstranslator import HTMLTranslator
 from w3lib.url import canonicalize_url
 
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     url_is_from_any_domain, url_has_any_extension,
@@ -43,13 +45,27 @@ IGNORED_EXTENSIONS = [
 
 
 _re_type = type(re.compile("", 0))
-_matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
-class FilteringLinkExtractor(object):
+def _matches(url, regexs):
+    return any(r.search(url) for r in regexs)
+
+
+def _is_valid_url(url):
+    return url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
+
+
+class FilteringLinkExtractor:
 
     _csstranslator = HTMLTranslator()
+
+    def __new__(cls, *args, **kwargs):
+        from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
+        if issubclass(cls, FilteringLinkExtractor) and not issubclass(cls, LxmlLinkExtractor):
+            warn('scrapy.linkextractors.FilteringLinkExtractor is deprecated, '
+                 'please use scrapy.linkextractors.LinkExtractor instead',
+                 ScrapyDeprecationWarning, stacklevel=2)
+        return super(FilteringLinkExtractor, cls).__new__(cls)
 
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
                  restrict_xpaths, canonicalize, deny_extensions, restrict_css, restrict_text):

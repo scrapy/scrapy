@@ -41,7 +41,7 @@ Requirements
 ============
 
 * Python 3.5+
-* Works on Linux, Windows, Mac OSX, BSD
+* Works on Linux, Windows, macOS, BSD
 
 Install
 =======

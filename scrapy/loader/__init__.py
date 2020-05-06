@@ -25,7 +25,7 @@ def unbound_method(method):
     return method
 
 
-class ItemLoader(object):
+class ItemLoader:
 
     default_item_class = Item
     default_input_processor = Identity()

@@ -44,7 +44,7 @@ guidelines when you're going to report a new bug.
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
-* if you have a general question about scrapy usage, please ask it at
+* if you have a general question about Scrapy usage, please ask it at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__
   (use "scrapy" tag).
 
@@ -143,7 +143,7 @@ by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
 (replace 'upstream' with a remote name for scrapy repository,
 ``$PR_NUMBER`` with an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE``
 with a name of the branch you want to create locally).
-See also: https://help.github.com/articles/checking-out-pull-requests-locally/#modifying-an-inactive-pull-request-locally.
+See also: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
 E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
@@ -168,7 +168,7 @@ Scrapy:
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://help.github.com/articles/setting-your-username-in-git/ for
+  See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
 
 .. _documentation-policies:
@@ -217,7 +217,7 @@ the tests with Python 3.6 use::
 
     tox -e py36
 
-You can also specify a comma-separated list of environmets, and use :ref:`tox’s
+You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
@@ -266,5 +266,5 @@ And their unit-tests are in::
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
-.. _pull request: https://help.github.com/en/articles/creating-a-pull-request
+.. _pull request: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist

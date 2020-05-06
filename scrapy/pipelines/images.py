@@ -14,7 +14,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
-#TODO: from scrapy.pipelines.media import MediaPipeline
+# TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException, FilesPipeline
 
 
@@ -93,6 +93,11 @@ class ImagesPipeline(FilesPipeline):
         gcs_store = cls.STORE_SCHEMES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
+
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
 
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)

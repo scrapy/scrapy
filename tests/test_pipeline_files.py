@@ -10,12 +10,13 @@ from urllib.parse import urlparse
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore, FTPFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
 from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
+from scrapy.utils.test import get_ftp_content_and_delete
 from scrapy.utils.boto import is_botocore
 
 
@@ -58,7 +59,6 @@ class FilesPipelineTestCase(unittest.TestCase):
         self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
                                     //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
                          'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
-                         
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
@@ -272,7 +272,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
         user_pipeline = pipeline_cls.from_settings(Settings(settings))
-        for pipe_cls_attr, settings_attr, pipe_inst_attr  in self.file_cls_attr_settings_map:
+        for pipe_cls_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             custom_value = settings.get(prefix + "_" + settings_attr)
             self.assertNotEqual(custom_value, self.default_cls_settings[pipe_cls_attr])
             self.assertEqual(getattr(user_pipeline, pipe_inst_attr), custom_value)
@@ -285,7 +285,6 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedFilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
         self.assertEqual(pipeline.files_result_field, "this")
         self.assertEqual(pipeline.files_urls_field, "that")
-
 
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of FilesPipeline,
@@ -360,12 +359,37 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], 'zc2oVgXkbQr2EQdSdw3OPA==')
         u = urlparse(uri)
-        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:]+path)
+        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:] + path)
         self.assertEqual(content, data)
         self.assertEqual(blob.metadata, {'foo': 'bar'})
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+
+class TestFTPFileStore(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_persist(self):
+        uri = os.environ.get('FTP_TEST_FILE_URI')
+        if not uri:
+            raise unittest.SkipTest("No FTP URI available for testing")
+        data = b"TestFTPFilesStore: \xe2\x98\x83"
+        buf = BytesIO(data)
+        meta = {'foo': 'bar'}
+        path = 'full/filename'
+        store = FTPFilesStore(uri)
+        empty_dict = yield store.stat_file(path, info=None)
+        self.assertEqual(empty_dict, {})
+        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
+        stat = yield store.stat_file(path, info=None)
+        self.assertIn('last_modified', stat)
+        self.assertIn('checksum', stat)
+        self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
+        path = '%s/%s' % (store.basedir, path)
+        content = get_ftp_content_and_delete(
+            path, store.host, store.port,
+            store.username, store.password, store.USE_ACTIVE_MODE)
+        self.assertEqual(data.decode(), content)
 
 
 class ItemWithFiles(Item):

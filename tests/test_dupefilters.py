@@ -2,6 +2,8 @@ import hashlib
 import tempfile
 import unittest
 import shutil
+import os
+import sys
 from testfixtures import LogCapture
 
 from scrapy.dupefilters import RFPDupeFilter
@@ -33,7 +35,7 @@ class FromSettingsRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class DirectDupeFilter(object):
+class DirectDupeFilter:
     method = 'n/a'
 
 
@@ -41,7 +43,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_crawler_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
@@ -49,14 +51,14 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_settings_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__  + '.FromSettingsRFPDupeFilter'}
+                    'DUPEFILTER_CLASS': __name__ + '.FromSettingsRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_df_direct_scheduler(self):
-        settings = {'DUPEFILTER_CLASS': __name__  + '.DirectDupeFilter'}
+        settings = {'DUPEFILTER_CLASS': __name__ + '.DirectDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertEqual(scheduler.df.method, 'n/a')
@@ -84,17 +86,21 @@ class RFPDupeFilterTest(unittest.TestCase):
         path = tempfile.mkdtemp()
         try:
             df = RFPDupeFilter(path)
-            df.open()
-            assert not df.request_seen(r1)
-            assert df.request_seen(r1)
-            df.close('finished')
+            try:
+                df.open()
+                assert not df.request_seen(r1)
+                assert df.request_seen(r1)
+            finally:
+                df.close('finished')
 
             df2 = RFPDupeFilter(path)
-            df2.open()
-            assert df2.request_seen(r1)
-            assert not df2.request_seen(r2)
-            assert df2.request_seen(r2)
-            df2.close('finished')
+            try:
+                df2.open()
+                assert df2.request_seen(r1)
+                assert not df2.request_seen(r2)
+                assert df2.request_seen(r2)
+            finally:
+                df2.close('finished')
         finally:
             shutil.rmtree(path)
 
@@ -129,10 +135,34 @@ class RFPDupeFilterTest(unittest.TestCase):
 
         case_insensitive_dupefilter.close('finished')
 
+    def test_seenreq_newlines(self):
+        """ Checks against adding duplicate \r to
+        line endings on Windows platforms. """
+
+        r1 = Request('http://scrapytest.org/1')
+
+        path = tempfile.mkdtemp()
+        try:
+            df = RFPDupeFilter(path)
+            df.open()
+            df.request_seen(r1)
+            df.close('finished')
+
+            with open(os.path.join(path, 'requests.seen'), 'rb') as seen_file:
+                line = next(seen_file).decode()
+                assert not line.endswith('\r\r\n')
+                if sys.platform == 'win32':
+                    assert line.endswith('\r\n')
+                else:
+                    assert line.endswith('\n')
+
+        finally:
+            shutil.rmtree(path)
+
     def test_log(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': False,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -142,12 +172,12 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             r1 = Request('http://scrapytest.org/index.html')
             r2 = Request('http://scrapytest.org/index.html')
-            
+
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            l.check_present(('scrapy.dupefilters', 'DEBUG', 
+            l.check_present(('scrapy.dupefilters', 'DEBUG',
                 ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
                 ' - no more duplicates will be shown'
                 ' (see DUPEFILTER_DEBUG to show all duplicates)')))
@@ -157,7 +187,7 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log_debug(self):
         with LogCapture() as l:
             settings = {'DUPEFILTER_DEBUG': True,
-                        'DUPEFILTER_CLASS': __name__  + '.FromCrawlerRFPDupeFilter'}
+                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -169,7 +199,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             r2 = Request('http://scrapytest.org/index.html',
                 headers={'Referer': 'http://scrapytest.org/INDEX.html'}
             )
-            
+
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
