@@ -167,7 +167,7 @@ class XmliterTestCase(unittest.TestCase):
 
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, 'product')
-        self.assertRaises(AssertionError, next, i)
+        self.assertRaises(TypeError, next, i)
 
     def test_xmliter_encoding(self):
         body = (

@@ -61,8 +61,7 @@ class FilteringLinkExtractor:
 
     def __new__(cls, *args, **kwargs):
         from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
-        if (issubclass(cls, FilteringLinkExtractor) and
-                not issubclass(cls, LxmlLinkExtractor)):
+        if issubclass(cls, FilteringLinkExtractor) and not issubclass(cls, LxmlLinkExtractor):
             warn('scrapy.linkextractors.FilteringLinkExtractor is deprecated, '
                  'please use scrapy.linkextractors.LinkExtractor instead',
                  ScrapyDeprecationWarning, stacklevel=2)

@@ -75,8 +75,7 @@ class SelectorTestCase(unittest.TestCase):
         headers = {'Content-Type': ['text/html; charset=utf-8']}
         response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
         x = Selector(response)
-        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(),
-                          [u'\xa3'])
+        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(), [u'\xa3'])
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence

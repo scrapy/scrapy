@@ -52,8 +52,7 @@ def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')
     cenc = response.headers.get('Content-Encoding', b'').lower()
-    return (_is_gzipped(ctype) or
-            (_is_octetstream(ctype) and cenc in (b'gzip', b'x-gzip')))
+    return _is_gzipped(ctype) or _is_octetstream(ctype) and cenc in (b'gzip', b'x-gzip')
 
 
 def gzip_magic_number(response):

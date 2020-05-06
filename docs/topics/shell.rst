@@ -156,6 +156,17 @@ First, we launch the shell::
 
     scrapy shell 'https://scrapy.org' --nolog
 
+.. note::
+
+   Remember to always enclose URLs in quotes when running the Scrapy shell from
+   the command line, otherwise URLs containing arguments (i.e. the ``&`` character)
+   will not work.
+
+   On Windows, use double quotes instead::
+
+       scrapy shell "https://scrapy.org" --nolog
+
+
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
 all start with the ``[s]`` prefix)::

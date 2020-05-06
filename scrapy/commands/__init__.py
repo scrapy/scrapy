@@ -23,7 +23,8 @@ class ScrapyCommand:
         self.settings = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
-        assert not hasattr(self, '_crawler'), "crawler already set"
+        if hasattr(self, '_crawler'):
+            raise RuntimeError("crawler already set")
         self._crawler = crawler
 
     def syntax(self):
