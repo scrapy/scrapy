@@ -822,11 +822,15 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 21:15:45 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', method='PUT', headers={
-            'Content-Type': 'image/jpeg',
-            'Date': date,
-            'Content-Length': '94328',
-            })
+        req = Request(
+            's3://johnsmith/photos/puppy.jpg',
+            method='PUT',
+            headers={
+                'Content-Type': 'image/jpeg',
+                'Date': date,
+                'Content-Length': '94328',
+            },
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
@@ -906,11 +910,10 @@ class S3TestCase(unittest.TestCase):
         # ensure that spaces are quoted properly before signing
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
         req = Request(
-            ("s3://johnsmith/photos/my puppy.jpg"
-             "?response-content-disposition=my puppy.jpg"),
+            "s3://johnsmith/photos/my puppy.jpg?response-content-disposition=my puppy.jpg",
             method='GET',
             headers={'Date': date},
-            )
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(
