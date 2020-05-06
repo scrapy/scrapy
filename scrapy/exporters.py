@@ -147,7 +147,7 @@ class XmlItemExporter(BaseItemExporter):
 
     def _beautify_indent(self, breadcrumbs):
         if self.indent:
-            self.xg.characters(' ' * self.indent * (len(breadcrumbs)+1))
+            self.xg.characters(' ' * self.indent * (len(breadcrumbs) + 1))
 
     def start_exporting(self):
         self.xg.startDocument()
