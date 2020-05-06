@@ -81,9 +81,17 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/count') == 2
 
     def test_twistederrors(self):
-        exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
-                DNSLookupError, ConnectionRefusedError, ConnectionDone,
-                ConnectError, ConnectionLost, ResponseFailed]
+        exceptions = [
+            ConnectError,
+            ConnectionDone,
+            ConnectionLost,
+            ConnectionRefusedError,
+            defer.TimeoutError,
+            DNSLookupError,
+            ResponseFailed,
+            TCPTimedOutError,
+            TimeoutError,
+        ]
 
         for exc in exceptions:
             req = Request('http://www.scrapytest.org/%s' % exc.__name__)

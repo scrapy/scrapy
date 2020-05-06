@@ -485,8 +485,10 @@ class TextResponseTest(BaseResponseTest):
             response.xpath("normalize-space(//p[@class=\"content\"])").getall(),
         )
         self.assertEqual(
-            response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
-                pclass="content", pcount=1).getall(),
+            response.xpath(
+                "//title[count(following::p[@class=$pclass])=$pcount]/text()",
+                pclass="content", pcount=1,
+            ).getall(),
             response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
         )
 
@@ -566,12 +568,14 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com',
             body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
         )
-        self._assert_followed_url(resp.css('a')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
-        self._assert_followed_url(resp.css('a::attr(href)')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
+        self._assert_followed_url(
+            resp.css('a')[0],
+            'http://example.com/foo',
+            response=resp)
+        self._assert_followed_url(
+            resp.css('a::attr(href)')[0],
+            'http://example.com/foo',
+            response=resp)
 
     def test_follow_encoding(self):
         resp1 = self.response_class(
