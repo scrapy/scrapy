@@ -29,7 +29,7 @@ def get_settings_priority(priority):
         return priority
 
 
-class SettingsAttribute(object):
+class SettingsAttribute:
 
     """Class for storing data related to settings attributes.
 

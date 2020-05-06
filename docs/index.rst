@@ -165,12 +165,14 @@ Solving specific problems
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/coroutines
+   topics/asyncio
 
 :doc:`faq`
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.
@@ -204,6 +206,12 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
+
+:doc:`topics/coroutines`
+    Use the :ref:`coroutine syntax <async>`.
+
+:doc:`topics/asyncio`
+    Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
 
 .. _extending-scrapy:
 

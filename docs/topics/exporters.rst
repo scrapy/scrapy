@@ -42,7 +42,7 @@ value of one of their fields::
 
     from scrapy.exporters import XmlItemExporter
 
-    class PerYearXmlExportPipeline(object):
+    class PerYearXmlExportPipeline:
         """Distribute items across multiple XML files according to their 'year' field"""
 
         def open_spider(self, spider):
@@ -137,7 +137,7 @@ output examples, which assume you're exporting these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0, dont_fail=False)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -147,6 +147,9 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
+
+   .. versionadded:: 2.0
+      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 
@@ -327,7 +330,7 @@ CsvItemExporter
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
-   `csv.writer`_ ``__init__`` method, so you can use any ``csv.writer`` ``__init__`` method
+   :func:`csv.writer` function, so you can use any :func:`csv.writer` function
    argument to customize this exporter.
 
    A typical output of this exporter would be::
@@ -335,8 +338,6 @@ CsvItemExporter
       product,price
       Color TV,1200
       DVD player,200
-
-.. _csv.writer: https://docs.python.org/2/library/csv.html#csv.writer
 
 PickleItemExporter
 ------------------
@@ -351,14 +352,12 @@ PickleItemExporter
    :param protocol: The pickle protocol to use.
    :type protocol: int
 
-   For more information, refer to the `pickle module documentation`_.
+   For more information, see :mod:`pickle`.
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
    Pickle isn't a human readable format, so no output examples are provided.
-
-.. _pickle module documentation: https://docs.python.org/2/library/pickle.html
 
 PprintItemExporter
 ------------------
@@ -388,8 +387,8 @@ JsonItemExporter
    Exports Items in JSON format to the specified file-like object, writing all
    objects as a list of objects. The additional ``__init__`` method arguments are
    passed to the :class:`BaseItemExporter` ``__init__`` method, and the leftover
-   arguments to the `JSONEncoder`_ ``__init__`` method, so you can use any
-   `JSONEncoder`_ ``__init__`` method argument to customize this exporter.
+   arguments to the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
+   :class:`~json.JSONEncoder` ``__init__`` method argument to customize this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -409,8 +408,6 @@ JsonItemExporter
       stream-friendly format, consider using :class:`JsonLinesItemExporter`
       instead, or splitting the output in multiple chunks.
 
-.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
-
 JsonLinesItemExporter
 ---------------------
 
@@ -419,8 +416,8 @@ JsonLinesItemExporter
    Exports Items in JSON format to the specified file-like object, writing one
    JSON-encoded item per line. The additional ``__init__`` method arguments are passed
    to the :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to
-   the `JSONEncoder`_ ``__init__`` method, so you can use any `JSONEncoder`_
-   ``__init__`` method argument to customize this exporter.
+   the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
+   :class:`~json.JSONEncoder` ``__init__`` method argument to customize this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -432,8 +429,6 @@ JsonLinesItemExporter
 
    Unlike the one produced by :class:`JsonItemExporter`, the format produced by
    this exporter is well suited for serializing large amounts of data.
-
-.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
 
 MarshalItemExporter
 -------------------

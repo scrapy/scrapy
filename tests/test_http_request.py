@@ -244,25 +244,41 @@ class RequestTest(unittest.TestCase):
         self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
 
-    def test_callback_is_callable(self):
+    def test_callback_and_errback(self):
         def a_function():
             pass
-        r = self.request_class('http://example.com')
-        self.assertIsNone(r.callback)
-        r = self.request_class('http://example.com', a_function)
-        self.assertIs(r.callback, a_function)
-        with self.assertRaises(TypeError):
-            self.request_class('http://example.com', 'a_function')
 
-    def test_errback_is_callable(self):
-        def a_function():
-            pass
-        r = self.request_class('http://example.com')
-        self.assertIsNone(r.errback)
-        r = self.request_class('http://example.com', a_function, errback=a_function)
-        self.assertIs(r.errback, a_function)
+        r1 = self.request_class('http://example.com')
+        self.assertIsNone(r1.callback)
+        self.assertIsNone(r1.errback)
+
+        r2 = self.request_class('http://example.com', callback=a_function)
+        self.assertIs(r2.callback, a_function)
+        self.assertIsNone(r2.errback)
+
+        r3 = self.request_class('http://example.com', errback=a_function)
+        self.assertIsNone(r3.callback)
+        self.assertIs(r3.errback, a_function)
+
+        r4 = self.request_class(
+            url='http://example.com',
+            callback=a_function,
+            errback=a_function,
+        )
+        self.assertIs(r4.callback, a_function)
+        self.assertIs(r4.errback, a_function)
+
+    def test_callback_and_errback_type(self):
         with self.assertRaises(TypeError):
-            self.request_class('http://example.com', a_function, errback='a_function')
+            self.request_class('http://example.com', callback='a_function')
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', errback='a_function')
+        with self.assertRaises(TypeError):
+            self.request_class(
+                url='http://example.com',
+                callback='a_function',
+                errback='a_function',
+            )
 
     def test_from_curl(self):
         # Note: more curated tests regarding curl conversion are in
@@ -383,8 +399,7 @@ class FormRequestTest(RequestTest):
 
     def test_custom_encoding_bytes(self):
         data = {b'\xb5 one': b'two', b'price': b'\xa3 100'}
-        r2 = self.request_class("http://www.example.com", formdata=data,
-                                    encoding='latin1')
+        r2 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'latin1')
         self.assertQueryEqual(r2.body, b'price=%A3+100&%B5+one=two')
@@ -392,8 +407,7 @@ class FormRequestTest(RequestTest):
 
     def test_custom_encoding_textual_data(self):
         data = {'price': u'£ 100'}
-        r3 = self.request_class("http://www.example.com", formdata=data,
-                                    encoding='latin1')
+        r3 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, b'price=%A3+100')
 
@@ -453,7 +467,7 @@ class FormRequestTest(RequestTest):
             </form>""",
             url="http://www.example.com/this/list.html",
             encoding='latin1',
-            )
+        )
         req = self.request_class.from_response(response,
                 formdata={'one': ['two', 'three'], 'six': 'seven'})
 

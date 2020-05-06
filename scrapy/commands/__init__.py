@@ -9,7 +9,7 @@ from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 
 
-class ScrapyCommand(object):
+class ScrapyCommand:
 
     requires_project = False
     crawler_process = None
@@ -23,7 +23,8 @@ class ScrapyCommand(object):
         self.settings = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
-        assert not hasattr(self, '_crawler'), "crawler already set"
+        if hasattr(self, '_crawler'):
+            raise RuntimeError("crawler already set")
         self._crawler = crawler
 
     def syntax(self):

@@ -25,7 +25,7 @@ class TestItem(Item):
     url = Field()
 
 
-class ResponseMock(object):
+class ResponseMock:
     url = 'http://scrapy.org'
 
 
@@ -252,7 +252,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.assertEqual(len(contracts), 3)
         self.assertEqual(frozenset(type(x) for x in contracts),
                          frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
-        
+
         contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
         self.assertEqual(len(contracts), 3)
         self.assertEqual(frozenset(type(x) for x in contracts),

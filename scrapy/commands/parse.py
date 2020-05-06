@@ -80,7 +80,7 @@ class Command(ScrapyCommand):
         else:
             items = self.items.get(lvl, [])
 
-        print("# Scraped Items ", "-"*60)
+        print("# Scraped Items ", "-" * 60)
         display.pprint([dict(x) for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
@@ -92,14 +92,14 @@ class Command(ScrapyCommand):
         else:
             requests = self.requests.get(lvl, [])
 
-        print("# Requests ", "-"*65)
+        print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)
 
     def print_results(self, opts):
         colour = not opts.nocolour
 
         if opts.verbose:
-            for level in range(1, self.max_level+1):
+            for level in range(1, self.max_level + 1):
                 print('\n>>> DEPTH LEVEL: %s <<<' % level)
                 if not opts.noitems:
                     self.print_items(level, colour)
@@ -146,9 +146,8 @@ class Command(ScrapyCommand):
             if not self.spidercls:
                 logger.error('Unable to find spider for: %(url)s', {'url': url})
 
-        # Request requires callback argument as callable or None, not string
-        request = Request(url, None)
-        _start_requests = lambda s: [self.prepare_request(s, request, opts)]
+        def _start_requests(spider):
+            yield self.prepare_request(spider, Request(url), opts)
         self.spidercls.start_requests = _start_requests
 
     def start_parsing(self, url, opts):

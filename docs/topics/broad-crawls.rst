@@ -188,7 +188,7 @@ AjaxCrawlMiddleware helps to crawl them correctly.
 It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 
-.. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+.. _ajax crawlable: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
 
 .. _broad-crawls-bfo:
 
@@ -211,3 +211,10 @@ If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
 BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
 <broad-crawls-concurrency>` you should :ref:`debug your memory leaks
 <topics-leaks>`.
+
+
+Install a specific Twisted reactor
+==================================
+
+If the crawl is exceeding the system's capabilities, you might want to try
+installing a specific Twisted reactor, via the :setting:`TWISTED_REACTOR` setting.

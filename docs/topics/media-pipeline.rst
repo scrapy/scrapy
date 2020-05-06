@@ -97,7 +97,6 @@ For Files Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
-
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
@@ -116,12 +115,6 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
 Supported Storage
 =================
-
-File system is currently the only officially supported storage, but there are
-also support for storing files in `Amazon S3`_ and `Google Cloud Storage`_.
-
-.. _Amazon S3: https://aws.amazon.com/s3/
-.. _Google Cloud Storage: https://cloud.google.com/storage/
 
 File system storage
 -------------------
@@ -147,6 +140,29 @@ Where:
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
+
+.. _media-pipeline-ftp:
+
+FTP server storage
+------------------
+
+.. versionadded:: 2.0
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
+Scrapy will automatically upload the files to the server.
+
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` should be written in one of the
+following forms::
+
+    ftp://username:password@address:port/path
+    ftp://address:port/path
+    
+If ``username`` and ``password`` are not provided, they are taken from the :setting:`FTP_USER` and
+:setting:`FTP_PASSWORD` settings respectively.
+
+FTP supports two different connection modes: active or passive. Scrapy uses
+the passive connection mode by default. To use the active connection mode instead,
+set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
 Amazon S3 storage
 -----------------
@@ -392,7 +408,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
-   .. method:: file_path(request, response, info)
+   .. method:: file_path(self, request, response=None, info=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
@@ -416,7 +432,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
         class MyFilesPipeline(FilesPipeline):
 
-            def file_path(self, request, response, info):
+            def file_path(self, request, response=None, info=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
       By default the :meth:`file_path` method returns
@@ -506,7 +522,7 @@ See here the methods that you can override in your custom Images Pipeline:
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
 
-   .. method:: file_path(request, response, info)
+   .. method:: file_path(self, request, response=None, info=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
@@ -530,7 +546,7 @@ See here the methods that you can override in your custom Images Pipeline:
 
         class MyImagesPipeline(ImagesPipeline):
 
-            def file_path(self, request, response, info):
+            def file_path(self, request, response=None, info=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
       By default the :meth:`file_path` method returns
@@ -555,10 +571,12 @@ See here the methods that you can override in your custom Images Pipeline:
       By default, the :meth:`item_completed` method returns the item.
 
 
+.. _media-pipeline-example:
+
 Custom Images pipeline example
 ==============================
 
-Here is a full example of the Images Pipeline whose methods are examplified
+Here is a full example of the Images Pipeline whose methods are exemplified
 above::
 
     import scrapy
@@ -577,5 +595,13 @@ above::
                 raise DropItem("Item contains no images")
             item['image_paths'] = image_paths
             return item
+
+
+To enable your custom media pipeline component you must add its class import path to the
+:setting:`ITEM_PIPELINES` setting, like in the following example::
+
+   ITEM_PIPELINES = {
+       'myproject.pipelines.MyImagesPipeline': 300
+   }
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5

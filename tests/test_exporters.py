@@ -225,11 +225,12 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
-        first = to_unicode(first)
-        second = to_unicode(second)
-        csvsplit = lambda csv: [sorted(re.split(r'(,|\s+)', line))
-                                for line in csv.splitlines(True)]
-        return self.assertEqual(csvsplit(first), csvsplit(second), msg)
+        def split_csv(csv):
+            return [
+                sorted(re.split(r"(,|\s+)", line))
+                for line in to_unicode(csv).splitlines(True)
+            ]
+        return self.assertEqual(split_csv(first), split_csv(second), msg=msg)
 
     def _check_output(self):
         self.output.seek(0)
@@ -323,6 +324,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)

@@ -1,8 +1,11 @@
+import numbers
 import os
 import sys
-import numbers
+import warnings
 from configparser import ConfigParser
 from operator import itemgetter
+
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
@@ -106,3 +109,64 @@ def get_sources(use_closest=True):
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
+
+
+def feed_complete_default_values_from_settings(feed, settings):
+    out = feed.copy()
+    out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
+    out.setdefault("fields", settings.settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
+    out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
+    out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
+    if settings["FEED_EXPORT_INDENT"] is None:
+        out.setdefault("indent", None)
+    else:
+        out.setdefault("indent", settings.getint("FEED_EXPORT_INDENT"))
+    return out
+
+
+def feed_process_params_from_cli(settings, output, output_format=None):
+    """
+    Receives feed export params (from the 'crawl' or 'runspider' commands),
+    checks for inconsistencies in their quantities and returns a dictionary
+    suitable to be used as the FEEDS setting.
+    """
+    valid_output_formats = without_none_values(
+        settings.getwithbase('FEED_EXPORTERS')
+    ).keys()
+
+    def check_valid_format(output_format):
+        if output_format not in valid_output_formats:
+            raise UsageError("Unrecognized output format '%s', set one after a"
+                             " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
+                             " or as a file extension, from the supported list %s" %
+                             (output_format, tuple(valid_output_formats)))
+
+    if output_format:
+        if len(output) == 1:
+            check_valid_format(output_format)
+            warnings.warn('The -t command line option is deprecated in favor'
+                          ' of specifying the output format within the -o'
+                          ' option, please check the -o option docs for more details',
+                          category=ScrapyDeprecationWarning, stacklevel=2)
+            return {output[0]: {'format': output_format}}
+        else:
+            raise UsageError('The -t command line option cannot be used if multiple'
+                             ' output files are specified with the -o option')
+
+    result = {}
+    for element in output:
+        try:
+            feed_uri, feed_format = element.rsplit(':', 1)
+        except ValueError:
+            feed_uri = element
+            feed_format = os.path.splitext(element)[1].replace('.', '')
+        else:
+            if feed_uri == '-':
+                feed_uri = 'stdout:'
+        check_valid_format(feed_format)
+        result[feed_uri] = {'format': feed_format}
+
+    # FEEDS setting should take precedence over the -o and -t CLI options
+    result.update(settings.getdict('FEEDS'))
+
+    return result

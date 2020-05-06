@@ -121,9 +121,7 @@ class DictItem(MutableMapping, BaseItem):
         return self.__class__(self)
 
     def deepcopy(self):
-        """Return a `deep copy`_ of this item.
-
-        .. _deep copy: https://docs.python.org/library/copy.html#copy.deepcopy
+        """Return a :func:`~copy.deepcopy` of this item.
         """
         return deepcopy(self)
 
