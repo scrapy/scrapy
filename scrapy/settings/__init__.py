@@ -248,7 +248,7 @@ class BaseSettings(MutableMapping):
         :type name: str
 
         :param value: the value to associate with the setting
-        :type default: object
+        :type value: object
 
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
