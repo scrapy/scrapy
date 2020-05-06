@@ -6,15 +6,419 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Scrapy 2.0\n"
+"Project-Id-Version: Scrapy 2.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-04 01:00+0100\n"
+"POT-Creation-Date: 2020-05-06 20:10+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: ../../intro/examples.rst:5
+msgid "Examples"
+msgstr ""
+
+#: ../../intro/examples.rst:7
+msgid "The best way to learn is with examples, and Scrapy is no exception. For this reason, there is an example Scrapy project named quotesbot_, that you can use to play and learn more about Scrapy. It contains two spiders for http://quotes.toscrape.com, one using CSS selectors and another one using XPath expressions."
+msgstr ""
+
+#: ../../intro/examples.rst:13
+msgid "The quotesbot_ project is available at: https://github.com/scrapy/quotesbot. You can find more information about it in the project's README."
+msgstr ""
+
+#: ../../intro/examples.rst:16
+msgid "If you're familiar with git, you can checkout the code. Otherwise you can download the project as a zip file by clicking `here <https://github.com/scrapy/quotesbot/archive/master.zip>`_."
+msgstr ""
+
+#: ../../intro/install.rst:5
+msgid "Installation guide"
+msgstr ""
+
+#: ../../intro/install.rst:8
+msgid "Installing Scrapy"
+msgstr ""
+
+#: ../../intro/install.rst:10
+msgid "Scrapy runs on Python 3.5 or above under CPython (default Python implementation) and PyPy (starting with PyPy 5.9)."
+msgstr ""
+
+#: ../../intro/install.rst:13
+msgid "If you're using `Anaconda`_ or `Miniconda`_, you can install the package from the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows and macOS."
+msgstr ""
+
+#: ../../intro/install.rst:17
+msgid "To install Scrapy using ``conda``, run::"
+msgstr ""
+
+#: ../../intro/install.rst:21
+msgid "Alternatively, if you’re already familiar with installation of Python packages, you can install Scrapy and its dependencies from PyPI with::"
+msgstr ""
+
+#: ../../intro/install.rst:26
+msgid "Note that sometimes this may require solving compilation issues for some Scrapy dependencies depending on your operating system, so be sure to check the :ref:`intro-install-platform-notes`."
+msgstr ""
+
+#: ../../intro/install.rst:30
+msgid "We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`, to avoid conflicting with your system packages."
+msgstr ""
+
+#: ../../intro/install.rst:33
+msgid "For more detailed and platform specifics instructions, as well as troubleshooting information, read on."
+msgstr ""
+
+#: ../../intro/install.rst:38
+msgid "Things that are good to know"
+msgstr ""
+
+#: ../../intro/install.rst:40
+msgid "Scrapy is written in pure Python and depends on a few key Python packages (among others):"
+msgstr ""
+
+#: ../../intro/install.rst:42
+msgid "`lxml`_, an efficient XML and HTML parser"
+msgstr ""
+
+#: ../../intro/install.rst:43
+msgid "`parsel`_, an HTML/XML data extraction library written on top of lxml,"
+msgstr ""
+
+#: ../../intro/install.rst:44
+msgid "`w3lib`_, a multi-purpose helper for dealing with URLs and web page encodings"
+msgstr ""
+
+#: ../../intro/install.rst:45
+msgid "`twisted`_, an asynchronous networking framework"
+msgstr ""
+
+#: ../../intro/install.rst:46
+msgid "`cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs"
+msgstr ""
+
+#: ../../intro/install.rst:48
+msgid "The minimal versions which Scrapy is tested against are:"
+msgstr ""
+
+#: ../../intro/install.rst:50
+msgid "Twisted 14.0"
+msgstr ""
+
+#: ../../intro/install.rst:51
+msgid "lxml 3.4"
+msgstr ""
+
+#: ../../intro/install.rst:52
+msgid "pyOpenSSL 0.14"
+msgstr ""
+
+#: ../../intro/install.rst:54
+msgid "Scrapy may work with older versions of these packages but it is not guaranteed it will continue working because it’s not being tested against them."
+msgstr ""
+
+#: ../../intro/install.rst:58
+msgid "Some of these packages themselves depends on non-Python packages that might require additional installation steps depending on your platform. Please check :ref:`platform-specific guides below <intro-install-platform-notes>`."
+msgstr ""
+
+#: ../../intro/install.rst:62
+msgid "In case of any trouble related to these dependencies, please refer to their respective installation instructions:"
+msgstr ""
+
+#: ../../intro/install.rst:65
+msgid "`lxml installation`_"
+msgstr ""
+
+#: ../../intro/install.rst:66
+msgid "`cryptography installation`_"
+msgstr ""
+
+#: ../../intro/install.rst:75
+msgid "Using a virtual environment (recommended)"
+msgstr ""
+
+#: ../../intro/install.rst:77
+msgid "TL;DR: We recommend installing Scrapy inside a virtual environment on all platforms."
+msgstr ""
+
+#: ../../intro/install.rst:80
+msgid "Python packages can be installed either globally (a.k.a system wide), or in user-space. We do not recommend installing Scrapy system wide."
+msgstr ""
+
+#: ../../intro/install.rst:83
+msgid "Instead, we recommend that you install Scrapy within a so-called \"virtual environment\" (:mod:`venv`). Virtual environments allow you to not conflict with already-installed Python system packages (which could break some of your system tools and scripts), and still install packages normally with ``pip`` (without ``sudo`` and the likes)."
+msgstr ""
+
+#: ../../intro/install.rst:89
+msgid "See :ref:`tut-venv` on how to create your virtual environment."
+msgstr ""
+
+#: ../../intro/install.rst:91
+msgid "Once you have created a virtual environment, you can install Scrapy inside it with ``pip``, just like any other Python package. (See :ref:`platform-specific guides <intro-install-platform-notes>` below for non-Python dependencies that you may need to install beforehand)."
+msgstr ""
+
+#: ../../intro/install.rst:100
+msgid "Platform specific installation notes"
+msgstr ""
+
+#: ../../intro/install.rst:105
+msgid "Windows"
+msgstr ""
+
+#: ../../intro/install.rst:107
+msgid "Though it's possible to install Scrapy on Windows using pip, we recommend you to install `Anaconda`_ or `Miniconda`_ and use the package from the `conda-forge`_ channel, which will avoid most installation issues."
+msgstr ""
+
+#: ../../intro/install.rst:111
+msgid "Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::"
+msgstr ""
+
+#: ../../intro/install.rst:119
+msgid "Ubuntu 14.04 or above"
+msgstr ""
+
+#: ../../intro/install.rst:121
+msgid "Scrapy is currently tested with recent-enough versions of lxml, twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions. But it should support older versions of Ubuntu too, like Ubuntu 14.04, albeit with potential issues with TLS connections."
+msgstr ""
+
+#: ../../intro/install.rst:126
+msgid "**Don't** use the ``python-scrapy`` package provided by Ubuntu, they are typically too old and slow to catch up with latest Scrapy."
+msgstr ""
+
+#: ../../intro/install.rst:130
+msgid "To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install these dependencies::"
+msgstr ""
+
+#: ../../intro/install.rst:135
+msgid "``python3-dev``, ``zlib1g-dev``, ``libxml2-dev`` and ``libxslt1-dev`` are required for ``lxml``"
+msgstr ""
+
+#: ../../intro/install.rst:137
+msgid "``libssl-dev`` and ``libffi-dev`` are required for ``cryptography``"
+msgstr ""
+
+#: ../../intro/install.rst:139
+msgid "Inside a :ref:`virtualenv <intro-using-virtualenv>`, you can install Scrapy with ``pip`` after that::"
+msgstr ""
+
+#: ../../intro/install.rst:145
+msgid "The same non-Python dependencies can be used to install Scrapy in Debian Jessie (8.0) and above."
+msgstr ""
+
+#: ../../intro/install.rst:152
+msgid "macOS"
+msgstr ""
+
+#: ../../intro/install.rst:154
+msgid "Building Scrapy's dependencies requires the presence of a C compiler and development headers. On macOS this is typically provided by Apple’s Xcode development tools. To install the Xcode command line tools open a terminal window and run::"
+msgstr ""
+
+#: ../../intro/install.rst:161
+msgid "There's a `known issue <https://github.com/pypa/pip/issues/2468>`_ that prevents ``pip`` from updating system packages. This has to be addressed to successfully install Scrapy and its dependencies. Here are some proposed solutions:"
+msgstr ""
+
+#: ../../intro/install.rst:166
+msgid "*(Recommended)* **Don't** use system python, install a new, updated version that doesn't conflict with the rest of your system. Here's how to do it using the `homebrew`_ package manager:"
+msgstr ""
+
+#: ../../intro/install.rst:170
+msgid "Install `homebrew`_ following the instructions in https://brew.sh/"
+msgstr ""
+
+#: ../../intro/install.rst:172
+msgid "Update your ``PATH`` variable to state that homebrew packages should be used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly if you're using `zsh`_ as default shell)::"
+msgstr ""
+
+#: ../../intro/install.rst:178
+msgid "Reload ``.bashrc`` to ensure the changes have taken place::"
+msgstr ""
+
+#: ../../intro/install.rst:182
+msgid "Install python::"
+msgstr ""
+
+#: ../../intro/install.rst:186
+msgid "Latest versions of python have ``pip`` bundled with them so you won't need to install it separately. If this is not the case, upgrade python::"
+msgstr ""
+
+#: ../../intro/install.rst:191
+msgid "*(Optional)* :ref:`Install Scrapy inside a Python virtual environment <intro-using-virtualenv>`."
+msgstr ""
+
+#: ../../intro/install.rst:194
+msgid "This method is a workaround for the above macOS issue, but it's an overall good practice for managing dependencies and can complement the first method."
+msgstr ""
+
+#: ../../intro/install.rst:197
+msgid "After any of these workarounds you should be able to install Scrapy::"
+msgstr ""
+
+#: ../../intro/install.rst:203
+msgid "PyPy"
+msgstr ""
+
+#: ../../intro/install.rst:205
+msgid "We recommend using the latest PyPy version. The version tested is 5.9.0. For PyPy3, only Linux installation was tested."
+msgstr ""
+
+#: ../../intro/install.rst:208
+msgid "Most Scrapy dependencides now have binary wheels for CPython, but not for PyPy. This means that these dependecies will be built during installation. On macOS, you are likely to face an issue with building Cryptography dependency, solution to this problem is described `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_, that is to ``brew install openssl`` and then export the flags that this command recommends (only needed when installing Scrapy). Installing on Linux has no special issues besides installing build dependencies. Installing Scrapy with PyPy on Windows is not tested."
+msgstr ""
+
+#: ../../intro/install.rst:218
+msgid "You can check that Scrapy is installed correctly by running ``scrapy bench``. If this command gives errors such as ``TypeError: ... got 2 unexpected keyword arguments``, this means that setuptools was unable to pick up one PyPy-specific dependency. To fix this issue, run ``pip install 'PyPyDispatcher>=2.1.0'``."
+msgstr ""
+
+#: ../../intro/install.rst:228
+msgid "Troubleshooting"
+msgstr ""
+
+#: ../../intro/install.rst:231
+msgid "AttributeError: 'module' object has no attribute 'OP_NO_TLSv1_1'"
+msgstr ""
+
+#: ../../intro/install.rst:233
+msgid "After you install or upgrade Scrapy, Twisted or pyOpenSSL, you may get an exception with the following traceback::"
+msgstr ""
+
+#: ../../intro/install.rst:243
+msgid "The reason you get this exception is that your system or virtual environment has a version of pyOpenSSL that your version of Twisted does not support."
+msgstr ""
+
+#: ../../intro/install.rst:246
+msgid "To install a version of pyOpenSSL that your version of Twisted supports, reinstall Twisted with the :code:`tls` extra option::"
+msgstr ""
+
+#: ../../intro/install.rst:251
+msgid "For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_."
+msgstr ""
+
+#: ../../intro/overview.rst:5
+msgid "Scrapy at a glance"
+msgstr ""
+
+#: ../../intro/overview.rst:7
+msgid "Scrapy is an application framework for crawling web sites and extracting structured data which can be used for a wide range of useful applications, like data mining, information processing or historical archival."
+msgstr ""
+
+#: ../../intro/overview.rst:11
+msgid "Even though Scrapy was originally designed for `web scraping`_, it can also be used to extract data using APIs (such as `Amazon Associates Web Services`_) or as a general purpose web crawler."
+msgstr ""
+
+#: ../../intro/overview.rst:17
+msgid "Walk-through of an example spider"
+msgstr ""
+
+#: ../../intro/overview.rst:19
+msgid "In order to show you what Scrapy brings to the table, we'll walk you through an example of a Scrapy Spider using the simplest way to run a spider."
+msgstr ""
+
+#: ../../intro/overview.rst:22
+msgid "Here's the code for a spider that scrapes famous quotes from website http://quotes.toscrape.com, following the pagination::"
+msgstr ""
+
+#: ../../intro/overview.rst:46
+msgid "Put this in a text file, name it to something like ``quotes_spider.py`` and run the spider using the :command:`runspider` command::"
+msgstr ""
+
+#: ../../intro/overview.rst:52
+msgid "When this finishes you will have in the ``quotes.json`` file a list of the quotes in JSON format, containing text and author, looking like this (reformatted here for better readability)::"
+msgstr ""
+
+#: ../../intro/overview.rst:72
+msgid "What just happened?"
+msgstr ""
+
+#: ../../intro/overview.rst:74
+msgid "When you ran the command ``scrapy runspider quotes_spider.py``, Scrapy looked for a Spider definition inside it and ran it through its crawler engine."
+msgstr ""
+
+#: ../../intro/overview.rst:77
+msgid "The crawl started by making requests to the URLs defined in the ``start_urls`` attribute (in this case, only the URL for quotes in *humor* category) and called the default callback method ``parse``, passing the response object as an argument. In the ``parse`` callback, we loop through the quote elements using a CSS Selector, yield a Python dict with the extracted quote text and author, look for a link to the next page and schedule another request using the same ``parse`` method as callback."
+msgstr ""
+
+#: ../../intro/overview.rst:85
+msgid "Here you notice one of the main advantages about Scrapy: requests are :ref:`scheduled and processed asynchronously <topics-architecture>`.  This means that Scrapy doesn't need to wait for a request to be finished and processed, it can send another request or do other things in the meantime. This also means that other requests can keep going even if some request fails or an error happens while handling it."
+msgstr ""
+
+#: ../../intro/overview.rst:92
+msgid "While this enables you to do very fast crawls (sending multiple concurrent requests at the same time, in a fault-tolerant way) Scrapy also gives you control over the politeness of the crawl through :ref:`a few settings <topics-settings-ref>`. You can do things like setting a download delay between each request, limiting amount of concurrent requests per domain or per IP, and even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries to figure out these automatically."
+msgstr ""
+
+#: ../../intro/overview.rst:102
+msgid "This is using :ref:`feed exports <topics-feed-exports>` to generate the JSON file, you can easily change the export format (XML or CSV, for example) or the storage backend (FTP or `Amazon S3`_, for example).  You can also write an :ref:`item pipeline <topics-item-pipeline>` to store the items in a database."
+msgstr ""
+
+#: ../../intro/overview.rst:111
+msgid "What else?"
+msgstr ""
+
+#: ../../intro/overview.rst:113
+msgid "You've seen how to extract and store items from a website using Scrapy, but this is just the surface. Scrapy provides a lot of powerful features for making scraping easy and efficient, such as:"
+msgstr ""
+
+#: ../../intro/overview.rst:117
+msgid "Built-in support for :ref:`selecting and extracting <topics-selectors>` data from HTML/XML sources using extended CSS selectors and XPath expressions, with helper methods to extract using regular expressions."
+msgstr ""
+
+#: ../../intro/overview.rst:121
+msgid "An :ref:`interactive shell console <topics-shell>` (IPython aware) for trying out the CSS and XPath expressions to scrape data, very useful when writing or debugging your spiders."
+msgstr ""
+
+#: ../../intro/overview.rst:125
+msgid "Built-in support for :ref:`generating feed exports <topics-feed-exports>` in multiple formats (JSON, CSV, XML) and storing them in multiple backends (FTP, S3, local filesystem)"
+msgstr ""
+
+#: ../../intro/overview.rst:129
+msgid "Robust encoding support and auto-detection, for dealing with foreign, non-standard and broken encoding declarations."
+msgstr ""
+
+#: ../../intro/overview.rst:132
+msgid ":ref:`Strong extensibility support <extending-scrapy>`, allowing you to plug in your own functionality using :ref:`signals <topics-signals>` and a well-defined API (middlewares, :ref:`extensions <topics-extensions>`, and :ref:`pipelines <topics-item-pipeline>`)."
+msgstr ""
+
+#: ../../intro/overview.rst:137
+msgid "Wide range of built-in extensions and middlewares for handling:"
+msgstr ""
+
+#: ../../intro/overview.rst:139
+msgid "cookies and session handling"
+msgstr ""
+
+#: ../../intro/overview.rst:140
+msgid "HTTP features like compression, authentication, caching"
+msgstr ""
+
+#: ../../intro/overview.rst:141
+msgid "user-agent spoofing"
+msgstr ""
+
+#: ../../intro/overview.rst:142
+msgid "robots.txt"
+msgstr ""
+
+#: ../../intro/overview.rst:143
+msgid "crawl depth restriction"
+msgstr ""
+
+#: ../../intro/overview.rst:144
+msgid "and more"
+msgstr ""
+
+#: ../../intro/overview.rst:146
+msgid "A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python console running inside your Scrapy process, to introspect and debug your crawler"
+msgstr ""
+
+#: ../../intro/overview.rst:150
+msgid "Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and XML/CSV feeds, a media pipeline for :ref:`automatically downloading images <topics-media-pipeline>` (or any other media) associated with the scraped items, a caching DNS resolver, and much more!"
+msgstr ""
+
+#: ../../intro/overview.rst:156
+msgid "What's next?"
+msgstr ""
+
+#: ../../intro/overview.rst:158
+msgid "The next steps for you are to :ref:`install Scrapy <intro-install>`, :ref:`follow through the tutorial <intro-tutorial>` to learn how to create a full-blown Scrapy project and `join the community`_. Thanks for your interest!"
+msgstr ""
 
 #: ../../intro/tutorial.rst:5
 msgid "Scrapy Tutorial"
@@ -49,7 +453,7 @@ msgid "Changing spider to recursively follow links"
 msgstr ""
 
 #: ../../intro/tutorial.rst:19
-#: ../../intro/tutorial.rst:706
+#: ../../intro/tutorial.rst:705
 msgid "Using spider arguments"
 msgstr ""
 
@@ -218,7 +622,7 @@ msgid "There's a lesson here: for most scraping code, you want it to be resilien
 msgstr ""
 
 #: ../../intro/tutorial.rst:291
-msgid "Besides the :meth:`~scrapy.selector.SelectorList.getall` and :meth:`~scrapy.selector.SelectorList.get` methods, you can also use the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular expressions <regular expressions>`__:"
+msgid "Besides the :meth:`~scrapy.selector.SelectorList.getall` and :meth:`~scrapy.selector.SelectorList.get` methods, you can also use the :meth:`~scrapy.selector.SelectorList.re` method to extract using :doc:`regular expressions <library/re>`:"
 msgstr ""
 
 #: ../../intro/tutorial.rst:303
@@ -229,246 +633,246 @@ msgstr ""
 msgid "`Selector Gadget`_ is also a nice tool to quickly find CSS selector for visually selected elements, which works in many browsers."
 msgstr ""
 
-#: ../../intro/tutorial.rst:316
+#: ../../intro/tutorial.rst:315
 msgid "XPath: a brief intro"
 msgstr ""
 
-#: ../../intro/tutorial.rst:318
+#: ../../intro/tutorial.rst:317
 msgid "Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:325
+#: ../../intro/tutorial.rst:324
 msgid "XPath expressions are very powerful, and are the foundation of Scrapy Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You can see that if you read closely the text representation of the selector objects in the shell."
 msgstr ""
 
-#: ../../intro/tutorial.rst:330
+#: ../../intro/tutorial.rst:329
 msgid "While perhaps not as popular as CSS selectors, XPath expressions offer more power because besides navigating the structure, it can also look at the content. Using XPath, you're able to select things like: *select the link that contains the text \"Next Page\"*. This makes XPath very fitting to the task of scraping, and we encourage you to learn XPath even if you already know how to construct CSS selectors, it will make scraping much easier."
 msgstr ""
 
-#: ../../intro/tutorial.rst:337
+#: ../../intro/tutorial.rst:336
 msgid "We won't cover much of XPath here, but you can read more about :ref:`using XPath with Scrapy Selectors here <topics-selectors>`. To learn more about XPath, we recommend `this tutorial to learn XPath through examples <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn \"how to think in XPath\" <http://plasmasturm.org/log/xpath101/>`_."
 msgstr ""
 
-#: ../../intro/tutorial.rst:347
+#: ../../intro/tutorial.rst:346
 msgid "Extracting quotes and authors"
 msgstr ""
 
-#: ../../intro/tutorial.rst:349
+#: ../../intro/tutorial.rst:348
 msgid "Now that you know a bit about selection and extraction, let's complete our spider by writing the code to extract the quotes from the web page."
 msgstr ""
 
-#: ../../intro/tutorial.rst:352
+#: ../../intro/tutorial.rst:351
 msgid "Each quote in http://quotes.toscrape.com is represented by HTML elements that look like this:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:373
+#: ../../intro/tutorial.rst:372
 msgid "Let's open up scrapy shell and play a bit to find out how to extract the data we want::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:378
+#: ../../intro/tutorial.rst:377
 msgid "We get a list of selectors for the quote HTML elements with:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:385
+#: ../../intro/tutorial.rst:384
 msgid "Each of the selectors returned by the query above allows us to run further queries over their sub-elements. Let's assign the first selector to a variable, so that we can run our CSS selectors directly on a particular quote:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:391
+#: ../../intro/tutorial.rst:390
 msgid "Now, let's extract ``text``, ``author`` and the ``tags`` from that quote using the ``quote`` object we just created:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:401
+#: ../../intro/tutorial.rst:400
 msgid "Given that the tags are a list of strings, we can use the ``.getall()`` method to get all of them:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:414
+#: ../../intro/tutorial.rst:413
 msgid "Having figured out how to extract each bit, we can now iterate over all the quotes elements and put them together into a Python dictionary:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:427
+#: ../../intro/tutorial.rst:426
 msgid "Extracting data in our spider"
 msgstr ""
 
-#: ../../intro/tutorial.rst:429
+#: ../../intro/tutorial.rst:428
 msgid "Let's get back to our spider. Until now, it doesn't extract any data in particular, just saves the whole HTML page to a local file. Let's integrate the extraction logic above into our spider."
 msgstr ""
 
-#: ../../intro/tutorial.rst:433
+#: ../../intro/tutorial.rst:432
 msgid "A Scrapy spider typically generates many dictionaries containing the data extracted from the page. To do that, we use the ``yield`` Python keyword in the callback, as you can see below::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:455
+#: ../../intro/tutorial.rst:454
 msgid "If you run this spider, it will output the extracted data with the log::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:466
+#: ../../intro/tutorial.rst:465
 msgid "Storing the scraped data"
 msgstr ""
 
-#: ../../intro/tutorial.rst:468
+#: ../../intro/tutorial.rst:467
 msgid "The simplest way to store the scraped data is by using :ref:`Feed exports <topics-feed-exports>`, with the following command::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:473
+#: ../../intro/tutorial.rst:472
 msgid "That will generate an ``quotes.json`` file containing all scraped items, serialized in `JSON`_."
 msgstr ""
 
-#: ../../intro/tutorial.rst:476
+#: ../../intro/tutorial.rst:475
 msgid "For historic reasons, Scrapy appends to a given file instead of overwriting its contents. If you run this command twice without removing the file before the second time, you'll end up with a broken JSON file."
 msgstr ""
 
-#: ../../intro/tutorial.rst:480
+#: ../../intro/tutorial.rst:479
 msgid "You can also use other formats, like `JSON Lines`_::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:484
+#: ../../intro/tutorial.rst:483
 msgid "The `JSON Lines`_ format is useful because it's stream-like, you can easily append new records to it. It doesn't have the same problem of JSON when you run twice. Also, as each record is a separate line, you can process big files without having to fit everything in memory, there are tools like `JQ`_ to help doing that at the command-line."
 msgstr ""
 
-#: ../../intro/tutorial.rst:490
+#: ../../intro/tutorial.rst:489
 msgid "In small projects (like the one in this tutorial), that should be enough. However, if you want to perform more complex things with the scraped items, you can write an :ref:`Item Pipeline <topics-item-pipeline>`. A placeholder file for Item Pipelines has been set up for you when the project is created, in ``tutorial/pipelines.py``. Though you don't need to implement any item pipelines if you just want to store the scraped items."
 msgstr ""
 
-#: ../../intro/tutorial.rst:502
+#: ../../intro/tutorial.rst:501
 msgid "Following links"
 msgstr ""
 
-#: ../../intro/tutorial.rst:504
+#: ../../intro/tutorial.rst:503
 msgid "Let's say, instead of just scraping the stuff from the first two pages from http://quotes.toscrape.com, you want quotes from all the pages in the website."
 msgstr ""
 
-#: ../../intro/tutorial.rst:507
+#: ../../intro/tutorial.rst:506
 msgid "Now that you know how to extract data from pages, let's see how to follow links from them."
 msgstr ""
 
-#: ../../intro/tutorial.rst:510
+#: ../../intro/tutorial.rst:509
 msgid "First thing is to extract the link to the page we want to follow.  Examining our page, we can see there is a link to the next page with the following markup:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:522
+#: ../../intro/tutorial.rst:521
 msgid "We can try extracting it in the shell:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:527
+#: ../../intro/tutorial.rst:526
 msgid "This gets the anchor element, but we want the attribute ``href``. For that, Scrapy supports a CSS extension that lets you select the attribute contents, like this:"
 msgstr ""
 
-#: ../../intro/tutorial.rst:534
+#: ../../intro/tutorial.rst:533
 msgid "There is also an ``attrib`` property available (see :ref:`selecting-attributes` for more):"
 msgstr ""
 
-#: ../../intro/tutorial.rst:540
+#: ../../intro/tutorial.rst:539
 msgid "Let's see now our spider modified to recursively follow the link to the next page, extracting data from it::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:566
+#: ../../intro/tutorial.rst:565
 msgid "Now, after extracting the data, the ``parse()`` method looks for the link to the next page, builds a full absolute URL using the :meth:`~scrapy.http.Response.urljoin` method (since the links can be relative) and yields a new request to the next page, registering itself as callback to handle the data extraction for the next page and to keep the crawling going through all the pages."
 msgstr ""
 
-#: ../../intro/tutorial.rst:573
+#: ../../intro/tutorial.rst:572
 msgid "What you see here is Scrapy's mechanism of following links: when you yield a Request in a callback method, Scrapy will schedule that request to be sent and register a callback method to be executed when that request finishes."
 msgstr ""
 
-#: ../../intro/tutorial.rst:577
+#: ../../intro/tutorial.rst:576
 msgid "Using this, you can build complex crawlers that follow links according to rules you define, and extract different kinds of data depending on the page it's visiting."
 msgstr ""
 
-#: ../../intro/tutorial.rst:581
+#: ../../intro/tutorial.rst:580
 msgid "In our example, it creates a sort of loop, following all the links to the next page until it doesn't find one -- handy for crawling blogs, forums and other sites with pagination."
 msgstr ""
 
-#: ../../intro/tutorial.rst:589
+#: ../../intro/tutorial.rst:588
 msgid "A shortcut for creating Requests"
 msgstr ""
 
-#: ../../intro/tutorial.rst:591
+#: ../../intro/tutorial.rst:590
 msgid "As a shortcut for creating Request objects you can use :meth:`response.follow <scrapy.http.TextResponse.follow>`::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:615
+#: ../../intro/tutorial.rst:614
 msgid "Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no need to call urljoin. Note that ``response.follow`` just returns a Request instance; you still have to yield this Request."
 msgstr ""
 
-#: ../../intro/tutorial.rst:619
+#: ../../intro/tutorial.rst:618
 msgid "You can also pass a selector to ``response.follow`` instead of a string; this selector should extract necessary attributes::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:625
+#: ../../intro/tutorial.rst:624
 msgid "For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href attribute automatically. So the code can be shortened further::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:631
+#: ../../intro/tutorial.rst:630
 msgid "To create multiple requests from an iterable, you can use :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:637
+#: ../../intro/tutorial.rst:636
 msgid "or, shortening it further::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:643
+#: ../../intro/tutorial.rst:642
 msgid "More examples and patterns"
 msgstr ""
 
-#: ../../intro/tutorial.rst:645
+#: ../../intro/tutorial.rst:644
 msgid "Here is another spider that illustrates callbacks and following links, this time for scraping author information::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:673
+#: ../../intro/tutorial.rst:672
 msgid "This spider will start from the main page, it will follow all the links to the authors pages calling the ``parse_author`` callback for each of them, and also the pagination links with the ``parse`` callback as we saw before."
 msgstr ""
 
-#: ../../intro/tutorial.rst:677
+#: ../../intro/tutorial.rst:676
 msgid "Here we're passing callbacks to :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` as positional arguments to make the code shorter; it also works for :class:`~scrapy.http.Request`."
 msgstr ""
 
-#: ../../intro/tutorial.rst:682
+#: ../../intro/tutorial.rst:681
 msgid "The ``parse_author`` callback defines a helper function to extract and cleanup the data from a CSS query and yields the Python dict with the author data."
 msgstr ""
 
-#: ../../intro/tutorial.rst:685
+#: ../../intro/tutorial.rst:684
 msgid "Another interesting thing this spider demonstrates is that, even if there are many quotes from the same author, we don't need to worry about visiting the same author page multiple times. By default, Scrapy filters out duplicated requests to URLs already visited, avoiding the problem of hitting servers too much because of a programming mistake. This can be configured by the setting :setting:`DUPEFILTER_CLASS`."
 msgstr ""
 
-#: ../../intro/tutorial.rst:692
+#: ../../intro/tutorial.rst:691
 msgid "Hopefully by now you have a good understanding of how to use the mechanism of following links and callbacks with Scrapy."
 msgstr ""
 
-#: ../../intro/tutorial.rst:695
+#: ../../intro/tutorial.rst:694
 msgid "As yet another example spider that leverages the mechanism of following links, check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic spider that implements a small rules engine that you can use to write your crawlers on top of it."
 msgstr ""
 
-#: ../../intro/tutorial.rst:700
+#: ../../intro/tutorial.rst:699
 msgid "Also, a common pattern is to build an item with data from more than one page, using a :ref:`trick to pass additional data to the callbacks <topics-request-response-ref-request-callback-arguments>`."
 msgstr ""
 
-#: ../../intro/tutorial.rst:708
+#: ../../intro/tutorial.rst:707
 msgid "You can provide command line arguments to your spiders by using the ``-a`` option when running them::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:713
+#: ../../intro/tutorial.rst:712
 msgid "These arguments are passed to the Spider's ``__init__`` method and become spider attributes by default."
 msgstr ""
 
-#: ../../intro/tutorial.rst:716
+#: ../../intro/tutorial.rst:715
 msgid "In this example, the value provided for the ``tag`` argument will be available via ``self.tag``. You can use this to make your spider fetch only quotes with a specific tag, building the URL based on the argument::"
 msgstr ""
 
-#: ../../intro/tutorial.rst:745
+#: ../../intro/tutorial.rst:744
 msgid "If you pass the ``tag=humor`` argument to this spider, you'll notice that it will only visit URLs from the ``humor`` tag, such as ``http://quotes.toscrape.com/tag/humor``."
 msgstr ""
 
-#: ../../intro/tutorial.rst:749
+#: ../../intro/tutorial.rst:748
 msgid "You can :ref:`learn more about handling spider arguments here <spiderargs>`."
 msgstr ""
 
-#: ../../intro/tutorial.rst:752
+#: ../../intro/tutorial.rst:751
 msgid "Next steps"
 msgstr ""
 
-#: ../../intro/tutorial.rst:754
+#: ../../intro/tutorial.rst:753
 msgid "This tutorial covered only the basics of Scrapy, but there's a lot of other features not mentioned here. Check the :ref:`topics-whatelse` section in :ref:`intro-overview` chapter for a quick overview of the most important ones."
 msgstr ""
 
-#: ../../intro/tutorial.rst:758
+#: ../../intro/tutorial.rst:757
 msgid "You can continue from the section :ref:`section-basics` to know more about the command-line tool, spiders, selectors and other things the tutorial hasn't covered like modeling the scraped data. If you prefer to play with an example project, check the :ref:`intro-examples` section."
 msgstr ""

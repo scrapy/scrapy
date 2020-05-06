@@ -70,7 +70,7 @@ except ImportError:
 # for a list of supported languages.
 language = 'en'
 
-gettext_compact = False
+gettext_compact = True
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
