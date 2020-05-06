@@ -66,11 +66,7 @@ class MediaPipeline:
         except AttributeError:
             pipe = cls()
         pipe.crawler = crawler
-        pipe._fingerprinter = crawler.settings.getinstance(
-            'REQUEST_FINGERPRINTER',
-            crawler=crawler,
-            singleton=True,
-        )
+        pipe._fingerprinter = crawler.request_fingerprinter
         return pipe
 
     def open_spider(self, spider):

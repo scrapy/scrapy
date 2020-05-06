@@ -235,47 +235,6 @@ class BaseSettings(MutableMapping):
         else:
             return get_settings_priority('default')
 
-    def getinstance(self, name, *, crawler=None, singleton=False):
-        """Return an instance of the class with the import path specified in
-        the value of the setting called *name*.
-
-        If *crawler* is specified, and the class defines a ``from_crawler``
-        class method, the instance is created using that method.
-
-        If the class defines a ``from_settings`` class method, the instance is
-        created using that method.
-
-        Otherwise, the instance is created using its ``__init__`` method.
-
-        If *singleton* is ``True``, the created instance is cached in the
-        settings, so that future calls for the same *name* with *singleton*
-        also set to ``True`` return the same object instead of creating a new
-        instance.
-
-        :param name: the setting name
-        :type name: str
-
-        :param crawler: a crawler to pass to ``from_crawler``
-        :type crawler: scrapy.crawler.Crawler
-
-        :param singleton: whether to return a previously created instance if
-            available (``True``) or create a new instance (``False``, default)
-        :type singleton: bool
-        """
-        def _create_instance():
-            return create_instance(
-                load_object(self.get('REQUEST_FINGERPRINTER')),
-                settings=self,
-                crawler=crawler,
-            )
-
-        if not singleton:
-            return _create_instance()
-        else:
-            if name not in self._singletons:
-                self._singletons[name] = _create_instance()
-            return self._singletons[name]
-
     def __setitem__(self, name, value):
         self.set(name, value)
 

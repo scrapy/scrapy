@@ -226,11 +226,7 @@ class DbmCacheStorage:
 
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
-        self._fingerprinter = spider.settings.getinstance(
-            'REQUEST_FINGERPRINTER',
-            crawler=spider.crawler,
-            singleton=True,
-        )
+        self._fingerprinter = spider.crawler.request_fingerprinter
 
     def close_spider(self, spider):
         self.db.close()
@@ -284,11 +280,7 @@ class FilesystemCacheStorage:
         logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
                      extra={'spider': spider})
 
-        self._fingerprinter = spider.settings.getinstance(
-            'REQUEST_FINGERPRINTER',
-            crawler=spider.crawler,
-            singleton=True,
-        )
+        self._fingerprinter = spider.crawler.request_fingerprinter
 
     def close_spider(self, spider):
         pass

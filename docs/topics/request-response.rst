@@ -313,6 +313,8 @@ errors if needed::
                 self.logger.error('TimeoutError on %s', request.url)
 
 
+.. _request-fingerprints:
+
 Request fingerprints
 --------------------
 
@@ -332,12 +334,12 @@ URL fragments, exclude certain URL query parameters, include some or all
 headers, etc.
 
 To change how request fingerprints are built for your requests, use the
-:setting:`REQUEST_FINGERPRINTER` setting.
+:setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
-.. setting:: REQUEST_FINGERPRINTER
+.. setting:: REQUEST_FINGERPRINTER_CLASS
 
-REQUEST_FINGERPRINTER
-~~~~~~~~~~~~~~~~~~~~~
+REQUEST_FINGERPRINTER_CLASS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Default: ``'scrapy.utils.request.RequestFingerprinter'``
 
@@ -401,7 +403,7 @@ For example, to take the value of a request header named ``X-ID`` into
 account::
 
     # my_project/settings.py
-    REQUEST_FINGERPRINTER = 'my_project.utils.RequestFingerprinter'
+    REQUEST_FINGERPRINTER_CLASS = 'my_project.utils.RequestFingerprinter'
 
     # my_project/utils.py
     from scrapy.utils.request import request_fingerprint

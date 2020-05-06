@@ -41,30 +41,10 @@ class RFPDupeFilter(BaseDupeFilter):
 
     @classmethod
     def from_crawler(cls, crawler):
-        try:
-            dupefilter = cls.from_settings(crawler.settings)
-        except AttributeError:
-            debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
-            fingerprinter = crawler.settings.getinstance(
-                'REQUEST_FINGERPRINTER',
-                crawler=crawler,
-                singleton=True,
-            )
-            dupefilter = cls(
-                job_dir(crawler.settings),
-                debug,
-                fingerprinter=fingerprinter,
-            )
-        return dupefilter
-
-    @classmethod
-    def from_settings(cls, settings):
-        debug = settings.getbool('DUPEFILTER_DEBUG')
-        fingerprinter = settings.getinstance(
-            'REQUEST_FINGERPRINTER',
-            singleton=True,
-        )
-        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
+        path = job_dir(crawler.settings)
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+        fingerprinter = crawler.request_fingerprinter
+        return cls(path=path, debug=debug, fingerprinter=fingerprinter)
 
     def request_seen(self, request):
         fp = self.request_fingerprint(request)

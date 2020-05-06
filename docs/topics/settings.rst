@@ -717,7 +717,7 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 The class used to detect and filter duplicate requests.
 
 The default (``RFPDupeFilter``) filters based on the
-:setting:`REQUEST_FINGERPRINTER` setting.
+:setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.

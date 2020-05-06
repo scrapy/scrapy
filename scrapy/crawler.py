@@ -50,6 +50,12 @@ class Crawler:
         self.spidercls.update_settings(self.settings)
 
         self.signals = SignalManager(self)
+
+        self.request_fingerprinter = create_instance(
+            self.settings['REQUEST_FINGERPRINTER_CLASS'],
+            settings=self.settings,
+            crawler=self,
+        )
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
