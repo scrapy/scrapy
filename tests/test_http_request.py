@@ -467,7 +467,7 @@ class FormRequestTest(RequestTest):
             </form>""",
             url="http://www.example.com/this/list.html",
             encoding='latin1',
-            )
+        )
         req = self.request_class.from_response(response,
                 formdata={'one': ['two', 'three'], 'six': 'seven'})
 

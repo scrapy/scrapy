@@ -149,7 +149,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers={
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                }))
+            },
+        ))
 
         self._test(factory,
             b"GET /bar HTTP/1.0\r\n"
@@ -165,7 +166,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers=Headers({
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                })))
+            }),
+        ))
 
         self._test(factory,
             b"GET /bar HTTP/1.0\r\n"
