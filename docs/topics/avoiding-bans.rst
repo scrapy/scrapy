@@ -5,23 +5,29 @@ Avoiding bans
 =============
 
 This topic covers some of the strategies that you can follow to avoid getting
-different or bad from a website that you are crawling due to filters such as
-regional filters, web browser filters, etc.
+different or bad responses from a website that you are crawling due to filters
+such as regional filters, web browser filters, etc.
 
-.. _snapshot-crawling:
+.. _avoiding-crawling:
 
-Crawling internet snapshots
-===========================
+Avopiding crawling
+==================
 
 The best way not to be banned from a website is not to send requests to it in
-the first place. If your crawl sessions have a monthly or lower frequency, you
-may be able to crawl a public snapshot of the target website instead.
+the first place.
 
+One way to avoid crawling a website is to find the desired dataset through
+other means. For example, you can use Google’s `dataset search engine`_.
+
+If the target website is the only or best source of the desired information,
+and you only need to extract the data on a monthly basis or a lower frequency,
+you may be able to crawl a public snapshot of the target website instead.
 `Common Crawl`_ is an open repository of web crawl data that you can access
 freely. It contains monthly snapshots of a wide variety of websites and, if you
 are lucky, your target website will be among them.
 
 .. _Common Crawl: https://commoncrawl.org/
+.. _dataset search engine: https://datasetsearch.research.google.com/
 
 
 .. _being-polite:
