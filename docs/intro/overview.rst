@@ -48,8 +48,7 @@ and run the spider using the :command:`runspider` command::
     scrapy runspider quotes_spider.py -o quotes.jl
 
 When this finishes you will have in the ``quotes.jl`` file a list of the
-quotes in JSON format, containing text and author, looking like this (reformatted
-here for better readability)::
+quotes in JSON Lines format, containing text and author, looking like this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}
     {"author": "Steve Martin", "text": "\u201cA day without sunshine is like, you know, night.\u201d"}
