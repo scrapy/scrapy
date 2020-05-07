@@ -14,9 +14,14 @@ from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GC
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
-from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
-from scrapy.utils.test import get_ftp_content_and_delete
+from scrapy.utils.test import (
+    assert_aws_environ,
+    assert_gcs_environ,
+    get_crawler,
+    get_ftp_content_and_delete,
+    get_gcs_content_and_delete,
+    get_s3_content_and_delete,
+)
 from scrapy.utils.boto import is_botocore
 
 
@@ -29,7 +34,9 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        settings_dict = {'FILES_STORE': self.tempdir}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
