@@ -22,7 +22,7 @@ class Command(ScrapyCommand):
         parser.add_option("-O", "--overwrite-output", metavar="FILE", action="append",
                           help="overwrite scraped items into FILE")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
-                          help="format to use for dumping items with -o")
+                          help="format to use for dumping items")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)

@@ -703,7 +703,7 @@ Using spider arguments
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
-    scrapy crawl quotes -o quotes-humor.json -a tag=humor
+    scrapy crawl quotes -O quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
 spider attributes by default.

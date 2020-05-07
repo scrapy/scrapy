@@ -137,10 +137,14 @@ def feed_process_params_from_cli(settings, output, output_format=None,
 
     def check_valid_format(output_format):
         if output_format not in valid_output_formats:
-            raise UsageError("Unrecognized output format '%s', set one after a"
-                             " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
-                             " or as a file extension, from the supported list %s" %
-                             (output_format, tuple(valid_output_formats)))
+            raise UsageError(
+                "Unrecognized output format '%s'. Set a supported one (%s) "
+                "after a colon at the end of the output URI (i.e. -o "
+                "<URI>:<FORMAT>) or as a file extension." % (
+                    output_format,
+                    tuple(valid_output_formats),
+                )
+            )
 
     overwrite = False
     if overwrite_output:
@@ -152,14 +156,18 @@ def feed_process_params_from_cli(settings, output, output_format=None,
     if output_format:
         if len(output) == 1:
             check_valid_format(output_format)
-            warnings.warn('The -t command line option is deprecated in favor'
-                          ' of specifying the output format within the -o'
-                          ' option, please check the -o option docs for more details',
-                          category=ScrapyDeprecationWarning, stacklevel=2)
+            message = (
+                'The -t command line option is deprecated in favor of '
+                'specifying the output format within the output URI. See the '
+                'documentation of the -o option for more information.',
+            )
+            warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}
         else:
-            raise UsageError('The -t command line option cannot be used if multiple'
-                             ' output files are specified with the -o option')
+            raise UsageError(
+                'The -t command-line option cannot be used if multiple output '
+                'URIs are specified'
+            )
 
     result = {}
     for element in output:
@@ -176,7 +184,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
         if overwrite:
             result[feed_uri]['overwrite'] = True
 
-    # FEEDS setting should take precedence over the -o and -t CLI options
+    # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict('FEEDS'))
 
     return result
