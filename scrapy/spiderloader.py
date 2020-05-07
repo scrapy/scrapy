@@ -1,6 +1,6 @@
 import traceback
+import warnings
 from collections import defaultdict
-from warnings import warn
 
 from zope.interface import implementer
 
@@ -19,12 +19,14 @@ class SpiderLoader:
     def __init__(self, settings):
         self.require_name = settings.getbool('SPIDER_LOADER_REQUIRE_NAME')
         if self.require_name:
-            warn('SPIDER_LOADER_REQUIRE_NAME is True. In a future version of '
-                 'Scrapy, the SPIDER_LOADER_REQUIRE_NAME setting will be '
-                 'removed, and Scrapy will always behave as if '
-                 'SPIDER_LOADER_REQUIRE_NAME were False. To remove this '
-                 'warning, set SPIDER_LOADER_REQUIRE_NAME to False.',
-                 ScrapyDeprecationWarning)
+            message = (
+                'SPIDER_LOADER_REQUIRE_NAME is True. In a future version of '
+                'Scrapy, the SPIDER_LOADER_REQUIRE_NAME setting will be '
+                'removed, and Scrapy will always behave as if '
+                'SPIDER_LOADER_REQUIRE_NAME were False. To remove this '
+                'warning, set SPIDER_LOADER_REQUIRE_NAME to False.'
+            )
+            warnings.warn(message, ScrapyDeprecationWarning)
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
         self._spiders = {}
@@ -41,7 +43,7 @@ class SpiderLoader:
             msg = ("There are several spiders with the same name:\n\n"
                    "{}\n\n  This can cause unexpected behavior.".format(
                         "\n\n".join(dupes)))
-            warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning)
 
     def _load_spiders(self, module):
         classes = iter_spider_classes(module, require_name=self.require_name)
@@ -61,7 +63,7 @@ class SpiderLoader:
                     msg = ("\n{tb}Could not load spiders from module '{modname}'. "
                            "See above traceback for details.".format(
                                 modname=name, tb=traceback.format_exc()))
-                    warn(msg, RuntimeWarning)
+                    warnings.warn(msg, RuntimeWarning)
                 else:
                     raise
         self._check_name_duplicates()
