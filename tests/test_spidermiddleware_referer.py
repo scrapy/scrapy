@@ -478,32 +478,32 @@ class TestSettingsPolicyByName(TestCase):
 
     def test_valid_name(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
 
     def test_valid_name_casevariants(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
