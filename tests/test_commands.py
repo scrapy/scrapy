@@ -376,7 +376,7 @@ class MySpider(scrapy.Spider):
 """
         args = ['-o', 'example1.json', '-O', 'example2.json']
         log = self.get_log(spider_code, args=args)
-        self.assertIn("error: Please use only one of --output and --overwrite-output", log)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
 
 
 class BenchCommandTest(CommandTest):
@@ -461,4 +461,4 @@ class MySpider(scrapy.Spider):
 """
         args = ['-o', 'example1.json', '-O', 'example2.json']
         log = self.get_log(spider_code, args=args)
-        self.assertIn("error: Please use only one of --output and --overwrite-output", log)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
