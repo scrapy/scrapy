@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
 import traceback
 import warnings
+from collections import defaultdict
 
 from zope.interface import implementer
 
@@ -16,6 +16,7 @@ class SpiderLoader:
     SpiderLoader is a class which locates and loads spiders
     in a Scrapy project.
     """
+
     def __init__(self, settings):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
@@ -29,6 +30,7 @@ class SpiderLoader:
             dupes.extend([
                 "  {cls} named {name!r} (in {module})".format(module=mod, cls=cls, name=name)
                 for mod, cls in locations
+                if len(locations) > 1
             ])
 
         if dupes:
@@ -49,10 +51,9 @@ class SpiderLoader:
                     self._load_spiders(module)
             except ImportError:
                 if self.warn_only:
-                    msg = (
-                        "\n{tb}Could not load spiders from module '{modname}'. "
-                        "See above traceback for details.".format(modname=name, tb=traceback.format_exc())
-                    )
+                    msg = ("\n{tb}Could not load spiders from module '{modname}'. "
+                           "See above traceback for details.".format(
+                                modname=name, tb=traceback.format_exc()))
                     warnings.warn(msg, RuntimeWarning)
                 else:
                     raise
@@ -76,8 +77,10 @@ class SpiderLoader:
         """
         Return the list of spider names that can handle the given request.
         """
-        return [name for name, cls in self._spiders.items()
-                if cls.handles_request(request)]
+        return [
+            name for name, cls in self._spiders.items()
+            if cls.handles_request(request)
+        ]
 
     def list(self):
         """
