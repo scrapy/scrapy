@@ -825,11 +825,15 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 21:15:45 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', method='PUT', headers={
-            'Content-Type': 'image/jpeg',
-            'Date': date,
-            'Content-Length': '94328',
-            })
+        req = Request(
+            's3://johnsmith/photos/puppy.jpg',
+            method='PUT',
+            headers={
+                'Content-Type': 'image/jpeg',
+                'Date': date,
+                'Content-Length': '94328',
+            },
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
@@ -909,11 +913,10 @@ class S3TestCase(unittest.TestCase):
         # ensure that spaces are quoted properly before signing
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
         req = Request(
-            ("s3://johnsmith/photos/my puppy.jpg"
-             "?response-content-disposition=my puppy.jpg"),
+            "s3://johnsmith/photos/my puppy.jpg?response-content-disposition=my puppy.jpg",
             method='GET',
             headers={'Date': date},
-            )
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(
@@ -1093,8 +1096,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEqual(response.text, 'A brief note')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "US-ASCII")
 
         request = Request("data:,A%20brief%20note")
@@ -1103,8 +1105,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype(self):
         def _test(response):
             self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "iso-8859-7")
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
@@ -1122,8 +1123,7 @@ class DataURITestCase(unittest.TestCase):
     def test_mediatype_parameters(self):
         def _test(response):
             self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "utf-8")
 
         request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'
