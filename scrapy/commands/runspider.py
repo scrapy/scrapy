@@ -43,9 +43,9 @@ class Command(ScrapyCommand):
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
-                          help="dump scraped items into FILE (use - for stdout)")
+                          help="append scraped items to the end of FILE (use - for stdout)")
         parser.add_option("-O", "--overwrite-output", metavar="FILE", action="append",
-                          help="overwrite scraped items into FILE")
+                          help="dump scraped items into FILE, overwriting any existing file")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items")
 

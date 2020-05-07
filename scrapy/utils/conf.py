@@ -139,7 +139,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
         if output_format not in valid_output_formats:
             raise UsageError(
                 "Unrecognized output format '%s'. Set a supported one (%s) "
-                "after a colon at the end of the output URI (i.e. -o "
+                "after a colon at the end of the output URI (i.e. -o/-O "
                 "<URI>:<FORMAT>) or as a file extension." % (
                     output_format,
                     tuple(valid_output_formats),
@@ -149,7 +149,9 @@ def feed_process_params_from_cli(settings, output, output_format=None,
     overwrite = False
     if overwrite_output:
         if output:
-            raise UsageError("Please use only one of --output and --overwrite-output")
+            raise UsageError(
+                "Please use only one of -o/--output and -O/--overwrite-output"
+            )
         output = overwrite_output
         overwrite = True
 
@@ -159,7 +161,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             message = (
                 'The -t command line option is deprecated in favor of '
                 'specifying the output format within the output URI. See the '
-                'documentation of the -o option for more information.',
+                'documentation of the -o and -O options for more information.',
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}
