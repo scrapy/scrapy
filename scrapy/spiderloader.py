@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import traceback
 import warnings
 from collections import defaultdict
