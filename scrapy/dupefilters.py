@@ -44,7 +44,13 @@ class RFPDupeFilter(BaseDupeFilter):
         path = job_dir(crawler.settings)
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
         fingerprinter = crawler.request_fingerprinter
-        return cls(path=path, debug=debug, fingerprinter=fingerprinter)
+        try:
+            result = cls.from_settings(crawler.settings)
+        except AttributeError:
+            return cls(path=path, debug=debug, fingerprinter=fingerprinter)
+        else:
+            result.fingerprinter = fingerprinter
+            return result
 
     def request_seen(self, request):
         fp = self.request_fingerprint(request)
