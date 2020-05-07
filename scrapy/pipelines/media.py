@@ -43,8 +43,7 @@ class MediaPipeline:
         if allow_redirects:
             self.handle_httpstatus_list = SequenceExclude(range(300, 400))
 
-    def _key_for_pipe(self, key, base_class_name=None,
-                      settings=None):
+    def _key_for_pipe(self, key, base_class_name=None, settings=None):
         """
         >>> MediaPipeline()._key_for_pipe("IMAGES")
         'IMAGES'
@@ -55,8 +54,11 @@ class MediaPipeline:
         """
         class_name = self.__class__.__name__
         formatted_key = "{}_{}".format(class_name.upper(), key)
-        if class_name == base_class_name or not base_class_name \
-            or (settings and not settings.get(formatted_key)):
+        if (
+            not base_class_name
+            or class_name == base_class_name
+            or settings and not settings.get(formatted_key)
+        ):
             return key
         return formatted_key
 
