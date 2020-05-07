@@ -290,13 +290,10 @@ as a fallback value if that key is not provided for a specific feed definition:
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
 
-    The remaining storage backends do not support overwritting the output file:
+    -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
+        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
 
-    -   :ref:`topics-feed-storage-s3`: `does not support appending to files
-        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_.
-
-    -   :ref:`topics-feed-storage-stdout`: we have not implemented support for
-        overwritting the standard output.
+    -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
 
 .. setting:: FEED_EXPORT_ENCODING
