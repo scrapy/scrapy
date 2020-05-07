@@ -14,7 +14,23 @@ from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
 
-class BaseItem(object_ref):
+class _BaseItem(object_ref):
+    """
+    Temporary class used internally to avoid the deprecation
+    warning raised by isinstance checks using BaseItem.
+    """
+    pass
+
+
+class _BaseItemMeta(ABCMeta):
+    def __instancecheck__(cls, instance):
+        if cls is BaseItem:
+            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
+                 ScrapyDeprecationWarning, stacklevel=2)
+        return super().__instancecheck__(instance)
+
+
+class BaseItem(_BaseItem, metaclass=_BaseItemMeta):
     """
     Deprecated, please use :class:`scrapy.item.Item` instead
     """
@@ -30,7 +46,7 @@ class Field(dict):
     """Container of field metadata"""
 
 
-class ItemMeta(ABCMeta):
+class ItemMeta(_BaseItemMeta):
     """Metaclass_ of :class:`Item` that handles field definitions.
 
     .. _metaclass: https://realpython.com/python-metaclasses

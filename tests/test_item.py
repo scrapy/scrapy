@@ -4,7 +4,7 @@ from unittest import mock
 from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import ABCMeta, BaseItem, DictItem, Field, Item, ItemMeta
+from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -334,29 +334,73 @@ class DictItemTest(unittest.TestCase):
 
 class BaseItemTest(unittest.TestCase):
 
+    def test_isinstance_check(self):
+
+        class SubclassedBaseItem(BaseItem):
+            pass
+
+        class SubclassedItem(Item):
+            pass
+
+        self.assertTrue(isinstance(BaseItem(), BaseItem))
+        self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
+        self.assertTrue(isinstance(Item(), BaseItem))
+        self.assertTrue(isinstance(SubclassedItem(), BaseItem))
+
+        # make sure internal checks using private _BaseItem class succeed
+        self.assertTrue(isinstance(BaseItem(), _BaseItem))
+        self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
+        self.assertTrue(isinstance(Item(), _BaseItem))
+        self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
+
     def test_deprecation_warning(self):
+        """
+        Make sure deprecation warnings are logged whenever BaseItem is used,
+        either instantiated or in an isinstance check
+        """
         with catch_warnings(record=True) as warnings:
             BaseItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
         with catch_warnings(record=True) as warnings:
+
             class SubclassedBaseItem(BaseItem):
                 pass
+
             SubclassedBaseItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+        with catch_warnings(record=True) as warnings:
+            self.assertFalse(isinstance("foo", BaseItem))
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+        with catch_warnings(record=True) as warnings:
+            self.assertTrue(isinstance(BaseItem(), BaseItem))
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 class ItemNoDeprecationWarningTest(unittest.TestCase):
-
     def test_no_deprecation_warning(self):
+        """
+        Make sure deprecation warnings are NOT logged whenever BaseItem subclasses are used.
+        """
+        class SubclassedItem(Item):
+            pass
+
         with catch_warnings(record=True) as warnings:
             Item()
-            self.assertEqual(len(warnings), 0)
-        with catch_warnings(record=True) as warnings:
-            class SubclassedItem(Item):
-                pass
             SubclassedItem()
+            _BaseItem()
+            self.assertFalse(isinstance("foo", _BaseItem))
+            self.assertFalse(isinstance("foo", Item))
+            self.assertFalse(isinstance("foo", SubclassedItem))
+            self.assertTrue(isinstance(_BaseItem(), _BaseItem))
+            self.assertTrue(isinstance(Item(), Item))
+            self.assertTrue(isinstance(SubclassedItem(), SubclassedItem))
             self.assertEqual(len(warnings), 0)
 
 

@@ -14,10 +14,10 @@ from w3lib.html import replace_entities
 
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 
 
-_ITERABLE_SINGLE_VALUES = dict, BaseItem, str, bytes
+_ITERABLE_SINGLE_VALUES = dict, _BaseItem, str, bytes
 
 
 def arg_to_iter(arg):
