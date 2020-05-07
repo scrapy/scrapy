@@ -18,6 +18,14 @@ except ImportError:
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
+from twisted.web.test.test_webclient import (
+    ForeverTakingResource,
+    ErrorResource,
+    NoLengthResource,
+    HostHeaderResource,
+    PayloadResource,
+    BrokenDownloadResource,
+)
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
@@ -200,11 +208,6 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol.dataReceived(b"\n")
         self.assertEqual(protocol.headers,
             Headers({'Hello': ['World'], 'Foo': ['Bar']}))
-
-
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        ErrorResource, NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
 
 
 class EncodingResource(resource.Resource):

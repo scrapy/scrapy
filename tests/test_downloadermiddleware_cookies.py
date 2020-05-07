@@ -139,10 +139,12 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_complex_cookies(self):
         # merge some cookies into jar
-        cookies = [{'name': 'C1', 'value': 'value1', 'path': '/foo', 'domain': 'scrapytest.org'},
-                {'name': 'C2', 'value': 'value2', 'path': '/bar', 'domain': 'scrapytest.org'},
-                {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
-                {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'}]
+        cookies = [
+            {'name': 'C1', 'value': 'value1', 'path': '/foo', 'domain': 'scrapytest.org'},
+            {'name': 'C2', 'value': 'value2', 'path': '/bar', 'domain': 'scrapytest.org'},
+            {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
+            {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'},
+        ]
 
         req = Request('http://scrapytest.org/', cookies=cookies)
         self.mw.process_request(req, self.spider)
