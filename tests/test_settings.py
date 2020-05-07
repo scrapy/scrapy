@@ -357,12 +357,12 @@ class BaseSettingsTest(unittest.TestCase):
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
                           'HASNOBASE': BaseSettings({3: 3000}, 'default')})
         self.assertDictEqual(s.copy_to_dict(),
-                            {'HASNOBASE': {3: 3000},
-                             'TEST': {1: 10, 3: 30},
-                             'TEST_BASE': {1: 1, 2: 2},
-                             'TEST_BOOLEAN': False,
-                             'TEST_LIST': [1, 2],
-                             'TEST_STRING': 'a string'})
+                             {'HASNOBASE': {3: 3000},
+                              'TEST': {1: 10, 3: 30},
+                              'TEST_BASE': {1: 1, 2: 2},
+                              'TEST_BOOLEAN': False,
+                              'TEST_LIST': [1, 2],
+                              'TEST_STRING': 'a string'})
 
     def test_freeze(self):
         self.settings.freeze()
