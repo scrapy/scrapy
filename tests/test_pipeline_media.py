@@ -4,15 +4,16 @@ from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
+from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.signal import disconnect_all
-from scrapy import signals
+from scrapy.utils.test import get_crawler
 
 
 def _mocked_download_func(request, info):
@@ -26,9 +27,11 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     settings = None
 
     def setUp(self):
-        self.spider = Spider('media.com')
-        self.pipe = self.pipeline_class(download_func=_mocked_download_func,
-                                        settings=Settings(self.settings))
+        spider_cls = Spider
+        self.spider = spider_cls('media.com')
+        crawler = get_crawler(spider_cls, self.settings)
+        self.pipe = self.pipeline_class.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
 
