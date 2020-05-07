@@ -72,7 +72,7 @@ class Crawler:
         self.logformatter = lf_cls.from_crawler(self)
 
         self.request_fingerprinter = create_instance(
-            self.settings['REQUEST_FINGERPRINTER_CLASS'],
+            load_object(self.settings['REQUEST_FINGERPRINTER_CLASS']),
             settings=self.settings,
             crawler=self,
         )
