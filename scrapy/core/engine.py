@@ -230,8 +230,7 @@ class ExecutionEngine:
 
     def _downloaded(self, response, slot, request, spider):
         slot.remove_request(request)
-        return self.download(response, spider) \
-                if isinstance(response, Request) else response
+        return self.download(response, spider) if isinstance(response, Request) else response
 
     def _download(self, request, spider):
         slot = self.slot

@@ -50,8 +50,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 
     """
     if include_headers:
-        include_headers = tuple(to_bytes(h.lower())
-                                 for h in sorted(include_headers))
+        include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
     cache_key = (include_headers, keep_fragments)
     if cache_key not in cache:
