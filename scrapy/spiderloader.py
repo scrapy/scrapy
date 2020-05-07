@@ -35,9 +35,11 @@ class SpiderLoader:
 
         if dupes:
             dupes_string = "\n\n".join(dupes)
-            msg = ("There are several spiders with the same name:\n\n"
-                   "{}\n\n  This can cause unexpected behavior.".format(dupes_string))
-            warnings.warn(msg, UserWarning)
+            warnings.warn(
+                "There are several spiders with the same name:\n\n"
+                "{}\n\n  This can cause unexpected behavior.".format(dupes_string),
+                category=UserWarning,
+            )
 
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
@@ -51,10 +53,13 @@ class SpiderLoader:
                     self._load_spiders(module)
             except ImportError:
                 if self.warn_only:
-                    msg = ("\n{tb}Could not load spiders from module '{modname}'. "
-                           "See above traceback for details.".format(
-                                modname=name, tb=traceback.format_exc()))
-                    warnings.warn(msg, RuntimeWarning)
+                    warnings.warn(
+                        "\n{tb}Could not load spiders from module '{modname}'. "
+                        "See above traceback for details.".format(
+                            modname=name, tb=traceback.format_exc()
+                        ),
+                        category=RuntimeWarning,
+                    )
                 else:
                     raise
         self._check_name_duplicates()
