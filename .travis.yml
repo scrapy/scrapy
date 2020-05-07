@@ -15,19 +15,25 @@ matrix:
       python: 3.7  # Keep in sync with .readthedocs.yml
 
     - env: TOXENV=pypy3
-    - python: 3.5
+    - env: TOXENV=py
+      python: 3.5
     - env: TOXENV=pinned
       python: 3.5
     - env: TOXENV=asyncio
       python: 3.5.2
-    - python: 3.6
-    - python: 3.7
-    - env: PYPI_RELEASE_JOB=true
+    - env: TOXENV=py
+      python: 3.6
+    - env: TOXENV=py
+      python: 3.7
+    - env: TOXENV=py PYPI_RELEASE_JOB=true
       python: 3.8
+      dist: bionic
     - env: TOXENV=extra-deps
       python: 3.8
+      dist: bionic
     - env: TOXENV=asyncio
       python: 3.8
+      dist: bionic
 install:
   - |
       if [ "$TOXENV" = "pypy3" ]; then
