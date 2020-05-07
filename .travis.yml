@@ -16,9 +16,16 @@ matrix:
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
-      python: 3.5.1
+      python: 3.5  # 3.5.1 enforced through dist and system_site_packages below
+      dist: xenial
+      virtualenv:
+        system_site_packages: true  # Python
     - env: TOXENV=asyncio
-      python: 3.5.1  # We use additional code to support 3.5.3 and earlier
+      python: 3.5  # 3.5.1 enforced through dist and system_site_packages below
+                   # We use additional code to support 3.5.3 and earlier
+      dist: xenial
+      virtualenv:
+        system_site_packages: true  # Python
     - python: 3.5
     - env: TOXENV=asyncio
       python: 3.5
