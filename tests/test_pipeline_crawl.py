@@ -44,9 +44,7 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
     name = 'redirectedmedia'
 
     def _process_url(self, url):
-        return add_or_replace_parameter(
-                    self.mockserver.url('/redirect-to'),
-                    'goto', url)
+        return add_or_replace_parameter(self.mockserver.url('/redirect-to'), 'goto', url)
 
 
 class FileDownloadCrawlTestCase(TestCase):
