@@ -20,7 +20,6 @@ from w3lib.html import strip_html5_whitespace
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.decorators import deprecated
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
