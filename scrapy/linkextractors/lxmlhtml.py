@@ -1,6 +1,8 @@
 """
 Link extractor based on lxml.html
 """
+import operator
+from functools import partial
 from urllib.parse import urljoin
 
 import lxml.etree as etree
@@ -8,10 +10,10 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
+from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
-from scrapy.linkextractors import FilteringLinkExtractor
 
 
 # from lxml/src/lxml/html/__init__.py
@@ -27,20 +29,24 @@ def _nons(tag):
     return tag
 
 
+def _identity(x):
+    return x
+
+
+def _canonicalize_link_url(link):
+    return canonicalize_url(link.url, keep_fragments=True)
+
+
 class LxmlParserLinkExtractor:
     def __init__(
         self, tag="a", attr="href", process=None, unique=False, strip=True, canonicalized=False
     ):
-        self.scan_tag = tag if callable(tag) else lambda t: t == tag
-        self.scan_attr = attr if callable(attr) else lambda a: a == attr
-        self.process_attr = process if callable(process) else lambda v: v
+        self.scan_tag = tag if callable(tag) else partial(operator.eq, tag)
+        self.scan_attr = attr if callable(attr) else partial(operator.eq, attr)
+        self.process_attr = process if callable(process) else _identity
         self.unique = unique
         self.strip = strip
-        if canonicalized:
-            self.link_key = lambda link: link.url
-        else:
-            self.link_key = lambda link: canonicalize_url(link.url,
-                                                          keep_fragments=True)
+        self.link_key = operator.attrgetter("url") if canonicalized else _canonicalize_link_url
 
     def _iter_links(self, document):
         for el in document.iter(etree.Element):
@@ -113,8 +119,8 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         lx = LxmlParserLinkExtractor(
-            tag=lambda x: x in tags,
-            attr=lambda x: x in attrs,
+            tag=partial(operator.contains, tags),
+            attr=partial(operator.contains, attrs),
             unique=unique,
             process=process_value,
             strip=strip,
