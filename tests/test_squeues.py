@@ -89,12 +89,12 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = TestLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, TestLoader)
+        assert loader2.default_item_class is TestItem
+        self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -173,12 +173,12 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = TestLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, TestLoader)
+        assert loader2.default_item_class is TestItem
+        self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
         q = self.queue()
