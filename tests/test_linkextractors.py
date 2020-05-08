@@ -1,3 +1,4 @@
+import pickle
 import re
 import unittest
 from warnings import catch_warnings
@@ -461,6 +462,10 @@ class Base:
             self.assertEqual(lx.extract_links(response), [
                 Link(url='ftp://www.external.com/', text=u'An Item', fragment='', nofollow=False),
             ])
+
+        def test_pickle_extractor(self):
+            lx = self.extractor_cls()
+            self.assertIsInstance(pickle.loads(pickle.dumps(lx)), self.extractor_cls)
 
 
 class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):

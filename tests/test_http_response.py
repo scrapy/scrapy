@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from w3lib.encoding import resolve_encoding
