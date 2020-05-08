@@ -22,7 +22,7 @@ for extending and overriding different field parsing rules, either by spider,
 or by source format (HTML, XML, etc) without becoming a nightmare to maintain.
 
 .. note:: Item Loaders used to be a part of ``scrapy``, but moved to a self-contained library.
-    This implementation is an extension of ``itemloaders`` library,
+    This implementation is an extension of itemloaders_ library,
     keeping support to :ref:`Items <topics-items>` and :ref:`Response <topics-request-response>`.
 
 Using Item Loaders to populate items
@@ -68,8 +68,11 @@ previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 Declaring Item Loaders
 ======================
 
-Item Loaders are declared like Items, by using a class definition syntax. Here
-is an example::
+Besides the usage of Item Laoders as instances, like the example above,
+it's quite common to define them as classes.
+This allows the loaders to be extended and
+also to share common parsing rules across loaders for different websites.
+Here is an example on how to define an Item Loader as class::
 
     from scrapy.loader import ItemLoader
     from itemloaders.processors import TakeFirst, MapCompose, Join
@@ -85,42 +88,31 @@ is an example::
 
         # ...
 
-As you can see, input processors are declared using the ``_in`` suffix while
-output processors are declared using the ``_out`` suffix. And you can also
-declare a default input/output processors using the
+In this case, field input and output processors are declared as the item's
+field name followed by a ``_in`` or ``_out`` suffix.
+If there's some routine that's generic and shareable across the fields,
+it can be define as a default processor through
 :attr:`ItemLoader.default_input_processor` and
 :attr:`ItemLoader.default_output_processor` attributes.
-For more information about processors, please refer to ``itemloaders`` documentation.
+
+.. note:: For more information about processors,
+    please refer to itemloaders_ documentation.
 
 
 ItemLoader objects
 ==================
 
-.. class:: ItemLoader([item, selector, response], \**kwargs)
+.. autoclass:: scrapy.loader.ItemLoader
+    :members:
+    :inherited-members:
 
-    Return a new Item Loader for populating the given Item. If no item is
-    given, one is instantiated automatically using the class in
-    :attr:`default_item_class`.
 
-    When instantiated with a ``selector`` or a ``response`` parameters
-    the :class:`ItemLoader` class provides convenient mechanisms for extracting
-    data from web pages using :ref:`selectors <topics-selectors>`.
+Processors
+==========
 
-    :param item: The item instance to populate using subsequent calls to
-        :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
-        or :meth:`~ItemLoader.add_value`.
-    :type item: :class:`~scrapy.item.Item` object
+.. _topics-loaders-processors:
 
-    :param selector: The selector to extract data from, when using the
-        :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
-        (resp. :meth:`replace_css`) method.
-    :type selector: :class:`~scrapy.selector.Selector` object
+Processors documentation is available in `itemloaders processors`_.
 
-    :param response: The response used to construct the selector using the
-        :attr:`default_selector_class`, unless the selector argument is given,
-        in which case this argument is ignored.
-    :type response: :class:`~scrapy.http.Response` object
-
-    The item, selector, response and the remaining keyword arguments are
-    assigned to the Loader context (accessible through the :attr:`context` attribute).
-
+.. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
+.. _itemloaders processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html

@@ -288,6 +288,7 @@ intersphinx_mapping = {
     'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
     'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
+    'itemloaders': ('https://itemloaders.readthedocs.io/en/latest/', None),
 }
 
 
@@ -302,3 +303,15 @@ hoverxref_role_types = {
     "mod": "tooltip",
     "ref": "tooltip",
 }
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', maybe_skip_member)
+
+
+def maybe_skip_member(app, what, name, obj, skip, options):
+    if not skip:
+        # autodocs was generating a text "alias of" for the following members
+        # https://github.com/sphinx-doc/sphinx/issues/4422
+        return name in {'default_item_class', 'default_selector_class'}
+    return skip
