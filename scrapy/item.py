@@ -79,8 +79,7 @@ class DictItem(MutableMapping, BaseItem):
 
     def __new__(cls, *args, **kwargs):
         if issubclass(cls, DictItem) and not issubclass(cls, Item):
-            warn('scrapy.item.DictItem is deprecated, please use '
-                 'scrapy.item.Item instead',
+            warn('scrapy.item.DictItem is deprecated, please use scrapy.item.Item instead',
                  ScrapyDeprecationWarning, stacklevel=2)
         return super(DictItem, cls).__new__(cls, *args, **kwargs)
 
@@ -146,6 +145,11 @@ class Item(DictItem, metaclass=ItemMeta):
 
     If you need instances of a custom class to be considered items by Scrapy,
     you must inherit from either :class:`Item` or :class:`dict`.
+
+    Items offer the ability to declare :class:`Field` attributes, which can be
+    used to define metadata and control the way data is processed internally.
+    Please refer to the :ref:`documentation about fields <topics-items-fields>`
+    for additional information.
 
     Unlike instances of :class:`dict`, instances of :class:`Item` may be
     :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
