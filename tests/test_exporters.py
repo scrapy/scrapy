@@ -215,11 +215,12 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
-        first = to_unicode(first)
-        second = to_unicode(second)
-        csvsplit = lambda csv: [sorted(re.split(r'(,|\s+)', line))
-                                for line in csv.splitlines(True)]
-        return self.assertEqual(csvsplit(first), csvsplit(second), msg)
+        def split_csv(csv):
+            return [
+                sorted(re.split(r"(,|\s+)", line))
+                for line in to_unicode(csv).splitlines(True)
+            ]
+        return self.assertEqual(split_csv(first), split_csv(second), msg=msg)
 
     def _check_output(self):
         self.assertCsvEqual(to_unicode(self.output.getvalue()), u'age,name\r\n22,John\xa3\r\n')
@@ -341,20 +342,22 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
 
-        self.assertExportResult(i3,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<age>'
-                        b'<age>'
-                            b'<age>22</age>'
-                            b'<name>foo\xc2\xa3hoo</name>'
-                        b'</age>'
-                        b'<name>bar</name>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
-            b'</items>'
+        self.assertExportResult(
+            i3,
+            b"""<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <age>
+                            <age>
+                                <age>22</age>
+                                <name>foo\xc2\xa3hoo</name>
+                            </age>
+                            <name>bar</name>
+                        </age>
+                        <name>buz</name>
+                    </item>
+                </items>
+            """
         )
 
     def test_nested_list_item(self):
@@ -362,31 +365,35 @@ class XmlItemExporterTest(BaseItemExporterTest):
         i2 = dict(name=u'bar', v2={"egg": ["spam"]})
         i3 = TestItem(name=u'buz', age=[i1, i2])
 
-        self.assertExportResult(i3,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<age>'
-                        b'<value><name>foo</name></value>'
-                        b'<value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>'
-                    b'</age>'
-                    b'<name>buz</name>'
-                b'</item>'
-            b'</items>'
+        self.assertExportResult(
+            i3,
+            b"""<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <age>
+                            <value><name>foo</name></value>
+                            <value><name>bar</name><v2><egg><value>spam</value></egg></v2></value>
+                        </age>
+                        <name>buz</name>
+                    </item>
+                </items>
+            """
         )
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
-        self.assertExportResult(item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-               b'<item>'
-                   b'<float>3.14</float>'
-                   b'<boolean>False</boolean>'
-                   b'<number>22</number>'
-                   b'<time>2015-01-01 01:01:01</time>'
-               b'</item>'
-            b'</items>'
+        self.assertExportResult(
+            item,
+            b"""<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                   <item>
+                       <float>3.14</float>
+                       <boolean>False</boolean>
+                       <number>22</number>
+                       <time>2015-01-01 01:01:01</time>
+                   </item>
+                </items>
+            """
         )
 
 

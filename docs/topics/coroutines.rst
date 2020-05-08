@@ -7,10 +7,6 @@ Coroutines
 Scrapy has :ref:`partial support <coroutine-support>` for the
 :ref:`coroutine syntax <async>`.
 
-.. warning:: :mod:`asyncio` support in Scrapy is experimental. Future Scrapy
-             versions may introduce related API and behavior changes without a
-             deprecation period or warning.
-
 .. _coroutine-support:
 
 Supported callables
@@ -114,8 +110,8 @@ becomes::
 
 Coroutines may be used to call asynchronous code. This includes other
 coroutines, functions that return Deferreds and functions that return
-`awaitable objects`_ such as :class:`~asyncio.Future`. This means you can use
-many useful Python libraries providing such code::
+:term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
+This means you can use many useful Python libraries providing such code::
 
     class MySpider(Spider):
         # ...
@@ -145,4 +141,3 @@ Common use cases for asynchronous code include:
   :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
-.. _awaitable objects: https://docs.python.org/3/glossary.html#term-awaitable

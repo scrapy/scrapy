@@ -58,7 +58,11 @@ class ReturnsContract(Contract):
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
+        if len(self.args) not in [1, 2, 3]:
+            raise ValueError(
+                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
+                % len(self.args)
+            )
         self.obj_name = self.args[0] or None
         self.obj_type = self.objects[self.obj_name]
 

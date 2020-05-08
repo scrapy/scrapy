@@ -1,7 +1,7 @@
 import functools
 import logging
 from collections import defaultdict
-from twisted.internet.defer import Deferred, DeferredList, _DefGen_Return
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
 from scrapy.settings import Settings
@@ -43,8 +43,7 @@ class MediaPipeline:
         if allow_redirects:
             self.handle_httpstatus_list = SequenceExclude(range(300, 400))
 
-    def _key_for_pipe(self, key, base_class_name=None,
-                      settings=None):
+    def _key_for_pipe(self, key, base_class_name=None, settings=None):
         """
         >>> MediaPipeline()._key_for_pipe("IMAGES")
         'IMAGES'
@@ -55,8 +54,11 @@ class MediaPipeline:
         """
         class_name = self.__class__.__name__
         formatted_key = "{}_{}".format(class_name.upper(), key)
-        if class_name == base_class_name or not base_class_name \
-            or (settings and not settings.get(formatted_key)):
+        if (
+            not base_class_name
+            or class_name == base_class_name
+            or settings and not settings.get(formatted_key)
+        ):
             return key
         return formatted_key
 
@@ -141,24 +143,26 @@ class MediaPipeline:
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #
-            # Twisted inline callbacks pass return values using the function
-            # twisted.internet.defer.returnValue, which encapsulates the return
-            # value inside a _DefGen_Return base exception.
-            #
-            # What happens when the media_downloaded callback raises another
+            # What happens when the media_downloaded callback raises an
             # exception, for example a FileException('download-error') when
-            # the Response status code is not 200 OK, is that it stores the
-            # _DefGen_Return exception on the FileException context.
+            # the Response status code is not 200 OK, is that the original
+            # StopIteration exception (which in turn contains the failed
+            # Response and by extension, the original Request) gets encapsulated
+            # within the FileException context.
+            #
+            # Originally, Scrapy was using twisted.internet.defer.returnValue
+            # inside functions decorated with twisted.internet.defer.inlineCallbacks,
+            # encapsulating the returned Response in a _DefGen_Return exception
+            # instead of a StopIteration.
             #
             # To avoid keeping references to the Response and therefore Request
             # objects on the Media Pipeline cache, we should wipe the context of
-            # the exception encapsulated by the Twisted Failure when its a
-            # _DefGen_Return instance.
+            # the encapsulated exception when it is a StopIteration instance
             #
             # This problem does not occur in Python 2.7 since we don't have
             # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
             context = getattr(result.value, '__context__', None)
-            if isinstance(context, _DefGen_Return):
+            if isinstance(context, StopIteration):
                 setattr(result.value, '__context__', None)
 
         info.downloading.remove(fp)
@@ -166,7 +170,7 @@ class MediaPipeline:
         for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
 
-    ### Overridable Interface
+    # Overridable Interface
     def media_to_download(self, request, info):
         """Check request before starting download"""
         pass
