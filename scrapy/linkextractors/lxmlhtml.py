@@ -28,8 +28,9 @@ def _nons(tag):
 
 
 class LxmlParserLinkExtractor:
-    def __init__(self, tag="a", attr="href", process=None, unique=False,
-                 strip=True, canonicalized=False):
+    def __init__(
+        self, tag="a", attr="href", process=None, unique=False, strip=True, canonicalized=False
+    ):
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_attr = process if callable(process) else lambda v: v
@@ -93,10 +94,23 @@ class LxmlParserLinkExtractor:
 
 class LxmlLinkExtractor(FilteringLinkExtractor):
 
-    def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
-                 tags=('a', 'area'), attrs=('href',), canonicalize=False,
-                 unique=True, process_value=None, deny_extensions=None, restrict_css=(),
-                 strip=True, restrict_text=None):
+    def __init__(
+        self,
+        allow=(),
+        deny=(),
+        allow_domains=(),
+        deny_domains=(),
+        restrict_xpaths=(),
+        tags=('a', 'area'),
+        attrs=('href',),
+        canonicalize=False,
+        unique=True,
+        process_value=None,
+        deny_extensions=None,
+        restrict_css=(),
+        strip=True,
+        restrict_text=None,
+    ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         lx = LxmlParserLinkExtractor(
             tag=lambda x: x in tags,
@@ -106,12 +120,18 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             strip=strip,
             canonicalized=canonicalize
         )
-
-        super(LxmlLinkExtractor, self).__init__(lx, allow=allow, deny=deny,
-                                                allow_domains=allow_domains, deny_domains=deny_domains,
-                                                restrict_xpaths=restrict_xpaths, restrict_css=restrict_css,
-                                                canonicalize=canonicalize, deny_extensions=deny_extensions,
-                                                restrict_text=restrict_text)
+        super(LxmlLinkExtractor, self).__init__(
+            link_extractor=lx,
+            allow=allow,
+            deny=deny,
+            allow_domains=allow_domains,
+            deny_domains=deny_domains,
+            restrict_xpaths=restrict_xpaths,
+            restrict_css=restrict_css,
+            canonicalize=canonicalize,
+            deny_extensions=deny_extensions,
+            restrict_text=restrict_text,
+        )
 
     def extract_links(self, response):
         """Returns a list of :class:`~scrapy.link.Link` objects from the
@@ -124,9 +144,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         """
         base_url = get_base_url(response)
         if self.restrict_xpaths:
-            docs = [subdoc
-                    for x in self.restrict_xpaths
-                    for subdoc in response.xpath(x)]
+            docs = [
+                subdoc
+                for x in self.restrict_xpaths
+                for subdoc in response.xpath(x)
+            ]
         else:
             docs = [response.selector]
         all_links = []
