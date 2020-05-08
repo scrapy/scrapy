@@ -65,16 +65,19 @@ spider that have the
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests`
 method must support this: if they receive an asynchronous iterable, they must
 return one as well. On the other hand, if they receive a normal iterable, they
-shouldn't break. Such universal :meth:`process_start_requests` must be an
-asynchronous generator itself, and so it will always convert a normal iterable
-to an asynchronous one. Because a result of a middleware method is passed to
-the same method of the next middleware, it's only possible to mix middlewares
-with synchronous and asynchronous :meth:`process_start_requests` if all
-synchronous ones are called first.
+shouldn't break and ideally should return a normal iterable too. There can be
+several possible implementations of this.
+
+First, such universal :meth:`process_start_requests` can be an asynchronous
+generator itself, and so it will always convert a normal iterable to an
+asynchronous one. Because a result of a middleware method is passed to the same
+method of the next middleware, it's only possible to mix middlewares with
+synchronous and asynchronous :meth:`process_start_requests` if all synchronous
+ones are called first.
 
 .. autofunction:: scrapy.utils.asyncgen.as_async_generator
 
-Here is an example of a universal middleware::
+Here is an example of a universal middleware using this approach::
 
     from scrapy.utils.asyncgen import as_async_generator
 
@@ -86,6 +89,23 @@ Here is an example of a universal middleware::
 
 If this method includes asynchronous code, that code will work even with
 synchronous :meth:`~scrapy.spiders.Spider.start_requests`.
+
+Another option is to make separate methods for normal and asynchronous
+iterables and choose one at the run time::
+
+    class ProcessStartRequestsAsyncGenMiddleware:
+        def _normal_process_start_requests(self, start_requests, spider):
+            # ... do something with normal start_requests
+
+        async def _async_process_start_requests(self, start_requests, spider):
+            # ... do something with async start_requests
+
+        def process_start_requests(self, start_requests, spider):
+            if hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(start_requests):
+                return self._async_process_start_requests(start_requests, spider)
+            else:
+                return self._normal_process_start_requests(start_requests, spider)
+
 
 Usage
 =====
