@@ -18,6 +18,7 @@ from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
+from scrapy.utils.decorators import deprecated
 
 
 class TextResponse(Response):
@@ -59,6 +60,7 @@ class TextResponse(Response):
         return self._encoding or self._headers_encoding() \
             or self._body_declared_encoding()
 
+    @deprecated
     def body_as_unicode(self):
         """Return body as unicode"""
         return self.text
