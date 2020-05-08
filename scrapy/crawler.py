@@ -96,16 +96,14 @@ class Crawler:
                 yield self.engine.close()
             raise
 
-    @defer.inlineCallbacks
     def call_start_requests(self):
         if hasattr(inspect, 'isasyncgenfunction') and inspect.isasyncgenfunction(self.spider.start_requests):
             # requires Python 3.6+
-            start_requests = self.spider.start_requests().__aiter__()
+            return self.spider.start_requests().__aiter__()
         elif inspect.iscoroutinefunction(self.spider.start_requests):
-            start_requests = yield deferred_from_coro(self.spider.start_requests())
+            return deferred_from_coro(self.spider.start_requests())
         else:
-            start_requests = iter(self.spider.start_requests())
-        return start_requests
+            return iter(self.spider.start_requests())
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
