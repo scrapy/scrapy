@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import inspect
 import unittest
 from unittest import mock
