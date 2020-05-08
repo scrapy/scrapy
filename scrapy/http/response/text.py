@@ -5,6 +5,8 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import warnings
+
 from contextlib import suppress
 from typing import Generator
 from urllib.parse import urljoin
@@ -14,6 +16,8 @@ from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
 
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.decorators import deprecated
@@ -60,9 +64,11 @@ class TextResponse(Response):
         return self._encoding or self._headers_encoding() \
             or self._body_declared_encoding()
 
-    @deprecated
     def body_as_unicode(self):
         """Return body as unicode"""
+        warnings.warn('Response.body_as_unicode() is deprecated, '
+                      'please use Response.text instead.',
+                      ScrapyDeprecationWarning)
         return self.text
 
     @property
