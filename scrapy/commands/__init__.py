@@ -115,7 +115,7 @@ class BaseRunSpiderCommands(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-a", dest="spargs", action="append", default=[],metavar="NAME=VALUE",
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
                           help="dump scraped items into FILE"
