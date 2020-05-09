@@ -4,7 +4,7 @@ from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.exceptions import UsageError
-from scrapy.commands.common_commands import CommonCommands
+from scrapy.commands import BaseRunSpiderCommands
 
 
 def _import_file(filepath):
@@ -23,7 +23,7 @@ def _import_file(filepath):
     return module
 
 
-class Command(CommonCommands):
+class Command(BaseRunSpiderCommands):
 
     requires_project = False
     default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
