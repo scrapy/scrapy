@@ -53,7 +53,7 @@ Request objects
 
     :param body: the request body. If a string is passed, it is converted to
         bytes using *encoding*, which defaults to ``utf-8``. If not passed or
-        ``None`` is passed, an empty bytes array is stored.
+        ``None`` is passed, an empty :class:`bytes` object is stored.
     :type body: bytes
 
     :param headers: the headers of this request. The dict values can be strings
