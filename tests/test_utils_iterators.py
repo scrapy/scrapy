@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 
 from twisted.trial import unittest
@@ -93,8 +92,8 @@ class XmliterTestCase(unittest.TestCase):
             # with bytes
             XmlResponse(url="http://example.com", body=body.encode('utf-8')),
             # Unicode body needs encoding information
-            XmlResponse(url="http://example.com", body=body, encoding='utf-8')):
-
+            XmlResponse(url="http://example.com", body=body, encoding='utf-8'),
+        ):
             attrs = []
             for x in self.xmliter(r, u'þingflokkur'):
                 attrs.append((x.attrib['id'],
@@ -157,7 +156,7 @@ class XmliterTestCase(unittest.TestCase):
 
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, 'product')
-        self.assertRaises(AssertionError, next, i)
+        self.assertRaises(TypeError, next, i)
 
     def test_xmliter_encoding(self):
         body = b'<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
