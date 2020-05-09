@@ -6,7 +6,6 @@ See documentation in docs/topics/request-response.rst
 """
 
 import warnings
-
 from contextlib import suppress
 from typing import Generator
 from urllib.parse import urljoin
@@ -15,7 +14,6 @@ import parsel
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
-
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request

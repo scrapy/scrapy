@@ -835,7 +835,6 @@ TextResponse objects
     .. automethod:: TextResponse.follow_all
 
 
-
 HtmlResponse objects
 --------------------
 
