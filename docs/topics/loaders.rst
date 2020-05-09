@@ -68,7 +68,7 @@ previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 Declaring Item Loaders
 ======================
 
-Besides the usage of Item Laoders as instances, like the example above,
+Besides the usage of Item Loaders as instances, like the example above,
 it's quite common to define them as classes.
 This allows the loaders to be extended and
 also to share common parsing rules across loaders for different websites.
