@@ -1,5 +1,5 @@
-from scrapy.exceptions import UsageError
 from scrapy.commands import BaseRunSpiderCommands
+from scrapy.exceptions import UsageError
 
 
 class Command(BaseRunSpiderCommands):
@@ -16,8 +16,7 @@ class Command(BaseRunSpiderCommands):
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:
-            raise UsageError(
-                "running 'scrapy crawl' with more than one spider is no longer supported")
+            raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
         spname = args[0]
 
         crawl_defer = self.crawler_process.crawl(spname, **opts.spargs)

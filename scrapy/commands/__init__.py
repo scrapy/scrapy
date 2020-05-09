@@ -80,8 +80,7 @@ class ScrapyCommand:
             self.settings.setdict(arglist_to_dict(opts.set),
                                   priority='cmdline')
         except ValueError:
-            raise UsageError(
-                "Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
             self.settings.set('LOG_ENABLED', True, priority='cmdline')
@@ -108,18 +107,15 @@ class ScrapyCommand:
         raise NotImplementedError
 
 
-''''
-The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
-performing common functionality between crawl.py and runspider.py
-'''
-
-
 class BaseRunSpiderCommands(ScrapyCommand):
+    ''''
+    The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
+    performing common functionality between crawl.py and runspider.py
+    '''
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-a", dest="spargs", action="append", default=[],
-                          metavar="NAME=VALUE",
+        parser.add_option("-a", dest="spargs", action="append", default=[],metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
                           help="dump scraped items into FILE"
@@ -132,9 +128,7 @@ class BaseRunSpiderCommands(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError(
-                "Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
-            feeds = feed_process_params_from_cli(
-                self.settings, opts.output, opts.output_format)
+            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
             self.settings.set('FEEDS', feeds, priority='cmdline')
