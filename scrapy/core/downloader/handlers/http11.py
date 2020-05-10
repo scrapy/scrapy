@@ -12,7 +12,8 @@ from urllib.parse import urldefrag
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
-from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
+from twisted.internet.interfaces import IStreamClientEndpoint
+from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI, _StandardEndpointFactory
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
@@ -214,6 +215,18 @@ class TunnelingAgent(Agent):
         self._proxyConf = proxyConf
         self._contextFactory = contextFactory
 
+    @classmethod
+    def usingEndpointFactory(cls, reactor, proxyConf, contextFactory, endpointFactory, pool=None):
+        agent = Agent.usingEndpointFactory(
+            cls,
+            reactor=reactor,
+            endpointFactory=endpointFactory,
+            pool=pool,
+        )
+        agent._proxyConf = proxyConf
+        agent._contextFactory = contextFactory
+        return agent
+
     def _getEndpoint(self, uri):
         return TunnelingTCP4ClientEndpoint(
             reactor=self._reactor,
@@ -252,6 +265,13 @@ class ScrapyProxyAgent(Agent):
         )
         self._proxyURI = URI.fromBytes(proxyURI)
 
+    @classmethod
+    def usingEndpointFactory(cls, reactor, proxyURI, endpointFactory, pool=None):
+        agent = cls.__new__(cls)
+        agent._init(reactor, endpointFactory, pool)
+        agent._proxyURI = URI.fromBytes(proxyURI)
+        return agent
+
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
         Issue a new request via the configured proxy.
@@ -285,11 +305,18 @@ class ScrapyAgent:
         self._warnsize = warnsize
         self._fail_on_dataloss = fail_on_dataloss
         self._txresponse = None
+        self._endpointFactory = None
 
     def _get_agent(self, request, timeout):
         from twisted.internet import reactor
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
+        self._endpointFactory = _CertCaptureEndpointFactory(
+            reactor=reactor,
+            contextFactory=self._contextFactory,
+            connectTimeout=timeout,
+            bindAddress=bindaddress,
+        )
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
@@ -313,19 +340,16 @@ class ScrapyAgent:
                     pool=self._pool,
                 )
             else:
-                return self._ProxyAgent(
+                return self._ProxyAgent.usingEndpointFactory(
                     reactor=reactor,
                     proxyURI=to_bytes(proxy, encoding='ascii'),
-                    connectTimeout=timeout,
-                    bindAddress=bindaddress,
+                    endpointFactory=self._endpointFactory,
                     pool=self._pool,
                 )
 
-        return self._Agent(
+        return self._Agent.usingEndpointFactory(
             reactor=reactor,
-            contextFactory=self._contextFactory,
-            connectTimeout=timeout,
-            bindAddress=bindaddress,
+            endpointFactory=self._endpointFactory,
             pool=self._pool,
         )
 
@@ -378,7 +402,7 @@ class ScrapyAgent:
                 "txresponse": txresponse,
                 "body": b"",
                 "flags": None,
-                "certificate": None,
+                "certificate": self._endpointFactory._last_cert,
                 "ip_address": None,
             }
 
@@ -427,6 +451,35 @@ class ScrapyAgent:
             certificate=result["certificate"],
             ip_address=result["ip_address"],
         )
+
+
+class _CertCaptureEndpointFactory(_StandardEndpointFactory):
+
+    @implementer(IStreamClientEndpoint)
+    class _CertCaptureEndpointWrapper:
+        def __init__(self, endpoint, factory):
+            self._factory = factory
+            self._endpoint = endpoint
+
+        def connect(self, protocolFactory):
+            d = self._endpoint.connect(protocolFactory)
+            d.addCallback(self._capture_cert)
+            return d
+
+        def _capture_cert(self, protocol):
+            self._factory._last_peer = protocol.transport.getPeer().host
+            with suppress(AttributeError):
+                self._factory._last_cert = ssl.Certificate(protocol.transport.getPeerCertificate())
+            return protocol
+
+    def __init__(self, reactor, contextFactory, connectTimeout, bindAddress):
+        _StandardEndpointFactory.__init__(self, reactor, contextFactory, connectTimeout, bindAddress)
+        self._last_peer = None
+        self._last_cert = None
+
+    def endpointForURI(self, uri):
+        endpoint = _StandardEndpointFactory.endpointForURI(self, uri)
+        return self._CertCaptureEndpointWrapper(endpoint, self)
 
 
 @implementer(IBodyProducer)
