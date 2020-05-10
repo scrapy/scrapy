@@ -5,12 +5,13 @@ import logging
 from twisted.internet.defer import DeferredList, Deferred
 from twisted.python.failure import Failure
 
-from pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
-    getAllReceivers, disconnect
+from pydispatch.dispatcher import Anonymous, Any, disconnect, getAllReceivers, liveReceivers
 from pydispatch.robustapply import robustApply
 
+from scrapy.exceptions import StopDownload
 from scrapy.utils.defer import maybeDeferred_coro
 from scrapy.utils.log import failure_to_exc_info
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
     """
-    dont_log = named.pop('dont_log', _IgnoredException)
+    dont_log = (named.pop('dont_log', _IgnoredException), StopDownload)
     spider = named.get('spider', None)
     responses = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
