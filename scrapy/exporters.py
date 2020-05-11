@@ -250,7 +250,7 @@ class CsvItemExporter(BaseItemExporter):
 
 class PickleItemExporter(BaseItemExporter):
 
-    def __init__(self, file, protocol=2, **kwargs):
+    def __init__(self, file, protocol=4, **kwargs):
         super().__init__(**kwargs)
         self.file = file
         self.protocol = protocol
