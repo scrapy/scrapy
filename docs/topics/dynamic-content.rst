@@ -253,12 +253,12 @@ along with `scrapy-selenium`_ for seamless integration.
 
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
+.. _chompjs: https://github.com/Nykakin/chompjs
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
 .. _curl: https://curl.haxx.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
-.. _chompjs: https://github.com/Nykakin/chompjs
 .. _pytesseract: https://github.com/madmaze/pytesseract
 .. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
