@@ -108,10 +108,10 @@ class ScrapyCommand:
 
 
 class BaseRunSpiderCommands(ScrapyCommand):
-    ''''
+    """
     The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
     performing common functionality between crawl.py and runspider.py
-    '''
+    """
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
