@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Scrapy documentation build configuration file, created by
 # sphinx-quickstart on Mon Nov 24 12:02:52 2008.
 #

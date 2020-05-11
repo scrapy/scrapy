@@ -730,6 +730,9 @@ class Http11ProxyTestCase(HttpProxyTestCase):
 
 class HttpDownloadHandlerMock:
 
+    def __init__(self, *args, **kwargs):
+        pass
+
     def download_request(self, request, spider):
         return request
 
