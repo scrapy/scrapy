@@ -4,7 +4,9 @@ import unittest
 from unittest import mock
 
 from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, set_environ, walk_modules
+from scrapy.utils.misc import (arg_to_iter, create_instance,
+                               get_object_attributes_as_dict, load_object,
+                               set_environ, walk_modules)
 
 
 __doctests__ = ['scrapy.utils.misc']
@@ -130,6 +132,19 @@ class UtilsMiscTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             create_instance(m, None, None)
+
+    def test_get_object_attributes_as_dict(self):
+        class SomeClass(object):
+            some_class_attribute = 'foo'
+
+            def __init__(self):
+                self.some_object_attribute = 'bar'
+
+        obj = SomeClass()
+        attributes = get_object_attributes_as_dict(obj)
+
+        self.assertEqual(attributes['some_class_attribute'], 'foo')
+        self.assertEqual(attributes['some_object_attribute'], 'bar')
 
     def test_set_environ(self):
         assert os.environ.get('some_test_environ') is None

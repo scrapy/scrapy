@@ -81,7 +81,7 @@ class ImagesPipeline(FilesPipeline):
 
     @classmethod
     def from_settings(cls, settings):
-        s3store = cls.STORE_SCHEMES['s3']
+        s3store = cls.STORAGES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
@@ -90,11 +90,11 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_VERIFY = settings['AWS_VERIFY']
         s3store.POLICY = settings['IMAGES_STORE_S3_ACL']
 
-        gcs_store = cls.STORE_SCHEMES['gs']
+        gcs_store = cls.STORAGES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
 
-        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store = cls.STORAGES['ftp']
         ftp_store.FTP_USERNAME = settings['FTP_USER']
         ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
         ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')

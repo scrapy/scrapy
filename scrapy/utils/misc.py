@@ -150,6 +150,11 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         return objcls(*args, **kwargs)
 
 
+def get_object_attributes_as_dict(obj):
+    """Returns the object attributes (``dir(obj)``) names and values in a ``dict``"""
+    return {k: getattr(obj, k) for k in dir(obj)}
+
+
 @contextmanager
 def set_environ(**kwargs):
     """Temporarily set environment variables inside the context manager and

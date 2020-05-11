@@ -9,6 +9,7 @@ import logging
 import mimetypes
 import os
 import time
+import warnings
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from ftplib import FTP
@@ -21,7 +22,7 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
-from scrapy.utils.misc import md5sum
+from scrapy.utils.misc import get_object_attributes_as_dict, load_object, md5sum
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
@@ -338,25 +339,27 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME = "file"
     EXPIRES = 90
-    STORE_SCHEMES = {
-        '': FSFilesStore,
-        'file': FSFilesStore,
-        's3': S3FilesStore,
-        'gs': GCSFilesStore,
-        'ftp': FTPFilesStore
-    }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
+    STORAGES = {}
 
-    def __init__(self, store_uri, download_func=None, settings=None):
-        if not store_uri:
+    STORE_SCHEMES = {}
+
+    def __init__(self, urifmt, download_func=None, settings=None):
+        if not urifmt:
             raise NotConfigured
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         cls_name = "FilesPipeline"
-        self.store = self._get_store(store_uri)
+        self.store = None
+        self.urifmt = urifmt
+        if '%' not in self.urifmt:
+            # simple heuristic to check if urifmt is a template (requires spider attributes)
+            # if it is not a template, load the store ASAP to avoid incompatibility issues
+            self.store = self._get_store(self.urifmt)
+
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
@@ -378,7 +381,8 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def from_settings(cls, settings):
-        s3store = cls.STORE_SCHEMES['s3']
+        cls._load_storages(settings)
+        s3store = cls.STORAGES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
@@ -387,25 +391,48 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_VERIFY = settings['AWS_VERIFY']
         s3store.POLICY = settings['FILES_STORE_S3_ACL']
 
-        gcs_store = cls.STORE_SCHEMES['gs']
+        gcs_store = cls.STORAGES['gs']
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['FILES_STORE_GCS_ACL'] or None
 
-        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store = cls.STORAGES['ftp']
         ftp_store.FTP_USERNAME = settings['FTP_USER']
         ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
         ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
 
-        store_uri = settings['FILES_STORE']
-        return cls(store_uri, settings=settings)
+        urifmt = settings['FILES_STORE']
+        return cls(urifmt, settings=settings)
+
+    @classmethod
+    def _load_storages(cls, settings):
+        storages = settings.getwithbase('FILES_STORAGES')
+        for (scheme, storage_cls) in storages.items():
+            cls.STORAGES[scheme] = load_object(storage_cls)
+
+        if cls.STORE_SCHEMES:
+            warnings.warn(
+                'FilesPipeline.STORE_SCHEMES is deprecated and will be removed in the future.'
+                'Please upgrade to FILES_STORAGES setting.',
+                DeprecationWarning
+            )
+
+        for (scheme, storage_cls) in cls.STORE_SCHEMES.items():
+            cls.STORAGES[scheme] = load_object(storage_cls)
+
+    def open_spider(self, spider):
+        if not self.store:
+            attributes = get_object_attributes_as_dict(spider)
+            store_uri = self.urifmt % attributes
+            self.store = self._get_store(store_uri)
+        super(FilesPipeline, self).open_spider(spider)
 
     def _get_store(self, uri):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
-        store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        storage_cls = self.STORAGES[scheme]
+        return storage_cls(uri)
 
     def media_to_download(self, request, info):
         def _onsuccess(result):

@@ -22,7 +22,7 @@ from scrapy.utils.boto import is_botocore
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import create_instance, get_object_attributes_as_dict, load_object
 from scrapy.utils.python import without_none_values
 
 
@@ -332,9 +332,7 @@ class FeedExporter:
         return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
     def _get_uri_params(self, spider, uri_params):
-        params = {}
-        for k in dir(spider):
-            params[k] = getattr(spider, k)
+        params = get_object_attributes_as_dict(spider)
         ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
