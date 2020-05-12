@@ -82,13 +82,14 @@ def init_env(project='default', set_syspath=True, use_closest=True):
     dir. This sets the Scrapy settings module and modifies the Python path to
     be able to locate the project module.
     """
-    if use_closest:
-        closest = closest_scrapy_cfg()
-        if closest:
-            cfg = get_config(closest)
-            projdir = os.path.dirname(closest)
-            if set_syspath and projdir not in sys.path:
-                sys.path.append(projdir)
+    closest = closest_scrapy_cfg()
+    if closest:
+        projdir = os.path.dirname(closest)
+        if set_syspath and projdir not in sys.path:
+            sys.path.append(projdir)
+
+    if use_closest and closest:
+        cfg = get_config(closest)
     else:
         cfg = get_config()
 
@@ -98,7 +99,7 @@ def init_env(project='default', set_syspath=True, use_closest=True):
 
 def get_config(closest=None):
     """Get Scrapy config file as a ConfigParser"""
-    sources = get_sources(closest=None)
+    sources = get_sources(closest)
     cfg = ConfigParser()
     cfg.read(sources)
     return cfg
