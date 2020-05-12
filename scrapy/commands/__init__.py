@@ -112,7 +112,6 @@ class BaseRunSpiderCommands(ScrapyCommand):
     The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
     performing common functionality between crawl.py and runspider.py
     """
-
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
