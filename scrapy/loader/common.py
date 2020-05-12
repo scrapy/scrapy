@@ -1,7 +1,7 @@
 """Common functions used in Item Loaders code"""
 
-from functools import partial
 import warnings
+from functools import partial
 
 from itemloaders import common
 
