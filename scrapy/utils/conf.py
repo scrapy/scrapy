@@ -77,37 +77,41 @@ def closest_scrapy_cfg(path='.', prevpath=None):
     return closest_scrapy_cfg(os.path.dirname(path), path)
 
 
-def init_env(project='default', set_syspath=True):
+def init_env(project='default', set_syspath=True, use_closest=True):
     """Initialize environment to use command-line tool from inside a project
     dir. This sets the Scrapy settings module and modifies the Python path to
     be able to locate the project module.
     """
-    cfg = get_config()
+    if use_closest:
+        closest = closest_scrapy_cfg()
+        if closest:
+            cfg = get_config(closest)
+            projdir = os.path.dirname(closest)
+            if set_syspath and projdir not in sys.path:
+                sys.path.append(projdir)
+    else:
+        cfg = get_config()
+
     if cfg.has_option('settings', project):
         os.environ['SCRAPY_SETTINGS_MODULE'] = cfg.get('settings', project)
-    closest = closest_scrapy_cfg()
-    if closest:
-        projdir = os.path.dirname(closest)
-        if set_syspath and projdir not in sys.path:
-            sys.path.append(projdir)
 
 
-def get_config(use_closest=True):
+def get_config(closest=None):
     """Get Scrapy config file as a ConfigParser"""
-    sources = get_sources(use_closest)
+    sources = get_sources(closest=None)
     cfg = ConfigParser()
     cfg.read(sources)
     return cfg
 
 
-def get_sources(use_closest=True):
+def get_sources(closest=None):
     xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
         os.path.expanduser('~/.config')
     sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
                xdg_config_home + '/scrapy.cfg',
                os.path.expanduser('~/.scrapy.cfg')]
-    if use_closest:
-        sources.append(closest_scrapy_cfg())
+    if closest:
+        sources.append(closest)
     return sources
 
 
