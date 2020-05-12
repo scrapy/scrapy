@@ -118,8 +118,7 @@ class BaseRunSpiderCommands(ScrapyCommand):
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
-                          help="dump scraped items into FILE"
-                          + "(use - for stdout)")
+                          help="dump scraped items into FILE (use - for stdout)")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items with -o")
 
