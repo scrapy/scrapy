@@ -5,6 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import json
 import warnings
 from contextlib import suppress
 from typing import Generator
@@ -67,6 +68,10 @@ class TextResponse(Response):
                       'please use Response.text instead.',
                       ScrapyDeprecationWarning)
         return self.text
+
+    @property
+    def json(self):
+        return json.loads(self.text)
 
     @property
     def text(self):

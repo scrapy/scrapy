@@ -669,6 +669,11 @@ class TextResponseTest(BaseResponseTest):
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
+    def test_json_response(self):
+        body = b"""{"ip": "109.187.217.200"}"""
+        response = self.response_class("http://www.example.com", body=body)
+        self.assertEqual(response.json, {'ip': '109.187.217.200'})
+
 
 class HtmlResponseTest(TextResponseTest):
 
