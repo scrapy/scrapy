@@ -242,7 +242,7 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch_size = self.settings.get('FEED_STORAGE_BATCH_SIZE', None)
+        self.storage_batch_size = self.settings.get('FEED_STORAGE_BATCH_ITEM_COUNT', None)
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
@@ -290,7 +290,7 @@ class FeedExporter:
     def _start_new_batch(self, batch_id, uri, feed, spider, template_uri):
         """
         Redirect the output data stream to a new file.
-        Execute multiple times if 'FEED_STORAGE_BATCH' setting is specified.
+        Execute multiple times if 'FEED_STORAGE_BATCH_ITEM_COUNT' setting is specified.
         :param batch_id: sequence number of current batch
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
@@ -326,7 +326,7 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_SIZE and close the old one
+            # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
             if self.storage_batch_size and slot.itemcount == self.storage_batch_size:
                 uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'], slot)
                 self._close_slot(slot, spider)
@@ -358,12 +358,12 @@ class FeedExporter:
 
     def _batch_deliveries_supported(self, uri):
         """
-        If FEED_STORAGE_BATCH_SIZE setting is specified uri has to contain %(batch_time)s or %(batch_id)s
+        If FEED_STORAGE_BATCH_ITEM_COUNT setting is specified uri has to contain %(batch_time)s or %(batch_id)s
         to distinguish different files of partial output
         """
         if self.storage_batch_size is None or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
             return True
-        logger.warning('%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_SIZE setting is specified')
+        logger.warning('%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_ITEM_COUNT setting is specified')
         return False
 
     def _storage_supported(self, uri):

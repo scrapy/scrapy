@@ -220,7 +220,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGE_FTP_ACTIVE`
  * :setting:`FEED_STORAGE_S3_ACL`
  * :setting:`FEED_EXPORTERS`
- * :setting:`FEED_EXPORT_BATCH_SIZE`
+ * :setting:`FEED_STORAGE_BATCH_ITEM_COUNT`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -431,9 +431,9 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
-.. setting:: FEED_EXPORT_BATCH_SIZE
+.. setting:: FEED_STORAGE_BATCH_ITEM_COUNT
 
-FEED_EXPORT_BATCH_SIZE
+FEED_STORAGE_BATCH_ITEM_COUNT
 ----------------------
 Default: ``None``
 
@@ -448,7 +448,7 @@ Therefore you must specify %(batch_time)s or %(batch_id)s or both in FEED_URI.
 
 For instance::
 
-    FEED_EXPORT_BATCH_SIZE=100
+    FEED_STORAGE_BATCH_ITEM_COUNT=100
 
 Your request can be like::
 
