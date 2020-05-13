@@ -184,6 +184,18 @@ data from it:
     >>> json.loads(json_data)
     {'field': 'value'}
 
+-   chompjs_ provides an API to parse JavaScript objects into a :class:`dict`.
+
+    For example, if the JavaScript code contains
+    ``var data = {field: "value", secondField: "second value"};``
+    you can extract that data as follows:
+
+    >>> import chompjs
+    >>> javascript = response.css('script::text').get()
+    >>> data = chompjs.parse_js_object(javascript)
+    >>> data
+    {'field': 'value', 'secondField': 'second value'}
+
 -   Otherwise, use js2xml_ to convert the JavaScript code into an XML document
     that you can parse using :ref:`selectors <topics-selectors>`.
 
@@ -241,6 +253,7 @@ along with `scrapy-selenium`_ for seamless integration.
 
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
+.. _chompjs: https://github.com/Nykakin/chompjs
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
 .. _curl: https://curl.haxx.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser

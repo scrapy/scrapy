@@ -137,6 +137,11 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             msg = str(w[0].message)
             self.assertIn("several spiders with the same name", msg)
             self.assertIn("'spider3'", msg)
+            self.assertTrue(msg.count("'spider3'") == 2)
+
+            self.assertNotIn("'spider1'", msg)
+            self.assertNotIn("'spider2'", msg)
+            self.assertNotIn("'spider4'", msg)
 
             spiders = set(spider_loader.list())
             self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
@@ -156,7 +161,13 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             msg = str(w[0].message)
             self.assertIn("several spiders with the same name", msg)
             self.assertIn("'spider1'", msg)
+            self.assertTrue(msg.count("'spider1'") == 2)
+
             self.assertIn("'spider2'", msg)
+            self.assertTrue(msg.count("'spider2'") == 2)
+
+            self.assertNotIn("'spider3'", msg)
+            self.assertNotIn("'spider4'", msg)
 
             spiders = set(spider_loader.list())
             self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))

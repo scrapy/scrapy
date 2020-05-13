@@ -264,12 +264,12 @@ class ItemTest(unittest.TestCase):
         """Make sure the DictItem deprecation warning is not issued for
         Item"""
         with catch_warnings(record=True) as warnings:
-            item = Item()
+            Item()
             self.assertEqual(len(warnings), 0)
 
             class SubclassedItem(Item):
                 pass
-            subclassed_item = SubclassedItem()
+            SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
