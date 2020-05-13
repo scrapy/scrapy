@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 
 from twisted.trial import unittest
@@ -93,8 +92,8 @@ class XmliterTestCase(unittest.TestCase):
             # with bytes
             XmlResponse(url="http://example.com", body=body.encode('utf-8')),
             # Unicode body needs encoding information
-            XmlResponse(url="http://example.com", body=body, encoding='utf-8')):
-
+            XmlResponse(url="http://example.com", body=body, encoding='utf-8'),
+        ):
             attrs = []
             for x in self.xmliter(r, u'þingflokkur'):
                 attrs.append((x.attrib['id'],

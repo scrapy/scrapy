@@ -459,7 +459,6 @@ class TestRequestMetaSettingFallback(TestCase):
         target = 'http://www.example.com'
 
         for settings, response_headers, request_meta, policy_class, check_warning in self.params[3:]:
-            spider = Spider('foo')
             mw = RefererMiddleware(Settings(settings))
 
             response = Response(origin, headers=response_headers)
@@ -478,32 +477,32 @@ class TestSettingsPolicyByName(TestCase):
 
     def test_valid_name(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
 
     def test_valid_name_casevariants(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
@@ -511,7 +510,7 @@ class TestSettingsPolicyByName(TestCase):
     def test_invalid_name(self):
         settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(RuntimeError):
-            mw = RefererMiddleware(settings)
+            RefererMiddleware(settings)
 
 
 class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):

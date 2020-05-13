@@ -434,7 +434,7 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. setting:: FEED_STORAGE_BATCH_ITEM_COUNT
 
 FEED_STORAGE_BATCH_ITEM_COUNT
-----------------------
+-----------------------------
 Default: ``None``
 
 An integer number that represents the number of scraped items stored in each output

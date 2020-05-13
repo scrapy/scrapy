@@ -94,11 +94,12 @@ class FTPDownloadHandler:
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
+        return client.retrieveFile(filepath, protocol).addCallbacks(
+            callback=self._build_response,
+            callbackArgs=(request, protocol),
+            errback=self._failed,
+            errbackArgs=(request,),
+        )
 
     def _build_response(self, result, request, protocol):
         self.result = result

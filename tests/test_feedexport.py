@@ -730,7 +730,6 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_encoding(self):
         items = [dict({'foo': u'Test\xd6'})]
-        header = ['foo']
 
         formats = {
             'json': u'[{"foo": "Test\\u00d6"}]'.encode('utf-8'),

@@ -834,11 +834,6 @@ TextResponse objects
 
     .. automethod:: TextResponse.follow_all
 
-    .. method:: TextResponse.body_as_unicode()
-
-        The same as :attr:`text`, but available as a method. This method is
-        kept for backward compatibility; please prefer ``response.text``.
-
 
 HtmlResponse objects
 --------------------

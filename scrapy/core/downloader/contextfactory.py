@@ -86,8 +86,8 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
         #
         # This means that a website like https://www.cacert.org will be rejected
         # by default, since CAcert.org CA certificate is seldom shipped.
-        return optionsForClientTLS(hostname.decode("ascii"),
-                                   trustRoot=platformTrust(),
-                                   extraCertificateOptions={
-                                        'method': self._ssl_method,
-                                   })
+        return optionsForClientTLS(
+            hostname=hostname.decode("ascii"),
+            trustRoot=platformTrust(),
+            extraCertificateOptions={'method': self._ssl_method},
+        )
